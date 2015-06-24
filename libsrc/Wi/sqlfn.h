@@ -327,6 +327,7 @@ int ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * stat
 int ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
     it_cursor_t * itc, buffer_desc_t ** buf_ret, table_source_t * ts,
 		 int search_mode);
+void ks_cl_local_cast (key_source_t * ks, caddr_t * inst);
 int itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
 	       inx_locality_t * il, placeholder_t * pl, int is_asc);
 
@@ -717,6 +718,7 @@ void end_node_free (end_node_t * en);
 void setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst);
 void setp_mem_sort_flush (setp_node_t * setp, caddr_t * qst);
 void setp_mem_sort (setp_node_t * setp, caddr_t * qst, int n_sets, int merge_set);
+int setp_top_get (caddr_t * inst, state_slot_t * ssl, int deflt);
 void setp_filled (setp_node_t * setp, caddr_t * qst);
 
 void union_node_input (union_node_t * setp, caddr_t * inst, caddr_t * state);
@@ -961,6 +963,7 @@ extern int32 cli_utf8_execs;
 extern int32 cli_no_system_tables;
 extern int32 cli_binary_timestamp;
 extern long cli_encryption_on_password;
+extern int timezoneless_datetimes;
 int current_of_node_scrollable (current_of_node_t * co, query_instance_t * qi, char * cr_name);
 void cli_set_scroll_current_ofs (client_connection_t * cli, caddr_t * current_ofs);
 void stmt_start_scroll (client_connection_t * cli, srv_stmt_t * stmt,
@@ -1399,6 +1402,7 @@ void ssi_free (ssa_iter_node_t * ssi);
 
 
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
+caddr_t box_concat (caddr_t b1, caddr_t b2);
 
 query_t * sch_ua_func_ua (caddr_t name);
 
@@ -1516,6 +1520,7 @@ void cl_fref_resume (fun_ref_node_t * fref, caddr_t * inst);
 void chash_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
 void memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
 void fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state);
+void fun_ref_reset_setps (fun_ref_node_t * fref, caddr_t * inst);
 void chash_merge (setp_node_t * setp, chash_t * cha, chash_t * delta, int n_to_go);
 dtp_t cha_dtp (dtp_t dtp, int is_key);
 caddr_t * chash_reader_current_branch (table_source_t * ts, caddr_t * inst, int is_next);

@@ -60,7 +60,6 @@ index using the VT_INC_INDEX_&lt;q&gt;_&lt;o&gt;_&lt;table&gt; function.
     <refsect2><title>interval_minutes</title>
       <para>the update interval.  NULL means that updates are not  scheduled.</para></refsect2>
   </refsect1>
-  <refsect1 id="ret_vt_batch_update"><title>Return Types</title><para></para></refsect1>
   <refsect1 id="errors_vt_batch_update"><title>Errors</title>
     <table><title>Errors signalled by</title>
       <tgroup cols="4">
@@ -76,17 +75,11 @@ index using the VT_INC_INDEX_&lt;q&gt;_&lt;o&gt;_&lt;table&gt; function.
       </tgroup>
     </table>
   </refsect1>
-  <refsect1 id="examples_vt_batch_update"><title>Examples</title>
-    <example id="ex_vt_batch_update"><title></title>
-      <para></para>
-      <screen></screen>
-    </example>
-  </refsect1>
   <refsect1 id="seealso_vt_batch_update"><title>See Also</title>
-    <para><link linkend="fn_vt_drop_ftt">vt_drop_ftt</link></para>
-    <para><link linkend="fn_vt_batch">vt_batch</link></para>
-    <para><link linkend="fn_vt_create_text_index">vt_create_text_index</link></para>
-    <para><link linkend="fn_vt_batch_feed">vt_batch_feed</link></para>
+    <para><link linkend="fn_vt_drop_ftt">vt_drop_ftt()</link></para>
+    <para><link linkend="fn_vt_batch">vt_batch()</link></para>
+    <para><link linkend="fn_vt_create_text_index">vt_create_text_index()</link></para>
+    <para><link linkend="fn_vt_batch_feed">vt_batch_feed()</link></para>
   </refsect1>
 </refentry>
 

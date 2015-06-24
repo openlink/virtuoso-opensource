@@ -53,7 +53,7 @@ So the 'introspection' file lists all the functions that a given site supports.<
 
 <programlisting><![CDATA[
 GET /Atom/Http/intro?b=128 HTTP/1.1
-Host: localhost:6666
+Host: example.com
 ]]></programlisting>
 
 <para>Response:</para>
@@ -68,10 +68,10 @@ Content-Length: 417
 
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <introspection xmlns="http://example.com/newformat#" >
-  <create-entry>http://localhost:6666/Atom/Http/entry?b=128</create-entry>
-  <user-prefs>http://localhost:6666/Atom/Http/prefs?b=128</user-prefs>
-  <search-entries>http://localhost:6666/Atom/Http/search?b=128</search-entries>
-  <categories>http://localhost:6666/Atom/Http/categories?b=128</categories>
+  <create-entry>http://example.com/Atom/Http/entry?b=128</create-entry>
+  <user-prefs>http://example.com/Atom/Http/prefs?b=128</user-prefs>
+  <search-entries>http://example.com/Atom/Http/search?b=128</search-entries>
+  <categories>http://example.com/Atom/Http/categories?b=128</categories>
 </introspection>
 ]]></programlisting>
 </example>
@@ -213,7 +213,7 @@ range and last_N.</para></formalpara>
 <programlisting><![CDATA[
 GET /Atom/Http/search?b=128?last=7 HTTP/1.1
 Accept: application/x.atom+xml
-Host: localhost:6666
+Host: example.com
 Authorization: ...
 ]]></programlisting>
 
@@ -222,7 +222,7 @@ Authorization: ...
 <programlisting><![CDATA[
 GET /Atom/Http/search?b=128&start-range=2&end-range=27 HTTP/1.1
 Accept: application/x.atom+xml
-Host: localhost:6666
+Host: example.com
 Authorization: ...
 ]]></programlisting>
 
@@ -230,13 +230,13 @@ Authorization: ...
 
 <programlisting><![CDATA[
 <search-results xmlns="http://example.com/newformat#">
-<match title="Classic ASP Framework. Make your Classic...">http://localhost:6666/Atom/Http?b=128&amp;id=6</match>
-<match title="DB Navigator - an open source .NET control">http://localhost:6666/Atom/Http?b=128&amp;id=4</match>
-<match title="Sort an Array with Non-Comparable Items">http://localhost:6666/Atom/Http?b=128&amp;id=5</match>
-<match title="SignedXML Licensing Sample">http://localhost:6666/Atom/Http?b=128&amp;id=7</match>
-<match title="TicTacToe">http://localhost:6666/Atom/Http?b=128&amp;id=1</match>
-<match title="Check your eMails in Hotmail using HTTPMail">http://localhost:6666/Atom/Http?b=128&amp;id=2</match>
-<match title="Slashdot.org RSS Feed Reader">http://localhost:6666/Atom/Http?b=128&amp;id=3</match>
+<match title="Classic ASP Framework. Make your Classic...">http://example.com/Atom/Http?b=128&amp;id=6</match>
+<match title="DB Navigator - an open source .NET control">http://example.com/Atom/Http?b=128&amp;id=4</match>
+<match title="Sort an Array with Non-Comparable Items">http://example.com/Atom/Http?b=128&amp;id=5</match>
+<match title="SignedXML Licensing Sample">http://example.com/Atom/Http?b=128&amp;id=7</match>
+<match title="TicTacToe">http://example.com/Atom/Http?b=128&amp;id=1</match>
+<match title="Check your eMails in Hotmail using HTTPMail">http://example.com/Atom/Http?b=128&amp;id=2</match>
+<match title="Slashdot.org RSS Feed Reader">http://example.com/Atom/Http?b=128&amp;id=3</match>
 </search-results>
 ]]></programlisting>
 
@@ -325,13 +325,13 @@ introspection file - 'uri'.</para>
 
 <programlisting><![CDATA[
 declare x any;
-x := atom.get_Intro ('http://localhost:6666/Atom/Http/intro?b=128');
+x := atom.get_Intro ('http://example.com/Atom/Http/intro?b=128');
 -- x will contain
--- (("create-entry" "http://localhost:6666/Atom/Http/entry?b=128" ) 
+-- (("create-entry" "http://example.com/Atom/Http/entry?b=128" )
 --  ("user-prefs"
--- "http://localhost:6666/Atom/Http/prefs?b=128" ) ("search-entries"
--- "http://localhost:6666/Atom/Http/search?b=128" ) ("categories"
--- "http://localhost:6666/Atom/Http/categories?b=128" ) )
+-- "http://example.com/Atom/Http/prefs?b=128" ) ("search-entries"
+-- "http://example.com/Atom/Http/search?b=128" ) ("categories"
+-- "http://example.com/Atom/Http/categories?b=128" ) )
 ]]></programlisting>
 
 <para>make a new entry</para>
@@ -346,11 +346,11 @@ stru := new "MTWeblogPost" ();
 stru.title := 'My title'
 stru.description := '<p>hello</p>';
 req.struct := stru;
-resp := atom.new_Post ('http://localhost:6666/Atom/Http/entry?b=128', req);
+resp := atom.new_Post ('http://example.com/Atom/Http/entry?b=128', req);
 ]]></programlisting>
 
 <para>The response, resp, would contain: 
-  <computeroutput><![CDATA[http://localhost:6666/Atom/Http/entry?b=128&id=1]]></computeroutput></para>
+  <computeroutput><![CDATA[http://example.com/Atom/Http/entry?b=128&id=1]]></computeroutput></para>
 
 <para>edit an entry:</para>
 
@@ -364,19 +364,18 @@ stru := new "MTWeblogPost" ();
 stru.title := 'test'
 stru.description := '<p>hello from me</p>';
 req.struct := stru;
-atom.edit_Post ('http://localhost:6666/Atom/Http/entry?b=128&id=1', req);
+atom.edit_Post ('http://example.com/Atom/Http/entry?b=128&id=1', req);
 ]]></programlisting>
 
 <para>delete it:</para>
 
 <programlisting><![CDATA[
-atom.delete_Post ('http://localhost:6666/Atom/Http/entry?b=128&id=1', req);
+atom.delete_Post ('http://example.com/Atom/Http/entry?b=128&id=1', req);
 ]]></programlisting>
 </example>
 
 <tip><title>See Also:</title>
-  <para><ulink url="bitworking.org">http://bitworking.org/rfc/draft-gregorio-07.html</ulink></para></tip>
-
+  <para><ulink url="https://tools.ietf.org/html/rfc5023">RFC 5023: The Atom Publishing Protocol</ulink></para></tip>
   </sect3>
 </sect2>
 

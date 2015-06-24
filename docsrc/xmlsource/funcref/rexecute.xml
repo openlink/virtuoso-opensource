@@ -209,9 +209,6 @@ REVOKE REXECUTE ON '<attached_dsn_name>' FROM <user_name>
       <para>The cursor handle (<type>long</type>).</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_rexecute"><title>Return Values</title>
-    <para></para>
-  </refsect1>
   <refsect1 id="examples_rexecute">
     <title>Examples</title>
     <example id="ex_rexecute_1"><title>Remote execute example 1</title>

@@ -85,7 +85,7 @@ i.e. relativepathList[i] is name for fileTextList[i].</para></refsect2>
       <screen>
     - Invocation:
 
-    SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://localhost:6666/xmlStorageSystem&#39;, operation=&gt;&#39;saveMultipleFiles&#39;, 
+    SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://example.com/xmlStorageSystem&#39;, operation=&gt;&#39;saveMultipleFiles&#39;,
 	parameters=&gt;vector (&#39;email&#39;,&#39;user@example.domain&#39;, &#39;password&#39;, md5(&#39;xxx&#39;),
 	  &#39;relativepathList&#39;, vector (&#39;test.txt&#39;), &#39;fileTextList&#39;, vector (&#39;this is a test&#39;));
 
@@ -96,9 +96,9 @@ i.e. relativepathList[i] is name for fileTextList[i].</para></refsect2>
 	&lt;flError&gt;0&lt;/flError&gt;
 	&lt;message /&gt;
 	&lt;urllist&gt;
-	  &lt;item&gt;http://localhost:6666/DAV/user@example.domain/blog/test.txt&lt;/item&gt;
+	  &lt;item&gt;http://example.com/DAV/user@example.domain/blog/test.txt&lt;/item&gt;
 	&lt;/urllist&gt;
-	&lt;yourUpstreamFolderUrl&gt;http://localhost:6666/DAV/user@example.domain/blog/&lt;/yourUpstreamFolderUrl&gt;
+	&lt;yourUpstreamFolderUrl&gt;http://example.com/DAV/user@example.domain/blog/&lt;/yourUpstreamFolderUrl&gt;
       &lt;/Result&gt;
     &lt;/saveMultipleFilesResponse&gt;
 </screen>

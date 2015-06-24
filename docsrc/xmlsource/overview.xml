@@ -176,7 +176,7 @@
 		</sect2>
 	</sect1>
         <sect1 id="virtuosofaq">
-          <title>Virtuoso 6 FAQ</title>
+          <title>Virtuoso FAQ</title>
 <para>We have received various inquiries on high-end metadata stores. We will here go through some salient
 questions. The requested features include:
 </para>
@@ -884,12 +884,12 @@ LIMIT 10
       <para>Let's take for example a <ulink url="http://virtuoso.openlinksw.com/whitepapers/relational%20rdf%20views%20mapping.html">created Linked Data View from relational data in Virtuoso</ulink>. The RDF output therefor should have two graphs which reside in a quad storage named for ex.:
       </para>	
 <programlisting><![CDATA[
-http://localhost:8890/rdfv_demo/quad_storage/default	
+http://example.com/rdfv_demo/quad_storage/default
 ]]></programlisting>      
       <para>Also the RDF is accessible over the SPARQL endpoint with the following query:
       </para>	
 <programlisting><![CDATA[
-define input:storage <http://localhost:8890/rdfv_demo/quad_storage/default>
+define input:storage <http://example.com/rdfv_demo/quad_storage/default>
 SELECT * 
 WHERE 
   { 
@@ -900,7 +900,7 @@ WHERE
       	included in queries to the SPARQL endpoint? So that the user does not have to define the 
       	<emphasis>input:storage</emphasis> explicitly in each query, like this:</para>	
 <programlisting><![CDATA[
-http://localhost:8890/sparql?query=select * where { ?s ?p ?o }&default-graph-uri=NULL&named-graph-uri=NULL	
+http://example.com/sparql?query=select * where { ?s ?p ?o }&default-graph-uri=NULL&named-graph-uri=NULL
 ]]></programlisting>      
       <para>All metadata about all RDF storages are kept in "system" graph 
       	&lt;http://www.openlinksw.com/schemas/virtrdf#&gt; ( namespace prefix <emphasis>virtrdf:</emphasis> ). 
@@ -990,7 +990,7 @@ Http Host:  my.example.com
         	"Sparql access point" from the drop-down list and press Next button. Set "Path" to /sparql 
         	and press the "Save Changes" button to store.</listitem>
         <listitem>At this point you have created: http://my.example.com:8080/sparql which functions 
-        	exactly the same as your internal http://localhost:8890/sparql. You can now open your firewall 
+        	exactly the same as your internal http://example.com/sparql. You can now open your firewall
         	and allow outside machines to connect to port 8080 so people can use your SPARQL endpoint 
         	without access to any other endpoint on your Virtuoso installation.</listitem>
         <listitem>You should probably also change your virtuoso.ini so:
@@ -1238,7 +1238,7 @@ specific patch.
 http://host:port/DAV/home/<user-name>/<rdf-sink-folder>/
 
 -- So in our example it should be:
-http://localhost:8890/DAV/home/john/MySinkFolder/
+http://example.com/DAV/home/john/MySinkFolder/
 ]]></programlisting>
         </listitem>
         <listitem>Add another property virt:rdf_sponger with value "on". 
@@ -1304,7 +1304,7 @@ SQL> SELECT DAV_PROP_GET ('/DAV/home/john/MySinkFolder/', 'virt:rdf_graph','john
 
 Query result:
 DAV_PROP_GET
-http://localhost:8890/DAV/home/john/MySinkFolder/
+http://example.com/DAV/home/john/MySinkFolder/
 
 No. of rows in result: 1 
 ]]></programlisting>
@@ -1339,7 +1339,7 @@ WHERE
     </sect2>   
     <sect2 id="virtuosotipsandtricksbulkloadcl">
       <title>How is a Checkpoint performed against a Virtuoso Clustered Server?</title>                    
-      <para>The cluster <link linkend="clusteroperationadmclexec"><function>cl_exec()</function></link> function is 
+      <para>The cluster <link linkend="fn_cl_exec">cl_exec()</link> function is
       used to perform a checkpoint across all node of a Virtuoso cluster as follows:</para>
 <programlisting><![CDATA[
 SQL>cl_exec ('checkpoint'); 	
@@ -1508,7 +1508,7 @@ WHERE
 ]]></programlisting>      
     </sect2>  
     <sect2 id="virtuosotipsandtricksmultithreadjdbc">
-      <title>How can I make Multi Thread Virtuoso connection using JDBC??</title>     
+      <title>How can I make Multi Thread Virtuoso connection using JDBC?</title>
       <para>See details <link linkend="JDBCDriverhibernatesetupandtestingexmp4">here</link>.</para> 
     </sect2>            
     <sect2 id="virtuosotipsandtricksgetcertattr">
@@ -2344,7 +2344,7 @@ SQL>
         <sect4 id="loadcmrdfex2">         	
       	  <title>Load from file</title>         	
           <orderedlist>
-            <listitem>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</listitem>
+            <listitem>Create DAV collection which is visible to public, for ex: http://example.com/DAV/tmp</listitem>
             <listitem>Upload to the DAV collection a file for ex. with name listall.rq and with the following content:
 <programlisting><![CDATA[  
 SPARQL
@@ -2370,7 +2370,7 @@ callret-0
 VARCHAR
 _______________________________________________________________________________
 
-Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
+Load <http://example.com/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
 
 1 Rows. -- 321 msec.	
 ]]></programlisting>            	
@@ -3730,7 +3730,7 @@ Old logfiles can be gzipped or removed by hand to conserve disk space.</listitem
           <title>Example of a GET request</title>         
 <programlisting><![CDATA[
 GET /sparql?query=DESCRIBE%20%3CnodeID%3A%2F%2Fb15481%3E&output=text%2Fcxml     HTTP/1.1
-Host: localhost:8890
+Host: example.com
 Connection: Keep-alive
 Accept: */*
 From: googlebot(at)googlebot.com
@@ -3743,13 +3743,13 @@ Accept-Encoding: gzip,deflate
 <programlisting><![CDATA[
 POST /ods_services/Http/usersGetInfo HTTP/1.1
 User-Agent: Opera/9.80 (Macintosh; Intel Mac OS X 10.5.8; U; en) Presto/2.9.168 Version/11.51
-Host: localhost:8890
+Host: example.com
 Accept: text/html, application/xml;q=0.9, application/xhtml+xml, image/png, image/webp, image/jpeg, image/gif, 
   image/x-xbitmap, */*;q=0.1
 Accept-Language: en,en-US;q=0.9,ja;q=0.8,fr;q=0.7,de;q=0.6,es;q=0.5,it;q=0.4,pt;q=0.3,pt-  
   PT;q=0.2,nl;q=0.1,sv;q=0.1,nb;q=0.1,da;q=0.1,fi;q=0.1,ru;q=0.1,pl;q=0.1,zh-CN;q=0.1,zh-TW;q=0.1,ko;q=0.1
 Accept-Encoding: gzip, deflate
-Referer: https://localhost:8890/ods/
+Referer: https://example.com/ods/
 Cookie: interface=js; oatSecurityCookie=0123456878794576; sid=b3fae40reb78bc4babab3cb2a70fb111
 Connection: Keep-Alive
 Content-Length: 77
@@ -3875,7 +3875,7 @@ ShortenLongURIs = 1
         <listitem>Save locally the content from above for ex. to file with name "soap.xml".</listitem>
         <listitem>To pass the SOAP request to a Virtuoso SPARQL Endpoint, execute the following curl command:
 <programlisting><![CDATA[
-$ curl -d@soap.xml -H "Content-Type:text/xml" -H "SOAPAction: ''" http://localhost:8890/sparql
+$ curl -d@soap.xml -H "Content-Type:text/xml" -H "SOAPAction: ''" http://example.com/sparql
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
   <soapenv:Body>
     <query-result xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">
@@ -4162,6 +4162,106 @@ CheckpointInterval       = 60
       can be used for loading large datasets, and it will handle the checkpoint matter automatically.
       </para>
     </sect2>    		
+
+    <sect2 id="howtomanagesslprotocolsandciphers">
+    	<title>How to Manage SSL Protocols and Ciphers used with Virtuoso?</title>
+    	<sect3 id="howtomanagesslprotocolsandcipherswhat">
+      	<title>What?</title>
+        <para>As of Virtuoso 7.2, SSL protocol and cipher support is now configurable for connections from all HTTP, ODBC,
+        JDBC, ADO.NET, and OLE-DB clients.</para>
+      </sect3>
+      <sect3 id="howtomanagesslprotocolsandcipherswhy">
+      	<title>Why?</title>
+        <para>Default binding to OpenSSL can expose Virtuoso instances to version- and cipher-specific SSL vulnerabilities
+        (e.g., recent <ulink url="http://security.stackexchange.com/questions/70719/ssl3-poodle-vulnerability">Poodle exploit</ulink>).
+        Being able to scope Virtuoso's use of SSL to one or more specific versions provides instance administrators better protection
+        against a moving target.</para>
+      </sect3>
+      <sect3 id="howtomanagesslprotocolsandciphershow">
+      	<title>How?</title>
+      	<sect4 id="howtomanagesslprotocolsandciphershowbasicc">
+      	  <title>Basic SSL Protocol Configuration</title>
+      	  <para>Basic configuration is through the <code>SSL_Protocols</code> values in the <code>[Parameters]</code> and
+      	  <code>[HTTP]</code> sections of the Virtuoso INI file. These are comma+space-separated (", ") value lists. Including a
+      	  protocol name explicitly enables it; preceding the protocol name with an exclamation point ("<code>!</code>")
+      	  explicitly disables it.</para>
+      	  <sect5 id="howtomanagesslprotocolsandciphershowbasiccss">
+      	    <title>Basic SSL Protocol Configuration</title>
+            <table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+                <title>Supported SSL Protocols and INI keyword values List</title>
+                <tgroup align="char" charoff="50" char="." cols="3">
+                <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+                <thead>
+                  <row>
+                    <entry>SSL/TLS Version</entry>
+                    <entry>Value for INI file</entry>
+                    <entry>Notes</entry>
+                  </row>
+                </thead>
+                <tbody>
+                  <row>
+                    <entry>SSLv2</entry>
+                    <entry>-</entry>
+                    <entry>Permanently disabled.</entry>
+                  </row>
+                  <row>
+                    <entry>SSLv3</entry>
+                    <entry><code>SSLv3</code></entry>
+                    <entry>Disabled by default. To our knowledge, only required by IE6/Windows XP clients.</entry>
+                  </row>
+                  <row>
+                    <entry>TLSv1</entry>
+                    <entry><code>TLSv1</code></entry>
+                    <entry>Enabled by default.</entry>
+                  </row>
+                  <row>
+                    <entry>TLSv1.1</entry>
+                    <entry><code>TLSv1.1</code></entry>
+                    <entry>Enabled by default, supported if available in local <code>openssl</code> library.</entry>
+                  </row>
+                  <row>
+                    <entry>TLSv1.2</entry>
+                    <entry><code>TLSv1.2</code></entry>
+                    <entry>Enabled by default, supported if available in local <code>openssl</code> library. </entry>
+                  </row>
+                </tbody>
+              </tgroup>
+            </table>
+      	  </sect5>
+        </sect4>
+      	<sect4 id="howtomanagesslprotocolsandciphershowbasica">
+      	  <title>Advanced SSL Cipher List Configuration</title>
+      	  <para>The <code>SSL_Cipher_List</code> values in the <code>[Parameters]</code> and <code>[HTTP]</code> stanzas of the
+      	  Virtuoso INI file may also be adjusted, to disable particular ciphers when there are security reports about some new
+      	  attack that breaks them. These are colon-separated ("<code>:</code>") value lists.</para>
+      	  <para>Including a protocol name or groupname explicitly enables it; preceding the protocol name with an exclamation point
+      	  ("<code>!</code>") explicitly disables it. You can review the ciphers supported by your local <code>OpenSSL</code> library
+      	  with the command:</para>
+<programlisting><![CDATA[
+openssl ciphers -v ALL
+]]></programlisting>
+          <para>For instance, we recommend explicitly forbidding anonymous cipher suites (i.e., ones that do not use certificates,
+          and are therefore susceptible to man-in-the-middle attacks) using <code>!aNULL</code>.</para>
+          <para>We also recommend including <code>@STRENGTH</code> at the end of the list, so that <code>OpenSSL</code> will
+          prioritize the enabled ciphers by key length, regardless of the list order.</para>
+        </sect4>
+      	<sect4 id="howtomanagesslprotocolsandciphershowbasicr">
+      	  <title>Recommended Settings</title>
+      	  <para>The sample settings below provide a reasonable tradeoff of security versus flexibility. As shown, we have enabled
+      	  <code>SSLv3</code> on the HTTPS ports for IE6 users, but left this disabled on the SQL data port.</para>
+<programlisting><![CDATA[
+[Parameters]
+SSL_Protocols	= TLSv1, TLSv1.1, TLSv1.2
+SSL_Cipher_List = HIGH:!aNULL:!eNULL:!RC4:!DES:!MD5:!PSK:!SRP:!KRB5:!SSLv2:!EXP:!MEDIUM:!LOW:!DES-CBC-SHA:@STRENGTH
+
+[HTTP]
+SSL_Protocols	= SSLv3, TLSv1, TLSv1.1, TLSv1.2
+SSL_Cipher_List = HIGH:!aNULL:!eNULL:!RC4:!DES:!MD5:!PSK:!SRP:!KRB5:!SSLv2:!EXP:!MEDIUM:!LOW:!DES-CBC-SHA:@STRENGTH
+]]></programlisting>
+        </sect4>
+      </sect3>
+    </sect2>
+
   </sect1>    
 </chapter>
 

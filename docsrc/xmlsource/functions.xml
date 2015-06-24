@@ -103,8 +103,9 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &collation_define; &complete_table_name; &composite; &composite_ref;
 &concat; &concatenate; &connection_get; &connection_id; &connection_is_dirty;
 &connection_set; &connection_vars; &connection_vars_set; &contains;
-&cov_load; &cov_report; &cov_store; &createXML; &curdate;
-&current_charset; &vacuum; &sparql_to_sql_text;
+&cov_load; &cov_report; &cov_store; &createXML; &curdate; &forget_timezone; &is_timezoneless;
+&adjust_timezone; &rdf_now_impl; &current_timestamp; &curdatetime; &curdatetimeoffset;
+&curutcdatetime; &sysutcdatetime; &current_charset; &vacuum; &sparql_to_sql_text;
 
 &dateadd; &datediff; &datestring; &datestring_gmt;
 &dav_api_add; &dav_api_change; &dav_api_lock; &dav_api_search; &dav_api_user;
@@ -122,21 +123,21 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &exec_metadata; &exec_score; 
 &exp; &explain;
 
-&file_delete; &file_open; &file_dirlist; &file_mkdir; &file_mkpath; &file_stat;
+&file_delete; &file_open; &ft_set_file; &file_dirlist; &file_mkdir; &file_mkpath; &file_stat;
 &file_to_string; &file_to_string_output; &file_unlink;
 &fk_check_input_values; &floor;
-&ftp_get; &ftp_ls; &ftp_put; &gz_file_open; &get_csv_row; &csv_load_file;
+&ftp_get; &ftp_ls; &ftp_put; &gz_file_open; &get_csv_row; &csv_load_file; &attach_from_csv;
 &csv_load; &csv_parse; &csv_cols_def; &csv_table_def;
 
 
 &get_certificate_info; &get_keyword; &get_keyword_ucase; &get_timestamp;
 &getdate; &gvector_sort; &gvector_digit_sort; &gz_compress; &gz_uncompress;
 
-&st_point; &st_x; &st_y; &st_distance; &st_srid; &st_setsrid; &st_astext;
+&ST_Affine; &st_point; &st_x; &st_y; &st_distance; &ST_SRID; &ST_SetSRID; &st_astext;
 &st_geomfromtext; &st_intersects; &st_contains; &st_within; &isgeometry;
 &geo_insert; &geo_delete;
 
-&hour; &http; &http_lock; &http_unlock; &http_acl_set; &http_acl_get; &http_acl_remove; &http_body_read; &http_client; &http_client_ext; &http_client_ip; &dns_txt_get;
+&hour; &http; &http_lock; &http_unlock; &http_acl_set; &http_acl_get; &http_acl_remove; &http_body_read; &http_client; &http_client_ext; &http_client_ip;
 &http_debug_log; &http_enable_gz; &http_file; &http_flush; &http_internal_redirect;
 &http_get; &http_header; &http_header_get; &http_kill; &http_listen_host; &http_map_table;
 &http_map_get; &http_param; &http_path; &http_pending_req; &http_physical_path; &http_proxy;
@@ -153,8 +154,8 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 
 &lcase; &ldap_search; &ldap_delete; &ldap_add; &ldap_modify;
 &left; &length; &lfs_exp; &lh_get_handler; &lh_load_handler;
-&locate; &log; &log10; &log_enable; &log_text;
-&lower; &ltrim; &__dbf_set;
+&locate; &log; &log10; &log_enable; &log_text;&read_log;
+&lower; &ltrim; &__dbf_set; &stat_import; &stat_export;
 
 &make_array; &make_string; &md5; &md5_init; &md5_update;
 &md5_final; &mime_body; &mime_part; &mime_tree; &minute; &mod; &month;
@@ -166,14 +167,14 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 <!-- &openxml; -->
 &os_chmod; &os_chown;
 
-&pem_certificates_to_array; &pldbg_stats; &pldbg_stats_load; &pop3_get;
+&pem_certificates_to_array; &pldbg_stats; &pldbg_stats_load; &pop3_get; &imap_get;
 &position; &power; &prof_enable; &prof_sample;
 
 &quarter; &quote_dotted;
 
 &randomize; &rclose; &regexp_match; &regexp_parse; &regexp_substr;
 &rdf_audit_metadata;&rdf_graph_security_audit; &rdf_default_user_perms_set; &rdf_default_user_perms_del;
-&rdf_backup_metadata; &rdf_void_store;
+&rdf_backup_metadata; &rdf_void_store; &rdf_load_stop; &rdf_loader_run; &ld_dir_all;
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata; &rdf_load_rdfxml_mt; &rdf_load_rdfxml; &rdf_load_rdfa; &ld_dir; &ttlp; &ttlp_mt; &ttlp_mt_local_file; &rdf_datatype_of_obj; 
 &rdf_triples_to_rdf_xml_text; &rdf_triples_to_ttl; &rdf_64bit_upgrade; &rdf_view_sync_to_physical;
@@ -210,7 +211,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &REPL_DROP_SNAPSHOT_SUB; &REPL_DROP_SNAPSHOT_PUB; &REPL_INIT_SNAPSHOT;
 &REPL_UPDATE_SNAPSHOT; &REPL_SNP_SERVER; &REPL_SERVER_NAME;
 &REPL_ADD_CR; &REPL_ADD_DAV_CR; &REPL_ADD_SNAPSHOT_CR; &rdf_repl_start; 
-&rdf_repl_graph_ins; &rdf_repl_graph_del;
+&rdf_repl_stop; &rdf_repl_sync; &rdf_repl_graph_ins; &rdf_repl_graph_del;
 &result; &result_names; &rexecute; &rstmtexec; &right; &rmoreresults;
 &rnd; &rnext; &row_count; &rtrim;
 
@@ -254,7 +255,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &upper; &user_change_password; &user_create;
 &user_drop; &user_get_option; &user_grant_role; &user_revoke_role;
 &user_role_create; &user_role_drop; &user_set_qualifier; &user_set_option;
-&user_set_password; &username; &uudecode; &uuencode; &uuvalidate;
+&user_set_password; &username; &uudecode; &uuencode; &uuvalidate; &user_key_store;
 
 &vad_check; &vad_check_installability; &vad_check_uninstallability; &vad_fail_check;
 &vad_install; &vad_load_file;	&vad_load_sql_file; &vad_pack; &vad_safe_exec; &vad_uninstall;
@@ -333,4 +334,38 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &bpel_plink_get_option;
 &bpel_plink_set_option;
 &bpel_import_script;
+
+&GeometryType;
+&http_st_dxf_entity;
+&http_st_ewkt;
+&st_ewkt_read;
+&postgis_proj_version;
+&st_dist_from_point_to_line_segment;
+&earth_radius;
+&ST_ExteriorRing;
+&ST_GeometryN;
+&st_get_bounding_box;
+&st_get_bounding_box_n;
+&haversine_deg_km;
+&ST_InteriorRingN;
+&st_linestring;
+&ST_M;
+&st_may_intersect;
+&ST_MMax;
+&ST_MMin;
+&ST_NumGeometries;
+&ST_NumInteriorRings;
+&ST_Transform;
+&st_transform_by_custom_projection;
+&ST_Translate;
+&ST_TransScale;
+&ST_XMax;
+&ST_XMin;
+&ST_YMax;
+&ST_YMin;
+&ST_Z;
+&ST_ZMax;
+&ST_Zmflag;
+&ST_ZMin;
+
 </chapter>

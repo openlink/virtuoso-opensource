@@ -19,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <refentry id="fn_GROUP_CONCAT_DISTINCT">
   <refmeta>
@@ -64,7 +63,7 @@
   </refsect1>
   <refsect1 id="examples_GROUP_CONCAT_DISTINCT">
     <title>Examples</title>
-    <example id="ex_GROUP_CONCAT_DISTINCT"><title></title>
+    <example id="ex_GROUP_CONCAT_DISTINCT"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>SPARQL
 SELECT ?name, (sql:GROUP_CONCAT_DISTINCT(?near, ' , '))
@@ -91,9 +90,9 @@ No. of rows in result: 2
   </refsect1>
   <refsect1 id="seealso_GROUP_CONCAT_DISTINCT">
     <title>See Also</title>
-    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE</function></link></para>
-    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT</function></link></para>
-    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST</function></link></para>
+    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT()</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST()</function></link></para>
     <para><link linkend="samplegroupconcatdigest">Differences between DB.DBA.SAMPLE, DB.DBA.GROUP_CONCAT,
     DB.DBA.GROUP_CONCAT_DISTINCT and DB.DBA.GROUP_DIGEST functions usage.</link></para>
   </refsect1>

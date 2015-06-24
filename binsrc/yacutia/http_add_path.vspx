@@ -117,6 +117,7 @@
       <v:variable name="soap_opt" persist="0" type="varchar" default="''" />
       <v:variable name="auth_opt" persist="0" type="varchar" default="''" />
       <v:variable name="global_opts" persist="0" type="varchar" default="''" />
+      <v:variable name="global_opts_misc" persist="0" type="varchar" default="''" />
       <v:variable name="is_dav" persist="0" type="integer" default="0" />
       <v:variable name="is_https" persist="0" type="integer" default="0" />
       <v:variable name="cors" persist="0" type="varchar" default="''" />
@@ -173,14 +174,36 @@
 
               if( isarray (self.global_opts) and not mod (length (self.global_opts),2))
 	        {
-                self.xmlexec := get_keyword ('xml_templates', self.global_opts, NULL);
-                self.ovrexec := get_keyword ('executable', self.global_opts, NULL);
-                self.ssbrow := get_keyword ('browse_sheet', self.global_opts, '');
-	      if (not isstring (self.ssbrow))
-	        self.ssbrow := '';
-	        self.noinherit := get_keyword ('noinherit', self.global_opts);
-                  self.cors := get_keyword ('cors', self.global_opts, '');
-                  self.cors_rej := get_keyword ('cors_restricted', self.global_opts, 0);
+                  -- defaults
+		  self.xmlexec := NULL;
+		  self.ovrexec := NULL;
+		  self.ssbrow := '';
+                  self.cors := '';
+                  self.cors_rej := 0;
+                  self.global_opts_misc := vector();
+
+                  -- We leave all unknown global options in self.global_opts_misc
+                  for (declare i int, i := 0; i < length(self.global_opts); i := i+2)
+                    {
+                      if (self.global_opts[i] = 'xml_templates')
+                        self.xmlexec := self.global_opts[i+1];
+                      else if (self.global_opts[i] = 'executable')
+                        self.ovrexec := self.global_opts[i+1];
+                      else if (self.global_opts[i] = 'browse_sheet')
+                        {
+                          self.ssbrow := self.global_opts[i+1];
+                          if (not isstring (self.ssbrow))
+                            self.ssbrow := '';
+                        }
+                      else if (self.global_opts[i] = 'noinherit')
+                        self.noinherit := self.global_opts[i+1];
+                      else if (self.global_opts[i] = 'cors')
+                        self.cors := self.global_opts[i+1];
+                      else if (self.global_opts[i] = 'cors_restricted')
+                        self.cors_rej := self.global_opts[i+1];
+                      else
+                        self.global_opts_misc := vector_concat (self.global_opts_misc, vector (self.global_opts[i], self.global_opts[i+1]));
+                    }
 	        }
             }
             else if (self.mode = 'add1')
@@ -223,6 +246,16 @@
 	    self.t_ssbrow.ufl_value := self.ssbrow;
             if (self.dl_vspuser.vsl_item_values is not null)
               self.dl_vspuser.vsl_selected_inx := position(cast(self.dl_vspuser.ufl_value as varchar), self.dl_vspuser.vsl_item_values) - 1;
+
+            -- We put all unknown global options into the advanced options text field
+            declare gopts varchar;
+            gopts := '';
+            for (declare i int, i := 0; i < length(self.global_opts_misc); i := i+2)
+              {
+                gopts := concat( gopts, sprintf('%s=%s;\r\n', cast(self.global_opts_misc[i] as varchar), cast(self.global_opts_misc[i+1] as varchar)));
+              }
+            self.t_global_opt_misc.ufl_value := gopts;
+
             self.t_auth_realm.ufl_value := self.auth_realm;
             self.t_auth_func.ufl_value := self.auth_func;
             self.t_after_func.ufl_value := self.after_func;
@@ -599,6 +632,12 @@
               </td>
             </tr>
             <tr>
+              <td valign="top"><label for="t_global_opt_misc">Advanced Options</label></td>
+              <td>
+                <v:textarea name="t_global_opt_misc" xhtml_cols="30" xhtml_rows="5" xhtml_id="t_global_opt_misc"/>
+              </td>
+            </tr>
+            <tr>
               <th align="left">Authentication options</th>
               <td/>
             </tr>
@@ -634,7 +673,7 @@
               </td>
             </tr>
             <tr>
-              <td valign="top"><label for="t_auth_opt">Advanced</label></td>
+              <td valign="top"><label for="t_auth_opt">Advanced Auth Options</label></td>
               <td>
                 <v:textarea name="t_auth_opt" xhtml_cols="30" xhtml_rows="5" xhtml_id="t_auth_opt"/>
               </td>
@@ -785,9 +824,10 @@
                         self.soap_opt := replace (self.soap_opt, '<SERVICE_NAME>', spath[0]);
                         self.soap_opt := split_and_decode (self.soap_opt);
                       }
-                      self.global_opts := NULL;
+
+                      self.global_opts := split_and_decode (rtrim (trim (replace (replace (self.t_global_opt_misc.ufl_value, '\r', ''), '\n', '')), ';'), 0, '\0\0;=');
                       if( self.xmlexec <> 0 )
-                        self.global_opts := vector ('xml_templates', 'yes');
+                        self.global_opts := vector_concat (self.global_opts, vector ('xml_templates', 'yes'));
                       if (self.ovrexec <> 0)
                         self.global_opts := vector_concat ( coalesce (self.global_opts, vector()), vector('executable', 'yes'));
                       if (self.ssbrow <> 0)

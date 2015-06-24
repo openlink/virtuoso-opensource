@@ -45,6 +45,9 @@
     different when converted to a string.  The  timezone component is an
     offset from UTC in minutes. It can be retrieved with the timezone
     function.</para>
+    <para>Timezoneless: The function returns its first argument with unchanged GMT value but new timezone offset. Unlike
+    	<link linkend="fn_adjust_timezone"><function>adjust_timezone()</function></link>, if the argument is timezoneless then no
+    	error is signaled.</para>
   </refsect1>
   <refsect1 id="params_dt_set_tz"><title>Parameters</title>
     <refsect2><title>dt</title>

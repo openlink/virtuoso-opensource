@@ -93,61 +93,68 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_BOP_EQNAMES		(ptrlong)1052	/*!< A special "equality": arguments are variables whose names are merged into one equivalence class */
 #define SPAR_UNION_WO_ALL		(ptrlong)1053	/*!< A special union that will become SQL UNION, not SQL UNION ALL as we usually cheat */
 
-#define SPAR_BIF_ABS			(ptrlong)1101
-#define SPAR_BIF_BNODE			(ptrlong)1102
-#define SPAR_BIF_CASEWHEN		(ptrlong)1103
-#define SPAR_BIF_CASEX			(ptrlong)1104
-#define SPAR_BIF_CEIL			(ptrlong)1105
-#define SPAR_BIF_COALESCE		(ptrlong)1106
-#define SPAR_BIF_CONCAT			(ptrlong)1107
-#define SPAR_BIF_CONTAINS		(ptrlong)1108
-#define SPAR_BIF_DAY			(ptrlong)1109
-#define SPAR_BIF_ENCODE_FOR_URI		(ptrlong)1110
-#define SPAR_BIF_FLOOR			(ptrlong)1111
-#define SPAR_BIF_HOURS			(ptrlong)1112
-#define SPAR_BIF_IF			(ptrlong)1113
-#define SPAR_BIF_ISBLANK		(ptrlong)1114
-#define SPAR_BIF_ISIRI			(ptrlong)1115
-#define SPAR_BIF_ISLITERAL		(ptrlong)1116
-#define SPAR_BIF_ISNUMERIC		(ptrlong)1117
-#define SPAR_BIF_ISREF			(ptrlong)1118
-#define SPAR_BIF_ISURI			(ptrlong)1119
-#define SPAR_BIF_LANGMATCHES		(ptrlong)1120
-#define SPAR_BIF_LCASE			(ptrlong)1121
-#define SPAR_BIF_MD5			(ptrlong)1122
-#define SPAR_BIF_MINUTES		(ptrlong)1123
-#define SPAR_BIF_MONTH			(ptrlong)1124
-#define SPAR_BIF_NOW			(ptrlong)1125
-#define SPAR_BIF_RAND			(ptrlong)1126
-#define SPAR_BIF_REGEX			(ptrlong)1127
-#define SPAR_BIF_REMOVE_UNICODE3_ACCENTS	(ptrlong)1128
-#define SPAR_BIF_REPLACE		(ptrlong)1129
-#define SPAR_BIF_ROUND			(ptrlong)1130
-#define SPAR_BIF_SAMETERM		(ptrlong)1131
-#define SPAR_BIF_SECONDS		(ptrlong)1132
-#define SPAR_BIF_SHA1			(ptrlong)1133
-#define SPAR_BIF_SHA224			(ptrlong)1134
-#define SPAR_BIF_SHA256			(ptrlong)1135
-#define SPAR_BIF_SHA384			(ptrlong)1136
-#define SPAR_BIF_SHA512			(ptrlong)1137
-#define SPAR_BIF_STR			(ptrlong)1138
-#define SPAR_BIF_STRAFTER		(ptrlong)1139
-#define SPAR_BIF_STRBEFORE		(ptrlong)1140
-#define SPAR_BIF_STRDT			(ptrlong)1141
-#define SPAR_BIF_STRENDS		(ptrlong)1142
-#define SPAR_BIF_STRLANG		(ptrlong)1143
-#define SPAR_BIF_STRLEN			(ptrlong)1144
-#define SPAR_BIF_STRSTARTS		(ptrlong)1145
-#define SPAR_BIF_STRUUID		(ptrlong)1146
-#define SPAR_BIF_SUBSTR			(ptrlong)1147
-#define SPAR_BIF_TIMEZONE		(ptrlong)1148
-#define SPAR_BIF_TZ			(ptrlong)1149
-#define SPAR_BIF_UCASE			(ptrlong)1150
-#define SPAR_BIF_URI			(ptrlong)1151
-#define SPAR_BIF_UUID			(ptrlong)1152
-#define SPAR_BIF_VALID			(ptrlong)1153
-#define SPAR_BIF_YEAR			(ptrlong)1154
-#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1155
+#define SPAR_BIF_ABS				(ptrlong)1101
+#define SPAR_BIF_BNODE				(ptrlong)1102
+#define SPAR_BIF_CASEWHEN			(ptrlong)1103
+#define SPAR_BIF_CASEX				(ptrlong)1104
+#define SPAR_BIF_CEIL				(ptrlong)1105
+#define SPAR_BIF_COALESCE			(ptrlong)1106
+#define SPAR_BIF_CONCAT				(ptrlong)1107
+#define SPAR_BIF_CONTAINS			(ptrlong)1108
+#define SPAR_BIF_DAY				(ptrlong)1109
+#define SPAR_BIF_EBV				(ptrlong)1110
+#define SPAR_BIF_EBV_INT			(ptrlong)1111
+#define SPAR_BIF_ENCODE_FOR_URI			(ptrlong)1112
+#define SPAR_BIF_FLOOR				(ptrlong)1113
+#define SPAR_BIF_HOURS				(ptrlong)1114
+#define SPAR_BIF_IF				(ptrlong)1115
+#define SPAR_BIF_ISBLANK			(ptrlong)1116
+#define SPAR_BIF_ISIRI				(ptrlong)1117
+#define SPAR_BIF_ISLITERAL			(ptrlong)1118
+#define SPAR_BIF_ISNUMERIC			(ptrlong)1119
+#define SPAR_BIF_ISREF				(ptrlong)1120
+#define SPAR_BIF_ISURI				(ptrlong)1121
+#define SPAR_BIF_LANGMATCHES			(ptrlong)1122
+#define SPAR_BIF_LCASE				(ptrlong)1123
+#define SPAR_BIF_MD5				(ptrlong)1124
+#define SPAR_BIF_MINUTES			(ptrlong)1125
+#define SPAR_BIF_MONTH				(ptrlong)1126
+#define SPAR_BIF_NOW				(ptrlong)1127
+#define SPAR_BIF_RAND				(ptrlong)1128
+#define SPAR_BIF_REGEX				(ptrlong)1129
+#define SPAR_BIF_REMOVE_UNICODE3_ACCENTS	(ptrlong)1130
+#define SPAR_BIF_REPLACE			(ptrlong)1131
+#define SPAR_BIF_ROUND				(ptrlong)1132
+#define SPAR_BIF_SAMETERM			(ptrlong)1133
+#define SPAR_BIF_SECONDS			(ptrlong)1134
+#define SPAR_BIF_SHA1				(ptrlong)1135
+#define SPAR_BIF_SHA224				(ptrlong)1136
+#define SPAR_BIF_SHA256				(ptrlong)1137
+#define SPAR_BIF_SHA384				(ptrlong)1138
+#define SPAR_BIF_SHA512				(ptrlong)1139
+#define SPAR_BIF_STR				(ptrlong)1140
+#define SPAR_BIF_STRAFTER			(ptrlong)1141
+#define SPAR_BIF_STRBEFORE			(ptrlong)1142
+#define SPAR_BIF_STRDT				(ptrlong)1143
+#define SPAR_BIF_STRENDS			(ptrlong)1144
+#define SPAR_BIF_STRLANG			(ptrlong)1145
+#define SPAR_BIF_STRLEN				(ptrlong)1146
+#define SPAR_BIF_STRSTARTS			(ptrlong)1147
+#define SPAR_BIF_STRUUID			(ptrlong)1148
+#define SPAR_BIF_SUBSTR				(ptrlong)1149
+#define SPAR_BIF_TIMEZONE			(ptrlong)1150
+#define SPAR_BIF_TZ				(ptrlong)1151
+#define SPAR_BIF_UCASE				(ptrlong)1152
+#define SPAR_BIF_URI				(ptrlong)1153
+#define SPAR_BIF_UUID				(ptrlong)1154
+#define SPAR_BIF_VALID				(ptrlong)1155
+#define SPAR_BIF_YEAR				(ptrlong)1156
+#define SPAR_BIF__CUBE				(ptrlong)1157
+#define SPAR_BIF__ITEM_IN_VECTOR		(ptrlong)1158
+#define SPAR_BIF__GROUPING_LIST			(ptrlong)1159
+#define SPAR_BIF__GROUPING_SET			(ptrlong)1160
+#define SPAR_BIF__GROUPING_SETS			(ptrlong)1161
+#define SPAR_BIF__ROLLUP			(ptrlong)1162
 
 #define SPAR_SML_CREATE			(ptrlong)1201
 #define SPAR_SML_DROP			(ptrlong)1202
@@ -258,7 +265,8 @@ typedef struct sparp_sources_s
   rdf_grab_config_t	ssrc_grab;			/*!< Grabber configuration */
   dk_set_t		ssrc_common_sponge_options;	/*!< Options that are added to every FROM ... OPTION ( ... ) list */
   SPART *		ssrc_graph_set_by_with;		/*!< The precode expression of WITH clause, if exists */
-  SPART *		ssrc_graph_set_by_fallback_with;	/*!< For debugging purposes, it may be convenient to fallback to virtrdf:DefaultSparul11Target or the like instead of "No default graph specified in the preamble..." error. Set the value of this field to non-NULL for this effect. */
+  SPART *		ssrc_fallback_target;		/*!< For debugging purposes, it may be convenient to fallback to virtrdf:DefaultSparul11Target or the like instead of "No default graph specified in the preamble..." error. Set the value of this field to non-NULL (by define input:target-fallback-graph-uri) for this effect. */
+  SPART *		ssrc_fallback_default_graph;	/*!< For debugging purposes, this can be used as an equivalent of "default graph specified by Graph Store" from spec. To set the value of this field to non-NULL, use define input:with-fallback-graph-uri. */
   dk_set_t		ssrc_default_graphs;		/*!< Default graphs and NOT FROM graphs as set by protocol or FROM graph-uri-precode. All NOT FROM are after all FROM! */
   dk_set_t		ssrc_named_graphs;		/*!< Named graphs and NOT FROM NAMED graphs as set by protocol or clauses. All NOT FROM NAMED are after all FROM NAMED! */
   int			ssrc_default_graphs_listed;	/*!< At least one default graph was set, so the list of default graphs is exhaustive even if empty or consists of solely NOT FROM (NOT FROM may remove all FROM, making the list empty) */
@@ -316,7 +324,12 @@ typedef struct sparp_env_s
   int			spare_disable_output_formatting;	/*!< Indicates that sg_output_xxx_format_name are all ignored, because the query is intermediate in iterative get with "seealso" */
   dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */
   caddr_t		spare_sql_refresh_free_text;	/*!< Flags if there's any use of bif:contains or the like, so 'sql:refresh-free-text' 'yes' option should be added to any vector of sponge options. This is a _boxed_ integer even if it's zero; that is used to store a reference to a changing integer in a compiled tree. */
+  SPART *               spare_found_default_sparul_target;	/*!< If \c spare_need_for_default_sparul_target is non-NULL, this remembers the result of spare_default_sparul_target() at the end of list of USING clauses. It can also be set after INSERT IN graph_precode, DELETE FROM graph_precode or MODIFY graph_precode */
+  const char *		spare_need_for_default_sparul_target;	/*!< When non-NULL, a single default graph should be provided by single USING, WITH or fallback; missing all three means the error */
 } sparp_env_t;
+
+#define SPARP_EBV_SQL		0	/*!< Cast to boolean implicitly, i.e. as that will happen in SQL */
+#define SPARP_EBV_SPARQL11	1	/*!< Cast to boolean according to SPARQL 1.1 Efficient Boolean Value rules */
 
 typedef struct sparp_globals_s {
   struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
@@ -341,6 +354,7 @@ typedef struct sparp_globals_s {
   caddr_t sg_output_compose_report;			/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
   caddr_t		sg_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
   int			sg_comment_sql;			/*!< Flags that control storing comments in the resulting SQL text */
+  int			sg_ebv_mode;			/*!< Mode for booleans, one of SPARL_EBV_xxx constants */
 } sparp_globals_t;
 
 typedef struct sparp_e4qm_s {
@@ -436,12 +450,21 @@ typedef struct sparp_s {
 
 
 #define sparp_env() sparp_arg->sparp_env
+#define sparp_ebv_mode sparp_sg->sg_ebv_mode
 
 /*extern void sparqr_free (spar_query_t *sparqr);*/
 
-extern void spar_error (sparp_t *sparp, const char *format, ...);
+extern void spar_error (sparp_t *sparp, const char *format, ...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
 extern void spar_internal_error (sparp_t *sparp, const char *strg);
-extern int spar_audit_error (sparp_t *sparp, const char *format, ...); /* returns fake 1 as a value for return */
+extern int spar_audit_error (sparp_t *sparp, const char *format, ...) /* returns fake 1 as a value for return */
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
 extern caddr_t spar_source_place (sparp_t *sparp, char *raw_text);
 extern caddr_t spar_dbg_string_of_triple_field (sparp_t *sparp, SPART *fld);
 extern void sparyyerror_impl (sparp_t *xpp, char *raw_text, const char *strg);
@@ -478,7 +501,9 @@ extern ptrlong sparp_tr_usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT];
 #define SPART_GRAPH_NOT_GROUP		0x1081	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
 #define SPART_GRAPH_NOT_NAMED		0x1090
 
+#define SPARP_EQUIV_COUNT(sparp) ((sparp)->sparp_sg->sg_equiv_count)
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
+#define SPARP_SINV_COUNT(sparp) ((sparp)->sparp_sg->sg_sinv_count)
 #define SPARP_SINV(sparp,idx) ((sparp)->sparp_sg->sg_sinvs[(idx)])
 
 #ifdef DEBUG
@@ -811,8 +836,12 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
    (SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == (tree)->type)*/ )
 
 #define SPAR_LIT_VAL(tree) \
-  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
+  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)(tree))) ? ((caddr_t)(tree)) : \
    (SPAR_LIT == (tree)->type) ? (tree)->_.lit.val : NULL )
+
+#define SPAR_LIT_DATATYPE(tree) \
+  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)(tree))) ? ((caddr_t)(tree)) : \
+   (SPAR_LIT == (tree)->type) ? (tree)->_.lit.datatype : NULL )
 
 #define SPAR_LIT_OR_QNAME_VAL(tree) \
   ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
@@ -984,7 +1013,8 @@ extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in re
 extern SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode);
 extern SPART *spar_make_qname_or_literal_from_rvr (sparp_t * sparp, rdf_val_range_t *rvr, int make_naked_box_if_possible);
 
-#define SPAR_MAKE_BOOL_LITERAL(sparp,v) (spartlist ((sparp), 5, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL, t_box_string((v)?"true":"false")))
+#define SPAR_MAKE_INT_LITERAL(sparp,v) (spartlist ((sparp), 5, SPAR_LIT, (SPART *)t_box_num_nonull(v), uname_xmlschema_ns_uri_hash_integer, NULL, NULL))
+#define SPAR_MAKE_EBV_LITERAL(sparp,v) (spartlist ((sparp), 5, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL, t_box_string((v)?"true":"false")))
 
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 /*! Creates a new FROM / FROM NAMED / NOT FROM / NOT FROM NAMED source description and pushes it into context for future storing in req_top.sources.
@@ -993,7 +1023,8 @@ extern void sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtyp
 extern SPART *sparp_make_graph_precode (sparp_t *sparp, ptrlong subtype, SPART *iriref, SPART **options);
 /*! Returns whether \c ctor_gp contains at least one use of default graph, so it depends on WITH <graph_iri> or the like */
 extern int spar_ctor_uses_default_graph (SPART *ctor_gp);
-extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *reason_to_use);
+extern SPART *spar_default_sparul_target (sparp_t *sparp, const char *reason_to_use, int preliminary_call);
+extern void spar_apply_fallback_default_graph (sparp_t *sparp, int target_fallback_first);
 extern SPART *spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn);
 extern void spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args);
 

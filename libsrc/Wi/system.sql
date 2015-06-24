@@ -933,7 +933,7 @@ create procedure SYS_ALFANUM_NAME (in name varchar)
 --  declare _u_data varchar;
 --  select U_ID, U_GROUP into _u_id, _u_group from DB.DBA.SYS_USERS where U_NAME = USER;
 --  if (not (_u_id = 0 or _u_group = 0))
---    signal ('42000', 'Function user_set_password restricted to dba group', 'SR285');
+--    signal ('42000', 'Function user_set_password() restricted to dba group', 'SR285:SECURITY');
 --  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name))
 --    signal ('42000', concat ('The user ''', name, ''' does not exist'), 'SR286');
 --  if (not isstring (passwd) or length (passwd) < 1)
@@ -3189,7 +3189,7 @@ DAV_USER_SET_PASSWORD (in name varchar, in passwd varchar)
   --declare _u_id, _u_group integer;
   --select U_ID, U_GROUP into _u_id, _u_group from SYS_USERS where U_NAME = USER;
   --if (not (_u_id = 0 or _u_group = 0))
-  --  signal ('42000', 'Function dav_user_set_password restricted to dba group', 'DA009');
+  --  signal ('42000', 'Function dav_user_set_password() restricted to DBA group', 'DA009:SECURITY');
   --if (not exists (select 1 from WS.WS.SYS_DAV_USER where U_NAME = name))
   --  signal ('42000', concat ('The user ''', name, ''' does not exist'), 'DA010');
   --if (not isstring (passwd) or length (passwd) < 1)

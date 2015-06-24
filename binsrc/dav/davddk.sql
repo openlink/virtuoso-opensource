@@ -46,7 +46,7 @@ create table WS.WS.SYS_DAV_COL (
 alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_PARENT int)
 create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT) partition (COL_PARENT int)
 create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID) partition (COL_ID int)
-create index SYS_DAV_COL_IID on WS.WS.SYS_DAV_COL (COL_IID) partition (COL_IID int (0hexffff00))
+create not null index SYS_DAV_COL_IID on WS.WS.SYS_DAV_COL (COL_IID) partition (COL_IID int (0hexffff00))
 ;
 
 --#IF VER=5
@@ -439,7 +439,17 @@ DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_TAG', 'DT_TAGS', 'DT_FT_ID', 2, 0, v
 ;
 
 -- Get next id for collections or resources or props or rdf prop names (C/R/P/RPN)
+
 create procedure WS.WS.GETID (in type varchar)
+{
+  declare id int;
+  type := upper (type);
+  id := sequence_next (sprintf ('__DAV_ID_SEQ_%s', type));
+  return id;
+}
+;
+
+create procedure WS.WS.SET_ID_SEQ (in type varchar)
 {
   declare id, nid integer;
   declare c_cur cursor for select top 1 COL_ID from WS.WS.SYS_DAV_COL order by COL_ID desc;
@@ -451,10 +461,6 @@ create procedure WS.WS.GETID (in type varchar)
 
   type := upper (type);
 
-  set isolation = 'serializable';
-
-again:
-
   id := 1;
   whenever not found goto not_found;
 
@@ -462,89 +468,63 @@ again:
     {
       open c_cur (exclusive, prefetch 1);
       fetch c_cur into id;
-      if (not isnull(id))
-        id := id + 1;
+      sequence_set (sprintf ('__DAV_ID_SEQ_%s', type), id + 1, 1);
     }
   else if (type = 'R')
     {
       open r_cur (exclusive, prefetch 1);
       fetch r_cur into id;
-      if (not isnull(id))
-        id := id + 1;
+      sequence_set (sprintf ('__DAV_ID_SEQ_%s', type), id + 1, 1);
     }
   else if (type = 'P')
     {
       open p_cur (exclusive, prefetch 1);
       fetch p_cur into id;
-      if (not isnull(id))
-        id := id + 1;
+      sequence_set (sprintf ('__DAV_ID_SEQ_%s', type), id + 1, 1);
     }
   else if (type = 'RPN')
     {
       open rpn_cur (exclusive, prefetch 1);
       fetch rpn_cur into id;
-      if (not isnull(id))
-        id := id + 1;
+      sequence_set (sprintf ('__DAV_ID_SEQ_%s', type), id + 1, 1);
     }
   else if (type = 'CF')
     {
       open cf_cur (exclusive, prefetch 1);
       fetch cf_cur into id;
-      if (not isnull(id))
-        id := id + 1;
+      sequence_set (sprintf ('__DAV_ID_SEQ_%s', type), id + 1, 1);
     }
   else if (type = 'T')
     {
       open t_cur (exclusive, prefetch 1);
       fetch t_cur into id;
-      if (not isnull(id))
-        id := id + 1;
+      sequence_set (sprintf ('__DAV_ID_SEQ_%s', type), id + 1, 1);
     }
-  else
-    id := 0;
-
 not_found:
-  if (isnull(id))
-    id := 1;
-
-whenever not found goto return_id;
   if (type = 'C')
     {
       close c_cur;
-      select COL_ID into nid from WS.WS.SYS_DAV_COL where COL_ID = id;
-      goto again;
     }
   else if (type = 'R')
     {
       close r_cur;
-      select RES_ID into nid from WS.WS.SYS_DAV_RES where RES_ID = id;
-      goto again;
     }
   else if (type = 'P')
     {
       close p_cur;
-      select PROP_ID into nid from WS.WS.SYS_DAV_PROP where PROP_ID = id;
-      goto again;
     }
   else if (type = 'RPN')
     {
       close rpn_cur;
-      select RPN_CATID into nid from WS.WS.SYS_RDF_PROP_NAME where RPN_CATID = id;
-      goto again;
     }
   else if (type = 'CF')
     {
       close cf_cur;
-      select CF_ID into nid from WS.WS.SYS_DAV_CATFILTER where CF_ID = id;
-      goto again;
     }
   else if (type = 'T')
     {
       close t_cur;
-      select DT_FT_ID into nid from WS.WS.SYS_DAV_TAG where DT_FT_ID = id;
-      goto again;
     }
-return_id:
   return id;
 }
 ;
@@ -1040,6 +1020,22 @@ create procedure WS.WS.SYS_DAV_INIT ()
   };
   set triggers off;
   insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER, COL_GROUP, COL_PERMS) values (1, 'DAV', 0, now (), now (), http_dav_uid (), http_admin_gid (), '110100000R');
+  sequence_set ('__DAV_ID_SEQ_C', 1, 1);
+  sequence_set ('__DAV_ID_SEQ_R', 1, 1);
+  sequence_set ('__DAV_ID_SEQ_P', 1, 1);
+  sequence_set ('__DAV_ID_SEQ_RPN', 1, 1);
+  sequence_set ('__DAV_ID_SEQ_CF', 1, 1);
+  sequence_set ('__DAV_ID_SEQ_T', 1, 1);
+  if (registry_get ('__DAV_SEQ_INITED') <> '1')
+    {
+      WS.WS.SET_ID_SEQ ('C');
+      WS.WS.SET_ID_SEQ ('R');
+      WS.WS.SET_ID_SEQ ('P');
+      WS.WS.SET_ID_SEQ ('RPN');
+      WS.WS.SET_ID_SEQ ('CF');
+      WS.WS.SET_ID_SEQ ('T');
+      registry_set ('__DAV_SEQ_INITED', '1');
+    }
   nobody_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = http_nobody_uid ()));
   if (nobody_name is null)
     {
@@ -2928,6 +2924,11 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-ms-wmv','wmv
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-ms-wmx','wmx')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-ms-wvx','wvx')
+;
+
+update WS.WS.SYS_DAV_RES_TYPES
+   set T_TYPE = 'application/x-apple-diskimage'
+ where T_TYPE = 'application/octet-stream' and T_EXT = 'dmg'
 ;
 
 select count(*) from WS.WS.SYS_DAV_RES_TYPES where http_mime_type_add (T_EXT, T_TYPE)

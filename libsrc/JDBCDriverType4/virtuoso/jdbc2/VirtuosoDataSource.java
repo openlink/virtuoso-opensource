@@ -34,6 +34,7 @@ import javax.naming.*;
 
 public class VirtuosoDataSource implements DataSource, Referenceable, Serializable {
 
+    protected String logFileName = null;
     protected String dataSourceName = "VirtuosoDataSourceName";
     protected String description;
     protected String serverName = "localhost";
@@ -67,6 +68,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     protected transient java.io.PrintWriter logWriter;
 
 
+    final static String n_logFileName = "logFileName";
     final static String n_dataSourceName = "dataSourceName";
     final static String n_description = "description";
     final static String n_serverName = "serverName";
@@ -105,6 +107,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
 //==================== interface Referenceable
   protected void  addProperties(Reference ref) {
+    if (logFileName != null)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_logFileName, logFileName));
     if (dataSourceName != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_dataSourceName, dataSourceName));
     if (description != null)
@@ -277,7 +281,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
   public void setLogWriter(PrintWriter out) throws SQLException
   {
-    logWriter = out;
+    VirtuosoFuture.rpc_log = logWriter = out;
   }
 
   public void setLoginTimeout(int seconds) throws SQLException
@@ -293,8 +297,36 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
  //////// properties
 
   /**
+   * Get the log FileName.
+   * The default value is null
+   *
+   * @return   log Filename
+   *
+  **/
+  public String getLogFileName() {
+    return logFileName;
+  }
+  /**
+   * Set the log Filename. The default value is null
+   *
+   * @param parm  Filename to be set
+   *
+  **/
+  public void setLogFileName(String parm) {
+    logFileName = parm;
+
+    if (logFileName!=null) {
+      try {
+         setLogWriter(new java.io.PrintWriter(new java.io.FileOutputStream(logFileName), true));
+      } catch (Exception e) {}
+    }
+
+  }
+
+
+  /**
    * Get the datasource name for this instance if set.
-   * The default value is "OPLDataSourceName"
+   * The default value is "VirtuosoDataSourceName"
    *
    * @return   DataSource name
    *
@@ -303,7 +335,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return dataSourceName;
   }
   /**
-   * Set the DataSource name. The default value is "OPLDataSourceName"
+   * Set the DataSource name. The default value is "VirtuosoDataSourceName"
    *
    * @param parm  DataSource name to be set
    *

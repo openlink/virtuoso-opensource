@@ -1652,7 +1652,7 @@ table_source_create (
     char *from_position)
 {
   search_spec_t **sps = ts_preds_to_sps (cc, preds);
-  dbe_table_t *table = sch_name_to_table (cc->cc_schema, table_name);
+  dbe_table_t *table = sch_name_to_table (wi_inst.wi_schema, table_name);
   dbe_key_t *order_key;
   dbe_key_t *main_key;
 
@@ -1756,7 +1756,7 @@ ins_col_slot (comp_context_t * cc, insert_node_t * ins, oid_t col_id)
 	}
     }
   END_DO_BOX;
-  col = sch_id_to_column (cc->cc_schema, col_id);
+  col = sch_id_to_column (wi_inst.wi_schema, col_id);
   return (ssl_new_constant (cc, col->col_default));
 }
 
@@ -1862,7 +1862,7 @@ insert_node_create (comp_context_t * cc, char *tb_name,
   int inx;
   oid_t *col_ids = (oid_t *) dk_alloc_box (box_length ((caddr_t) col_names),
       DV_ARRAY_OF_LONG);
-  dbe_table_t *table = sch_name_to_table (cc->cc_schema, tb_name);
+  dbe_table_t *table = sch_name_to_table (wi_inst.wi_schema, tb_name);
   NEW_VARZ (insert_node_t, ins);
   if (!table)
     sqlc_new_error (cc, "42S02", "SQ051", "No table %s.", tb_name);
@@ -2175,7 +2175,7 @@ update_node_compile (comp_context_t * cc,
   if (len & 1)
     sqlc_new_error (cc, "21S01", "SQ055", "Odd assignment list for update.");
 
-  tb = sch_name_to_table (cc->cc_schema, table);
+  tb = sch_name_to_table (wi_inst.wi_schema, table);
   if (!tb)
     sqlc_new_error (cc, "42S02", "SQ056", "No table %s in update.", table);
 
@@ -2225,7 +2225,7 @@ key_insert_compile (comp_context_t * cc,
     caddr_t * stmt, data_source_t ** head_ret,
     data_source_t ** tail_ret)
 {
-  dbe_key_t *key = sch_table_key (cc->cc_schema, stmt[2], stmt[3], 0);
+  dbe_key_t *key = sch_table_key (wi_inst.wi_schema, stmt[2], stmt[3], 0);
   NODE_INIT (key_insert_node_t, ins, key_insert_node_input, NULL);
 
   if (!key)
@@ -2738,7 +2738,7 @@ eql_compile_eql (const char *string, client_connection_t * cli, caddr_t * err)
 
     if (cli->cli_user && !sec_user_has_group (0, cli->cli_user->usr_g_id))
       {
-	sqlc_new_error (&cc, "42000", "SQ060", "Must be in dba group to use EQL.");
+	sqlc_new_error (&cc, "42000", "SQ060:SECURITY", "Must be in DBA group to use EQL.");
       }
     eql_stmt_comp (&cc, (caddr_t) text, &head, &tail);
 

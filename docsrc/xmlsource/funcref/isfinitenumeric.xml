@@ -47,7 +47,7 @@ or not-a-number.
     </para>
   </refsect1>
     <refsect1 id="examples_isfinitenumeric"><title>Examples</title>
-  <example id="ex_isfinitenumeric"><title></title>
+  <example id="ex_isfinitenumeric"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>  SPARQL 
 INSERT INTO GRAPH <http://mygraph.com>

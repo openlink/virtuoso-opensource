@@ -55,7 +55,7 @@ of all passed vectors.
     </para>
   </refsect1>
   <refsect1 id="examples_BAG_CONCAT_AGG"><title>Examples</title>
-    <example id="ex_BAG_CONCAT_AGG_1"><title></title>
+    <example id="ex_BAG_CONCAT_AGG_1"><title>Simple Use</title>
     <para>The most typical usage is the composing of get-keyword style vector, for ex:
     </para>
 <programlisting><![CDATA[

@@ -493,6 +493,16 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
       ssg_sdprin_varname (ssg, eq->e_varnames[0]);
       ssg_puts (" = ");
       ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrFixedValue));
+      if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype))
+        {
+          ssg_puts ("^^");
+          ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrDatatype));
+        }
+      if (NULL != eq->e_rvr.rvrLanguage)
+        {
+          ssg_puts ("@");
+          ssg_puts (eq->e_rvr.rvrLanguage);
+        }
       ssg_puts (")");
       goto end_builtin_checks;
     }
@@ -754,11 +764,27 @@ static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX
                 colon[0] = ':';
               }
           }
+        if (!strcmp (fname, "SQLVAL::_STAR"))
+          {
+            ssg_puts (" *");
+            return;
+          }
         ssg_sdprin_qname (ssg, (SPART *)(fname));
 fname_printed:
         ssg_putchar ('(');
         ssg->ssg_indent++;
+        if (tree->_.funcall.agg_mode)
+          {
+            if (DISTINCT_L == tree->_.funcall.agg_mode)
+              ssg_puts (" DISTINCT");
+            if ((1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) && ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0]))
+              {
+                ssg_puts (" *");
+                goto args_printed; /* see below */
+              }
+          }
         ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');
+args_printed:
         ssg_putchar (')');
         ssg->ssg_indent--;
         return;
@@ -1333,7 +1359,7 @@ fname_printed:
         SPART *expn = tree->_.oby.expn;
         switch (tree->_.oby.direction)
           {
-          case ASC_L: ssg_puts (" ASC ("); break;
+          case 0: case ASC_L: ssg_puts (" ASC ("); break;
           case DESC_L: ssg_puts (" DESC ("); break;
           }
         ssg->ssg_indent++;

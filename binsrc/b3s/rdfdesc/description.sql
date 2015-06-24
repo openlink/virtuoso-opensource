@@ -612,44 +612,6 @@ create procedure b3s_label_get (inout data any, in langs any)
 ;
 
 create procedure
-b3s_rel_print (in val any, in rel any, in flag int := 0)
-{
-  declare delim, delim1, delim2, delim3 integer;
-  declare inx int;
-  declare nss, loc, nspref varchar;
-
-  delim1 := coalesce (strrchr (val, '/'), -1);
-  delim2 := coalesce (strrchr (val, '#'), -1);
-  delim3 := coalesce (strrchr (val, ':'), -1);
-  delim := __max (delim1, delim2, delim3);
-  nss := null;
-  loc := val;
-  if (delim < 0) return loc;
-  nss := subseq (val, 0, delim + 1);
-  loc := subseq (val, delim + 1);
-
-  nspref := __xml_get_ns_prefix (nss, 2);
-  if (nspref is null)
-    {
-      inx := connection_get ('ns_ctr');
-      connection_set ('ns_ctr', inx + 1);
-      nspref := sprintf ('ns%d', inx);
-    }
-
-
-  nss := sprintf ('xmlns:%s="%s"', nspref, nss);
-  if (flag)
-    loc := sprintf ('property="%s:%s"', nspref, loc);
-  else if (rel)
-    loc := sprintf ('rel="%s:%s"', nspref, loc);
-  else
-    loc := sprintf ('rev="%s:%s"', nspref, loc);
-  return concat (loc, ' ', nss);
-}
-;
-
-
-create procedure
 b3s_uri_curie (in uri varchar)
 {
   declare delim integer;
@@ -833,7 +795,7 @@ create procedure b3s_o_is_out (in x any)
   declare f any;
   f := 'http://xmlns.com/foaf/0.1/';
   -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
-  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction'))
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl'))
     {
       return 1;
     }
@@ -842,9 +804,9 @@ create procedure b3s_o_is_out (in x any)
 ;
 
 create procedure
-b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
+b3s_http_print_r (in subj any, in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
-   declare lang, rdfs_type, rdfa, visible any;
+   declare lang, rdfs_type, rdfa, visible, itemid any;
 
    if (_object is null)
      return;
@@ -868,9 +830,19 @@ b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in 
    if (__tag of IRI_ID = __tag (rdfs_type))
      rdfs_type := id_to_iri (rdfs_type);
 
-   rdfa := b3s_rel_print (prop, rel, 1);
+   rdfa := sprintf ('itemprop="%s"', prop);
    visible := b3s_str_lang_check (lang, acc);
-   http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
+   itemid := subj;
+   if (flag = 1 and (__tag (_object) = 243 or 
+     (isstring (_object) and (__box_flags (_object)= 1 or _object like 'nodeID://%' or _object like 'http://%'))))
+     {
+       if (__tag of IRI_ID = __tag (_object))
+	 itemid := id_to_iri (_object);
+       else
+	 itemid := _object;
+     }
+   http (sprintf ('\t<li%s itemid="%s" itemscope itemtype="%s"><span class="literal">', 
+   	case visible when 0 then ' style="display:none;"' else '' end, itemid, 'http://www.w3.org/2002/07/owl#Thing'));
 again:
    if (__tag (_object) = 246)
      {
@@ -893,7 +865,6 @@ again:
 
        http (sprintf ('<!-- %d -->', length (_url)));
 
-       rdfa := b3s_rel_print (prop, rel, 0);
        if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
 	 {
 	   declare src any;
@@ -901,6 +872,7 @@ again:
 	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where
 	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
 	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
+	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _object else subj end));
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or prop = 'http://xmlns.com/foaf/0.1/depiction')
 	 {
@@ -922,10 +894,11 @@ again:
 	     lbl := b3s_uri_curie(_url);
 	   -- XXX: must encode as wide label to print correctly
 	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
-	   http (sprintf ('<a class="uri" %s href="%s">', rdfa, b3s_http_url (_url, sid, _from)));
+	   http (sprintf ('<a class="uri" href="%s">', b3s_http_url (_url, sid, _from)));
 	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
+	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _url else subj end));
 	   if (b3s_o_is_out (prop))
 	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/goout.gif" border="0"/></a>', _url));
 	 }
@@ -966,7 +939,7 @@ again:
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
-       if (vlbl = 0 or _object like '<object%' or _object like '<iframe%')
+       if (vlbl = 0 or _object like '<object%' or _object like '<iframe%' or ltrim (_object) like '<%' or strstr (_object, '<a href') is not null)
          http (_object);
        else
          http_value (vlbl);
@@ -1259,9 +1232,149 @@ create procedure b3s_gs_check_needed ()
 }
 ;
 
-create procedure b3s_get_entity_graph (in entity_uri varchar)
+--- Identifies the graph(s) containing the given entity
+--- * For entity URIs of the form /about/id[/entity]/{data_source_uri}[#child_entity_id] or /proxy-iri/xxx
+---   ensures that the correct data source URI is sponged
+-- * Allows us the check the permissions on the graph before an attempted read or sponge and, if reading or
+--   sponging is denied, provide some feedback in the /describe UI, rather than just display an empty result set.
+-- * If we're not handling a sponge request and the given entity is present in multiple graphs:
+--     * null is returned for the entity graph
+--     * we then make no attempt to determine the user's permissions on these graphs prior to the select to
+--       fetch the results for display. It's assumed that RDF_GRAPH_USER_PERMS_ACK() will filter the results
+--       from any graphs for which the user doesn't have read permission.
+create procedure b3s_get_entity_graph (in entity_uri varchar, in sponge_request int)
 {
-  return coalesce ((select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where S = iri_to_id (entity_uri)), entity_uri);
+  declare arr, pa, sch, nhost, tmp, npath, entity_graph any;
+
+  arr := rfc1808_parse_uri (entity_uri);
+  if (arr[0] = 'nodeID')
+    return rtrim (entity_uri, '/');
+
+  if (not (arr[2] like '/about/id%' or arr[2] like '/proxy-iri/%'))
+  {
+    if (sponge_request)
+      return entity_uri; -- the entity description is sponged to a graph with the same URI
+    else
+    {
+      declare num_containing_graphs int;
+      num_containing_graphs := (
+	select count(distinct G) from DB.DBA.RDF_QUAD where 
+          S = iri_to_id (entity_uri) and 
+	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
+                    where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
+      if (num_containing_graphs > 1)
+	return null;
+      else
+	 return (select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where 
+          S = iri_to_id (entity_uri) and 
+	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
+                    where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
+    }
+  }
+
+  -- Handle /about/id/* and /proxy-iri/* style entity URIs
+
+  entity_graph := (select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where 
+	  S = iri_to_id (entity_uri) and
+	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
+                    where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
+  if (entity_graph is not null)
+    return entity_graph;
+
+  -- Assume the original containing graph has been cleared. Deduce it.
+
+  if (arr[2] like '/proxy-iri/%')
+    return RDF_SPONGE_PROXY_IRI_GET_GRAPH (entity_uri);
+
+  entity_graph := entity_uri;
+  -- Strip off fragment - entity_uri could be a child entity with a hash URI
+  arr[5] := ''; 
+
+  pa := split_and_decode (arr[2], 0, '\0\0/');
+  if (length (pa) > 5 and pa[3] = 'entity' and pa[4] <> '' and pa [5] <> '')
+{
+    -- Set entity_graph to the URI following /about/id/entity/
+    sch := pa[4];
+    nhost := pa [5];
+    tmp := '/about/id/entity/' || sch || '/' || nhost;
+    npath := subseq (arr[2], length (tmp));    
+    arr[0] := sch;
+    arr[1] := nhost;
+    arr[2] := npath;
+    
+    if (lower(arr[0]) in ('acct', 'mailto')) 
+    {
+      arr [2] := arr[1];
+      arr [1] := '';
+    }
+
+    entity_graph := DB.DBA.vspx_uri_compose (arr);
+  }
+  else if (length (pa) > 4 and pa[3] <> '' and pa [4] <> '')
+  {
+    -- Set entity_graph to the URI following /about/id/
+    sch := pa[3];
+    nhost := pa [4];
+    tmp := '/about/id/' || sch || '/' || nhost;
+    npath := subseq (arr[2], length (tmp));    
+    arr[0] := sch;
+    arr[1] := nhost;
+    arr[2] := npath;
+    
+    if (sch in ('acct', 'mailto'))
+    {
+      arr[2] := arr[1];
+      arr[1] := '';
+    }
+	    
+    entity_graph := DB.DBA.vspx_uri_compose (arr);
+  }
+
+  return entity_graph;
+}
+;
+
+-- Checks a user's permissions on a single graph
+create procedure b3s_get_user_graph_permissions (
+  in graph varchar,
+  in pageUrl varchar,
+  in val_vad_present int,
+  inout val_serviceId varchar,
+  inout val_auth_method int,
+  inout graph_perms_allow_sponge int,
+  inout view_mode varchar
+  )
+{
+  declare user_permissions int;
+
+  view_mode := 'full';
+  graph_perms_allow_sponge := 1;
+  user_permissions := 15;
+
+  -- graph == null indicates that the subject entity URI being viewed is contained in multiple graphs.
+  -- Don't attempt to check permissions here if this is the case, as here we only check permissions
+  -- on a single graph
+  -- FIX ME: 
+  -- See use of RDF_GRAPH_USER_PERMS_ACK [1] by dt1 and dt2 in description.vsp. 
+  -- Filtering of results from multiple graphs should be done at this point [1]
+
+  if (graph is not null)
+    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (graph, http_nobody_uid());
+
+  if (bit_and (user_permissions, 1) = 0)
+  {
+    -- User doesn't have read permission
+    view_mode := 'none';
+    graph_perms_allow_sponge := 0;
+  }
+  else if (bit_and (user_permissions, 4) = 0)
+  {
+    graph_perms_allow_sponge := 0;
+    if (bit_and (user_permissions, 2))
+      view_mode := 'read-write';
+    else
+      view_mode := 'read-only';
+  }
 }
 ;
 
@@ -1284,6 +1397,7 @@ create procedure fct_set_graphs (in sid any, in graphs any)
   commit work;
 }
 ;
+
 
 create procedure FCT.DBA.build_page_url_on_current_host (
   in path varchar,

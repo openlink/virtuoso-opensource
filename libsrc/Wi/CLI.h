@@ -81,6 +81,7 @@ typedef struct con_defaults_s
     long	cdef_no_char_c_escape;
     long	cdef_utf8_execs;
     long	cdef_binary_timestamp;
+    long	cdef_timezoneless_datetimes;
   } con_defaults_t;
 
 #define STMT_MSEC_OPTION(x) \

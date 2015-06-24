@@ -89,8 +89,8 @@ cmp_label (in lbl_str varchar, in langs varchar)
       goto done;
     };
 
-    for (select rl_lang, s as ull_iid, __ro2sq (o) as ull_label from rdf_label, rdf_quad
-	where rl_text like urilbl_ac_ruin_label (lbl_str) || '%' and rl_o = o) do
+    for (select rl_lang, s as ull_iid, __ro2sq (o) as ull_label from rdf_label, rdf_quad, rdf_p_score  
+	where rl_text like urilbl_ac_ruin_label (lbl_str) || '%' and rl_o = o and p = p_iri order by p_score) do
       {
 	declare ull_label_lang varchar;
 	ull_label_lang := '';

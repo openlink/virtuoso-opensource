@@ -17,7 +17,7 @@ Build-Depends: cdbs, debhelper (>= 7), quilt, autotools-dev, autoconf (>=2.57),
  libmono-corlib2.0-cil (>= 1.2.6) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
  libmono-system-data2.0-cil (>= 1.0) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
  libmono-system2.0-cil (>= 1.2.6) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
- docbook2x, po-debconf, libmagickwand-dev, java6-sdk, java7-jdk
+ docbook2x, po-debconf, libmagickwand-dev, openjdk-7-jdk
 
 Package: virtuoso-nepomuk
 Architecture: all

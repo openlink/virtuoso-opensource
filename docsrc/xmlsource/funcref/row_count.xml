@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_row_count">
       <funcprototype id="fproto_row_count">
         <funcdef>integer <function>row_count</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

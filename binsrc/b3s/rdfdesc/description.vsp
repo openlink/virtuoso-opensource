@@ -60,11 +60,16 @@
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
   declare gs_check_cond varchar;
-  declare user_permissions, graph_perms_allow_sponge int;
+  declare sponge_request,  graph_perms_allow_sponge int;
+  declare val_serviceId varchar;
+  declare val_auth_method integer;
   declare host varchar;
   declare pageUrl, err varchar;
   declare dist int;
+  declare stat, msg varchar;
+  declare metas, rset any;
 
+  val_serviceId := null;
   err := null;
   deadl := 0;
 
@@ -103,7 +108,6 @@ again:
   inf := '';
 
   sp_mode := 'add';
-  view_mode := 'full';
 
   if (__proc_exists ('DB.DBA.lp_score_ck') is not null)
     DB.DBA.lp_score_ck (lines);
@@ -194,8 +198,12 @@ again:
     doc := rtrim (doc, '/');
   if (gr[0] = '#'[0])
     doc := gr;
-  -- If doc URI contains /about/id/entity/ or /about/id/, set _G to the URI following these components
-  _G := b3s_get_entity_graph (doc);
+
+  sponge_request := 0;
+  if (get_keyword ('sp', params) = '1' or get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null)
+    sponge_request := 1;
+
+  _G := b3s_get_entity_graph (doc, sponge_request);
   page_resource_uri := gr;
   -- page_resource_uri := replace (page_resource_uri, '%23', '#');
   page_resource_uri := replace (page_resource_uri, ' ', '%20');
@@ -210,8 +218,9 @@ again:
   sp_accept := get_keyword ('sponger:accept', params, '');
   if (length (sp_accept))
     sp_accept := 'define get:accept "' || sp_accept || '"';
+
   -- check ACL
-  if (get_keyword ('sp', params) = '1' or get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null)
+  if (sponge_request)
     if (__proc_exists ('DB.DBA.RDF_SPONGE_AUTH_SI') is not null and 0 = DB.DBA.RDF_SPONGE_AUTH_SI ('Virtuoso Sponger'))
       {
         http_rewrite ();
@@ -223,26 +232,18 @@ again:
 
   pageUrl := FCT.DBA.build_page_url_on_current_host ('/describe/', sprintf ('url=%U%s', gr, FCT.DBA.get_describe_request_params (params)));
 
-    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (_G, http_nobody_uid());
-
-  graph_perms_allow_sponge := 1;
-  if (bit_and (user_permissions, 1) = 0 and bit_and (user_permissions, 4) = 0)
+  graph_perms_allow_sponge := sponge_request;
+  view_mode := 'full';
+  b3s_get_user_graph_permissions (_G, pageUrl, 0, val_serviceId, val_auth_method, graph_perms_allow_sponge, view_mode); 
+  if (view_mode = 'none')
   {
     -- User doesn't have read permission
     declare protocol, view_uri varchar;
-    -- graph_perms_allow_sponge := 0;
     view_uri := gr;
     protocol := 'http'; if (is_https_ctx()) protocol := 'https';
     http_status_set (303);
     http_header (sprintf('Location: %s://%s//fct/rdfdesc/fct_no_view_perms.vsp?gr=%U%s\r\n', protocol, host, view_uri, FCT.DBA.get_describe_request_params (params)));
     return;
-  }
-  else if (bit_and (user_permissions, 4) = 0)
-  {
-    view_mode := 'read-only';
-    graph_perms_allow_sponge := 0;
-    if (bit_and (user_permissions, 2))
-      view_mode := 'read-write';
   }
 
   if (graph_perms_allow_sponge)
@@ -257,7 +258,7 @@ again:
   -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
   if (get_keyword ('sp', params) = '1')
     {
-	DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL', 1);
+      exec (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', _G), stat, msg, vector (), 0, metas, rset);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
@@ -274,14 +275,14 @@ again:
               -- if (SPONGING_ALLOWED())  -- only available on develop/7.x branch
 	      {
 		-- We're user SPARQL at this point
-		DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%S>', _G), 'dba');
+		exec (sprintf ('sparql clear graph <%S>', _G), stat, msg, vector (), 0, metas, rset);
 	      }
             }
         }
       else
         refr := atoi (get_keyword ('sr', params, '0'));
 
-	DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), 'SPARQL', 1);
+      exec (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), stat, msg, vector (), 0, metas, rset);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
@@ -295,6 +296,7 @@ again:
         return;
       }
   }
+  --set_user_id (http_map_get ('vsp_uid'));
 
   odd_position := 0;
   set http_charset='utf-8';
@@ -345,7 +347,7 @@ again:
 
   _subject := b3s_label_get (data, langs);
 
-  rdf_link := sprintf ('/sparql?query=%U', __box_flags_tweak (sprintf ('define sql:describe-mode "LOD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S), 2)); 
+  rdf_link := sprintf ('/sparql?query=%U', __box_flags_tweak (sprintf ('define sql:describe-mode "CBD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S), 2)); 
   __box_flags_set (rdf_link, 2);
 
   declare __res_desc, qs, qv, best_variant, accept varchar;
@@ -453,7 +455,7 @@ again:
     <script type="text/javascript" src="s/description.js"></script>
 <?vsp fct_links_mup (_S, rdf_link); ?>
 </head>
-<body about="<?V page_resource_uri ?>">
+<body>
   <div id="PG">
     <div id="HD">
     <?vsp fct_desc_page_head (); ?>
@@ -659,7 +661,7 @@ if (_subject <> '') {
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
+           vis := b3s_http_print_r (page_resource_uri, OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;
 	   inx := inx + 1;
 	   skip:;
@@ -767,18 +769,21 @@ if (_subject <> '') {
 	<?vsp } ?>
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
 
-        &nbsp; &nbsp; Raw Data in:
-	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> ) | Microdata (
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |  
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/ld+json')?>">JSON-LD</a> 
+        &nbsp; &nbsp; Raw Linked Data Formats: &nbsp; 
+	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img src="/fct/images/cxml_doc.png" class="dicon"/></a> 
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img src="/fct/images/csv_doc.png" class="dicon"/></a>  
+	&nbsp; &nbsp; RDF &nbsp; 
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>"><img src="/fct/images/ntriples_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>"><img src="/fct/images/n3turtle_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/ld+json')?>"><img src="/fct/images/jsonld_doc.png" class="dicon"/></a> 
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>"><img src="/fct/images/json_doc.png" class="dicon"/></a> 
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>"><img src="/fct/images/xml_doc.png" class="dicon"/></a>  
+	&nbsp; &nbsp; ODATA &nbsp; 
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>"><img src="/fct/images/atom_doc.png" class="dicon"/></a> 
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/odata+json')?>"><img src="/fct/images/json_doc.png" class="dicon"/></a>
+	&nbsp; &nbsp; Microdata &nbsp; 
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/microdata+json') ?>"><img src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/html') ?>"><img src="/fct/images/html_doc.png" class="dicon"/></a>  
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
@@ -786,13 +791,13 @@ if (_subject <> '') {
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0"/></a>
         <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
 
-	<span about=""
+	<!--span 
 	resource="http://www.w3.org/TR/rdfa-syntax"
 	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
 	<a href="http://validator.w3.org/check?uri=referer"><img
 	    src="http://www.w3.org/Icons/valid-xhtml-rdfa"
 	    alt="Valid XHTML + RDFa" height="27" /></a>
-	</span>
+	</span-->
 	<br />
 	<?vsp fct_virt_info (); ?><br />
 	<?vsp

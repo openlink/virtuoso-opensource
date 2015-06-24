@@ -689,12 +689,14 @@ bif_st_distance (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_geo_pred (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * f, int op)
 {
-  geo_t * g1 = bif_geo_arg (qst, args, 0, f, GEO_ARG_NONNULL);
-  geo_t * g2 = bif_geo_arg (qst, args, 1, f, GEO_ARG_NONNULL);
+  geo_t * g1 = bif_geo_arg (qst, args, 0, f, GEO_ARG_ANY_NULLABLE);
+  geo_t * g2 = bif_geo_arg (qst, args, 1, f, GEO_ARG_ANY_NULLABLE);
   double prec = 0;
   int srid1, srid2;
   if (BOX_ELEMENTS (args) > 2)
     prec = bif_double_arg (qst, args, 2, f);
+  if ((NULL == g1) || (NULL == g2))
+    return box_num (geo_pred (g1, g2, op, prec));
   srid1 = GEO_SRID (g1->geo_srcode);
   srid2 = GEO_SRID (g2->geo_srcode);
   if (srid2 != srid1)

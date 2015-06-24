@@ -2149,8 +2149,8 @@ create procedure CAL.WA.dt_now (
   in tz integer := null)
 {
   if (isnull (tz))
-    tz := timezone (now());
-  return dateadd ('minute', tz - timezone (now()), now());
+    tz := timezone (curdatetime_tz());
+  return dateadd ('minute', tz - timezone (curdatetime_tz()), curdatetime_tz());
 }
 ;
 
@@ -2231,8 +2231,8 @@ create procedure CAL.WA.dt_curdate (
   declare dt date;
 
   if (isnull (tz))
-    tz := timezone (now());
-  return CAL.WA.dt_dateClear (dateadd ('minute', tz - timezone (now()), now()));
+    tz := timezone (curdatetime_tz());
+  return CAL.WA.dt_dateClear (dateadd ('minute', tz - timezone (curdatetime_tz()), curdatetime_tz()));
 }
 ;
 
@@ -2262,8 +2262,8 @@ create procedure CAL.WA.dt_curtime (
   in tz integer := null)
 {
   if (isnull (tz))
-    tz := timezone (now());
-  return cast (dateadd ('minute', tz - timezone (now()), now()) as time);
+    tz := timezone (curdatetime_tz());
+  return cast (dateadd ('minute', tz - timezone (curdatetime_tz()), curdatetime_tz()) as time);
 }
 ;
 
@@ -2641,6 +2641,8 @@ create procedure CAL.WA.dt_timeCeiling (
 create procedure CAL.WA.dt_rfc1123 (
   in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;
@@ -3878,9 +3880,10 @@ create procedure CAL.WA.settings_usedTimeZone (
   in domain_id integer,
   in account_id integer := null)
 {
-  declare tmp any;
+  declare tmp, settings, dtDaylight any;
 
-  tmp := CAL.WA.settings_timeZone (CAL.WA.settings (domain_id), 'timeZone', null);
+  settings := CAL.WA.settings (domain_id);
+  tmp := CAL.WA.settings_timeZone (settings, 'timeZone', null);
   if (isnull (tmp))
   {
     if (isnull (account_id))
@@ -3892,6 +3895,12 @@ create procedure CAL.WA.settings_usedTimeZone (
       tmp := 0;
     tmp := cast (tmp as integer) * 60;
   }
+  dtDaylight := CAL.WA.settings_daylight (settings);
+  if (dtDaylight)
+  {
+    tmp := tmp + datediff ('minute', curdatetime_tz(), CAL.WA.event_daylight (curdatetime_tz(), dtDaylight, 1));
+  }
+
   return tmp;
 }
 ;
@@ -4378,36 +4387,39 @@ create procedure CAL.WA.event_user2gmt (
 --
 create procedure CAL.WA.event_daylight (
   in pDate datetime,
-  in pDaylight integer,
+  in pDaylight integer := 0,
   in pStep integer := 0)
 {
   declare _day, _month integer;
   declare startRRule, endRRule any;
 
-  CAL.WA.dt_daylightRRules (pDaylight, startRRule, endRRule);
-  _month := month (pDate);
-  if (_month < startRRule[3])
-    return pDate;
-
-  if (_month = startRRule[3])
+  if (pDaylight and pStep)
   {
-    _day := CAL.WA.event_findDay (pDate, startRRule[1], startRRule[2]);
-    if (dayofmonth (pDate) < _day)
+    CAL.WA.dt_daylightRRules (pDaylight, startRRule, endRRule);
+    _month := month (pDate);
+    if (_month < startRRule[3])
       return pDate;
 
-    return dateadd ('hour', pStep, pDate);
-  }
+    if (_month = startRRule[3])
+    {
+      _day := CAL.WA.event_findDay (pDate, startRRule[1], startRRule[2]);
+      if (dayofmonth (pDate) < _day)
+        return pDate;
 
-  if (_month < endRRule[3])
-    return dateadd ('hour', pStep, pDate);
+      return dateadd ('hour', pStep, pDate);
+    }
 
-  if (_month = endRRule[3])
-  {
-    _day := CAL.WA.event_findDay (pDate, endRRule[1], endRRule[2]);
-    if (dayofmonth (pDate) >= _day)
-      return pDate;
+    if (_month < endRRule[3])
+      return dateadd ('hour', pStep, pDate);
 
-    return dateadd ('hour', pStep, pDate);
+    if (_month = endRRule[3])
+    {
+      _day := CAL.WA.event_findDay (pDate, endRRule[1], endRRule[2]);
+      if (dayofmonth (pDate) >= _day)
+        return pDate;
+
+      return dateadd ('hour', pStep, pDate);
+    }
   }
   return pDate;
 }
@@ -5732,7 +5744,7 @@ create procedure CAL.WA.vcal_date2utc (
   in dt datetime)
 {
   return CAL.WA.dt_format (dt, 'YMDTHNSZ');
-  --return CAL.WA.dt_format (dateadd ('minute', -timezone (now ()), dt), 'YMDTHNSZ');
+  --return CAL.WA.dt_format (dateadd ('minute', -timezone (curdatetime_tz ()), dt), 'YMDTHNSZ');
 }
 ;
 

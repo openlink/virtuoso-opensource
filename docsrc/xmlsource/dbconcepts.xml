@@ -436,7 +436,8 @@ the data will then be opaque.
 </para>
 			<para>
 SQL92 provides for types with a timezone. Although the ODBC API does not expose the timezone, it is stored with
-these types and can be retrieved with the <function>timezone()</function> function. The timezone has a precision of minutes from UTC.
+these types and can be retrieved with the <link linkend="fn_timezone"><function>timezone()</function></link> function.
+The timezone has a precision of minutes from UTC.
 </para>
 			<para>
 The storage requirement for these types is 10 bytes.
@@ -447,6 +448,209 @@ literals can be used.  The datetime/timestamp literal is of the form
 {d 'YYYY-MM-DD'}.  Dates and datetimes may be compared between themselves but 
 not with other types without explicit casting.</para>
 </sect3>
+  <sect3 id="timezoneless">
+	  <title>Timezoneless Datetimes</title>
+		<para>Some traditional relational databases keep all values of DATETIME type as combination of time and timezone
+			data. Other keep time in some specific timezone without paying any attention to timezone at all. In RDF, the
+			incoming triples may contain literals of types like xsd:dateTime with arbitrary values matching ISO 8601, and
+			this standard permits the use of time values with optional timezone. Thus there should be a way of handling
+			both "timezoned" and "timezoneless" datetimes inside one database. Virtuoso server supports this starting from
+			version 07.20.3214.</para>
+		<para><emphasis>Important note:</emphasis> The use of timezoneless datetimes may result in subtle errors in data
+		processing. Applications that worked fine with timezoned datetimes may work incorrectly if timezoneless datetimes
+		are used. The related application errors may stay unnoticed during local testing and reveal after worldwide use.
+		To stay on safe side, the use of timezoneless datetimes with pre-07.20.3214 databases remains blocked even after
+		the server executable is upgraded, so old applications will continue to work as before. When developing new
+		applications, please pay attention to the check-list at the end of this section.</para>
+	  <sect4 id="timezonelessenable">
+		  <title>Enabling Timezoneless Support</title>
+		  <para>Different applications may require different behavior when input data contain timezoneless values. In some cases it
+		  	is better to "cast" all of them to timezoned than to upgrade existing code. Virtuoso offers 5 different modes of support.
+		  	The mode is selected by <code>TimezonelessDatetimes</code> parameter in <code>[Parameters]</code> section of
+		  	<link linkend="VIRTINI">virtuoso.ini</link> . This should be set before creating the database and the set value is stored
+		  	in the database. After database is created, an attempt to change the mode by patching <link linkend="VIRTINI">virtuoso.ini</link>
+		  	will have no effect and virtuoso.log will contain a warning about mismatch between virtuoso.ini and the database file.</para>
+		  <para>The possible variants are:</para>
+      <itemizedlist mark="bullet">
+        <listitem>Never use timezoneless, as it was in old databases. Always set local timezone on parsing strings if no timezone
+        	specified. An attempt to set timezoneless by calling function
+        	<link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> will signal error. Timezoneless values
+        	still may come from outside as dezerializations of timezoneless DATETIME values, serialized by other database instances,
+        	but not in any other way:
+<programlisting><![CDATA[
+TimezonelessDatetimes=0
+]]></programlisting>
+        </listitem>
+        <listitem>When parsing strings, set timezoneless if ISO format tells so:
+<programlisting><![CDATA[
+TimezonelessDatetimes=1
+]]></programlisting>
+        </listitem>
+        <listitem>Set timezoneless always, exception is when the parsed string contains explicit timezone or when RFC requires the
+        	use of GMT or when timezone is set by function <link linkend="fn_adjust_timezone"><function>adjust_timezone()</function></link>. This is default for new databases if
+        	<code>TimezonelessDatetimes</code> parameter is missing in virtuoso.ini
+<programlisting><![CDATA[
+TimezonelessDatetimes=2
+]]></programlisting>
+        </listitem>
+        <listitem>Never use timezoneless. Always set local timezone on parsing strings if not timezone specified. An attempt to set
+        	timezoneless by calling function <link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> will
+        	signal error. Timezoneless values still may come from outside as deserializations of timezoneless DATETIME values,
+        	serialized by other database instances, but not in any other way. The difference with <code>TimezonelessDatetimes=0</code>
+        	is that timezones are always printed on cast datetimes to strings etc. so timezoneless-aware clients will get unambiguous data.
+<programlisting><![CDATA[
+TimezonelessDatetimes=3
+]]></programlisting>
+        </listitem>
+        <listitem>On parsing string, set timezone to GMT if no timezone specified. However, timezoneless can be set by calling
+      	function <link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> . This mode can be convenient
+      	for global web services when real "local" timezones of specific users are not known.
+<programlisting><![CDATA[
+TimezonelessDatetimes=4
+]]></programlisting>
+        </listitem>
+      </itemizedlist>
+  		<para>For new applications, consider the use of <code>TimezonelessDatetimes=2</code> as primary variant,
+  		<code>TimezonelessDatetimes=1</code> as the second best.</para>
+	  </sect4>
+    <sect4 id="timezonelessfdstr">
+  		<title>Formats of Datetime Strings</title>
+      <para>Traditional SQL strings are of format "<code>YYYY-MM-DD hh:mm:ss</code>" with optional decimal fraction at the end
+      and optional timezone data. Depending on software, the timezone can be specified as "timezone offset", i.e. the difference
+      with GMT in minutes or as "timezone label", i.e. an identifier of timezone in special system dictionary that contains not
+      only an offset in minutes but also information about daylight saving changes of the offset. Virtuoso does not support
+      timezone labels, only numerical timezone offsets. Depending on system, the notation without the timezone data at the end
+      means timezoneless value or, more probably, the value in some "default" timezone, such as local timezone of the server
+      or GMT.</para>
+      <para>ISO 8601 introduced format "<code>YYYY-MM-DDThh:mm:ss</code>", with "<code>T</code>" character between
+      "<code>date</code>" and "<code>time</code>" parts. It also prescribed an unambiguous difference between timezoneless and
+      timezoned values: absent timezone means timezoneless value.</para>
+      <para>The timezone offset is written as "<code>+hh:mm</code>" or "<code>-hh:mm</code>", the "<code>+00:00</code>" is
+      usually shortened to "<code>Z</code>". Oracle Java may use 1 to 4 digits without delimiting ":", in that case 1 or 2 digits
+      mean whole hours whereas 3 or 4 digits mean an 1 or 2 digits of hour and two digits of minutes. For historical reasons,
+      "<code>-00:00</code>" notation differs from "<code>+00:00</code>" and mean timezoneless, not GMT datetime.</para>
+      <para></para>
+	  </sect4>
+    <sect4 id="timezonelesscomp">
+  		<title>Comparison of Datetimes</title>
+      <para>ISO 8601 explicitly warns that comparison of timezoned and timezoneless datetime is not always possible. Valid
+      	timezones vary from -14:00 to +14:00, the fact that the span can exceed 24 hours may be not obvious. Nevertheless,
+      	storing rows in a database table require some unambiguous order; any order is OK as soon as it does not break the
+      	rules and common sense, but it should be well-defined. Virtuoso's order for mix of timezoned and timezoneless
+      	datetimes is very simple.</para>
+      <orderedlist>
+        <listitem>All timezoned datetimes are sorted in natural chronological order, like if they are converted to GMT first.
+        	The value of timezone offset does not matter.</listitem>
+        <listitem>All timezoneless datetimes are sorted in natural chronological order, like they are in GMT already.</listitem>
+        <listitem>For each GMT calendar day, all timezoned datetimes are placed before all timezoneless datetimes.</listitem>
+      </orderedlist>
+      <para></para>
+	  </sect4>
+    <sect4 id="timezonelessrfunc">
+  		<title>Related Functions</title>
+      <itemizedlist mark="bullet">
+        <listitem><link linkend="fn_is_timezoneless"><function>is_timezoneless()</function></link> -- The function returns 1 for timezoneless arguments, zero for timezoned.
+<programlisting><![CDATA[
+integer is_timezoneless (in dt datetime)
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_timezone"><function>timezone()</function></link> -- The function returns timezone offset
+        of its first argument, as an integer value in minutes. If the first argument is timezoneless and second argument is
+        missing or zero then the returned value is NULL. If the first argument is timezoneless and second argument is nonzero
+        then the returned value is 0.
+<programlisting><![CDATA[
+integer timezone (in dt datetime [, in ignore_tzl integer])
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_adjust_timezone"><function>adjust_timezone()</function></link> -- The function returns its
+        first argument with unchanged GMT value but new timezone offset, as it is specified by the second argument. If the first
+        argument is timezoneless and third argument is missing or zero then error 22023 is signaled. If the first argument is
+        timezoneless and third argument is nonzero then no error is signaled and the argument is handled like it is a GMT value.
+<programlisting><![CDATA[
+datetime adjust_timezone (in dt datetime, in tz_offset integer [, in ignore_tzl integer])
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_dt_set_tz"><function>dt_set_tz()</function></link> --  The function returns its first argument
+        with unchanged GMT value but new timezone offset. Unlike
+        <link linkend="fn_adjust_timezone"><function>adjust_timezone()</function></link>, if the argument is timezoneless then no
+        error is signaled.
+<programlisting><![CDATA[
+datetime dt_set_tz (in dt datetime, in tz_offset integer)
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> -- The function
+        returns its first argument as a timezoned value. If the first argument is timezoneless then it is returned
+        unchanged. If the first argument is timezoned and second argument is missing or zero then the result is
+        timezoneless value that "looks like" local time notation. If the first argument is timezoned and second
+        argument is nonzero then the value is first made GMT and then it becomes timezoneless.
+<programlisting><![CDATA[
+datetime forget_timezone (in dt datetime [, in ignore_timezone integer])
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_now"><function>now()</function></link> -- returns the current transaction timestamp:
+<programlisting><![CDATA[
+datetime now ()
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_rdf_now_impl"><function>rdf_now_impl()</function></link> -- returns the timestamp
+        associated with current transaction as a <type>DATETIME</type>. Alias of
+        <link linkend="fn_now"><function>now()</function></link>:
+<programlisting><![CDATA[
+datetime	rdf_now_impl ()
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_getdate"><function>getdate()</function></link> -- returns the current transaction timestamp,
+        alias of <link linkend="fn_now"><function>now()</function></link>:
+<programlisting><![CDATA[
+datetime getdate ();
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_get_timestamp"><function>get_timestamp()</function></link> -- returns the timestamp of
+        the current transaction:
+<programlisting><![CDATA[
+datetime get_timestamp ()
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_current_timestamp"><function>current_timestamp()</function></link> -- All these names refer
+        to one function that returns the timestamp of current transaction. It is the datetime of the beginning of current
+        transaction with the fractional part of seconds replaced with serial number of a transaction within the second.
+        If <code>TimezonelessDatetimes=0</code> then the time has local timezone offset (as it was set at the time of last
+        server start); otherwise it is timezoneless.
+<programlisting><![CDATA[
+datetime current_timestamp ()
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_curdatetime"><function>curdatetime()</function></link> -- The function returns current
+        datetime, like <link linkend="fn_now"><function>now()</function></link>, but fractional part of seconds can be adjusted
+        by providing the number of "microseconds" as the argument.
+<programlisting><![CDATA[
+datetime curdatetime ([in fraction_microseconds integer])
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_curdatetimeoffset"><function>curdatetimeoffset()</function></link> -- The function is like
+        <link linkend="fn_curdatetime"><function>curdatetime()</function></link> but the returned datetime is in GMT timezone.
+<programlisting><![CDATA[
+datetime curdatetimeoffset ([in fraction_microseconds integer])
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_curutcdatetime"><function>curutcdatetime()</function></link> -- Refers to function that
+        is similar to <link linkend="fn_curdatetime"><function>curdatetime()</function></link> but the returned datetime is
+        in GMT timezone.
+<programlisting><![CDATA[
+datetime curutcdatetime ([in fraction_microseconds integer])
+]]></programlisting>
+        </listitem>
+        <listitem><link linkend="fn_sysutcdatetime"><function>sysutcdatetime()</function></link> -- Refers to function that
+        is similar to <link linkend="fn_curdatetime"><function>curdatetime()</function></link> but the returned datetime is
+        in GMT timezone.
+<programlisting><![CDATA[
+datetime sysutcdatetime ([in fraction_microseconds integer])
+]]></programlisting>
+        </listitem>
+      </itemizedlist>
+	  </sect4>
+
+	</sect3>
 	<sect3 id="twobyteunicode">
 		<title>Unicode Support</title>
 		<para>

@@ -51,7 +51,7 @@
 
 <refsect1 id="examples_gz_file_open">
     <title>Examples</title>
-    <example id="ex_gz_file_open"><title></title>
+    <example id="ex_gz_file_open"><title>Simple Use</title>
       <para>For loading gzipped N3 and Turtle files you can use:</para>
 <screen><![CDATA[
 SQL>DB.DBA.TTLP_MT (gz_file_open('path/myfile.n3.gz'), 'base uri', 'graph uri', 255);
@@ -62,9 +62,9 @@ of 0 means strict syntax rules.</para>
   </refsect1>
   <refsect1 id="seealso_gz_file_open">
     <title>See Also</title>
-    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE()</function></link></para>
   </refsect1>
 </refentry>
 

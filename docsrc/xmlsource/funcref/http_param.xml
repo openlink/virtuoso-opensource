@@ -84,7 +84,7 @@
   <refsect1 id="seealso_http_param"><title>See Also</title>
     <para>
       <link linkend="">VSP pages</link>
-      <link linkend="fn_vhost_define">vhost_define</link>
+      <link linkend="fn_vhost_define"><function>vhost_define()</function></link>
     </para>
   </refsect1>
 </refentry>

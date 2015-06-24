@@ -165,7 +165,7 @@ sqlc_print_literal_proc (char *text, size_t tlen, int *fill, char *name, ST ** p
     }
   else
     {
-      query_t *qr = sch_proc_def (sc->sc_cc->cc_schema, name);
+      query_t *qr = sch_proc_def (wi_inst.wi_schema, name);
       if (!qr || IS_REMOTE_ROUTINE_QR (qr) || !qr->qr_proc_ret_type)
 	return;
       else
@@ -347,7 +347,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
 	}
       else
 	{
-	  query_t *qr = sch_proc_def (sc->sc_cc->cc_schema, name);
+	  query_t *qr = sch_proc_def (wi_inst.wi_schema, name);
 	  if (qr && !IS_REMOTE_ROUTINE_QR (qr) && qr->qr_proc_ret_type)
 	    {
 	      ptrlong *rtype = (ptrlong *) qr->qr_proc_ret_type;
@@ -827,7 +827,7 @@ sqlc_remote_assign_param_type (sql_comp_t * sc, char *tb_name, char *col_name)
 {
   if (sc->sc_exp_param && sc->sc_exp_param->ssl_dtp == DV_UNKNOWN)
     {
-      dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tb_name);
+      dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tb_name);
       dbe_column_t *col = tb_name_to_column (tb, col_name);
       sc->sc_exp_param->ssl_sqt = col->col_sqt;
     }
@@ -1133,6 +1133,11 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
       sc->sc_exp_sqt.sqt_dtp = dtp;
       break;
 
+    case DV_SINGLE_FLOAT:
+      sprintf_more (text, tlen, fill, "%lg", unbox_float ((caddr_t) exp));
+      sc->sc_exp_sqt.sqt_dtp = dtp;
+      break;
+
     case DV_NUMERIC:
       numeric_to_string ((numeric_t) exp, text + *fill, tlen - *fill);
       *fill += (int) strlen (text + *fill);
@@ -1364,7 +1369,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 
 	case TABLE_DOTTED:
 	  {
-	    dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tree->_.table.name);
+	    dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tree->_.table.name);
 	    comp_table_t *ct = sqlc_table_ct (sc, tb, tree);
 	    char *c_prefix = sqlc_ct_vdb_prefix (sc, ct);
 	    remote_table_t *rt = find_remote_table (tb->tb_name, 0);
@@ -1449,7 +1454,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	case INSERT_STMT:
 	  {
 	    ST *tb_ref = tree->_.insert.table;
-	    dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tb_ref->_.table.name);
+	    dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tb_ref->_.table.name);
 	    sprintf_more (text, tlen, fill, "INSERT INTO ");
 	    sqlc_quote_dotted (text, tlen, fill, tb_remote_name (tb));
 	    if (!sec_tb_check (tb, (oid_t) unbox (tb_ref->_.table.g_id), (oid_t) unbox (tb_ref->_.table.u_id), GR_INSERT) ||
@@ -1490,7 +1495,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	  {
 	    dbe_table_t *tb = sc->sc_tables[0]->ct_table;
 	    if (tb && !sec_tb_check (tb, sc->sc_tables[0]->ct_g_id, sc->sc_tables[0]->ct_u_id, GR_DELETE))
-	      sqlc_new_error (sc->sc_cc, "42000", "SQ110", "Permission denied for delete from table %.300s", tb->tb_name);
+	      sqlc_new_error (sc->sc_cc, "42000", "SQ110:SECURITY", "Permission denied for delete from table %.300s", tb->tb_name);
 	    sprintf_more (text, tlen, fill, "DELETE FROM ");
 	    sqlc_quote_dotted (text, tlen, fill, tb_remote_name (sc->sc_tables[0]->ct_table));
 	    if (tree->_.delete_src.table_exp->_.table_exp.where)
@@ -1519,8 +1524,8 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		if (col_obj)
 		  {
 		    if (!sec_checked && !sec_col_check (col_obj, sc->sc_tables[0]->ct_g_id, sc->sc_tables[0]->ct_u_id, GR_UPDATE))
-		      sqlc_new_error (sc->sc_cc, "42000", "SQ164", "Update of column %s of table %.300s not allowed (user ID = %lu)",
-			  col_obj->col_name, sc->sc_tables[0]->ct_table->tb_name, sc->sc_tables[0]->ct_u_id);
+		      sqlc_new_error (sc->sc_cc, "42000", "SQ164:SECURITY", "Update of column %s of table %.300s not allowed (user ID = %lu)",
+			  col_obj->col_name, sc->sc_tables[0]->ct_table->tb_name, (long)(sc->sc_tables[0]->ct_u_id) );
 		  }
 		sprintf_more (text, tlen, fill, " ");
 		sqlc_quote_dotted (text, tlen, fill, col_obj ? col_obj->col_name : (char *) tree->_.update_src.cols[inx]);
@@ -1581,7 +1586,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		    }
 		  else
 		    {
-		      query_t *qr = sch_proc_def (sc->sc_cc->cc_schema, tree->_.call.name);
+		      query_t *qr = sch_proc_def (wi_inst.wi_schema, tree->_.call.name);
 		      if (qr && !IS_REMOTE_ROUTINE_QR (qr) && qr->qr_proc_ret_type)
 			{
 			  ptrlong *rtype = (ptrlong *) qr->qr_proc_ret_type;
@@ -1827,11 +1832,13 @@ sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree)
   ST *t1 = from ? from[0]->_.table_ref.table : NULL;
   if (1 == BOX_ELEMENTS_0 (from) && ST_P (t1, TABLE_DOTTED) && !tree->_.select_stmt.table_exp->_.table_exp.group_by)
     {
-      dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, t1->_.table.name);
+      dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, t1->_.table.name);
       remote_table_t *rt;
       if (!tb)
 	return 0;
       if (sqlo_opt_value (t1->_.table.opts, OPT_INDEX_ONLY))
+	return 0;
+      if (sch_view_def (wi_inst.wi_schema, tb->tb_name))
 	return 0;
       rt = find_remote_table (tb->tb_name, 0);
       if (!rt && !tb->tb_primary_key->key_partition && !tb->tb_primary_key->key_is_col)

@@ -151,6 +151,8 @@ key_cl_count (dbe_col_loc_t * cls)
   return inx;
 }
 
+int32 setp_distinct_max_keys = 100;
+
 void
 setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 {
@@ -304,6 +306,8 @@ setp_after_deserialize (setp_node_t * setp)
     ha->ha_memcache_only = 1;
   if (setp->setp_loc_ts)
     setp->setp_loc_ts->ts_order_ks->ks_key = ha->ha_key;
+  if (setp->setp_ha && HA_ORDER == setp->setp_ha->ha_op)
+    setp->setp_org_slots = (state_slot_t **)box_concat (setp->setp_keys_box, setp->setp_dependent_box);
 }
 
 

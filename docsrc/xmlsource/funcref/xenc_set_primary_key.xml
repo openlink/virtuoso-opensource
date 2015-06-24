@@ -54,20 +54,9 @@
   <refsect1 id="ret_xenc_set_primary_key"><title>Return Types</title>
       <para>No return value.</para>
   </refsect1>
-  <refsect1 id="errors_xenc_set_primary_key">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_set_primary_key">
     <title>Examples</title>
     <example id="ex_xenc_set_primary_key"><title>Importing a key from X.509 certificate</title>
-      <para></para>
       <screen><![CDATA[
 	  ...
 	  xenc_key_create_cert (key_name, key_value, key_type, fmt, NULL, key_passwd);

@@ -106,6 +106,7 @@ caddr_t f##_w p \
       return NULL; \
     } \
   CLI_ENTER; \
+  sqlc_set_client (NULL); \
   f p1; \
   CLI_LEAVE; \
   return NULL; \
@@ -1145,7 +1146,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 	    err = srv_make_new_error ("28000", "SR311",
 		"Bad login");
 	  else
-	    err = srv_make_new_error ("08004", "SR311",
+	    err = srv_make_new_error ("08004", "SR311:SECURITY",
 		"Shutting down the server permitted only to DBA group");
 	  DKST_RPC_DONE (client);
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
@@ -3825,7 +3826,7 @@ srv_global_init (char *mode)
   mode_pass_change = 0;
   in_srv_global_init = 1;
 
-  if (f_old_dba_pass && f_new_dba_pass && f_new_dav_pass)
+  if (f_old_dba_pass && f_new_dba_pass)
     {
       log_info ("Starting for DBA password change.");
       mode_pass_change = 1;
@@ -4091,35 +4092,31 @@ srv_global_init (char *mode)
 
   if (mode_pass_change)
     {
-	  caddr_t err = NULL;
-	  query_t *qr;
-	  char e_text [200];
+      caddr_t err = NULL;
+      query_t *qr;
+      char e_text [200];
 
-	  snprintf (e_text, sizeof (e_text),
-	      "USER_CHANGE_PASSWORD ('dba', '%.20s', '%.20s')", f_old_dba_pass, f_new_dba_pass);
-
-	  qr = sql_compile (e_text, bootstrap_cli, &err, SQLC_DEFAULT);
-	  if (!err)
-	    {
-	      err = qr_quick_exec (qr, bootstrap_cli, NULL, NULL, 0);
-	      qr_free (qr);
-	    }
-
-	  log_info ("The DBA password is changed.");
-	  snprintf (e_text, sizeof (e_text),
-	      "USER_CHANGE_PASSWORD ('dav', 'dav', '%.20s')", f_new_dav_pass);
-
+      snprintf (e_text, sizeof (e_text), "USER_CHANGE_PASSWORD ('dba', '%.20s', '%.20s')", f_old_dba_pass, f_new_dba_pass);
+      qr = sql_compile (e_text, bootstrap_cli, &err, SQLC_DEFAULT);
+      if (!err)
+	{
+	  err = qr_quick_exec (qr, bootstrap_cli, NULL, NULL, 0);
+	  qr_free (qr);
+	}
+      log_info ("The DBA password is changed.");
+      if (f_new_dav_pass)
+	{
+	  snprintf (e_text, sizeof (e_text), "USER_CHANGE_PASSWORD ('dav', 'dav', '%.20s')", f_new_dav_pass);
 	  qr = sql_compile (e_text , bootstrap_cli, &err, SQLC_DEFAULT);
 	  if (!err)
 	    {
 	      err = qr_quick_exec (qr, bootstrap_cli, NULL, NULL, 0);
 	      qr_free (qr);
 	    }
-
 	  log_info ("The DAV password is changed.");
-
-	  local_commit (bootstrap_cli);
-	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
+	}
+      local_commit (bootstrap_cli);
+      sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
   ddl_redo_undefined_triggers ();
   srv_global_init_plugin_actions (&srv_global_init_postponed_actions, mode);

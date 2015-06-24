@@ -110,7 +110,73 @@
         </div>
       </v:form>
     </v:template>
-  <v:template name="tree_tmpl" type="simple" enabled="-- equ (self.mode, '')">
+
+    <v:template name="def_host_tmpl" type="simple" enabled="-- equ(self.mode, 'add_def')">
+      <v:before-data-bind>
+        <v:script><![CDATA[
+          self.err_msg := '';
+          if(self.mode <> 'add_def')
+            self.mode := '';
+          ]]></v:script>
+      </v:before-data-bind>
+      <v:form name="frm_confirm_def_hosts" action="http_serv_mgmt.vspx" method="POST" type="simple">
+        <div class="confirm_dialog">
+          <div class="confirm_text">
+             <p>
+              <img class="dialog_icon" src="images/icons/add_32.png" alt="Confirm" title="Confirm"/>
+              You are requesting the addition of default virtual directories to the listener at interface <b><?V self.edit_host ?></b>, listening at port <b><?V self.edit_port ?></b>, for connections to <b><?V self.edit_httphost ?></b>.<br/>
+              The following Virtual directories will be created (existing ones will be overwritten):
+            </p>
+            <p>
+              <?vsp
+                for select HPD_LPATH
+                      from DB.DBA.HTTP_PATH_DEFAULT
+                  order by HPD_LPATH do
+                {
+                  http ('<b>');
+                  http (HPD_LPATH);
+                  http('</b><br/>');
+                }
+              ?>
+             </p>
+          </div>
+          <div class="confirm_buttons">
+            <v:button name="conf_cancel_def_hosts" action="simple" value="Cancel">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.edit_host := '';
+                    self.edit_httphost := '';
+                    self.edit_port := '';
+                    self.chost := '';
+                    self.clhost := '';
+                    self.mode := '';
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="conf_proceed_def_hosts" action="simple" value="Create Default Directories">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    DB.DBA.CREATE_DEFAULT_VHOSTS (vhost=>self.chost, lhost=>self.clhost);
+                    self.mode := '';
+                    self.edit_host := '';
+                    self.edit_httphost := '';
+                    self.edit_port := '';
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+          </div>
+        </div>
+      </v:form>
+    </v:template>
+
+
+    <v:template name="tree_tmpl" type="simple" enabled="-- equ (self.mode, '')">
       <vm:help id="http_server_management" sect=""/>
       <v:form name="frm1" method="POST" type="simple">
         <table class="listing">
@@ -221,6 +287,30 @@
 		    ]]></v:after-data-bind>
 		   <!--</v:url>-->
 		   </v:button>
+                  <v:button name="add_default_hosts" action="simple" value="Add Defaults" style="url" xhtml_title="Add Default Virtuso Directories to Listener">
+                    <v:on-post>
+                      <![CDATA[
+                        declare host, port, lhost, edit, chost, clhost varchar;
+                        declare xt, intf any;
+
+                        xt := (control.vc_parent as vspx_tree_node).tn_element;
+                        host := cast (xpath_eval ('@host',xt) as varchar);
+                        port := cast (xpath_eval ('@port',xt) as varchar);
+                        lhost := cast (xpath_eval ('@lhost',xt) as varchar);
+                        clhost := cast (xpath_eval ('@clhost',xt) as varchar);
+                        chost := cast (xpath_eval ('@chost',xt) as varchar);
+
+                        self.edit_host := host;
+                        self.edit_httphost := lhost;
+                        self.edit_port := port;
+                        self.chost := chost;
+                        self.clhost := clhost;
+                        self.mode := 'add_def';
+
+                        self.vc_data_bind (e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
 		  <v:button name="item_stop1" action="simple" value="Stop" style="url">
 		    <v:after-data-bind><![CDATA[
 		      declare xt, xp, vh any;

@@ -757,7 +757,7 @@ create function "CalDAV_DAV_RES_CONTENT" (
 
   type := 'text/calendar';
   whenever not found goto endline;
-  tz := timezone(now());
+  tz := timezone(curdatetime_tz());
   if (id[4] is not null)
     content := CAL.WA.export_vcal (id[3], vector (id[4]));
 endline:

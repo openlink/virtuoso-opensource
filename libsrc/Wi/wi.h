@@ -34,7 +34,9 @@
 #define VAJRA
 #define VEC
 #define NO_CL GPF_T1 ("not available without cluster support")
+#if defined(linux)
 #define PM_TLSF 1
+#endif
 #define KEYCOMP GPF_T1 ("not done with key comp");
 #define O12 GPF_T1("Database engine does not support this deprecated function. Please contact OpenLink Support.")
 /*#define PAGE_TRACE 1 */
@@ -1005,6 +1007,7 @@ struct it_cursor_s
       int	segs_sampled;
       int	rows_in_segs;
       dk_hash_t *	cols;	/* hash from de_col_t to col_stat_t *for random sample col stats. */
+      dk_hash_t *	visited;
       struct tb_sample_s *	smp;
       int		n_rows_sampled;
       int		n_row_spec_matches;
@@ -1943,6 +1946,9 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
    DV_DOUBLE_FLOAT == dtp || \
    DV_NUMERIC == dtp \
   || DV_INT64 == dtp)
+
+#define IS_DATE_DTP(dtp) \
+  (DV_TIMESTAMP == (dtp) || DV_DATE == (dtp) || DV_DATETIME == (dtp))
 
 #ifndef dbg_printf
 # ifdef DEBUG

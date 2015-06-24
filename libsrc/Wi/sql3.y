@@ -1726,6 +1726,7 @@ sql_option
 	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
 	| NO_L IDENTITY { $$ = t_CONS (OPT_NO_IDENTITY, t_CONS (1, NULL)); }
 	| NO_L TRIGGER { $$ = t_CONS (OPT_NO_TRIGGER, t_CONS (1, NULL)); }
+	| TRIGGER { $$ = t_CONS (OPT_TRIGGER, t_CONS (1, NULL)); }
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
 	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
 | INDEX ORDER { $$ = t_cons ((void*)OPT_INDEX_ORDER, t_cons ((void*)1, NULL)); }
@@ -2728,11 +2729,11 @@ function_call
 	| CALL '(' scalar_exp ')' '(' opt_arg_commalist ')'
 		{ $$ = t_listst (3, CALL_STMT, t_list (1, $3),
 			t_list_to_array ($6)); }
-	| CURRENT_DATE
+	| CURRENT_DATE opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdate"), t_list (0));
 		}
-	| CURRENT_TIME
+	| CURRENT_TIME opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (0));
 		}
@@ -2740,7 +2741,7 @@ function_call
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (1, $3));
 		}
-	| CURRENT_TIMESTAMP
+	| CURRENT_TIMESTAMP opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdatetime"), t_list (0));
 		}
@@ -2754,6 +2755,11 @@ function_call
 		  caddr_t bit_index = t_box_num (0);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__grouping"), t_list (3, $3, bit, bit_index));
 		}
+	;
+
+opt_lpar_rpar
+	: /* empty */
+	| '(' ')'
 	;
 
 /* the call return statement {?=call x [()]} */
@@ -3242,20 +3248,6 @@ admin_statement
 	| LOGX OFF
 		{ $$ = t_listst (4, OP_LOG_OFF, NULL, NULL, NULL); }
 	;
-
-/* embedded condition things */
-/*
-sql
-	: WHENEVER NOT FOUND when_action
-	| WHENEVER SQLERROR when_action
-	;
-
-when_action
-	: GOTO identifier
-	| CONTINUE
-	;
-*/
-
 
 /* SQL Procedures */
 

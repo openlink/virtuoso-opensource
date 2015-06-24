@@ -50,9 +50,16 @@
     value can be used in subsequent FETCH .. BOOKMARK over the same
     cursor.</para>
   </refsect1>
-  <refsect1 id="params_bookmark"><title>Parameters</title>
-    <refsect2><title></title>
-      <para></para></refsect2>
+  <refsect1 id="params_bookmark">
+  	<title>Parameters</title>
+    <refsect2>
+    	<title>bookmark</title>
+      <para>Given Bookmark.</para>
+    </refsect2>
+    <refsect2>
+    	<title>cursor</title>
+      <para>Open scrollable cursor.</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="ret_bookmark"><title>Return Types</title>
     <para><parameter>integer</parameter> bookmark id.</para></refsect1>

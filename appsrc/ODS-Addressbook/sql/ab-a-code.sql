@@ -2260,7 +2260,7 @@ create procedure AB.WA.show_excerpt(
 --
 create procedure AB.WA.dt_current_time()
 {
-  return dateadd('minute', - timezone(now()), now());
+  return dateadd('minute', - timezone(curdatetime_tz()), curdatetime_tz());
 }
 ;
 
@@ -2282,7 +2282,7 @@ create procedure AB.WA.dt_gmt2user(
     pUser := connection_get('vspx_user');
   if (is_empty_or_null (pUser))
     return pDate;
-  tz := cast (coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(now())/60) as integer) * 60;
+  tz := cast (coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(curdatetime_tz())/60) as integer) * 60;
   return dateadd('minute', tz, pDate);
 }
 ;
@@ -2497,6 +2497,8 @@ _end:
 create procedure AB.WA.dt_rfc1123 (
   in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;

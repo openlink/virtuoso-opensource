@@ -26,7 +26,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" xmlns:dc="http://purl.org/dc/elements/1.1/">
   <xsl:output method="xml" indent="yes"/>
 	<xsl:include href="page_common.xsl"/>
-	<xsl:param name="now_rfc1123"><?V date_rfc1123(now())?></xsl:param>
+	<xsl:param name="now_rfc1123"><?V date_rfc1123(curutcdatetime())?></xsl:param>
 	
   <xsl:template match="tutorial">
     <?vsp

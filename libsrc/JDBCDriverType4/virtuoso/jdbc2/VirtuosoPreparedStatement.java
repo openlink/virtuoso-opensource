@@ -169,6 +169,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
              vresultSet.isLastResult = false;
 	     vresultSet.getMoreResults(false);
+             vresultSet.stmt_n_rows_to_get = this.prefetch;
 	     result_opened = true;
 	   }
 	 catch(IOException e)

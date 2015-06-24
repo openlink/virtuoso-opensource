@@ -136,11 +136,10 @@ rdtsc()
   __asm__ __volatile__ ("mftb %0":"=r" (result));
   return result;
 #elif defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
-  {
-    struct timespec t;
-    clock_gettime(CLOCK_REALTIME, &t);
-    return (uint64) t.tv_sec * 1000000000 + (uint64) t.tv_nsec;
-  }
+  struct timespec t;
+  clock_gettime(CLOCK_REALTIME, &t);
+  return (uint64) t.tv_sec * 1000000000 + (uint64) t.tv_nsec;
+#else
   return 0;
 #endif
 }

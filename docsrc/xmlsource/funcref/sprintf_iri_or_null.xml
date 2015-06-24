@@ -50,7 +50,7 @@ null if any of the arguments except the first one is null.</para>
 </refsect1>
  <refsect1 id="examples_sprintf_iri_or_null">
    <title>Examples</title>
-    <example id="ex_sprintf_iri_or_null"><title></title>
+    <example id="ex_sprintf_iri_or_null"><title>Simple Use</title>
       <screen><![CDATA[
 create function job_history(
   in EMPLOYEE_ID integer,

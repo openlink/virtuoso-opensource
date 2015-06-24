@@ -918,28 +918,26 @@ rdf_inf_ctx (char * name)
 
 rdf_inf_ctx_t *
 ric_allocate (caddr_t n2)
-    {
+{
   NEW_VARZ (rdf_inf_ctx_t, ctx);
   ctx->ric_name = n2;
-  id_hash_set (rdf_name_to_ric, (caddr_t)&n2, (caddr_t)&ctx);
-      ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
-      /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);*/
-      ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
-      id_hash_set_rehash_pct (ctx->ric_iri_to_subproperty, 200);
-      id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
-      id_hash_set_rehash_pct (ctx->ric_samples, 200);
-      id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
+  id_hash_set (rdf_name_to_ric, (caddr_t) & n2, (caddr_t) & ctx);
+  ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
+  /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp); */
   ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_mtx = mutex_allocate ();
-      ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
+  id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
+  id_hash_set_rehash_pct (ctx->ric_iri_to_subproperty, 200);
+  id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
   id_hash_set_rehash_pct (ctx->ric_samples, 200);
+  id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
+  ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_mtx = mutex_allocate ();
   ctx->ric_p_stat = hash_table_allocate (11);
-      return ctx;
-    }
+  return ctx;
+}
 
 rdf_inf_ctx_t *
 bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int create)
@@ -2146,6 +2144,10 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
     }
   do
     {
+      if (dfe->dfe_type == DFE_TABLE && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
+	{
+	  return ctx;
+	}
       if (dfe->dfe_type == DFE_DT && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
 	{
 	  return ctx;
@@ -2267,8 +2269,9 @@ sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
 			ctx, tb_dfe, inxop_inx, &sas_o)
 
 #define LEADING_SAME_AS_P \
-  sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_P, \
-			ctx, tb_dfe, inxop_inx, &sas_p)
+  {  if (DFE_CONST != p_dfe->dfe_type || empty_ric == ctx)		\
+    sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_P, \
+			  ctx, tb_dfe, inxop_inx, &sas_p); }
 
 #define LEADING_IFP_S \
   sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_IFP | RI_SAME_AS_S, \
@@ -2473,6 +2476,7 @@ qn_ensure_prev (sql_comp_t * sc, data_source_t ** head , data_source_t * qn)
   (((qn_input_fn) rdf_inf_pre_input == (qn)->src_input && !((rdf_inf_pre_node_t *)(qn))->ri_is_after) \
     || (qn_input_fn)in_iter_input  == (qn)->src_input)
 
+#define IS_ITER_OR_TXS(qn) (IS_ITER(qn) || (qn_input_fn)txs_input == (qn)->src_input)
 
 void
 sqlc_asg_mark (state_slot_t * ssl)
@@ -2587,11 +2591,11 @@ sqlg_cl_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t *
   outer_seq_end_node_t * ose = NULL;
   while (qn)
     {
-      if (IS_ITER (qn))
+      if (IS_ITER_OR_TXS (qn))
 	{
 	  if (!first_iter)
 	    first_iter = qn;
-    }
+	}
       else if (ts == qn)
 	{
 	  data_source_t * before;

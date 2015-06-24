@@ -204,6 +204,9 @@ walk_db (lock_trx_t * lt, page_func_t func)
   memset (levels, 0, sizeof (levels));
 
   {
+    IN_TXN;
+    lt_threads_set_inner (lt, 1);
+    LEAVE_TXN;
     DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
       {
 	if (it != wi_inst.wi_master->dbs_cpt_tree && !backup_key_is_ignored (&ign, it->it_key))
@@ -229,12 +232,17 @@ walk_db (lock_trx_t * lt, page_func_t func)
 	    ITC_FAILED
 	      {
 		itc_free (itc);
+		if (!srv_have_global_lock(THREAD_CURRENT_THREAD))
+		  LEAVE_CPT (lt);
 	      }
 	    END_FAIL (itc);
 	    itc_free (itc);
 	  }
       }
     END_DO_SET()
+    IN_TXN;
+    lt_threads_set_inner (lt, 0);
+    LEAVE_TXN;
   }
 }
 
@@ -841,6 +849,7 @@ db_recover_keys (char *keys)
     }
 }
 
+int db_dd_log = 0;
 #ifdef DBG_BLOB_PAGES_ACCOUNT
 dk_hash_t * blob_pages_hash = NULL;
 void db_crash_to_log (char *mode);
@@ -848,11 +857,12 @@ void db_crash_to_log (char *mode);
 void
 db_dbg_account_add_page (dp_addr_t start)
 {
+  if (db_dd_log) return;
   if (blob_pages_hash)
     {
       if (gethash (DP_ADDR2VOID (start), blob_pages_hash))
 	{
-	  log_error ("duplicate blob db :%ld", (long) start);
+	  log_error ("duplicate blob dp :%ld", (long) start);
 	}
       sethash (DP_ADDR2VOID (start), blob_pages_hash, DP_ADDR2VOID (1));
     }
@@ -865,8 +875,8 @@ db_dbg_account_check_page_in_hash (dp_addr_t start)
     {
       if (!gethash (DP_ADDR2VOID (start), blob_pages_hash))
 	{
-	  log_error ("found a db not in the used set : %ld", (long) start);
-	  call_exit (-1);
+	  log_error ("found a dp not in the used set : %ld", (long) start);
+	  /*call_exit (-1);*/
 	}
     }
 }
@@ -896,13 +906,24 @@ db_to_log (void)
   IN_TXN;
   cli_set_new_trx (bootstrap_cli);
   LEAVE_TXN;
+  db_dd_log = 1;
   srv_dd_to_log (bootstrap_cli);
+  db_dd_log = 0;
   walk_db (bootstrap_cli->cli_trx, log_page);
 
   sqlc_hook_enable = saved_sqlc_hook_enable;
   log_info ("Database dump complete");
 #ifdef DBG_BLOB_PAGES_ACCOUNT
-  db_crash_to_log ("");
+  DO_HT (ptrlong, dp, extent_map_t *, em, wi_inst.wi_master->dbs_dp_to_extent_map)
+    {
+      extent_t * ext;
+      int type;
+      ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
+      type = EXT_TYPE (ext);
+      if (type == EXT_BLOB && !dbs_is_free_page (wi_inst.wi_master, dp))
+	db_dbg_account_check_page_in_hash (dp);
+    }
+  END_DO_HT;
 #endif
 }
 

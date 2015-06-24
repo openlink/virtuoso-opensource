@@ -44,11 +44,7 @@ class XAResourceManager {
     private XAResourceManager(String serverName, int portNumber) {
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("new XAResourceManager (serverName=" + serverName + ", portNumber=" + portNumber + ") :" + hashCode());
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
         this.serverName = serverName;
         this.portNumber = portNumber;
@@ -59,11 +55,7 @@ class XAResourceManager {
         int portNumber) {
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("XAResourceManager.getManager (serverName=" + serverName + ", portNumber=" + portNumber + ")");
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
         XAResourceManager manager;
 
@@ -83,11 +75,7 @@ class XAResourceManager {
         XATransaction transaction = null;
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("XAResourceManager.createTransaction (xid=" + xid.hashCode() + ", status=" + status + ") :" + hashCode());
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
         VirtuosoXid vxid = new VirtuosoXid(xid);
         synchronized (transactions) {
@@ -104,11 +92,7 @@ class XAResourceManager {
     void removeTransaction(Xid xid) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("XAResourceManager.removeTransaction (xid=" + xid.hashCode() + ") :" + hashCode());
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
         VirtuosoXid vxid = new VirtuosoXid(xid);
         synchronized (transactions) {
@@ -119,11 +103,7 @@ class XAResourceManager {
     XATransaction getTransaction(Xid xid) throws XAException {
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("XAResourceManager.getTransaction (xid=" + xid.hashCode() + ") :" + hashCode());
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
         XATransaction transaction;
         VirtuosoXid vxid = new VirtuosoXid(xid);

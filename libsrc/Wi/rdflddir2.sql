@@ -154,8 +154,7 @@ create procedure
 ld_file (in f varchar, in graph varchar)
 {
   declare gzip_name, base varchar;
-  base := graph;
-  if (base = 'with_delete') base := '';
+  base := '';
   declare exit handler for sqlstate '*' {
     rollback work;
     update DB.DBA.LOAD_LIST
@@ -187,14 +186,14 @@ ld_file (in f varchar, in graph varchar)
     {
       gzip_name := regexp_replace (f, '\.gz\x24', '');
       if (ld_is_rdfxml (gzip_name))
-	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), graph, graph);
+	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), base, graph);
       else
 	TTLP_V (gz_file_open (f), base, graph, ld_ttlp_flags (gzip_name, graph));
     }
   else
     {
       if (ld_is_rdfxml (f))
-	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), graph, graph);
+	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), base, graph);
       else
 	TTLP_V (file_open (f), base, graph, ld_ttlp_flags (f, graph));
     }

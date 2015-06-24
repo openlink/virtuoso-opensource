@@ -879,7 +879,7 @@ create function DB.DBA.Dropbox__datestring (
   s  := xslt_format_number (second (dt), '00');
   k  := xslt_format_number (dayofweek (dt), '00');
   y  := cast (year (dt) as varchar);
-  z  := timezone (dt);
+  z  := coalesce(timezone (dt), 0);
   if (z < 0)
   {
     zz := '-';

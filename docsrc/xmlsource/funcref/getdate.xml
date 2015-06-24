@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_getdate">
       <funcprototype id="fproto_getdate">
         <funcdef><function>getdate</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

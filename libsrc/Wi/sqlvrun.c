@@ -2419,7 +2419,6 @@ ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_buf_re
   QNCAST (query_instance_t, qi, inst);
   if (aq_state != TS_AQ_COORD_AQ_WAIT)
     {
-      if (itc->itc_buf_registered && itc->itc_map_pos >= itc->itc_buf_registered->bd_content_map->pm_count) GPF_T1 ("itc regd after end of pagfe in ts_thread ");
       itc->itc_ltrx = qi->qi_trx;
       if (1 == itc->itc_n_sets && !itc->itc_param_order)
 	{
@@ -2802,7 +2801,7 @@ itc_angle (it_cursor_t * itc, buffer_desc_t ** buf_ret, int angle, placeholder_t
    * Retry until can read both the place and the previous.  If landed to the left of previous, return NULL */
   table_source_t *ts = tsp->tsp_ts;
   QNCAST (query_instance_t, qi, itc->itc_out_state);
-  int64 est;
+  int64 est, est2;
   float cost;
   int64 n_leaves;
   int rc;
@@ -2811,13 +2810,20 @@ itc_angle (it_cursor_t * itc, buffer_desc_t ** buf_ret, int angle, placeholder_t
   ITC_SAVE_ROW_SPECS (itc);
   ITC_NO_ROW_SPECS (itc);
   itc->itc_random_search = RANDOM_SEARCH_ON;
+
+  if (!itc->itc_key_spec.ksp_spec_array)
+    est = tsp->tsp_card_est = dbe_key_count (itc->itc_insert_key) / key_n_partitions (itc->itc_insert_key);
+  else if (tsp->tsp_ts && tsp->tsp_ts->ts_inx_cardinality)
+    est = tsp->tsp_card_est = tsp->tsp_ts->ts_inx_cardinality;
+  else
+    est = tsp->tsp_card_est = -1;
   *buf_ret = itc_reset (itc);
   itc->itc_random_search = RANDOM_SEARCH_OFF;
   itc_clear_stats (itc);
   itc->itc_st.mode = ITC_STAT_ANGLE;
-  est = itc_sample_1 (itc, buf_ret, &n_leaves, angle);
-  if (!tsp->tsp_card_est)
-    tsp->tsp_card_est = est;
+  est2 = itc_sample_1 (itc, buf_ret, &n_leaves, angle);
+  if (-1 == est)
+    est = tsp->tsp_card_est = est2;
   ITC_RESTORE_ROW_SPECS (itc);
   itc->itc_bp.bp_new_on_row = 1;
   itc->itc_bp.bp_just_landed = 1;
@@ -3529,8 +3535,8 @@ vec_top_merge (setp_node_t * setp, fun_ref_node_t * fref, caddr_t * inst, caddr_
 {
   int nth;
   caddr_t **arr = (caddr_t **) qst_get (branch, setp->setp_sorted);
-  ptrlong top = unbox (qst_get (inst, setp->setp_top));
-  ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
+  ptrlong top = setp_top_get (inst, setp->setp_top, 0);
+  ptrlong skip = setp_top_get (inst, setp->setp_top_skip, 0);
   ptrlong fill;
   QNCAST (query_instance_t, qi, inst);
   setp_node_t tmp_setp;

@@ -159,7 +159,7 @@ create procedure  DB.DBA.WS_TRUST_TOKEN_GEN (
         <wsse:RequestType>wsse:ReqIssue</wsse:RequestType>
         <wsp:AppliesTo xmlns:wsp="http://schemas.xmlsoap.org/ws/2002/12/policy">
           <wsa:EndpointReference>
-            <wsa:Address>http://localhost/SecureConvPolicyService/SecureConvService.asmx</wsa:Address>
+            <wsa:Address>http://example.com/SecureConvPolicyService/SecureConvService.asmx</wsa:Address>
           </wsa:EndpointReference>
         </wsp:AppliesTo>
       </wsse:RequestSecurityToken>

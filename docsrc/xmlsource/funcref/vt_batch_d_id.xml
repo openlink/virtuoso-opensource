@@ -50,7 +50,6 @@ of ID.
       <para>the free text document ID of the row  whose index entry is to be
 updated.</para></refsect2>
   </refsect1>
-  <refsect1 id="ret_vt_batch_d_id"><title>Return Types</title><para></para></refsect1>
   <refsect1 id="errors_vt_batch_d_id"><title>Errors</title>
     <table><title>Errors signalled by</title>
       <tgroup cols="4">
@@ -66,17 +65,11 @@ updated.</para></refsect2>
       </tgroup>
     </table>
   </refsect1>
-  <refsect1 id="examples_vt_batch_d_id"><title>Examples</title>
-    <example id="ex_vt_batch_d_id"><title></title>
-      <para></para>
-      <screen></screen>
-    </example>
-  </refsect1>
   <refsect1 id="seealso_vt_batch_d_id"><title>See Also</title>
-    <para><link linkend="fn_vt_drop_ftt">vt_drop_ftt</link></para>
-    <para><link linkend="fn_vt_batch">vt_batch</link></para>
-    <para><link linkend="fn_vt_batch_update">vt_batch_update</link></para>
-    <para><link linkend="fn_vt_create_text_index">vt_create_text_index</link></para>
+    <para><link linkend="fn_vt_drop_ftt">vt_drop_ftt()</link></para>
+    <para><link linkend="fn_vt_batch">vt_batch()</link></para>
+    <para><link linkend="fn_vt_batch_update">vt_batch_update()</link></para>
+    <para><link linkend="fn_vt_create_text_index">vt_create_text_index()</link></para>
   </refsect1>
 </refentry>
 

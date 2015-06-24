@@ -20,22 +20,67 @@
 #
 
 noinst_LTLIBRARIES = libtidy.la
-noinst_HEADERS = html.h platform.h
+noinst_HEADERS = \
+	access.h \
+	attrdict.h \
+	attrs.h \
+	buffio.h \
+	charsets.h \
+	clean.h \
+	config.h \
+	entities.h \
+	fileio.h \
+	forward.h \
+	gdoc.h \
+	iconvtc.h \
+	lexer.h \
+	mappedio.h \
+	message.h \
+	parser.h \
+	platform.h \
+	pprint.h \
+	sprtf.h \
+	streamio.h \
+	tags.h \
+	tidy.h \
+	tidyenum.h \
+	tidy-int.h \
+	tmbstr.h \
+	utf8.h \
+	version.h \
+	win32tc.h
 
 libtidy_la_SOURCES = \
+	access.c \
+	alloc.c \
+	attrask.c \
+	attrdict.c \
+	attrget.c \
 	attrs.c \
+	buffio.c \
+	charsets.c \
 	clean.c \
 	config.c \
 	entities.c \
+	fileio.c \
+	gdoc.c \
+	iconvtc.c \
 	istack.c \
 	lexer.c \
 	localize.c \
+	mappedio.c \
 	parser.c \
 	pprint.c \
+	sprtf.c \
+	streamio.c \
+	tagask.c \
 	tags.c \
-	tidy.c
+	tidylib.c \
+	tmbstr.c \
+	utf8.c \
+	win32tc.c
 
-libtidy_la_CFLAGS  = @VIRT_AM_CFLAGS@
+libtidy_la_CFLAGS  = @VIRT_AM_CFLAGS@ -DNDEBUG
 libtidy_la_CFLAGS  += -I$(top_srcdir)/libsrc
 libtidy_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 
@@ -45,4 +90,4 @@ libtidy_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = tab2space.c
+EXTRA_DIST = #tab2space.c

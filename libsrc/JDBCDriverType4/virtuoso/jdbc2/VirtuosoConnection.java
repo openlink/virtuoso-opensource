@@ -696,10 +696,8 @@ public class VirtuosoConnection implements Connection
 			   //System.err.println ("txn timeout = " + txn_timeout);
 			 }
 
-			 if (trxisolation <= 0) {
-			   trxisolation = (int) cdef_param (client_defaults, "SQL_TXN_ISOLATION", trxisolation);
-			   //System.err.println ("txn isolation = " + trxisolation);
-			 }
+			 trxisolation = (int) cdef_param (client_defaults, "SQL_TXN_ISOLATION", trxisolation);
+			 //System.err.println ("txn isolation = " + trxisolation);
 
 			 utf8_execs = cdef_param (client_defaults, "SQL_UTF8_EXECS", 0) != 0;
 			 //System.err.println ("utf8_execs = " + utf8_execs);
@@ -790,12 +788,8 @@ public class VirtuosoConnection implements Connection
    {
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
-	     VirtuosoFuture.rpc_log.print ("(conn " + hashCode() + ") OUT ");
+	     VirtuosoFuture.rpc_log.print ("  >> (conn " + hashCode() + ") OUT ");
 	     VirtuosoFuture.rpc_log.println (obj != null ? obj.toString() : "<null>");
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
 #if JDK_VER >= 14
     try {
@@ -945,12 +939,8 @@ public class VirtuosoConnection implements Connection
      //System.out.println ("req end");
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
-	     VirtuosoFuture.rpc_log.print ("(conn " + hashCode() + ") IN ");
+	     VirtuosoFuture.rpc_log.print ("  << (conn " + hashCode() + ") IN ");
 	     VirtuosoFuture.rpc_log.println (_result != null ? _result.toString() : "<null>");
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
 
      try
@@ -976,13 +966,9 @@ public class VirtuosoConnection implements Connection
        {
          if (VirtuosoFuture.rpc_log != null)
            {
-             synchronized (VirtuosoFuture.rpc_log)
-               {
-                 VirtuosoFuture.rpc_log.println ("(conn " + hashCode() + ") **** runtime2 " +
+                 VirtuosoFuture.rpc_log.println ("  **(conn " + hashCode() + ") **** runtime2 " +
                      e.getClass().getName() + " in read_request");
                  e.printStackTrace(VirtuosoFuture.rpc_log);
-		 VirtuosoFuture.rpc_log.flush();
-               }
            }
          throw new Error (e.getClass().getName() + ":" + e.getMessage());
        }
@@ -2554,11 +2540,7 @@ public class VirtuosoConnection implements Connection
     boolean getGlobalTransaction() {
 	   if (VirtuosoFuture.rpc_log != null)
 	   {
-	       synchronized (VirtuosoFuture.rpc_log)
-	       {
 		   VirtuosoFuture.rpc_log.println ("VirtuosoConnection.getGlobalTransaction () (con=" + this.hashCode() + ") :" + global_transaction);
-		   VirtuosoFuture.rpc_log.flush();
-	       }
 	   }
         return global_transaction;
     }
@@ -2566,11 +2548,7 @@ public class VirtuosoConnection implements Connection
     void setGlobalTransaction(boolean value) {
 	   if (VirtuosoFuture.rpc_log != null)
 	   {
-	       synchronized (VirtuosoFuture.rpc_log)
-	       {
 		   VirtuosoFuture.rpc_log.println ("VirtuosoConnection.getGlobalTransaction (" + value + ") (con=" + this.hashCode() + ") :" + global_transaction);
-		   VirtuosoFuture.rpc_log.flush();
-	       }
 	   }
         global_transaction = value;
     }

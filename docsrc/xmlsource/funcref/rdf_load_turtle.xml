@@ -51,16 +51,6 @@
   <refsect1 id="ret_rdf_load_turtle"><title>Return Types</title>
     <para></para>
   </refsect1>
-  <refsect1 id="errors_rdf_load_turtle">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_rdf_load_turtle">
     <title>Examples</title>
     <example id="ex_rdf_load_turtle"><title></title>

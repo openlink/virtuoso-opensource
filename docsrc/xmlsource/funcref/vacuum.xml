@@ -67,13 +67,6 @@ names as returned by the ODBC call SQLStatistics or equivalent, which is also th
 SYS_KEYS.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_vacuum">
-    <title>Return Types</title>
-    <para></para>
-  </refsect1>
-  <refsect1 id="errors_vacuum"><title>Errors</title>
-    <para></para>
-  </refsect1>
   <refsect1 id="examples_vacuum">
     <title>Examples</title>
     <example id="ex_vacuum">

@@ -79,7 +79,7 @@ IMPORT_JAR (in files any, in classes any)
   -->
   <refsect1 id="examples_jvm_ref_import">
     <title>Examples</title>
-    <example id="ex_jvm_ref_import"><title></title>
+    <example id="ex_jvm_ref_import"><title>Simple Use</title>
       <screen><![CDATA[
 JVM_REF_IMPORT (NULL, vector ('java.lang.Object', 'java.lang.System'));
 ]]></screen>

@@ -2235,7 +2235,8 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 	    {
 	      int n_cols, k, need_comma = 0;
 	      caddr_t * names;
-	      sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO")),
+	char * mode = ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO"));
+	sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", mode, 
 		 ESC(key_table->tb_qualifier, 1), ESC(key_table->tb_owner, 2), ESC(key_table->tb_name_only,3));
 	      if (op == LOG_KEY_INSERT && !old_key)
 		{
@@ -2396,7 +2397,7 @@ get_vec_query (lre_request_t *request, dbe_key_t * key, int flag, caddr_t * err_
     }
   while (key->key_migrate_to)
     key = sch_id_to_key (wi_inst.wi_schema, key->key_migrate_to);
-  res = log_key_ins_del_qr (key, err_ret, op, flag, 1);
+  res = log_key_ins_del_qr (key, err_ret, op, op == LOG_KEY_INSERT && flag == LOG_INSERT_SOFT ? INS_SOFT : flag, 1);
   sethash ((void*)(ptrlong)op, lq->lrq_qrs, (void*)res);
   return res;
 }
@@ -2638,7 +2639,11 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
   caddr_t err = NULL;
   dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, unbox (row[0]));
   LOCAL_RD (rd);
-
+  if (!key)
+    {
+      dk_free_tree ((caddr_t)row);
+      return srv_make_new_error ("42000", "RFWNK", "No key %d", unbox (row[0]));
+    }
   rd.rd_allocated = RD_AUTO;
   rd.rd_values = &row[1];
   rd.rd_n_values = BOX_ELEMENTS (row) - 1;
@@ -2761,6 +2766,7 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
       dc_append_box (dc, arg);
       dk_free_tree (to_free);
     }
+ ret:
   dk_free_tree (row);
   return SQL_SUCCESS;
 }
@@ -3263,7 +3269,7 @@ log_replay_time (caddr_t * header)
       if (BOX_ELEMENTS (dta) == 2 && DV_DATETIME == DV_TYPE_OF (dta[0]))
 	{
 	  int64 w_id = unbox (dta[1]);
-	  if (DVC_LESS == dt_compare (wi_inst.wi_log_replay_dt, dta[0]))
+	  if (DVC_LESS == dt_compare (wi_inst.wi_log_replay_dt, dta[0], 1))
 	    memcpy (wi_inst.wi_log_replay_dt, dta[0], DT_LENGTH);
 	  if (QFID_HOST (w_id) == local_cll.cll_this_host
 	      &&  (!log_last_local_w_id || W_ID_GT ((int32)w_id, log_last_local_w_id)))

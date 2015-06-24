@@ -81,11 +81,6 @@ key store of the calling user account.</para>
 	  optionally signed SOAP message.
       </para>
   </refsect1>
-  <refsect1 id="errors_xenc_encrypt">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_encrypt">
     <title>Examples</title>
     <example id="ex_xenc_encrypt"><title>Encrypting and signing SOAP message</title>

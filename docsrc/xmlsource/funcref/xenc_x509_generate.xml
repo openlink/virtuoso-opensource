@@ -74,19 +74,6 @@
   </para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_xenc_x509_generate"><title>Return Types</title>
-    <para></para>
-  </refsect1>
-  <refsect1 id="errors_xenc_x509_generate">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_x509_generate">
     <title>Examples</title>
     <example id="ex_xenc_x509_generate"><title>Issuing a certificate</title>
@@ -104,15 +91,19 @@
 			'OU', get_keyword ('ou', params, name),
 			'emailAddress', get_keyword ('email', params)
 			), 
-		vector ('subjectAltName', 'URI:'||webid, 'nsComment', 'Virtuoso Generated Certificate', 
-			'authorityKeyIdentifier', 'keyid,issuer:always'));
-]]>
-</screen>
+		vector (
+		  'subjectAltName',
+		  'URI:'||webid,
+		  'nsComment',
+		  'Virtuoso Generated Certificate',
+			'authorityKeyIdentifier',
+			'keyid,issuer:always'));
+]]></screen>
     </example>
   </refsect1>
   <refsect1 id="seealso_xenc_x509_generate">
     <title>See Also</title>
-    <para><link linkend="fn_xenc_SPKI_read"><function>xenc_SPKI_read</function></link></para>
-    <para><link linkend="fn_xenc_x509_ss_generate"><function>xenc_x509_ss_generate</function></link></para>
+    <para><link linkend="fn_xenc_SPKI_read"><function>xenc_SPKI_read()</function></link></para>
+    <para><link linkend="fn_xenc_x509_ss_generate"><function>xenc_x509_ss_generate()</function></link></para>
   </refsect1>
 </refentry>

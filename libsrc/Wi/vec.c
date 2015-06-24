@@ -1276,6 +1276,9 @@ dc_elt_size (data_col_t * dc)
   return box; \
 }
 
+extern int dbf_explain_level;
+int32 enable_sslr_check = 0;
+
 caddr_t
 sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
 {
@@ -1289,11 +1292,23 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
       for (step = 0; step < sslr->sslr_distance; step++)
 	{
 	  int *set_nos = (int *) inst[sslr->sslr_set_nos[step]];
-#if 0
-	  uint32 fill = QST_INT (inst, sslr->sslr_set_nos[step] + 1);
-	  if ((uint32) row_no > fill)
-	    GPF_T1 ("access to set beyond present results");
-#endif
+	  if (enable_sslr_check)
+	    {
+	      uint32 fill = QST_INT (inst, sslr->sslr_set_nos[step] + 1);
+	      if ((uint32) row_no > fill)
+		{
+		  QNCAST (query_instance_t, qi, inst);
+		  if (qi->qi_query)
+		    {
+		      int save = dbf_explain_level;
+		      dbf_explain_level = 3;
+		      qr_print (qi->qi_query);
+		      dbf_explain_level = save;
+		    }
+		  log_error ("access to set beyond present results, please report query to the support");
+		  enable_sslr_check = 0;
+		}
+	    }
 	  row_no = set_nos[row_no];
 	}
     }
@@ -2627,7 +2642,6 @@ dc_copy (data_col_t * target, data_col_t * source)
   memcpy_16_nt (target->dc_values, source->dc_values, sz * source->dc_n_values);
 }
 
-
 void
 dc_assign (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl_from, int row_from)
 {
@@ -2696,6 +2710,77 @@ general:
   qi->qi_set = save;
 }
 
+void
+dc_assign_copy (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl_from, int row_from)
+{
+  state_slot_t tmp;
+  caddr_t box;
+  int save;
+  data_col_t * target = QST_BOX (data_col_t *, inst, ssl_to->ssl_index);
+  data_col_t * source = QST_BOX (data_col_t *, inst, ssl_from->ssl_index);
+  QNCAST (query_instance_t, qi, inst);
+  if (SSL_REF == ssl_from->ssl_type)
+    row_from = sslr_set_no (inst, ssl_from, row_from);
+  if (SSL_VEC != ssl_to->ssl_type)
+    goto general;
+  if ((DCT_BOXES & target->dc_type) || (DCT_BOXES & source->dc_type))
+    goto general;
+  DC_CHECK_LEN (target, row_to);
+  if (!(SSL_VEC == ssl_from->ssl_type || SSL_REF == ssl_from->ssl_type))
+    goto general;
+  if (DV_ANY == target->dc_dtp)
+    {
+      DC_FILL_TO (target, caddr_t, row_to);
+    }
+  if (target->dc_type == source->dc_type && target->dc_dtp == source->dc_dtp)
+    {
+      if (source->dc_dtp == DV_ANY)
+	{
+	  db_buf_t dv = ((db_buf_t*)source->dc_values)[row_from];
+	  int len, save = target->dc_n_values;
+	  DB_BUF_TLEN (len, dv[0], dv);
+	  target->dc_n_values = row_to;
+	  dc_append_bytes (target, dv, len, NULL, 0);
+	  target->dc_n_values = MAX (save, target->dc_n_values);
+	  if (source->dc_any_null && DV_DB_NULL == *dv)
+	    target->dc_any_null = 1;
+	}
+      else
+	{
+	  int elt_sz = dc_elt_size (source);
+	  memcpy_16 (target->dc_values + row_to * elt_sz, source->dc_values + row_from * elt_sz, elt_sz);
+	}
+      if (row_to >= target->dc_n_values)
+	target->dc_n_values = row_to + 1;
+      if (source->dc_nulls && DC_IS_NULL (source, row_from))
+	{
+	  if (!target->dc_nulls)
+	    dc_ensure_null_bits (target);
+	  DC_SET_NULL (target, row_to);
+	}
+      return;
+    }
+ general:
+  save = qi->qi_set;
+  if (SSL_REF == ssl_from->ssl_type)
+    {
+      state_slot_t * ssl_from2 = ((state_slot_ref_t*)ssl_from)->sslr_ssl;
+      if (ssl_from2->ssl_index != ssl_from->ssl_index)
+	{
+	  tmp = *ssl_from2;
+	  tmp.ssl_index = ssl_from->ssl_index;
+	  tmp.ssl_box_index = ssl_from->ssl_box_index;
+	  ssl_from = &tmp;
+	}
+      else
+	ssl_from = ssl_from2;
+    }
+  qi->qi_set = row_from; /* the indirections are counted, so for a ref use the org ssl */
+  box = QST_GET (inst, ssl_from);
+  qi->qi_set = row_to;
+  qst_set_copy (inst, ssl_to, box);
+  qi->qi_set = save;
+}
 
 void
 dc_heterogenous (data_col_t * dc)

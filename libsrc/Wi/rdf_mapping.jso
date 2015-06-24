@@ -22,24 +22,25 @@
 
 --
 -- Flags that describe restrictions on possible values of the variable or the use of the var
-JSO_CONST virtrdf SPART_VARR__ALL		0xFFFF	--!< OR of everything, do not forget to edit when new bits are added.
-JSO_CONST virtrdf SPART_VARR_SPRINTFF		0x0001	--!< The values of a variable is always made according to one of specified formats
-JSO_CONST virtrdf SPART_VARR_IS_REF		0x0002	--!< The value is a node reference, IRI or blank
-JSO_CONST virtrdf SPART_VARR_IS_IRI		0x0004	--!< The value is an IRI node reference
-JSO_CONST virtrdf SPART_VARR_IS_BLANK		0x0008	--!< The value is a blank node reference
-JSO_CONST virtrdf SPART_VARR_IRI_CALC		0x0010	--!< The variable an IRI calculated by other data, e_iri_classes of equiv class will contain known formats of possible values of the variable
-JSO_CONST virtrdf SPART_VARR_IS_LIT		0x0020	--!< The value is a literal
-JSO_CONST virtrdf SPART_VARR_TYPED		0x0040	--!< The value is a literal of a known type and the type is saved as e_datatype of equiv class
-JSO_CONST virtrdf SPART_VARR_FIXED		0x0080	--!< The value is known and e_fixedvalue contains either SQL representation of the literal or IRI string of the IRI node reference
-JSO_CONST virtrdf SPART_VARR_NOT_NULL		0x0100	--!< The variable is always bound, can't be NULL
-JSO_CONST virtrdf SPART_VARR_LONG_EQ_SQL	0x0200	--!< The value is a number of some sort or a datetime or NULL, not string or RDF box.
+JSO_CONST virtrdf SPART_VARR__ALL		0x0000FFFF	--!< OR of everything, do not forget to edit when new bits are added.
+JSO_CONST virtrdf SPART_VARR_SPRINTFF		0x00000001	--!< The values of a variable is always made according to one of specified formats
+JSO_CONST virtrdf SPART_VARR_IS_REF		0x00000002	--!< The value is a node reference, IRI or blank
+JSO_CONST virtrdf SPART_VARR_IS_IRI		0x00000004	--!< The value is an IRI node reference
+JSO_CONST virtrdf SPART_VARR_IS_BLANK		0x00000008	--!< The value is a blank node reference
+JSO_CONST virtrdf SPART_VARR_IRI_CALC		0x00000010	--!< The variable an IRI calculated by other data, e_iri_classes of equiv class will contain known formats of possible values of the variable
+JSO_CONST virtrdf SPART_VARR_IS_LIT		0x00000020	--!< The value is a literal
+JSO_CONST virtrdf SPART_VARR_TYPED		0x00000040	--!< The value is a literal of a known type and the type is saved as e_datatype of equiv class
+JSO_CONST virtrdf SPART_VARR_FIXED		0x00000080	--!< The value is known and e_fixedvalue contains either SQL representation of the literal or IRI string of the IRI node reference
+JSO_CONST virtrdf SPART_VARR_NOT_NULL		0x00000100	--!< The variable is always bound, can't be NULL
+JSO_CONST virtrdf SPART_VARR_LONG_EQ_SQL	0x00000200	--!< The value is a number of some sort or a datetime or NULL, not string or RDF box.
 -- Flags listed below this line are for temporary use, they never appear in databases sho they may be changed.
-JSO_CONST virtrdf SPART_VARR_ALWAYS_NULL	0x0400	--!< The variable is never bound, can't have value other than NULL
-JSO_CONST virtrdf SPART_VARR_GLOBAL		0x0800	--!< The variable is a global parameter
-JSO_CONST virtrdf SPART_VARR_EXTERNAL		0x1000	--!< The variable is in scalar subquery and is bound outside
-JSO_CONST virtrdf SPART_VARR_EXPORTED		0x2000	--!< The variable is exported to the final result-set
-JSO_CONST virtrdf SPART_VARR_CONFLICT		0x4000	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
-JSO_CONST virtrdf SPART_VARR_EQ_VAR		0x8000	--!< This is to indicate that the equivalence class saves some equalities that no longer exists as filters
+JSO_CONST virtrdf SPART_VARR_ALWAYS_NULL	0x00000400	--!< The variable is never bound, can't have value other than NULL
+JSO_CONST virtrdf SPART_VARR_GLOBAL		0x00000800	--!< The variable is a global parameter
+JSO_CONST virtrdf SPART_VARR_EXTERNAL		0x00001000	--!< The variable is in scalar subquery and is bound outside
+JSO_CONST virtrdf SPART_VARR_EXPORTED		0x00002000	--!< The variable is exported to the final result-set
+JSO_CONST virtrdf SPART_VARR_CONFLICT		0x00004000	--!< The variable should match conflicting requirements or should appear in the result set of an empty union, so it is never bound
+JSO_CONST virtrdf SPART_VARR_EQ_VAR		0x00008000	--!< This is to indicate that the equivalence class saves some equalities that no longer exists as filters
+JSO_CONST virtrdf SPART_VARR_IS_BOOL		0x00010000	--!< The value is a boolean, the rvrFixedValue, if present, is integer 1 or 0, the rvrDatatype, if present, is xsd:Boolean
 
 -- Flags of actions to be done in case of match of triple pattern to conditions of the quad map
 JSO_CONST virtrdf SPART_QM_EMPTY		0x0002	--!< The quad map does not contain real mapping but it's a root of tree of submaps and it can set a common 'exclusive'
@@ -96,6 +97,7 @@ JSO_SCALAR qmfSqlvalTmpl STRING REQUIRED		--!< 'sqlval' value template
 JSO_SCALAR qmfDatatypeTmpl STRING OPTIONAL		--!< datatype value template, compiler will use qmfDatatypeOfShortTmpl if this one is not set
 JSO_SCALAR qmfLanguageTmpl STRING OPTIONAL		--!< language value template, compiler will use qmfLanguageOfShortTmpl if this one is not set
 JSO_SCALAR qmfBoolTmpl STRING REQUIRED			--!< Boolean value template
+JSO_SCALAR qmfSparqlEbvTmpl STRING OPTIONAL		--!< SPARQL 1.1 Effective Boolean Value template, if not set then qmfBoolTmpl is used
 -- Templates of booleans that tell whether the short is of some sort:
 JSO_SCALAR qmfIsrefOfShortTmpl STRING REQUIRED		--!< ... whether the short is ref
 JSO_SCALAR qmfIsuriOfShortTmpl STRING REQUIRED		--!< ... whether the short is uri
@@ -111,6 +113,7 @@ JSO_SCALAR qmfSqlvalOfShortTmpl STRING REQUIRED		--!< ... SQL value from short
 JSO_SCALAR qmfDatatypeOfShortTmpl STRING REQUIRED	--!< ... datatype IRI STRING from short
 JSO_SCALAR qmfLanguageOfShortTmpl STRING REQUIRED	--!< ... language ID STRING from short
 JSO_SCALAR qmfBoolOfShortTmpl STRING REQUIRED		--!< ... boolean value from short
+JSO_SCALAR qmfSparqlEbvOfShortTmpl STRING OPTIONAL	--!< ... SPARQL 1.1 Effective Boolean Value from short, if not set then qmfBoolOfShortTmpl is used
 JSO_SCALAR qmfIidOfShortTmpl STRING REQUIRED		--!< ... URI_ID from short
 JSO_SCALAR qmfUriOfShortTmpl STRING REQUIRED		--!< ... URI STRING from short
 JSO_SCALAR qmfStrsqlvalOfShortTmpl STRING REQUIRED	--!< ... SQL representation of the STRING value of short

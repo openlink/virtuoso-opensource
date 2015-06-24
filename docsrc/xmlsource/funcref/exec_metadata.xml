@@ -145,8 +145,7 @@ The function will generate a SQL 22023 error value if a supplied parameter is no
   </refsect1>
   <refsect1 id="examples_exec_metadata">
     <title>Examples</title>
-    <example id="ex_exec_metadata"><title></title>
-      <para></para>
+    <example id="ex_exec_metadata"><title>Simple Use</title>
       <screen><![CDATA[
 create procedure get_meta (in str varchar)
 {

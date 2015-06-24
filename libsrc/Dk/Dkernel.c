@@ -5047,6 +5047,7 @@ ssl_server_key_setup ()
 #error Must have openssl configures with threads support
 #endif
 
+#ifndef NO_THREAD
 static dk_mutex_t ** lock_cs;
 
 void
@@ -5076,6 +5077,7 @@ ssl_thread_setup ()
   CRYPTO_set_locking_callback ((void (*) (int, int, char *, int)) ssl_locking_callback);
   CRYPTO_set_id_callback ((unsigned long (*)()) ssl_thread_id);
 }
+#endif
 
 
 /*
@@ -5257,8 +5259,14 @@ ssl_server_init ()
   CRYPTO_set_mem_functions (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
+
+#if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
+  SSL_library_init ();
+#endif
+
   SSL_load_error_strings ();
   ERR_load_crypto_strings ();
+
 #ifndef WIN32
   {
     unsigned char tmp[1024];
@@ -5266,9 +5274,7 @@ ssl_server_init ()
     RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
   }
 #endif
-# if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
-  SSL_library_init ();
-# endif
+
   SSLeay_add_all_algorithms ();
   PKCS12_PBE_add ();		/* stub */
 
@@ -5300,7 +5306,9 @@ ssl_server_init ()
     }
 #endif
 
+#ifndef NO_THREAD
   ssl_thread_setup ();
+#endif
 }
 
 

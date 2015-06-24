@@ -46,7 +46,7 @@
 	      declare d1, d2, tz any;
               m := month (dt);
               y := year (dt);
-              tz := timezone (now());
+              tz := timezone (curdatetime_tz());
               d1 := stringdate (sprintf ('%i-%i-%i', y, m, 1));
 	      d2 := dateadd('month', 1, d1);
 

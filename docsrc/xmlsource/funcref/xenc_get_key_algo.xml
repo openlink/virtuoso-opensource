@@ -53,11 +53,6 @@
 	  value as described in 
 	  <ulink url="http://www.w3.org/TR/xmldsig-core/">http://www.w3.org/TR/xmldsig-core</ulink>.</para>
   </refsect1>
-  <refsect1 id="errors_xenc_get_key_algo">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_get_key_algo">
     <title>Examples</title>
     <example id="ex_xenc_get_key_algo"><title>Determine signing algorithm of a key</title>

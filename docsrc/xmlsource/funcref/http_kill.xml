@@ -103,7 +103,6 @@ kill only that pending HTTP request.
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="examples_http_kill"><title>Examples</title>
   <example id="ex_http_kill"><title>Retrieving a list of VSP processes</title>

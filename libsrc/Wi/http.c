@@ -1038,7 +1038,7 @@ next_fragment:
 	      day = tm->tm_mday;
 	      year = tm->tm_year + 1900;
 	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
-		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100);
+		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
 	    }
 	  break;
       case 'r':
@@ -1128,7 +1128,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 
   snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
       ws->ws_client_ip, u_id, (tm->tm_mday), monday [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       (ws->ws_req_line
 #ifdef WM_ERROR
        && ws->ws_method != WM_ERROR
@@ -1455,7 +1455,7 @@ ws_url_rewrite (ws_connection_t *ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -2158,27 +2158,31 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 {
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
+  char * ret_origin = NULL;
   int rc = 0;
-  if (origin && ws->ws_status_code < 500 && ws->ws_map && ws->ws_map->hm_cors)
+  if (origin && ws->ws_map && ws->ws_map->hm_cors)
     {
       caddr_t * orgs = ws_split_cors (origin), * place = NULL;
       int inx;
       if (ws->ws_map->hm_cors == (id_hash_t *) WS_CORS_STAR)
-	rc = 1;
+	{
+	  if (orgs != WS_CORS_STAR && BOX_ELEMENTS_0 (orgs) > 0)
+	    ret_origin = orgs[0];
+	  rc = 1;
+	}
       else if (orgs != WS_CORS_STAR)
 	{
 	  DO_BOX (caddr_t, org, inx, orgs)
 	    {
 	      if (NULL != (place = (caddr_t *) id_hash_get_key (ws->ws_map->hm_cors, (caddr_t) & org)))
 		{
+		  ret_origin = org;
 		  rc = 1;
 		  break;
 		}
 	    }
 	  END_DO_BOX;
 	}
-      if (orgs != WS_CORS_STAR)
-	dk_free_tree (orgs);
       if (rc)
 	{
 	  char ach[2000] = {0}; 
@@ -2201,9 +2205,16 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	      ach[strlen (ach) - 1] = 0;
 	      strcat_ck (ach, "\r\n");
 	    }
+	  if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Headers:")))
+	    {
+	      strcat_ck (ach, "Access-Control-Allow-Headers: Accept, Authorization, Slug, Link, Origin, Content-type");
+	      strcat_ck (ach, "\r\n");
+	    }
 	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
-	      place ? *place : "*", place ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+	      ret_origin ? ret_origin : "*", ret_origin ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
 	}
+      if (orgs != WS_CORS_STAR)
+	dk_free_tree (orgs);
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
@@ -2419,7 +2430,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  char dt [DT_LENGTH];
 	  char last_modify[100];
 
-	  dt_now (dt);
+	  dt_now_tz (dt);
 	  dt_to_rfc1123_string (dt, last_modify, sizeof (last_modify));
 	  SES_PRINT (ws->ws_session, "Date: ");
 	  SES_PRINT (ws->ws_session, last_modify);
@@ -2928,7 +2939,7 @@ ws_file (ws_connection_t * ws)
   int n_ranges = 0;
 
   box_date = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-  dt_now (box_date);
+  dt_now_tz (box_date);
   dt_to_rfc1123_string (box_date, date_now, sizeof (date_now));
   dk_free_box (box_date);
 
@@ -3380,7 +3391,7 @@ ws_auth_check (ws_connection_t * ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The authentication procedure %s is not property of DBA group", auth_proc);
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The authentication procedure %s is not property of DBA group", auth_proc);
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -3528,7 +3539,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" "is not property of DBA group");
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" "is not property of DBA group");
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -3593,7 +3604,6 @@ ws_mem_record (ws_connection_t * ws)
 {
   char * h = ws_header_field (ws->ws_lines, "X-Recording:", NULL);
   static FILE *fp;
-  char * endpos;
   if (!h) return;
   while (isspace (*h)) h ++;
   mutex_enter (ws_http_log_mtx);
@@ -4456,6 +4466,21 @@ ws_switch_to_keep_alive (ws_connection_t * ws)
   mutex_leave (ws_queue_mtx);
 }
 
+int32 ws_write_timeout = 0;
+
+void 
+ws_set_write_timeout (ws_connection_t * ws)
+{
+  int block = 0;
+  dk_session_t * client = ws->ws_session;
+  if (!ws_write_timeout)
+    return;
+  client->dks_session->ses_fduplex = 1;
+  client->dks_session->ses_w_status = SST_OK;
+  client->dks_session->ses_status = SST_OK;
+  client->dks_write_block_timeout.to_sec = ws_write_timeout;
+  session_set_control (client->dks_session, SC_BLOCKING, (void*)&block, sizeof (int));
+}
 
 void
 ws_serve_connection (ws_connection_t * ws)
@@ -4497,6 +4522,7 @@ ws_serve_connection (ws_connection_t * ws)
 #endif
 
  next_input:
+  ws_set_write_timeout (ws);
   ws->ws_cli->cli_http_ses = ws->ws_session;
   ws_read_req (ws);
   try_pipeline = ws_can_try_pipeline (ws);
@@ -4701,6 +4727,7 @@ ws_init_func (ws_connection_t * ws)
 	  /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
 	  ws_inet_session_init (ses, ws);
 #endif
+	  ws_set_write_timeout (ws);
 	  http_trace (("connect from queue accept ws %p ses %p\n", ws, ws->ws_session));
 	  tws_connections ++;
 	  SESSION_SCH_DATA (ses)->sio_default_read_ready_action = (io_action_func) ws_ready;
@@ -9800,6 +9827,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   char * me = "https_renegotiate";
   query_instance_t *qi = (query_instance_t *)qst;
   ws_connection_t *ws = qi->qi_client->cli_ws;
+  int ctr = 0;
 #ifdef _SSL
   SSL *ssl = NULL;
 #endif
@@ -9815,6 +9843,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       static int s_server_auth_session_id_context;
       int https_client_verify = BOX_ELEMENTS (args) > 0 ? bif_long_arg (qst, args, 0, me) : HTTPS_VERIFY_OPTIONAL_NO_CA;
       int https_client_verify_depth = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, me) : 15;
+      char err_buf [1024];
       s_server_auth_session_id_context ++;
 
       if (https_client_verify < 0 || https_client_verify > HTTPS_VERIFY_OPTIONAL_NO_CA)
@@ -9832,15 +9861,35 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
       SSL_set_app_data (ssl, ap);
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      i = 0;
       IO_SECT (qst);
       i = SSL_renegotiate (ssl);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_renegotiate failed");
-      i = SSL_do_handshake (ssl);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (i <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..001", "SSL_renegotiate failed %s", err_buf);
+	}
+	i = SSL_do_handshake (ssl);
+      if (i <= 0) 
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
+	}
       ssl->state = SSL_ST_ACCEPT;
-      i = SSL_do_handshake (ssl);
+      while (SSL_renegotiate_pending (ssl) && ctr < 1000)
+	{
+	  timeout_t to = { 0, 1000 };
+	  i = SSL_do_handshake (ssl);
+	  if (i <= 0)
+	    tcpses_is_read_ready (ws->ws_session->dks_session, &to);
+	  ctr ++;
+	}
       END_IO_SECT (err_ret);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (i <= 0) 
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..003", "SSL_do_handshake failed %s", err_buf);
+	}
       if (SSL_get_peer_certificate (ssl))
 	return box_num (1);
     }
@@ -9917,9 +9966,10 @@ caddr_t
 bif_http_escape (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   dk_session_t * out = http_session_no_catch_arg (qst, args, 2, "http_escape");
-  caddr_t text = bif_varchar_or_bin_arg (qst, args, 0, "http_escape");
+  caddr_t text = bif_arg (qst, args, 0, "http_escape");
+  int box_len = box_length (text);
   int mode = (int) bif_long_arg (qst, args, 1, "http_escape");
-  wcharset_t *src_charset = (((BOX_ELEMENTS (args) >= 4) && bif_long_arg (qst, args, 3, "http_escape")) ? CHARSET_UTF8 : default_charset);
+  wcharset_t *src_charset;
   wcharset_t *tgt_charset = (((BOX_ELEMENTS (args) < 5) || bif_long_arg (qst, args, 4, "http_escape")) ? CHARSET_UTF8 : default_charset);
   if (
     ((mode & 0xff) >= COUNTOF__DKS_ESC) ||
@@ -9928,7 +9978,23 @@ bif_http_escape (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("22023", "HT058",
         "Incorrect escaping mode (%d) is specified in parameter 2 of http_escape()", mode);
     }
-  dks_esc_write (out, text, box_length(text)-1, tgt_charset, src_charset, mode);
+  switch (DV_TYPE_OF (text))
+    {
+    case DV_STRING: case DV_BIN:
+      src_charset = (((BOX_ELEMENTS (args) >= 4) && bif_long_arg (qst, args, 3, "http_escape")) ? CHARSET_UTF8 : default_charset);
+      if (0 < box_len)
+        dks_esc_write (out, text, box_len - 1, tgt_charset, src_charset, mode);
+      break;
+    case DV_UNAME:
+      if ((BOX_ELEMENTS (args) >= 4) && (0 == bif_long_arg (qst, args, 3, "http_escape")) && (CHARSET_UTF8 != default_charset))
+        sqlr_new_error ("22023", "HT058",
+          "First argument of http_escape() is UNAME but the encoding is explicitly specified as non-UTF-8");
+      dks_esc_write (out, text, box_len - 1, tgt_charset, CHARSET_UTF8, mode);
+      break;
+    case DV_WIDE:
+      dks_wide_esc_write (out, (wchar_t *)text, (box_len/sizeof (wchar_t)) - 1, tgt_charset, mode);
+      break;
+    }
   return NULL;
 }
 
@@ -10759,7 +10825,7 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s\" %.3s %ld\n",
       host_name, user, (tm->tm_mday), monday [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       command, resp, len);
 
   dk_free_box (host_name);

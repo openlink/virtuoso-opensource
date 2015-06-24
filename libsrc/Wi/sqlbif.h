@@ -195,6 +195,7 @@ extern bif_type_t bt_any;
 extern bif_type_t bt_any_box;
 extern bif_type_t bt_iri_id;
 extern bif_type_t bt_integer;
+extern bif_type_t bt_integer_nn;
 extern bif_type_t bt_double;
 extern bif_type_t bt_float;
 extern bif_type_t bt_numeric;

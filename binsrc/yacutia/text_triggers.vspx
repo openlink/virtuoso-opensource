@@ -57,18 +57,30 @@
     ]]>
   </v:method>
 
+  <v:method name="ttl_prefixes_enabled2" arglist="">
+    <![CDATA[
+      if (__proc_exists ('WS.WS.TTL_PREFIXES_ENABLED'))
+        return WS.WS.TTL_PREFIXES_ENABLED ();
+
+      return 0;
+    ]]>
+  </v:method>
+
       <v:variable name="inter" type="integer" default="10" persist="0"/>
       <v:variable name="chk" type="integer" default="0" persist="0"/>
   <v:variable name="skin" type="integer" default="0" persist="0"/>
   <v:variable name="sse" type="integer" default="0" persist="0"/>
   <v:variable name="ttl" type="integer" default="0" persist="0"/>
+  <v:variable name="ttl_prefixes" type="integer" default="0" persist="0"/>
       <v:variable name="c_text" type="varchar" default="''" persist="0"/>
       <v:before-data-bind>
           <![CDATA[
             declare _idx integer;
       declare _mode, _skin, _key varchar;
             declare _u_id, _mode1 integer;
+      declare params any;
 
+      params := control.vc_page.vc_event.ve_params;
             _idx := 0;
             self.chk := 0;
             self.c_text := '';
@@ -82,9 +94,10 @@
       self.skin := case when registry_get ('__WebDAV_vspx__') = 'yes' then 1 else 0 end;
       self.sse := self.sse_enabled2 ();
       self.ttl := self.ttl_enabled2 ();
-            if ('' <> get_keyword ('edit', control.vc_page.vc_event.ve_params, ''))
+      self.ttl_prefixes := self.ttl_prefixes_enabled2 ();
+      if ('' <> get_keyword ('edit', params, ''))
             {
-              _mode1 := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+        _mode1 := atoi (get_keyword ('choice_source', params));
               if (_mode1 = 1)
               {
                 self.chk := 1;
@@ -95,7 +108,8 @@
                 self.chk := 0;
                 _mode := 'OFF';
               }
-              self.inter := atoi (get_keyword ('int', control.vc_page.vc_event.ve_params, '0'));
+
+        self.inter := atoi (get_keyword ('int', params, '0'));
               if (self.inter < 0)
                 self.inter := 10;
               if (self.inter = 0)
@@ -117,7 +131,7 @@
               }
 
         -- WebDAV skin
-        if (atoi (get_keyword ('choice_skin', control.vc_page.vc_event.ve_params)) = 1)
+        if (atoi (get_keyword ('choice_skin', params)) = 1)
         {
           registry_set ('__WebDAV_vspx__', 'yes');
         }
@@ -128,7 +142,7 @@
         self.skin := case when registry_get ('__WebDAV_vspx__') = 'yes' then 1 else 0 end;
 
         -- server side encryption
-        if (atoi (get_keyword ('sse_enable', control.vc_page.vc_event.ve_params)) = 1)
+        if (atoi (get_keyword ('sse_enable', params)) = 1)
         {
           registry_set ('__WebDAV_sse__', 'yes');
         }
@@ -139,7 +153,7 @@
         self.sse := self.sse_enabled2 ();
 
         -- .TTL redirect
-        if (atoi (get_keyword ('ttl_enable', control.vc_page.vc_event.ve_params)) = 1)
+        if (atoi (get_keyword ('ttl_enable', params)) = 1)
         {
           registry_set ('__WebDAV_ttl__', 'yes');
         }
@@ -147,7 +161,18 @@
         {
           registry_set ('__WebDAV_ttl__', 'no');
         }
-        if (atoi (get_keyword ('ttl_sp_enable', control.vc_page.vc_event.ve_params)) = 1)
+
+        if (atoi (get_keyword ('ttl_prefixes_enable', params)) = 1)
+        {
+          registry_set ('__WebDAV_ttl_prefixes__', 'yes');
+        }
+        else
+        {
+          registry_set ('__WebDAV_ttl_prefixes__', 'no');
+        }
+        self.ttl_prefixes := self.ttl_prefixes_enabled2 ();
+
+        if (atoi (get_keyword ('ttl_sp_enable', params)) = 1)
         {
           registry_set ('__WebDAV_sponge_ttl__', 'yes');
         }
@@ -169,7 +194,7 @@
       <v:form name="inx_form" type="simple" method="POST" action="cont_page.vspx?page=3">
         <table class="SubData" border="0" cellpadding="3" cellspacing="0">
           <tr>
-        <td width="180px">
+        <td style="width: 20%;">
           Text Indexing
         </td>
         <td width="1px">
@@ -182,7 +207,7 @@
                 </v:before-data-bind>
               </v:radio-button>
             </td>
-        <td colspan="2">
+        <td>
               <label for="choice_source1">Continuously</label>
             </td>
           </tr>
@@ -198,7 +223,7 @@
                 </v:before-data-bind>
               </v:radio-button>
             </td>
-        <td colspan="2">
+        <td>
               <label for="choice_source2">Batch Mode</label>
             </td>
           </tr>
@@ -210,7 +235,7 @@
         </td>
       </tr>
       <tr>
-        <td valign="top">
+        <td nowrap="nowrap" valign="top">
           Enable redirection for .TTL files
         </td>
         <td colspan="2">
@@ -227,6 +252,23 @@
         </td>
       </tr>
       <tr>
+        <td nowrap="nowrap" valign="top">
+          Enable adding automatically missed prefixes for .TTL files
+        </td>
+        <td colspan="2">
+          <label>
+            <v:check-box name="ttl_prefixes_enable" value="1" xhtml_id="ttl_prefixes_enable">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_selected := case when (self.ttl_prefixes = 0) then 0 else 1 end;
+                  control.vc_data_bound := 1;
+                ]]>
+              </v:before-data-bind>
+            </v:check-box> ('text/turtle' content only)
+          </label>
+        </td>
+      </tr>
+      <tr>
         <td valign="top">
           Enable sponge option for .TTL files redirection
         </td>
@@ -235,7 +277,7 @@
             <v:check-box name="ttl_sp_enable" value="1" xhtml_id="ttl_sp_enable">
               <v:before-data-bind>
                 <![CDATA[
-		control.ufl_selected := case when (registry_get ('__WebDAV_sponge_ttl__') <> 'yes') then 0 else 1 end;
+                  control.ufl_selected := case when (registry_get ('__WebDAV_sponge_ttl__') <> 'yes') then 0 else 1 end;
                   control.vc_data_bound := 1;
                 ]]>
               </v:before-data-bind>
@@ -261,12 +303,12 @@
               ]]>
             </v:before-data-bind>
           </v:check-box>
-      		<?vsp
+          <?vsp
             if (self.sse_check_key ())
-        		{
-        		  http ('<br /><input type="button" name="dwn" id="dwn" value="Download SSE RSA Key" onclick="javascript: document.location = ''sec_pki_download.vsp?key=__sse_rsa&user=dba''; return false;" />');
-      		  }
-      		?>
+            {
+              http ('<br /><input type="button" name="dwn" id="dwn" value="Download SSE RSA Key" onclick="javascript: document.location = ''sec_pki_download.vsp?key=__sse_rsa&user=dba''; return false;" />');
+            }
+          ?>
         </td>
       </tr>
       <?vsp
@@ -289,7 +331,7 @@
             </v:before-data-bind>
           </v:radio-button>
         </td>
-        <td colspan="2">
+        <td>
           <label for="choice_skin1">All Features List</label>
         </td>
       </tr>
@@ -305,7 +347,7 @@
             </v:before-data-bind>
           </v:radio-button>
         </td>
-        <td colspan="2">
+        <td>
           <label for="choice_skin2">Simple List</label>
             </td>
           </tr>
@@ -325,7 +367,7 @@
             {
           ?>
           <tr>
-            <td class="Warning" align="center" colspan="2">
+        <td class="Warning" align="center" colspan="3">
               <p>
                 <?vsp
                   http(self.c_text);

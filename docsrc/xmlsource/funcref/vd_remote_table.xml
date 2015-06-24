@@ -67,24 +67,9 @@ in effect.
     <refsect2><title>remote_name</title>
       <para>Fully qualified name of the remote table.</para></refsect2>
   </refsect1>
-<!--  <refsect1 id="ret_vd_remote_table"><title>Return Types</title><para></para></refsect1> -->
-  <refsect1 id="errors_vd_remote_table"><title>Errors</title>
-    <table><title>Errors signalled by</title>
-      <tgroup cols="4">
-       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table>
-  </refsect1>
+
   <refsect1 id="seealso_vd_remote_table"><title>See Also</title>
-    <para><link linkend="fn_vd_remote_data_source">vd_remote_data_source</link></para>
+    <para><link linkend="fn_vd_remote_data_source">vd_remote_data_source()</link></para>
     <para><link linkend="MANSETRDS">Manually Setting Up A Remote Data Source</link></para>
   </refsect1>
 </refentry>

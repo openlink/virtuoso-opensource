@@ -78,8 +78,7 @@
   </refsect1> -->
   <refsect1 id="examples_sql_data_sources">
     <title>Examples</title>
-    <example id="ex_sql_data_sources"><title></title>
-      <para></para>
+    <example id="ex_sql_data_sources"><title>Simple Use</title>
       <screen>SQL> select aref (aref (sql_data_sources(), 0), 0);
 callret
 VARCHAR

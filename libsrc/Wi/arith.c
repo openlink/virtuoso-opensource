@@ -25,6 +25,7 @@
  *
  */
 
+#include "date.h"
 #include "datesupp.h"
 #include "sqlnode.h"
 #include "sqlfn.h"
@@ -513,8 +514,13 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collatio
   n1 = box_length (box1);
   n2 = box_length (box2);
 
-  if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) || (dtp2 == DV_DATETIME && dtp1 == DV_BIN))
+  if ((DV_DATETIME == dtp1) || (DV_DATETIME == dtp2))
+    {
+      if ((dtp1 == DV_BIN) || (dtp2 == DV_BIN))
     dtp1 = dtp2 = DV_DATETIME;
+      if ((DV_DATETIME == dtp1) && (DV_DATETIME == dtp2))
+	return dt_compare (box1, box2, 1);
+    }
 
   switch (dtp1)
     {
@@ -726,8 +732,13 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t *
       n1 = box_length (box1);
       n2 = box_length (box2);
 
-      if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) || (dtp2 == DV_DATETIME && dtp1 == DV_BIN))
+      if ((DV_DATETIME == dtp1) || (DV_DATETIME == dtp2))
+	{
+	  if ((dtp1 == DV_BIN) || (dtp2 == DV_BIN))
 	dtp1 = dtp2 = DV_DATETIME;
+	  if ((DV_DATETIME == dtp1) && (DV_DATETIME == dtp2))
+	    return dt_compare (box1, box2, 0);
+	}
 
       switch (dtp1)
 	{

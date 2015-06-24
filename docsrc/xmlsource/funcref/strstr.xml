@@ -83,8 +83,7 @@
   </refsect1> -->
   <refsect1 id="examples_strstr">
     <title>Examples</title>
-    <example id="ex_strstr"><title>Simple example</title>
-      <para></para>
+    <example id="ex_strstr"><title>Sample example</title>
       <screen>strstr('AbracadabrA','abrA')
     -&gt; 7 (Found from the eighth character onwards)
 strcasestr('AbracadabrA','abrA')

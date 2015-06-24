@@ -64,7 +64,7 @@ subjectAltName=$ENV::ALTNAME
 </listitem>
   <listitem>Set the environment variable ALTNAME to the owner's Web ID, e.g.,
 <programlisting><![CDATA[
-export ALTNAME=URI:http://localhost/dataspace/person/myname#this
+export ALTNAME=URI:http://example.com/dataspace/person/myname#this
 ]]></programlisting>
 </listitem>
   <listitem>Make a self-signed certificate, e.g.,
@@ -76,7 +76,7 @@ $ CA.pl -sign
   <listitem>When asked to commit the certificate, make sure you see several lines above, like:
 <programlisting><![CDATA[
  X509v3 Subject Alternative Name:
-                URI:http://localhost/dataspace/person/myname#this
+                URI:http://example.com/dataspace/person/myname#this
 ]]></programlisting>
 </listitem>
   <listitem>If your browser wants a PKCS#12 bundle, you must make one:

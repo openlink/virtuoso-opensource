@@ -124,7 +124,7 @@ end_loop:;
 	  sponge := sprintf ('define get:soft "%s"', get);
 	  sponge := '';
 
-	  set_user_id ('SPARQL');
+	  --set_user_id ('SPARQL');
 
 	  if (local_qry)
             {

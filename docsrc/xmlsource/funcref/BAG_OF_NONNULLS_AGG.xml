@@ -55,7 +55,7 @@
     </para>
   </refsect1>
   <refsect1 id="examples_BAG_OF_NONNULLS_AGG"><title>Examples</title>
-    <example id="ex_BAG_OF_NONNULLS_AGG_1"><title></title>
+    <example id="ex_BAG_OF_NONNULLS_AGG_1"><title>Simple Use</title>
 <programlisting><![CDATA[
 SELECT DB.DBA.BAG_OF_NONNULLS_AGG (subquery.X)
 FROM (SELECT X FROM ... ORDER BY X) as subquery

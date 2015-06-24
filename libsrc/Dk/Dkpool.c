@@ -114,7 +114,7 @@ mp_map_count_print (char * buf, size_t max)
     }
   END_DO_HT;
   mutex_leave (&mp_reg_mtx);
-  snprintf (buf, max, "%d maps in mps, %ld bytes, %Ld in use, %Ld max in use\n", ctr, sz, mp_large_in_use, mp_max_large_in_use);
+  snprintf (buf, max, "%d maps in mps, %Ld bytes, %Ld in use, %Ld max in use\n", ctr, (long long)sz, (long long)mp_large_in_use, (long long)mp_max_large_in_use);
 }
 
 #else
@@ -471,7 +471,7 @@ DBG_NAME (mp_box_string) (DBG_PARAMS mem_pool_t * mp, const char *str)
 }
 
 
-box_t
+caddr_t
 DBG_NAME (mp_box_dv_short_nchars) (DBG_PARAMS mem_pool_t * mp, const char *buf, size_t buf_len)
 {
   box_t box;
@@ -499,6 +499,29 @@ DBG_NAME (mp_box_substr) (DBG_PARAMS mem_pool_t * mp, ccaddr_t str, int n1, int 
   return res;
 }
 
+caddr_t
+DBG_NAME (mp_box_dv_short_concat) (DBG_PARAMS mem_pool_t * mp, ccaddr_t str1, ccaddr_t str2)
+{
+  int len1 = box_length (str1) - 1;
+  int len2 = box_length (str2);
+  caddr_t box;
+  box = DBG_MP_ALLOC_BOX (mp, len1 + len2, DV_SHORT_STRING);
+  memcpy (box, str1, len1);
+  memcpy (box+len1, str2, len2);
+  return box;
+}
+
+caddr_t
+DBG_NAME (mp_box_dv_short_strconcat) (DBG_PARAMS mem_pool_t * mp, const char *str1, const char *str2)
+{
+  int len1 = strlen (str1);
+  int len2 = strlen (str2) + 1;
+  caddr_t box;
+  box = DBG_MP_ALLOC_BOX (mp, len1 + len2, DV_SHORT_STRING);
+  memcpy (box, str1, len1);
+  memcpy (box+len1, str2, len2);
+  return box;
+}
 
 caddr_t DBG_NAME (mp_box_dv_uname_string) (DBG_PARAMS mem_pool_t * mp, const char *str)
 {
@@ -532,7 +555,7 @@ caddr_t DBG_NAME (mp_box_dv_uname_string) (DBG_PARAMS mem_pool_t * mp, const cha
 }
 
 
-box_t
+caddr_t
 DBG_NAME (mp_box_dv_uname_nchars) (DBG_PARAMS mem_pool_t * mp, const char *buf, size_t buf_len)
 {
   caddr_t box;
@@ -1507,7 +1530,7 @@ mp_by_address (uint64 ptr)
 	{
 	  if (ptr >= start && ptr < start + sz)
 	    {
-	      printf ("Address %p is %ld bytes inside map starting at %p of size %ld\n", (void*)ptr, ptr - start, (void*)start, sz);
+	      printf ("Address %p is %Ld bytes inside map starting at %p of size %Ld\n", (void*)ptr, ptr - start, (void*)start, (long long)sz);
 	    }
 	}
       END_DO_HT;
@@ -1522,7 +1545,7 @@ mp_by_address (uint64 ptr)
 	  int64 start = (int64) (rc->rc_items[inx2]);
 	  if (ptr >= start && ptr < start + mm_sizes[inx])
 	    {
-	      printf ("Address %x is %ld bytes indes arc cached block start %p size %ld\n", (void*)ptr, ptr - start, (void*)start, mm_sizes[inx]);
+	      printf ("Address %x is %Ld bytes indes arc cached block start %p size %Ld\n", (void*)ptr, ptr - start, (void*)start, (long long)(mm_sizes[inx]));
 	      return;
 	    }
 	}
@@ -2161,11 +2184,15 @@ caddr_t mp_box_string (mem_pool_t * mp, const char *str) { return dbg_mp_box_str
 #undef mp_box_substr
 caddr_t mp_box_substr (mem_pool_t * mp, ccaddr_t str, int n1, int n2) { return dbg_mp_box_substr (__FILE__, __LINE__, mp, str, n1, n2); }
 #undef mp_box_dv_short_nchars
-box_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, mp, str, len); }
+caddr_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, mp, str, len); }
+#undef mp_box_dv_short_concat
+caddr_t mp_box_dv_short_concat (mem_pool_t * mp, ccaddr_t str1, ccaddr_t str2) { return dbg_mp_box_dv_short_concat (__FILE__, __LINE__, mp, str1, str2); }
+#undef mp_box_dv_short_strconcat
+caddr_t mp_box_dv_short_strconcat (mem_pool_t * mp, const char *str1, const char *str2) { return dbg_mp_box_dv_short_strconcat (__FILE__, __LINE__, mp, str1, str2); }
 #undef mp_box_dv_uname_string
 caddr_t mp_box_dv_uname_string (mem_pool_t * mp, const char *str) { return dbg_mp_box_dv_uname_string (__FILE__, __LINE__, mp, str); }
 #undef mp_box_dv_uname_nchars
-box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_uname_nchars (__FILE__, __LINE__, mp, str, len); }
+caddr_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len) { return dbg_mp_box_dv_uname_nchars (__FILE__, __LINE__, mp, str, len); }
 #undef mp_box_copy
 caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box) { return dbg_mp_box_copy (__FILE__, __LINE__, mp, box); }
 #undef mp_box_copy_tree

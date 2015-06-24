@@ -1504,7 +1504,6 @@ next_row:;
     {
       id_hash_free (hi->hi_memcache);
       hi->hi_memcache = NULL;
-      qst_set (branch, setp->setp_ha->ha_tree, NULL);
     }
   else
     {
@@ -1512,6 +1511,7 @@ next_row:;
       mp_free (hi->hi_pool);
       hi->hi_pool = NULL;
     }
+  qst_set (branch, setp->setp_ha->ha_tree, NULL);
   if (branch == inst) /* if reading cluster branch, the calling chash reader decides when at end */
     SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
   ts_always_null (ts, inst);
@@ -1597,7 +1597,8 @@ void
 ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
 {
   buffer_desc_t * buf;
-  state_slot_t tmp_ssl[SETP_DISTINCT_MAX_KEYS];
+  char tmp_ssl_buf[sizeof (state_slot_t) * 200 + BOX_AUTO_OVERHEAD];
+  state_slot_t * tmp_ssl;
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   it_cursor_t * ref_itc = (it_cursor_t*)QST_GET_V (inst, ha->ha_ref_itc);
@@ -1615,6 +1616,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
       page_leave_outside_map (ref_itc->itc_buf);
       ref_itc->itc_buf = NULL;
     }
+  BOX_AUTO_TYPED (state_slot_t *, tmp_ssl, tmp_ssl_buf, sizeof (state_slot_t) * setp_distinct_max_keys, DV_BIN);
   memset (&ks, 0, sizeof (ks));
   memset (&setp, 0, sizeof (setp));
   ITC_INIT (itc, NULL, NULL);
@@ -1668,6 +1670,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
     }
   ITC_FAILED
     {
+      BOX_DONE (tmp_ssl, tmp_ssl_buf);
       itc_free (itc);
     }
   END_FAIL (itc);
@@ -1679,6 +1682,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
       qst_set (inst, ssl, save[inx]);
     }
   END_DO_BOX;
+  BOX_DONE (tmp_ssl, tmp_ssl_buf);
   dk_free_box ((caddr_t)save);
   dk_set_free (ks.ks_out_slots);
   ITC_IN_KNOWN_MAP (insert_itc, last_dp);
@@ -1709,7 +1713,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   hash_inx_b_ptr_t hibp;
 #endif
   int keys_on_stack;
-  int do_flush;
+  int do_flush = 0;
   index_tree_t * tree = qst_tree (qst, ha->ha_tree, ha->ha_set_no);
   if (!tree)
     {

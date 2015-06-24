@@ -3939,7 +3939,7 @@ create procedure BMK.WA.dashboard_get(
 --
 create procedure BMK.WA.dt_current_time()
 {
-  return dateadd('minute', - timezone(now()),now());
+  return dateadd('minute', - timezone(curdatetime_tz()),curdatetime_tz());
 }
 ;
 
@@ -4163,6 +4163,8 @@ _end:
 create procedure BMK.WA.dt_rfc1123 (
   in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;

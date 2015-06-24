@@ -30,6 +30,13 @@ export LOGFILE
 SQLPATH=$SQLPATH:$VIRTUOSO_TEST/tpc-d
 DS1=$PORT
 DS2=`expr $PORT + 1`
+
+if [ "$VIRTUOSO_VDB" = "0" ]
+then
+    LOG "VDB is not enabled by test suite."
+    exit
+fi
+
 if [ "$VIRTUOSO_VDB" = "1" ]
 then
         PORT=$DS2

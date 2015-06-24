@@ -6168,6 +6168,7 @@ again_exec:;
       else if (sparql_translate_mode)
         {
           const TCHAR* q = text;
+	  print_blobs_flag = 1;
           if (!strncasecmp (text, _T("SPARQL"), isqlt_tcslen(_T("SPARQL"))))
             q = text + isqlt_tcslen(_T("SPARQL"));
 
@@ -6992,7 +6993,7 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
       else if (ifdef_current_is_true ())
         /* A normal semicolon terminated statement */
         {
-          if (virtext &&
+          if (virtext && !sparql_translate_mode &&
               ( latest_statement_begins_at () != current_linecount() ||
                 is_declaration (input) ) )
             {

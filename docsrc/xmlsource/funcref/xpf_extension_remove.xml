@@ -66,14 +66,8 @@
       </tgroup>
     </table>
   </refsect1>
-  <refsect1 id="examples_xpf_extension_remove"><title>Examples</title>
-    <example id="ex_xpf_extension_remove"><title></title>
-      <para></para>
-      <screen></screen>
-    </example>
-  </refsect1>
   <refsect1 id="seealso_xpf_extension_remove"><title>See Also</title>
-    <para><link linkend="fn_xpf_extension"><function>xpf_extension</function></link></para>
+    <para><link linkend="fn_xpf_extension"><function>xpf_extension()</function></link></para>
   </refsect1>
 </refentry>
 

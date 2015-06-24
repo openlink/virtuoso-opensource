@@ -77,9 +77,9 @@ wrapped into the specified root element.
   </refsect1>
 -->
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xml_view_schema">xml_view_schema</link></para>
-    <para><link linkend="fn_xml_validate_dtd">xml_validate_dtd</link></para>
-    <para><link linkend="fn_xml_persistent">xml_persistent</link></para>
+    <para><link linkend="fn_xml_view_schema"><function>xml_view_schema()</function></link></para>
+    <para><link linkend="fn_xml_validate_dtd"><function>xml_validate_dtd()</function></link></para>
+    <para><link linkend="fn_xml_persistent"><function>xml_persistent()</function></link></para>
   </refsect1>
 </refentry>
 

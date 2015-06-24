@@ -1,3 +1,1157 @@
+2015-06-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version number to 7.2.1 for release
+
+	Updated version of ODBC driver
+
+	Fixed issues in cost model
+
+2015-06-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed moved timezoneless check to soap_print_box
+
+2015-06-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing files from distribution tar
+
+	Fixed issue building distribution tar
+
+	Updated documentation
+
+2015-06-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed indentation
+
+	Fixed memory leak
+
+	Fixed check if key is avail before setting sample
+
+	Fixed memory leak if prev sample exists
+
+2015-06-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed reset fill cha, else can get ref to freed on 2nd use of subq
+
+	Fixed expiration can be null
+
+2015-06-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.1-rc2
+
+	Updated engine version to 3214
+
+	Removed deprecated test code, fixed initialization and portability
+
+	Fixed return 0 if no rtc clock can be found
+
+	Fixed decl after stmt
+
+2015-06-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed irrelevant test
+
+2015-06-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated JDBC drivers and Jena provider
+
+2015-06-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of JDBC driver
+
+2015-06-11  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed issues loging JDBC XA operations and JDBC RPC calls
+
+	Added new Methods setLogFileName/getLogFileName and attribute
+	"logFileName" to VirtuosoDataSources for logging support
+
+	The user can add the following Datasource property in JBoss for logging:
+	     <xa-datasource-property name="logFileName">c:/jdbc.log</xa-datasource-property>
+	or
+	     <xa-datasource-property name="logFileName">/home/test/jdbc.log</xa-datasource-property>
+
+2015-06-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of Jena provider
+
+2015-06-11  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed issue closing XA connection
+
+2015-06-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild all JDBC drivers, hibernate and Jena and Sesame providers
+
+2015-06-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of JDBC driver
+
+	Rebuild Jena2 provider
+
+	Updated version number of Jena2 provider
+
+2015-06-11  Sergey Malinin  <smalinin@openlinksw.com>
+
+	FIxed generated query and error messages
+
+	Fixed issue with DELETE query
+
+	Fixed issue with blank nodes in DELETE constructor
+
+2015-06-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed use flag 2 in insert_c when db is multigraph
+
+	Added new bif gvector_deduplicate_sorted()
+
+2015-06-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added new text index functions and aggregates
+
+	Functions:
+	vt_word_string_id_init
+	vt_word_string_id_acc
+	vt_word_string_id_final
+	vt_word_string_ro_id_final
+
+	Aggregates:
+	VT_WORD_STRING_ID_AGG
+	VT_WORD_STRING_RO_ID_AGG
+
+2015-06-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with revert delete on col row
+
+	Fixed insert of xml literal
+
+	Fixed do checkpoint on new cluster db
+
+	Fixed issues with timezoneless dates
+
+2015-06-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.1-rc1
+
+	Fixed compiler warning
+
+2015-06-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with SPARQL queries using sub-selects
+
+	* Fixed SPARQL queries with sub-selects that return constant columns:
+	* Fixed handling of "plain box" constants in sparp_values_equal()
+	  and sparl_rvr_set_by_constants()
+
+2015-06-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added initial support for define input:with-fallback-graph_uri and input:target-fallback-graph-uri
+
+	Added initial fix in sparul target for ignore default graph from context but set from USING
+
+	Fixed small cleanup
+
+	Fixed missing case for real
+
+	Fixed compiler warning decl after stmt
+
+	Fixed only use wi_inst.wi_schema not cc_schema
+
+2015-06-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with conditional expression
+
+	Fixed cond exp gen, in and/or, starts at 2nd term also if 2nd term
+	is last
+
+2015-06-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with conditional section
+
+	A dfe that gets assigned a ssl in a conditional section gets the
+	ssl cleared away after the extent
+
+2015-06-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with split in cpt rb where itx has no trx but lock may exist
+
+2015-06-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC Drivers
+
+2015-06-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed report statement with nil col
+
+	Fixed JDBC driver did not use SQL_TXN_ISOLATION setting from init handshake
+
+	Added support for debugging DV_RDF
+
+	Fixed insert triple with XML type
+
+	Fixed issue with bad filter reduced to NULL
+
+	Merge branch 'develop/6' into develop/7
+
+	Removed testsuite jars
+
+	Fixed issue with timezone
+
+2015-06-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixd crash when anytime w/ gby
+
+	Fixed sparql text can be large, so enable blob flag
+
+	Fixed add setting to allow more than 100 keys in distinct
+
+	Fixed if cli terminated don't perform stats
+
+	Fixed txs can be considered first in outer
+
+2015-05-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing initialization
+
+	Fixed issue with possible unsafe mem access
+
+	Fixed jgraph param must be an iri
+
+2015-05-25  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+2015-05-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2015_05_25_fix14322' into develop/7
+
+	Updated version of JDBC driver
+
+2015-05-25  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Additional fix for RPC reader
+
+2015-05-25  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix #14322
+
+	- added millisec fraction for Time value
+	- fixed issue in RPC reader for Date value
+
+2015-05-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed flag for cl load from rdf view
+
+	Fixed a dt can be a leaf for a plan
+
+	Fixed issue with multistate order by
+
+	Added flag
+
+2015-05-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed g card i exact p stat
+
+	Fixed use macro
+
+	Fixed col always null, no nulls in inx
+
+2015-05-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+2015-05-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of JDBC driver
+
+2015-05-22  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed throw exception when reading polygon geometry by JDBC
+
+	Fixed SPARQL DateTime literal timezone handling
+
+2015-05-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed building new tidy code on windows
+
+	Added LDP support in DAV API
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed typos
+
+	Updated Conductor version
+
+	Fixed issue deleting files from DAV
+
+	Added footer icons to /describe page
+
+2015-05-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed link qr super to containing proc
+
+	Added flag for no atomic and always logging
+
+	Fixed __ro2sq arg an be dc of boxes, so get ids from box
+
+	Fixed issue with delete up transit check
+
+	Fixed set tz to 0 if timezoneless
+
+	Added new function for protocols
+
+	Added new cache for compiled regular expressions
+
+2015-05-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed crash in client disconnects during backup /dev/null
+
+	Fixed temp set db_explain_level 3 for debugging
+
+	Added missing flag
+
+	Added error check
+
+	Added support for exp in TOP/SKIP
+
+	Fixed do env in cl also if not partitioned tb
+
+	Fixed missing init
+
+	Fixed renamed var
+
+	Fixed reporting of bad ssl ref
+
+2015-05-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added optional sslr check
+
+	Updated documentation
+
+	Fixed mtx was not entered, block serialized on other mtx
+
+2015-05-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed memory leak when cleaning regexp cache
+
+	Fixed redundant trailing '\0' from wide char arg
+
+2015-05-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed use cursor for delete as inline performs bad
+
+	Fixed allow both CURRENT_TIMESTAMP and CURRENT_TIMESTAMP()
+
+	Fixed return \uNNNN\uNNNN instead of \UNNNNNNNN in JSON strings
+
+	Fixed SPARQL abs() should not convert result to integer
+
+2015-05-15  Tim Haynes  <thaynes@openlinksw.com>
+
+	Removed openjdk-6-jdk; do not build or package JDBC4 target.
+
+	(Note a precompiled virtjdbc4.jar is still included in source distribution for legacy purposes.)
+
+2015-05-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with configure if the version of jdk is not installed
+
+2015-05-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed LDP missing triples when subj == new subj
+
+	Added latest tidy-html5 code
+
+2015-05-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC drivers and Jena2 and Sesame2 providers
+
+	Fixed typo in prototype
+
+2015-05-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added missing MKCOL keyword
+
+	Fixed must reset client as i may be on different thread
+
+2015-05-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Revert "Fixed use xml 1.1 decl to sparql-results"
+
+	This reverts commit b7bf79008d750a0cc0fe3f0cfc479380d0beeae1.
+
+2015-05-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with xsd:dayTimeDuration in codegen
+
+	Use properly parsed value instead of NULL in SSG_VALMODE_NUM
+
+2015-05-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of Jena2 provider
+
+2015-05-13  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed set prefetchSize to 100
+
+	Removed deprecated class reference
+
+	Fixed XSD:dateTime format if fraction is 0
+
+	Removed deprecated functions
+
+2015-05-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of JDBC drivers
+
+2015-05-13  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Removed mask from hour in rpc
+
+	Fixed XSD:dateTime format if fraction is 0
+
+2015-05-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with docdir missing from older versions of autoconf/automake
+
+2015-05-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild Sesame2 provider
+
+2015-05-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of Sesame2 provider
+
+2015-05-11  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Added support for maxQueryTimeout in Sesame2 provider
+
+2015-05-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed split trx as graph re-load would fail n cluster
+
+	Fixed use dav sequence for uniq ids, cursors are not efficient
+
+	Fixed issue with pcre error codes
+
+	Fixed use xml 1.1 decl to sparql-results
+
+2015-05-06  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed tell gnu make not to build certain targets in parallel
+
+	Fixed issue building tutorial
+
+2015-05-05  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix  ADO.NET provider: incorrect handling of the VirtuosoCommand.CommandTimeout property due to integer overflow #376
+
+2015-05-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild JDBC, Jena, Jena2 and Sesame providers
+
+	Updated version of the JDBC driver
+
+	Updated version of Jena, Jena2 and Sesame2 providers
+
+2015-05-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issue in Jena with properly get Date/Time/DateTime literals
+
+2015-05-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed Sesame2 provider to return xsd:boolean as  "true"/"false" rather than "1"/"0"
+
+2015-05-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed Jena2 provider
+
+	* Return xsd:boolean as  "true"/"false" rather than "1"/"0"
+	* Fixed issue with insert data via Jena provider in XA transaction
+
+2015-05-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed filesystem permissions
+
+	Fixed CRLF
+
+	Merge branch 'develop/6' into develop/7
+
+	Added initial support for private RDF graph
+
+	Updated version of FCT
+
+	Fixed labels
+
+	Fixed UI to work with private graphs
+
+	Merge branch 'feature/2015_03_13_fix16653_use_new_server_proc' into develop/7
+
+2015-05-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix configure settings
+
+	Fix Jena & Sesame provider for use updated server proc rdf_insert_triple_c() for insert BNode data
+
+2015-05-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added option to set content length threshold for async sponging
+
+	Sponger Configuration Settings panel in Conductor now surfaces
+	registry setting for controlling content length threshold at which
+	jobs submitted to /ext and /enr endpoints are run asynchronously
+
+2015-05-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added option to create shared folder if not exists
+
+	Fixed DETs to work with new private graphs
+
+	Fixed issue with NDEBUG build
+
+2015-05-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with OPTIONALS with a common dependent variable
+
+	Use deeper inspection for e_nested_optionals
+
+2015-05-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed codegen for ((A is NULL) or (A=B)) and similar in LEFT OUTER JOIN
+
+	Fixed compiler warnings
+
+	Fixed compiler warning
+
+	Added new macro SPAR_LIT_DATATYPE
+
+2015-04-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed CORS headers
+
+	* Added Authorization keyword to Access-Control-Allow-Headers
+	* Added support for Access-Control-Allow-Credentials
+
+2015-04-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with negative cost for empty table
+
+	Fixed issue with cast error in profile
+
+2015-04-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with SSL handshake
+
+	* Socket can be non-blocking and not ready for reading
+	* Fixed error reporting
+
+2015-04-28  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed permission issues
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed user switch is not needed
+
+	Fixed UNDEF is now a valid generic subexpression in SPARQL
+
+	Fixed GPF on call of SPARQL COALESCE with 0 arguments
+
+	Fixed issue with timezone for dt_to_rfc1134_string in http
+
+	Fixed check and label
+
+	Fixed typo
+
+	Fixed commented out debug prints
+
+2015-04-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed create procedure as non-dba
+
+	Fixed xsd:boolean support in rdf_insert_triple_c(), rdf_replace_graph_c() and rdf_delete_triple_c()
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed rdf box deserialize needs certain length
+
+	Fixed issue from analytics
+
+	Fixed issue from analytics
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with expression card
+
+	Ctrl expressions must flag order by dep and skip to min card
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with hash fill dt
+
+	A hash fill dt can have its select altered by adding cols.  do not
+	use the original from the ot, make a copy, put the copy back in the
+	ot when generating, keep intact until then, can be cached dt
+	compilation, so ot dt must stay the same
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with cost based optimizer
+
+	If col of dt, it can have a card and if it is lt the card of a refd
+	col assume pk/fk and estimate the lower card of the 2
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed remove dup samples from stat
+
+	Fixed count row wise deletes in cnt delta on tb
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with chash exception
+
+	Clear exception fill else streaming or multi part can get wrong exc
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed crash in xtree_doc on a clustered blob
+
+	Fixed issue multiple OPTIONALs for a variable or nullable subq + optional
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with upper and lower bound col specs
+
+	When combining upper and lower bound col specs, do not do it if
+	either spec already has upper and lower
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added initial support for datetime without timezone
+
+	Fixed issue with testsuite hanging on urlsimu check
+
+2015-04-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support to run individual tests from testsuite
+
+	Example:
+	cd binsrc/tests/suite
+	make test T=thttp.sh
+
+2015-04-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed SQL codegen for SPARQL SELECT ... count(*) ...
+
+	Fixed signed double got changed minus sign but not changed original_text
+
+	Added new pool functions for handling strings
+
+	Fixed handling of UNAME values in LONG valmode an in casts to OBJ
+
+	Fixed warning should be in debug mode
+
+	Fixed issue with changing dba and dav password via commandline
+
+	Fixed testsuite
+
+	Fixed testsuite
+
+	Fixed qt check for double
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed support for graph permission checks
+
+	Fixed label
+
+	Fixed small serialization issue
+
+2015-04-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed labels
+
+	Added support for folder option related to .TTL redirection
+
+	Added folder option related to .TTL redirection
+
+	Added option to enable/disable DET graphs binding
+
+	Fixed removed 'Verify' button from IMAP DET UI
+
+	Fixed hrefs for resource paths in DAV browser
+
+	Added text/turtle functionality to create file action
+
+	Fixed describe mode from LOD to CBD
+
+2015-04-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added new functions to edit turtle files
+
+	Fixed prefix search bug when editing turtle files
+
+	Fixed title and typos
+
+	Added support for emitting microdata instead of rdfa
+
+	Fixed bad font issue on Chrome
+
+	Fixed bad font issue on Chrome
+
+	Added support for VAD dependency tree
+
+	Fixed conflict using graph for share and LDP in WAC delete queries
+
+2015-04-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with datatype(boolean) AS ?dt
+
+	Updated documentation
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed func name in error message
+
+	Updated engine version
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with STRDT positiveInteger typed as integer
+
+	xsd:negativeInteger, xsd:unsignedLong and the like are wrapped into
+	rdf_box_t, preserving an exact type
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue UNION with multiple BINDS in SPARQL
+
+	Wrong copying of filter into members of UNION when there's a bad
+	member and a copy of the filter should stay outside.
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with chash
+
+	When chash type incompatibel w ce type, all sets falling in the ce
+	fail. So inc the itc match in accordingly, else will return next
+	row in same ce.
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added qt_diff
+
+	Fixed crash with _cvt(noargs)
+
+	Fixed xs is a box and must be freed as box
+
+	Fixed quicker check of qt results
+
+	Fixed issue ssg_print_retval_bop_calc_expn(): unsupported valmode
+
+	Fixed CSV format for REAL
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issues with bif_one_of_these()
+
+	Mixing of UNAME and non-UNAME strings, as well as BF_IRI and plain
+	DV_STRINGS (and not casting BF_UTF8 DV_STRINGS to wides with
+	connection charset)
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with scalar and vectored impl of __id2in() and __id2i()
+
+	Fixed issue with returning scalar
+
+	Fixed bulkloader should not use graph name for base
+
+	Fixed issue with MALLOC_DEBUG
+
+	Removed unused code
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed handling of '*' in COUNT(*) and COUNT(DISTINCT *)
+
+	Expand '*' into true list of variables before the optimization loop
+
+2015-04-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed perms
+
+	Added new implementation of xsd:boolean logic
+
+2015-04-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed NULL in in/target of trans skipped
+
+2015-04-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed check for NULL in key position
+
+2015-04-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixes for TLSF
+
+	* Fixed issue with MALLOC_DEBUG
+	* Fixed area mmap cannot be over 1G
+	* Fixed reporting
+
+2015-04-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed no overflow for empty p in p stat o case
+
+	Fixed put text after test
+
+2015-04-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issues with cost based optimizer
+
+	* Fixed possible div by 0
+	* Fixed rgs check is never true as it is always in a NOT so no effect on card
+
+2015-04-01  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added procedures to create a VAD dependency tree
+
+2015-03-27  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed Date/Time/Timestamp values to Jena/Sesame Node Literal
+
+2015-03-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed graph handling in old Jena provider
+
+2015-03-27  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed issues in old Jena provider
+
+	* Corrupted literals with datatypes using Jena provider
+	* Issue with returns wrong date/time/timestamp values
+
+2015-03-27  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed corrupted literals with datatypes using Jena provider
+
+2015-03-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed date / time / datetime CAST
+
+	Fixed error strings plus compiler warnings
+
+	Fixed coalesce() for full outer join like two VALUES with UNBOUNDS of same var
+
+	Small code cleanup
+
+2015-03-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with shadow slot in sorting node (revised)
+
+	If shadow ssl in setp it does not mean read shadow in sort read of setp.
+	In single no, in cluster maybe.
+	So see if shadow in effect at making sort rdr and use the shadow or the org ssl of setp as may be
+
+2015-03-26  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed when non txn insert, no rollback of blob since page refd blob
+
+	Fixed missing check for trigger
+
+	Added support for Bnodes in bulkloader
+
+	Merge branch 'develop/6' into develop/7
+
+2015-03-26  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for default vdirs when creating new listeners
+
+	* Added table HTTP_HOST_DEFAULT which holds default vdirs
+	* Added button on conductor vdir page to create default vdirs
+	* Added new pl ADD_DEFAULT_HOST to create new default vdirs
+	* Added load/save virtual host options
+	* Register /DAV in default vdir table
+
+2015-03-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing lang flag
+
+	Fixed order of functions
+
+2015-03-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue in cost based optimizer with inferencing
+
+	In inf subp sample, get the inx card and right and get the col card
+	correction right if 0, no /0
+
+2015-03-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with same as on p
+
+	No same as on p if there is sup on p, subp to contain expansion of
+	sas and equiv p
+
+2015-03-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed do not leave old ce reloc records in col alter table hanging after splitting a leaf page
+
+	Fixed remove old #if GEO_INDEX .. #endif
+
+	Fixed top k hash join not to overdo ref card
+
+	Fixed faster compart for p col
+
+	Fixed no hash merge icol is modified by trailing rdf inf
+
+	Fixed when normalizing non iri fot sas distinct, return result
+
+	Fixed check if cert is available
+
+2015-03-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added option to enable running triggers on rdf quad
+
+	Fixed issue with multiple graph repl and FT index
+
+2015-03-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed optional minus sign on sparql values
+
+	Fixed allow http status 203 as valid response to sponge request
+
+	Fixed handling of language tags in strstr, strcontains, strstarts etc
+
+2015-03-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added option to set http server socket non-blocking with write timeout
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed issue running thttp on mac os x
+
+2015-03-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+2015-03-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed JDBC hang on PreparedStatement when using setFetchSize() method
+
+2015-03-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/7'
+
+2015-03-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild sesame2 provider
+
+2015-03-03  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed storing blank nodes as URIs
+
+	Sesame2 provider now store BNodes as Virtuoso Native BNode by default
+
+2015-03-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed json-ld results with no @id for objects that are URIs
+
+	Merge branch 'develop/6' into develop/7
+
+	Updated Conductor VAD version
+
+	Fixed cleanup
+
+	Fixed use WebDAV Preferences
+
+	Fixed labels
+
+	Fixed fct labels
+
+	Fixed typo
+
+	Fixes issues with new realms
+
+	Fixed link-out
+
+	Added popup dialog to search for unknown prefixes
+
+	Added enable/disable for new regstry valye in WebDAV settings
+
+	Added registry option to add  missing prefixes for .ttl files
+
+	Fixed issue with application/x-apple-diskimage in buildin types
+
+	Fixed issue with subfolders of DETs type ResFilter and CatFilter
+
+	Added LDP enable/disable option for folders
+
+	Fixed more html detection in fct
+
+	Fixed assume text starting with '<' is html or xml, so render as is
+
+2015-03-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed skip ssl is not supposed to be vector, thus take 1st from original
+
+	Fixed issue with sparql translation
+
+2015-02-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing rpc tags
+
+2015-02-24  Tim Haynes  <github@stirfried.vegetable.org.uk>
+
+	Debian build: specify both openjdk-{6,7}-jdk packages as build dependencies
+
+2015-02-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing rpc tags
+
+	Fixed tsuite for polygon
+
+	Commented out declspec for windows as it interferes with EXPORT
+
+2015-02-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added small query optimization
+
+	Added key delete stats
+
+	Added key delete stats
+
+	Added better handling of HTTP status codes on SPARQL graph protocol endpoint
+
+	Fixed checks for WIDE boxes in debug mode
+
+	Fixed box length check in DEBUG mode
+
+	Fixed format for float and double arguments
+
+	Fixed format for long long args
+
+	Fixed use snprintf
+
+	Fixed issue with NULL arguments
+
+	Fixed issue with ORDER BY TOP xxx in SPARQL GROUPING SETS
+
+	Added initial support for SPARQL GROUPING SETS
+
+	Added gcc/clang format attribute for better compiler warnings
+
+	Fixed issues handling language IDs case-insensitive
+
+	Merge branch 'feature/sparql_11_ebv' into develop/7
+
+	Fixed file perms
+
+	Fixed issue using strings with BF_IRI flag
+
+	Added initial implementation of __ro2ebv() BIF
+
+	Fixed missing var
+
+	Fixed buildin VALID() to use rb_uname_to_flags_of_parseable_datatype
+
+	Fixed print of equiv restriction as filter when equiv has fixed value that is literal with type or language
+
+2015-02-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed cast to SSG_VALMODE_BOOL
+
+	* Fixed cast from SSG_VALMODE_SQLVAL to SSG_VALMODE_BOOL
+	* Fixed distinction between SSG_VALMODE_NUM and SSG_VALMODE_SQLVAL re. this cast
+
+2015-02-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed better calculation of SPARQL 1.1 EBV for non-numeric typed literals
+
+	Added initial support for SPARQL 1.1 EBV (Efficient Boolean Value)
+
+2015-02-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed assert should only be checked in DEBUG mode
+
+	Removed deprecated test
+
+	Added flag to enable plan warnings
+
+2015-02-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed function never returns
+
+	Fixed compiler warnings on type mismatch
+
+	Fixed missing initialization of flock struct
+
+	Fixed openssl initialization order
+
+	Fixed building with NO_THREAD for single thread usage
+
+	Fixed compiler warnings on uninitialized data after calling function that do not return
+
+2015-02-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with possible col ref corruption
+
+	The col ref can get corrupted if delete drops a page and adds a
+	page via loss of compression on recompress. Any added/deleted page
+	should set any_del, causing the col ref to be written to the leaf row
+
+2015-02-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed O range not applicable on inlined values such as ints etc
+
+	Fixed limit max query terms on freetext index
+
+2015-02-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed default main thread size
+
+	Fixed PM_TLSF to only work on linux
+
+2015-02-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed --enable-all-vads enables building all vad packages
+
+	Fixed output should be UTF-8 as expected
+
+	Fixed invariant preds not supposed to have subqs
+
+2015-02-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed dsk_esc_write of JS strings
+
+	Fixes dks_esc_write of JS strings for characters that require UTF-16
+	encoding of sort \u....\u.... , and the related tweak in json
+	reading.
+
+2015-02-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed calling BLOB_PAGES_ACCOUNT as is not needed on regular builds
+
+	Removed duplicate stored procedure
+
+2015-02-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'hotfix/7.2.0.1' into develop/7
+
+	Updated version to 07.20.3212
+
+2015-02-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.1-dev to signal new development cycle
+
+	Merge branch 'release/7.2.0' into develop/7
+
+	Merge branch 'release/7.2.0' into stable/7
+
+	Updated NEWS
+
 2015-02-10  VOS Maintainer  <vos.admin@openlinksw.com>
 
     	Updated version number to 7.2.0 for release

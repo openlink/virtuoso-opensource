@@ -72,20 +72,20 @@ FROM (SELECT Y FROM ... ORDER BY X) as subquery
     </example>
   </refsect1>
   <refsect1 id="seealso_VECTOR_AGG"><title>See Also</title>
-    <para><link linkend="fn_XQ_SEQUENCE_AGG">DB.DBA.XQ_SEQUENCE_AGG()</link></para>
-    <para><link linkend="fn_VECTOR_OF_NONNULLS_AGG">DB.DBA.VECTOR_OF_NONNULLS_AGG()</link></para>
-    <para><link linkend="fn_VECTOR_OR_NULL_AGG">DB.DBA.VECTOR_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_VECTOR_OF_NONNULLS_OR_NULL_AGG">DB.DBA.VECTOR_OF_NONNULLS_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_VECTOR_CONCAT_AGG">DB.DBA.VECTOR_CONCAT_AGG()</link></para>
-    <para><link linkend="fn_BAG_AGG">DB.DBA.BAG_AGG()</link></para>
-    <para><link linkend="fn_BAG_OF_NONNULLS_AGG">DB.DBA.BAG_OF_NONNULLS_AGG()</link></para>
-    <para><link linkend="fn_BAG_OR_NULL_AGG">DB.DBA.BAG_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_BAG_OF_NONNULLS_OR_NULL_AGG">DB.DBA.BAG_OF_NONNULLS_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_BAG_CONCAT_AGG">DB.DBA.BAG_CONCAT_AGG()</link></para>
-    <para><link linkend="fn_GROUP_CONCAT">DB.DBA.GROUP_CONCAT()</link></para>
-    <para><link linkend="fn_GROUP_CONCAT_DISTINCT">DB.DBA.GROUP_CONCAT_DISTINCT()</link></para>
-    <para><link linkend="fn_GROUP_DIGEST">DB.DBA.GROUP_DIGEST()</link></para>
-    <para><link linkend="fn_SAMPLE">DB.DBA.SAMPLE()</link></para>
+    <para><link linkend="fn_XQ_SEQUENCE_AGG"><function>DB.DBA.XQ_SEQUENCE_AGG()</function></link></para>
+    <para><link linkend="fn_VECTOR_OF_NONNULLS_AGG"><function>DB.DBA.VECTOR_OF_NONNULLS_AGG()</function></link></para>
+    <para><link linkend="fn_VECTOR_OR_NULL_AGG"><function>DB.DBA.VECTOR_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_VECTOR_OF_NONNULLS_OR_NULL_AGG"><function>DB.DBA.VECTOR_OF_NONNULLS_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_VECTOR_CONCAT_AGG"><function>DB.DBA.VECTOR_CONCAT_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_AGG"><function>DB.DBA.BAG_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_OF_NONNULLS_AGG"><function>DB.DBA.BAG_OF_NONNULLS_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_OR_NULL_AGG"><function>DB.DBA.BAG_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_OF_NONNULLS_OR_NULL_AGG"><function>DB.DBA.BAG_OF_NONNULLS_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_CONCAT_AGG"><function>DB.DBA.BAG_CONCAT_AGG()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT()</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST()</function></link></para>
+    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE()</function></link></para>
   </refsect1>
 </refentry>
 

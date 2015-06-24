@@ -48,6 +48,7 @@ caddr_t uname__txt;
 caddr_t uname__xslt;
 caddr_t uname_SPECIAL_cc_bif_c_AVG;
 caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
 caddr_t uname_SPECIAL_cc_bif_c_MAX;
 caddr_t uname_SPECIAL_cc_bif_c_MIN;
 caddr_t uname_SPECIAL_cc_bif_c_SUM;
@@ -61,6 +62,7 @@ caddr_t uname_bif_c_st_within;
 caddr_t uname_bif_c_xcontains;
 caddr_t uname_bif_c_xpath_contains;
 caddr_t uname_bif_c_xquery_contains;
+caddr_t uname_false;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
@@ -93,6 +95,7 @@ caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 caddr_t uname_space;
 caddr_t uname_swap_reify_ns_uri;
 caddr_t uname_swap_reify_ns_uri_statement;
+caddr_t uname_true;
 caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadMap;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
@@ -241,6 +244,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__xslt				, " xslt"			},
   { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
   { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
+  { &uname_SPECIAL_cc_bif_c_GROUPING			, "SPECIAL::bif:GROUPING"			},
   { &uname_SPECIAL_cc_bif_c_MAX			, "SPECIAL::bif:MAX"		},
   { &uname_SPECIAL_cc_bif_c_MIN			, "SPECIAL::bif:MIN"		},
   { &uname_SPECIAL_cc_bif_c_SUM			, "SPECIAL::bif:SUM"		},
@@ -254,6 +258,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_bif_c_xcontains			, "bif:xcontains"		},
   { &uname_bif_c_xpath_contains			, "bif:xpath_contains"		},
   { &uname_bif_c_xquery_contains		, "bif:xquery_contains"		},
+  { &uname_false					, "false"					},
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
@@ -286,6 +291,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_space				, "space"			},
   { &uname_swap_reify_ns_uri			, SWAP_REIFY_NS_URI		},
   { &uname_swap_reify_ns_uri_statement		, SWAP_REIFY_NS_URI "statement"	},
+  { &uname_true						, "true"					},
   { &uname_virtrdf_ns_uri			, VIRTRDF_NS_URI		},
   { &uname_virtrdf_ns_uri_DefaultQuadMap	, VIRTRDF_NS_URI "DefaultQuadMap"	},
   { &uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	},

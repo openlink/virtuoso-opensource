@@ -622,7 +622,7 @@ DataGrid1.DataBind()
   <listitem><formalpara><title>View the ASPX page hosted in Virtuoso DAV</title>
     <para>With the virtual directory configured we have only to test that it works
     as expected.  On opening a browser at:
-    <computeroutput>http://localhost/aspxdemo1/WebForm1.aspx</computeroutput>,
+    <computeroutput>http://example.com/aspxdemo1/WebForm1.aspx</computeroutput>,
     we will see the same output as before.</para></formalpara>
     <figure id="rthmig013"><title>Migrating ASP.Net Applications to Virtuoso</title>
       <graphic fileref="rth/mig013.jpg" width="" depth=""/></figure>

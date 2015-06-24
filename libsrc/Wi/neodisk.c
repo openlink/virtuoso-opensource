@@ -2253,6 +2253,7 @@ srv_global_unlock (client_connection_t *cli, lock_trx_t *lt)
 
 
 int32 cl_retry_seed;
+int32 dbf_no_atomic;
 
 void
 srv_global_lock (query_instance_t * qi, int flag)
@@ -2260,7 +2261,7 @@ srv_global_lock (query_instance_t * qi, int flag)
   int retries = 0;
   lock_trx_t * lt = qi->qi_trx;
   /*GK: in roll forward this is a no-op */
-  if (in_log_replay)
+  if (in_log_replay || dbf_no_atomic)
     return;
   if (flag)
     {

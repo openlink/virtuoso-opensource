@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2015 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_ttlp">
   <refmeta>
     <refentrytitle>DB.DBA.TTLP</refentrytitle>
@@ -47,7 +68,8 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
  64 - Relax TURTLE syntax to include popular violations.
 128 - Try to recover from lexical errors as much as it is possible.
 256 - Allows TriG syntax, thus loading data in more than one graph.
-512 - Allows loading N-quad dataset files with and optional context value to indicate provenance as detailed
+ 512 - Allows loading N-quad dataset files with and optional context value to indicate provenance as detailed.
+8192 - Enables searching for Turtle within the string.
 <ulink url="http://sw.deri.org/2008/07/n-quads/">here</ulink>.
 ]]></programlisting>
     </refsect2>
@@ -104,7 +126,7 @@ the document, no matter what is the destination graph. Here is a simple example:
 ]]></programlisting>
     <para>Load the file:</para>
 <programlisting><![CDATA[
-SQL>DB.DBA.TTLP (file_to_string_output ('./nquad.nq'), '', 'http://localhost:8890/DAV/test', 512);
+SQL>DB.DBA.TTLP (file_to_string_output ('./nquad.nq'), '', 'http://example.com/DAV/test', 512);
 Done. -- 48 msec.
 ]]></programlisting>
     <para>Select all triples from the graph with URI the fourth provenance URI from the NQuad file i.e.: &lt;http://www.w3.org/People/Berners-Lee/card&gt;:</para>
@@ -131,11 +153,11 @@ Done. -- 48 msec.
   </refsect1>
   <refsect1 id="seealso_ttlp">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE()</function></link></para>
   </refsect1>
 </refentry>

@@ -5353,6 +5353,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
     }
   else
     {
+      oid_t org_user = qi->qi_u_id;
 #ifdef VIRT30_40
       if (is_27_40_incompartible_procedure (qst_get (state, op->op_arg_1)))
         goto skip_incomp;
@@ -5360,8 +5361,10 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       /* first we will remove all entries with the same name,
 	 because the PK of that table is not designed to keep only one entry per name */
       is_cl = !cl_run_local_only;
+      qi->qi_u_id = U_ID_DBA;
       err = qr_rec_exec (is_cl ? cl_proc_rm_duplicate_query : proc_rm_duplicate_query, cli, NULL, qi, NULL, 1,
 			 ":0", qst_get (state, op->op_arg_1), QRP_STR);
+      qi->qi_u_id = org_user;
       /* the grants also must be removed */
       qr_rec_exec (proc_revoke_query, cli, NULL, qi, NULL, 1,
 		   ":0", qst_get (state, op->op_arg_1), QRP_STR);
@@ -5626,7 +5629,7 @@ const char * drop_proc_text =
 "  select U_GROUP into ug from DB.DBA.SYS_USERS where U_NAME = user;\n"
 "\n"
 "  if (ug <> 0 and user <> name_part (nn, 1))\n"
-"    signal ('42000', concat ('Must be in dba group to drop non-owned ',  case proc when 4 then 'aggregate' when 0 then 'module' else 'procedure' end), 'SR271');\n"
+"    signal ('42000', concat ('Must be in DBA group to drop non-owned ',  case proc when 4 then 'aggregate' when 0 then 'module' else 'procedure' end), 'SR271:SECURITY');\n"
 "\n"
 "  if (proc > 0 and __proc_exists (p, 0) is not null) "
 "   signal ('42000', concat ('Trying to drop a module in DROP ', case proc when 4 then 'AGGREGATE' else 'PROCEDURE' end), 'SR314'); "

@@ -98,7 +98,6 @@
   </refsect1>
   <refsect1 id="params_dav_api_change"><title>Parameters</title>
     <refsect2><title>path</title>
-      <para></para>
       <para>Directory and name of source to be operated on.</para>
     </refsect2>
     <refsect2><title>destination</title>

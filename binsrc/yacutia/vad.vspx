@@ -252,9 +252,8 @@
                       xhtml_alt="Install"
                       xhtml_title="Install"
                       text="&nbsp;Install"
-                      url="--sprintf ('vad_install.vspx?path=%U&mode=%d',
-                      self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7],
-                      self.src_folder_type)"
+                      url="--sprintf ('vad_install_batch.vspx?mode=%d&packs=%U&dir=%U&dirmode=%d',
+                      self.src_folder_type, encode_base64 (serialize (vector (self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7]))), self.src_folder, self.src_folder_type)"
                       >
                       <v:on-init>
                         <![CDATA[
@@ -268,9 +267,8 @@
                       xhtml_alt="Upgrade"
                       xhtml_title="Upgrade"
                       text="&nbsp;Upgrade"
-                      url="--sprintf ('vad_install.vspx?path=%U&mode=%d',
-                      self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7],
-                      self.src_folder_type)"
+                      url="--sprintf ('vad_install_batch.vspx?mode=%d&packs=%U&dir=%U&dirmode=%d',
+                      self.src_folder_type, encode_base64 (serialize (vector (self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7]))), self.src_folder, self.src_folder_type)"
                       >
                       <v:on-init>
                         <![CDATA[
@@ -405,8 +403,8 @@
                 if (length (packs))
                 {
                   packs := encode_base64 (serialize (packs));
-                  self.vc_redirect (sprintf ('vad_install_batch.vspx?mode=%d&dir=%U&packs=%U',
-                  self.src_folder_type, self.src_folder, packs));
+                  self.vc_redirect (sprintf ('vad_install_batch.vspx?mode=%d&dir=%U&packs=%U&dirmode=%d',
+                  self.src_folder_type, self.src_folder, packs, self.src_folder_type));
                 }
                 else
                 {
@@ -541,8 +539,8 @@
                       self.vc_is_valid := 0;
                       return;
                     }
-                    self.vc_redirect (sprintf ('vad_install.vspx?path=%U&mode=%d',
-                    path, case when mode = 2 then 0 else 1 end));
+                    self.vc_redirect (sprintf ('vad_install_batch.vspx?mode=%d&dir=%U&dirmode=%d&packs=%U',
+                      case when mode = 2 then 0 else 1 end, self.src_folder, self.src_folder_type, encode_base64 (serialize (vector (path)))));
                   ]]>
                 </v:on-post>
               </v:button>

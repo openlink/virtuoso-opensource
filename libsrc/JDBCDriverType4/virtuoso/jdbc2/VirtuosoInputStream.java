@@ -463,14 +463,10 @@ class VirtuosoInputStream extends BufferedInputStream
        {
          if (VirtuosoFuture.rpc_log != null)
            {
-             synchronized (VirtuosoFuture.rpc_log)
-               {
-                 VirtuosoFuture.rpc_log.println ("(conn " + connection.hashCode() + ") **** runtime " +
+                 VirtuosoFuture.rpc_log.println ("  **(conn " + connection.hashCode() + ") **** runtime " +
                      e.getClass().getName() + " encountered while reading tag " + tag);
                  e.printStackTrace(VirtuosoFuture.rpc_log);
-               }
            }
-//         throw new Error (e.getClass().getName() + ":" + e.getMessage());
            throw new VirtuosoException(e.getClass().getName() + ":" + e.getMessage(),VirtuosoException.IOERROR);
 
        }
@@ -743,11 +739,13 @@ class VirtuosoInputStream extends BufferedInputStream
             is_complete = true;
             box = read_object (sparql_executed);
             if (type == VirtuosoRdfBox.RDF_BOX_GEO_TYPE) {
-                String data = ((String)box).substring(6);
-                try {
-                    box = new VirtuosoPoint(data.substring(0, data.length()-1));
-                } catch (Exception e){
-                    throw new VirtuosoException(e, VirtuosoException.IOERROR);
+                if (box instanceof String && ((String)box).length()>5  && ((String)box).substring(0,5).equalsIgnoreCase("point")) {
+                    String data = ((String)box).substring(6);
+                    try {
+                        box = new VirtuosoPoint(data.substring(0, data.length()-1));
+                    } catch (Exception e){
+                        throw new VirtuosoException(e, VirtuosoException.IOERROR);
+                    }
                 }
             }
         }
@@ -859,10 +857,13 @@ class VirtuosoInputStream extends BufferedInputStream
            java.util.Calendar cal_gmt = new java.util.GregorianCalendar(TimeZone.getTimeZone("GMT"));
 
            num2date(day, cal_gmt);
-           cal_gmt.set (Calendar.HOUR_OF_DAY, hour);
-           cal_gmt.set (Calendar.MINUTE, minute);
-           cal_gmt.set (Calendar.SECOND, second);
-
+           if (type!=VirtuosoTypes.DT_TYPE_DATE) 
+             {
+               cal_gmt.set (Calendar.HOUR_OF_DAY, hour);
+               cal_gmt.set (Calendar.MINUTE, minute);
+               cal_gmt.set (Calendar.SECOND, second);
+               cal_gmt.set (Calendar.MILLISECOND, fraction/1000);
+             }
            // Convert to Local GMT
            cal_dat.setTime(cal_gmt.getTime());
        }
@@ -894,10 +895,13 @@ class VirtuosoInputStream extends BufferedInputStream
            }
 
            num2date(day, cal_dat);
-           cal_dat.set (Calendar.HOUR_OF_DAY, hour);
-           cal_dat.set (Calendar.MINUTE, minute);
-           cal_dat.set(Calendar.SECOND, second);
-
+           if (type!=VirtuosoTypes.DT_TYPE_DATE) 
+             {
+               cal_dat.set (Calendar.HOUR_OF_DAY, hour);
+               cal_dat.set (Calendar.MINUTE, minute);
+               cal_dat.set (Calendar.SECOND, second);
+               cal_dat.set (Calendar.MILLISECOND, fraction/1000);
+             }
        }
 
       switch(type)

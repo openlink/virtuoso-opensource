@@ -40,7 +40,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_VECTOR_OF_NONNULLS_AGG"><title>Description</title>
     <para><function>DB.DBA.VECTOR_OF_NONNULLS_AGG</function> returns a vector of passed values.
-    Similar to <link linkend="fn_VECTOR_AGG()">DB.DBA.VECTOR_AGG()</link> but ignores NULL arguments.</para>
+    Similar to <link linkend="fn_VECTOR_AGG()"><function>DB.DBA.VECTOR_AGG()</function></link> but ignores NULL arguments.</para>
     <para>The order of items in the vector repeats the order of passing individual values to the aggregate.</para>
   </refsect1>
   <refsect1 id="params_VECTOR_OF_NONNULLS_AGG"><title>Parameters</title>
@@ -54,7 +54,7 @@
     </para>
   </refsect1>
   <refsect1 id="examples_VECTOR_OF_NONNULLS_AGG"><title>Examples</title>
-    <example id="ex_VECTOR_OF_NONNULLS_AGG_1"><title></title>
+    <example id="ex_VECTOR_OF_NONNULLS_AGG_1"><title>Simple Use</title>
     <para>As the order of items in the vector repeats the order of passing individual values to the aggregate,
     it is possible to write, for instance:
     </para>
@@ -72,19 +72,19 @@ FROM (SELECT Y FROM ... ORDER BY X) as subquery
     </example>
   </refsect1>
   <refsect1 id="seealso_VECTOR_OF_NONNULLS_AGG"><title>See Also</title>
-    <para><link linkend="fn_VECTOR_AGG">DB.DBA.VECTOR_AGG()</link></para>
-    <para><link linkend="fn_VECTOR_OR_NULL_AGG">DB.DBA.VECTOR_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_VECTOR_OF_NONNULLS_OR_NULL_AGG">DB.DBA.VECTOR_OF_NONNULLS_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_VECTOR_CONCAT_AGG">DB.DBA.VECTOR_CONCAT_AGG()</link></para>
-    <para><link linkend="fn_BAG_AGG">DB.DBA.BAG_AGG()</link></para>
-    <para><link linkend="fn_BAG_OF_NONNULLS_AGG">DB.DBA.BAG_OF_NONNULLS_AGG()</link></para>
-    <para><link linkend="fn_BAG_OR_NULL_AGG">DB.DBA.BAG_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_BAG_OF_NONNULLS_OR_NULL_AGG">DB.DBA.BAG_OF_NONNULLS_OR_NULL_AGG()</link></para>
-    <para><link linkend="fn_BAG_CONCAT_AGG">DB.DBA.BAG_CONCAT_AGG()</link></para>
-    <para><link linkend="fn_GROUP_CONCAT">DB.DBA.GROUP_CONCAT()</link></para>
-    <para><link linkend="fn_GROUP_CONCAT_DISTINCT">DB.DBA.GROUP_CONCAT_DISTINCT()</link></para>
-    <para><link linkend="fn_GROUP_DIGEST">DB.DBA.GROUP_DIGEST()</link></para>
-    <para><link linkend="fn_SAMPLE">DB.DBA.SAMPLE()</link></para>
+    <para><link linkend="fn_VECTOR_AGG"><function>DB.DBA.VECTOR_AGG()</function></link></para>
+    <para><link linkend="fn_VECTOR_OR_NULL_AGG"><function>DB.DBA.VECTOR_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_VECTOR_OF_NONNULLS_OR_NULL_AGG"><function>DB.DBA.VECTOR_OF_NONNULLS_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_VECTOR_CONCAT_AGG"><function>DB.DBA.VECTOR_CONCAT_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_AGG"><function>DB.DBA.BAG_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_OF_NONNULLS_AGG"><function>DB.DBA.BAG_OF_NONNULLS_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_OR_NULL_AGG"><function>DB.DBA.BAG_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_OF_NONNULLS_OR_NULL_AGG"><function>DB.DBA.BAG_OF_NONNULLS_OR_NULL_AGG()</function></link></para>
+    <para><link linkend="fn_BAG_CONCAT_AGG"><function>DB.DBA.BAG_CONCAT_AGG()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT()</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST()</function></link></para>
+    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE()</function></link></para>
   </refsect1>
 </refentry>
 

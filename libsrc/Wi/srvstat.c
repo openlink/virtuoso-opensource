@@ -210,6 +210,9 @@ extern long tc_dc_extend_values;
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
 extern int sqlo_max_layouts;
+extern size_t sqlo_max_mp_size;
+extern int enable_initial_plan;
+extern int32 enable_dt_leaf;
 extern int32 sqlo_compiler_exceeds_run_factor;
 
 extern int enable_mem_hash_join;
@@ -235,6 +238,7 @@ extern int enable_conn_rc_fifo;
 extern int enable_cm_still_wanted;
 extern int enable_cancel_waiting;
 extern int enable_setp_partition;
+extern int32 setp_distinct_max_keys;
 extern int enable_stream_gb;
 extern int enable_min_card;
 extern int enable_hash_colocate;
@@ -315,6 +319,8 @@ long vt_batch_size_limit = 1000000L;
 /* flags for simulated exceptions */
 long dbf_no_disk = 0;
 long dbf_log_no_disk;
+extern int32 dbf_log_always;
+extern int32 dbf_no_atomic;
 long dbf_2pc_prepare_wait; /* wait this many msec between prepare and commit */
 long dbf_2pc_wait; /* wait this many msec after each 2pc message or log write */
 long dbf_branch_transact_wait; /* wait this many msec onn cluster branch before doing rollback, prepare or commit */
@@ -464,6 +470,8 @@ long sparql_max_mem_in_use = 0;
 
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
+
+extern int timezoneless_datetimes;
 
 static long thr_cli_running;
 static long thr_cli_waiting;
@@ -1314,7 +1322,7 @@ status_report (const char * mode, query_instance_t * qi)
     {
       rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d\n",
 		  st_started_since_year, st_started_since_month, st_started_since_day,
-	  st_started_since_hour, st_started_since_minute, dt_local_tz / 60);
+	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
     }
   if (!gen_info)
     return;
@@ -1410,7 +1418,9 @@ extern long mp_sparql_cap;
 extern long srv_cpu_count;
 extern int32 col_seg_max_bytes;
 extern int32 col_seg_max_rows;
-
+extern int32 enable_qr_comment;
+extern int32 enable_rdf_trig;
+extern int32 enable_sslr_check;
 
 
 stat_desc_t stat_descs [] =
@@ -1758,6 +1768,8 @@ stat_desc_t dbf_descs [] =
     {"dbf_2pc_wait", &dbf_2pc_wait, NULL},
     {"dbf_branch_transact_wait", &dbf_branch_transact_wait, NULL},
     {"dbf_log_no_disk", &dbf_log_no_disk, NULL},
+    {"dbf_log_always", &dbf_log_always, SD_INT32},
+    {"dbf_no_atomic", &dbf_no_atomic, SD_INT32},
     {"txn_after_image_limit", &txn_after_image_limit, NULL},
     {"dbf_clop_enter_wait", &dbf_clop_enter_wait, NULL},
     {"dbf_cl_skip_wait_notify", &dbf_cl_skip_wait_notify, NULL},
@@ -1774,10 +1786,14 @@ stat_desc_t dbf_descs [] =
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
     {"enable_mem_hash_join", (long *)&    enable_mem_hash_join, SD_INT32},
     {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
+    {"sqlo_max_mp_size", &sqlo_max_mp_size},
+    {"enable_initial_plan", &enable_initial_plan, SD_INT32},
+    {"enable_dt_leaf", &enable_dt_leaf, SD_INT32},
     {"sqlo_compiler_exceeds_run_factor", &sqlo_compiler_exceeds_run_factor, SD_INT32},
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},
+    {"setp_distinct_max_keys", (long *)&setp_distinct_max_keys, SD_INT32},
     {"enable_iri_nic_n", (long *)&enable_iri_nic_n, SD_INT32},
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},
@@ -1817,6 +1833,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_col_ins_dbg_log", (long *)&dbf_col_ins_dbg_log, SD_INT32},
     {"dbf_col_del_leaf", (long *)&dbf_col_del_leaf, SD_INT32},
     {"enable_pogs_check", (long *)&enable_pogs_check, SD_INT32},
+    {"enable_sslr_check", (long *)&enable_sslr_check, SD_INT32},
     {"chash_space_avail", (long *)&chash_space_avail},
     {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},
@@ -1859,6 +1876,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_max_itc_samples", (long *)&dbf_max_itc_samples, SD_INT32},
     {"enable_mt_ft_inx", (long *)&enable_mt_ft_inx, SD_INT32},
     {"disable_rdf_init", (long *)&disable_rdf_init, SD_INT32},
+    {"enable_rdf_trig", (long *)&enable_rdf_trig, SD_INT32},
     {"enable_pg_card", (long *)&enable_pg_card, SD_INT32},
     {"enable_ce_ins_check",  (long *)&enable_ce_ins_check, SD_INT32},
     {"dbf_ignore_uneven_col", (long *)&dbf_ignore_uneven_col, SD_INT32},
@@ -1874,6 +1892,8 @@ stat_desc_t dbf_descs [] =
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
+    {"enable_qr_comment", &enable_qr_comment, SD_INT32},
+    {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
     {NULL, NULL, NULL}
   };
 
@@ -2008,7 +2028,7 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba ((query_instance_t*)qst, "__dbf_set");
   place = (stat_desc_t**)id_hash_get (sd_hash, (caddr_t)&name);
   if (!place)
-    sqlr_new_error ("42000", "SR...", "sys_stat_set, parameter does not exist");
+    sqlr_new_error ("42000", "SR...", "__dbf_set, parameter does not exist");
 
 
   sd = *place;
@@ -2173,6 +2193,8 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (it_remap_count (key->key_fragments[0]->kf_it)));
 	  if (0 == strcmp (stat_name, "n_rows"))
 	    return (box_num (key->key_table->tb_count));
+	  if (0 == strcmp (stat_name, "n_deletes"))
+	    return (box_num (key->key_n_deletes));
 	  if (0 == strcmp (stat_name, "ac_in"))
 	    return (box_num (key->key_ac_in));
 	  if (0 == strcmp (stat_name, "ac_out"))
@@ -2827,7 +2849,7 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	    fprintf (out, "#D(");
 	    for (n = 0; n < length; n++)
 	      {
-		fprintf (out, "%f ", ((double *) object)[n]);
+		fprintf (out, DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, ((double *) object)[n]);
 	      }
 	    fprintf (out, ")");
 	    break;
@@ -2840,7 +2862,7 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	    fprintf (out, "#F(");
 	    for (n = 0; n < length; n++)
 	      {
-		fprintf (out, "%f ", ((float *) object)[n]);
+		fprintf (out, SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, ((float *) object)[n]);
 	      }
 	    fprintf (out, ")");
 	    break;
@@ -2864,11 +2886,11 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	  break;
 
 	case DV_SINGLE_FLOAT:
-	  fprintf (out, "%f", *(float *) object);
+	  fprintf (out, SINGLE_E_STAR_FMT, SINGLE_E_PREC, *(float *) object);
 	  break;
 
 	case DV_DOUBLE_FLOAT:
-	  fprintf (out, "%f", *(double *) object);
+	  fprintf (out, DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, *(double *) object);
 	  break;
 
 	case DV_DB_NULL:
@@ -3056,14 +3078,14 @@ printf_dv (db_buf_t dv, FILE * out)
       {
 	float f;
 	EXT_TO_FLOAT (&f, (dv + 1));
-	fprintf (out, "%f ", f);
+	fprintf (out, SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, f);
 	break;
       }
     case DV_DOUBLE_FLOAT:
       {
 	double f;
 	EXT_TO_DOUBLE (&f, (dv + 1));
-	fprintf (out, "%f ", f);
+	fprintf (out, DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, f);
 	break;
       }
     default:
@@ -3255,7 +3277,7 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 	  {
 	    float f;
 	    EXT_TO_FLOAT (&f, xx);
-	    fprintf (out, " %f ", f);
+	    fprintf (out, " " SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, f);
 	    break;
 	  }
 	case DV_DOUBLE_FLOAT:

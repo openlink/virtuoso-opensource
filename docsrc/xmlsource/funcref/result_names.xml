@@ -57,7 +57,7 @@ the application already knows what columns and their types are to be returned.</
   </refsect1>
   <refsect1 id="params_result_names">
     <title>Parameters</title>
-    <refsect2>var_1, ..., var_n<title></title>
+    <refsect2><title>var_1, ..., var_n</title>
       <para>The column variables previously declared or otherwise.</para>
     </refsect2>
   </refsect1>

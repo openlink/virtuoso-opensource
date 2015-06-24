@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_http_path">
       <funcprototype id="fproto_http_path">
         <funcdef><function>http_path</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

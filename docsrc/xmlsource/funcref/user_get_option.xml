@@ -74,14 +74,14 @@
   <refsect1 id="seealso_USER_GET_OPTION">
     <title>See Also</title>
     <para><link linkend="vumuseroptions">User Options Section</link></para>
-    <para><link linkend="fn_USER_CREATE"><function>USER_CREATE</function></link></para>
-    <para><link linkend="fn_USER_ROLE_CREATE"><function>USER_ROLE_CREATE</function></link></para>
-    <para><link linkend="fn_USER_DROP"><function>USER_DROP</function></link></para>
-    <para><link linkend="fn_USER_ROLE_DROP"><function>USER_ROLE_DROP</function></link></para>
-    <para><link linkend="fn_USER_CHANGE_PASSWORD"><function>USER_CHANGE_PASSWORD</function></link></para>
-    <para><link linkend="fn_USER_SET_QUALIFIER"><function>USER_SET_QUALIFIER</function></link></para>
-    <para><link linkend="fn_USER_GRANT_ROLE"><function>USER_GRANT_ROLE</function></link></para>
-    <para><link linkend="fn_USER_REVOKE_ROLE"><function>USER_REVOKE_ROLE</function></link></para>
-    <para><link linkend="fn_USER_SET_OPTION"><function>USER_SET_OPTIONS</function></link></para>
+    <para><link linkend="fn_USER_CREATE"><function>USER_CREATE()</function></link></para>
+    <para><link linkend="fn_USER_ROLE_CREATE"><function>USER_ROLE_CREATE()</function></link></para>
+    <para><link linkend="fn_USER_DROP"><function>USER_DROP()</function></link></para>
+    <para><link linkend="fn_USER_ROLE_DROP"><function>USER_ROLE_DROP()</function></link></para>
+    <para><link linkend="fn_USER_CHANGE_PASSWORD"><function>USER_CHANGE_PASSWORD()</function></link></para>
+    <para><link linkend="fn_USER_SET_QUALIFIER"><function>USER_SET_QUALIFIER()</function></link></para>
+    <para><link linkend="fn_USER_GRANT_ROLE"><function>USER_GRANT_ROLE()</function></link></para>
+    <para><link linkend="fn_USER_REVOKE_ROLE"><function>USER_REVOKE_ROLE()</function></link></para>
+    <para><link linkend="fn_USER_SET_OPTION"><function>USER_SET_OPTIONS()</function></link></para>
   </refsect1>
 </refentry>

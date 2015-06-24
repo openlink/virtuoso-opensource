@@ -230,7 +230,7 @@ create procedure TUT_generate_files(
 	  if (trim(gen_path,'/') <> '')
 	    _xsl_params := vector_concat(_xsl_params,vector('path',ltrim(gen_path,'/')));
 	    
-	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(now())));
+	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(curutcdatetime())));
 
 	  _stream := string_output();
 	  http_rewrite(_stream);

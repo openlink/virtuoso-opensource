@@ -426,7 +426,7 @@ sqlo_ip_trailing_text (df_elt_t * tb_dfe, index_choice_t * ic)
     return 0;
   dfe_text_cost (tb_dfe, &text_cost, &text_card, 0);
   ic->ic_unit += text_cost;
-  ic->ic_arity /= MAX (1, text_card);
+  ic->ic_arity *= MAX (1e-9, text_card);
   ic->ic_text_pred = text_pred;
   return 1;
 }
@@ -707,6 +707,8 @@ dfe_tb_o_range_comp (df_elt_t * left, df_elt_t * right, df_elt_t * tb_dfe)
   /* left is __ro2sq (tb.o) and right is independent of tb */
   ST * tree = left->dfe_tree;
   if (dk_set_member (right->dfe_tables, (void*)tb_dfe))
+    return 0;
+  if (right->dfe_type == DFE_CONST && (IS_NUM_DTP (DV_TYPE_OF (right->dfe_tree)) || IS_DATE_DTP (DV_TYPE_OF (right->dfe_tree))))
     return 0;
   if (ST_P (tree, CALL_STMT) && DV_STRINGP (tree->_.call.name)
       && !stricmp (tree->_.call.name, "__ro2sq")

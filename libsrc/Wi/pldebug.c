@@ -189,7 +189,7 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	      for (i = 0; i < l; i++)
 		{
 		  char buffer[50];
-		  snprintf (buffer, sizeof (buffer), "%f ", ((float *) box)[i]);
+		  snprintf (buffer, sizeof (buffer), SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, ((float *) box)[i]);
 		  SES_PRINT (ses, buffer);
 		}
 	      SES_PRINT (ses, ")");
@@ -202,7 +202,7 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	      for (i = 0; i < l; i++)
 		{
 		  char buffer[50];
-		  snprintf (buffer, sizeof (buffer), "%f ", ((double *) box)[i]);
+		  snprintf (buffer, sizeof (buffer), DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, ((double *) box)[i]);
 		  SES_PRINT (ses, buffer);
 		}
 	      SES_PRINT (ses, ")");
@@ -278,6 +278,25 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	    SES_PRINT (ses, tmp);
 	  }
 	break;
+        case DV_RDF:
+            {
+              rdf_box_t *rb = (rdf_box_t *)box;
+	      SES_PRINT (ses, "rdf_box(");
+	      pldbg_print_value (ses, rb->rb_box, qi);
+	      snprintf (tmp, sizeof (tmp), 
+		  ",%ld,%ld,%ld,%ld", (long)(rb->rb_type), (long)(rb->rb_lang), (long)(rb->rb_ro_id), (long)(rb->rb_is_complete));
+	      SES_PRINT (ses, tmp);
+              if (rb->rb_chksum_tail)
+                {
+                  rdf_bigbox_t *rbb = (rdf_bigbox_t *)rb;
+	          SES_PRINT (ses, ",");
+		  pldbg_print_value (ses, rbb->rbb_chksum, qi);
+	          snprintf (tmp, sizeof (tmp), ",%ld", (long)(rbb->rbb_box_dtp));
+		  SES_PRINT (ses, tmp);
+                }
+	      SES_PRINT (ses, ")");
+              break;
+            }
       default:
 	    {
 	      caddr_t err_ret = NULL;

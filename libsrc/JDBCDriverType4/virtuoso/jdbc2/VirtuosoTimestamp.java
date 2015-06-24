@@ -78,7 +78,8 @@ public class VirtuosoTimestamp extends java.sql.Timestamp
         int nanos = getNanos();
 
         if (nanos == 0) {
-            nanosString = "000";
+//            nanosString = "000";
+            nanosString = "";
         } else {
             nanosString = Integer.toString(nanos);
 
@@ -121,8 +122,11 @@ public class VirtuosoTimestamp extends java.sql.Timestamp
         }
         sb.append(formatter.format(this));
 
-        sb.append(".");
-        sb.append(nanosString);
+        if (nanosString.length()>0) {
+          sb.append(".");
+          sb.append(nanosString);
+        }
+
         if (timeZoneString!=null)
             sb.append(timeZoneString);
         return sb.toString();

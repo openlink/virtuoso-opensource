@@ -47,6 +47,7 @@
 
 #undef DBG_PRINTF
 #define NO_DBG_PRINTF
+#include "datesupp.h"
 #include "libutil.h"
 #include "wi.h"
 #include "sqlver.h"
@@ -3885,7 +3886,9 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
     dbs_init_id (dbs->dbs_id);
   memcpy (db.db_id, dbs->dbs_id, sizeof (db.db_id));
   memcpy (db.db_cpt_dt, dbs->dbs_cfg_page_dt, DT_LENGTH);
-
+  if (-1 == timezoneless_datetimes)
+    timezoneless_datetimes = DT_TZL_BY_DEFAULT;
+  db.db_timezoneless_datetimes = timezoneless_datetimes;
   LSEEK (fd, 0, SEEK_SET);
   memcpy (zero, &db, sizeof (db));
   rc = write (fd, zero, PAGE_SZ);
@@ -4313,6 +4316,15 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
       log_error ("The database will contain data types which are not recognized by this server.");
       log_error ("Please use a newer server.");
       call_exit (-1);
+    }
+  if (cfg_page->db_timezoneless_datetimes != timezoneless_datetimes)
+    {
+      if (-1 != timezoneless_datetimes)
+        {
+          log_error ("The database you are opening has TimezonelessDatetimes set to %d whereas the value in configuration file is %d." , cfg_page->db_timezoneless_datetimes, timezoneless_datetimes);
+          log_error ("The value from configuration file is ignored.");
+        }
+      timezoneless_datetimes = cfg_page->db_timezoneless_datetimes;
     }
   if (cfg_page->db_byte_order != DB_ORDER_UNKNOWN && cfg_page->db_byte_order != DB_SYS_BYTE_ORDER)
     {

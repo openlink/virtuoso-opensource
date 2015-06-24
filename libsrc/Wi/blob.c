@@ -2154,9 +2154,8 @@ bh_is_ready:
 	  blob_log_write (row_itc, first_page, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (target_bh)), 0, 0, 0, 0);
       }
     bh_to_dv (target_bh, col, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (target_bh)));
-    if (!row_is_temporary && !row_itc->itc_ltrx->lt_client->cli_cl_dae_blob)
-    blob_schedule_delayed_delete (row_itc, bl_from_dv (col, row_itc),
-				  BL_DELETE_AT_ROLLBACK );
+    if (!row_is_temporary && !row_itc->itc_ltrx->lt_client->cli_cl_dae_blob && !row_itc->itc_non_txn_insert)
+      blob_schedule_delayed_delete (row_itc, bl_from_dv (col, row_itc), BL_DELETE_AT_ROLLBACK);
     if (BLOB_NULL_RECEIVED != read_status)
       source_bh->bh_ask_from_client = 0;	/* next time this bh is used it will refer to
 				   this blob and won't ask the user again. */

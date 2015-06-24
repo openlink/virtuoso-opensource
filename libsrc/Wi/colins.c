@@ -619,7 +619,7 @@ extern client_connection_t *rfwd_cli;
 
 //#define RQ_CHECK_TEXT "select count (*) from rdf_quad a table option (index rdf_quad) where not exists (select 1 from rq_rows b table option (loop) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)"
 //#define RQ_CHECK_TEXT "select count (*)  from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster) where  a.p = b.p and a.o = b.o )"
-//#define RQ_CHECK_TEXT "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)"
+#define RQ_CHECK_TEXT "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)"
 //#define RQ_CHECK_TEXT "select count (*)  from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster) where  a.g = b.g and a.s = b.s )"
 //#define RQ_CHECK_TEXT "select 0, count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad) where p =  #i292339462 and s > #ib390000000"
 
@@ -627,7 +627,7 @@ extern client_connection_t *rfwd_cli;
 #define RQ_RANGE_CHECK_TEXT_2 "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s) and p >= ? and p <= ?"
 
 //#define RQ_CHECK_TEXT "select count (*) from t1 a table option (index str2) where not exists (select 1 from t1 b table option (loop, index str2) where b.string2 = a.string2 and b.row_no = a.row_no)"
-#define RQ_CHECK_TEXT "select count (*) from knows k1 table option (index k_p2) where not exists (select 1 from knows k2 table option (loop, index k_p2) where k1.k_person1id = k2.k_person1id and k1.k_person2id = k2.k_person2id)"
+//#define RQ_CHECK_TEXT "select count (*) from knows k1 table option (index k_p2) where not exists (select 1 from knows k2 table option (loop, index k_p2) where k1.k_person1id = k2.k_person1id and k1.k_person2id = k2.k_person2id)"
 
 
 void
@@ -3661,10 +3661,12 @@ ceic_no_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int *action)
 	    if (page_ceic->ceic_res->cer_n_ces > PM_MAX_CES)
 	      GPF_T1 ("more ces than fit in pm");
 
-
 	    is_first_cer = 1;
 	    if (page_ceic->ceic_res && page_ceic->ceic_res->cer_next)
-	      dp_may_compact (buf->bd_storage, buf->bd_page);
+	      {
+		any_del = 1;	/* set of dps changed, update the col ref on the leaf row */
+	        dp_may_compact (buf->bd_storage, buf->bd_page);
+	      }
 	    for (cer = page_ceic->ceic_res; cer; cer = cer->cer_next)
 	      {
 		if (!cer->cer_pm->pm_count)
@@ -4508,6 +4510,8 @@ itc_col_ins_dups (it_cursor_t * itc, buffer_desc_t * buf, insert_node_t * ins)
 	      if (!itc_is_own_del_clk (itc, itc->itc_ranges[inx].r_first, &clk, &point, &next))
 		continue;
 	      clk->clk_change &= ~CLK_DELETE_AT_COMMIT;
+	      if (ins->ins_mode == INS_SOFT && (ins->ins_key_only || cl_run_local_only == CL_RUN_CLUSTER || itc->itc_insert_key->key_is_primary))
+		log_insert (itc->itc_ltrx, itc->itc_vec_rds[itc->itc_param_order[inx]], itc->itc_ins_flags);
 	      if (itc->itc_insert_key->key_n_significant * 2 == itc->itc_insert_key->key_n_parts)
 		continue;
 	    }

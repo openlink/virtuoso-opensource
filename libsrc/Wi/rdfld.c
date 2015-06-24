@@ -137,7 +137,7 @@ cu_rl_local_exec (cucurbit_t * cu)
     if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
       {
 	user_t *usr = cli->cli_user;
-	sqlr_new_error ("42000", "SR186", "No permission to execute dpipe %s with user ID %d, group ID %d",
+	sqlr_new_error ("42000", "SR186:SECURITY", "No permission to execute dpipe %s with user ID %d, group ID %d",
 	    clo->_.call.func, (int) (usr ? usr->usr_id : 0), (int) (usr ? usr->usr_g_id : 0));
       }
     memcpy (save_pars, clo->_.call.params, box_length ((caddr_t) clo->_.call.params));
@@ -247,6 +247,7 @@ aq_rl_del_key_func (caddr_t av, caddr_t * err_ret)
 }
 
 int rl_query_inited;
+int32 enable_rdf_trig = 0;
 
 void
 rl_query_init (dbe_table_t * quad_tb)
@@ -269,7 +270,8 @@ rl_query_init (dbe_table_t * quad_tb)
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
   {
     int first = 1;
-      sprintf (txt, "insert soft DB.DBA.RDF_QUAD index %s option (vectored%s) (", key->key_name, !key->key_is_primary ? ", no trigger" : "");
+    sprintf (txt, "insert soft DB.DBA.RDF_QUAD index %s option (vectored%s) (", key->key_name,
+	!key->key_is_primary || !enable_rdf_trig ? ", no trigger" : "");
     pars[0] = 0;
     DO_SET (dbe_column_t *, col, &key->key_parts)
     {
@@ -298,7 +300,7 @@ rl_query_init (dbe_table_t * quad_tb)
 	  first = 0;
 	}
       END_DO_SET();
-      sprintf (txt + strlen (txt), "option (index %s, vectored)", key->key_name);
+      sprintf (txt + strlen (txt), "option (index %s, vectored%s)", key->key_name, key->key_is_primary && enable_rdf_trig ? ", trigger" : "");
       rl_del_qrs[nth_key] = sql_compile (txt, bootstrap_cli, &err, SQLC_DEFAULT);
       nth_key++;
       if (err)
@@ -510,6 +512,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       rdf_box_t *rb = (rdf_box_t *) box;
       caddr_t content = rb->rb_box;
       dtp_t cdtp = DV_TYPE_OF (content);
+      rdf_obj_ft_rule_iid_hkey_t iid_hkey = { 0, 0 };
       if (rb->rb_ro_id)
 	{
 	  cu_set_value (cu, vs, box_copy_tree (box));
@@ -548,6 +551,13 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
 	}
       else
 	is_text = rb->rb_is_text_index;
+      if (!is_text) /* check if all graphs are enabled */
+	{
+	  mutex_enter (rdf_obj_ft_rules_mtx);
+	  if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
+	    is_text = 1;
+	  mutex_leave (rdf_obj_ft_rules_mtx);
+	}
       len = box_length (content) - 1;
       if (len > RB_BOX_HASH_MIN_LEN)
 	{

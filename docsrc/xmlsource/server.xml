@@ -143,6 +143,9 @@ It is divided into the following sections:
 			</listitem>
 			<listitem><para>[URIQA] Settings in this optional section control URIQA semantic web enabler.</para>
 			</listitem>
+			<listitem><para>[Flags] Settings for options that are generally used with <link linkend="fn_dbf_set"><function>__dbf_set</function></link>
+			   as temporally valid ( such as enable_joins_only), to be set as permanent.</para>
+			</listitem>
 			<listitem><para>[SPARQL] Settings in this optional section control SPARQL protocol endpoint default parameters and limits.</para>
 			</listitem>
 			<listitem><para>[I18N] encoding settings</para>
@@ -655,7 +658,7 @@ ACL's</link> for information on functions that are restricted.</para>
 					<formalpara>
 						<title>StopCompilerWhenXOverRunTime = 0</title>
 						<para>
-						If non-zero, this specifies that the SQL compiler should stop considering alternative execution plans after the elapsed compilation time exceeds the best run time estimate times the parameter.
+						The default value is 0. If non-zero, this specifies that the SQL compiler should stop considering alternative execution plans after the elapsed compilation time exceeds the best run time estimate times the parameter.
 						For example, if this is 2, then compilation stops after using twice the time of the best plan reached thus far.
 						Enabling this option increases performance when processing short running queries that are each executed once.  Using this with long running queries or prepared parametrized queries is not useful and may lead to non-optimal plans being selected.
 						</para></formalpara>
@@ -888,14 +891,18 @@ LIMIT 1000
 	<listitem id="ini_Parameters_RunAs">
 	    <formalpara>
 		<title>RunAs</title>
-		<para>Specifies the OS user name to which the server will switch after opening the listen ports. Has an effect only on the operating systems that support it.
+		<para>Specifies the OS user name to which the server will switch after opening the listen ports. Has an effect only on the
+			operating systems that support it.
 		</para>
 	    </formalpara>
 	</listitem>
 	<listitem id="ini_Parameters_MaxMemPoolSize">
 	    <formalpara>
-		<title>MaxMemPoolSize</title>
-		<para>Specifies the limit of the memory to be used for compiling a SQL statement. If the query compilation requires more memory an error will be signalled. If this is a zero then no limit will be applied. The default is 10Mb i.e. when no parameter is specified, also if negative number or less than 5000000 is given then it would be set to 5000000 bytes.
+		<title>MaxMemPoolSize = 200000000 </title>
+		<para>This parameter specifies the limit of the memory to be used for compiling a SQL statement.
+			If the query compilation requires more memory an error will be signalled. If this is a zero then no limit will be applied.
+			The default is 200000000. i.e. when no parameter is specified, also if negative number or less than 5000000 is given then it
+			would be set to 5000000 bytes.
 		</para>
 	    </formalpara>
 	</listitem>
@@ -1031,6 +1038,16 @@ lite is 2 in 'normal' mode is 256 by default.
 		    <para>Default is 40000.</para>
 	    </formalpara>
 	  </listitem>
+
+	  <listitem id="ini_ColumnStore">
+	    <formalpara>
+		    <title>ColumnStore</title>
+		    <para> If 1, all create table and create index statements will create column-store structures by default.
+		    </para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+	    </formalpara>
+	  </listitem>
+
 	  <listitem id="ini_AsyncQueueMaxThreads">
 	    <formalpara>
 		    <title>AsyncQueueMaxThreads</title>
@@ -1156,6 +1173,47 @@ This is followed by a size letter M or G.  A single hash join hash table  will o
         </tip>
 	    </formalpara>
 	  </listitem>
+
+
+    <listitem id="ini_TimezonelessDatetimes">
+	    <formalpara>
+		    <title>TimezonelessDatetimes</title>
+		    <para>Enables Timezoneless Support. Different applications may require different behavior when input data contain
+		    	timezoneless values. In some cases it is better to "cast" all of them to timezoned than to upgrade existing code.
+		    	Virtuoso offers 5 different modes of support -- 0, 1, 2, 3 and 4. This should be set before creating the database
+		    	and the set value is stored in the database. After database is created, an attempt to change the mode by patching
+		    	<link linkend="VIRTINI">virtuoso.ini</link> will have no effect and virtuoso.log will contain a warning about
+		    	mismatch between virtuoso.ini and the database file.</para>
+		    	<para>The possible variants are:</para>
+      <itemizedlist mark="bullet">
+        <listitem>TimezonelessDatetimes=0 -- Never use timezoneless, as it was in old databases. Always set local timezone on parsing strings if no timezone
+        	specified. An attempt to set timezoneless by calling function
+        	<link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> will signal error. Timezoneless values
+        	still may come from outside as dezerializations of timezoneless DATETIME values, serialized by other database instances,
+        	but not in any other way:
+        </listitem>
+        <listitem>TimezonelessDatetimes=1 -- When parsing strings, set timezoneless if ISO format tells so:
+        </listitem>
+        <listitem>TimezonelessDatetimes=2 -- Set timezoneless always, exception is when the parsed string contains explicit timezone or when RFC requires the
+        	use of GMT or when timezone is set by function <link linkend="fn_adjust_timezone"><function>adjust_timezone()</function></link>. This is default for new databases if
+        	<code>TimezonelessDatetimes</code> parameter is missing in virtuoso.ini
+        </listitem>
+        <listitem>TimezonelessDatetimes=3 -- Never use timezoneless. Always set local timezone on parsing strings if not timezone specified. An attempt to set
+        	timezoneless by calling function <link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> will
+        	signal error. Timezoneless values still may come from outside as deserializations of timezoneless DATETIME values,
+        	serialized by other database instances, but not in any other way. The difference with <code>TimezonelessDatetimes=0</code>
+        	is that timezones are always printed on cast datetimes to strings etc. so timezoneless-aware clients will get unambiguous data.
+        </listitem>
+        <listitem>TimezonelessDatetimes=4 -- On parsing string, set timezone to GMT if no timezone specified. However, timezoneless can be set by calling
+      	function <link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> . This mode can be convenient
+      	for global web services when real "local" timezones of specific users are not known.
+        </listitem>
+      </itemizedlist>
+  		<para>For new applications, consider the use of <code>TimezonelessDatetimes=2</code> as primary variant,
+  		<code>TimezonelessDatetimes=1</code> as the second best.</para>
+	    </formalpara>
+	  </listitem>
+
           </itemizedlist>
           <para>Note: The default for startup behavior is to always read full extents and the default for the normal 
 behavior is to trigger preread on the third read inside one second.</para>
@@ -1312,8 +1370,8 @@ The log file is rotated daily.</para>
 <para>An example of which is:</para>
 <programlisting><![CDATA[
 127.0.0.1 - - [12/Sep/2006:12:31:17 +0300] "GET /ods/ HTTP/1.1" 200 19453 "" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.0.6) Gecko.."
-127.0.0.1 - - [12/Sep/2006:12:31:18 +0300] "GET /ods/default.css HTTP/1.1" 200 41389 "http://localhost:8894/ods/" "Mozilla/5.0 (Windows; U; ..."
-127.0.0.1 - - [12/Sep/2006:12:31:19 +0300] "GET /ods/common.js HTTP/1.1" 200 7481 "http://localhost:8894/ods/" "Mozilla/5.0 (Windows; U; ..."]]></programlisting>
+127.0.0.1 - - [12/Sep/2006:12:31:18 +0300] "GET /ods/default.css HTTP/1.1" 200 41389 "http://example.com/ods/" "Mozilla/5.0 (Windows; U; ..."
+127.0.0.1 - - [12/Sep/2006:12:31:19 +0300] "GET /ods/common.js HTTP/1.1" 200 7481 "http://example.com/ods/" "Mozilla/5.0 (Windows; U; ..."]]></programlisting>
 				</listitem>
 				<listitem id="ini_HTTPServer_MacCachedProxyConnections">
 					<formalpara>
@@ -1544,6 +1602,22 @@ from the HTTP threads after each request.  The default setting is "0".</para>
 </listitem>
       </itemizedlist>
 		</sect5>
+		<sect5 id="ini_Flags">
+			<title>[Flags]</title>
+			<para>
+      </para>
+			<itemizedlist mark="dash">
+        <listitem id="ini_URIQA_EnableJoinsOnly ">
+          <formalpara>
+        	  <title>enable_joins_only = 0</title>
+        	  <para>Setting enable_joins_only will cause the optimizer to only consider next plan candidates that are connected by a
+        	  	join to the existing partial plan. In other words, no cartesian products will be considered. This may save some space
+        	  	and time.
+        	  </para>
+          </formalpara>
+        </listitem>
+      </itemizedlist>
+		</sect5>
 		<sect5 id="ini_URIQA">
 			<title>[URIQA]</title>
 			<para>
@@ -1614,6 +1688,13 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 	<para>Cache Expiration time in seconds that overrides Sponger's default cache invalidation.</para>
     </formalpara>
 </listitem>
+<listitem id="ini_MaxDataSourceSize">
+    <formalpara>
+	<title>MaxDataSourceSize = 20971520</title>
+	<para>Controls the max size that can be sponged. Default is 20 MB.</para>
+    </formalpara>
+</listitem>
+
 <listitem id="ini_SPARQL_ExternalXsltSource">
     <formalpara>
 	<title>ExternalXsltSource = 1 or 0</title>
@@ -1623,7 +1704,9 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
 <listitem id="ini_SPARQL_ResultSetMaxRows">
     <formalpara>
 	<title>ResultSetMaxRows = number</title>
-	<para>This setting is used to limit the number of the rows in the result, if this is higher than "maxrows" parameter this setting takes precedence.</para>
+	<para>This setting is used to limit the number of the rows in the result. The effective limit will be the lowest of this
+		setting, SPARQL query 'LIMIT' clause value (if present), and SPARQL Endpoint request URI
+		<link linkend="rdfrequestparamsofunctions">&amp;maxrows</link> parameter value (if present).</para>
     </formalpara>
 </listitem>
 <listitem id="ini_SPARQL_DefaultGraph">
@@ -2094,7 +2177,7 @@ reconnecting without reporting the error, which would be setting 1.</para>
 					    </para>
 					</formalpara>
 				</listitem>
-				<listitem id="ini_VDB_KeepConnectionOnFixedThread">
+				<listitem id="ini_VDB_PrpcBurstTimeoutMsecs">
 					<formalpara>
 					    <title>PrpcBurstTimeoutMsecs=100 (milliseconds)</title>
 					    <para>RPC burst mode timeout in milliseconds. (see above)</para>
@@ -2140,7 +2223,7 @@ exits when there are a large number of connection requests to the VDB.  Certain 
 						<para>This option controls the aggregation point of the VDB connection pools.
 						    When it is off (=0, the default) the VDB connections that are no longer needed after transaction end
 						    are collected server-side in a per-user connection cache. This (together with the
-						    <link linkend="ini_VDB_KeepConnectionOnFixedThread">KeepConnectionOnFixedThread</link> INI option)
+						   <code>KeepConnectionOnFixedThread</code> INI option)
 						    ensures conformance even with older ODBC drivers that require that connections must be used
 						    only within the OS thread that initiated them. This however may result in somewhat low reuse rate
 						    for the pooled connections. That's why when this option is 1 (On) the connections are stored
@@ -2645,6 +2728,11 @@ Usage:
   +checkpoint-only       exit as soon as checkpoint on startup is complete
   +backup-dump           dump database into the transaction log, then exit
   +crash-dump            dump inconsistent database into the transaction log, then exit
+  +log6                  If you're starting with a Virtuoso 5 server, and migrating to a Virtuoso 6 or
+                         later server, append +log6 after +backup-dump or +crash-dump.
+                         Note: The extra +log6 argument is not needed, and may have unexpected effect,
+                         so please leave it off if starting with a Virtuoso 6 server and moving to
+                         Virtuoso 6 or later.
   +crash-dump-data-ini   specify the DB ini to use for reading the data to dump
   +restore-crash-dump    restore from a crash-dump
   +wait                  wait for background initialization to complete
@@ -3197,8 +3285,6 @@ The following functions are restricted by file Access Control Lists (ACL) in the
 </sect1>
 
 &adminui;
-
-&clusteroperation;
 
 &fault;
 

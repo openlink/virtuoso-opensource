@@ -1388,7 +1388,7 @@ ewkt_get_token (ewkt_input_t * in, ewkt_token_val_t * val)
   return res;
 }
 
-void
+NORETURN void
 ewkt_signal (ewkt_input_t * in, const char *error)
 {
   in->ewkt_error = error;
@@ -1931,16 +1931,16 @@ ewkt_print_sf12_points (dk_session_t * ses, int geo_flags, int pcount, geoc * Xs
 	SES_PRINT (ses, "EMPTY");
       else
 	{
-          snprintf (buf, sizeof(buf), "%lf %lf", Xs[inx], Ys[inx]);
+          snprintf (buf, sizeof(buf), GEOC_WKT_STAR_FMT " " GEOC_WKT_STAR_FMT, GEOC_WKT_PREC, Xs[inx], GEOC_WKT_PREC, Ys[inx]);
 	  SES_PRINT (ses, buf);
 	  if (geo_flags & GEO_A_Z)
 	    {
-              snprintf (buf, sizeof(buf), " %lf", Zs[inx]);
+              snprintf (buf, sizeof(buf), " " GEOC_WKT_STAR_FMT, GEOC_WKT_PREC, Zs[inx]);
 	      SES_PRINT (ses, buf);
 	    }
 	  if (geo_flags & GEO_A_M)
 	    {
-              snprintf (buf, sizeof(buf), " %lf", Ms[inx]);
+              snprintf (buf, sizeof(buf), " " GEOC_WKT_STAR_FMT, GEOC_WKT_PREC, Ms[inx]);
 	      SES_PRINT (ses, buf);
 	    }
 	}
@@ -2013,7 +2013,7 @@ ewkt_print_sf12 (geo_t * g, dk_session_t * ses)
   ewkt_print_sf12_one (g, ses, 1);
 }
 
-#define SES_DXF_REAL(ses,mark,v) do { char tmpbuf[60]; snprintf (tmpbuf, sizeof(tmpbuf), "\n%3d\n%lf", (mark), (double)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+#define SES_DXF_REAL(ses,mark,v) do { char tmpbuf[60]; snprintf (tmpbuf, sizeof(tmpbuf), "\n%3d\n" GEOC_DXF_STAR_FMT, (mark), GEOC_DXF_PREC, (double)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
 
 #define SES_DXF_INTEGER(ses,mark,v) do { char tmpbuf[50]; snprintf (tmpbuf, sizeof(tmpbuf), "\n%3d\n%d", (mark), (int)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
 

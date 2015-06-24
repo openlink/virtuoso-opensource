@@ -770,7 +770,7 @@ create procedure WEBDAV.DBA.dc_compareMetas (inout cmp_metas any)
 --
 create procedure WEBDAV.DBA.dt_current_time()
 {
-  return dateadd('minute', - timezone(now()),now());
+  return dateadd('minute', - timezone(curdatetime_tz()),curdatetime_tz());
 }
 ;
 
@@ -790,7 +790,7 @@ create procedure WEBDAV.DBA.dt_gmt2user(
     pUser := WEBDAV.DBA.account ();
   if (isnull (pUser))
     return pDate;
-  tz := cast (coalesce (USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60 - timezone(now());
+  tz := cast (coalesce (USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60 - timezone(curdatetime_tz());
   return dateadd('minute', tz, pDate);
 };
 
@@ -1862,6 +1862,9 @@ create procedure WEBDAV.DBA.user_initialize (
 
     if (WEBDAV.DBA.DAV_ERROR (cid))
       signal ('BRF03', concat ('User''s folder ''Public'' can not be created.', WEBDAV.DBA.DAV_PERROR(cid)));
+
+    -- create "Shared Resources" folder
+    WEBDAV.DBA.acl_share_create (uid);
   }
 }
 ;
@@ -3632,22 +3635,17 @@ create procedure WEBDAV.DBA.rdfSink_CONFIGURE (
   in params any)
 {
   -- dbg_obj_princ ('rdfSink_CONFIGURE (', id, params, ')');
-  declare path, oldGraph, newGraph varchar;
+  declare path varchar;
 
   path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
-  oldGraph := DB.DBA.DAV_PROP_GET_INT (id, 'C', 'graph', 0);
-  if (WEBDAV.DBA.DAV_ERROR (oldGraph))
-    oldGraph := '';
-
-  newGraph := trim (get_keyword ('graph', params, ''));
-  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-base', get_keyword ('base', params), null, null, 0, 0, 1, http_dav_uid ());
-  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-graph', get_keyword ('graph', params), null, null, 0, 0, 1, http_dav_uid ());
-  WEBDAV.DBA.graph_update (id, 'rdfSink', oldGraph, newGraph);
 
   -- Sponger
   DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-sponger',        get_keyword ('sponger', params), null, null, 0, 0, 1, http_dav_uid ());
   DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-cartridges',     get_keyword ('cartridges', params), null, null, 0, 0, 1, http_dav_uid ());
   DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-metaCartridges', get_keyword ('metaCartridges', params), null, null, 0, 0, 1, http_dav_uid ());
+
+  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-base',           get_keyword ('base', params), null, null, 0, 0, 1, http_dav_uid ());
+  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-graph',          get_keyword ('graph', params), null, null, 0, 0, 1, http_dav_uid ());
 }
 ;
 
@@ -4955,7 +4953,15 @@ create procedure WEBDAV.DBA.aci_save (
   }
   else
   {
-    retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta_n3', WEBDAV.DBA.aci_n3 (aci));
+    tmp := WEBDAV.DBA.aci_n3 (aci);
+    if (isnull (tmp))
+    {
+      retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'virt:aci_meta_n3');
+    }
+    else
+    {
+      retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta_n3', tmp);
+    }
   }
   return retValue;
 }
@@ -5416,128 +5422,50 @@ create procedure WEBDAV.DBA.metaCartridges_get ()
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.graph_update (
-  in id any,
-  in detType varchar,
-  in oldGraph varchar,
-  in newGraph varchar)
+create procedure WEBDAV.DBA.ldp_recovery (
+  in path varchar)
 {
-  declare path varchar;
-  declare permissions varchar;
   declare aq any;
 
-  path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
-  if (WEBDAV.DBA.DAV_ERROR (path))
-    return;
-
-  if (not WEBDAV.DBA.VAD_CHECK ('Framework'))
-    return;
-
-  -- old graph
-  if (not DB.DBA.is_empty_or_null (oldGraph))
-  {
-    SIOC..private_graph_remove (oldGraph);
-    DB.DBA.wa_private_graph_remove (oldGraph, 'WebDAV', path, 'C');
-  }
-
-  -- new graph
-  if (not DB.DBA.is_empty_or_null (newGraph))
-  {
-    permissions := DB.DBA.DAV_PROP_GET_INT (id, 'C', ':virtpermissions', 0, null, null, http_dav_uid ());
-    if (permissions[6] = ascii('0'))
-    {
-      -- add to private graphs
-      SIOC..private_init ();
-      SIOC..private_graph_add (newGraph);
-      DB.DBA.wa_private_graph_add (newGraph, 'WebDAV', path, 'C');
-    }
-    else
-    {
-      -- remove from private graphs
-      SIOC..private_graph_remove (newGraph);
-      DB.DBA.wa_private_graph_remove (newGraph, 'WebDAV', path, 'C');
-    }
-  }
-
-  -- update graph if needed
-  if (oldGraph <> newGraph)
-  {
-    aq := async_queue (1);
-    aq_request (aq, 'WEBDAV.DBA.graph_update_aq', vector (path, cast (detType as varchar), oldGraph, newGraph));
-  }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.graph_update_aq (
-  in path varchar,
-  in detType varchar,
-  in oldGraph varchar,
-  in newGraph varchar)
-{
-  -- dbg_obj_princ ('WEBDAV.DBA.graph_update_aq (', path, detType, oldGraph, newGraph, ')');
-  declare N, detcol_id integer;
-  declare V, filter any;
-
-  V := null;
-  detcol_id := DB.DBA.DAV_SEARCH_ID (path, 'C');
-  filter := vector (vector ('RES_FULL_PATH', 'like', path || '%'));
-  if ((coalesce (oldGraph, '') <> '') and (__proc_exists ('DB.DBA.' || detType || '__rdf_delete') is not null))
-  {
-    V := DB.DBA.DAV_DIR_FILTER (path, 1, filter, 'dav', WEBDAV.DBA.account_password (WEBDAV.DBA.account_id ('dav')));
-    for (N := 0; N < length (V); N := N + 1)
-    {
-      call ('DB.DBA.' || detType || '__rdf_delete') (detcol_id, V[N][4], 'R', oldGraph);
-    }
-  }
-
-  if ((coalesce (newGraph, '') <> '')  and (__proc_exists ('DB.DBA.' || detType || '__rdf_insert') is not null))
-  {
-    if (isnull (V))
-      V := DB.DBA.DAV_DIR_FILTER (path, 1, filter, 'dav', WEBDAV.DBA.account_password (WEBDAV.DBA.account_id ('dav')));
-
-    for (N := 0; N < length (V); N := N + 1)
-    {
-      call ('DB.DBA.' || detType || '__rdf_insert') (detcol_id, V[N][4], 'R', newGraph);
-    }
-  }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.graph_clear (
-  in path varchar,
-  in detType varchar,
-  in graph varchar)
-{
-  declare paths, aq any;
-
-  if ((coalesce (graph, '') = '') or not __proc_exists ('DB.DBA.' || detType || '__rdf_clear'))
-    return;
-
-  paths := vector ();
-  for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
-    paths := vector_concat (paths, vector (RES_FULL_PATH));
-
-  if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'))
-    DB.DBA.RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph);
-
   aq := async_queue (1);
-  aq_request (aq, 'WEBDAV.DBA.graph_clear_aq', vector (paths, graph));
+  aq_request (aq, 'WEBDAV.DBA.ldp_recovery_aq', vector (path));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.graph_clear_aq (
-  in paths any,
-  in graph varchar)
+create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
 {
-  foreach (any path in paths) do
+  -- dbg_obj_princ ('WEBDAV.DBA.ldp_recovery_aq (', path, ')');
+  declare id integer;
+  declare uri, ruri any;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+  if (not DB.DBA.LDP_ENABLED (id))
+    return;
+
+  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
   {
-    DB.DBA.RDF_SINK_CLEAR (path, graph);
+    uri := WS.WS.DAV_IRI (path);
+    TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
+    for (select RES_CONTENT, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id and RES_TYPE = 'text/turtle') do
+	  {
+	    ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
+	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
+	    {
+	      declare continue handler for sqlstate '*';
+	      TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+	    }
+	  }
+    for select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null do
+	  {
+	    ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
+	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
+	  }
+  }
+  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
+  {
+    WEBDAV.DBA.ldp_recovery_aq (path || COL_NAME || '/');
   }
 }
 ;

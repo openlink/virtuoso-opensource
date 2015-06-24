@@ -24,11 +24,18 @@ if WITH_JDK4
 TARGETS		= lib virt_dialect.jar
 JDK		= @ac_jdk4_path@
 JDK_FLAGS	= -Xlint -O -g:none -source 1.5 -target 1.5
+
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
 JAVAH		= $(JDK)/javah
 JAVADOC		= $(JDK)/javadoc
 JAR		= $(JDK)/jar
+else
+JAVA		= :
+JAVAC		= :
+JAVAH		= :
+JAVADOC		= :
+JAR		= :
 endif
 
 

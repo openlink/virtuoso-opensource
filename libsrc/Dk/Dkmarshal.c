@@ -693,7 +693,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 }
 
 
-void *
+NORETURN void
 box_read_error (dk_session_t * session, dtp_t dtp)
 {
   /*assert (session->dks_read_fail_on); */
@@ -712,8 +712,6 @@ box_read_error (dk_session_t * session, dtp_t dtp)
       SESSTAT_SET (session->dks_session, SST_BROKEN_CONNECTION);
     }
   longjmp_splice (&(SESSION_SCH_DATA (session)->sio_read_broken_context), 1);
-
-  return NULL;
 }
 
 
@@ -855,7 +853,8 @@ scan_session_boxing (dk_session_t * session)
     }
 
   if (session->dks_is_server && rpcreadtable[next_char] == box_read_error)
-    return box_read_error (session, next_char);
+    box_read_error (session, next_char);
+
   result = (*readtable[next_char]) (session, next_char);
 
   if (next_char == DV_LONG_INT || next_char == DV_SHORT_INT)

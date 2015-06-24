@@ -168,6 +168,30 @@ dk_mmap_brk (size_t sz)
   ((sz) >= box_min_mmap && (sz) < 0xffffff ? mm_free_sized (ptr, sz) : dk_free (ptr, sz))
 #endif
 
+#ifndef NDEBUG
+#define dk_alloc_box_check_length(bytes,tag) do { \
+  if ((bytes) & ~0xffffff) \
+    GPF_T1 ("box to allocate is too large"); \
+  switch ((tag)) { \
+    case DV_SHORT_STRING_SERIAL: case DV_LONG_WIDE: \
+      GPF_T1 ("misused tag of box to allocate"); \
+      break; \
+    case DV_WIDE: \
+      if ((bytes) % sizeof (wchar_t)) \
+        GPF_T1 ("DV_WIDE of length that is not divisible on sizeof (wchar_t)"); \
+      if (0 == (bytes)) \
+        GPF_T1 ("DV_WIDE with no room for trailing zero"); \
+      break; \
+    case DV_STRING: case DV_C_STRING: \
+      if (0 == (bytes)) \
+        GPF_T1 ("String with no room for trailing zero"); \
+      break; \
+    } \
+} while (0)
+#else
+#define dk_alloc_box_check_length(bytes,tag) do { ; } while (0)
+#endif
+
 
 size_t box_min_mmap = (1024 * 100 ) - 8;
 #undef dk_alloc_box
@@ -176,11 +200,7 @@ dk_alloc_box (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
-#ifdef MALLOC_DEBUG
-  if (bytes & ~0xffffff)
-    GPF_T1 ("box to allocate is too large");
-#endif
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -248,11 +268,7 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
   unsigned char *ptr = NULL;
   size_t align_bytes;
 
-#ifdef MALLOC_DEBUG
-  if (bytes & ~0xffffff)
-    GPF_T1 ("box to allocate is too large");
-#endif
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -287,7 +303,7 @@ dk_alloc_box_zero (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -320,7 +336,7 @@ dbg_dk_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -352,7 +368,7 @@ dbg_dk_alloc_box_long (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -386,7 +402,7 @@ dbg_dk_try_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -418,7 +434,7 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -514,17 +530,17 @@ dk_free_box (box_t box)
 
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Free of a damaged wide string");
+#endif
 #ifdef DOUBLE_ALIGN
       len = ALIGN_8 (len);
 #else
       len = ALIGN_4 (len);
 #endif
       break;
-#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -706,17 +722,17 @@ dk_free_tree (box_t box)
 
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Free of a tree with a damaged wide string");
+#endif
 #ifdef DOUBLE_ALIGN
       len = ALIGN_8 (len);
 #else
       len = ALIGN_4 (len);
 #endif
       break;
-#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -800,6 +816,18 @@ void
 box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
 {
   dk_alloc_box_assert (box);
+#ifndef NDEBUG
+  if (DV_WIDE == DV_TYPE_OF (box))
+    {
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Reuse of a damaged wide string");
+    }
+  if (DV_WIDE == dtp)
+    {
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)data)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Reuse of a box for a damaged wide string");
+    }
+#endif
   box_tag_modify (box, dtp);
   ((dtp_t *) box)[-4] = (dtp_t) (len & 0xff);
   ((dtp_t *) box)[-3] = (dtp_t) (len >> 8);
@@ -1119,12 +1147,12 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
   switch (tag)
     {
     case DV_WIDE:
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
       len = box_length (box);
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Copy of a damaged wide string");
-      break;
 #endif
+      break;
     case DV_STRING:
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
@@ -1250,13 +1278,13 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
   tag = box_tag (box);
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       len = box_length (box);
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Copy of a tree with a damaged wide string");
-      break;
 #endif
+      break;
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
@@ -1345,6 +1373,13 @@ DBG_NAME (box_try_copy_tree) (DBG_PARAMS box_t box, box_t stub)
   tag = box_tag (box);
   switch (tag)
     {
+    case DV_WIDE:
+#ifndef NDEBUG
+      len = box_length (box);
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Copy of a tree with a damaged wide string");
+#endif
+      break;
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
@@ -1478,7 +1513,8 @@ rdf_box_audit_impl (rdf_box_t * rb)
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");
 #endif
-  if (rb->rb_type < RDF_BOX_MIN_TYPE) GPF_T1 ("rb type out pof range");
+  if ((rb->rb_type < RDF_BOX_MIN_TYPE) || (rb->rb_type > RDF_BOX_MAX_TYPE)) GPF_T1 ("rb type out of range");
+  if ((rb->rb_lang < RDF_BOX_DEFAULT_LANG) || (rb->rb_lang > RDF_BOX_MAX_LANG)) GPF_T1 ("rb lang out of range");
   if (rb->rb_is_complete)
     rb_dt_lang_check(rb);
 }

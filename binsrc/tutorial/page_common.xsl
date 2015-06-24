@@ -26,7 +26,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" >
   <xsl:param name="mount_point">/tutorial</xsl:param>
   <xsl:param name="path" select="concat(/tutorial/section[1]/subsection[2]/@wwwpath,'/')"/>
-	<xsl:param name="now_rfc1123"><?V date_rfc1123(now())?></xsl:param>
+	<xsl:param name="now_rfc1123"><?V date_rfc1123(curutcdatetime())?></xsl:param>
   <xsl:variable name="subsecpath">
     <xsl:choose>
       <xsl:when test="//example[@wwwpath = $path]">

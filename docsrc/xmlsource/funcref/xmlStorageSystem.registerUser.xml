@@ -90,7 +90,7 @@ performed on the server are:</para>
     <title>Examples</title>
     <example id="ex_xmlStorageSystem"><title>Registering a new user</title>
       <screen>
-SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://localhost:6666/xmlStorageSystem&#39;,
+SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://example.com/xmlStorageSystem&#39;,
 	 	 operation=&gt;&#39;registerUser&#39;, parameters=&gt;vector
 		(&#39;email&#39;,&#39;user@example.domain&#39;, &#39;name&#39;, &#39;Somebody Name&#39;, 
 		 &#39;password&#39;, &#39;xxx&#39;, &#39;clientPort&#39;, 0, &#39;userAgent&#39;, &#39;&#39; , &#39;serialNumber&#39;, &#39;&#39;));

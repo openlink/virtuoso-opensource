@@ -207,7 +207,7 @@ next: ;
   END_DO_SET ();
   if (!n_found && SCO_THIS_QUAL == mode && strchr (col_ref->_.col_ref.prefix, '.'))
     {
-      dbe_table_t *prefix_table = sch_name_to_table (sco->sco_so->so_sc->sc_cc->cc_schema,
+      dbe_table_t *prefix_table = sch_name_to_table (wi_inst.wi_schema,
 	  col_ref->_.col_ref.prefix);
       DO_SET (op_table_t *, ot, &sco->sco_tables)
 	{
@@ -865,7 +865,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
     case TABLE_DOTTED:
       {
 	ST * with_view = sqlo_with_decl (so, tree);
-	dbe_table_t *tb = with_view ? NULL : sch_name_to_table (so->so_sc->sc_cc->cc_schema, tree->_.table.name);
+	dbe_table_t *tb = with_view ? NULL : sch_name_to_table (wi_inst.wi_schema, tree->_.table.name);
 	ST * view;
 	if (!tb && !with_view)
 	  sqlc_error (so->so_sc->sc_cc, "S0002", "No table %s", tree->_.table.name);
@@ -873,8 +873,8 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	  tree->_.table.name = t_box_copy (tb->tb_name);
 	if (!with_view)
 	  {
-	sqlc_table_used (so->so_sc, tb);
-	view = (ST*) sch_view_def (so->so_sc->sc_cc->cc_schema, tb->tb_name);
+	    sqlc_table_used (so->so_sc, tb);
+	    view = (ST*) sch_view_def (wi_inst.wi_schema, tb->tb_name);
 	  }
 	else
 	  view = with_view;
@@ -906,7 +906,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	  {
 	    op_table_t * ot = NULL;
 	    if (!with_view && !sec_tb_check (tb, (oid_t) unbox (tree->_.table.u_id), (oid_t) unbox (tree->_.table.u_id), GR_SELECT))
-	      sqlc_error (so->so_sc->sc_cc, "42000", "Must have select privileges on view %s", tb->tb_name);
+	      sqlc_new_error (so->so_sc->sc_cc, "42000", "SQ070:SECURITY", "Must have select privileges on view %s", tb->tb_name);
 	    view = (ST*) t_box_copy_tree ((caddr_t) view);
 	    if (ST_P (view, UNION_ST) ||
 		ST_P (view, UNION_ALL_ST) ||

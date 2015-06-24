@@ -96,7 +96,7 @@ namespace OpenLink.Data.Virtuoso
 			}
 			else
 			{
-				endOfTime = DateTime.Now.Ticks + timeout * Values.TicksPerSec;
+				endOfTime = DateTime.Now.Ticks + (long)timeout * Values.TicksPerSec;
 				this.timeout = timeout * Values.MillisPerSec;
 			}
 			Debug.WriteLineIf (Switch.Enabled, "requestNo: " + requestNo);

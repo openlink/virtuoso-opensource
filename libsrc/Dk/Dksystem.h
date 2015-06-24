@@ -179,6 +179,27 @@ char *strtok_r ();
 # define GLOBALREF extern
 #endif
 
+
+/*
+ *  Easier way of checking GCC version
+ */
+#if defined(__GNUC__)
+#  define GCC_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__)
+#endif
+
+/*
+ *  Portable way to tag functions that do not return
+ */
+#if (_MSC_VER >= 1310)		/* MS Visual Studio 2003/.NET Framework 1.1 or newer */
+#  define NORETURN 		/*__declspec(noreturn)*/
+#elif defined(__HP_cc) && (__HP_cc >= 61000)
+#  define NORETURN 		__attribute__((noreturn))
+#elif (GCC_VERSION >= 3004) || defined (__clang__)
+#  define NORETURN		__attribute__((noreturn))
+#else
+#  define NORETURN		/*NOTHING*/
+#endif
+
 #ifdef __GNUC__
 # define DK_INLINE	__inline__
 #else

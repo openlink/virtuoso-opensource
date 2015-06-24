@@ -1939,6 +1939,7 @@ cha_clear_1 (chash_t * cha)
     cha->cha_init_data = cha->cha_current_data;
   cha_clear_fill (cha->cha_current);
   cha_clear_fill (cha->cha_current_data);
+  cha->cha_exception_fill = 0;
 }
 
 
@@ -5137,7 +5138,20 @@ ce_hash_dc (col_pos_t * fetch_cpo, db_buf_t ce, db_buf_t ce_first, int n_values,
     {
       dtp_t ce_dtp = CE_INTLIKE (flags) ? ((CE_IS_IRI & flags) ? DV_IRI_ID : DV_LONG_INT) : DV_ANY;
       if (ce_dtp != DV_ANY && ce_dtp != dtp_canonical[dcdtp])
-	return;			/*incompatible dc */
+	{
+	  if (itc->itc_n_matches)
+	    {
+	      int end = fetch_cpo->cpo_ce_row_no + n_values;
+	      for (;;)
+		{
+		  if (++itc->itc_match_in == itc->itc_n_matches)
+		    return;
+		  if (itc->itc_matches[itc->itc_match_in] >= end)
+		    return;
+		}
+	    }
+	  return; /*incompatible dc */
+	}
       if (DV_ANY == fetch_cpo->cpo_cl->cl_sqt.sqt_col_dtp && DV_ANY == ce_dtp)
 	{
 	  fetch_cpo->cpo_value_cb = ce_result_typed;

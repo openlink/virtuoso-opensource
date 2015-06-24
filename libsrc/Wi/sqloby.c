@@ -803,7 +803,7 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
 	    locus_to_loclocal = 1;
 	}
       if (arg_dfe)
-	sqlg_find_aggregate_sqt (so->so_sc->sc_cc->cc_schema, &(arg_dfe->dfe_sqt), fref, &(fref_dfe->dfe_sqt));
+	sqlg_find_aggregate_sqt (wi_inst.wi_schema, &(arg_dfe->dfe_sqt), fref, &(fref_dfe->dfe_sqt));
       if (locus_to_loclocal)
 	{
 	  fref_dfe->dfe_locus = LOC_LOCAL;

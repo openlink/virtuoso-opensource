@@ -568,7 +568,7 @@ create procedure ODRIVE.WA.exec (
 --
 create procedure ODRIVE.WA.dt_current_time()
 {
-  return dateadd('minute', - timezone(now()),now());
+  return dateadd('minute', - timezone(curdatetime_tz()),curdatetime_tz());
 }
 ;
 
@@ -588,7 +588,7 @@ create procedure ODRIVE.WA.dt_gmt2user(
     pUser := ODRIVE.WA.account();
   if (isnull(pUser))
     return pDate;
-  tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60 - timezone(now());
+  tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60 - timezone(curdatetime_tz());
   return dateadd('minute', tz, pDate);
 };
 
@@ -770,6 +770,8 @@ create procedure ODRIVE.WA.dt_reformat(
 create procedure ODRIVE.WA.dt_rfc1123 (
   in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;

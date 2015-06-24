@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_connection_vars">
       <funcprototype id="fproto_connection_vars">
         <funcdef>any <function>connection_vars</function></funcdef>
-	<paramdef />
+	<paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

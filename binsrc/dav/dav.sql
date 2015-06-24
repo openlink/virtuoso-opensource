@@ -115,7 +115,7 @@ not_found: ;
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
 		ldp_head,
 		'Access-Control-Allow-Methods: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n',
-		'Access-Control-Allow-Headers: accept, slug, link, origin, content-type\r\n',
+		'Access-Control-Allow-Headers: authorization, accept, slug, link, origin, content-type\r\n',
 		'Accept-Patch: */*\r\n',
 		'Accept-Post: */*\r\n',
 		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
@@ -2179,19 +2179,13 @@ create procedure WS.WS.PUT (
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-	declare _col_parent, _etag varchar;
-	_col_parent :=  DB.DBA.DAV_SEARCH_PATH (_col_parent_id, 'C');
+
+  	declare _etag varchar;
+
 	_etag := WS.WS.ETAG_BY_ID (rc, rc_type);
 	if (_etag is not null)
 	  http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', _etag));
-	if (LDP_ENABLED (_col_parent_id))
-	{
-		declare par_graph, cur_graph any;
-		par_graph := (WS.WS.DAV_IRI (_col_parent));
-		cur_graph := (WS.WS.DAV_IRI (full_path));
-		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', par_graph, cur_graph), par_graph, par_graph);
-		--SPARQL INSERT IN GRAPH ?:par_graph { ?:par_graph <http://www.w3.org/ns/ldp#contains> ?:cur_graph . };
-	}
+
     if (_atomPub)
     {
       WS.WS.DAV_ATOM_ENTRY (rc, 'R');
@@ -2972,19 +2966,29 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-  if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+    if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
     {
-      declare sp_opt any;
+      declare sp_opt, sp_col_opt any;
 
-      http_rewrite ();
-      http_status_set (303);
-      if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
-        sp_opt := '&sponger:get=add';
-      else
-        sp_opt := '';
-      http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s\r\n',
-      WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt));
-      return;
+      sp_col_opt := DB.DBA.TTL_REDIRECT_PARAMS (_col);
+      if (not isnull (sp_col_opt))
+      {
+        sp_col_opt := '&' || trim (sp_col_opt, '&');
+        http_rewrite ();
+        http_status_set (303);
+        if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
+        {
+          sp_opt := '&sponger:get=add';
+        }
+        else
+        {
+          sp_opt := '';
+        }
+        http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s%s\r\n',
+          WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt, sp_col_opt));
+
+        return;
+      }
     }
 
     _sse_cont_type := cont_type;
@@ -3327,7 +3331,7 @@ create procedure WS.WS.LDP_HDRS (in is_col int := 0, in add_rel int := 0, in pag
 {
   declare h, nid any;
   h := 'MS-Author-Via: DAV, SPARQL\r\n' ||
-      'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
+      'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,MKCOL,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
       'Accept-Patch: application/sparql-update\r\n' ||
       'Accept-Post: text/turtle,text/n3,text/nt\r\n' ||
       'Vary: Accept,Origin,If-Modified-Since,If-None-Match\r\n';
@@ -3655,6 +3659,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   declare ns, def_gr, giid, dict, triples, prefixes any;
 	declare exit handler for sqlstate '*'
 	{
+  _error:;
 	  connection_set ('__sql_state', __SQL_STATE);
 	  connection_set ('__sql_message', __SQL_MESSAGE);
 	  return -44;
@@ -3675,7 +3680,18 @@ create procedure WS.WS.TTL_QUERY_POST (
       filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
     }
   {
-    declare exit handler for sqlstate '37000' {goto _again; };
+    declare exit handler for sqlstate '37000' {
+      if (connection_get ('__WebDAV_ttl_prefixes__') = 'yes')
+        goto _again;
+
+      if (connection_get ('__WebDAV_ttl_prefixes__') = 'no')
+        goto _error;
+
+      if (not WS.WS.TTL_PREFIXES_ENABLED ())
+        goto _error;
+
+      goto _again;
+    };
 
     ns := ses;
     dict := dict_new ();
@@ -3712,13 +3728,19 @@ _exit:;
       org_path := replace (path, ',meta', '');
       subj := iri_to_id (WS.WS.DAV_LINK (org_path));
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
-      sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-      sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      if (nsubj <> subj)
+	{
+	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	}
       org_path := org_path || '/';
       subj := iri_to_id (WS.WS.DAV_LINK (org_path));
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
-      sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-      sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      if (nsubj <> subj)
+	{
+	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	}
     }
   ses := ns;
   log_enable (3);
@@ -3749,6 +3771,12 @@ create procedure WS.WS.SPARQL_QUERY_UPDATE (in content any, in full_path varchar
   def_gr := WS.WS.DAV_IRI (full_path);
   pars := vector ('query', string_output_string (content), 'default-graph-uri', def_gr);
   WS.WS."/!sparql/" (path, pars, lines);
+}
+;
+
+create procedure WS.WS.TTL_PREFIXES_ENABLED ()
+{
+  return case when registry_get ('__WebDAV_ttl_prefixes__') = 'yes' then 1 else 0 end;
 }
 ;
 
@@ -6317,6 +6345,29 @@ create procedure DB.DBA.DAV_SET_AUTHENTICATE_HTTP_STATUS (
 }
 ;
 
+create procedure DB.DBA.HTTP_DEFAULT_ERROR_PAGE (in status varchar, in title varchar, in head varchar, in state varchar, in msg varchar)
+{
+  if (status is not null)
+    http_request_status (status);
+  http (sprintf (
+      '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n' ||
+      '<html>\n' ||
+      '  <head>\n' ||
+      '    <title>%V</title>\n' ||
+      '  </head>\n' ||
+      '  <body>\n',
+      coalesce (title, status, head, 'Error ' || state) ) );
+  if (head is not null or status is not null)
+    {
+      http (sprintf ('    <h1>%V</h1>\n',
+      coalesce (head, status) ) );
+    }
+  http (sprintf ('    <h3>%V</h3>\n<xmp>', 'Error ' || state));
+  http (msg);
+  http ('</xmp></body></html>');
+}
+;
+
 create procedure DB.DBA.DAV_SET_HTTP_STATUS (
   in status any,
   in title any := null,
@@ -6437,5 +6488,69 @@ create procedure LDP_ENABLED (in _col_id any)
     }
   nf:
   return 0;
+}
+;
+
+create procedure DB.DBA.LDP_CREATE (
+  in path any)
+{
+  -- dbg_obj_princ ('LDP_CREATE (', path, ')');
+  declare id_parent any;
+  declare path_parent, graph, graph_parent varchar;
+
+  id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
+	if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_parent)) and DB.DBA.LDP_ENABLED (id_parent))
+	{
+  	path_parent := DB.DBA.DAV_SEARCH_PATH (id_parent, 'C');
+		graph_parent := WS.WS.DAV_IRI (path_parent);
+		graph := WS.WS.DAV_IRI (path);
+		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph), graph_parent, graph_parent);
+	}
+}
+;
+
+create procedure DB.DBA.LDP_DELETE (
+  in path any)
+{
+  -- dbg_obj_princ ('LDP_DELETE (', path, ')');
+  declare graph varchar;
+
+  graph := WS.WS.DAV_IRI (path);
+  SPARQL clear graph ?:graph;
+  delete
+    from DB.DBA.RDF_QUAD b
+   where exists (select 1
+                   from DB.DBA.RDF_QUAD a
+                  WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and	a.P = __i2idn ('http://www.w3.org/ns/ldp#contains') and a.O = __i2idn (graph));
+}
+;
+
+create procedure DB.DBA.TTL_REDIRECT_PARAMS (
+  in _col_id any)
+{
+  declare _p_id, _tmp any;
+  whenever not found goto _not_found;
+
+  while (_col_id > 0 or isvector (_col_id))
+  {
+    _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirect', 0);
+    if (DAV_HIDE_ERROR (_tmp) is not null)
+    {
+      if (_tmp <> 'yes')
+  	    return null;
+
+      _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirectParams', 0);
+      if (DAV_HIDE_ERROR (_tmp) is not null)
+  	    return _tmp;
+
+      return '';
+	  }
+
+    _p_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_col_id, 'C'), 'P');
+    _col_id := _p_id;
+  }
+_not_found:
+
+  return '';
 }
 ;

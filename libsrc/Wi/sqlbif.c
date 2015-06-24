@@ -5562,7 +5562,7 @@ bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (NEW_DB_NULL);
   if (DV_WIDESTRINGP (str))
     {
-      len = box_length (str)/sizeof (wchar_t);
+      len = box_length (str)/sizeof (wchar_t) - 1;
       res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
         ((wchar_t *)res)[i] = (wchar_t)unicode3_getlcase((unichar)((wchar_t *)str)[i]);
@@ -5594,7 +5594,7 @@ bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (NEW_DB_NULL);
   if (DV_WIDESTRINGP (str))
     {
-      len = box_length (str)/sizeof (wchar_t);
+      len = box_length (str)/sizeof (wchar_t) - 1;
       res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
         ((wchar_t *)res)[i] = (wchar_t)unicode3_getucase((unichar)((wchar_t *)str)[i]);
@@ -5626,7 +5626,7 @@ bif_remove_unicode3_accents (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
     return (NEW_DB_NULL);
   if (DV_WIDESTRINGP (str))
     {
-      len = box_length (str)/sizeof (wchar_t);
+      len = box_length (str)/sizeof (wchar_t) - 1;
       res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
         ((wchar_t *)res)[i] = (wchar_t)unicode3_getbasechar((unichar)((wchar_t *)str)[i]);
@@ -9018,47 +9018,84 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (values);
       int nth, n_values = is_array ? BOX_ELEMENTS (values) : 1;
       for (nth = 0; nth < n_values; nth++)
-	{
-	  value = is_array ? ((caddr_t*)values)[nth] : values;
-	  val_dtp = DV_TYPE_OF (value);
-	  if (IS_WIDE_STRING_DTP (item_dtp) && IS_STRING_DTP (val_dtp))
-	    {
-	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-	      if (*err_ret)
-		return NULL;
-	      they_match = boxes_match (item, wide);
-	      dk_free_box (wide);
-	    }
-	  else if (IS_STRING_DTP (item_dtp) && IS_WIDE_STRING_DTP (val_dtp))
-	    {
-	      caddr_t wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-	      if (*err_ret)
-		return NULL;
-	      they_match = boxes_match (wide, value);
-	      dk_free_box (wide);
-	    }
-	  else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
-	    {
-	      caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
-	      if (*err_ret)
-		{
-		  if (qi->qi_no_cast_error)
-		    {
-		      dk_free_tree (*err_ret);
-		      *err_ret = NULL;
-		      continue;
-		    }
-		  return NULL;
-		}
-	      else
-		they_match = boxes_match (item, tmp_val);
-	      dk_free_tree (tmp_val);
-	    }
-	  else
-	    they_match = boxes_match (item, value);
-	  if (they_match)
-	    return (box_num (inx));
-	}
+        {
+          value = is_array ? ((caddr_t*)values)[nth] : values;
+          val_dtp = DV_TYPE_OF (value);
+          if (DV_RDF == item_dtp || DV_RDF_ID == item_dtp || DV_RDF == val_dtp || DV_RDF_ID == val_dtp)
+            they_match = boxes_match (item, value);
+          else if (IS_WIDE_STRING_DTP (item_dtp) || IS_WIDE_STRING_DTP (val_dtp))
+            {
+              if (DV_STRING == val_dtp)
+                {
+                  caddr_t wide;
+                  if (BF_IRI & box_flags (value))
+                    continue; /* IRI vs non-IRI */
+                  if (BF_UTF8 & box_flags (value))
+                    wide = box_utf8_as_wide_char (value, NULL, box_length (value)-1, 0);
+                  else
+                    wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+                  if (*err_ret)
+                    return NULL;
+                  they_match = boxes_match (item, wide);
+                  dk_free_box (wide);
+                }
+              else if (DV_STRING == item_dtp)
+                {
+                  caddr_t wide;
+                  if (BF_IRI & box_flags (item))
+                    continue; /* IRI vs non-IRI */
+                  if (BF_UTF8 & box_flags (item))
+                    wide = box_utf8_as_wide_char (item, NULL, box_length (value)-1, 0);
+                  else
+                    wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+                  if (*err_ret)
+                    return NULL;
+                  they_match = boxes_match (wide, value);
+                  dk_free_box (wide);
+                }
+              else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
+                continue;
+              else
+                they_match = boxes_match (item, value);
+            }
+          else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
+            {
+              size_t len;
+              if ((DV_STRING == item_dtp) && !(BF_IRI & box_flags (item)))
+                continue;
+              if ((DV_STRING == val_dtp) && !(BF_IRI & box_flags (value)))
+                continue;
+              if (!IS_STRING_DTP (val_dtp) || !IS_STRING_DTP (item_dtp))
+                continue;
+              len = box_length (value);
+              if (len != box_length (item))
+                continue;
+              if (memcmp (item, value, len-1))
+                continue;
+              return (box_num (inx));
+            }
+          else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
+            {
+              caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
+              if (*err_ret)
+                {
+                  if (qi->qi_no_cast_error)
+                    {
+                      dk_free_tree (*err_ret);
+                      *err_ret = NULL;
+                      continue;
+                    }
+                  return NULL;
+                }
+              else
+                they_match = boxes_match (item, tmp_val);
+              dk_free_tree (tmp_val);
+            }
+          else
+            they_match = boxes_match (item, value);
+          if (they_match)
+            return (box_num (inx));
+        }
     }
   return (box_num (0));
 }
@@ -10310,10 +10347,10 @@ do_wide:
 	      snprintf (tmp, sizeof (tmp), BOXINT_FMT, unbox (data));
 	      break;
 	  case DV_SINGLE_FLOAT:
-	      snprintf (tmp, sizeof (tmp), "%f", unbox_float (data));
+	      snprintf (tmp, sizeof (tmp), SINGLE_E_STAR_FMT, SINGLE_E_PREC, unbox_float (data));
 	      break;
 	  case DV_DOUBLE_FLOAT:
-	      snprintf (tmp, sizeof (tmp), "%f", unbox_double (data));
+	      snprintf (tmp, sizeof (tmp), DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, unbox_double (data));
 	      break;
 	  case DV_BLOB_HANDLE:
 	  case DV_BLOB_WIDE_HANDLE:
@@ -10413,7 +10450,7 @@ box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
 caddr_t
 bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ST *dtp = (ST *) QST_GET (qst, args[0]);
+  ST *dtp = (ST *) (BOX_ELEMENTS (args) > 0 ? QST_GET (qst, args[0]) : NULL);
   caddr_t data = bif_arg (qst, args, 1, "convert");
   dtp_t arg_dtp = DV_TYPE_OF (data);
 
@@ -10541,7 +10578,7 @@ bif_blob_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (((blob_handle_t*)bh)->bh_length > 10000000)
     sqlr_new_error ("22001", "SR072",
-	"Blob longer than maximum string length not allowed in blob_to_string");
+	"Blob longer than maximum string length not allowed in blob_to_string()");
     res = blob_to_string (qi->qi_trx, bh);
   return res;
 }
@@ -10737,10 +10774,10 @@ check_sequence_grants (query_instance_t * qi, caddr_t name)
   if (sec_bif_caller_is_dba (qi))
     return;
   if (id_hash_get (dba_sequences, (caddr_t)&name))
-    sqlr_new_error ("42000", "SR159", "Sequence %.300s restricted to dba group.", name);
+    sqlr_new_error ("42000", "SR159:SECURITY", "Sequence %.300s restricted to DBA group.", name);
   tbl = sequence_auto_increment_of (name);
   if (tbl && !sec_tb_check (tbl, qi->qi_u_id, qi->qi_g_id, GR_INSERT))
-    sqlr_new_error ("42000", "SR159", "No permission to write sequence %.300s.", name);
+    sqlr_new_error ("42000", "SR159:SECURITY", "No permission to write sequence %.300s with user ID %d, group ID %d", name, (int)(qi->qi_u_id), (int)(qi->qi_g_id));
 }
 
 static int registry_name_is_protected (const caddr_t name)
@@ -11031,7 +11068,7 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (2 < BOX_ELEMENTS (args))
     {
       if (!sec_bif_caller_is_dba ((query_instance_t *)qst))
-        sqlr_new_error ("42000", "SR159", "Function registry_set restricted to dba group when is called with 3 arguments.");
+        sqlr_new_error ("42000", "SR159:SECURITY", "Function registry_set() is restricted to DBA group when is called with 3 arguments.");
       force = bif_long_arg (qst, args, 2, "registry_set");
     }
   switch (name_is_protected)
@@ -11039,11 +11076,11 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 0: break;
     case 1:
       if (force) break;
-      sqlr_new_error ("42000", "SR483", "Function registry_set needs nonzero third argument to modify registry variable '%.300s'.", name);
+      sqlr_new_error ("42000", "SR483", "Function registry_set() needs nonzero third argument to modify registry variable '%.300s'.", name);
     case 2:
       if (2 == force)
         return (box_num (0));
-      sqlr_new_error ("42000", "SR484", "Function registry_set can not modify protected registry variable '%.300s'.", name);
+      sqlr_new_error ("42000", "SR484", "Function registry_set() can not modify protected registry variable '%.300s'.", name);
     }
   check_sequence_grants ((query_instance_t *)qst, name);
   IN_TXN;
@@ -11901,6 +11938,8 @@ bif_repl_is_raw (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (qi->qi_trx->lt_repl_is_raw);
 }
 
+int32 dbf_log_always = 0;
+
 
 caddr_t
 bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -11912,6 +11951,7 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long old_value;
   int in_atomic = 4 & flag;
   flag &= 3;
+  flag |= dbf_log_always;
   old_value = (((REPL_NO_LOG == qi->qi_trx->lt_replicate) ? 0 : 1) |	/* not || */
       (qi->qi_client->cli_row_autocommit ? 2 : 0));
 
@@ -12000,11 +12040,11 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!IS_BLOB_HANDLE_DTP(dtp))
     sqlr_new_error ("22023", "SR581", "deserialize() requires a blob or NULL or string argument");
   if (((blob_handle_t *) xx)->bh_ask_from_client)
-    sqlr_new_error ("22023", "SR582", "Blob argument to deserialize () must be a non-interactive blob");
+    sqlr_new_error ("22023", "SR582", "Blob argument to deserialize() must be a non-interactive blob");
   if (0 == (((blob_handle_t *) xx)->bh_length))
-    sqlr_new_error ("22023", "SR583", "Empty blob is not a valid argument for deserialize () built-in function");
+    sqlr_new_error ("22023", "SR583", "Empty blob is not a valid argument for deserialize() built-in function");
   if (((blob_handle_t*)xx)->bh_length > 10000000)
-    sqlr_new_error ("22001", "SR584", "Blob longer than maximum string length not allowed in deserialize ()");
+    sqlr_new_error ("22001", "SR584", "Blob longer than maximum string length not allowed in deserialize()");
     tmp_xx = blob_to_string (qi->qi_trx, xx);
   QR_RESET_CTX
     {
@@ -12206,7 +12246,7 @@ caddr_t bif_icc_name_arg (caddr_t * qst, state_slot_t ** args, int nth, const ch
   if (caller_is_dba)
     return arg;
   if (' ' == arg[0])
-    sqlr_new_error ("42000", "ICC01", "Lock names whose first char is whitespace are reserved for dba group.");
+    sqlr_new_error ("42000", "ICC01:SECURITY", "Lock names whose first char is whitespace are reserved for DBA group.");
   if (name_to_set)
     {
       char *at_sign = strrchr(arg, '@');
@@ -15700,8 +15740,10 @@ The CONTAINS function corresponds to the XPath fn:contains. The arguments must b
 caddr_t
 bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fnname, const char *sparql_fnname, int op_flags)
 {
-  ccaddr_t str = bif_arg_unrdf (qst, args, 0, fnname);
-  ccaddr_t pattern = bif_arg_unrdf (qst, args, 1, fnname);
+  caddr_t str_orig, pattern_orig;
+  ccaddr_t str = bif_arg_unrdf_ext (qst, args, 0, fnname, &str_orig);
+  ccaddr_t pattern = bif_arg_unrdf_ext (qst, args, 1, fnname, &pattern_orig);
+  int str_lang, pattern_lang;
   /*ccaddr_t str_end, pattern_position;*/
   size_t str_len, size_of_str_char, /*str_n_chars, pattern_n_chars,*/ pattern_len;
   int op_flags_place = op_flags & 0x0F;
@@ -15709,16 +15751,38 @@ bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   int found = 0;
   size_t hit_pos = 0;
   caddr_t res;
+  switch (DV_TYPE_OF (str))
+    {
+    case DV_STRING: 
+    case DV_UNAME:
+    case DV_WIDE:
+    case DV_LONG_WIDE:
+      break;
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    default:
+      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as first argument", sparql_fnname);
+      return NULL;
+    }
   switch (DV_TYPE_OF (pattern))
     {
-      case DV_STRING: 
-      case DV_UNAME:
-      case DV_WIDE:
-      case DV_LONG_WIDE:
-	  break;
-      default:
-	  sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as 2d argument", sparql_fnname);
-	  return NULL;
+    case DV_STRING: 
+    case DV_UNAME:
+    case DV_WIDE:
+    case DV_LONG_WIDE:
+      break;
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    default:
+      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as second argument", sparql_fnname);
+      return NULL;
+    }
+  pattern_lang = (DV_RDF == DV_TYPE_OF (pattern_orig)) ? ((rdf_box_t *)pattern_orig)->rb_lang : RDF_BOX_DEFAULT_LANG;
+  str_lang = (DV_RDF == DV_TYPE_OF (str_orig)) ? ((rdf_box_t *)str_orig)->rb_lang : RDF_BOX_DEFAULT_LANG;
+  if (pattern_lang != RDF_BOX_DEFAULT_LANG)
+    {
+      if (str_lang != pattern_lang)
+        return NEW_DB_NULL;
     }
   switch (DV_TYPE_OF (str))
     {
@@ -15787,29 +15851,38 @@ bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
           }
       }
       break;
-    case DV_DB_NULL:
-      return NEW_DB_NULL;
-    default:
-      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as 1st argument", sparql_fnname);
-    return NULL;
     }
   switch (op_flags_ret)
     {
     case STRCONTAINS_RET_BOOL:
-      res = (caddr_t)box_bool(found);
-      break;
+      return (caddr_t)box_bool(found);
     case STRCONTAINS_RET_AFTER:
       if (!found)
-        return box_dv_short_string ("");
-      res = dk_alloc_box (str_len + size_of_str_char - (hit_pos + pattern_len), box_tag (str));
-      memcpy (res, str + hit_pos + pattern_len, str_len + size_of_str_char - (hit_pos + pattern_len));
+        res = box_dv_short_string ("");
+      else
+        {
+          res = dk_alloc_box (str_len + size_of_str_char - (hit_pos + pattern_len), box_tag (str));
+          memcpy (res, str + hit_pos + pattern_len, str_len + size_of_str_char - (hit_pos + pattern_len));
+        }
       break;
     case STRCONTAINS_RET_BEFORE:
       if (!found)
-        return box_dv_short_string ("");
-      res = dk_alloc_box (hit_pos + size_of_str_char, box_tag (str));
-      memcpy (res, str, hit_pos + size_of_str_char);
+        res = box_dv_short_string ("");
+      else
+        {
+          res = dk_alloc_box (hit_pos + size_of_str_char, box_tag (str));
+          memcpy (res, str, hit_pos + size_of_str_char);
+        }
       break;
+    }
+  if (str_lang != RDF_BOX_DEFAULT_LANG)
+    {
+      rdf_box_t *res_rb = rb_allocate ();
+      res_rb->rb_box = res;
+      res_rb->rb_is_complete = 1;
+      res_rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+      res_rb->rb_lang = str_lang;
+      res = (caddr_t)res_rb;
     }
   return res;
 }
@@ -16106,40 +16179,7 @@ bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (NULL == dt_uname) /* Invalid twobytes of a datatype? */
         return box_bool (0);
       /* Despite the use of bif_string_or_uname_or_wide_or_null_arg() we handle only UNAMEs here */
-      if ( (uname_xmlschema_ns_uri_hash_boolean			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_byte			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_date			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp		== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_dayTimeDuration		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_decimal			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_double			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_float			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gDay			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gMonth			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gYear			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_hexBinary		== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_integer			== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_language		== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_long			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_negativeInteger		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_normalizedString	== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_positiveInteger		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_short			== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_string			== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_time			== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_token			== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_unsignedByte		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_unsignedLong		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_unsignedShort		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) )
+      if (rb_uname_to_flags_of_parseable_datatype (dt_uname) & RDF_TYPE_PARSEABLE)
         return box_bool (0);
     }
   return box_bool (1);
@@ -16416,8 +16456,7 @@ sql_bif_init (void)
   bif_define_ex ("atoi"			, bif_atoi	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dtoi"			, bif_dtoi	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("mod"			, bif_mod	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("abs", bif_abs, BMD_ALIAS, "rdf_abs_impl", BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
-      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("abs", bif_abs, BMD_ALIAS, "rdf_abs_impl", BMD_RET_TYPE, &bt_any	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("sign"			, bif_sign	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("acos"			, bif_acos	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("asin"			, bif_asin	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);

@@ -258,7 +258,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
     }
   if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
-      err_ret[0] = srv_make_new_error ("42000", "SR575", "No permission to execute %.300s as callback of %.100s() with user ID %d, group ID %d",
+      err_ret[0] = srv_make_new_error ("42000", "SR575:SECURITY", "No permission to execute %.300s as callback of %.100s() with user ID %d, group ID %d",
         full_name, funname, (int)(cli->cli_user->usr_id), (int)(cli->cli_user->usr_g_id) );
       return;
     }
@@ -1439,7 +1439,7 @@ nic_remove_some_elements_n (name_id_cache_t * nic, int nth_name, char cachelet_m
           NIC_IN_ID (nic, nth_id, el.nicel_id);
           remhash_64_f ( el.nicel_id, nic->nic_in_array[nth_id], flag);
 	  if (!flag)
-	    log_error ("missed delete of name id cache %s %L (%p %s)", el.nicel_name + 4, el.nicel_id, el.nicel_name, el.nicel_name);
+	    log_debug ("missed delete of name id cache %s %L (%p %s)", el.nicel_name + 4, el.nicel_id, el.nicel_name, el.nicel_name);
           NIC_LEAVE_ID (nic, nth_id);
 
           if (/* IvAn/121009 nic->nic_is_boxes && */ flag)
@@ -3584,18 +3584,6 @@ id_hash_t *rdf_obj_ft_rules_by_iids = NULL;
 id_hash_t *rdf_obj_ft_rules_by_iris = NULL;
 id_hash_t *rdf_obj_ft_graph_rule_counts = NULL;
 ptrlong rdf_obj_ft_predonly_rule_count = 0;
-
-typedef struct rdf_obj_ft_rule_iid_hkey_s
-{
-   iri_id_t hkey_g;
-   iri_id_t hkey_iid_p;
-} rdf_obj_ft_rule_iid_hkey_t;
-
-typedef struct rdf_obj_ft_rule_iri_hkey_s
-{
-   iri_id_t hkey_g;
-   caddr_t hkey_iri_p;
-} rdf_obj_ft_rule_iri_hkey_t;
 
 id_hashed_key_t
 rdf_obj_ft_rule_iid_hkey_hash (caddr_t p_data)

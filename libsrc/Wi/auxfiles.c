@@ -89,7 +89,7 @@ int n_oldest_flushable;
 int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
-int c_compress_mode = 0;
+int32 c_compress_mode = 0;
 int default_txn_isolation = ISO_COMMITTED;
 int c_col_by_default = 0;
 int c_query_log = 0;
@@ -337,24 +337,16 @@ srv_client_defaults_init (void)
 {
   caddr_t old = client_defaults;
   client_defaults = (caddr_t)
-    list (16,
-	  box_string ("SQL_TXN_ISOLATION"),
-	  box_num (default_txn_isolation),
-	  box_string ("SQL_PREFETCH_ROWS"),
-	  box_num (cli_prefetch),
-	  box_string ("SQL_PREFETCH_BYTES"),
-	  box_num (cli_prefetch_bytes),
-	  box_string ("SQL_QUERY_TIMEOUT"),
-	  box_num (cli_query_timeout),
-	  box_string ("SQL_TXN_TIMEOUT"),
-	  box_num (cli_txn_timeout),
-	  box_string ("SQL_NO_CHAR_C_ESCAPE"),
-	  box_num (cli_not_c_char_escape ? 1 : 0),
-	  box_string ("SQL_UTF8_EXECS"),
-	  box_num (cli_utf8_execs),
-	  box_string ("SQL_BINARY_TIMESTAMP"),
-	  box_num (cli_binary_timestamp)
-	  );
+    list (18,
+  box_string ("SQL_TXN_ISOLATION")		, box_num (default_txn_isolation)		,
+  box_string ("SQL_PREFETCH_ROWS")		, box_num (cli_prefetch)			,
+  box_string ("SQL_PREFETCH_BYTES")		, box_num (cli_prefetch_bytes)			,
+  box_string ("SQL_QUERY_TIMEOUT")		, box_num (cli_query_timeout)			,
+  box_string ("SQL_TXN_TIMEOUT")		, box_num (cli_txn_timeout)			,
+  box_string ("SQL_NO_CHAR_C_ESCAPE")		, box_num (cli_not_c_char_escape ? 1 : 0)	,
+  box_string ("SQL_UTF8_EXECS")			, box_num (cli_utf8_execs)			,
+  box_string ("SQL_BINARY_TIMESTAMP")		, box_num (cli_binary_timestamp)		,
+  box_string ("SQL_TIMEZONELESS_DATETIMES")	, box_num (timezoneless_datetimes)		);
   dk_free_tree (old);
 }
 

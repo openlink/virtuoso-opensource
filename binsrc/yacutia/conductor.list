@@ -299,6 +299,7 @@ conductor/images/icons/skipf_16.png
 conductor/images/icons/smarrblk.gif
 conductor/images/icons/stop_16.png
 conductor/images/icons/stop_32.png
+conductor/images/icons/add_32.png
 conductor/images/icons/table_16.png
 conductor/images/icons/tour_16.png
 conductor/images/icons/trash_16.png
@@ -518,3 +519,4 @@ conductor/yacutia.sql
 conductor/yacutia_style.css
 conductor/yacutia_style.xsl
 conductor/yacutia_vdir_style.css
+conductor/vad_utils.sql

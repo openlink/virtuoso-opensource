@@ -605,9 +605,9 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
   declare consumer_secret, oauth_token, oauth_secret varchar;
 
   nonce := xenc_rand_bytes (8, 1);
-  timest := datediff ('second', stringdate ('1970-1-1'), now ());
+  timest := datediff ('second', stringdate ('1970-1-1'), curdatetime_tz ());
   if (tz)
-    timest := timest - timezone (now()) * 60; 
+    timest := timest - timezone (curdatetime_tz()) * 60; 
   if (length (params) and params not like '%&')
     params := params || '&';
 
@@ -645,9 +645,9 @@ create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url 
   declare arr, hf any;
 
   nonce := xenc_rand_bytes (8, 1);
-  timest := datediff ('second', stringdate ('1970-1-1'), now ()) - (timezone (now()) * 60);
+  timest := datediff ('second', stringdate ('1970-1-1'), curdatetime_tz ()) - (timezone (curdatetime_tz()) * 60);
   if (tz)
-    timest := timest - timezone (now()) * 60; 
+    timest := timest - timezone (curdatetime_tz()) * 60; 
   if (length (params) and params not like '%&')
     params := params || '&';
 

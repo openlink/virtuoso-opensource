@@ -1,62 +1,40 @@
+/* parser.c -- HTML Parser
+
+  (c) 1998-2007 (W3C) MIT, ERCIM, Keio University
+  See tidy.h for the copyright notice.
+
+*/
+
+#include "tidy-int.h"
+#include "lexer.h"
+#include "parser.h"
+#include "message.h"
+#include "clean.h"
+#include "tags.h"
+#include "tmbstr.h"
+#ifdef _MSC_VER
+#include "sprtf.h"
+#endif
+
+#ifndef SPRTF
+#define SPRTF printf
+#endif
+
+#ifdef AUTO_INPUT_ENCODING
+#include "charsets.h"
+#endif
+
 /*
- *  $Id$
- *
- *  parser.c - HTML Parser
- *
- *  Copyright (c) 1998-2000 World Wide Web Consortium
- *  (Massachusetts Institute of Technology, Institut National de
- *  Recherche en Informatique et en Automatique, Keio University).
- *  All Rights Reserved.
- *
- *  Contributing Author(s):
- *
- *  Dave Raggett <dsr@w3.org>
- *
- *  The contributing author(s) would like to thank all those who
- *  helped with testing, bug fixes, and patience.  This wouldn't
- *  have been possible without all of you.
- *
- *  COPYRIGHT NOTICE:
- *
- *  This software and documentation is provided "as is," and
- *  the copyright holders and contributing author(s) make no
- *  representations or warranties, express or implied, including
- *  but not limited to, warranties of merchantability or fitness
- *  for any particular purpose or that the use of the software or
- *  documentation will not infringe any third party patents,
- *  copyrights, trademarks or other rights.
- *
- *  The copyright holders and contributing author(s) will not be
- *  liable for any direct, indirect, special or consequential damages
- *  arising out of any use of the software or documentation, even if
- *  advised of the possibility of such damage.
- *
- *  Permission is hereby granted to use, copy, modify, and distribute
- *  this source code, or portions hereof, documentation and executables,
- *  for any purpose, without fee, subject to the following restrictions:
- *
- *  1. The origin of this source code must not be misrepresented.
- *  2. Altered versions must be plainly marked as such and must
- *     not be misrepresented as being the original source.
- *  3. This Copyright notice may not be removed or altered from any
- *     source or altered source distribution.
- *
- *  The copyright holders and contributing author(s) specifically
- *  permit, without fee, and encourage the use of this source code
- *  as a component for supporting the Hypertext Markup Language in
- *  commercial products. If you use this source code in a product,
- *  acknowledgment is not required but would be appreciated.
+  Issue #72 - Need to know to avoid error-reporting - no warning only if --show-body-only yes
+  Issue #132 - likewise avoid warning if showing body only
  */
+#define showingBodyOnly(doc) (cfgAutoBool(doc,TidyBodyOnly) == TidyYesState) ? yes : no
 
-#include "platform.h"   /* platform independent stuff */
-#include "html.h"       /* to pull in definition of nodes */
 
-int SeenBodyEndTag;  /* could be moved into lexer structure */
-
-Bool CheckNodeIntegrity(Node *node)
+Bool TY_(CheckNodeIntegrity)(Node *node)
 {
+#ifndef NO_NODE_INTEGRITY_CHECK
     Node *child;
-    Bool found = no;
 
     if (node->prev)
     {
@@ -66,33 +44,24 @@ Bool CheckNodeIntegrity(Node *node)
 
     if (node->next)
     {
-        if (node->next->prev != node)
+        if (node->next == node || node->next->prev != node)
             return no;
     }
 
     if (node->parent)
     {
-        if (node->prev == null && node->parent->content != node)
+        if (node->prev == NULL && node->parent->content != node)
             return no;
 
-        if (node->next == null && node->parent->last != node)
-            return no;
-
-        for (child = node->parent->content; child; child = child->next)
-            if (child == node)
-            {
-                found = yes;
-                break;
-            }
-
-        if (!found)
+        if (node->next == NULL && node->parent->last != node)
             return no;
     }
 
     for (child = node->content; child; child = child->next)
-        if (!CheckNodeIntegrity(child))
+        if ( child->parent != node || !TY_(CheckNodeIntegrity)(child) )
             return no;
 
+#endif
     return yes;
 }
 
@@ -102,32 +71,40 @@ Bool CheckNodeIntegrity(Node *node)
  this was introduced to deal with
  user defined tags e.g. Cold Fusion
 */
-Bool IsNewNode(Node *node)
+Bool TY_(IsNewNode)(Node *node)
 {
     if (node && node->tag)
     {
         return (node->tag->model & CM_NEW);
     }
-
     return yes;
 }
 
-void CoerceNode(Lexer *lexer, Node *node, Dict *tag)
+void TY_(CoerceNode)(TidyDocImpl* doc, Node *node, TidyTagId tid, Bool obsolete, Bool unexpected)
 {
-    Node *tmp = InferredTag(lexer, tag->name);
-    ReportWarning(lexer, node, tmp, OBSOLETE_ELEMENT);
-    MemFree(tmp->element);
-    MemFree(tmp);
-    MemFree(node->element);
+    const Dict* tag = TY_(LookupTagDef)(tid);
+    Node* tmp = TY_(InferredTag)(doc, tag->id);
+
+    if (obsolete)
+        TY_(ReportWarning)(doc, node, tmp, OBSOLETE_ELEMENT);
+    else if (unexpected)
+        TY_(ReportError)(doc, node, tmp, REPLACING_UNEX_ELEMENT);
+    else
+        TY_(ReportNotice)(doc, node, tmp, REPLACING_ELEMENT);
+
+    TidyDocFree(doc, tmp->element);
+    TidyDocFree(doc, tmp);
+
     node->was = node->tag;
     node->tag = tag;
     node->type = StartTag;
     node->implicit = yes;
-    node->element = wstrdup(tag->name);
+    TidyDocFree(doc, node->element);
+    node->element = TY_(tmbstrdup)(doc->allocator, tag->name);
 }
 
 /* extract a node and its children from a markup tree */
-void RemoveNode(Node *node)
+Node *TY_(RemoveNode)(Node *node)
 {
     if (node->prev)
         node->prev->next = node->next;
@@ -144,44 +121,53 @@ void RemoveNode(Node *node)
             node->parent->last = node->prev;
     }
 
-    node->parent = node->prev = node->next = null;
+    node->parent = node->prev = node->next = NULL;
+    return node;
 }
 
 /* remove node from markup tree and discard it */
-Node *DiscardElement(Node *element)
+Node *TY_(DiscardElement)( TidyDocImpl* doc, Node *element )
 {
-    Node *next = null;
+    Node *next = NULL;
 
     if (element)
     {
         next = element->next;
-        RemoveNode(element);
-        FreeNode(element);
+        TY_(RemoveNode)(element);
+        TY_(FreeNode)( doc, element);
     }
 
     return next;
 }
 
-/* insert node into markup tree */
-void InsertNodeAtStart(Node *element, Node *node)
+/*
+ insert "node" into markup tree as the firt element
+ of content of "element"
+*/
+void TY_(InsertNodeAtStart)(Node *element, Node *node)
 {
     node->parent = element;
 
-    if (element->content == null)
+    if (element->content == NULL)
         element->last = node;
+    else
+        element->content->prev = node;
 
     node->next = element->content;
-    node->prev = null;
+    node->prev = NULL;
     element->content = node;
 }
 
-/* insert node into markup tree */
-void InsertNodeAtEnd(Node *element, Node *node)
+/*
+ insert "node" into markup tree as the last element
+ of content of "element"
+*/
+void TY_(InsertNodeAtEnd)(Node *element, Node *node)
 {
     node->parent = element;
     node->prev = element->last;
 
-    if (element->last != null)
+    if (element->last != NULL)
         element->last->next = node;
     else
         element->content = node;
@@ -190,7 +176,7 @@ void InsertNodeAtEnd(Node *element, Node *node)
 }
 
 /*
- insert node into markup tree in pace of element
+ insert "node" into markup tree in place of "element"
  which is moved to become the child of the node
 */
 static void InsertNodeAsParent(Node *element, Node *node)
@@ -207,20 +193,20 @@ static void InsertNodeAsParent(Node *element, Node *node)
         node->parent->last = node;
 
     node->prev = element->prev;
-    element->prev = null;
+    element->prev = NULL;
 
     if (node->prev)
         node->prev->next = node;
 
     node->next = element->next;
-    element->next = null;
+    element->next = NULL;
 
     if (node->next)
         node->next->prev = node;
 }
 
-/* insert node into markup tree before element */
-void InsertNodeBeforeElement(Node *element, Node *node)
+/* insert "node" into markup tree before "element" */
+void TY_(InsertNodeBeforeElement)(Node *element, Node *node)
 {
     Node *parent;
 
@@ -237,80 +223,167 @@ void InsertNodeBeforeElement(Node *element, Node *node)
         parent->content = node;
 }
 
-/* insert node into markup tree after element */
-void InsertNodeAfterElement(Node *element, Node *node)
+/* insert "node" into markup tree after "element" */
+void TY_(InsertNodeAfterElement)(Node *element, Node *node)
 {
     Node *parent;
 
     parent = element->parent;
     node->parent = parent;
 
-    if (parent->last == element)
+    /* AQ - 13 Jan 2000 fix for parent == NULL */
+    if (parent != NULL && parent->last == element)
         parent->last = node;
     else
     {
         node->next = element->next;
-        node->next->prev = node;
+        /* AQ - 13 Jan 2000 fix for node->next == NULL */
+        if (node->next != NULL)
+            node->next->prev = node;
     }
 
     element->next = node;
     node->prev = element;
 }
 
-static Bool CanPrune(Node *element)
+static Bool CanPrune( TidyDocImpl* doc, Node *element )
 {
-    if (element->type == TextNode)
+    if ( !cfgBool(doc, TidyDropEmptyElems) )
+        return no;
+
+    if ( TY_(nodeIsText)(element) )
         return yes;
 
-    if (element->content)
+    if ( element->content )
         return no;
 
-    if (element->tag == tag_a && element->attributes != null)
+    if ( element->tag == NULL )
         return no;
 
-    if (element->tag == tag_p && !DropEmptyParas)
+    if ( element->tag->model & CM_BLOCK && element->attributes != NULL )
         return no;
 
-    if (element->tag == null)
+    if ( nodeIsA(element) && element->attributes != NULL )
         return no;
 
-    if (element->tag->model & CM_ROW)
+    if ( nodeIsP(element) && !cfgBool(doc, TidyDropEmptyParas) )
         return no;
 
-    if (element->tag == tag_applet)
+    if ( element->tag->model & CM_ROW )
         return no;
 
-    if (element->tag == tag_object)
+    if ( element->tag->model & CM_EMPTY )
         return no;
 
-    if ( element->attributes != null &&
-            (GetAttrByName(element, "id") ||
-               GetAttrByName(element, "name")) )
+    if ( nodeIsAPPLET(element) )
         return no;
+
+    if ( nodeIsOBJECT(element) )
+        return no;
+
+    if ( nodeIsSCRIPT(element) && attrGetSRC(element) )
+        return no;
+
+    if ( nodeIsTITLE(element) )
+        return no;
+
+    /* #433359 - fix by Randy Waki 12 Mar 01 */
+    if ( nodeIsIFRAME(element) )
+        return no;
+
+    /* fix for bug 770297 */
+    if (nodeIsTEXTAREA(element))
+        return no;
+
+    /* fix for ISSUE #7 https://github.com/w3c/tidy-html5/issues/7 */
+    if (nodeIsCANVAS(element))
+        return no;
+    
+    if (nodeIsPROGRESS(element))
+        return no;
+
+    if ( attrGetID(element) || attrGetNAME(element) )
+        return no;
+
+    /* fix for bug 695408; a better fix would look for unknown and    */
+    /* known proprietary attributes that make the element significant */
+    if (attrGetDATAFLD(element))
+        return no;
+
+    /* fix for bug 723772, don't trim new-...-tags */
+    if (element->tag->id == TidyTag_UNKNOWN)
+        return no;
+
+    if (nodeIsBODY(element))
+        return no;
+
+    if (nodeIsCOLGROUP(element))
+        return no;
+
+    /* HTML5 - do NOT drop empty option if it has attributes */
+    if ( nodeIsOPTION(element) && element->attributes != NULL )
+        return no;
+
+    /* fix for #103 - don't drop empty dd tags lest document not validate */
+    if (nodeIsDD(element))
+        return no;
+
 
     return yes;
 }
 
-static void TrimEmptyElement(Lexer *lexer, Node *element)
+/* return next element */
+Node *TY_(TrimEmptyElement)( TidyDocImpl* doc, Node *element )
 {
-    if (CanPrune(element))
+    if ( CanPrune(doc, element) )
     {
        if (element->type != TextNode)
-            ReportWarning(lexer, element, null, TRIM_EMPTY_ELEMENT);
+            TY_(ReportNotice)(doc, element, NULL, TRIM_EMPTY_ELEMENT);
 
-        DiscardElement(element);
+        return TY_(DiscardElement)(doc, element);
     }
-    else if (element->tag == tag_p && element->content == null)
+    return element->next;
+}
+
+Node* TY_(DropEmptyElements)(TidyDocImpl* doc, Node* node)
+{
+    Node* next;
+
+    while (node)
     {
-        /* replace <p></p> by <br><br> to preserve formatting */
-        Node *node = InferredTag(lexer, "br");
-        CoerceNode(lexer, element, tag_br);
-        InsertNodeAfterElement(element, node);
+        next = node->next;
+
+        if (node->content)
+            TY_(DropEmptyElements)(doc, node->content);
+
+        if (!TY_(nodeIsElement)(node) &&
+            !(TY_(nodeIsText)(node) && !(node->start < node->end)))
+        {
+            node = next;
+            continue;
+        }
+
+        next = TY_(TrimEmptyElement)(doc, node);
+        node = next;
     }
+
+    return node;
+}
+
+/* 
+  errors in positioning of form start or end tags
+  generally require human intervention to fix
+  Issue #166 - repeated <main> element also uses this flag
+  to indicate duplicates, discarded
+*/
+static void BadForm( TidyDocImpl* doc )
+{
+    doc->badForm |= flg_BadForm;
+    /* doc->errors++; */
 }
 
 /*
-  This maps
+  This maps 
        <em>hello </em><strong>world</strong>
   to
        <em>hello</em> <strong>world</strong>
@@ -319,40 +392,94 @@ static void TrimEmptyElement(Lexer *lexer, Node *element)
   then trim trailing white space character
   moving it to after element's end tag.
 */
-static void TrimTrailingSpace(Lexer *lexer, Node *element, Node *last)
+static void TrimTrailingSpace( TidyDocImpl* doc, Node *element, Node *last )
 {
-    unsigned char c;
+    Lexer* lexer = doc->lexer;
+    byte c;
 
-    if (last != null && last->type == TextNode && last->end > last->start)
+    if (TY_(nodeIsText)(last))
     {
-        c = (unsigned char)lexer->lexbuf[last->end - 1];
-
-        if (c == 160 || c == ' ')
+        if (last->end > last->start)
         {
-            /* take care with <td>&nbsp;</td> */
-            if (element->tag == tag_td || element->tag == tag_th)
+            c = (byte) lexer->lexbuf[ last->end - 1 ];
+
+            if (   c == ' '
+#ifdef COMMENT_NBSP_FIX
+                || c == 160
+#endif
+               )
             {
-                if (last->end > last->start + 1)
+#ifdef COMMENT_NBSP_FIX
+                /* take care with <td>&nbsp;</td> */
+                if ( c == 160 && 
+                     ( element->tag == doc->tags.tag_td || 
+                       element->tag == doc->tags.tag_th )
+                   )
+                {
+                    if (last->end > last->start + 1)
+                        last->end -= 1;
+                }
+                else
+#endif
+                {
                     last->end -= 1;
-            }
-            else
-            {
-                last->end -= 1;
-
-                if ((element->tag->model & CM_INLINE) &&
-                        !(element->tag->model & CM_FIELD))
-                    lexer->insertspace = yes;
-
-                /* if empty string then delete from parse tree */
-                if (last->start == last->end)
-                    TrimEmptyElement(lexer, last);
+                    if ( (element->tag->model & CM_INLINE) &&
+                         !(element->tag->model & CM_FIELD) )
+                        lexer->insertspace = yes;
+                }
             }
         }
     }
 }
 
+#if 0
+static Node *EscapeTag(Lexer *lexer, Node *element)
+{
+    Node *node = NewNode(lexer->allocator, lexer);
+
+    node->start = lexer->lexsize;
+    AddByte(lexer, '<');
+
+    if (element->type == EndTag)
+        AddByte(lexer, '/');
+
+    if (element->element)
+    {
+        char *p;
+        for (p = element->element; *p != '\0'; ++p)
+            AddByte(lexer, *p);
+    }
+    else if (element->type == DocTypeTag)
+    {
+        uint i;
+        AddStringLiteral( lexer, "!DOCTYPE " );
+        for (i = element->start; i < element->end; ++i)
+            AddByte(lexer, lexer->lexbuf[i]);
+    }
+
+    if (element->type == StartEndTag)
+        AddByte(lexer, '/');
+
+    AddByte(lexer, '>');
+    node->end = lexer->lexsize;
+
+    return node;
+}
+#endif /* 0 */
+
+/* Only true for text nodes. */
+Bool TY_(IsBlank)(Lexer *lexer, Node *node)
+{
+    Bool isBlank = TY_(nodeIsText)(node);
+    if ( isBlank )
+        isBlank = ( node->end == node->start ||       /* Zero length */
+                    ( node->end == node->start+1      /* or one blank. */
+                      && lexer->lexbuf[node->start] == ' ' ) );
+    return isBlank;
+}
+
 /*
-  This maps
+  This maps 
        <p>hello<em> world</em>
   to
        <p>hello <em>world</em>
@@ -361,48 +488,175 @@ static void TrimTrailingSpace(Lexer *lexer, Node *element, Node *last)
   start tag, or if this element is the first in
   parent's content, then by discarding the space
 */
-static void TrimInitialSpace(Lexer *lexer, Node *element, Node *text)
+static void TrimInitialSpace( TidyDocImpl* doc, Node *element, Node *text )
 {
+    Lexer* lexer = doc->lexer;
     Node *prev, *node;
 
-    if (text->type == TextNode && lexer->lexbuf[text->start] == ' ')
+    if ( TY_(nodeIsText)(text) && 
+         lexer->lexbuf[text->start] == ' ' && 
+         text->start < text->end )
     {
-        if ((element->tag->model & CM_INLINE) &&
-            !(element->tag->model & CM_FIELD) &&
-            element->parent->content != element)
+        if ( (element->tag->model & CM_INLINE) &&
+             !(element->tag->model & CM_FIELD) )
         {
             prev = element->prev;
 
-            if (prev && prev->type == TextNode)
+            if (TY_(nodeIsText)(prev))
             {
-                if (lexer->lexbuf[prev->end - 1] != ' ')
+                if (prev->end == 0 || lexer->lexbuf[prev->end - 1] != ' ')
                     lexer->lexbuf[(prev->end)++] = ' ';
 
                 ++(element->start);
             }
             else /* create new node */
             {
-                node = NewNode();
+                node = TY_(NewNode)(lexer->allocator, lexer);
                 node->start = (element->start)++;
                 node->end = element->start;
                 lexer->lexbuf[node->start] = ' ';
-                node->prev = prev;
-
-                if (prev)
-                    prev->next = node;
-
-                node->next = element;
-                element->prev = node;
-                node->parent = element->parent;
+                TY_(InsertNodeBeforeElement)(element ,node);
             }
         }
 
-        /* discard the space  in current node */
+        /* discard the space in current node */
         ++(text->start);
     }
 }
 
-/*
+static Bool IsPreDescendant(Node* node)
+{
+    Node *parent = node->parent;
+
+    while (parent)
+    {
+        if (parent->tag && parent->tag->parser == TY_(ParsePre))
+            return yes;
+
+        parent = parent->parent;
+    }
+
+    return no;
+}
+
+static Bool CleanTrailingWhitespace(TidyDocImpl* doc, Node* node)
+{
+    Node* next;
+
+    if (!TY_(nodeIsText)(node))
+        return no;
+
+    if (node->parent->type == DocTypeTag)
+        return no;
+
+    if (IsPreDescendant(node))
+        return no;
+
+    if (node->parent->tag && node->parent->tag->parser == TY_(ParseScript))
+        return no;
+
+    next = node->next;
+
+    /* <p>... </p> */
+    if (!next && !TY_(nodeHasCM)(node->parent, CM_INLINE))
+        return yes;
+
+    /* <div><small>... </small><h3>...</h3></div> */
+    if (!next && node->parent->next && !TY_(nodeHasCM)(node->parent->next, CM_INLINE))
+        return yes;
+
+    if (!next)
+        return no;
+
+    if (nodeIsBR(next))
+        return yes;
+
+    if (TY_(nodeHasCM)(next, CM_INLINE))
+        return no;
+
+    /* <a href='/'>...</a> <p>...</p> */
+    if (next->type == StartTag)
+        return yes;
+
+    /* <strong>...</strong> <hr /> */
+    if (next->type == StartEndTag)
+        return yes;
+
+    /* evil adjacent text nodes, Tidy should not generate these :-( */
+    if (TY_(nodeIsText)(next) && next->start < next->end
+        && TY_(IsWhite)(doc->lexer->lexbuf[next->start]))
+        return yes;
+
+    return no;
+}
+
+static Bool CleanLeadingWhitespace(TidyDocImpl* ARG_UNUSED(doc), Node* node)
+{
+    if (!TY_(nodeIsText)(node))
+        return no;
+
+    if (node->parent->type == DocTypeTag)
+        return no;
+
+    if (IsPreDescendant(node))
+        return no;
+
+    if (node->parent->tag && node->parent->tag->parser == TY_(ParseScript))
+        return no;
+
+    /* <p>...<br> <em>...</em>...</p> */
+    if (nodeIsBR(node->prev))
+        return yes;
+
+    /* <p> ...</p> */
+    if (node->prev == NULL && !TY_(nodeHasCM)(node->parent, CM_INLINE))
+        return yes;
+
+    /* <h4>...</h4> <em>...</em> */
+    if (node->prev && !TY_(nodeHasCM)(node->prev, CM_INLINE) &&
+        TY_(nodeIsElement)(node->prev))
+        return yes;
+
+    /* <p><span> ...</span></p> */
+    if (!node->prev && !node->parent->prev && !TY_(nodeHasCM)(node->parent->parent, CM_INLINE))
+        return yes;
+
+    return no;
+}
+
+static void CleanSpaces(TidyDocImpl* doc, Node* node)
+{
+    Node* next;
+
+    while (node)
+    {
+        next = node->next;
+
+        if (TY_(nodeIsText)(node) && CleanLeadingWhitespace(doc, node))
+            while (node->start < node->end && TY_(IsWhite)(doc->lexer->lexbuf[node->start]))
+                ++(node->start);
+
+        if (TY_(nodeIsText)(node) && CleanTrailingWhitespace(doc, node))
+            while (node->end > node->start && TY_(IsWhite)(doc->lexer->lexbuf[node->end - 1]))
+                --(node->end);
+
+        if (TY_(nodeIsText)(node) && !(node->start < node->end))
+        {
+            TY_(RemoveNode)(node);
+            TY_(FreeNode)(doc, node);
+            node = next;
+
+            continue;
+        }
+
+        if (node->content)
+            CleanSpaces(doc, node->content);
+
+        node = next;
+    }
+}
+
+/* 
   Move initial and trailing space out.
   This routine maps:
 
@@ -414,30 +668,32 @@ static void TrimInitialSpace(Lexer *lexer, Node *element, Node *text)
   to
        <em>hello</em> <strong>world</strong>
 */
-static void TrimSpaces(Lexer *lexer, Node *element)
+static void TrimSpaces( TidyDocImpl* doc, Node *element)
 {
-    Node *text = element->content;
+    Node* text = element->content;
 
-    if (text && text->type == TextNode && element->tag != tag_pre)
-        TrimInitialSpace(lexer, element, text);
+    if (nodeIsPRE(element) || IsPreDescendant(element))
+        return;
+
+    if (TY_(nodeIsText)(text))
+        TrimInitialSpace(doc, element, text);
 
     text = element->last;
 
-    if (text && text->type == TextNode)
-        TrimTrailingSpace(lexer, element, text);
+    if (TY_(nodeIsText)(text))
+        TrimTrailingSpace(doc, element, text);
 }
 
-static Bool DescendantOf(Node *element, Dict *tag)
+static Bool DescendantOf( Node *element, TidyTagId tid )
 {
     Node *parent;
-
-    for (parent = element->parent;
-            parent != null; parent = parent->parent)
+    for ( parent = element->parent;
+          parent != NULL;
+          parent = parent->parent )
     {
-        if (parent->tag == tag)
+        if ( TagIsId(parent, tid) )
             return yes;
     }
-
     return no;
 }
 
@@ -449,9 +705,34 @@ static Bool InsertMisc(Node *element, Node *node)
         node->type == SectionTag ||
         node->type == AspTag ||
         node->type == JsteTag ||
-        node->type == PhpTag)
+        node->type == PhpTag )
     {
-        InsertNodeAtEnd(element, node);
+        TY_(InsertNodeAtEnd)(element, node);
+        return yes;
+    }
+
+    if ( node->type == XmlDecl )
+    {
+        Node* root = element;
+        while ( root && root->parent )
+            root = root->parent;
+        if ( root && !(root->content && root->content->type == XmlDecl))
+        {
+          TY_(InsertNodeAtStart)( root, node );
+          return yes;
+        }
+    }
+
+    /* Declared empty tags seem to be slipping through
+    ** the cracks.  This is an experiment to figure out
+    ** a decent place to pick them up.
+    */
+    if ( node->tag &&
+         TY_(nodeIsElement)(node) &&
+         TY_(nodeCMIsEmpty)(node) && TagId(node) == TidyTag_UNKNOWN &&
+         (node->tag->versions & VERS_PROPRIETARY) != 0 )
+    {
+        TY_(InsertNodeAtEnd)(element, node);
         return yes;
     }
 
@@ -459,83 +740,109 @@ static Bool InsertMisc(Node *element, Node *node)
 }
 
 
-static void ParseTag(Lexer *lexer, Node *node, uint mode)
+static void ParseTag( TidyDocImpl* doc, Node *node, GetTokenMode mode )
 {
+    Lexer* lexer = doc->lexer;
+
+	if (node->tag == NULL) /* [i_a]2 prevent crash for active content (php, asp) docs */
+		return;
+
+    /*
+       Fix by GLP 2000-12-21.  Need to reset insertspace if this 
+       is both a non-inline and empty tag (base, link, meta, isindex, hr, area).
+    */
     if (node->tag->model & CM_EMPTY)
     {
         lexer->waswhite = no;
-        return;
+        if (node->tag->parser == NULL)
+            return;
     }
     else if (!(node->tag->model & CM_INLINE))
         lexer->insertspace = no;
 
-    if (node->tag->parser == null || node->type == StartEndTag)
+    if (node->tag->parser == NULL)
         return;
 
-    (*node->tag->parser)(lexer, node, mode);
+    if (node->type == StartEndTag)
+        return;
+
+	lexer->parent = node; /* [i_a]2 added this - not sure why - CHECKME: */
+
+    (*node->tag->parser)( doc, node, mode );
 }
 
 /*
  the doctype has been found after other tags,
  and needs moving to before the html element
 */
-static void InsertDocType(Lexer *lexer, Node *element, Node *doctype)
+static void InsertDocType( TidyDocImpl* doc, Node *element, Node *doctype )
 {
-    ReportWarning(lexer, element, doctype, DOCTYPE_AFTER_TAGS);
-
-    while (element->tag != tag_html)
-        element = element->parent;
-
-    InsertNodeBeforeElement(element, doctype);
-}
-
-/* duplicate name attribute as an id */
-void FixId(Lexer *lexer, Node *node)
-{
-    AttVal *name = GetAttrByName(node, "name");
-    AttVal *id = GetAttrByName(node, "id");
-
-    if (name)
+    Node* existing = TY_(FindDocType)( doc );
+    if ( existing )
     {
-        if (id)
-        {
-            if (wstrcmp(id->value, name->value) != 0)
-                ReportAttrError(lexer, node, "name", ID_NAME_MISMATCH);
-        }
-        else if (XmlOut)
-            AddAttribute(node, "id", name->value);
-    }
-}
-
-static void MoveToHead(Lexer *lexer, Node *element, Node *node)
-{
-    Node *head;
-
-
-    if (node->type == StartTag || node->type == StartEndTag)
-    {
-        ReportWarning(lexer, element, node, TAG_NOT_ALLOWED_IN);
-
-        while (element->tag != tag_html)
-            element = element->parent;
-
-        for (head = element->content; head; head = head->next)
-        {
-            if (head->tag == tag_head)
-            {
-                InsertNodeAtEnd(head, node);
-                break;
-            }
-        }
-
-        if (node->tag->parser)
-            ParseTag(lexer, node, IgnoreWhitespace);
+        TY_(ReportError)(doc, element, doctype, DISCARDING_UNEXPECTED );
+        TY_(FreeNode)( doc, doctype );
     }
     else
     {
-        ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, element, doctype, DOCTYPE_AFTER_TAGS );
+        while ( !nodeIsHTML(element) )
+            element = element->parent;
+        TY_(InsertNodeBeforeElement)( element, doctype );
     }
+}
+
+/*
+ move node to the head, where element is used as starting
+ point in hunt for head. normally called during parsing
+*/
+static void MoveToHead( TidyDocImpl* doc, Node *element, Node *node )
+{
+    Node *head;
+
+    TY_(RemoveNode)( node );  /* make sure that node is isolated */
+
+    if ( TY_(nodeIsElement)(node) )
+    {
+        TY_(ReportError)(doc, element, node, TAG_NOT_ALLOWED_IN );
+
+        head = TY_(FindHEAD)(doc);
+        assert(head != NULL);
+
+        TY_(InsertNodeAtEnd)(head, node);
+
+        if ( node->tag->parser )
+            ParseTag( doc, node, IgnoreWhitespace );
+    }
+    else
+    {
+        TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node );
+    }
+}
+
+/* moves given node to end of body element */
+static void MoveNodeToBody( TidyDocImpl* doc, Node* node )
+{
+    Node* body = TY_(FindBody)( doc );
+    if ( body )
+    {
+        TY_(RemoveNode)( node );
+        TY_(InsertNodeAtEnd)( body, node );
+    }
+}
+
+static void AddClassNoIndent( TidyDocImpl* doc, Node *node )
+{
+    ctmbstr sprop =
+        "padding-left: 2ex; margin-left: 0ex"
+        "; margin-top: 0ex; margin-bottom: 0ex";
+    if ( !cfgBool(doc, TidyDecorateInferredUL) )
+        return;
+    if ( cfgBool(doc, TidyMakeClean) )
+        TY_(AddStyleAsClass)( doc, node, sprop );
+    else
+        TY_(AddStyleProperty)( doc, node, sprop );
 }
 
 /*
@@ -543,19 +850,31 @@ static void MoveToHead(Lexer *lexer, Node *element, Node *node)
    upon seeing the start tag, or by the
    parser when the start tag is inferred
 */
-void ParseBlock(Lexer *lexer, Node *element, uint mode)
+void TY_(ParseBlock)( TidyDocImpl* doc, Node *element, GetTokenMode mode)
 {
-    Node *node, *parent;
-    Bool checkstack;
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    static int in_parse_block = 0;
+#endif
+    Lexer* lexer = doc->lexer;
+    Node *node;
+    Bool checkstack = yes;
     uint istackbase = 0;
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_block++;
+    SPRTF("Entering ParseBlock %d...\n",in_parse_block);
+#endif
 
-    checkstack = yes;
-
-    if (element->tag->model & CM_EMPTY)
+    if ( element->tag->model & CM_EMPTY ) {
+#if !defined(NDEBUG) && defined(_MSC_VER)
+        in_parse_block--;
+        SPRTF("Exit ParseBlockL 1 %d...\n",in_parse_block);
+#endif
         return;
+    }
 
-    if (element->tag == tag_form && DescendantOf(element, tag_form))
-        ReportWarning(lexer, element, null, ILLEGAL_NESTING);
+    if ( nodeIsFORM(element) && 
+         DescendantOf(element, TidyTag_FORM) )
+        TY_(ReportError)(doc, element, NULL, ILLEGAL_NESTING );
 
     /*
      InlineDup() asks the lexer to insert inline emphasis tags
@@ -572,184 +891,203 @@ void ParseBlock(Lexer *lexer, Node *element, uint mode)
     }
 
     if (!(element->tag->model & CM_MIXED))
-        InlineDup(lexer, null);
+        TY_(InlineDup)( doc, NULL );
 
     mode = IgnoreWhitespace;
 
-    while ((node = GetToken(lexer, mode /*MixedContent*/)) != null)
+    while ((node = TY_(GetToken)(doc, mode /*MixedContent*/)) != NULL)
     {
         /* end tag for this element */
         if (node->type == EndTag && node->tag &&
             (node->tag == element->tag || element->was == node->tag))
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node );
 
             if (element->tag->model & CM_OBJECT)
             {
                 /* pop inline stack */
                 while (lexer->istacksize > lexer->istackbase)
-                    PopInline(lexer, null);
+                    TY_(PopInline)( doc, NULL );
                 lexer->istackbase = istackbase;
             }
 
             element->closed = yes;
-            TrimSpaces(lexer, element);
-            TrimEmptyElement(lexer, element);
+            TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_block--;
+            SPRTF("Exit ParseBlock 2 %d...\n",in_parse_block);
+#endif
             return;
         }
 
-        if (node->tag == tag_html || node->tag == tag_head || node->tag == tag_body)
+        if ( nodeIsBODY( node ) && DescendantOf( element, TidyTag_HEAD ))
         {
-            if (node->type == StartTag || node->type == StartEndTag)
-                ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
+            /*  If we're in the HEAD, close it before proceeding.
+                This is an extremely rare occurance, but has been observed.
+            */
+            TY_(UngetToken)( doc );
+            break;
+        }
 
-            FreeNode(node);
+        if ( nodeIsHTML(node) || nodeIsHEAD(node) || nodeIsBODY(node) )
+        {
+            if ( TY_(nodeIsElement)(node) )
+                TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+            TY_(FreeNode)( doc, node );
             continue;
         }
 
 
         if (node->type == EndTag)
         {
-            if (node->tag == null)
+            if (node->tag == NULL)
             {
-                ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-
-                FreeNode(node);
+                TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+                TY_(FreeNode)( doc, node );
                 continue;
             }
-            else if (node->tag == tag_br)
+            else if ( nodeIsBR(node) )
                 node->type = StartTag;
-            else if (node->tag == tag_p)
+            else if ( nodeIsP(node) )
             {
-                CoerceNode(lexer, node, tag_br);
-                InsertNodeAtEnd(element, node);
-                node = InferredTag(lexer, "br");
+                /* Cannot have a block inside a paragraph, so no checking
+                   for an ancestor is necessary -- but we _can_ have
+                   paragraphs inside a block, so change it to an implicit
+                   empty paragraph, to be dealt with according to the user's
+                   options
+                */
+                node->type = StartEndTag;
+                node->implicit = yes;
+#if OBSOLETE
+                TY_(CoerceNode)(doc, node, TidyTag_BR, no, no);
+                TY_(FreeAttrs)( doc, node ); /* discard align attribute etc. */
+                TY_(InsertNodeAtEnd)( element, node );
+                node = InferredTag(doc, TidyTag_BR);
+#endif
             }
-            else
+            else if (DescendantOf( element, node->tag->id ))
             {
-                /*
+                /* 
                   if this is the end tag for an ancestor element
                   then infer end tag for this element
                 */
-                for (parent = element->parent;
-                        parent != null; parent = parent->parent)
+                TY_(UngetToken)( doc );
+                break;
+#if OBSOLETE
+                Node *parent;
+                for ( parent = element->parent;
+                      parent != NULL; 
+                      parent = parent->parent )
                 {
                     if (node->tag == parent->tag)
                     {
                         if (!(element->tag->model & CM_OPT))
-                            ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
+                            TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE );
 
-                        UngetToken(lexer);
+                        TY_(UngetToken)( doc );
 
                         if (element->tag->model & CM_OBJECT)
                         {
                             /* pop inline stack */
                             while (lexer->istacksize > lexer->istackbase)
-                                PopInline(lexer, null);
+                                TY_(PopInline)( doc, NULL );
                             lexer->istackbase = istackbase;
                         }
 
-                        TrimSpaces(lexer, element);
-                        TrimEmptyElement(lexer, element);
+                        TrimSpaces( doc, element );
                         return;
                     }
                 }
-
+#endif
+            }
+            else
+            {
                 /* special case </tr> etc. for stuff moved in front of table */
-                if (lexer->exiled
-                            && node->tag->model
-                            && (node->tag->model & CM_TABLE))
+                if ( lexer->exiled
+                     && (TY_(nodeHasCM)(node, CM_TABLE) || nodeIsTABLE(node)) )
                 {
-                    UngetToken(lexer);
-                    TrimSpaces(lexer, element);
-                    TrimEmptyElement(lexer, element);
+                    TY_(UngetToken)( doc );
+                    TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_block--;
+                    SPRTF("Exit ParseBlock 2 %d...\n",in_parse_block);
+#endif
                     return;
                 }
             }
         }
 
         /* mixed content model permits text */
-        if (node->type == TextNode)
+        if (TY_(nodeIsText)(node))
         {
-            Bool iswhitenode = no;
-
-            if (node->type == TextNode &&
-                   node->end <= node->start + 1 &&
-                   lexer->lexbuf[node->start] == ' ')
-                iswhitenode = yes;
-
-            if (EncloseBlockText && !iswhitenode)
-            {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "p");
-                InsertNodeAtEnd(element, node);
-                ParseTag(lexer, node, MixedContent);
-                continue;
-            }
-
-            if (checkstack)
+            if ( checkstack )
             {
                 checkstack = no;
-
                 if (!(element->tag->model & CM_MIXED))
                 {
-                    if (InlineDup(lexer, node) > 0)
+                    if ( TY_(InlineDup)(doc, node) > 0 )
                         continue;
                 }
             }
 
-            InsertNodeAtEnd(element, node);
+            TY_(InsertNodeAtEnd)(element, node);
             mode = MixedContent;
 
             /*
               HTML4 strict doesn't allow mixed content for
               elements with %block; as their content model
             */
-            lexer->versions &= ~VERS_HTML40_STRICT;
+            /*
+              But only body, map, blockquote, form and
+              noscript have content model %block;
+            */
+            if ( nodeIsBODY(element)       ||
+                 nodeIsMAP(element)        ||
+                 nodeIsBLOCKQUOTE(element) ||
+                 nodeIsFORM(element)       ||
+                 nodeIsNOSCRIPT(element) )
+                TY_(ConstrainVersion)( doc, ~VERS_HTML40_STRICT );
             continue;
         }
 
-        if (InsertMisc(element, node))
+        if ( InsertMisc(element, node) )
             continue;
 
         /* allow PARAM elements? */
-        if (node->tag == tag_param)
+        if ( nodeIsPARAM(node) )
         {
-            if ((element->tag->model & CM_PARAM) &&
-                    (node->type == StartEndTag ||
-                    node->type == StartTag))
+            if ( TY_(nodeHasCM)(element, CM_PARAM) && TY_(nodeIsElement)(node) )
             {
-                InsertNodeAtEnd(element, node);
+                TY_(InsertNodeAtEnd)(element, node);
                 continue;
             }
 
             /* otherwise discard it */
-            ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+            TY_(FreeNode)( doc, node );
             continue;
         }
 
         /* allow AREA elements? */
-        if (node->tag == tag_area)
+        if ( nodeIsAREA(node) )
         {
-            if ((element->tag == tag_map) &&
-                    (node->type == StartTag || node->type == StartEndTag))
+            if ( nodeIsMAP(element) && TY_(nodeIsElement)(node) )
             {
-                InsertNodeAtEnd(element, node);
+                TY_(InsertNodeAtEnd)(element, node);
                 continue;
             }
 
             /* otherwise discard it */
-            ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+            TY_(FreeNode)( doc, node );
             continue;
         }
 
         /* ignore unknown start/end tags */
-        if (node->tag == null)
+        if ( node->tag == NULL )
         {
-            ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+            TY_(FreeNode)( doc, node );
             continue;
         }
 
@@ -764,127 +1102,216 @@ void ParseBlock(Lexer *lexer, Node *element, uint mode)
           Otherwise infer end tag for this element.
         */
 
-        if (!(node->tag->model & CM_INLINE))
+        if ( !TY_(nodeHasCM)(node, CM_INLINE) )
         {
-            if (node->type != StartTag && node->type != StartEndTag)
+            if ( !TY_(nodeIsElement)(node) )
             {
-                ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
+                if ( nodeIsFORM(node) )
+                    BadForm( doc );
+
+                TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+                TY_(FreeNode)( doc, node );
                 continue;
             }
 
-            if (element->tag == tag_td || element->tag == tag_th)
+            /* #427671 - Fix by Randy Waki - 10 Aug 00 */
+            /*
+             If an LI contains an illegal FRAME, FRAMESET, OPTGROUP, or OPTION
+             start tag, discard the start tag and let the subsequent content get
+             parsed as content of the enclosing LI.  This seems to mimic IE and
+             Netscape, and avoids an infinite loop: without this check,
+             ParseBlock (which is parsing the LI's content) and ParseList (which
+             is parsing the LI's parent's content) repeatedly defer to each
+             other to parse the illegal start tag, each time inferring a missing
+             </li> or <li> respectively.
+
+             NOTE: This check is a bit fragile.  It specifically checks for the
+             four tags that happen to weave their way through the current series
+             of tests performed by ParseBlock and ParseList to trigger the
+             infinite loop.
+            */
+            if ( nodeIsLI(element) )
+            {
+                if ( nodeIsFRAME(node)    ||
+                     nodeIsFRAMESET(node) ||
+                     nodeIsOPTGROUP(node) ||
+                     nodeIsOPTION(node) )
+                {
+                    TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+                    TY_(FreeNode)( doc, node );  /* DSR - 27Apr02 avoid memory leak */
+                    continue;
+                }
+            }
+
+            if ( nodeIsTD(element) || nodeIsTH(element) )
             {
                 /* if parent is a table cell, avoid inferring the end of the cell */
 
-                if (node->tag->model & CM_HEAD)
+                if ( TY_(nodeHasCM)(node, CM_HEAD) )
                 {
-                    MoveToHead(lexer, element, node);
+                    MoveToHead( doc, element, node );
                     continue;
                 }
 
-                if (node->tag->model & CM_LIST)
+                if ( TY_(nodeHasCM)(node, CM_LIST) )
                 {
-                    UngetToken(lexer);
-                    node = InferredTag(lexer, "ul");
-                    AddClass(node, "noindent");
+                    TY_(UngetToken)( doc );
+                    node = TY_(InferredTag)(doc, TidyTag_UL);
+                    AddClassNoIndent(doc, node);
                     lexer->excludeBlocks = yes;
                 }
-                else if (node->tag->model & CM_DEFLIST)
+                else if ( TY_(nodeHasCM)(node, CM_DEFLIST) )
                 {
-                    UngetToken(lexer);
-                    node = InferredTag(lexer, "dl");
+                    TY_(UngetToken)( doc );
+                    node = TY_(InferredTag)(doc, TidyTag_DL);
                     lexer->excludeBlocks = yes;
                 }
 
                 /* infer end of current table cell */
-                if (!(node->tag->model & CM_BLOCK))
+                if ( !TY_(nodeHasCM)(node, CM_BLOCK) )
                 {
-                    UngetToken(lexer);
-                    TrimSpaces(lexer, element);
-                    TrimEmptyElement(lexer, element);
+                    TY_(UngetToken)( doc );
+                    TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_block--;
+                    SPRTF("Exit ParseBlock 3 %d...\n",in_parse_block);
+#endif
                     return;
                 }
             }
-            else if (node->tag->model & CM_BLOCK)
+            else if ( TY_(nodeHasCM)(node, CM_BLOCK) )
             {
-                if (lexer->excludeBlocks)
+                if ( lexer->excludeBlocks )
                 {
-                    if (!(element->tag->model & CM_OPT))
-                        ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
+                    if ( !TY_(nodeHasCM)(element, CM_OPT) )
+                        TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE );
 
-                    UngetToken(lexer);
+                    TY_(UngetToken)( doc );
 
-                    if (element->tag->model & CM_OBJECT)
+                    if ( TY_(nodeHasCM)(element, CM_OBJECT) )
                         lexer->istackbase = istackbase;
 
-                    TrimSpaces(lexer, element);
-                    TrimEmptyElement(lexer, element);
+                    TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_block--;
+                    SPRTF("Exit ParseBlock 4 %d...\n",in_parse_block);
+#endif
                     return;
                 }
             }
             else /* things like list items */
             {
-                if (!(element->tag->model & CM_OPT) && !element->implicit)
-                    ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
-
                 if (node->tag->model & CM_HEAD)
                 {
-                    MoveToHead(lexer, element, node);
+                    MoveToHead( doc, element, node );
                     continue;
                 }
 
-                UngetToken(lexer);
+                /*
+                 special case where a form start tag
+                 occurs in a tr and is followed by td or th
+                */
 
-                if (node->tag->model & CM_LIST)
+                if ( nodeIsFORM(element) &&
+                     nodeIsTD(element->parent) &&
+                     element->parent->implicit )
                 {
-                    if (element->parent && element->parent->tag &&
-                        element->parent->tag->parser == ParseList)
+                    if ( nodeIsTD(node) )
                     {
-                        TrimSpaces(lexer, element);
-                        TrimEmptyElement(lexer, element);
+                        TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+                        TY_(FreeNode)( doc, node );
+                        continue;
+                    }
+
+                    if ( nodeIsTH(node) )
+                    {
+                        TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+                        TY_(FreeNode)( doc, node );
+                        node = element->parent;
+                        TidyDocFree(doc, node->element);
+                        node->element = TY_(tmbstrdup)(doc->allocator, "th");
+                        node->tag = TY_(LookupTagDef)( TidyTag_TH );
+                        continue;
+                    }
+                }
+
+                if ( !TY_(nodeHasCM)(element, CM_OPT) && !element->implicit )
+                    TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE );
+
+                TY_(UngetToken)( doc );
+
+                if ( TY_(nodeHasCM)(node, CM_LIST) )
+                {
+                    if ( element->parent && element->parent->tag &&
+                         element->parent->tag->parser == TY_(ParseList) )
+                    {
+                        TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                        in_parse_block--;
+                        SPRTF("Exit ParseBlock 5 %d...\n",in_parse_block);
+#endif
                         return;
                     }
 
-                    node = InferredTag(lexer, "ul");
-                    AddClass(node, "noindent");
+                    node = TY_(InferredTag)(doc, TidyTag_UL);
+                    AddClassNoIndent(doc, node);
                 }
-                else if (node->tag->model & CM_DEFLIST)
+                else if ( TY_(nodeHasCM)(node, CM_DEFLIST) )
                 {
-                    if (element->parent->tag == tag_dl)
+                    if ( nodeIsDL(element->parent) )
                     {
-                        TrimSpaces(lexer, element);
-                        TrimEmptyElement(lexer, element);
+                        TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                        in_parse_block--;
+                        SPRTF("Exit ParseBlock 6 %d...\n",in_parse_block);
+#endif
                         return;
                     }
 
-                    node = InferredTag(lexer, "dl");
+                    node = TY_(InferredTag)(doc, TidyTag_DL);
                 }
-                else if (node->tag->model & CM_TABLE || node->tag->model & CM_ROW)
+                else if ( TY_(nodeHasCM)(node, CM_TABLE) || TY_(nodeHasCM)(node, CM_ROW) )
                 {
-                    node = InferredTag(lexer, "table");
+                    /* http://tidy.sf.net/issue/1316307 */
+                    /* In exiled mode, return so table processing can 
+                       continue. */
+                    if (lexer->exiled) {
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                        in_parse_block--;
+                        SPRTF("Exit ParseBlock 7 %d...\n",in_parse_block);
+#endif
+                        return;
+                    }
+                    node = TY_(InferredTag)(doc, TidyTag_TABLE);
                 }
-                else if (element->tag->model & CM_OBJECT)
+                else if ( TY_(nodeHasCM)(element, CM_OBJECT) )
                 {
                     /* pop inline stack */
-                    while (lexer->istacksize > lexer->istackbase)
-                        PopInline(lexer, null);
+                    while ( lexer->istacksize > lexer->istackbase )
+                        TY_(PopInline)( doc, NULL );
                     lexer->istackbase = istackbase;
-                    TrimSpaces(lexer, element);
-                    TrimEmptyElement(lexer, element);
+                    TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_block--;
+                    SPRTF("Exit ParseBlock 8 %d...\n",in_parse_block);
+#endif
                     return;
 
                 }
                 else
                 {
-                    TrimSpaces(lexer, element);
-                    TrimEmptyElement(lexer, element);
+                    TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_block--;
+                    SPRTF("Exit ParseBlock 9 %d...\n",in_parse_block);
+#endif
                     return;
                 }
             }
         }
 
         /* parse known element */
-        if (node->type == StartTag || node->type == StartEndTag)
+        if (TY_(nodeIsElement)(node))
         {
             if (node->tag->model & CM_INLINE)
             {
@@ -892,8 +1319,11 @@ void ParseBlock(Lexer *lexer, Node *element, uint mode)
                 {
                     checkstack = no;
 
-                    if (InlineDup(lexer, node) > 0)
-                        continue;
+                    if (!(element->tag->model & CM_MIXED)) /* #431731 - fix by Randy Waki 25 Dec 00 */
+                    {
+                        if ( TY_(InlineDup)(doc, node) > 0 )
+                            continue;
+                    }
                 }
 
                 mode = MixedContent;
@@ -905,56 +1335,249 @@ void ParseBlock(Lexer *lexer, Node *element, uint mode)
             }
 
             /* trim white space before <br> */
-            if (node->tag == tag_br)
-                TrimSpaces(lexer, element);
+            if ( nodeIsBR(node) )
+                TrimSpaces( doc, element );
 
-            InsertNodeAtEnd(element, node);
-
+            TY_(InsertNodeAtEnd)(element, node);
+            
             if (node->implicit)
-                ReportWarning(lexer, element, node, INSERTING_TAG);
+                TY_(ReportError)(doc, element, node, INSERTING_TAG );
 
-            ParseTag(lexer, node, IgnoreWhitespace /*MixedContent*/);
+            ParseTag( doc, node, IgnoreWhitespace /*MixedContent*/ );
             continue;
         }
 
         /* discard unexpected tags */
         if (node->type == EndTag)
-            PopInline(lexer, node);  /* if inline end tag */
+            TY_(PopInline)( doc, node );  /* if inline end tag */
 
-        ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+        TY_(FreeNode)( doc, node );
+        continue;
     }
 
     if (!(element->tag->model & CM_OPT))
-        ReportWarning(lexer, element, node, MISSING_ENDTAG_FOR);
+        TY_(ReportError)(doc, element, node, MISSING_ENDTAG_FOR);
 
     if (element->tag->model & CM_OBJECT)
     {
         /* pop inline stack */
-        while (lexer->istacksize > lexer->istackbase)
-            PopInline(lexer, null);
+        while ( lexer->istacksize > lexer->istackbase )
+            TY_(PopInline)( doc, NULL );
         lexer->istackbase = istackbase;
     }
 
-    TrimSpaces(lexer, element);
-    TrimEmptyElement(lexer, element);
+    TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_block--;
+    SPRTF("Exit ParseBlock 10 %d...\n",in_parse_block);
+#endif
 }
 
-void ParseInline(Lexer *lexer, Node *element, uint mode)
+/* [i_a] svg / math */
+
+struct MatchingDescendantData
 {
+	Node *found_node;
+	Bool *passed_marker_node;
+
+	/* input: */
+	TidyTagId matching_tagId;
+	Node *node_to_find;
+	Node *marker_node;
+};
+
+static NodeTraversalSignal FindDescendant_cb(TidyDocImpl* ARG_UNUSED(doc), Node* node, void *propagate)
+{
+	struct MatchingDescendantData *cb_data = (struct MatchingDescendantData *)propagate;
+
+	if (TagId(node) == cb_data->matching_tagId)
+	{
+		/* make sure we match up 'unknown' tags exactly! */
+		if (cb_data->matching_tagId != TidyTag_UNKNOWN ||
+			(node->element != NULL &&
+			cb_data->node_to_find != NULL &&
+			cb_data->node_to_find->element != NULL &&
+			0 == TY_(tmbstrcmp)(cb_data->node_to_find->element, node->element)))
+		{
+			cb_data->found_node = node;
+			return ExitTraversal;
+		}
+	}
+
+	if (cb_data->passed_marker_node && node == cb_data->marker_node)
+		*cb_data->passed_marker_node = yes;
+
+	return VisitParent;
+}
+
+/*
+Search the parent chain (from 'parent' upwards up to the root) for a node matching the
+given 'node'.
+
+When the search passes beyond the 'marker_node' (which is assumed to sit in the
+parent chain), this will be flagged by setting the boolean referenced by
+'is_parent_of_marker' to yes.
+
+'is_parent_of_marker' and 'marker_node' are optional parameters and may be NULL.
+*/
+static Node *FindMatchingDescendant( Node *parent, Node *node, Node *marker_node, Bool *is_parent_of_marker )
+{
+	struct MatchingDescendantData cb_data = { 0 };
+	cb_data.matching_tagId = TagId(node);
+	cb_data.node_to_find = node;
+	cb_data.marker_node = marker_node;
+
+	assert(node);
+
+	if (is_parent_of_marker)
+		*is_parent_of_marker = no;
+
+	TY_(TraverseNodeTree)(NULL, parent, FindDescendant_cb, &cb_data);
+	return cb_data.found_node;
+}
+
+/*
+   Act as a generic XML (sub)tree parser: collect each node and add it to the DOM, without any further validation.
+   TODO : add schema- or other-hierarchy-definition-based validation of the subtree here...
+*/
+void TY_(ParseNamespace)(TidyDocImpl* doc, Node *basenode, GetTokenMode mode)
+{
+    Lexer* lexer = doc->lexer;
+	Node *node;
+	Node *parent = basenode;
+	uint istackbase;
+    AttVal* av; /* #130 MathML attr and entity fix! */
+
+	/* a la <table>: defer popping elements off the inline stack */
+	TY_(DeferDup)( doc );
+	istackbase = lexer->istackbase;
+	lexer->istackbase = lexer->istacksize;
+
+	mode = OtherNamespace; /* Preformatted; IgnoreWhitespace; */
+
+	while ((node = TY_(GetToken)(doc, mode)) != NULL)
+	{
+		/*
+		fix check to skip action in InsertMisc for regular/empty
+		nodes, which we don't want here...
+
+		The way we do it here is by checking and processing everything
+		and only what remains goes into InsertMisc()
+		*/
+
+		/* is this a close tag? And does it match the current parent node? */
+		if (node->type == EndTag)
+		{
+			/*
+			to prevent end tags flowing from one 'alternate namespace' we
+			check this in two phases: first we check if the tag is a
+			descendant of the current node, and when it is, we check whether
+			it is the end tag for a node /within/ or /outside/ the basenode.
+			*/
+			Bool outside;
+			Node *mp = FindMatchingDescendant(parent, node, basenode, &outside);
+
+			if (mp != NULL)
+			{
+				/*
+				when mp != parent as we might expect,
+				infer end tags until we 'hit' the matched
+				parent or the basenode
+				*/
+				Node *n;
+
+				for (n = parent;
+					 n != NULL && n != basenode->parent && n != mp;
+					 n = n->parent)
+				{
+					/* n->implicit = yes; */
+					n->closed = yes;
+					TY_(ReportError)(doc, n->parent, n, MISSING_ENDTAG_BEFORE);
+				}
+				assert(outside == no ? n == mp : 1);
+				assert(outside == yes ? n == basenode->parent : 1);
+
+				if (outside == no)
+				{
+					/* EndTag for a node within the basenode subtree. Roll on... */
+					n->closed = yes;
+					TY_(FreeNode)(doc, node);
+
+					node = n;
+					parent = node->parent;
+				}
+				else
+				{
+					/* EndTag for a node outside the basenode subtree: let the caller handle that. */
+					TY_(UngetToken)( doc );
+					node = basenode;
+					parent = node->parent;
+				}
+
+				/* when we've arrived at the end-node for the base node, it's quitting time */
+				if (node == basenode)
+				{
+					lexer->istackbase = istackbase;
+					assert(basenode->closed == yes);
+					return;
+				}
+			}
+			else
+			{
+				/* unmatched close tag: report an error and discard */
+				TY_(ReportError)(doc, parent, node, NON_MATCHING_ENDTAG);
+				TY_(ReportError)(doc, parent, node, DISCARDING_UNEXPECTED);
+				assert(parent);
+				assert(parent->tag != node->tag);
+			}
+		}
+		else if (node->type == StartTag)
+		{
+            /* #130 MathML attr and entity fix! 
+               care if it has attributes, and 'accidently' any of those attributes match known */
+            for ( av = node->attributes; av; av = av->next )
+            {
+                av->dict = 0; /* does something need to be freed? */
+            }
+			/* add another child to the current parent */
+			TY_(InsertNodeAtEnd)(parent, node);
+			parent = node;
+		}
+		else
+		{
+            /* #130 MathML attr and entity fix! 
+               care if it has attributes, and 'accidently' any of those attributes match known */
+            for ( av = node->attributes; av; av = av->next )
+            {
+                av->dict = 0; /* does something need to be freed? */
+            }
+			TY_(InsertNodeAtEnd)(parent, node);
+		}
+	}
+
+	TY_(ReportError)(doc, basenode->parent, basenode, MISSING_ENDTAG_FOR);
+}
+
+
+void TY_(ParseInline)( TidyDocImpl* doc, Node *element, GetTokenMode mode )
+{
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    static int in_parse_inline = 0;
+#endif
+    Lexer* lexer = doc->lexer;
     Node *node, *parent;
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_inline++;
+    SPRTF("Entering ParseInline %d...\n",in_parse_inline);
+#endif
 
-    if (element->tag->model & CM_EMPTY)
+    if (element->tag->model & CM_EMPTY) {
+#if !defined(NDEBUG) && defined(_MSC_VER)
+        in_parse_inline--;
+        SPRTF("Exit ParseInline 1 %d...\n",in_parse_inline);
+#endif
         return;
-
-    if (element->tag == tag_a)
-    {
-        if (element->attributes == null)
-        {
-            ReportWarning(lexer, element->parent, element, DISCARDING_UNEXPECTED);
-            DiscardElement(element);
-            return;
-        }
     }
 
     /*
@@ -963,117 +1586,137 @@ void ParseInline(Lexer *lexer, Node *element, uint mode)
      on the inline stack. For Inline elements, we normally push them
      onto the inline stack provided they aren't implicit or OBJECT/APPLET.
      This test is carried out in PushInline and PopInline, see istack.c
-     We don't push A or SPAN to replicate current browser behavior
-    */
-    if ((element->tag->model & CM_BLOCK) || (element->tag == tag_dt))
-        InlineDup(lexer, null);
-    else if (element->tag->model & CM_INLINE &&
-                element->tag != tag_a && element->tag != tag_span)
-        PushInline(lexer, element);
 
-    if (element->tag == tag_nobr)
-        lexer->badLayout |= USING_NOBR;
-    else if (element->tag == tag_font)
-        lexer->badLayout |= USING_FONT;
+     InlineDup(...) is not called for elements with a CM_MIXED (inline and
+     block) content model, e.g. <del> or <ins>, otherwise constructs like 
+
+       <p>111<a name='foo'>222<del>333</del>444</a>555</p>
+       <p>111<span>222<del>333</del>444</span>555</p>
+       <p>111<em>222<del>333</del>444</em>555</p>
+
+     will get corrupted.
+    */
+    if ((TY_(nodeHasCM)(element, CM_BLOCK) || nodeIsDT(element)) &&
+        !TY_(nodeHasCM)(element, CM_MIXED))
+        TY_(InlineDup)(doc, NULL);
+    else if (TY_(nodeHasCM)(element, CM_INLINE))
+        TY_(PushInline)(doc, element);
+
+    if ( nodeIsNOBR(element) )
+        doc->badLayout |= USING_NOBR;
+    else if ( nodeIsFONT(element) )
+        doc->badLayout |= USING_FONT;
 
     /* Inline elements may or may not be within a preformatted element */
     if (mode != Preformatted)
         mode = MixedContent;
 
-    while ((node = GetToken(lexer, mode)) != null)
+    while ((node = TY_(GetToken)(doc, mode)) != NULL)
     {
         /* end tag for current element */
         if (node->tag == element->tag && node->type == EndTag)
         {
-            if (element->tag->model & CM_INLINE && element->tag != tag_a)
-                PopInline(lexer, node);
+            if (element->tag->model & CM_INLINE)
+                TY_(PopInline)( doc, node );
 
-            FreeNode(node);
+            TY_(FreeNode)( doc, node );
 
             if (!(mode & Preformatted))
-                TrimSpaces(lexer, element);
+                TrimSpaces(doc, element);
 
             /*
              if a font element wraps an anchor and nothing else
              then move the font element inside the anchor since
              otherwise it won't alter the anchor text color
             */
-            if (element->tag == tag_font && element->content && element->content == element->last)
+            if ( nodeIsFONT(element) && 
+                 element->content && element->content == element->last )
             {
                 Node *child = element->content;
 
-                if (child->tag == tag_a)
+                if ( nodeIsA(child) )
                 {
                     child->parent = element->parent;
                     child->next = element->next;
                     child->prev = element->prev;
 
-                    if (child->prev)
-                        child->prev->next = child;
-                    else
-                        child->parent->content = child;
-
-                    if (child->next)
-                        child->next->prev = child;
-                    else
-                        child->parent->last = child;
-
-                    element->next = null;
-                    element->prev = null;
+                    element->next = NULL;
+                    element->prev = NULL;
                     element->parent = child;
+
                     element->content = child->content;
                     element->last = child->last;
-                    child->content = child->last = element;
+                    child->content = element;
 
-                    for (child = element->content; child; child = child->next)
-                        child->parent = element;
+                    TY_(FixNodeLinks)(child);
+                    TY_(FixNodeLinks)(element);
                 }
             }
 
             element->closed = yes;
-            TrimSpaces(lexer, element);
-            TrimEmptyElement(lexer, element);
+            TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_inline--;
+            SPRTF("Exit ParseInline 2 %d...\n",in_parse_inline);
+#endif
             return;
         }
 
         /* <u>...<u>  map 2nd <u> to </u> if 1st is explicit */
+        /* (see additional conditions below) */
         /* otherwise emphasis nesting is probably unintentional */
-        /* big and small have cumulative effect to leave them alone */
-        if (node->type == StartTag
-                && node->tag == element->tag
-                && IsPushed(lexer, node)
-                && !node->implicit
-                && !element->implicit
-                && node->tag && (node->tag->model & CM_INLINE)
-                && node->tag != tag_a
-                && node->tag != tag_font
-                && node->tag != tag_big
-                && node->tag != tag_small)
+        /* big, small, sub, sup have cumulative effect to leave them alone */
+        if ( node->type == StartTag
+             && node->tag == element->tag
+             && TY_(IsPushed)( doc, node )
+             && !node->implicit
+             && !element->implicit
+             && node->tag && (node->tag->model & CM_INLINE)
+             && !nodeIsA(node)
+             && !nodeIsFONT(node)
+             && !nodeIsBIG(node)
+             && !nodeIsSMALL(node)
+             && !nodeIsSUB(node)
+             && !nodeIsSUP(node)
+             && !nodeIsQ(node)
+             && !nodeIsSPAN(node)
+             && cfgBool(doc, TidyCoerceEndTags)
+           )
         {
-            if (element->content != null && node->attributes == null)
+            /* proceeds only if "node" does not have any attribute and
+               follows a text node not finishing with a space */
+            if (element->content != NULL && node->attributes == NULL
+                && TY_(nodeIsText)(element->last)
+                && !TY_(TextNodeEndWithSpace)(doc->lexer, element->last) )
             {
-                ReportWarning(lexer, element, node, COERCE_TO_ENDTAG);
+                TY_(ReportWarning)(doc, element, node, COERCE_TO_ENDTAG_WARN);
                 node->type = EndTag;
-                UngetToken(lexer);
+                TY_(UngetToken)(doc);
                 continue;
             }
 
-            ReportWarning(lexer, element, node, NESTED_EMPHASIS);
+            if (node->attributes == NULL || element->attributes == NULL)
+                TY_(ReportWarning)(doc, element, node, NESTED_EMPHASIS);
+        }
+        else if ( TY_(IsPushed)(doc, node) && node->type == StartTag && 
+                  nodeIsQ(node) )
+        {
+            TY_(ReportWarning)(doc, element, node, NESTED_QUOTATION);
         }
 
-        if (node->type == TextNode)
+        if ( TY_(nodeIsText)(node) )
         {
             /* only called for 1st child */
-            if (element->content == null && !(mode & Preformatted))
-                TrimSpaces(lexer, element);
+            if ( element->content == NULL && !(mode & Preformatted) )
+                TrimSpaces( doc, element );
 
-            if (node->start >= node->end)
+            if ( node->start >= node->end )
             {
-                FreeNode(node);
+                TY_(FreeNode)( doc, node );
                 continue;
             }
 
-            InsertNodeAtEnd(element, node);
+            TY_(InsertNodeAtEnd)(element, node);
             continue;
         }
 
@@ -1082,131 +1725,181 @@ void ParseInline(Lexer *lexer, Node *element, uint mode)
             continue;
 
         /* deal with HTML tags */
-        if (node->tag == tag_html)
+        if ( nodeIsHTML(node) )
         {
-            if (node->type == StartTag || node->type == StartEndTag)
+            if ( TY_(nodeIsElement)(node) )
             {
-                ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED );
+                TY_(FreeNode)( doc, node );
                 continue;
             }
 
             /* otherwise infer end of inline element */
-            UngetToken(lexer);
+            TY_(UngetToken)( doc );
 
             if (!(mode & Preformatted))
-                TrimSpaces(lexer, element);
-
-            TrimEmptyElement(lexer, element);
+                TrimSpaces(doc, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_inline--;
+            SPRTF("Exit ParseInline 3 %d...\n",in_parse_inline);
+#endif
             return;
         }
 
         /* within <dt> or <pre> map <p> to <br> */
-        if (node->tag == tag_p &&
-              node->type == StartTag &&
-              ((mode & Preformatted) ||
-               element->tag == tag_dt ||
-               DescendantOf(element, tag_dt)))
+        if ( nodeIsP(node) &&
+             node->type == StartTag &&
+             ( (mode & Preformatted) ||
+               nodeIsDT(element) || 
+               DescendantOf(element, TidyTag_DT )
+             )
+           )
         {
-            node->tag = tag_br;
-            MemFree(node->element);
-            node->element = wstrdup("br");
-            TrimSpaces(lexer, element);
-            InsertNodeAtEnd(element, node);
+            node->tag = TY_(LookupTagDef)( TidyTag_BR );
+            TidyDocFree(doc, node->element);
+            node->element = TY_(tmbstrdup)(doc->allocator, "br");
+            TrimSpaces(doc, element);
+            TY_(InsertNodeAtEnd)(element, node);
+            continue;
+        }
+
+        /* <p> allowed within <address> in HTML 4.01 Transitional */
+        if ( nodeIsP(node) &&
+             node->type == StartTag &&
+             nodeIsADDRESS(element) )
+        {
+            TY_(ConstrainVersion)( doc, ~VERS_HTML40_STRICT );
+            TY_(InsertNodeAtEnd)(element, node);
+            (*node->tag->parser)( doc, node, mode );
             continue;
         }
 
         /* ignore unknown and PARAM tags */
-        if (node->tag == null || node->tag == tag_param)
+        if ( node->tag == NULL || nodeIsPARAM(node) )
         {
-            ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node );
             continue;
         }
 
-        if (node->tag == tag_br && node->type == EndTag)
+        if ( nodeIsBR(node) && node->type == EndTag )
             node->type = StartTag;
 
-        if (node->type == EndTag)
+        if ( node->type == EndTag )
         {
            /* coerce </br> to <br> */
-           if (node->tag == tag_br)
+           if ( nodeIsBR(node) )
                 node->type = StartTag;
-           else if (node->tag == tag_p)
+           else if ( nodeIsP(node) )
            {
                /* coerce unmatched </p> to <br><br> */
-                if (!DescendantOf(element, tag_p))
+                if ( !DescendantOf(element, TidyTag_P) )
                 {
-                    CoerceNode(lexer, node, tag_br);
-                    TrimSpaces(lexer, element);
-                    InsertNodeAtEnd(element, node);
-                    node = InferredTag(lexer, "br");
+                    TY_(CoerceNode)(doc, node, TidyTag_BR, no, no);
+                    TrimSpaces( doc, element );
+                    TY_(InsertNodeAtEnd)( element, node );
+                    node = TY_(InferredTag)(doc, TidyTag_BR);
+                    TY_(InsertNodeAtEnd)( element, node ); /* todo: check this */
                     continue;
                 }
            }
-           else if (node->tag->model & CM_INLINE
-                        && node->tag != tag_a
-                        && !(node->tag->model & CM_OBJECT)
-                        && element->tag->model & CM_INLINE)
+           else if ( TY_(nodeHasCM)(node, CM_INLINE)
+                     && !nodeIsA(node)
+                     && !TY_(nodeHasCM)(node, CM_OBJECT)
+                     && TY_(nodeHasCM)(element, CM_INLINE) )
             {
                 /* allow any inline end tag to end current element */
-                PopInline(lexer, element);
 
-                if (element->tag != tag_a)
+                /* http://tidy.sf.net/issue/1426419 */
+                /* but, like the browser, retain an earlier inline element.
+                   This is implemented by setting the lexer into a mode
+                   where it gets tokens from the inline stack rather than
+                   from the input stream. Check if the scenerio fits. */
+                if ( !nodeIsA(element)
+                     && (node->tag != element->tag)
+                     && TY_(IsPushed)( doc, node )
+                     && TY_(IsPushed)( doc, element ) )
                 {
-                    if (node->tag == tag_a && node->tag != element->tag)
+                    /* we have something like
+                       <b>bold <i>bold and italic</b> italics</i> */
+                    if ( TY_(SwitchInline)( doc, element, node ) )
                     {
-                       ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
-                       UngetToken(lexer);
+                        TY_(ReportError)(doc, element, node, NON_MATCHING_ENDTAG);
+                        TY_(UngetToken)( doc ); /* put this back */
+                        TY_(InlineDup1)( doc, NULL, element ); /* dupe the <i>, after </b> */
+                        if (!(mode & Preformatted))
+                            TrimSpaces( doc, element );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                        in_parse_inline--;
+                        SPRTF("Exit ParseInline 4 %d...\n",in_parse_inline);
+#endif
+                        return; /* close <i>, but will re-open it, after </b> */
+                    }
+                }
+                TY_(PopInline)( doc, element );
+
+                if ( !nodeIsA(element) )
+                {
+                    if ( nodeIsA(node) && node->tag != element->tag )
+                    {
+                       TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE );
+                       TY_(UngetToken)( doc );
                     }
                     else
                     {
-                        ReportWarning(lexer, element, node, NON_MATCHING_ENDTAG);
-                        FreeNode(node);
+                        TY_(ReportError)(doc, element, node, NON_MATCHING_ENDTAG);
+                        TY_(FreeNode)( doc, node);
                     }
 
                     if (!(mode & Preformatted))
-                        TrimSpaces(lexer, element);
-
-                    TrimEmptyElement(lexer, element);
+                        TrimSpaces(doc, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_inline--;
+                    SPRTF("Exit ParseInline 5 %d...\n",in_parse_inline);
+#endif
                     return;
                 }
 
                 /* if parent is <a> then discard unexpected inline end tag */
-                ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }  /* special case </tr> etc. for stuff moved in front of table */
-            else if (lexer->exiled
-                        && node->tag->model
-                        && (node->tag->model & CM_TABLE))
+            else if ( lexer->exiled
+                     && (TY_(nodeHasCM)(node, CM_TABLE) || nodeIsTABLE(node)) )
             {
-                UngetToken(lexer);
-                TrimSpaces(lexer, element);
-                TrimEmptyElement(lexer, element);
+                TY_(UngetToken)( doc );
+                TrimSpaces(doc, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                in_parse_inline--;
+                SPRTF("Exit ParseInline 6 %d...\n",in_parse_inline);
+#endif
                 return;
             }
         }
 
         /* allow any header tag to end current header */
-        if (node->tag->model & CM_HEADING && element->tag->model & CM_HEADING)
+        if ( TY_(nodeHasCM)(node, CM_HEADING) && TY_(nodeHasCM)(element, CM_HEADING) )
         {
 
-            if (node->tag == element->tag)
+            if ( node->tag == element->tag )
             {
-                ReportWarning(lexer, element, node, NON_MATCHING_ENDTAG);
-                FreeNode(node);
+                TY_(ReportError)(doc, element, node, NON_MATCHING_ENDTAG );
+                TY_(FreeNode)( doc, node);
             }
             else
             {
-                ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
-                UngetToken(lexer);
+                TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE );
+                TY_(UngetToken)( doc );
             }
 
             if (!(mode & Preformatted))
-                TrimSpaces(lexer, element);
+                TrimSpaces(doc, element);
 
-            TrimEmptyElement(lexer, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_inline--;
+            SPRTF("Exit ParseInline 7 %d...\n",in_parse_inline);
+#endif
             return;
         }
 
@@ -1214,171 +1907,187 @@ void ParseInline(Lexer *lexer, Node *element, uint mode)
            an <A> tag to ends any open <A> element
            but <A href=...> is mapped to </A><A href=...>
         */
-        if (node->tag == tag_a && !node->implicit && IsPushed(lexer, node))
+        /* #427827 - fix by Randy Waki and Bjoern Hoehrmann 23 Aug 00 */
+        /* if (node->tag == doc->tags.tag_a && !node->implicit && TY_(IsPushed)(doc, node)) */
+        if ( nodeIsA(node) && !node->implicit && 
+             (nodeIsA(element) || DescendantOf(element, TidyTag_A)) )
         {
-         /* coerce <a> to </a> unless it has some attributes */
-            if (node->attributes == null)
+            /* coerce <a> to </a> unless it has some attributes */
+            /* #427827 - fix by Randy Waki and Bjoern Hoehrmann 23 Aug 00 */
+            /* other fixes by Dave Raggett */
+            /* if (node->attributes == NULL) */
+            if (node->type != EndTag && node->attributes == NULL
+                && cfgBool(doc, TidyCoerceEndTags) )
             {
                 node->type = EndTag;
-                ReportWarning(lexer, element, node, COERCE_TO_ENDTAG);
-                PopInline(lexer, node);
-                UngetToken(lexer);
+                TY_(ReportError)(doc, element, node, COERCE_TO_ENDTAG);
+                /* TY_(PopInline)( doc, node ); */
+                TY_(UngetToken)( doc );
                 continue;
             }
 
-            UngetToken(lexer);
-            ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
-            PopInline(lexer, element);
+            TY_(UngetToken)( doc );
+            TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE);
+            /* TY_(PopInline)( doc, element ); */
 
             if (!(mode & Preformatted))
-                TrimSpaces(lexer, element);
+                TrimSpaces(doc, element);
 
-            TrimEmptyElement(lexer, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_inline--;
+            SPRTF("Exit ParseInline 8 %d...\n",in_parse_inline);
+#endif
             return;
         }
 
         if (element->tag->model & CM_HEADING)
         {
-            if (node->tag == tag_center || node->tag == tag_div)
+            if ( nodeIsCENTER(node) || nodeIsDIV(node) )
             {
-                if (node->type != StartTag && node->type != StartEndTag)
+                if (!TY_(nodeIsElement)(node))
                 {
-                    ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-                    FreeNode(node);
+                    TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+                    TY_(FreeNode)( doc, node);
                     continue;
                 }
 
-                ReportWarning(lexer, element, node, TAG_NOT_ALLOWED_IN);
+                TY_(ReportError)(doc, element, node, TAG_NOT_ALLOWED_IN);
 
                 /* insert center as parent if heading is empty */
-                if (element->content == null)
+                if (element->content == NULL)
                 {
                     InsertNodeAsParent(element, node);
                     continue;
                 }
 
                 /* split heading and make center parent of 2nd part */
-                InsertNodeAfterElement(element, node);
+                TY_(InsertNodeAfterElement)(element, node);
 
                 if (!(mode & Preformatted))
-                    TrimSpaces(lexer, element);
+                    TrimSpaces(doc, element);
 
-                element = CloneNode(lexer, element);
-                InsertNodeAtEnd(node, element);
+                element = TY_(CloneNode)( doc, element );
+                TY_(InsertNodeAtEnd)(node, element);
                 continue;
             }
 
-            if (node->tag == tag_hr)
+            if ( nodeIsHR(node) )
             {
-                if (node->type != StartTag && node->type != StartEndTag)
+                if ( !TY_(nodeIsElement)(node) )
                 {
-                    ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-                    FreeNode(node);
+                    TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+                    TY_(FreeNode)( doc, node);
                     continue;
                 }
 
-                ReportWarning(lexer, element, node, TAG_NOT_ALLOWED_IN);
+                TY_(ReportError)(doc, element, node, TAG_NOT_ALLOWED_IN);
 
                 /* insert hr before heading if heading is empty */
-                if (element->content == null)
+                if (element->content == NULL)
                 {
-                    InsertNodeBeforeElement(element, node);
+                    TY_(InsertNodeBeforeElement)(element, node);
                     continue;
                 }
 
                 /* split heading and insert hr before 2nd part */
-                InsertNodeAfterElement(element, node);
+                TY_(InsertNodeAfterElement)(element, node);
 
                 if (!(mode & Preformatted))
-                    TrimSpaces(lexer, element);
+                    TrimSpaces(doc, element);
 
-                element = CloneNode(lexer, element);
-                InsertNodeAfterElement(node, element);
+                element = TY_(CloneNode)( doc, element );
+                TY_(InsertNodeAfterElement)(node, element);
                 continue;
             }
         }
 
-        if (element->tag == tag_dt)
+        if ( nodeIsDT(element) )
         {
-            if (node->tag == tag_hr)
+            if ( nodeIsHR(node) )
             {
                 Node *dd;
-
-                if (node->type != StartTag && node->type != StartEndTag)
+                if ( !TY_(nodeIsElement)(node) )
                 {
-                    ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-                    FreeNode(node);
+                    TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+                    TY_(FreeNode)( doc, node);
                     continue;
                 }
 
-                ReportWarning(lexer, element, node, TAG_NOT_ALLOWED_IN);
-                dd = InferredTag(lexer, "dd");
+                TY_(ReportError)(doc, element, node, TAG_NOT_ALLOWED_IN);
+                dd = TY_(InferredTag)(doc, TidyTag_DD);
 
                 /* insert hr within dd before dt if dt is empty */
-                if (element->content == null)
+                if (element->content == NULL)
                 {
-                    InsertNodeBeforeElement(element, dd);
-                    InsertNodeAtEnd(dd, node);
+                    TY_(InsertNodeBeforeElement)(element, dd);
+                    TY_(InsertNodeAtEnd)(dd, node);
                     continue;
                 }
 
                 /* split dt and insert hr within dd before 2nd part */
-                InsertNodeAfterElement(element, dd);
-                InsertNodeAtEnd(dd, node);
+                TY_(InsertNodeAfterElement)(element, dd);
+                TY_(InsertNodeAtEnd)(dd, node);
 
                 if (!(mode & Preformatted))
-                    TrimSpaces(lexer, element);
+                    TrimSpaces(doc, element);
 
-                element = CloneNode(lexer, element);
-                InsertNodeAfterElement(dd, element);
+                element = TY_(CloneNode)( doc, element );
+                TY_(InsertNodeAfterElement)(dd, element);
                 continue;
             }
         }
 
 
-        /*
+        /* 
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
         if (node->type == EndTag)
         {
             for (parent = element->parent;
-                    parent != null; parent = parent->parent)
+                    parent != NULL; parent = parent->parent)
             {
                 if (node->tag == parent->tag)
                 {
                     if (!(element->tag->model & CM_OPT) && !element->implicit)
-                        ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
+                        TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE);
 
-                    if (element->tag == tag_a)
-                        PopInline(lexer, element);
-
-                    UngetToken(lexer);
+                    if( TY_(IsPushedLast)( doc, element, node ) ) 
+                        TY_(PopInline)( doc, element );
+                    TY_(UngetToken)( doc );
 
                     if (!(mode & Preformatted))
-                        TrimSpaces(lexer, element);
+                        TrimSpaces(doc, element);
 
-                    TrimEmptyElement(lexer, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_inline--;
+                    SPRTF("Exit ParseInline 9 %d...\n",in_parse_inline);
+#endif
                     return;
                 }
             }
         }
 
         /* block level tags end this element */
-        if (!(node->tag->model & CM_INLINE))
+        if (!(node->tag->model & CM_INLINE) &&
+            !(element->tag->model & CM_MIXED))
         {
-            if (node->type != StartTag)
+            if ( !TY_(nodeIsElement)(node) )
             {
-                ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
+                TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
-
+            /* HTML5 */
+            if (nodeIsDATALIST(element)) {
+                TY_(ConstrainVersion)( doc, ~VERS_HTML5 );
+            } else
             if (!(element->tag->model & CM_OPT))
-                ReportWarning(lexer, element, node, MISSING_ENDTAG_BEFORE);
+                TY_(ReportError)(doc, element, node, MISSING_ENDTAG_BEFORE);
 
             if (node->tag->model & CM_HEAD && !(node->tag->model & CM_BLOCK))
             {
-                MoveToHead(lexer, element, node);
+                MoveToHead(doc, element, node);
                 continue;
             }
 
@@ -1386,69 +2095,101 @@ void ParseInline(Lexer *lexer, Node *element, uint mode)
                prevent anchors from propagating into block tags
                except for headings h1 to h6
             */
-            if (element->tag == tag_a)
+            if ( nodeIsA(element) )
             {
                 if (node->tag && !(node->tag->model & CM_HEADING))
-                    PopInline(lexer, element);
+                    TY_(PopInline)( doc, element );
                 else if (!(element->content))
                 {
-                    DiscardElement(element);
-                    UngetToken(lexer);
+                    TY_(DiscardElement)( doc, element );
+                    TY_(UngetToken)( doc );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+                    in_parse_inline--;
+                    SPRTF("Exit ParseInline 10 %d...\n",in_parse_inline);
+#endif
                     return;
                 }
             }
 
-            UngetToken(lexer);
+            TY_(UngetToken)( doc );
 
             if (!(mode & Preformatted))
-                TrimSpaces(lexer, element);
+                TrimSpaces(doc, element);
 
-            TrimEmptyElement(lexer, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_inline--;
+            SPRTF("Exit ParseInline 11 %d...\n",in_parse_inline);
+#endif
             return;
         }
 
         /* parse inline element */
-        if (node->type == StartTag || node->type == StartEndTag)
+        if (TY_(nodeIsElement)(node))
         {
             if (node->implicit)
-                ReportWarning(lexer, element, node, INSERTING_TAG);
+                TY_(ReportError)(doc, element, node, INSERTING_TAG);
 
             /* trim white space before <br> */
-            if (node->tag == tag_br)
-                TrimSpaces(lexer, element);
-
-            InsertNodeAtEnd(element, node);
-            ParseTag(lexer, node, mode);
+            if ( nodeIsBR(node) )
+                TrimSpaces(doc, element);
+            
+            TY_(InsertNodeAtEnd)(element, node);
+            ParseTag(doc, node, mode);
             continue;
         }
 
         /* discard unexpected tags */
-        ReportWarning(lexer, element, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, element, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node );
+        continue;
     }
 
     if (!(element->tag->model & CM_OPT))
-        ReportWarning(lexer, element, node, MISSING_ENDTAG_FOR);
+        TY_(ReportError)(doc, element, node, MISSING_ENDTAG_FOR);
 
-    TrimEmptyElement(lexer, element);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_inline--;
+    SPRTF("Exit ParseInline 12 %d...\n",in_parse_inline);
+#endif
 }
 
-void ParseDefList(Lexer *lexer, Node *list, uint mode)
+void TY_(ParseEmpty)(TidyDocImpl* doc, Node *element, GetTokenMode mode)
 {
+    Lexer* lexer = doc->lexer;
+    if ( lexer->isvoyager )
+    {
+        Node *node = TY_(GetToken)( doc, mode);
+        if ( node )
+        {
+            if ( !(node->type == EndTag && node->tag == element->tag) )
+            {
+                /* TY_(ReportError)(doc, element, node, ELEMENT_NOT_EMPTY); */
+                TY_(UngetToken)( doc );
+            }
+            else
+            {
+                TY_(FreeNode)( doc, node );
+            }
+        }
+    }
+}
+
+void TY_(ParseDefList)(TidyDocImpl* doc, Node *list, GetTokenMode mode)
+{
+    Lexer* lexer = doc->lexer;
     Node *node, *parent;
 
     if (list->tag->model & CM_EMPTY)
         return;
 
-    lexer->insert = null;  /* defer implicit inline start tags */
+    lexer->insert = NULL;  /* defer implicit inline start tags */
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)( doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == list->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             list->closed = yes;
-            TrimEmptyElement(lexer, list);
             return;
         }
 
@@ -1456,124 +2197,164 @@ void ParseDefList(Lexer *lexer, Node *list, uint mode)
         if (InsertMisc(list, node))
             continue;
 
-        if (node->type == TextNode)
+        if (TY_(nodeIsText)(node))
         {
-            UngetToken(lexer);
-            node = InferredTag(lexer, "dt");
-            ReportWarning(lexer, list, node, MISSING_STARTTAG);
+            TY_(UngetToken)( doc );
+            node = TY_(InferredTag)(doc, TidyTag_DT);
+            TY_(ReportError)(doc, list, node, MISSING_STARTTAG);
         }
 
-        if (node->tag == null)
+        if (node->tag == NULL)
         {
-            ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
-        /*
+        /* 
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
         if (node->type == EndTag)
         {
-            if (node->tag == tag_form)
+            Bool discardIt = no;
+            if ( nodeIsFORM(node) )
             {
-                lexer->badForm = yes;
-                ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
+                BadForm( doc );
+                TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node );
                 continue;
             }
 
             for (parent = list->parent;
-                    parent != null; parent = parent->parent)
+                    parent != NULL; parent = parent->parent)
             {
+               /* Do not match across BODY to avoid infinite loop
+                  between ParseBody and this parser,
+                  See http://tidy.sf.net/bug/1098012. */
+                if (nodeIsBODY(parent))
+                {
+                    discardIt = yes;
+                    break;
+                }
                 if (node->tag == parent->tag)
                 {
-                    ReportWarning(lexer, list, node, MISSING_ENDTAG_BEFORE);
+                    TY_(ReportError)(doc, list, node, MISSING_ENDTAG_BEFORE);
 
-                    UngetToken(lexer);
-                    TrimEmptyElement(lexer, list);
+                    TY_(UngetToken)( doc );
                     return;
                 }
+            }
+            if (discardIt)
+            {
+                TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
+                continue;
             }
         }
 
         /* center in a dt or a dl breaks the dl list in two */
-        if (node->tag == tag_center)
+        if ( nodeIsCENTER(node) )
         {
             if (list->content)
-                InsertNodeAfterElement(list, node);
+                TY_(InsertNodeAfterElement)(list, node);
             else /* trim empty dl list */
             {
-                InsertNodeBeforeElement(list, node);
-                DiscardElement(list);
+                TY_(InsertNodeBeforeElement)(list, node);
+
+/* #540296 tidy dumps with empty definition list */
+#if 0
+                TY_(DiscardElement)(list);
+#endif
             }
 
-            /* and parse contents of center */
-            ParseTag(lexer, node, mode);
+            /* #426885 - fix by Glenn Carroll 19 Apr 00, and
+                         Gary Dechaines 11 Aug 00 */
+            /* ParseTag can destroy node, if it finds that
+             * this <center> is followed immediately by </center>.
+             * It's awkward but necessary to determine if this
+             * has happened.
+             */
+            parent = node->parent;
 
-            /* now create a new dl element */
-            list = InferredTag(lexer, "dl");
-            InsertNodeAfterElement(node, list);
+            /* and parse contents of center */
+            lexer->excludeBlocks = no;
+            ParseTag( doc, node, mode);
+            lexer->excludeBlocks = yes;
+
+            /* now create a new dl element,
+             * unless node has been blown away because the
+             * center was empty, as above.
+             */
+            if (parent->last == node)
+            {
+                list = TY_(InferredTag)(doc, TidyTag_DL);
+                TY_(InsertNodeAfterElement)(node, list);
+            }
             continue;
         }
 
-        if (!(node->tag == tag_dt || node->tag == tag_dd))
+        if ( !(nodeIsDT(node) || nodeIsDD(node)) )
         {
-            UngetToken(lexer);
+            TY_(UngetToken)( doc );
 
             if (!(node->tag->model & (CM_BLOCK | CM_INLINE)))
             {
-                ReportWarning(lexer, list, node, TAG_NOT_ALLOWED_IN);
-                TrimEmptyElement(lexer, list);
+                TY_(ReportError)(doc, list, node, TAG_NOT_ALLOWED_IN);
                 return;
             }
 
             /* if DD appeared directly in BODY then exclude blocks */
             if (!(node->tag->model & CM_INLINE) && lexer->excludeBlocks)
-            {
-                TrimEmptyElement(lexer, list);
                 return;
-            }
 
-            node = InferredTag(lexer, "dd");
-            ReportWarning(lexer, list, node, MISSING_STARTTAG);
+            node = TY_(InferredTag)(doc, TidyTag_DD);
+            TY_(ReportError)(doc, list, node, MISSING_STARTTAG);
         }
 
         if (node->type == EndTag)
         {
-            ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
+            TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
-
+        
         /* node should be <DT> or <DD>*/
-        InsertNodeAtEnd(list, node);
-        ParseTag(lexer, node, IgnoreWhitespace);
+        TY_(InsertNodeAtEnd)(list, node);
+        ParseTag( doc, node, IgnoreWhitespace);
     }
 
-    ReportWarning(lexer, list, node, MISSING_ENDTAG_FOR);
-    TrimEmptyElement(lexer, list);
+    TY_(ReportError)(doc, list, node, MISSING_ENDTAG_FOR);
 }
 
-void ParseList(Lexer *lexer, Node *list, uint mode)
+static Bool FindLastLI( Node *list, Node **lastli )
 {
-    Node *node, *parent;
+    Node *node;
+
+    *lastli = NULL;
+    for ( node = list->content; node ; node = node->next )
+        if ( nodeIsLI(node) && node->type == StartTag )
+            *lastli=node;
+    return *lastli ? yes:no;
+}
+
+void TY_(ParseList)(TidyDocImpl* doc, Node *list, GetTokenMode ARG_UNUSED(mode))
+{
+    Lexer* lexer = doc->lexer;
+    Node *node, *parent, *lastli;
+    Bool wasblock;
 
     if (list->tag->model & CM_EMPTY)
         return;
 
-    lexer->insert = null;  /* defer implicit inline start tags */
+    lexer->insert = NULL;  /* defer implicit inline start tags */
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)( doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == list->tag && node->type == EndTag)
         {
-            FreeNode(node);
-
-            if (list->tag->model & CM_OBSOLETE)
-                CoerceNode(lexer, list, tag_ul);
-
+            TY_(FreeNode)( doc, node);
             list->closed = yes;
-            TrimEmptyElement(lexer, list);
             return;
         }
 
@@ -1581,81 +2362,108 @@ void ParseList(Lexer *lexer, Node *list, uint mode)
         if (InsertMisc(list, node))
             continue;
 
-        if (node->type != TextNode && node->tag == null)
+        if (node->type != TextNode && node->tag == NULL)
         {
-            ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
-        /*
+        /* 
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
         if (node->type == EndTag)
         {
-            if (node->tag == tag_form)
+            if ( nodeIsFORM(node) )
             {
-                lexer->badForm = yes;
-                ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
+                BadForm( doc );
+                TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node );
                 continue;
             }
 
-            if (node->tag && node->tag->model & CM_INLINE)
+            if (TY_(nodeHasCM)(node,CM_INLINE))
             {
-                ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
-                PopInline(lexer, node);
-                FreeNode(node);
+                TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+                TY_(PopInline)( doc, node );
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            for (parent = list->parent;
-                    parent != null; parent = parent->parent)
+            for ( parent = list->parent;
+                  parent != NULL; parent = parent->parent )
             {
+               /* Do not match across BODY to avoid infinite loop
+                  between ParseBody and this parser,
+                  See http://tidy.sf.net/bug/1053626. */
+                if (nodeIsBODY(parent))
+                    break;
                 if (node->tag == parent->tag)
                 {
-                    ReportWarning(lexer, list, node, MISSING_ENDTAG_BEFORE);
-                    UngetToken(lexer);
-
-                    if (list->tag->model & CM_OBSOLETE)
-                        CoerceNode(lexer, list, tag_ul);
-
-                    TrimEmptyElement(lexer, list);
+                    TY_(ReportError)(doc, list, node, MISSING_ENDTAG_BEFORE);
+                    TY_(UngetToken)( doc );
                     return;
                 }
             }
 
-            ReportWarning(lexer, list, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, list, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
-        if (node->tag != tag_li)
+        if ( !nodeIsLI(node) )
         {
-            UngetToken(lexer);
+            TY_(UngetToken)( doc );
 
-            if (node->tag && (node->tag->model & CM_BLOCK) && lexer->excludeBlocks)
+            if (TY_(nodeHasCM)(node,CM_BLOCK) && lexer->excludeBlocks)
             {
-                ReportWarning(lexer, list, node, MISSING_ENDTAG_BEFORE);
-                TrimEmptyElement(lexer, list);
+                TY_(ReportError)(doc, list, node, MISSING_ENDTAG_BEFORE);
                 return;
             }
+            /* http://tidy.sf.net/issue/1316307 */
+            /* In exiled mode, return so table processing can continue. */
+            else if ( lexer->exiled
+                      && (TY_(nodeHasCM)(node, CM_TABLE|CM_ROWGRP|CM_ROW)
+                          || nodeIsTABLE(node)) )
+                return;
 
-            node = InferredTag(lexer, "li");
-            AddAttribute(node, "style", "list-style: none");
-            ReportWarning(lexer, list, node, MISSING_STARTTAG);
+            /* http://tidy.sf.net/issue/836462
+               If "list" is an unordered list, insert the next tag within 
+               the last <li> to preserve the numbering to match the visual 
+               rendering of most browsers. */    
+            if ( nodeIsOL(list) && FindLastLI(list, &lastli) )
+            {
+                /* Create a node for error reporting */
+                node = TY_(InferredTag)(doc, TidyTag_LI);
+                TY_(ReportError)(doc, list, node, MISSING_STARTTAG );
+                TY_(FreeNode)( doc, node);
+                node = lastli;
+            }
+            else
+            {
+                /* Add an inferred <li> */
+                wasblock = TY_(nodeHasCM)(node,CM_BLOCK);
+                node = TY_(InferredTag)(doc, TidyTag_LI);
+                /* Add "display: inline" to avoid a blank line after <li> with 
+                   Internet Explorer. See http://tidy.sf.net/issue/836462 */
+                TY_(AddStyleProperty)( doc, node,
+                                       wasblock
+                                       ? "list-style: none; display: inline"
+                                       : "list-style: none" 
+                                       );
+                TY_(ReportError)(doc, list, node, MISSING_STARTTAG );
+                TY_(InsertNodeAtEnd)(list,node);
+            }
         }
+        else
+            /* node is <LI> */
+            TY_(InsertNodeAtEnd)(list,node);
 
-        /* node should be <LI> */
-        InsertNodeAtEnd(list,node);
-        ParseTag(lexer, node, IgnoreWhitespace);
+        ParseTag( doc, node, IgnoreWhitespace);
     }
 
-    if (list->tag->model & CM_OBSOLETE)
-        CoerceNode(lexer, list, tag_ul);
-
-    ReportWarning(lexer, list, node, MISSING_ENDTAG_FOR);
-    TrimEmptyElement(lexer, list);
+    TY_(ReportError)(doc, list, node, MISSING_ENDTAG_FOR);
 }
 
 /*
@@ -1663,29 +2471,22 @@ void ParseList(Lexer *lexer, Node *list, uint mode)
  the table in accordance with Netscape and IE. This code
  assumes that node hasn't been inserted into the row.
 */
-static void MoveBeforeTable(Node *row, Node *node)
+static void MoveBeforeTable( TidyDocImpl* ARG_UNUSED(doc), Node *row,
+                             Node *node )
 {
     Node *table;
 
     /* first find the table element */
     for (table = row->parent; table; table = table->parent)
     {
-        if (table->tag == tag_table)
+        if ( nodeIsTABLE(table) )
         {
-            if (table->parent->content == table)
-                table->parent->content = node;
-
-            node->prev = table->prev;
-            node->next = table;
-            table->prev = node;
-            node->parent = table->parent;
-
-            if (node->prev)
-                node->prev->next = node;
-
-            break;
+            TY_(InsertNodeBeforeElement)( table, node );
+            return;
         }
     }
+    /* No table element */
+    TY_(InsertNodeBeforeElement)( row->parent, node );
 }
 
 /*
@@ -1693,72 +2494,73 @@ static void MoveBeforeTable(Node *row, Node *node)
  this practice is consistent with browser behavior
  and avoids potential problems with row spanning cells
 */
-static void FixEmptyRow(Lexer *lexer, Node *row)
+static void FixEmptyRow(TidyDocImpl* doc, Node *row)
 {
     Node *cell;
 
-    if (row->content == null)
+    if (row->content == NULL)
     {
-        cell = InferredTag(lexer, "td");
-        InsertNodeAtEnd(row, cell);
-        ReportWarning(lexer, row, cell, MISSING_STARTTAG);
+        cell = TY_(InferredTag)(doc, TidyTag_TD);
+        TY_(InsertNodeAtEnd)(row, cell);
+        TY_(ReportError)(doc, row, cell, MISSING_STARTTAG);
     }
 }
 
-void ParseRow(Lexer *lexer, Node *row, uint mode)
+void TY_(ParseRow)(TidyDocImpl* doc, Node *row, GetTokenMode ARG_UNUSED(mode))
 {
-    Node *node, *parent;
+    Lexer* lexer = doc->lexer;
+    Node *node;
     Bool exclude_state;
 
     if (row->tag->model & CM_EMPTY)
         return;
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == row->tag)
         {
             if (node->type == EndTag)
             {
-                FreeNode(node);
+                TY_(FreeNode)( doc, node);
                 row->closed = yes;
-                FixEmptyRow(lexer, row);
+                FixEmptyRow( doc, row);
                 return;
             }
 
-            UngetToken(lexer);
-            FixEmptyRow(lexer, row);
+            /* New row start implies end of current row */
+            TY_(UngetToken)( doc );
+            FixEmptyRow( doc, row);
             return;
         }
 
-        /*
+        /* 
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
-        if (node->type == EndTag)
+        if ( node->type == EndTag )
         {
-            if (node->tag == tag_form)
+            if ( (TY_(nodeHasCM)(node, CM_HTML|CM_TABLE) || nodeIsTABLE(node))
+                 && DescendantOf(row, TagId(node)) )
             {
-                lexer->badForm = yes;
-                ReportWarning(lexer, row, node, DISCARDING_UNEXPECTED);
+                TY_(UngetToken)( doc );
+                return;
+            }
+
+            if ( nodeIsFORM(node) || TY_(nodeHasCM)(node, CM_BLOCK|CM_INLINE) )
+            {
+                if ( nodeIsFORM(node) )
+                    BadForm( doc );
+
+                TY_(ReportError)(doc, row, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            if (node->tag == tag_td || node->tag == tag_th)
+            if ( nodeIsTD(node) || nodeIsTH(node) )
             {
-                ReportWarning(lexer, row, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, row, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
-            }
-
-            for (parent = row->parent;
-                    parent != null; parent = parent->parent)
-            {
-                if (node->tag == parent->tag)
-                {
-                    UngetToken(lexer);
-                    TrimEmptyElement(lexer, row);
-                    return;
-                }
             }
         }
 
@@ -1767,32 +2569,32 @@ void ParseRow(Lexer *lexer, Node *row, uint mode)
             continue;
 
         /* discard unknown tags */
-        if (node->tag == null && node->type != TextNode)
+        if (node->tag == NULL && node->type != TextNode)
         {
-            ReportWarning(lexer, row, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, row, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
         /* discard unexpected <table> element */
-        if (node->tag == tag_table)
+        if ( nodeIsTABLE(node) )
         {
-            ReportWarning(lexer, row, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, row, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
         /* THEAD, TFOOT or TBODY */
-        if (node->tag && (node->tag->model & CM_ROWGRP))
+        if ( TY_(nodeHasCM)(node, CM_ROWGRP) )
         {
-            UngetToken(lexer);
-            TrimEmptyElement(lexer, row);
+            TY_(UngetToken)( doc );
             return;
         }
 
         if (node->type == EndTag)
         {
-            ReportWarning(lexer, row, node, DISCARDING_UNEXPECTED);
+            TY_(ReportError)(doc, row, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
@@ -1803,84 +2605,85 @@ void ParseRow(Lexer *lexer, Node *row, uint mode)
 
         if (node->type != EndTag)
         {
-            if (node->tag == tag_form)
+            if ( nodeIsFORM(node) )
             {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "td");
-                ReportWarning(lexer, row, node, MISSING_STARTTAG);
+                TY_(UngetToken)( doc );
+                node = TY_(InferredTag)(doc, TidyTag_TD);
+                TY_(ReportError)(doc, row, node, MISSING_STARTTAG);
             }
-            else if (node->type == TextNode
-                    || (node->tag->model & (CM_BLOCK | CM_INLINE)))
+            else if ( TY_(nodeIsText)(node)
+                      || TY_(nodeHasCM)(node, CM_BLOCK | CM_INLINE) )
             {
-                MoveBeforeTable(row, node);
-                ReportWarning(lexer, row, node, TAG_NOT_ALLOWED_IN);
+                MoveBeforeTable( doc, row, node );
+                TY_(ReportError)(doc, row, node, TAG_NOT_ALLOWED_IN);
                 lexer->exiled = yes;
+                exclude_state = lexer->excludeBlocks;
+                lexer->excludeBlocks = no;
 
                 if (node->type != TextNode)
-                    ParseTag(lexer, node, IgnoreWhitespace);
+                    ParseTag( doc, node, IgnoreWhitespace);
 
                 lexer->exiled = no;
+                lexer->excludeBlocks = exclude_state;
                 continue;
             }
             else if (node->tag->model & CM_HEAD)
             {
-                ReportWarning(lexer, row, node, TAG_NOT_ALLOWED_IN);
-                MoveToHead(lexer, row, node);
+                TY_(ReportError)(doc, row, node, TAG_NOT_ALLOWED_IN);
+                MoveToHead( doc, row, node);
                 continue;
             }
         }
 
-        if (!(node->tag == tag_td || node->tag == tag_th))
+        if ( !(nodeIsTD(node) || nodeIsTH(node)) )
         {
-            ReportWarning(lexer, row, node, TAG_NOT_ALLOWED_IN);
-            FreeNode(node);
+            TY_(ReportError)(doc, row, node, TAG_NOT_ALLOWED_IN);
+            TY_(FreeNode)( doc, node);
             continue;
         }
-
+        
         /* node should be <TD> or <TH> */
-        InsertNodeAtEnd(row, node);
+        TY_(InsertNodeAtEnd)(row, node);
         exclude_state = lexer->excludeBlocks;
         lexer->excludeBlocks = no;
-        ParseTag(lexer, node, IgnoreWhitespace);
+        ParseTag( doc, node, IgnoreWhitespace);
         lexer->excludeBlocks = exclude_state;
 
         /* pop inline stack */
 
-        while (lexer->istacksize > lexer->istackbase)
-            PopInline(lexer, null);
+        while ( lexer->istacksize > lexer->istackbase )
+            TY_(PopInline)( doc, NULL );
     }
 
-    TrimEmptyElement(lexer, row);
 }
 
-void ParseRowGroup(Lexer *lexer, Node *rowgroup, uint mode)
+void TY_(ParseRowGroup)(TidyDocImpl* doc, Node *rowgroup, GetTokenMode ARG_UNUSED(mode))
 {
+    Lexer* lexer = doc->lexer;
     Node *node, *parent;
 
     if (rowgroup->tag->model & CM_EMPTY)
         return;
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == rowgroup->tag)
         {
             if (node->type == EndTag)
             {
                 rowgroup->closed = yes;
-                TrimEmptyElement(lexer, rowgroup);
-                FreeNode(node);
+                TY_(FreeNode)( doc, node);
                 return;
             }
 
-            UngetToken(lexer);
+            TY_(UngetToken)( doc );
             return;
         }
 
         /* if </table> infer end tag */
-        if (node->tag == tag_table && node->type == EndTag)
+        if ( nodeIsTABLE(node) && node->type == EndTag )
         {
-            UngetToken(lexer);
-            TrimEmptyElement(lexer, rowgroup);
+            TY_(UngetToken)( doc );
             return;
         }
 
@@ -1889,10 +2692,10 @@ void ParseRowGroup(Lexer *lexer, Node *rowgroup, uint mode)
             continue;
 
         /* discard unknown tags */
-        if (node->tag == null && node->type != TextNode)
+        if (node->tag == NULL && node->type != TextNode)
         {
-            ReportWarning(lexer, rowgroup, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, rowgroup, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
@@ -1904,60 +2707,63 @@ void ParseRowGroup(Lexer *lexer, Node *rowgroup, uint mode)
 
         if (node->type != EndTag)
         {
-            if (node->tag == tag_td || node->tag == tag_th)
+            if ( nodeIsTD(node) || nodeIsTH(node) )
             {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "tr");
-                ReportWarning(lexer, rowgroup, node, MISSING_STARTTAG);
+                TY_(UngetToken)( doc );
+                node = TY_(InferredTag)(doc, TidyTag_TR);
+                TY_(ReportError)(doc, rowgroup, node, MISSING_STARTTAG);
             }
-            else if (node->type == TextNode
-                    || (node->tag->model & (CM_BLOCK | CM_INLINE)))
+            else if ( TY_(nodeIsText)(node)
+                      || TY_(nodeHasCM)(node, CM_BLOCK|CM_INLINE) )
             {
-                MoveBeforeTable(rowgroup, node);
-                ReportWarning(lexer, rowgroup, node, TAG_NOT_ALLOWED_IN);
+                MoveBeforeTable( doc, rowgroup, node );
+                TY_(ReportError)(doc, rowgroup, node, TAG_NOT_ALLOWED_IN);
                 lexer->exiled = yes;
 
                 if (node->type != TextNode)
-                    ParseTag(lexer, node, IgnoreWhitespace);
+                    ParseTag(doc, node, IgnoreWhitespace);
 
                 lexer->exiled = no;
                 continue;
             }
             else if (node->tag->model & CM_HEAD)
             {
-                ReportWarning(lexer, rowgroup, node, TAG_NOT_ALLOWED_IN);
-                MoveToHead(lexer, rowgroup, node);
+                TY_(ReportError)(doc, rowgroup, node, TAG_NOT_ALLOWED_IN);
+                MoveToHead(doc, rowgroup, node);
                 continue;
             }
         }
 
-        /*
+        /* 
           if this is the end tag for ancestor element
           then infer end tag for this element
         */
         if (node->type == EndTag)
         {
-            if (node->tag == tag_form)
+            if ( nodeIsFORM(node) || TY_(nodeHasCM)(node, CM_BLOCK|CM_INLINE) )
             {
-                lexer->badForm = yes;
-                ReportWarning(lexer, rowgroup, node, DISCARDING_UNEXPECTED);
+                if ( nodeIsFORM(node) )
+                    BadForm( doc );
+
+                TY_(ReportError)(doc, rowgroup, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            if (node->tag == tag_tr || node->tag == tag_td || node->tag == tag_th)
+            if ( nodeIsTR(node) || nodeIsTD(node) || nodeIsTH(node) )
             {
-                ReportWarning(lexer, rowgroup, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, rowgroup, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            for (parent = rowgroup->parent;
-                    parent != null; parent = parent->parent)
+            for ( parent = rowgroup->parent;
+                  parent != NULL;
+                  parent = parent->parent )
             {
                 if (node->tag == parent->tag)
                 {
-                    UngetToken(lexer);
-                    TrimEmptyElement(lexer, rowgroup);
+                    TY_(UngetToken)( doc );
                     return;
                 }
             }
@@ -1970,77 +2776,78 @@ void ParseRowGroup(Lexer *lexer, Node *rowgroup, uint mode)
         if (node->tag->model & CM_ROWGRP)
         {
             if (node->type != EndTag)
-                UngetToken(lexer);
-
-            TrimEmptyElement(lexer, rowgroup);
-            return;
+            {
+                TY_(UngetToken)( doc );
+                return;
+            }
         }
 
         if (node->type == EndTag)
         {
-            ReportWarning(lexer, rowgroup, node, DISCARDING_UNEXPECTED);
+            TY_(ReportError)(doc, rowgroup, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
-
-        if (!(node->tag == tag_tr))
+        
+        if ( !nodeIsTR(node) )
         {
-            node = InferredTag(lexer, "tr");
-            ReportWarning(lexer, rowgroup, node, MISSING_STARTTAG);
-            UngetToken(lexer);
+            node = TY_(InferredTag)(doc, TidyTag_TR);
+            TY_(ReportError)(doc, rowgroup, node, MISSING_STARTTAG);
+            TY_(UngetToken)( doc );
         }
 
        /* node should be <TR> */
-        InsertNodeAtEnd(rowgroup, node);
-        ParseTag(lexer, node, IgnoreWhitespace);
+        TY_(InsertNodeAtEnd)(rowgroup, node);
+        ParseTag(doc, node, IgnoreWhitespace);
     }
 
-    TrimEmptyElement(lexer, rowgroup);
 }
 
-void ParseColGroup(Lexer *lexer, Node *colgroup, uint mode)
+void TY_(ParseColGroup)(TidyDocImpl* doc, Node *colgroup, GetTokenMode ARG_UNUSED(mode))
 {
     Node *node, *parent;
 
     if (colgroup->tag->model & CM_EMPTY)
         return;
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == colgroup->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             colgroup->closed = yes;
             return;
         }
 
-        /*
+        /* 
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
         if (node->type == EndTag)
         {
-            if (node->tag == tag_form)
+            if ( nodeIsFORM(node) )
             {
-                lexer->badForm = yes;
-                ReportWarning(lexer, colgroup, node, DISCARDING_UNEXPECTED);
+                BadForm( doc );
+                TY_(ReportError)(doc, colgroup, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            for (parent = colgroup->parent;
-                    parent != null; parent = parent->parent)
+            for ( parent = colgroup->parent;
+                  parent != NULL;
+                  parent = parent->parent )
             {
-
                 if (node->tag == parent->tag)
                 {
-                    UngetToken(lexer);
+                    TY_(UngetToken)( doc );
                     return;
                 }
             }
         }
 
-        if (node->type == TextNode)
+        if (TY_(nodeIsText)(node))
         {
-            UngetToken(lexer);
+            TY_(UngetToken)( doc );
             return;
         }
 
@@ -2049,48 +2856,49 @@ void ParseColGroup(Lexer *lexer, Node *colgroup, uint mode)
             continue;
 
         /* discard unknown tags */
-        if (node->tag == null)
+        if (node->tag == NULL)
         {
-            ReportWarning(lexer, colgroup, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, colgroup, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
-        if (node->tag != tag_col)
+        if ( !nodeIsCOL(node) )
         {
-            UngetToken(lexer);
+            TY_(UngetToken)( doc );
             return;
         }
 
         if (node->type == EndTag)
         {
-            ReportWarning(lexer, colgroup, node, DISCARDING_UNEXPECTED);
+            TY_(ReportError)(doc, colgroup, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
-
+        
         /* node should be <COL> */
-        InsertNodeAtEnd(colgroup, node);
-        ParseTag(lexer, node, IgnoreWhitespace);
+        TY_(InsertNodeAtEnd)(colgroup, node);
+        ParseTag(doc, node, IgnoreWhitespace);
     }
 }
 
-void ParseTableTag(Lexer *lexer, Node *table, uint mode)
+void TY_(ParseTableTag)(TidyDocImpl* doc, Node *table, GetTokenMode ARG_UNUSED(mode))
 {
+    Lexer* lexer = doc->lexer;
     Node *node, *parent;
     uint istackbase;
 
-    DeferDup(lexer);
+    TY_(DeferDup)( doc );
     istackbase = lexer->istackbase;
     lexer->istackbase = lexer->istacksize;
-
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == table->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             lexer->istackbase = istackbase;
             table->closed = yes;
-            TrimEmptyElement(lexer, table);
             return;
         }
 
@@ -2099,10 +2907,10 @@ void ParseTableTag(Lexer *lexer, Node *table, uint mode)
             continue;
 
         /* discard unknown tags */
-        if (node->tag == null && node->type != TextNode)
+        if (node->tag == NULL && node->type != TextNode)
         {
-            ReportWarning(lexer, table, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, table, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
@@ -2110,63 +2918,63 @@ void ParseTableTag(Lexer *lexer, Node *table, uint mode)
 
         if (node->type != EndTag)
         {
-            if (node->tag == tag_td ||
-                node->tag == tag_th ||
-                node->tag == tag_table)
+            if ( nodeIsTD(node) || nodeIsTH(node) || nodeIsTABLE(node) )
             {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "tr");
-                ReportWarning(lexer, table, node, MISSING_STARTTAG);
+                TY_(UngetToken)( doc );
+                node = TY_(InferredTag)(doc, TidyTag_TR);
+                TY_(ReportError)(doc, table, node, MISSING_STARTTAG);
             }
-            else if (node->type == TextNode
-                       || (node->tag->model & (CM_BLOCK | CM_INLINE)))
+            else if ( TY_(nodeIsText)(node) ||TY_(nodeHasCM)(node,CM_BLOCK|CM_INLINE) )
             {
-                InsertNodeBeforeElement(table, node);
-                ReportWarning(lexer, table, node, TAG_NOT_ALLOWED_IN);
+                TY_(InsertNodeBeforeElement)(table, node);
+                TY_(ReportError)(doc, table, node, TAG_NOT_ALLOWED_IN);
                 lexer->exiled = yes;
 
-                if (!node->type == TextNode)
-                    ParseTag(lexer, node, IgnoreWhitespace);
+                if (node->type != TextNode) 
+                    ParseTag(doc, node, IgnoreWhitespace);
 
                 lexer->exiled = no;
                 continue;
             }
             else if (node->tag->model & CM_HEAD)
             {
-                MoveToHead(lexer, table, node);
+                MoveToHead(doc, table, node);
                 continue;
             }
         }
 
-        /*
+        /* 
           if this is the end tag for an ancestor element
           then infer end tag for this element
         */
         if (node->type == EndTag)
         {
-            if (node->tag == tag_form)
+            if ( nodeIsFORM(node) )
             {
-                lexer->badForm = yes;
-                ReportWarning(lexer, table, node, DISCARDING_UNEXPECTED);
+                BadForm( doc );
+                TY_(ReportError)(doc, table, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            if (node->tag && node->tag->model & (CM_TABLE|CM_ROW))
+            /* best to discard unexpected block/inline end tags */
+            if ( TY_(nodeHasCM)(node, CM_TABLE|CM_ROW) ||
+                 TY_(nodeHasCM)(node, CM_BLOCK|CM_INLINE) )
             {
-                ReportWarning(lexer, table, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, table, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            for (parent = table->parent;
-                    parent != null; parent = parent->parent)
+            for ( parent = table->parent;
+                  parent != NULL;
+                  parent = parent->parent )
             {
                 if (node->tag == parent->tag)
                 {
-                    ReportWarning(lexer, table, node, MISSING_ENDTAG_BEFORE);
-                    UngetToken(lexer);
+                    TY_(ReportError)(doc, table, node, MISSING_ENDTAG_BEFORE );
+                    TY_(UngetToken)( doc );
                     lexer->istackbase = istackbase;
-                    TrimEmptyElement(lexer, table);
                     return;
                 }
             }
@@ -2174,78 +2982,80 @@ void ParseTableTag(Lexer *lexer, Node *table, uint mode)
 
         if (!(node->tag->model & CM_TABLE))
         {
-            UngetToken(lexer);
-            ReportWarning(lexer, table, node, TAG_NOT_ALLOWED_IN);
+            TY_(UngetToken)( doc );
+            TY_(ReportError)(doc, table, node, TAG_NOT_ALLOWED_IN);
             lexer->istackbase = istackbase;
-            TrimEmptyElement(lexer, table);
             return;
         }
 
-        if (node->type == StartTag || node->type == StartEndTag)
+        if (TY_(nodeIsElement)(node))
         {
-            InsertNodeAtEnd(table, node);;
-            ParseTag(lexer, node, IgnoreWhitespace);
+            TY_(InsertNodeAtEnd)(table, node);
+            ParseTag(doc, node, IgnoreWhitespace);
             continue;
         }
 
         /* discard unexpected text nodes and end tags */
-        ReportWarning(lexer, table, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, table, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
 
-    ReportWarning(lexer, table, node, MISSING_ENDTAG_FOR);
-    TrimEmptyElement(lexer, table);
+    TY_(ReportError)(doc, table, node, MISSING_ENDTAG_FOR);
     lexer->istackbase = istackbase;
 }
 
-void ParsePre(Lexer *lexer, Node *pre, uint mode)
+/* acceptable content for pre elements */
+static Bool PreContent( TidyDocImpl* ARG_UNUSED(doc), Node* node )
 {
-    Node *node, *parent;
+    /* p is coerced to br's, Text OK too */
+    if ( nodeIsP(node) || TY_(nodeIsText)(node) )
+        return yes;
+
+    if ( node->tag == NULL ||
+         nodeIsPARAM(node) ||
+         !TY_(nodeHasCM)(node, CM_INLINE|CM_NEW) )
+        return no;
+
+    return yes;
+}
+
+void TY_(ParsePre)( TidyDocImpl* doc, Node *pre, GetTokenMode ARG_UNUSED(mode) )
+{
+    Node *node;
 
     if (pre->tag->model & CM_EMPTY)
         return;
 
-    if (pre->tag->model & CM_OBSOLETE)
-        CoerceNode(lexer, pre, tag_pre);
+    TY_(InlineDup)( doc, NULL ); /* tell lexer to insert inlines if needed */
 
-    InlineDup(lexer, null); /* tell lexer to insert inlines if needed */
-
-    while ((node = GetToken(lexer, Preformatted)) != null)
+    while ((node = TY_(GetToken)(doc, Preformatted)) != NULL)
     {
-        if (node->tag == pre->tag && node->type == EndTag)
+        if ( node->type == EndTag && 
+             (node->tag == pre->tag || DescendantOf(pre, TagId(node))) )
         {
-            FreeNode(node);
-            TrimSpaces(lexer, pre);
+            if (nodeIsBODY(node) || nodeIsHTML(node))
+            {
+                TY_(ReportError)(doc, pre, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)(doc, node);
+                continue;
+            }
+            if (node->tag == pre->tag)
+            {
+                TY_(FreeNode)(doc, node);
+            }
+            else
+            {
+                TY_(ReportError)(doc, pre, node, MISSING_ENDTAG_BEFORE );
+                TY_(UngetToken)( doc );
+            }
             pre->closed = yes;
-            TrimEmptyElement(lexer, pre);
+            TrimSpaces(doc, pre);
             return;
         }
 
-        if (node->tag == tag_html)
+        if (TY_(nodeIsText)(node))
         {
-            if (node->type == StartTag || node->type == StartEndTag)
-                ReportWarning(lexer, pre, node, DISCARDING_UNEXPECTED);
-
-            FreeNode(node);
-            continue;
-        }
-
-        if (node->type == TextNode)
-        {
-            /* if first check for inital newline */
-            if (pre->content == null)
-            {
-                if (lexer->lexbuf[node->start] == '\n')
-                    ++(node->start);
-
-                if (node->start >= node->end)
-                {
-                    FreeNode(node);
-                    continue;
-                }
-            }
-
-            InsertNodeAtEnd(pre, node);
+            TY_(InsertNodeAtEnd)(pre, node);
             continue;
         }
 
@@ -2253,147 +3063,150 @@ void ParsePre(Lexer *lexer, Node *pre, uint mode)
         if (InsertMisc(pre, node))
             continue;
 
-        /* discard unknown  and PARAM tags */
-        if (node->tag == null || node->tag == tag_param)
+        if (node->tag == NULL)
         {
-            ReportWarning(lexer, pre, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, pre, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)(doc, node);
             continue;
         }
 
-        if (node->tag == tag_p)
+        /* strip unexpected tags */
+        if ( !PreContent(doc, node) )
+        {
+            Node *newnode;
+
+            /* fix for http://tidy.sf.net/bug/772205 */
+            if (node->type == EndTag)
+            {
+                /* http://tidy.sf.net/issue/1590220 */ 
+               if ( doc->lexer->exiled
+                   && (TY_(nodeHasCM)(node, CM_TABLE) || nodeIsTABLE(node)) )
+               {
+                  TY_(UngetToken)(doc);
+                  TrimSpaces(doc, pre);
+                  return;
+               }
+
+               TY_(ReportError)(doc, pre, node, DISCARDING_UNEXPECTED);
+               TY_(FreeNode)(doc, node);
+               continue;
+            }
+            /* http://tidy.sf.net/issue/1590220 */
+            else if (TY_(nodeHasCM)(node, CM_TABLE|CM_ROW)
+                     || nodeIsTABLE(node) )
+            {
+                if (!doc->lexer->exiled)
+                    /* No missing close warning if exiled. */
+                    TY_(ReportError)(doc, pre, node, MISSING_ENDTAG_BEFORE);
+
+                TY_(UngetToken)(doc);
+                return;
+            }
+
+            /*
+              This is basically what Tidy 04 August 2000 did and far more accurate
+              with respect to browser behaivour than the code commented out above.
+              Tidy could try to propagate the <pre> into each disallowed child where
+              <pre> is allowed in order to replicate some browsers behaivour, but
+              there are a lot of exceptions, e.g. Internet Explorer does not propagate
+              <pre> into table cells while Mozilla does. Opera 6 never propagates
+              <pre> into blocklevel elements while Opera 7 behaves much like Mozilla.
+
+              Tidy behaves thus mostly like Opera 6 except for nested <pre> elements
+              which are handled like Mozilla takes them (Opera6 closes all <pre> after
+              the first </pre>).
+
+              There are similar issues like replacing <p> in <pre> with <br>, for
+              example
+
+                <pre>...<p>...</pre>                 (Input)
+                <pre>...<br>...</pre>                (Tidy)
+                <pre>...<br>...</pre>                (Opera 7 and Internet Explorer)
+                <pre>...<br><br>...</pre>            (Opera 6 and Mozilla)
+
+                <pre>...<p>...</p>...</pre>          (Input)
+                <pre>...<br>......</pre>             (Tidy, BUG!)
+                <pre>...<br>...<br>...</pre>         (Internet Explorer)
+                <pre>...<br><br>...<br><br>...</pre> (Mozilla, Opera 6)
+                <pre>...<br>...<br><br>...</pre>     (Opera 7)
+                
+              or something similar, they could also be closing the <pre> and propagate
+              the <pre> into the newly opened <p>.
+
+              Todo: IMG, OBJECT, APPLET, BIG, SMALL, SUB, SUP, FONT, and BASEFONT are
+              dissallowed in <pre>, Tidy neither detects this nor does it perform any
+              cleanup operation. Tidy should at least issue a warning if it encounters
+              such constructs.
+
+              Todo: discarding </p> is abviously a bug, it should be replaced by <br>.
+            */
+            TY_(InsertNodeAfterElement)(pre, node);
+            TY_(ReportError)(doc, pre, node, MISSING_ENDTAG_BEFORE);
+            ParseTag(doc, node, IgnoreWhitespace);
+
+            newnode = TY_(InferredTag)(doc, TidyTag_PRE);
+            TY_(ReportError)(doc, pre, newnode, INSERTING_TAG);
+            pre = newnode;
+            TY_(InsertNodeAfterElement)(node, pre);
+
+            continue;
+        }
+
+        if ( nodeIsP(node) )
         {
             if (node->type == StartTag)
             {
-                ReportWarning(lexer, pre, node, USING_BR_INPLACE_OF);
+                TY_(ReportError)(doc, pre, node, USING_BR_INPLACE_OF);
 
                 /* trim white space before <p> in <pre>*/
-                TrimSpaces(lexer, pre);
-
+                TrimSpaces(doc, pre);
+            
                 /* coerce both <p> and </p> to <br> */
-                CoerceNode(lexer, node, tag_br);
-                InsertNodeAtEnd(pre, node);
+                TY_(CoerceNode)(doc, node, TidyTag_BR, no, no);
+                TY_(FreeAttrs)( doc, node ); /* discard align attribute etc. */
+                TY_(InsertNodeAtEnd)( pre, node );
             }
             else
             {
-                ReportWarning(lexer, pre, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, pre, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
             }
             continue;
         }
 
-        if (node->tag->model & CM_HEAD && !(node->tag->model & CM_BLOCK))
-        {
-            MoveToHead(lexer, pre, node);
-            continue;
-        }
-
-        /*
-          if this is the end tag for an ancestor element
-          then infer end tag for this element
-        */
-        if (node->type == EndTag)
-        {
-            if (node->tag == tag_form)
-            {
-                lexer->badForm = yes;
-                ReportWarning(lexer, pre, node, DISCARDING_UNEXPECTED);
-                continue;
-            }
-
-            for (parent = pre->parent;
-                    parent != null; parent = parent->parent)
-            {
-                if (node->tag == parent->tag)
-                {
-                    ReportWarning(lexer, pre, node, MISSING_ENDTAG_BEFORE);
-
-                    UngetToken(lexer);
-                    TrimSpaces(lexer, pre);
-                    TrimEmptyElement(lexer, pre);
-                    return;
-                }
-            }
-        }
-
-        /* what about head content, HEAD, BODY tags etc? */
-        if (!(node->tag->model & CM_INLINE))
-        {
-            if (node->type != StartTag)
-            {
-                ReportWarning(lexer, pre, node, DISCARDING_UNEXPECTED);
-                continue;
-            }
-
-            ReportWarning(lexer, pre, node, MISSING_ENDTAG_BEFORE);
-            lexer->excludeBlocks = yes;
-
-            /* check if we need to infer a container */
-            if (node->tag->model & CM_LIST)
-            {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "ul");
-                AddClass(node, "noindent");
-            }
-            else if (node->tag->model & CM_DEFLIST)
-            {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "dl");
-            }
-            else if (node->tag->model & CM_TABLE)
-            {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "table");
-            }
-
-            InsertNodeAfterElement(pre, node);
-            pre = InferredTag(lexer, "pre");
-            InsertNodeAfterElement(node, pre);
-            ParseTag(lexer, node, IgnoreWhitespace);
-            lexer->excludeBlocks = no;
-            continue;
-        }
-#if 0
-        if (!(node->tag->model & CM_INLINE))
-        {
-            ReportWarning(lexer, pre, node, MISSING_ENDTAG_BEFORE);
-            UngetToken(lexer);
-            return;
-        }
-#endif
-        if (node->type == StartTag || node->type == StartEndTag)
+        if ( TY_(nodeIsElement)(node) )
         {
             /* trim white space before <br> */
-            if (node->tag == tag_br)
-                TrimSpaces(lexer, pre);
-
-            InsertNodeAtEnd(pre, node);
-            ParseTag(lexer, node, Preformatted);
+            if ( nodeIsBR(node) )
+                TrimSpaces(doc, pre);
+            
+            TY_(InsertNodeAtEnd)(pre, node);
+            ParseTag(doc, node, Preformatted);
             continue;
         }
 
         /* discard unexpected tags */
-        ReportWarning(lexer, pre, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, pre, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
 
-    ReportWarning(lexer, pre, node, MISSING_ENDTAG_FOR);
-    TrimEmptyElement(lexer, pre);
+    TY_(ReportError)(doc, pre, node, MISSING_ENDTAG_FOR);
 }
 
-void ParseOptGroup(Lexer *lexer, Node *field, uint mode)
+void TY_(ParseOptGroup)(TidyDocImpl* doc, Node *field, GetTokenMode ARG_UNUSED(mode))
 {
+    Lexer* lexer = doc->lexer;
     Node *node;
 
-    lexer->insert = null;  /* defer implicit inline start tags */
+    lexer->insert = NULL;  /* defer implicit inline start tags */
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == field->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             field->closed = yes;
-            TrimSpaces(lexer, field);
+            TrimSpaces(doc, field);
             return;
         }
 
@@ -2401,37 +3214,49 @@ void ParseOptGroup(Lexer *lexer, Node *field, uint mode)
         if (InsertMisc(field, node))
             continue;
 
-        if (node->type == StartTag &&
-             (node->tag == tag_option || node->tag == tag_optgroup))
+        if ( node->type == StartTag && 
+             (nodeIsOPTION(node) || nodeIsOPTGROUP(node)) )
         {
-            if (node->tag == tag_optgroup)
-                ReportWarning(lexer, field, node, CANT_BE_NESTED);
+            if ( nodeIsOPTGROUP(node) )
+                TY_(ReportError)(doc, field, node, CANT_BE_NESTED);
 
-            InsertNodeAtEnd(field, node);
-            ParseTag(lexer, node, MixedContent);
+            TY_(InsertNodeAtEnd)(field, node);
+            ParseTag(doc, node, MixedContent);
             continue;
         }
 
         /* discard unexpected tags */
-        ReportWarning(lexer, field, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, field, node, DISCARDING_UNEXPECTED );
+        TY_(FreeNode)( doc, node);
     }
 }
 
 
-void ParseSelect(Lexer *lexer, Node *field, uint mode)
+void TY_(ParseSelect)(TidyDocImpl* doc, Node *field, GetTokenMode ARG_UNUSED(mode))
 {
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    static int in_parse_select = 0;
+#endif
+    Lexer* lexer = doc->lexer;
     Node *node;
 
-    lexer->insert = null;  /* defer implicit inline start tags */
+    lexer->insert = NULL;  /* defer implicit inline start tags */
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_select++;
+    SPRTF("Entering ParseSelect %d...\n",in_parse_select);
+#endif
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == field->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             field->closed = yes;
-            TrimSpaces(lexer, field);
+            TrimSpaces(doc, field);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_select--;
+            SPRTF("Exit ParseSelect 1 %d...\n",in_parse_select);
+#endif
             return;
         }
 
@@ -2439,40 +3264,109 @@ void ParseSelect(Lexer *lexer, Node *field, uint mode)
         if (InsertMisc(field, node))
             continue;
 
-        if (node->type == StartTag &&
-             (node->tag == tag_option ||
-               node->tag == tag_optgroup ||
-               node->tag == tag_script))
+        if ( node->type == StartTag && 
+             ( nodeIsOPTION(node)   ||
+               nodeIsOPTGROUP(node) ||
+               nodeIsDATALIST(node) ||
+               nodeIsSCRIPT(node)) 
+           )
         {
-            InsertNodeAtEnd(field, node);
-            ParseTag(lexer, node, IgnoreWhitespace);
+            TY_(InsertNodeAtEnd)(field, node);
+            ParseTag(doc, node, IgnoreWhitespace);
             continue;
         }
 
         /* discard unexpected tags */
-        ReportWarning(lexer, field, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, field, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
 
-    ReportWarning(lexer, field, node, MISSING_ENDTAG_FOR);
+    TY_(ReportError)(doc, field, node, MISSING_ENDTAG_FOR);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_select--;
+    SPRTF("Exit ParseSelect 2 %d...\n",in_parse_select);
+#endif
 }
 
-void ParseText(Lexer *lexer, Node *field, uint mode)
+/* HTML5 */
+void TY_(ParseDatalist)(TidyDocImpl* doc, Node *field, GetTokenMode ARG_UNUSED(mode))
 {
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    static int in_parse_datalist = 0;
+#endif
+    Lexer* lexer = doc->lexer;
     Node *node;
 
-    lexer->insert = null;  /* defer implicit inline start tags */
+    lexer->insert = NULL;  /* defer implicit inline start tags */
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_datalist++;
+    SPRTF("Entering ParseDatalist %d...\n",in_parse_datalist);
+#endif
 
-    if (field->tag == tag_textarea)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
+    {
+        if (node->tag == field->tag && node->type == EndTag)
+        {
+            TY_(FreeNode)( doc, node);
+            field->closed = yes;
+            TrimSpaces(doc, field);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            in_parse_datalist--;
+            SPRTF("Exit ParseDatalist 1 %d...\n",in_parse_datalist);
+#endif
+            return;
+        }
+
+        /* deal with comments etc. */
+        if (InsertMisc(field, node))
+            continue;
+
+        if ( node->type == StartTag && 
+             ( nodeIsOPTION(node)   ||
+               nodeIsOPTGROUP(node) ||
+               nodeIsDATALIST(node) ||
+               nodeIsSCRIPT(node)) 
+           )
+        {
+            TY_(InsertNodeAtEnd)(field, node);
+            ParseTag(doc, node, IgnoreWhitespace);
+            continue;
+        }
+
+        /* discard unexpected tags */
+        TY_(ReportError)(doc, field, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
+    }
+
+    TY_(ReportError)(doc, field, node, MISSING_ENDTAG_FOR);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    in_parse_datalist--;
+    SPRTF("Exit ParseDatalist 2 %d...\n",in_parse_datalist);
+#endif
+}
+
+
+
+
+void TY_(ParseText)(TidyDocImpl* doc, Node *field, GetTokenMode mode)
+{
+    Lexer* lexer = doc->lexer;
+    Node *node;
+
+    lexer->insert = NULL;  /* defer implicit inline start tags */
+
+    if ( nodeIsTEXTAREA(field) )
         mode = Preformatted;
+    else
+        mode = MixedContent;  /* kludge for font tags */
 
-    while ((node = GetToken(lexer, mode)) != null)
+    while ((node = TY_(GetToken)(doc, mode)) != NULL)
     {
         if (node->tag == field->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             field->closed = yes;
-            TrimSpaces(lexer, field);
+            TrimSpaces(doc, field);
             return;
         }
 
@@ -2480,70 +3374,82 @@ void ParseText(Lexer *lexer, Node *field, uint mode)
         if (InsertMisc(field, node))
             continue;
 
-        if (node->type == TextNode)
+        if (TY_(nodeIsText)(node))
         {
             /* only called for 1st child */
-            if (field->content == null && !(mode & Preformatted))
-                TrimSpaces(lexer, field);
+            if (field->content == NULL && !(mode & Preformatted))
+                TrimSpaces(doc, field);
 
             if (node->start >= node->end)
             {
-                FreeNode(node);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            InsertNodeAtEnd(field, node);
+            TY_(InsertNodeAtEnd)(field, node);
             continue;
         }
 
-        if (node->tag == tag_font)
+        /* for textarea should all cases of < and & be escaped? */
+
+        /* discard inline tags e.g. font */
+        if (   node->tag 
+            && node->tag->model & CM_INLINE
+            && !(node->tag->model & CM_FIELD)) /* #487283 - fix by Lee Passey 25 Jan 02 */
         {
-            ReportWarning(lexer, field, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, field, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
         /* terminate element on other tags */
         if (!(field->tag->model & CM_OPT))
-                ReportWarning(lexer, field, node, MISSING_ENDTAG_BEFORE);
+            TY_(ReportError)(doc, field, node, MISSING_ENDTAG_BEFORE);
 
-        UngetToken(lexer);
-        TrimSpaces(lexer, field);
+        TY_(UngetToken)( doc );
+        TrimSpaces(doc, field);
         return;
     }
 
     if (!(field->tag->model & CM_OPT))
-        ReportWarning(lexer, field, node, MISSING_ENDTAG_FOR);
+        TY_(ReportError)(doc, field, node, MISSING_ENDTAG_FOR);
 }
 
 
-void ParseTitle(Lexer *lexer, Node *title, uint mode)
+void TY_(ParseTitle)(TidyDocImpl* doc, Node *title, GetTokenMode ARG_UNUSED(mode))
 {
     Node *node;
-
-    while ((node = GetToken(lexer, MixedContent)) != null)
+    while ((node = TY_(GetToken)(doc, MixedContent)) != NULL)
     {
-        if (node->tag == title->tag && node->type == EndTag)
+        if (node->tag == title->tag && node->type == StartTag
+            && cfgBool(doc, TidyCoerceEndTags) )
         {
-            FreeNode(node);
+            TY_(ReportError)(doc, title, node, COERCE_TO_ENDTAG);
+            node->type = EndTag;
+            TY_(UngetToken)( doc );
+            continue;
+        }
+        else if (node->tag == title->tag && node->type == EndTag)
+        {
+            TY_(FreeNode)( doc, node);
             title->closed = yes;
-            TrimSpaces(lexer, title);
+            TrimSpaces(doc, title);
             return;
         }
 
-        if (node->type == TextNode)
+        if (TY_(nodeIsText)(node))
         {
             /* only called for 1st child */
-            if (title->content == null)
-                TrimInitialSpace(lexer, title, node);
+            if (title->content == NULL)
+                TrimInitialSpace(doc, title, node);
 
             if (node->start >= node->end)
             {
-                FreeNode(node);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            InsertNodeAtEnd(title, node);
+            TY_(InsertNodeAtEnd)(title, node);
             continue;
         }
 
@@ -2552,21 +3458,21 @@ void ParseTitle(Lexer *lexer, Node *title, uint mode)
             continue;
 
         /* discard unknown tags */
-        if (node->tag == null)
+        if (node->tag == NULL)
         {
-            ReportWarning(lexer, title, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, title, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
         /* pushback unexpected tokens */
-        ReportWarning(lexer, title, node, MISSING_ENDTAG_BEFORE);
-        UngetToken(lexer);
-        TrimSpaces(lexer, title);
+        TY_(ReportError)(doc, title, node, MISSING_ENDTAG_BEFORE);
+        TY_(UngetToken)( doc );
+        TrimSpaces(doc, title);
         return;
     }
 
-    ReportWarning(lexer, title, node, MISSING_ENDTAG_FOR);
+    TY_(ReportError)(doc, title, node, MISSING_ENDTAG_FOR);
 }
 
 /*
@@ -2576,54 +3482,108 @@ void ParseTitle(Lexer *lexer, Node *title, uint mode)
   < + letter,  < + !, < + ?  or  < + / + letter
 */
 
-void ParseScript(Lexer *lexer, Node *script, uint mode)
+void TY_(ParseScript)(TidyDocImpl* doc, Node *script, GetTokenMode ARG_UNUSED(mode))
 {
     Node *node;
-
-    node = GetCDATA(lexer, script);
+    
+    doc->lexer->parent = script;
+    node = TY_(GetToken)(doc, CdataContent);
+    doc->lexer->parent = NULL;
 
     if (node)
-        InsertNodeAtEnd(script, node);
+    {
+        TY_(InsertNodeAtEnd)(script, node);
+    }
+    else
+    {
+        /* handle e.g. a document like "<script>" */
+        TY_(ReportError)(doc, script, NULL, MISSING_ENDTAG_FOR);
+        return;
+    }
+
+    node = TY_(GetToken)(doc, IgnoreWhitespace);
+
+    if (!(node && node->type == EndTag && node->tag &&
+        node->tag->id == script->tag->id))
+    {
+        TY_(ReportError)(doc, script, node, MISSING_ENDTAG_FOR);
+
+        if (node)
+            TY_(UngetToken)(doc);
+    }
+    else
+    {
+        TY_(FreeNode)(doc, node);
+    }
 }
 
-Bool IsJavaScript(Node *node)
+Bool TY_(IsJavaScript)(Node *node)
 {
     Bool result = no;
     AttVal *attr;
 
-    if (node->attributes == null)
+    if (node->attributes == NULL)
         return yes;
 
     for (attr = node->attributes; attr; attr = attr->next)
     {
-        if ( (wstrcasecmp(attr->attribute, "language") == 0
-                || wstrcasecmp(attr->attribute, "type") == 0)
-                && wsubstr(attr->value, "javascript"))
+        if ( (attrIsLANGUAGE(attr) || attrIsTYPE(attr))
+             && AttrContains(attr, "javascript") )
+        {
             result = yes;
+            break;
+        }
     }
 
     return result;
 }
 
-void ParseHead(Lexer *lexer, Node *head, uint mode)
+void TY_(ParseHead)(TidyDocImpl* doc, Node *head, GetTokenMode ARG_UNUSED(mode))
 {
+    Lexer* lexer = doc->lexer;
     Node *node;
     int HasTitle = 0;
     int HasBase = 0;
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    SPRTF("Enter ParseHead...\n");
+#endif
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == head->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             head->closed = yes;
             break;
         }
 
-        if (node->type == TextNode)
+        /* find and discard multiple <head> elements */
+        /* find and discard <html> in <head> elements */
+        if ((node->tag == head->tag || nodeIsHTML(node)) && node->type == StartTag)
         {
-            UngetToken(lexer);
+            TY_(ReportError)(doc, head, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)(doc, node);
+            continue;
+        }
+
+        if (TY_(nodeIsText)(node))
+        {
+            /*\ Issue #132 - avoid warning for missing body tag,
+             *  if configured to --omit-otpional-tags yes
+            \*/
+            if (!cfgBool( doc, TidyOmitOptionalTags )) {
+                TY_(ReportError)(doc, head, node, TAG_NOT_ALLOWED_IN);
+            }
+            TY_(UngetToken)( doc );
             break;
+        }
+
+        if (node->type == ProcInsTag && node->element &&
+            TY_(tmbstrcmp)(node->element, "xml-stylesheet") == 0)
+        {
+            TY_(ReportError)(doc, head, node, TAG_NOT_ALLOWED_IN);
+            TY_(InsertNodeBeforeElement)(TY_(FindHTML)(doc), node);
+            continue;
         }
 
         /* deal with comments etc. */
@@ -2632,182 +3592,281 @@ void ParseHead(Lexer *lexer, Node *head, uint mode)
 
         if (node->type == DocTypeTag)
         {
-            InsertDocType(lexer, head, node);
+            InsertDocType(doc, head, node);
             continue;
         }
 
         /* discard unknown tags */
-        if (node->tag == null)
+        if (node->tag == NULL)
         {
-            ReportWarning(lexer, head, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, head, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
-
+        
+        /*
+         if it doesn't belong in the head then
+         treat as implicit end of head and deal
+         with as part of the body
+        */
         if (!(node->tag->model & CM_HEAD))
         {
-            UngetToken(lexer);
+            /* #545067 Implicit closing of head broken - warn only for XHTML input */
+            if ( lexer->isvoyager )
+                TY_(ReportError)(doc, head, node, TAG_NOT_ALLOWED_IN );
+            TY_(UngetToken)( doc );
             break;
         }
 
-        if (node->type == StartTag || node->type == StartEndTag)
+        if (TY_(nodeIsElement)(node))
         {
-            if (node->tag == tag_title)
+            if ( nodeIsTITLE(node) )
             {
                 ++HasTitle;
 
                 if (HasTitle > 1)
-                    ReportWarning(lexer, head, node, TOO_MANY_ELEMENTS);
+                    TY_(ReportError)(doc, head, node,
+                                     head ?
+                                     TOO_MANY_ELEMENTS_IN : TOO_MANY_ELEMENTS);
             }
-            else if (node->tag == tag_base)
+            else if ( nodeIsBASE(node) )
             {
                 ++HasBase;
 
                 if (HasBase > 1)
-                    ReportWarning(lexer, head, node, TOO_MANY_ELEMENTS);
+                    TY_(ReportError)(doc, head, node,
+                                     head ?
+                                     TOO_MANY_ELEMENTS_IN : TOO_MANY_ELEMENTS);
             }
-            else if (node->tag == tag_noscript)
-                ReportWarning(lexer, head, node, TAG_NOT_ALLOWED_IN);
 
-            InsertNodeAtEnd(head, node);
-            ParseTag(lexer, node, IgnoreWhitespace);
+#ifdef AUTO_INPUT_ENCODING
+            else if (nodeIsMETA(node))
+            {
+                AttVal * httpEquiv = AttrGetById(node, TidyAttr_HTTP_EQUIV);
+                AttVal * content = AttrGetById(node, TidyAttr_CONTENT);
+                if (httpEquiv && AttrValueIs(httpEquiv, "Content-Type") && AttrHasValue(content))
+                {
+                    tmbstr val, charset;
+                    uint end = 0;
+                    val = charset = TY_(tmbstrdup)(doc->allocator, content->value);
+                    val = TY_(tmbstrtolower)(val);
+                    val = strstr(content->value, "charset");
+                    
+                    if (val)
+                        val += 7;
+
+                    while(val && *val && (TY_(IsWhite)((tchar)*val) ||
+                          *val == '=' || *val == '"' || *val == '\''))
+                        ++val;
+
+                    while(val && val[end] && !(TY_(IsWhite)((tchar)val[end]) ||
+                          val[end] == '"' || val[end] == '\'' || val[end] == ';'))
+                        ++end;
+
+                    if (val && end)
+                    {
+                        tmbstr encoding = TY_(tmbstrndup)(doc->allocator,val, end);
+                        uint id = TY_(GetEncodingIdFromName)(encoding);
+
+                        /* todo: detect mismatch with BOM/XMLDecl/declared */
+                        /* todo: error for unsupported encodings */
+                        /* todo: try to re-init transcoder */
+                        /* todo: change input/output encoding settings */
+                        /* todo: store id in StreamIn */
+
+                        TidyDocFree(doc, encoding);
+                    }
+
+                    TidyDocFree(doc, charset);
+                }
+            }
+#endif /* AUTO_INPUT_ENCODING */
+
+            TY_(InsertNodeAtEnd)(head, node);
+            ParseTag(doc, node, IgnoreWhitespace);
             continue;
         }
 
         /* discard unexpected text nodes and end tags */
-        ReportWarning(lexer, head, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, head, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
-
-    if (HasTitle == 0)
-    {
-        ReportWarning(lexer, head, null, MISSING_TITLE_ELEMENT);
-        InsertNodeAtEnd(head, InferredTag(lexer, "title"));
-    }
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    SPRTF("Exit ParseHead 1...\n");
+#endif
 }
 
-void ParseBody(Lexer *lexer, Node *body, uint mode)
+/*\ 
+ *  Issue #166 - repeated <main> element
+ *  But this service is generalised to check for other duplicate elements
+\*/
+Bool TY_(FindNodeWithId)( Node *node, TidyTagId tid )
 {
+    Node *content;
+    while (node)
+    {
+        if (TagIsId(node,tid))
+            return yes;
+        for (content = node->content; content; content = content->content)
+        {
+            if (TY_(FindNodeWithId)(content,tid))
+                return yes;
+        }
+        node = node->next;
+    }
+    return no;
+}
+
+
+/*\ 
+ *  Issue #166 - repeated <main> element
+ *  Do a global search for an element
+\*/
+Bool TY_(FindNodeById)( TidyDocImpl* doc, TidyTagId tid )
+{
+    Node *node = (doc ? doc->root.content : NULL);
+    return TY_(FindNodeWithId)(node,tid);
+}
+
+
+void TY_(ParseBody)(TidyDocImpl* doc, Node *body, GetTokenMode mode)
+{
+    Lexer* lexer = doc->lexer;
     Node *node;
     Bool checkstack, iswhitenode;
 
     mode = IgnoreWhitespace;
     checkstack = yes;
 
-    while ((node = GetToken(lexer, mode)) != null)
+    TY_(BumpObject)( doc, body->parent );
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    SPRTF("Enter ParseBody...\n");
+#endif
+
+    while ((node = TY_(GetToken)(doc, mode)) != NULL)
     {
-        if (node->tag == body->tag && node->type == EndTag)
+        /* find and discard multiple <body> elements */
+        if (node->tag == body->tag && node->type == StartTag)
+        {
+            TY_(ReportError)(doc, body, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)(doc, node);
+            continue;
+        }
+
+        /* #538536 Extra endtags not detected */
+        if ( nodeIsHTML(node) )
+        {
+            if (TY_(nodeIsElement)(node) || lexer->seenEndHtml) 
+                TY_(ReportError)(doc, body, node, DISCARDING_UNEXPECTED);
+            else
+                lexer->seenEndHtml = 1;
+
+            TY_(FreeNode)( doc, node);
+            continue;
+        }
+
+        if ( lexer->seenEndBody && 
+             ( node->type == StartTag ||
+               node->type == EndTag   ||
+               node->type == StartEndTag ) )
+        {
+            TY_(ReportError)(doc, body, node, CONTENT_AFTER_BODY );
+        }
+
+        if ( node->tag == body->tag && node->type == EndTag )
         {
             body->closed = yes;
-            TrimSpaces(lexer, body);
-            FreeNode(node);
-            SeenBodyEndTag = 1;
+            TrimSpaces(doc, body);
+            TY_(FreeNode)( doc, node);
+            lexer->seenEndBody = 1;
             mode = IgnoreWhitespace;
 
-            if (body->parent->tag == tag_noframes)
+            if ( nodeIsNOFRAMES(body->parent) )
                 break;
 
             continue;
         }
 
-        if (node->tag == tag_noframes)
+        if ( nodeIsNOFRAMES(node) )
         {
             if (node->type == StartTag)
             {
-                InsertNodeAtEnd(body, node);
-                ParseBlock(lexer, node, mode);
+                TY_(InsertNodeAtEnd)(body, node);
+                TY_(ParseBlock)(doc, node, mode);
                 continue;
             }
 
-            if (node->type == EndTag && body->parent->tag == tag_noframes)
+            if (node->type == EndTag && nodeIsNOFRAMES(body->parent) )
             {
-                TrimSpaces(lexer, body);
-                UngetToken(lexer);
+                TrimSpaces(doc, body);
+                TY_(UngetToken)( doc );
                 break;
             }
         }
 
-        if ((node->tag == tag_frame || node->tag == tag_frameset)
-            && body->parent->tag == tag_noframes)
+        if ( (nodeIsFRAME(node) || nodeIsFRAMESET(node))
+             && nodeIsNOFRAMES(body->parent) )
         {
-            TrimSpaces(lexer, body);
-            UngetToken(lexer);
+            TrimSpaces(doc, body);
+            TY_(UngetToken)( doc );
             break;
         }
-
-        if (node->tag == tag_html)
-        {
-            if (node->type == StartTag || node->type == StartEndTag)
-                ReportWarning(lexer, body, node, DISCARDING_UNEXPECTED);
-
-            FreeNode(node);
-            continue;
-        }
-
+        
         iswhitenode = no;
 
-        if (node->type == TextNode &&
-               node->end <= node->start + 1 &&
-               lexer->lexbuf[node->start] == ' ')
+        if ( TY_(nodeIsText)(node) &&
+             node->end <= node->start + 1 &&
+             lexer->lexbuf[node->start] == ' ' )
             iswhitenode = yes;
 
         /* deal with comments etc. */
         if (InsertMisc(body, node))
             continue;
 
-        if (SeenBodyEndTag == 1 && !iswhitenode)
+        /* #538536 Extra endtags not detected */
+#if 0
+        if ( lexer->seenEndBody == 1 && !iswhitenode )
         {
-            ++SeenBodyEndTag;
-            ReportWarning(lexer, body, node, CONTENT_AFTER_BODY);
+            ++lexer->seenEndBody;
+            TY_(ReportError)(doc, body, node, CONTENT_AFTER_BODY);
         }
+#endif
 
         /* mixed content model permits text */
-        if (node->type == TextNode)
+        if (TY_(nodeIsText)(node))
         {
             if (iswhitenode && mode == IgnoreWhitespace)
             {
-                FreeNode(node);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            if (EncloseBodyText && !iswhitenode)
-            {
-                Node *para;
-
-                UngetToken(lexer);
-                para = InferredTag(lexer, "p");
-                InsertNodeAtEnd(body, para);
-                ParseTag(lexer, para, mode);
-                mode = MixedContent;
-                continue;
-            }
-            else /* strict doesn't allow text here */
-                lexer->versions &= ~(VERS_HTML40_STRICT | VERS_HTML20);
-
+            /* HTML 2 and HTML4 strict don't allow text here */
+            TY_(ConstrainVersion)(doc, ~(VERS_HTML40_STRICT | VERS_HTML20));
 
             if (checkstack)
             {
                 checkstack = no;
 
-                if (InlineDup(lexer, node) > 0)
+                if ( TY_(InlineDup)(doc, node) > 0 )
                     continue;
             }
 
-            InsertNodeAtEnd(body, node);
+            TY_(InsertNodeAtEnd)(body, node);
             mode = MixedContent;
             continue;
         }
 
         if (node->type == DocTypeTag)
         {
-            InsertDocType(lexer, body, node);
+            InsertDocType(doc, body, node);
             continue;
         }
         /* discard unknown  and PARAM tags */
-        if (node->tag == null || node->tag == tag_param)
+        if ( node->tag == NULL || nodeIsPARAM(node) )
         {
-            ReportWarning(lexer, body, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, body, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
@@ -2818,96 +3877,127 @@ void ParseBody(Lexer *lexer, Node *body, uint mode)
           to match Netscape's observed behaviour.
         */
         lexer->excludeBlocks = no;
-
-        if (!(node->tag->model & CM_BLOCK) &&
-            !(node->tag->model & CM_INLINE))
+        
+        if ( nodeIsINPUT(node) ||
+             (!TY_(nodeHasCM)(node, CM_BLOCK) && !TY_(nodeHasCM)(node, CM_INLINE))
+           )
         {
             /* avoid this error message being issued twice */
             if (!(node->tag->model & CM_HEAD))
-                ReportWarning(lexer, body, node, TAG_NOT_ALLOWED_IN);
+                TY_(ReportError)(doc, body, node, TAG_NOT_ALLOWED_IN);
 
             if (node->tag->model & CM_HTML)
             {
                 /* copy body attributes if current body was inferred */
-                if (node->tag == tag_body && body->implicit
-                                    && body->attributes == null)
+                if ( nodeIsBODY(node) && body->implicit 
+                     && body->attributes == NULL )
                 {
                     body->attributes = node->attributes;
-                    node->attributes = null;
+                    node->attributes = NULL;
                 }
 
-                FreeNode(node);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
             if (node->tag->model & CM_HEAD)
             {
-                MoveToHead(lexer, body, node);
+                MoveToHead(doc, body, node);
                 continue;
             }
 
             if (node->tag->model & CM_LIST)
             {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "ul");
-                AddClass(node, "noindent");
+                TY_(UngetToken)( doc );
+                node = TY_(InferredTag)(doc, TidyTag_UL);
+                AddClassNoIndent(doc, node);
                 lexer->excludeBlocks = yes;
             }
             else if (node->tag->model & CM_DEFLIST)
             {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "dl");
+                TY_(UngetToken)( doc );
+                node = TY_(InferredTag)(doc, TidyTag_DL);
                 lexer->excludeBlocks = yes;
             }
             else if (node->tag->model & (CM_TABLE | CM_ROWGRP | CM_ROW))
             {
-                UngetToken(lexer);
-                node = InferredTag(lexer, "table");
+                /* http://tidy.sf.net/issue/2855621 */
+                if (node->type != EndTag) {
+                    TY_(UngetToken)( doc );
+                    node = TY_(InferredTag)(doc, TidyTag_TABLE);
+                }
+                lexer->excludeBlocks = yes;
+            }
+            else if ( nodeIsINPUT(node) )
+            {
+                TY_(UngetToken)( doc );
+                node = TY_(InferredTag)(doc, TidyTag_FORM);
                 lexer->excludeBlocks = yes;
             }
             else
             {
-                if (!(node->tag->model & (CM_ROW | CM_FIELD)))
+                if ( !TY_(nodeHasCM)(node, CM_ROW | CM_FIELD) )
                 {
-                    UngetToken(lexer);
+                    TY_(UngetToken)( doc );
                     return;
                 }
 
                 /* ignore </td> </th> <option> etc. */
+                TY_(FreeNode)( doc, node );
                 continue;
             }
         }
 
         if (node->type == EndTag)
         {
-            if (node->tag == tag_br)
+            if ( nodeIsBR(node) )
                 node->type = StartTag;
-            else if (node->tag == tag_p)
+            else if ( nodeIsP(node) )
             {
-                CoerceNode(lexer, node, tag_br);
-                InsertNodeAtEnd(body, node);
-                node = InferredTag(lexer, "br");
+                node->type = StartEndTag;
+                node->implicit = yes;
+#if OBSOLETE
+                TY_(CoerceNode)(doc, node, TidyTag_BR, no, no);
+                FreeAttrs( doc, node ); /* discard align attribute etc. */
+                TY_(InsertNodeAtEnd)(body, node);
+                node = TY_(InferredTag)(doc, TidyTag_BR);
+#endif
             }
-            else if (node->tag->model & CM_INLINE)
-                PopInline(lexer, node);
+            else if ( TY_(nodeHasCM)(node, CM_INLINE) )
+                TY_(PopInline)( doc, node );
         }
 
-        if (node->type == StartTag || node->type == StartEndTag)
+        if (TY_(nodeIsElement)(node))
         {
-            if ((node->tag->model & CM_INLINE) && !(node->tag->model & CM_MIXED))
+            if (nodeIsMAIN(node)) {
+                /*\ Issue #166 - repeated <main> element
+                 *  How to efficiently search for a previous main element?
+                \*/
+                if ( TY_(FindNodeById)(doc, TidyTag_MAIN) )
+                {
+                    doc->badForm |= flg_BadMain; /* this is an ERROR in format */
+                    TY_(ReportError)(doc, body, node, DISCARDING_UNEXPECTED);
+                    TY_(FreeNode)( doc, node);
+                    continue;
+                }
+            }
+            /* Issue #20 - merging from Ger Hobbelt fork put back CM_MIXED, which had been
+               removed to fix this issue - reverting to fix 880221e
+             */
+            if ( TY_(nodeHasCM)(node, CM_INLINE) )
             {
                 /* HTML4 strict doesn't allow inline content here */
                 /* but HTML2 does allow img elements as children of body */
-                if (node->tag == tag_img)
-                    lexer->versions &= ~VERS_HTML40_STRICT;
+                if ( nodeIsIMG(node) )
+                    TY_(ConstrainVersion)(doc, ~VERS_HTML40_STRICT);
                 else
-                    lexer->versions &= ~(VERS_HTML40_STRICT | VERS_HTML20);
+                    TY_(ConstrainVersion)(doc, ~(VERS_HTML40_STRICT|VERS_HTML20));
 
                 if (checkstack && !node->implicit)
                 {
                     checkstack = no;
 
-                    if (InlineDup(lexer, node) > 0)
+                    if ( TY_(InlineDup)(doc, node) > 0 )
                         continue;
                 }
 
@@ -2920,52 +4010,65 @@ void ParseBody(Lexer *lexer, Node *body, uint mode)
             }
 
             if (node->implicit)
-                ReportWarning(lexer, body, node, INSERTING_TAG);
+                TY_(ReportError)(doc, body, node, INSERTING_TAG);
 
-            InsertNodeAtEnd(body, node);
-            ParseTag(lexer, node, mode);
+            TY_(InsertNodeAtEnd)(body, node);
+            ParseTag(doc, node, mode);
             continue;
         }
 
         /* discard unexpected tags */
-        ReportWarning(lexer, body, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, body, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    SPRTF("Exit ParseBody 1...\n");
+#endif
 }
 
-void ParseNoFrames(Lexer *lexer, Node *noframes, uint mode)
+void TY_(ParseNoFrames)(TidyDocImpl* doc, Node *noframes, GetTokenMode mode)
 {
+    Lexer* lexer = doc->lexer;
     Node *node;
-    Bool checkstack;
 
-    lexer->badAccess |=  USING_NOFRAMES;
-    mode = IgnoreWhitespace;
-    checkstack = yes;
-
-    while ((node = GetToken(lexer, mode)) != null)
+    if ( cfg(doc, TidyAccessibilityCheckLevel) == 0 )
     {
-        if (node->tag == noframes->tag && node->type == EndTag)
+        doc->badAccess |=  BA_USING_NOFRAMES;
+    }
+    mode = IgnoreWhitespace;
+
+    while ( (node = TY_(GetToken)(doc, mode)) != NULL )
+    {
+        if ( node->tag == noframes->tag && node->type == EndTag )
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             noframes->closed = yes;
-            TrimSpaces(lexer, noframes);
+            TrimSpaces(doc, noframes);
             return;
         }
 
-        if ((node->tag == tag_frame || node->tag == tag_frameset))
+        if ( nodeIsFRAME(node) || nodeIsFRAMESET(node) )
         {
-            ReportWarning(lexer, noframes, node, MISSING_ENDTAG_BEFORE);
-            TrimSpaces(lexer, noframes);
-            UngetToken(lexer);
+            TrimSpaces(doc, noframes);
+            if (node->type == EndTag)
+            {
+                TY_(ReportError)(doc, noframes, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);       /* Throw it away */
+            }
+            else
+            {
+                TY_(ReportError)(doc, noframes, node, MISSING_ENDTAG_BEFORE);
+                TY_(UngetToken)( doc );
+            }
             return;
         }
 
-        if (node->tag == tag_html)
+        if ( nodeIsHTML(node) )
         {
-            if (node->type == StartTag || node->type == StartEndTag)
-                ReportWarning(lexer, noframes, node, DISCARDING_UNEXPECTED);
+            if (TY_(nodeIsElement)(node))
+                TY_(ReportError)(doc, noframes, node, DISCARDING_UNEXPECTED);
 
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
@@ -2973,48 +4076,79 @@ void ParseNoFrames(Lexer *lexer, Node *noframes, uint mode)
         if (InsertMisc(noframes, node))
             continue;
 
-        if (node->tag == tag_body && node->type == StartTag)
+        if ( nodeIsBODY(node) && node->type == StartTag )
         {
-            InsertNodeAtEnd(noframes, node);
-            ParseTag(lexer, node, IgnoreWhitespace /*MixedContent*/);
+            Bool seen_body = lexer->seenEndBody;
+            TY_(InsertNodeAtEnd)(noframes, node);
+            ParseTag(doc, node, IgnoreWhitespace /*MixedContent*/);
+
+            /* fix for bug http://tidy.sf.net/bug/887259 */
+            if (seen_body && TY_(FindBody)(doc) != node)
+            {
+                TY_(CoerceNode)(doc, node, TidyTag_DIV, no, no);
+                MoveNodeToBody(doc, node);
+            }
             continue;
         }
 
         /* implicit body element inferred */
-        if (node->type == TextNode || node->tag)
+        if (TY_(nodeIsText)(node) || (node->tag && node->type != EndTag))
         {
-            UngetToken(lexer);
-            node = InferredTag(lexer, "body");
+            Node *body = TY_(FindBody)( doc );
+            if ( body || lexer->seenEndBody )
+            {
+                if ( body == NULL )
+                {
+                    TY_(ReportError)(doc, noframes, node, DISCARDING_UNEXPECTED);
+                    TY_(FreeNode)( doc, node);
+                    continue;
+                }
+                if ( TY_(nodeIsText)(node) )
+                {
+                    TY_(UngetToken)( doc );
+                    node = TY_(InferredTag)(doc, TidyTag_P);
+                    TY_(ReportError)(doc, noframes, node, CONTENT_AFTER_BODY );
+                }
+                TY_(InsertNodeAtEnd)( body, node );
+            }
+            else
+            {
+                TY_(UngetToken)( doc );
+                node = TY_(InferredTag)(doc, TidyTag_BODY);
+                if ( cfgBool(doc, TidyXmlOut) )
+                    TY_(ReportError)(doc, noframes, node, INSERTING_TAG);
+                TY_(InsertNodeAtEnd)( noframes, node );
+            }
 
-            if (XmlOut)
-                ReportWarning(lexer, noframes, node, INSERTING_TAG);
-
-            InsertNodeAtEnd(noframes, node);
-            ParseTag(lexer, node, IgnoreWhitespace /*MixedContent*/);
+            ParseTag( doc, node, IgnoreWhitespace /*MixedContent*/ );
             continue;
         }
 
         /* discard unexpected end tags */
-        ReportWarning(lexer, noframes, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+        TY_(ReportError)(doc, noframes, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
 
-    ReportWarning(lexer, noframes, node, MISSING_ENDTAG_FOR);
+    TY_(ReportError)(doc, noframes, node, MISSING_ENDTAG_FOR);
 }
 
-void ParseFrameSet(Lexer *lexer, Node *frameset, uint mode)
+void TY_(ParseFrameSet)(TidyDocImpl* doc, Node *frameset, GetTokenMode ARG_UNUSED(mode))
 {
+    Lexer* lexer = doc->lexer;
     Node *node;
 
-    lexer->badAccess |=  USING_FRAMES;
-
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    if ( cfg(doc, TidyAccessibilityCheckLevel) == 0 )
+    {
+        doc->badAccess |= BA_USING_FRAMES;
+    }
+    
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         if (node->tag == frameset->tag && node->type == EndTag)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             frameset->closed = yes;
-            TrimSpaces(lexer, frameset);
+            TrimSpaces(doc, frameset);
             return;
         }
 
@@ -3022,76 +4156,92 @@ void ParseFrameSet(Lexer *lexer, Node *frameset, uint mode)
         if (InsertMisc(frameset, node))
             continue;
 
-        if (node->tag == null)
+        if (node->tag == NULL)
         {
-            ReportWarning(lexer, frameset, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
-            continue;
+            TY_(ReportError)(doc, frameset, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
+            continue; 
         }
 
-        if (node->type == StartTag || node->type == StartEndTag)
+        if (TY_(nodeIsElement)(node))
         {
             if (node->tag && node->tag->model & CM_HEAD)
             {
-                MoveToHead(lexer, frameset, node);
+                MoveToHead(doc, frameset, node);
                 continue;
             }
         }
 
-        if (node->tag == tag_body)
+        if ( nodeIsBODY(node) )
         {
-            UngetToken(lexer);
-            node = InferredTag(lexer, "noframes");
-            ReportWarning(lexer, frameset, node, INSERTING_TAG);
+            TY_(UngetToken)( doc );
+            node = TY_(InferredTag)(doc, TidyTag_NOFRAMES);
+            TY_(ReportError)(doc, frameset, node, INSERTING_TAG);
         }
 
         if (node->type == StartTag && (node->tag->model & CM_FRAMES))
         {
-            InsertNodeAtEnd(frameset, node);
+            TY_(InsertNodeAtEnd)(frameset, node);
             lexer->excludeBlocks = no;
-            ParseTag(lexer, node, MixedContent);
+            ParseTag(doc, node, MixedContent);
             continue;
         }
         else if (node->type == StartEndTag && (node->tag->model & CM_FRAMES))
         {
-            InsertNodeAtEnd(frameset, node);
+            TY_(InsertNodeAtEnd)(frameset, node);
             continue;
         }
 
         /* discard unexpected tags */
-        ReportWarning(lexer, frameset, node, DISCARDING_UNEXPECTED);
-        FreeNode(node);
+#if SUPPORT_ACCESSIBILITY_CHECKS
+        /* WAI [6.5.1.4] link is being discarded outside of NOFRAME */
+        if ( nodeIsA(node) )
+           doc->badAccess |= BA_INVALID_LINK_NOFRAMES;
+#endif
+
+        TY_(ReportError)(doc, frameset, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
 
-    ReportWarning(lexer, frameset, node, MISSING_ENDTAG_FOR);
+    TY_(ReportError)(doc, frameset, node, MISSING_ENDTAG_FOR);
 }
 
-void ParseHTML(Lexer *lexer, Node *html, uint mode)
+void TY_(ParseHTML)(TidyDocImpl* doc, Node *html, GetTokenMode mode)
 {
     Node *node, *head;
-    Node *frameset = null;
-    Node *noframes = null;
+    Node *frameset = NULL;
+    Node *noframes = NULL;
 
-    XmlTags = no;
-    SeenBodyEndTag = 0;
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    SPRTF("Entering ParseHTML...\n");
+#endif
+    TY_(SetOptionBool)( doc, TidyXmlTags, no );
 
     for (;;)
     {
-        node = GetToken(lexer, IgnoreWhitespace);
+        node = TY_(GetToken)(doc, IgnoreWhitespace);
 
-        if (node == null)
+        if (node == NULL)
         {
-            node = InferredTag(lexer, "head");
+            node = TY_(InferredTag)(doc, TidyTag_HEAD);
             break;
         }
 
-        if (node->tag == tag_head)
+        if ( nodeIsHEAD(node) )
             break;
 
         if (node->tag == html->tag && node->type == EndTag)
         {
-            ReportWarning(lexer, html, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
+            continue;
+        }
+
+        /* find and discard multiple <html> elements */
+        if (node->tag == html->tag && node->type == StartTag)
+        {
+            TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)(doc, node);
             continue;
         }
 
@@ -3099,34 +4249,40 @@ void ParseHTML(Lexer *lexer, Node *html, uint mode)
         if (InsertMisc(html, node))
             continue;
 
-        UngetToken(lexer);
-        node = InferredTag(lexer, "head");
+        TY_(UngetToken)( doc );
+        node = TY_(InferredTag)(doc, TidyTag_HEAD);
         break;
     }
 
     head = node;
-    InsertNodeAtEnd(html, head);
-    ParseHead(lexer, head, mode);
+    TY_(InsertNodeAtEnd)(html, head);
+    TY_(ParseHead)(doc, head, mode);
 
     for (;;)
     {
-        node = GetToken(lexer, IgnoreWhitespace);
+        node = TY_(GetToken)(doc, IgnoreWhitespace);
 
-        if (node == null)
+        if (node == NULL)
         {
-            if (frameset == null) /* create an empty body */
-                node = InferredTag(lexer, "body");
-
+            if (frameset == NULL) /* implied body */
+            {
+                node = TY_(InferredTag)(doc, TidyTag_BODY);
+                TY_(InsertNodeAtEnd)(html, node);
+                TY_(ParseBody)(doc, node, mode);
+            }
+#if !defined(NDEBUG) && defined(_MSC_VER)
+            SPRTF("Exit ParseHTML 1...\n");
+#endif
             return;
         }
 
         /* robustly handle html tags */
         if (node->tag == html->tag)
         {
-            if (node->type != StartTag && frameset == null)
-                ReportWarning(lexer, html, node, DISCARDING_UNEXPECTED);
+            if (node->type != StartTag && frameset == NULL)
+                TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
 
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
@@ -3135,50 +4291,59 @@ void ParseHTML(Lexer *lexer, Node *html, uint mode)
             continue;
 
         /* if frameset document coerce <body> to <noframes> */
-        if (node->tag == tag_body)
+        if ( nodeIsBODY(node) )
         {
             if (node->type != StartTag)
             {
-                ReportWarning(lexer, html, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            if (frameset != null)
+            if ( cfg(doc, TidyAccessibilityCheckLevel) == 0 )
             {
-                UngetToken(lexer);
-
-                if (noframes == null)
+                if (frameset != NULL)
                 {
-                    noframes = InferredTag(lexer, "noframes");
-                    InsertNodeAtEnd(frameset, noframes);
-                    ReportWarning(lexer, html, noframes, INSERTING_TAG);
-                }
+                    TY_(UngetToken)( doc );
 
-                ParseTag(lexer, noframes, mode);
-                continue;
+                    if (noframes == NULL)
+                    {
+                        noframes = TY_(InferredTag)(doc, TidyTag_NOFRAMES);
+                        TY_(InsertNodeAtEnd)(frameset, noframes);
+                        TY_(ReportError)(doc, html, noframes, INSERTING_TAG);
+                    }
+                    else
+                    {
+                        if (noframes->type == StartEndTag)
+                            noframes->type = StartTag;
+                    }
+
+                    ParseTag(doc, noframes, mode);
+                    continue;
+                }
             }
 
+            TY_(ConstrainVersion)(doc, ~VERS_FRAMESET);
             break;  /* to parse body */
         }
 
         /* flag an error if we see more than one frameset */
-        if (node->tag == tag_frameset)
+        if ( nodeIsFRAMESET(node) )
         {
             if (node->type != StartTag)
             {
-                ReportWarning(lexer, html, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            if (frameset != null)
-                ReportError(lexer, html, node, DUPLICATE_FRAMESET);
+            if (frameset != NULL)
+                TY_(ReportFatal)(doc, html, node, DUPLICATE_FRAMESET);
             else
                 frameset = node;
 
-            InsertNodeAtEnd(html, node);
-            ParseTag(lexer, node, mode);
+            TY_(InsertNodeAtEnd)(html, node);
+            ParseTag(doc, node, mode);
 
             /*
               see if it includes a noframes element so
@@ -3187,155 +4352,404 @@ void ParseHTML(Lexer *lexer, Node *html, uint mode)
 
             for (node = frameset->content; node; node = node->next)
             {
-                if (node->tag == tag_noframes)
+                if ( nodeIsNOFRAMES(node) )
                     noframes = node;
             }
             continue;
         }
 
         /* if not a frameset document coerce <noframes> to <body> */
-        if (node->tag == tag_noframes)
+        if ( nodeIsNOFRAMES(node) )
         {
             if (node->type != StartTag)
             {
-                ReportWarning(lexer, html, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
+                TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
                 continue;
             }
 
-            if (frameset == null)
+            if (frameset == NULL)
             {
-                ReportWarning(lexer, html, node, DISCARDING_UNEXPECTED);
-                FreeNode(node);
-                node = InferredTag(lexer, "body");
+                TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
+                node = TY_(InferredTag)(doc, TidyTag_BODY);
                 break;
             }
 
-            if (noframes == null)
+            if (noframes == NULL)
             {
                 noframes = node;
-                InsertNodeAtEnd(frameset, noframes);
+                TY_(InsertNodeAtEnd)(frameset, noframes);
             }
             else
-                FreeNode(node);
+                TY_(FreeNode)( doc, node);
 
-            ParseTag(lexer, noframes, mode);
+            ParseTag(doc, noframes, mode);
             continue;
         }
 
-        if (node->type == StartTag || node->type == StartEndTag)
+        if (TY_(nodeIsElement)(node))
         {
             if (node->tag && node->tag->model & CM_HEAD)
             {
-                MoveToHead(lexer, html, node);
+                MoveToHead(doc, html, node);
+                continue;
+            }
+
+            /* discard illegal frame element following a frameset */
+            if ( frameset != NULL && nodeIsFRAME(node) )
+            {
+                TY_(ReportError)(doc, html, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)(doc, node);
                 continue;
             }
         }
 
-        UngetToken(lexer);
+        TY_(UngetToken)( doc );
 
         /* insert other content into noframes element */
 
         if (frameset)
         {
-            if (noframes == null)
+            if (noframes == NULL)
             {
-                noframes = InferredTag(lexer, "noframes");
-                InsertNodeAtEnd(frameset, noframes);
+                noframes = TY_(InferredTag)(doc, TidyTag_NOFRAMES);
+                TY_(InsertNodeAtEnd)(frameset, noframes);
             }
             else
-                ReportWarning(lexer, html, node, NOFRAMES_CONTENT);
+            {
+                TY_(ReportError)(doc, html, node, NOFRAMES_CONTENT);
+                if (noframes->type == StartEndTag)
+                    noframes->type = StartTag;
+            }
 
-            ParseTag(lexer, noframes, mode);
+            TY_(ConstrainVersion)(doc, VERS_FRAMESET);
+            ParseTag(doc, noframes, mode);
             continue;
         }
 
-        node = InferredTag(lexer, "body");
+        node = TY_(InferredTag)(doc, TidyTag_BODY);
+        /* Issue #132 - disable inserting BODY tag warning
+           BUT only if NOT --show-body-only yes */
+        if (!showingBodyOnly(doc))
+            TY_(ReportError)(doc, html, node, INSERTING_TAG );
+        TY_(ConstrainVersion)(doc, ~VERS_FRAMESET);
         break;
     }
 
     /* node must be body */
 
-    InsertNodeAtEnd(html, node);
-    ParseTag(lexer, node, mode);
+    TY_(InsertNodeAtEnd)(html, node);
+    ParseTag(doc, node, mode);
+#if !defined(NDEBUG) && defined(_MSC_VER)
+    SPRTF("Exit ParseHTML 2...\n");
+#endif
+}
+
+static Bool nodeCMIsOnlyInline( Node* node )
+{
+    return TY_(nodeHasCM)( node, CM_INLINE ) && !TY_(nodeHasCM)( node, CM_BLOCK );
+}
+
+static void EncloseBodyText(TidyDocImpl* doc)
+{
+    Node* node;
+    Node* body = TY_(FindBody)(doc);
+
+    if (!body)
+        return;
+
+    node = body->content;
+
+    while (node)
+    {
+        if ((TY_(nodeIsText)(node) && !TY_(IsBlank)(doc->lexer, node)) ||
+            (TY_(nodeIsElement)(node) && nodeCMIsOnlyInline(node)))
+        {
+            Node* p = TY_(InferredTag)(doc, TidyTag_P);
+            TY_(InsertNodeBeforeElement)(node, p);
+            while (node && (!TY_(nodeIsElement)(node) || nodeCMIsOnlyInline(node)))
+            {
+                Node* next = node->next;
+                TY_(RemoveNode)(node);
+                TY_(InsertNodeAtEnd)(p, node);
+                node = next;
+            }
+            TrimSpaces(doc, p);
+            continue;
+        }
+        node = node->next;
+    }
+}
+
+/* <form>, <blockquote> and <noscript> do not allow #PCDATA in
+   HTML 4.01 Strict (%block; model instead of %flow;).
+  When requested, text nodes in these elements are wrapped in <p>. */
+static void EncloseBlockText(TidyDocImpl* doc, Node* node)
+{
+    Node *next;
+    Node *block;
+
+    while (node)
+    {
+        next = node->next;
+
+        if (node->content)
+            EncloseBlockText(doc, node->content);
+
+        if (!(nodeIsFORM(node) || nodeIsNOSCRIPT(node) ||
+              nodeIsBLOCKQUOTE(node))
+            || !node->content)
+        {
+            node = next;
+            continue;
+        }
+
+        block = node->content;
+
+        if ((TY_(nodeIsText)(block) && !TY_(IsBlank)(doc->lexer, block)) ||
+            (TY_(nodeIsElement)(block) && nodeCMIsOnlyInline(block)))
+        {
+            Node* p = TY_(InferredTag)(doc, TidyTag_P);
+            TY_(InsertNodeBeforeElement)(block, p);
+            while (block &&
+                   (!TY_(nodeIsElement)(block) || nodeCMIsOnlyInline(block)))
+            {
+                Node* tempNext = block->next;
+                TY_(RemoveNode)(block);
+                TY_(InsertNodeAtEnd)(p, block);
+                block = tempNext;
+            }
+            TrimSpaces(doc, p);
+            continue;
+        }
+
+        node = next;
+    }
+}
+
+static void ReplaceObsoleteElements(TidyDocImpl* doc, Node* node)
+{
+    Node *next;
+
+    while (node)
+    {
+        next = node->next;
+
+        /* if (nodeIsDIR(node) || nodeIsMENU(node)) */
+        /* HTML5 - <menu ... > is no longer obsolete */
+        if (nodeIsDIR(node))
+            TY_(CoerceNode)(doc, node, TidyTag_UL, yes, yes);
+
+        if (nodeIsXMP(node) || nodeIsLISTING(node) ||
+            (node->tag && node->tag->id == TidyTag_PLAINTEXT))
+            TY_(CoerceNode)(doc, node, TidyTag_PRE, yes, yes);
+
+        if (node->content)
+            ReplaceObsoleteElements(doc, node->content);
+
+        node = next;
+    }
+}
+
+static void AttributeChecks(TidyDocImpl* doc, Node* node)
+{
+    Node *next;
+
+    while (node)
+    {
+        next = node->next;
+
+        if (TY_(nodeIsElement)(node))
+        {
+            if (node->tag && node->tag->chkattrs) /* [i_a]2 fix crash after adding SVG support with alt/unknown tag subtree insertion there */
+                node->tag->chkattrs(doc, node);
+            else
+                TY_(CheckAttributes)(doc, node);
+        }
+
+        if (node->content)
+            AttributeChecks(doc, node->content);
+
+        assert( next != node ); /* http://tidy.sf.net/issue/1603538 */
+        node = next;
+    }
 }
 
 /*
   HTML is the top level element
 */
-Node *ParseDocument(Lexer *lexer)
+void TY_(ParseDocument)(TidyDocImpl* doc)
 {
-    Node *node, *document, *html, *doctype = null;
+    Node *node, *html, *doctype = NULL;
 
-    document = NewNode();
-    document->type = RootNode;
-
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
+        if (node->type == XmlDecl)
+        {
+            if (TY_(FindXmlDecl)(doc) && doc->root.content)
+            {
+                TY_(ReportError)(doc, &doc->root, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)(doc, node);
+                continue;
+            }
+            if (node->line != 1 || (node->line == 1 && node->column != 1))
+            {
+                TY_(ReportError)(doc, &doc->root, node, SPACE_PRECEDING_XMLDECL);
+            }
+        }
+#ifdef AUTO_INPUT_ENCODING
+        if (node->type == XmlDecl)
+        {
+            AttVal* encoding = GetAttrByName(node, "encoding");
+            if (AttrHasValue(encoding))
+            {
+                uint id = TY_(GetEncodingIdFromName)(encoding->value);
+
+                /* todo: detect mismatch with BOM/XMLDecl/declared */
+                /* todo: error for unsupported encodings */
+                /* todo: try to re-init transcoder */
+                /* todo: change input/output encoding settings */
+                /* todo: store id in StreamIn */
+            }
+        }
+#endif /* AUTO_INPUT_ENCODING */
+
         /* deal with comments etc. */
-        if (InsertMisc(document, node))
+        if (InsertMisc( &doc->root, node ))
             continue;
 
         if (node->type == DocTypeTag)
         {
-            if (doctype == null)
+            if (doctype == NULL)
             {
-                InsertNodeAtEnd(document, node);
+                TY_(InsertNodeAtEnd)( &doc->root, node);
                 doctype = node;
             }
             else
-                ReportWarning(lexer, RootNode, node, DISCARDING_UNEXPECTED);
+            {
+                TY_(ReportError)(doc, &doc->root, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
+            }
             continue;
         }
 
         if (node->type == EndTag)
         {
-            ReportWarning(lexer, RootNode, node, DISCARDING_UNEXPECTED);
-            FreeNode(node);
+            TY_(ReportError)(doc, &doc->root, node, DISCARDING_UNEXPECTED);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
-        if (node->type != StartTag || node->tag != tag_html)
+        if (node->type == StartTag && nodeIsHTML(node))
         {
-            UngetToken(lexer);
-            html = InferredTag(lexer, "html");
+            AttVal *xmlns;
+
+            xmlns = TY_(AttrGetById)(node, TidyAttr_XMLNS);
+
+            if (AttrValueIs(xmlns, XHTML_NAMESPACE))
+            {
+                Bool htmlOut = cfgBool( doc, TidyHtmlOut );
+                doc->lexer->isvoyager = yes;                  /* Unless plain HTML */
+                TY_(SetOptionBool)( doc, TidyXhtmlOut, !htmlOut ); /* is specified, output*/
+                TY_(SetOptionBool)( doc, TidyXmlOut, !htmlOut );   /* will be XHTML. */
+
+                /* adjust other config options, just as in config.c */
+                if ( !htmlOut )
+                {
+                    TY_(SetOptionBool)( doc, TidyUpperCaseTags, no );
+                    TY_(SetOptionBool)( doc, TidyUpperCaseAttrs, no );
+                }
+            }
+        }
+
+        if ( node->type != StartTag || !nodeIsHTML(node) )
+        {
+            TY_(UngetToken)( doc );
+            html = TY_(InferredTag)(doc, TidyTag_HTML);
         }
         else
             html = node;
 
-        InsertNodeAtEnd(document, html);
-        ParseHTML(lexer, html, no);
+        /*\
+         *  #72, avoid MISSING_DOCTYPE if show-body-only. 
+         *  #191, also if --doctype omit, that is TidyDoctypeOmit
+        \*/
+        if (!TY_(FindDocType)(doc) && !showingBodyOnly(doc)) 
+        {
+            ulong dtmode = cfg( doc, TidyDoctypeMode );
+            if (dtmode != TidyDoctypeOmit)
+                TY_(ReportError)(doc, NULL, NULL, MISSING_DOCTYPE);
+        }
+        TY_(InsertNodeAtEnd)( &doc->root, html);
+        TY_(ParseHTML)( doc, html, IgnoreWhitespace );
         break;
     }
 
-    return document;
+#if SUPPORT_ACCESSIBILITY_CHECKS
+    /* do this before any more document fixes */
+    if ( cfg( doc, TidyAccessibilityCheckLevel ) > 0 )
+        TY_(AccessibilityChecks)( doc );
+#endif /* #if SUPPORT_ACCESSIBILITY_CHECKS */
+
+    if (!TY_(FindHTML)(doc))
+    {
+        /* a later check should complain if <body> is empty */
+        html = TY_(InferredTag)(doc, TidyTag_HTML);
+        TY_(InsertNodeAtEnd)( &doc->root, html);
+        TY_(ParseHTML)(doc, html, IgnoreWhitespace);
+    }
+
+    if (!TY_(FindTITLE)(doc))
+    {
+        Node* head = TY_(FindHEAD)(doc);
+        /* #72, avoid MISSING_TITLE_ELEMENT if show-body-only (but allow InsertNodeAtEnd to avoid new warning) */
+        if (!showingBodyOnly(doc))
+        {
+            TY_(ReportError)(doc, head, NULL, MISSING_TITLE_ELEMENT);
+        }
+        TY_(InsertNodeAtEnd)(head, TY_(InferredTag)(doc, TidyTag_TITLE));
+    }
+
+    AttributeChecks(doc, &doc->root);
+    ReplaceObsoleteElements(doc, &doc->root);
+    TY_(DropEmptyElements)(doc, &doc->root);
+    CleanSpaces(doc, &doc->root);
+
+    if (cfgBool(doc, TidyEncloseBodyText))
+        EncloseBodyText(doc);
+    if (cfgBool(doc, TidyEncloseBlockText))
+        EncloseBlockText(doc, &doc->root);
 }
 
-Bool XMLPreserveWhiteSpace(Node *element)
+Bool TY_(XMLPreserveWhiteSpace)( TidyDocImpl* doc, Node *element)
 {
     AttVal *attribute;
 
     /* search attributes for xml:space */
     for (attribute = element->attributes; attribute; attribute = attribute->next)
     {
-        if (wstrcmp(attribute->attribute, "xml:space") == 0)
+        if (attrIsXML_SPACE(attribute))
         {
-            if (wstrcmp(attribute->value, "preserve") == 0)
+            if (AttrValueIs(attribute, "preserve"))
                 return yes;
 
             return no;
         }
     }
 
+    if (element->element == NULL)
+        return no;
+        
     /* kludge for html docs without explicit xml:space attribute */
-    if (wstrcasecmp(element->element, "pre") == 0
-        || wstrcasecmp(element->element, "script") == 0
-        || wstrcasecmp(element->element, "style") == 0
-        || FindParser(element) == ParsePre)
+    if (nodeIsPRE(element)    ||
+        nodeIsSCRIPT(element) ||
+        nodeIsSTYLE(element)  ||
+        TY_(FindParser)(doc, element) == TY_(ParsePre))
         return yes;
 
     /* kludge for XSL docs */
-    if (wstrcasecmp(element->element, "xsl:text") == 0)
+    if ( TY_(tmbstrcasecmp)(element->element, "xsl:text") == 0 )
         return yes;
 
     return no;
@@ -3344,25 +4758,23 @@ Bool XMLPreserveWhiteSpace(Node *element)
 /*
   XML documents
 */
-static void ParseXMLElement(Lexer *lexer, Node *element, uint mode)
+static void ParseXMLElement(TidyDocImpl* doc, Node *element, GetTokenMode mode)
 {
+    Lexer* lexer = doc->lexer;
     Node *node;
-
-    /* Jeff Young's kludge for XSL docs */
-
-    if (wstrcasecmp(element->element, "xsl:text") == 0)
-        return;
 
     /* if node is pre or has xml:space="preserve" then do so */
 
-    if (XMLPreserveWhiteSpace(element))
+    if ( TY_(XMLPreserveWhiteSpace)(doc, element) )
         mode = Preformatted;
 
-    while ((node = GetToken(lexer, mode)) != null)
+    while ((node = TY_(GetToken)(doc, mode)) != NULL)
     {
-        if (node->type == EndTag && wstrcmp(node->element, element->element) == 0)
+        if (node->type == EndTag &&
+           node->element && element->element &&
+           TY_(tmbstrcmp)(node->element, element->element) == 0)
         {
-            FreeNode(node);
+            TY_(FreeNode)( doc, node);
             element->closed = yes;
             break;
         }
@@ -3370,16 +4782,20 @@ static void ParseXMLElement(Lexer *lexer, Node *element, uint mode)
         /* discard unexpected end tags */
         if (node->type == EndTag)
         {
-            ReportError(lexer, element, node, UNEXPECTED_ENDTAG);
-            FreeNode(node);
+            if (element)
+                TY_(ReportFatal)(doc, element, node, UNEXPECTED_ENDTAG_IN);
+            else
+                TY_(ReportFatal)(doc, element, node, UNEXPECTED_ENDTAG);
+
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
         /* parse content on seeing start tag */
         if (node->type == StartTag)
-            ParseXMLElement(lexer, node, mode);
+            ParseXMLElement( doc, node, mode );
 
-        InsertNodeAtEnd(element, node);
+        TY_(InsertNodeAtEnd)(element, node);
     }
 
     /*
@@ -3389,14 +4805,14 @@ static void ParseXMLElement(Lexer *lexer, Node *element, uint mode)
 
     node = element->content;
 
-    if (node && node->type == TextNode && mode != Preformatted)
+    if (TY_(nodeIsText)(node) && mode != Preformatted)
     {
-        if (lexer->lexbuf[node->start] == ' ')
+        if ( lexer->lexbuf[node->start] == ' ' )
         {
             node->start++;
 
             if (node->start >= node->end)
-                DiscardElement(node);
+                TY_(DiscardElement)( doc, node );
         }
     }
 
@@ -3407,77 +4823,82 @@ static void ParseXMLElement(Lexer *lexer, Node *element, uint mode)
 
     node = element->last;
 
-    if (node && node->type == TextNode && mode != Preformatted)
+    if (TY_(nodeIsText)(node) && mode != Preformatted)
     {
-        if (lexer->lexbuf[node->end - 1] == ' ')
+        if ( lexer->lexbuf[node->end - 1] == ' ' )
         {
             node->end--;
 
             if (node->start >= node->end)
-                DiscardElement(node);
+                TY_(DiscardElement)( doc, node );
         }
     }
 }
 
-Node *ParseXMLDocument(Lexer *lexer)
+void TY_(ParseXMLDocument)(TidyDocImpl* doc)
 {
-    Node *node, *document, *doctype;
+    Node *node, *doctype = NULL;
 
-    document = NewNode();
-    document->type = RootNode;
-    doctype = null;
-    XmlTags = yes;
+    TY_(SetOptionBool)( doc, TidyXmlTags, yes );
 
-    while ((node = GetToken(lexer, IgnoreWhitespace)) != null)
+    while ((node = TY_(GetToken)(doc, IgnoreWhitespace)) != NULL)
     {
         /* discard unexpected end tags */
         if (node->type == EndTag)
         {
-            ReportWarning(lexer, null, node, UNEXPECTED_ENDTAG);
-            FreeNode(node);
+            TY_(ReportError)(doc, NULL, node, UNEXPECTED_ENDTAG);
+            TY_(FreeNode)( doc, node);
             continue;
         }
 
          /* deal with comments etc. */
-        if (InsertMisc(document, node))
+        if (InsertMisc( &doc->root, node))
             continue;
 
         if (node->type == DocTypeTag)
         {
-            if (doctype == null)
+            if (doctype == NULL)
             {
-                InsertNodeAtEnd(document, node);
+                TY_(InsertNodeAtEnd)( &doc->root, node);
                 doctype = node;
             }
             else
-                ReportWarning(lexer, RootNode, node, DISCARDING_UNEXPECTED);
+            {
+                TY_(ReportError)(doc, &doc->root, node, DISCARDING_UNEXPECTED);
+                TY_(FreeNode)( doc, node);
+            }
+            continue;
+        }
+
+        if (node->type == StartEndTag)
+        {
+            TY_(InsertNodeAtEnd)( &doc->root, node);
             continue;
         }
 
        /* if start tag then parse element's content */
         if (node->type == StartTag)
         {
-            InsertNodeAtEnd(document, node);
-            ParseXMLElement(lexer, node, IgnoreWhitespace);
+            TY_(InsertNodeAtEnd)( &doc->root, node );
+            ParseXMLElement( doc, node, IgnoreWhitespace );
+            continue;
         }
 
+        TY_(ReportError)(doc, &doc->root, node, DISCARDING_UNEXPECTED);
+        TY_(FreeNode)( doc, node);
     }
 
-#if 0
-    /* discard the document type */
-    node = FindDocType(document);
-
-    if (node)
-        DiscardElement(node);
-#endif
-
-    if  (doctype && !CheckDocTypeKeyWords(lexer, doctype))
-            ReportWarning(lexer, doctype, null, DTYPE_NOT_UPPER_CASE);
-
-    /* ensure presence of initial <?XML version="1.0"?> */
-    if (XmlPi)
-        FixXMLPI(lexer, document);
-
-    return document;
+    /* ensure presence of initial <?xml version="1.0"?> */
+    if ( cfgBool(doc, TidyXmlDecl) )
+        TY_(FixXmlDecl)( doc );
 }
 
+
+/*
+ * local variables:
+ * mode: c
+ * indent-tabs-mode: nil
+ * c-basic-offset: 4
+ * eval: (c-set-offset 'substatement-open 0)
+ * end:
+ */

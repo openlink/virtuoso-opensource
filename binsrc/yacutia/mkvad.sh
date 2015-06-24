@@ -310,7 +310,7 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "        }" >> $STICKER
-echo "      if (__proc_exists ('DB.DBA.DAV_DET_CONTENT_MD5') is null)" >> $STICKER
+echo "      if (__proc_exists ('WS.WS.TTL_PREFIXES_ENABLED') is null)" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER
@@ -345,6 +345,7 @@ echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is
 echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vad_utils.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-uninstall\">" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER

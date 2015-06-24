@@ -1110,7 +1110,7 @@ int
 itc_up_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   buffer_desc_t * parent_buf = NULL;
-  int up_ctr = 0;
+  int up_ctr = 0, deld_ctr = 0;
   dp_addr_t up;
   volatile dp_addr_t * up_field;
   up_field = (dp_addr_t *) ((*buf_ret)->bd_buffer + DP_PARENT);
@@ -1133,6 +1133,14 @@ up_again:
     page_wait_access (itc, up, *buf_ret, &parent_buf, ITC_LANDED_PA (itc), RWG_WAIT_NO_ENTRY_IF_WAIT);
   /* the no entry case applies only to a wait. Also, if there is a wait, the original buffer will stay occupied by this itc.
   * So if we got no buffer, there was a wait and if we got one the transit had no wait but could have disk read. */
+    if (PF_OF_DELETED == parent_buf)
+      {
+	deld_ctr++;
+	log_info ("up transit to deleted parent %d on %s", up, itc->itc_insert_key->key_name);
+	if (deld_ctr > 2)
+	  return DVC_INDEX_END;
+	goto up_again;
+      }
   if (!parent_buf)
     {
       up_ctr ++;

@@ -62,11 +62,6 @@
   <refsect1 id="ret_xenc_key_3DES_read"><title>Return Types</title>
       <para>No return value.</para>
   </refsect1>
-  <refsect1 id="errors_xenc_key_3DES_read">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_key_3DES_read">
     <title>Examples</title>
     <example id="ex_xenc_key_3DES_read"><title>Loading a shared secret</title>

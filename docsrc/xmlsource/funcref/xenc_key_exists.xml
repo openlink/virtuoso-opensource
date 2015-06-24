@@ -53,8 +53,7 @@
   </refsect1>
   <refsect1 id="examples_xenc_key_exists">
     <title>Examples</title>
-    <example id="ex_xenc_key_exists"><title></title>
-      <para></para>
+    <example id="ex_xenc_key_exists"><title>Simple Use</title>
       <screen><![CDATA[
 SQL> select xenc_key_exists ('MyKey');
 VARCHAR
@@ -70,6 +69,6 @@ _______________________________________________________________________________
   </refsect1>
   <refsect1 id="seealso_xenc_key_exists">
     <title>See Also</title>
-    <para><link linkend="fn"><function></function></link></para>
+    <para><link linkend="fn_xenc_key_remove"><function>xenc_key_remove()</function></link></para>
   </refsect1>
 </refentry>

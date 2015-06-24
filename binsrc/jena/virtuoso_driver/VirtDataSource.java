@@ -24,6 +24,7 @@ package virtuoso.jena.driver;
 
 
 import java.sql.*;
+import javax.sql.*;
 import java.util.Iterator;
 import java.util.Vector;
 import java.util.LinkedList;
@@ -60,6 +61,17 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     {
       super(_graphName, _ds);
     }
+
+    public VirtDataSource(String _graphName, ConnectionPoolDataSource _ds)
+    {
+      super(_graphName, _ds);
+    }
+
+    public VirtDataSource(ConnectionPoolDataSource _ds)
+    {
+      super(_ds);
+    }
+
 
     protected VirtDataSource(VirtGraph g)
     {

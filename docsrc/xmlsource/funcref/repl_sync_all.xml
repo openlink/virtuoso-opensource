@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_repl_sync_all">
       <funcprototype id="fproto_repl_sync_all">
         <funcdef><function>repl_sync_all</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

@@ -137,42 +137,60 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define box_tag_modify(box,new_tag) 	box_tag_modify_impl(box,new_tag)
 #endif
 
+#ifdef WIDE_DEBUG
+#define WIDE_BOX_HEADER_BP(bytes,tag) do { \
+    if ((DV_WIDE == (tag)) && (1600 <= (bytes)) && (1608 >= (bytes)) && (1604 != (bytes))) \
+      GPF_T1 ("failed wide debug, WIDE_BOX_HEADER_BP"); \
+  } while (0)
+#else
+#define WIDE_BOX_HEADER_BP(bytes,tag)
+#endif
+
+
 #ifdef WORDS_BIGENDIAN
 #ifdef NDEBUG
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   ((uint32*)(ptr))[-1] = 0;		   \
   *ptr++ = (unsigned char) (bytes & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
-  *ptr++ = (unsigned char) tag
+    *ptr++ = (unsigned char) tag; \
+  } while (0)
 #else
   /* GK : this is to signal when a  box to be allocated exceeds the maximum allowed length */
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   if (bytes >= (256L * 256L * 256L)) \
     GPF_T1 ("box to allocate too large"); \
   ((uint32*)(ptr))[-1] = 0;		   \
   *ptr++ = (unsigned char) (bytes & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
-  *ptr++ = (unsigned char) tag
+    *ptr++ = (unsigned char) tag; \
+  } while (0)
 #endif
 #else
 #ifdef NDEBUG
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   ((uint32*)(ptr))[-1] = 0;		   \
   ((uint32*)ptr)[0] = bytes; \
   ptr[3] = (unsigned char) tag; \
-ptr += 4
+    ptr += 4; \
+  } while (0)
 
 #else
   /* GK : this is to signal when a  box to be allocated exceeds the maximum allowed length */
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   if (bytes >= (256L * 256L * 256L)) \
     GPF_T1 ("box to allocate too large"); \
   ((uint32*)(ptr))[-1] = 0;		   \
   ((uint32*)ptr)[0] = bytes; \
   ptr[3] = (unsigned char) tag; \
-  ptr += 4
+    ptr += 4; \
+  } while (0)
 #endif
 #endif
 
@@ -383,6 +401,38 @@ ptr += 4
 
 /* 8 byte float */
 #define DV_DOUBLE_FLOAT 		191
+
+#ifdef FLT_DECIMAL_DIG
+#define SINGLE_E_PREC (FLT_DECIMAL_DIG-1)
+#else
+#ifdef FLT_DIG
+#define SINGLE_E_PREC (FLT_DIG+2)
+#else
+#define SINGLE_E_PREC 8
+#endif
+#endif
+
+#define SINGLE_E_STAR_FMT "%.*e"
+#define SINGLE_G_LEN (DOUBLE_E_PREC + 4)
+#define SINGLE_G_STAR_FMT "%.*g"
+
+#ifdef DBL_DECIMAL_DIG
+#define DOUBLE_E_PREC (DBL_DECIMAL_DIG-1)
+#else
+#ifdef DECIMAL_DIG
+#define DOUBLE_E_PREC (DECIMAL_DIG-1)
+#else
+#ifdef DBL_DIG
+#define DOUBLE_E_PREC (DBL_DIG+2)
+#else
+#define DOUBLE_E_PREC 16
+#endif
+#endif
+#endif
+
+#define DOUBLE_E_STAR_FMT "%.*e"
+#define DOUBLE_G_LEN (DOUBLE_E_PREC + 4)
+#define DOUBLE_G_STAR_FMT "%.*g"
 
 /* 1 byte character */
 #define DV_CHARACTER 			192
@@ -888,6 +938,12 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 #define BOX_SPRINTF_DECLARED
 
 EXE_EXPORT (caddr_t, box_sprintf, (size_t buflen_eval, const char *format,...));
+
+extern caddr_t box_sprintf (size_t buflen_eval, const char *format,...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
 
 #ifdef MALLOC_DEBUG
 typedef caddr_t box_sprintf_impl_t (size_t buflen_eval, const char *format, ...);

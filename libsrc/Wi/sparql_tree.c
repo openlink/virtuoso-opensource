@@ -801,8 +801,8 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
                         SPART *arg_copy;
                         spar_mproc_ctx_t gparg_ctx;
                         if (SPAR_GP != SPART_TYPE (arg))
-                          spar_error (sparp, "The argument #%d (?%.20s) of macro <%.200s> should be a group pattern",
-                            tree->_.macropu.pindex, tree->_.macropu.pname, ctx->smpc_mcall->_.macrocall.mname );
+                          spar_error (sparp, "The argument #%ld (?%.20s) of macro <%.200s> should be a group pattern",
+                            (long)(tree->_.macropu.pindex), tree->_.macropu.pname, ctx->smpc_mcall->_.macrocall.mname );
                         arg_copy = sparp_tree_full_copy (sparp, arg, NULL);
                         memset (&gparg_ctx, 0, sizeof (spar_mproc_ctx_t));
                         gparg_ctx.smpc_unictr = (sparp->sparp_unictr)++;
@@ -1104,8 +1104,8 @@ sparp_equiv_dbg_gp_print (sparp_t *sparp, SPART *tree)
   SPARP_FOREACH_GP_EQUIV(sparp,tree,eq_ctr,eq)
     {
       int varname_count, varname_ctr;
-      spar_dbg_printf ((" ( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:",
-      BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
+      spar_dbg_printf ((" ( %d subv (%d bindings, %d nest.opt.), %d recv, %d gspo, %d const, %d opt, %d subq:",
+      BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), (int)(eq->e_nested_optionals), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
         (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_optional_reads), (int)(eq->e_subquery_uses) ));
       varname_count = BOX_ELEMENTS (eq->e_varnames);
       for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
@@ -1424,10 +1424,10 @@ sparp_equiv_connect_outer_to_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_
 {
   int i_ctr, i_count;
   int o_listed_in_i = 0;
-#ifdef DEBUG
   int o_ctr, o_count;
   int i_listed_in_o = 0;
   o_count = BOX_ELEMENTS_0 (outer->e_subvalue_idxs);
+#ifdef DEBUG
   for (o_ctr = o_count; o_ctr--; /* no step */)
     {
       if (outer->e_subvalue_idxs[o_ctr] == inner->e_own_idx)
@@ -1460,10 +1460,24 @@ sparp_equiv_connect_outer_to_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_
 #endif
   if (!add_if_missing)
     return 0;
-  outer->e_subvalue_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(outer->e_subvalue_idxs), 1, (ptrlong)(inner->e_own_idx));
+  if ((OPTIONAL_L == inner->e_gp->_.gp.subtype) || (0 == o_count))
+    outer->e_subvalue_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(outer->e_subvalue_idxs), 1, (ptrlong)(inner->e_own_idx));
+  else
+    {
+      for (o_ctr = o_count; o_ctr--; /* no step */)
+        {
+          if (OPTIONAL_L != SPARP_EQUIV (sparp, outer->e_subvalue_idxs[o_ctr])->e_gp->_.gp.subtype)
+            break;
+        }
+      outer->e_subvalue_idxs = (ptrlong *)t_list_insert_before_nth ((caddr_t)(outer->e_subvalue_idxs), (caddr_t)((ptrlong)(inner->e_own_idx)), o_ctr+1);
+    }    
   inner->e_receiver_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(inner->e_receiver_idxs), 1, (ptrlong)(outer->e_own_idx));
   if (SPARP_EQ_IS_ASSIGNED_LOCALLY(inner))
-    outer->e_nested_bindings += 1;
+    {
+      outer->e_nested_bindings += 1;
+      if (SPARP_EQ_RETURNS_LIKE_OPTIONAL(sparp,inner))
+        outer->e_nested_optionals += 1;
+    }
   return 1;
 }
 
@@ -1508,7 +1522,11 @@ sparp_equiv_disconnect_outer_from_inner (sparp_t *sparp, sparp_equiv_t *outer, s
   outer->e_subvalue_idxs = (ptrlong *)t_list_remove_nth ((caddr_t)(outer->e_subvalue_idxs), i_listed_in_o);
   inner->e_receiver_idxs = (ptrlong *)t_list_remove_nth ((caddr_t)(inner->e_receiver_idxs), o_listed_in_i);
   if (SPARP_EQ_IS_ASSIGNED_LOCALLY (inner))
-    outer->e_nested_bindings -= 1;
+    {
+      outer->e_nested_bindings -= 1;
+      if (SPARP_EQ_RETURNS_LIKE_OPTIONAL(sparp,inner))
+        outer->e_nested_optionals -= 1;
+    }
   return 1;
 }
 
@@ -1836,6 +1854,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
   pri->e_gspo_uses += sec->e_gspo_uses;
   sec->e_gspo_uses = 0;
   sec->e_nested_bindings = 0;
+  sec->e_nested_optionals = 0;
   pri->e_const_reads += sec->e_const_reads;
   sec->e_const_reads = 0;
   while (BOX_ELEMENTS_INT_0 (sec->e_subvalue_idxs))
@@ -1854,11 +1873,15 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
     }
   pri->e_nested_bindings = ((VALUES_L == pri->e_gp->_.gp.subtype) ? 1 : 0);
   pri->e_nested_bindings = 0;
+  pri->e_nested_optionals = 0;
   DO_BOX_FAST_REV (ptrlong, sub_idx, ctr1, pri->e_subvalue_idxs)
     {
       sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp,sub_idx);
-      if (SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
-        pri->e_nested_bindings += 1;
+      if (!SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
+        continue;
+      pri->e_nested_bindings += 1;
+      if (SPARP_EQ_RETURNS_LIKE_OPTIONAL(sparp,sub_eq))
+        pri->e_nested_optionals += 1;
     }
   END_DO_BOX_FAST;
 #ifdef SPARQL_DEBUG
@@ -1950,15 +1973,15 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
         {
 #ifndef NDEBUG
           if ((NULL != first_dt) || (NULL != first_lang))
-            spar_internal_error (sparp, "sparp_" "values_equal(): first is a uname with non-NULL dt/lang");
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a UNAME with non-NULL dt/lang");
 #endif
           first_is_iri = 1;
         }
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (first_val)) && ((NULL != first_dt) || (NULL != first_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): first is a non-string with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (first_val)) && (NULL != first_lang))
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a non-string with non-NULL lang");
 #endif
           first_is_iri = 0;
         }
@@ -2000,22 +2023,27 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (second_val)) && ((NULL != second_dt) || (NULL != second_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): second is a non-string with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (second_val)) && (NULL != second_lang))
+            spar_internal_error (sparp, "sparp_" "values_equal(): second is a non-string with non-NULL lang");
 #endif
           second_is_iri = 0;
         }
     }
-
-
   if (first_is_iri != second_is_iri)
     return 0;
   if (first_is_iri)
     return first_val == second_val ? 1 : 0;
-  if (first_dt != second_dt)
-    return 0;
   if (first_lang != second_lang)
     return 0;
+  if (first_dt != second_dt)
+    {
+      if ((NULL == first_dt) && (DV_STRING != DV_TYPE_OF (first_val)))
+        first_dt = xsd_type_of_box ((caddr_t)first_val);
+      if ((NULL == second_dt) && (DV_STRING != DV_TYPE_OF (second_val)))
+        second_dt = xsd_type_of_box ((caddr_t)second_val);
+      if (first_dt != second_dt)
+        return 0;
+    }
   if (DVC_MATCH != cmp_boxes_safe (first_val, second_val, NULL, NULL))
     return 0;
   return 1;
@@ -2028,7 +2056,7 @@ rvr_can_be_tightened (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *ad
     return 0; /* Can't be tighened --- it's conflict already, no matter how many reasons do we have for that */
   if (add_on->rvrRestrictions & ~(dest->rvrRestrictions) &
     ( SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IRI_CALC | SPART_VARR_IS_LIT |
-      SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_ALWAYS_NULL ) )
+      SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL | SPART_VARR_ALWAYS_NULL ) )
     return 1;
   if ((add_on->rvrRestrictions & SPART_VARR_TYPED) && (dest->rvrDatatype != add_on->rvrDatatype))
     return 1; /* Both are typed (if add_on is typed and dest is not then flag diff woud return 1 before), different types would tighten to the conflict */
@@ -2506,6 +2534,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             }
           else
             {
+              dest->rvrFixedValue = (caddr_t)value;
               dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
@@ -3182,6 +3211,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
 #endif
           cloned_eq->e_gspo_uses = eq->e_gspo_uses;
           cloned_eq->e_nested_bindings = eq->e_nested_bindings;
+          cloned_eq->e_nested_optionals = eq->e_nested_optionals;
           cloned_eq->e_const_reads = eq->e_const_reads;
           cloned_eq->e_optional_reads = eq->e_optional_reads;
           cloned_eq->e_subquery_uses = eq->e_subquery_uses;
@@ -4987,9 +5017,9 @@ spart_dump_eq (sparp_equiv_t *eq, dk_session_t *ses)
 {
   int varname_count, varname_ctr, var_ctr;
   char buf[100];
-  sprintf (buf, " %s( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:",
+  sprintf (buf, " %s( %d subv (%d bindings, %d nest.opt.), %d recv, %d gspo, %d const, %d opt, %d subq:",
   (eq->e_deprecated ? "deprecated " : ""),
-    BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
+    BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), (int)(eq->e_nested_optionals), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
     (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_optional_reads), (int)(eq->e_subquery_uses) );
   SES_PRINT (ses, buf);
   varname_count = BOX_ELEMENTS (eq->e_varnames);

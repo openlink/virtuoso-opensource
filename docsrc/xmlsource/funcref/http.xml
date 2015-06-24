@@ -97,7 +97,6 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="examples_http"><title>Examples</title>
     <example id="ex_http"><title>HTTP output</title>

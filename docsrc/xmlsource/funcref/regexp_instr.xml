@@ -67,11 +67,10 @@ thus providing greater versatility. </para>
     <refsect2><title>occurrence</title>
       <para>Defaulting to 1, this parameter describes how many occurrences to look for.</para></refsect2>
     <refsect2><title>return_option</title>
-      <para></para></refsect2>
+      <para>Default is 0, which returns the starting position of the pattern; a value of 1 returns the starting position of the
+      	next character following the match.</para></refsect2>
     <refsect2><title>match_parameter</title>
-      <para>The default value of the <parameter>return_option</parameter> is 0, which returns
-the starting position of the pattern; a value of 1 returns the starting position of
-the next character following the match. </para></refsect2>
+      <para>Match parameter value.</para></refsect2>
   </refsect1>
   <refsect1 id="ret_regexp_instr"><title>Returns</title>
   <para>This function returns the a substring matching the regular expression.</para>
