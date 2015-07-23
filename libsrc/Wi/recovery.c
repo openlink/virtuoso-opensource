@@ -231,11 +231,17 @@ walk_db (lock_trx_t * lt, page_func_t func)
 	      }
 	    ITC_FAILED
 	      {
+		if (!THREAD_CURRENT_THREAD->thr_reset_ctx) /* backup-dump */
+		  {
+		    log_error ("Broken index %s", it->it_key->key_name ? it->it_key->key_name : "temp key");
+		    goto next;
+		  }
 		itc_free (itc);
 		if (!srv_have_global_lock(THREAD_CURRENT_THREAD))
 		  LEAVE_CPT (lt);
 	      }
 	    END_FAIL (itc);
+next:
 	    itc_free (itc);
 	  }
       }
