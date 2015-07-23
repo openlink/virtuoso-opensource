@@ -1664,6 +1664,8 @@ bp_make_buffer_list (int n)
 	  if (c_use_o_direct)
 	    GPF_T1 ("An exe compiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
 	  buf->bd_buffer = malloc (BUF_ALLOC_SZ);
+	      if (!buf->bd_buffer)
+		GPF_T1 ("Cannot allocate memory for Database buffers, try to decrease NumberOfBuffers INI setting");
 	  BUF_SET_END_MARK (buf);
 	      BUF_SET_CK(buf);
 	}
