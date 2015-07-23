@@ -5041,7 +5041,7 @@ data_source_t *
 sqlg_add_breakup_node (sql_comp_t * sc, data_source_t ** head, state_slot_t *** ssl_ret, int n_per_set, dk_set_t * code)
 {
   state_slot_t ** ssl_out = *ssl_ret;
-  int inx;
+  int inx, alen = box_length (ssl_out) / sizeof (caddr_t);
   SQL_NODE_INIT (breakup_node_t, brk, breakup_node_input, breakup_node_free);
   brk->brk_all_output = ssl_out;
   DO_BOX (state_slot_t *, ssl, inx, ssl_out)
@@ -5069,7 +5069,12 @@ sqlg_add_breakup_node (sql_comp_t * sc, data_source_t ** head, state_slot_t *** 
   brk->brk_output = dk_alloc_box (sizeof (caddr_t) * n_per_set, DV_BIN);
   brk->brk_current_slot = cc_new_instance_slot  (sc->sc_cc);
   for (inx = 0; inx < n_per_set; inx++)
-    brk->brk_output[inx] = brk->brk_all_output[inx];
+    {
+      state_slot_t *ssl = brk->brk_all_output[inx];
+      state_slot_t *v = ssl_new_inst_variable (sc->sc_cc, ssl->ssl_name, ssl->ssl_sqt.sqt_dtp);
+      v->ssl_sqt.sqt_non_null = ssl->ssl_sqt.sqt_non_null;
+      brk->brk_output[inx] = v;
+    }
   sql_node_append (head, (data_source_t *) brk);
   *ssl_ret = (state_slot_t**) box_copy ((caddr_t) brk->brk_output);
   return (data_source_t*)brk;
