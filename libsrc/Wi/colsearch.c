@@ -813,7 +813,10 @@ itc_fetch_col_vec (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, i
       } 	while (itc->itc_to_reset > RWG_WAIT_ANY);
       ITC_LEAVE_MAPS (itc);
       if (PF_OF_DELETED == cr->cr_pages[cr_inx].cp_buf)
-	GPF_T1 ("ref to deld col page");
+	{
+	  log_error ("Broken index %s", key->key_name ? key->key_name : "temp key");
+	  GPF_T1 ("ref to deld col page");
+	}
       cr->cr_pages[cr_inx].cp_string = cr->cr_pages[cr_inx].cp_buf->bd_buffer;
       cr->cr_pages[cr_inx].cp_map = cr->cr_pages[cr_inx].cp_buf->bd_content_map;
       cr->cr_pages[cr_inx].cp_ceic = NULL;
@@ -1757,6 +1760,7 @@ int
 cr_n_rows (col_data_ref_t * cr)
 {
   int p, r, rows = 0, n_ces = 0;
+  index_tree_t * it = cr->cr_n_pages > 0 ? cr->cr_pages[0].cp_buf->bd_tree : NULL;
   for (p = 0; p < cr->cr_n_pages; p++)
     {
       page_map_t *pm = cr->cr_pages[p].cp_map;
@@ -1776,6 +1780,7 @@ cr_n_rows (col_data_ref_t * cr)
 	    return rows;
 	}
     }
+  log_error ("Broken index %s", it->it_key->key_name ? it->it_key->key_name : "temp key");
   GPF_T1 ("less ces in seg than indicated in leaf col ref");
   return 0;
 }

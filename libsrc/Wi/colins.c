@@ -2349,7 +2349,10 @@ cr_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, col_data_ref_t * cr)
     }
 done:
   if (nth_range < itc->itc_range_fill)
-    GPF_T1 ("Too few rows in seg for insert");
+    {
+      log_error ("Broken index %s", itc->itc_insert_key->key_name ? itc->itc_insert_key->key_name : "temp key");
+      GPF_T1 ("Too few rows in seg for insert");
+    }
   itc->itc_set = itc_set_save;
 }
 
