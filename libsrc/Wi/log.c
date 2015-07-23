@@ -341,6 +341,7 @@ log_fsync (dk_session_t * ses)
 
 
 extern long dbf_log_no_disk;
+long tc_log_write_clocks;
 
 int
 log_commit (lock_trx_t * lt)
@@ -351,11 +352,13 @@ log_commit (lock_trx_t * lt)
   dk_session_t * volatile log_ses;
   long bytes = strses_length (lt->lt_log);
   caddr_t *cbox;
+  uint64 ts;
   if (lt->lt_replicate == REPL_NO_LOG
       || (LT_CL_PREPARED != lt->lt_status && !bytes) || cl_non_logged_write_mode)
     return LTE_OK;
   if (dbf_log_no_disk)
     return LTE_LOG_FAILED;
+  ts = rdtsc ();
   ASSERT_IN_MTX (log_write_mtx);
   prev_length = dbs->dbs_log_length;
   log_ses = dbs->dbs_log_session;
@@ -479,6 +482,8 @@ log_commit (lock_trx_t * lt)
     }
   else
     dk_free_tree ((caddr_t) cbox);
+
+  tc_log_write_clocks += rdtsc () - ts;
 
   if (!DKSESSTAT_ISSET (log_ses, SST_OK))
     {

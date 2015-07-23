@@ -205,6 +205,7 @@ extern long tc_dc_alloc;
 extern long tc_dc_size;
 extern long tc_dc_extend;
 extern long tc_dc_extend_values;
+extern long tc_log_write_clocks;
 
 
 extern int32 em_ra_window;
@@ -1552,6 +1553,7 @@ stat_desc_t stat_descs [] =
     {"tc_reentry_split", &tc_reentry_split , NULL},
     {"tc_kill_closing", &tc_kill_closing , NULL},
     {"tc_get_buf_failed", &tc_get_buf_failed , NULL},
+    {"tc_log_write_clocks", &tc_log_write_clocks, NULL},
 
     {"tc_release_pl_on_deleted_dp", &tc_release_pl_on_deleted_dp, NULL},
     {"tc_release_pl_on_absent_dp", &tc_release_pl_on_absent_dp, NULL},
