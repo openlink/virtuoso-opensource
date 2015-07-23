@@ -2548,13 +2548,13 @@ bif_md5_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t sctx = bif_string_arg (qst, args, 0, "md5_update");
   caddr_t str = bif_arg (qst, args, 1, "md5_update");
   dtp_t dtp = DV_TYPE_OF (str);
-  if (DV_STRING == dtp)
+  if (DV_STRING == dtp || DV_RDF == dtp)
     str = bif_string_arg (qst, args, 1, "md5_update");
   else
     str = bif_strses_arg (qst, args, 1, "md5_update");
 
   string_to_md5ctx (&ctx, sctx);
-  if (DV_STRING == dtp)
+  if (DV_STRING == dtp || DV_RDF == dtp)
     MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
   else
     {
