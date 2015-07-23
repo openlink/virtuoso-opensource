@@ -1179,7 +1179,13 @@ dvc_num_double (numeric_t num1, double d2)
   numeric_to_double (num1, &d1);
   if (d1 == d2)
     {
-      if (num1->n_len + num1->n_scale < 15)
+      if (d2 > MIN_INT_DOUBLE && d2 < MAX_INT_DOUBLE)
+	{
+	  NUMERIC_VAR (num2);
+	  numeric_from_double (num2, d2);
+	  return numeric_compare_dvc ((numeric_t) num1, (numeric_t) num2);
+	}
+      if (num1->n_len + num1->n_scale <= 15)
 	return DVC_MATCH;
       if (0 < d2)
 	return DVC_GREATER;
