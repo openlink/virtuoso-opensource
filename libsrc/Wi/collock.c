@@ -39,14 +39,14 @@ ceic_del_dbg_log (ce_ins_ctx_t * ceic)
   /* debug func for logging delete locality and order.  Log the batch of rows that went intoo this seg */
   client_connection_t * cli = sqlc_client ();
   it_cursor_t * itc = ceic->ceic_itc;
-  lock_trx_t * lt = cli->cli_trx;
-  caddr_t * repl = lt->lt_replicate;
-  dk_session_t * save = lt->lt_log;
+  lock_trx_t * lt = cli ? cli->cli_trx : NULL;
+  caddr_t * repl = lt ? lt->lt_replicate : NULL;
+  dk_session_t * save = lt ? lt->lt_log : NULL;
   dk_session_t * ses;
   caddr_t * h = NULL;
   int fd;
   int inx;
-  if (!ceic->ceic_dbg_del_rds)
+  if (!ceic->ceic_dbg_del_rds || !cli)
     return;
   lt->lt_log = ses = strses_allocate ();
   lt->lt_replicate = REPL_LOG;
