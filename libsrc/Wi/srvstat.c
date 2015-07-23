@@ -134,6 +134,8 @@ long  tc_release_pl_on_deleted_dp;
 long  tc_release_pl_on_absent_dp;
 long  tc_cpt_lt_start_wait;
 long  tc_cpt_rollback;
+long  tc_cpt_unremap_dirty;
+long  tc_cpt_restore_uncommitted;
 long  tc_wait_for_closing_lt;
 long  tc_pl_non_owner_wait_ref_deld;
 long  tc_pl_split;
@@ -1559,6 +1561,8 @@ stat_desc_t stat_descs [] =
     {"tc_release_pl_on_absent_dp", &tc_release_pl_on_absent_dp, NULL},
     {"tc_cpt_lt_start_wait", &tc_cpt_lt_start_wait, NULL},
     {"tc_cpt_rollback", &tc_cpt_rollback, NULL},
+    {"tc_cpt_unremap_dirty", &tc_cpt_unremap_dirty, NULL},
+    {"tc_cpt_restore_uncommitted", &tc_cpt_restore_uncommitted, NULL},
     {"tc_wait_for_closing_lt", &tc_wait_for_closing_lt, NULL},
     {"tc_pl_non_owner_wait_ref_deld", &tc_pl_non_owner_wait_ref_deld, NULL},
     {"tc_pl_split", &tc_pl_split, NULL},
