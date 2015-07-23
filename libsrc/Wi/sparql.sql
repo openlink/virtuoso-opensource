@@ -694,38 +694,10 @@ create procedure DB.DBA.RDF_GLOBAL_RESET (in hard integer := 0)
     cast ( DB.DBA.XML_URI_GET (
         'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ) as varchar ),
     '', 'http://www.openlinksw.com/schemas/virtrdf#' );
-  DB.DBA.TTLP ('
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
-@prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
-@prefix atom: <http://atomowl.org/ontologies/atomrdf#> .
-
-virtrdf:DefaultQuadStorage
-  rdf:type virtrdf:QuadStorage ;
-  virtrdf:qsUserMaps virtrdf:DefaultQuadStorage-UserMaps ;
-  virtrdf:qsDefaultMap virtrdf:DefaultQuadMap ;
-  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
-virtrdf:DefaultQuadStorage-UserMaps
-      rdf:type virtrdf:array-of-QuadMap .
-
-virtrdf:DefaultServiceStorage
-  rdf:type virtrdf:QuadStorage ;
-  virtrdf:qsUserMaps virtrdf:DefaultServiceStorage-UserMaps ;
-  virtrdf:qsDefaultMap virtrdf:DefaultServiceMap ;
-  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
-virtrdf:DefaultServiceStorage-UserMaps
-  rdf:type virtrdf:array-of-QuadMap .
-
-virtrdf:SyncToQuads
-  rdf:type virtrdf:QuadStorage ;
-  virtrdf:qsUserMaps virtrdf:SyncToQuads-UserMaps .
-virtrdf:SyncToQuads-UserMaps
-  rdf:type virtrdf:array-of-QuadMap .
-
-  ', '', 'http://www.openlinksw.com/schemas/virtrdf#' );
+  DB.DBA.TTLP (
+    cast ( DB.DBA.XML_URI_GET (
+        'http://www.openlinksw.com/sparql/virtrdf-quad-storages.ttl', '' ) as varchar ),
+    '', 'http://www.openlinksw.com/schemas/virtrdf#' );
   delete from SYS_HTTP_SPONGE where HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
   commit work;
   sequence_set ('RDF_URL_IID_NAMED', 1010000, 1);
@@ -11302,20 +11274,32 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
     }
   if ((graphiri = DB.DBA.JSO_SYS_GRAPH ()) and fix_bugs)
     {
-      declare txt1 varchar;
-      declare dict1, lst1 any;
+      declare txt1,txt2 varchar;
+      declare dict1, dict2, lst any;
       result ('00000', 'Reloading built-in metadata, this might fix some errors without accurate reporting that they did exist');
       txt1 := cast ( DB.DBA.XML_URI_GET (
           'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ) as varchar );
+      txt2 := cast ( DB.DBA.XML_URI_GET (
+          'http://www.openlinksw.com/sparql/virtrdf-quad-storages.ttl', '' ) as varchar );
       dict1 := DB.DBA.RDF_TTL2HASH (txt1, '');
-      lst1 := dict_list_keys (dict1, 1);
-      foreach (any triple in lst1) do
+      dict2 := DB.DBA.RDF_TTL2HASH (txt2, '');
+      lst := vector_concat (dict_list_keys (dict1, 1), dict_list_keys (dict2, 1));
+      foreach (any triple in lst) do
         {
           delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD) where G = graphiri_id and S = triple[0] and P = triple[1];
         }
-      DB.DBA.RDF_INSERT_TRIPLES (graphiri_id, lst1);
+      DB.DBA.RDF_INSERT_TRIPLES (graphiri_id, lst);
       commit work;
-      result ('00000', 'Built-in metadata were reloaded');
+      foreach (any triple in lst) do
+        {
+          declare ms, mp, mo any;
+          ms := triple[0];
+          mp := triple[1];
+          mo := triple[2];
+          if (not exists (sparql define input:storage "" select 1 where { graph `iri(?:graphiri_id)` { ?:ms ?:mp ?:mo }}))
+            result ('00100', sprintf ('Error on reloading metadata, %s has lost property %s value; corrupted indicies?', id_to_iri_nosignal (ms), id_to_iri_nosignal (mp)));
+        }
+      result ('00000', sprintf ('Built-in metadata were reloaded (%d triples)', length (lst)));
       if (fix_bugs > 1)
         {
           for (sparql define input:storage ""
@@ -16512,7 +16496,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2015-03-16 0001v7';
+  ver := '2015-07-16 0001v7';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
@@ -16526,36 +16510,8 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
       declare dict1, lst1, dict2, lst2, sum_lst any;
       txt1 := cast ( DB.DBA.XML_URI_GET (
           'http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl', '' ) as varchar );
-      txt2 := '
-@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
-@prefix owl: <http://www.w3.org/2002/07/owl#> .
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
-@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
-@prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
-
-virtrdf:DefaultQuadStorage
-  rdf:type virtrdf:QuadStorage ;
-  virtrdf:qsUserMaps virtrdf:DefaultQuadStorage-UserMaps ;
-  virtrdf:qsDefaultMap virtrdf:DefaultQuadMap ;
-  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
-virtrdf:DefaultQuadStorage-UserMaps
-  rdf:type virtrdf:array-of-QuadMap .
-
-virtrdf:DefaultServiceStorage
-  rdf:type virtrdf:QuadStorage ;
-  virtrdf:qsUserMaps virtrdf:DefaultServiceStorage-UserMaps ;
-  virtrdf:qsDefaultMap virtrdf:DefaultServiceMap ;
-  virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
-virtrdf:DefaultServiceStorage-UserMaps
-  rdf:type virtrdf:array-of-QuadMap .
-
-virtrdf:SyncToQuads
-  rdf:type virtrdf:QuadStorage ;
-  virtrdf:qsUserMaps virtrdf:SyncToQuads-UserMaps .
-virtrdf:SyncToQuads-UserMaps
-  rdf:type virtrdf:array-of-QuadMap .
-      ';
+      txt2 := cast ( DB.DBA.XML_URI_GET (
+          'http://www.openlinksw.com/sparql/virtrdf-quad-storages.ttl', '' ) as varchar );
       jso_sys_g_iid := iri_to_id (JSO_SYS_GRAPH ());
       dict1 := DB.DBA.RDF_TTL2HASH (txt1, '');
       dict2 := DB.DBA.RDF_TTL2HASH (txt2, '');
