@@ -101,6 +101,7 @@ virtrdf:QuadStorage virtrdf:isGcResistantType "2" .
     rdfdf:sql-nvarchar-uri-fn ,			rdfdf:sql-nvarchar-uri-fn-nullable ,
     rdfdf:sql-integer-uri-fn ,			rdfdf:sql-integer-uri-fn-nullable ,
     rdfdf:sql-numeric-uri-fn ,			rdfdf:sql-numeric-uri-fn-nullable ,
+    rdfdf:sql-doubleprecision-uri-fn ,		rdfdf:sql-doubleprecision-uri-fn-nullable ,
     rdfdf:sql-date-uri-fn ,			rdfdf:sql-date-uri-fn-nullable ,
     rdfdf:sql-time-uri-fn ,			rdfdf:sql-time-uri-fn-nullable ,
     rdfdf:sql-datetime-uri-fn ,			rdfdf:sql-datetime-uri-fn-nullable ,
