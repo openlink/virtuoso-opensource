@@ -1728,9 +1728,9 @@ lt_transact (lock_trx_t * lt, int op)
       char user[16];
       char peer[32];
       dks_client_ip (lt->lt_client, from, user, peer, sizeof (from), sizeof (user), sizeof (peer));
-      log_info ("LTRS_1 %s %s %s %s transact %p %li", user, from, peer,
+      log_info ("LTRS_1 %s %s %s %s transact %p %d " BOXINT_FMT, user, from, peer,
 	  op == SQL_COMMIT ? "Commit" : "Rollback", lt,
-          lt->lt_client ? lt->lt_client->cli_autocommit : 0);
+          lt->lt_client ? (int)lt->lt_client->cli_autocommit : 0, lt->lt_w_id);
     }
   lt->lt_status = LT_CLOSING;
 #ifdef PAGE_TRACE
