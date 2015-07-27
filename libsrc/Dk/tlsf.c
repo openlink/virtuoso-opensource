@@ -893,6 +893,8 @@ tlsf_print_all_blocks(tlsf_t * tlsf, void * ht1, int mode)
   id_hash_t * ht = (id_hash_t *)ht1;
   area_info_t *ai;
   bhdr_t *next;
+  if (!tlsf)
+    return;
   if (ht)
     {
       ht->ht_free_hook = ht_free_nop;
@@ -1448,7 +1450,7 @@ tlsf_print_sizes (id_hash_t * allocs, int mode)
     {
       mdbg_stat_t * mds = mds_arr[inx];
       mdbg_place_t * pl = (mdbg_place_t*)id_hash_get (mdbg_id_to_place, (caddr_t) (((boxint*)mds) - 1));
-      fprintf (out, "%s:%d %d uses %d alloc %d free %lu  + %Ld bytes %lu total\n", pl->mpl_file, pl->mpl_line, mds->mds_allocs - mds->mds_frees, mds->mds_allocs, mds->mds_frees, mds->mds_prev_bytes, (int64)(mds->mds_bytes - mds->mds_prev_bytes), mds->mds_bytes); 
+      fprintf (out, "%s:%d %d uses %d alloc %d free " BOXINT_FMT "  + %Ld bytes " BOXINT_FMT " total\n", pl->mpl_file, pl->mpl_line, mds->mds_allocs - mds->mds_frees, mds->mds_allocs, mds->mds_frees, mds->mds_prev_bytes, (int64)(mds->mds_bytes - mds->mds_prev_bytes), mds->mds_bytes); 
     }
   tlsf_free (mds_arr);
 }

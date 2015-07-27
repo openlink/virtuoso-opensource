@@ -9614,9 +9614,21 @@ bif_tlsf_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
-
 caddr_t
-bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_tlsf_dump_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  char *fn = bif_string_or_null_arg (qst, args, 0, "tlsf_dump_bp");
+  id_hash_iterator_t * hit;
+  id_hash_t * ht = NULL;
+  int ht_mode = AB_ALLOCD;
+  int tlp;
+  for (tlp = 0; tlp < MAX_TLSFS; tlp ++)
+    tlsf_dump_1 (tlp, fn, ht, ht_mode);
+  return NULL;
+}
+
+caddr_t bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
 #ifdef MALLOC_DEBUG
   return box_num (dbg_malloc_get_current_total());
@@ -16697,6 +16709,7 @@ sql_bif_init (void)
   bif_define ("mem_summary", bif_mem_summary);
   bif_define ("tlsf_dump_bp", bif_tlsf_dump_bp);
   bif_define ("tlsf_dump", bif_tlsf_dump);
+  bif_define ("tlsf_dump_all", bif_tlsf_dump_all);
 
 #ifdef MALLOC_STRESS
   bif_define ("set_hard_memlimit", bif_set_hard_memlimit);
