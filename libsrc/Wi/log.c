@@ -399,7 +399,16 @@ log_commit (lock_trx_t * lt)
       cbox[LOGH_CL_2PC] = id;
     }
   else
-    cbox[LOGH_CL_2PC] = 0;
+    {
+#ifndef NDEBUG
+      caddr_t id = dk_alloc_box (10, DV_STRING);
+      id[0] = LOG_2PC_COMMIT;
+      INT64_SET_NA (id + 1, lt->lt_w_id);
+      cbox[LOGH_CL_2PC] = id;
+#else
+      cbox[LOGH_CL_2PC] = 0;
+#endif
+    }
   if (!lt->lt_branch_of && lt->lt_client && lt->lt_client->cli_user)
     cbox[LOGH_USER] = box_string (lt->lt_client->cli_user->usr_name);
   else
