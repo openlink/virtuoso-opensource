@@ -1557,12 +1557,12 @@ public class VirtGraph extends GraphBase {
             ps.setString(3, object.getLiteralLexicalForm());
             String s_lang = object.getLiteralLanguage();
             String s_type = object.getLiteralDatatypeURI();
-            if (s_type != null && s_type.length() > 0) {
-                ps.setString(4, s_type);
-                ps.setInt(5, 3);
-            } else if (s_lang != null && s_lang.length() > 0) {
+            if (s_lang != null && s_lang.length() > 0) {
                 ps.setString(4, s_lang);
                 ps.setInt(5, 2);
+            } else if (s_type != null && s_type.length() > 0) {
+                ps.setString(4, s_type);
+                ps.setInt(5, 3);
             } else {
                 ps.setNull(4, java.sql.Types.VARCHAR);
                 ps.setInt(5, 1);

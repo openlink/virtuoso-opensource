@@ -2380,15 +2380,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		  Literal lit = (Literal) object;
 		  ps.setString(3, lit.getLabel());
 
-		  if (lit.getDatatype() != null)
-		  {
-		    ps.setString(4, lit.getDatatype().toString());
-		    ps.setInt(5, 3);
-		  }
-		  else if (lit.getLanguage() != null) 
+		  if (lit.getLanguage() != null) 
 		  {
 		    ps.setString(4, lit.getLanguage());
 		    ps.setInt(5, 2);
+		  }
+		  else if (lit.getDatatype() != null)
+		  {
+		    ps.setString(4, lit.getDatatype().toString());
+		    ps.setInt(5, 3);
 		  }
 		  else
 		  {
