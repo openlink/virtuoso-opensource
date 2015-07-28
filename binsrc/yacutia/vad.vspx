@@ -121,7 +121,7 @@
       <v:form name="vad_list1" method="POST" type="simple">
         <table class="listing" rules="groups">
           <v:data-set name="ds_items1"
-                      sql="select PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST from YAC_VAD_LIST where dir = :self.src_folder and fs_type = :self.src_folder_type order by 1"
+                      sql="select PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST from VAD.DBA.VAD_LIST where dir = :self.src_folder and fs_type = :self.src_folder_type order by 1"
                       nrows="1000"
                       scrollable="1"
                       enabled="--isnull(self.upl_file)">

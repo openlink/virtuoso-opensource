@@ -66,7 +66,7 @@
                   };
 
                   -- Gather all dependencies for the vads to install
-                  deps := CONDUCTOR.DBA.VAD_FLATTEN_DEPENDENCY_TREE (CONDUCTOR.DBA.VAD_RESOLVE_DEPENDENCY_TREE (self.packs[i], self.pack_mode, self.pack_src, self.pack_src_mode));
+                  deps := VAD.DBA.VAD_FLATTEN_DEPENDENCY_TREE (VAD.DBA.VAD_RESOLVE_DEPENDENCY_TREE (self.packs[i], self.pack_mode, self.pack_src, self.pack_src_mode));
                   for (declare i int, i := 0; i < length (deps); i := i+1)
                     {
                       if (get_keyword (get_keyword ('name', deps[i]), allVads) is null)
