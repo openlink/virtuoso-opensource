@@ -2577,7 +2577,7 @@ create procedure WEBDAV.DBA.det_type (
     else if (WEBDAV.DBA.path_name (path) = 'VVC')
       detType := 'Versioning';
 
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-graph', '') <> '')
+    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-rdf', '') <> '')
       detType := 'rdfSink';
 
     else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-History', '') <> '')
@@ -2719,7 +2719,7 @@ create procedure WEBDAV.DBA.det_subClass (
     else if (WEBDAV.DBA.path_name (path) = 'Attic')
       retValue := 'Versioning';
 
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-graph', '') <> '')
+    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-rdf', '') <> '')
       retValue := 'rdfSink';
 
     else if (WEBDAV.DBA.syncml_detect (path))
@@ -3322,7 +3322,7 @@ create procedure WEBDAV.DBA.DAV_GET (
     if (isstring (path) and path like '%,meta')
       path := regexp_replace (path, ',meta\x24', '');
 
-    return cast (WEBDAV.DBA.DAV_PROP_GET (path, ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
+    return cast (WEBDAV.DBA.DAV_PROP_GET (path, ':virtacl', cast (WS.WS.ACL_CREATE() as varchar)) as varbinary);
   }
 
   if ((property = 'detType') and (not isnull (resource[0])))
@@ -3338,7 +3338,7 @@ create procedure WEBDAV.DBA.DAV_GET (
       if (WEBDAV.DBA.DAV_GET (resource, 'type') = 'R')
         path := WEBDAV.DBA.path_parent (path, 1);
 
-      if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-graph', '') <> '')
+      if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-rdf', '') <> '')
         detType := 'rdfSink';
       else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-History', '') <> '')
         detType := 'UnderVersioning';
@@ -3635,17 +3635,9 @@ create procedure WEBDAV.DBA.rdfSink_CONFIGURE (
   in params any)
 {
   -- dbg_obj_princ ('rdfSink_CONFIGURE (', id, params, ')');
-  declare path varchar;
 
-  path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
-
-  -- Sponger
-  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-sponger',        get_keyword ('sponger', params), null, null, 0, 0, 1, http_dav_uid ());
-  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-cartridges',     get_keyword ('cartridges', params), null, null, 0, 0, 1, http_dav_uid ());
-  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-metaCartridges', get_keyword ('metaCartridges', params), null, null, 0, 0, 1, http_dav_uid ());
-
-  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-base',           get_keyword ('base', params), null, null, 0, 0, 1, http_dav_uid ());
-  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-graph',          get_keyword ('graph', params), null, null, 0, 0, 1, http_dav_uid ());
+  -- RDF Graph & Sponger params
+  return DB.DBA.DAV_DET_RDF_PARAMS_SET ('rdfSink', id, params, vector ('sponger', 'cartridges', 'metaCartridges', 'base', 'graph'));
 }
 ;
 
