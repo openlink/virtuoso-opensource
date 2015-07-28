@@ -779,18 +779,6 @@
             ]]>
           </v:method>
 
-          <v:method name="detGraphUI" arglist="in det varchar">
-            <![CDATA[
-              declare retValue varchar;
-
-              retValue := self.get_fieldProperty (sprintf ('dav_%s_graph', det), self.dav_path, sprintf ('virt:%s-graph', det), '');
-              if ((retValue = '') and (self.command = 10) and (self.command_mode = 0) and (det = 'rdfSink'))
-                retValue := 'urn:dav:' || replace (WEBDAV.DBA.path_escape (subseq (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dav_path)), 5)), '/', ':');
-
-              return retValue;
-            ]]>
-          </v:method>
-
           <v:method name="detGraphUI2" arglist="">
             <![CDATA[
               return 'urn:dav:' || replace (WEBDAV.DBA.path_escape (subseq (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dir_path)), 5)), '/', ':');
@@ -837,11 +825,16 @@
             <![CDATA[
               declare S, T, graph varchar;
               declare N integer;
-              declare cartridges, selectedCartridges any;
+              declare rdfParams, cartridges, selectedCartridges any;
 
+              rdfParams := DB.DBA.DAV_DET_RDF_PARAMS_GET (det, DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C'));
+              graph := get_keyword ('graph', rdfParams, '');
+              if ((graph = '') and (self.command = 10) and (self.command_mode = 0) and (det = 'rdfSink'))
+              {
+                graph := 'urn:dav:' || replace (WEBDAV.DBA.path_escape (subseq (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dav_path)), 5)), '/', ':');
+              }
               if (det <> 'rdfSink')
               {
-                graph := trim (self.detGraphUI (det));
               http (sprintf (
                 '<tr>\n' ||
                 '  <th>\n' ||
@@ -858,10 +851,11 @@
                   det,
                   ndx
                 ));
+              }
 
                 http (sprintf (
                   '<tr id="dav%d_graph" %s>\n' ||
-                  '  <th> \n' ||
+                '  <th width="30%%"> \n' ||
                   '    <label for="dav_%s_graph">Graph name</label> \n' ||
                   '  </th> \n' ||
                   '  <td> \n' ||
@@ -875,9 +869,30 @@
                   det,
                   graph
                 ));
+
+              if (det = 'rdfSink')
+              {
+                S := get_keyword ('base', rdfParams, '');
+                if ((S = '') and (self.command = 10))
+                  S := WEBDAV.DBA.host_url () || WEBDAV.DBA.path_escape (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dav_path)));
+
+                http (sprintf (
+                  '<tr>\n' ||
+                  '  <th> \n' ||
+                  '    <label for="dav_%s_base">Base URI</label> \n' ||
+                  '  </th> \n' ||
+                  '  <td> \n' ||
+                  '    <input type="text" name="dav_%s_base" id="dav_%s_base" value="%V" disabled="disabled" class="field-text" /> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n',
+                  det,
+                  det,
+                  det,
+                  S
+                ));
               }
 
-              S := self.get_fieldProperty (sprintf ('dav_%s_sponger', det), self.dav_path, sprintf ('virt:%s-sponger', det), 'off');
+              S := get_keyword ('sponger', rdfParams, 'on');
               http (sprintf (
                 '<tr id="dav%d_sponger" %s>\n' ||
                 '  <th>\n' ||
@@ -899,7 +914,7 @@
                 ndx
               ));
 
-              selectedCartridges := self.get_fieldProperty (sprintf ('dav_%s_cartridges', det), self.dav_path, sprintf ('virt:%s-cartridges', det), '');
+              selectedCartridges := get_keyword ('cartridges', rdfParams, '');
               selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
               cartridges := WEBDAV.DBA.cartridges_get ();
 
@@ -960,7 +975,7 @@
               if (not WEBDAV.DBA.VAD_CHECK ('cartridges'))
                 return;
 
-              selectedCartridges := self.get_fieldProperty (sprintf ('dav_%s_metaCartridges', det), self.dav_path, sprintf ('virt:%s-metaCartridges', det), '');
+              selectedCartridges := get_keyword ('metaCartridges', rdfParams, '');
               selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
               cartridges := WEBDAV.DBA.metaCartridges_get ();
 
@@ -4928,36 +4943,6 @@
   <xsl:template match="vm:search-dc-template8">
     <div id="8" class="tabContent" style="display: none;">
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
-        <tr>
-          <th width="30%">
-            <v:label for="dav_rdfSink_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_rdfSink_graph" xhtml_id="dav_rdfSink_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('rdfSink');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
-        <tr>
-          <th width="30%">
-            <v:label for="dav_rdfSink_base" value="--'Base URI'" />
-          </th>
-          <td>
-            <v:text name="dav_rdfSink_base" xhtml_id="dav_rdfSink_base" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_rdfSink_base', self.dav_path, 'virt:rdfSink-base', '');
-                  if ((control.ufl_value = '') and (self.command = 10))
-                    control.ufl_value := WEBDAV.DBA.host_url () || WEBDAV.DBA.path_escape (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dav_path)));
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('rdfSink', 8);
         ?>
