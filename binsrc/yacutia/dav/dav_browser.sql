@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2182,7 +2182,9 @@ create procedure WEBDAV.DBA.prop_params (
 --
 create procedure WEBDAV.DBA.acl_params (
   inout params any,
-  in acl_dav any := null)
+  in acl_dav any := null,
+  in tbl varchar := 'f',
+  in mode varchar := 'full')
 {
   declare I, N integer;
   declare acl_value, acl_seq, acl_users, acl_user, acl_inheritance any;
@@ -2198,9 +2200,9 @@ create procedure WEBDAV.DBA.acl_params (
   }
   for (I := 0; I < length (params); I := I + 2)
   {
-    if (params[I] like 'f_fld_1_%')
+    if (params[I] like (tbl || '_fld_1_%'))
     {
-      acl_seq := replace (params[I], 'f_fld_1_', '');
+      acl_seq := replace (params[I], tbl || '_fld_1_', '');
       acl_users := split_and_decode (trim (params[I+1]), 0, '\0\0,');
       for (N := 0; N < length (acl_users); N := N + 1)
       {
@@ -2209,29 +2211,72 @@ create procedure WEBDAV.DBA.acl_params (
           acl_user := WEBDAV.DBA.user_id (trim (acl_users[N]));
         if (acl_user <> -1)
         {
-          acl_inheritance := atoi (get_keyword ('f_fld_2_' || acl_seq, params));
-          if (acl_inheritance <> 3)
+          if (mode = 'full')
+          {
+            acl_inheritance := atoi (get_keyword (tbl || '_fld_2_' || acl_seq, params));
+            if (acl_inheritance <> 3)
+            {
+              WS.WS.ACL_ADD_ENTRY (acl_value,
+                                   acl_user,
+                                   bit_shift (atoi (get_keyword (tbl || '_fld_3_' || acl_seq || '_r_grant', params, '0')), 2) +
+                                   bit_shift (atoi (get_keyword (tbl || '_fld_3_' || acl_seq || '_w_grant', params, '0')), 1) +
+                                   atoi (get_keyword (tbl || '_fld_3_' || acl_seq || '_x_grant', params, '0')),
+                                   1,
+                                   acl_inheritance);
+              WS.WS.ACL_ADD_ENTRY (acl_value,
+                                   acl_user,
+                                   bit_shift (atoi (get_keyword (tbl || '_fld_4_' || acl_seq || '_r_deny', params, '0')), 2) +
+                                   bit_shift (atoi (get_keyword (tbl || '_fld_4_' || acl_seq || '_w_deny', params, '0')), 1) +
+                                   atoi (get_keyword (tbl || '_fld_4_' || acl_seq || '_x_deny', params, '0')),
+                                   0,
+                                   acl_inheritance);
+            }
+          }
+          else
           {
             WS.WS.ACL_ADD_ENTRY (acl_value,
                                  acl_user,
-                                 bit_shift (atoi (get_keyword ('f_fld_3_' || acl_seq || '_r_grant', params, '0')), 2) +
-                                 bit_shift (atoi (get_keyword ('f_fld_3_' || acl_seq || '_w_grant', params, '0')), 1) +
-                                 atoi (get_keyword ('f_fld_3_' || acl_seq || '_x_grant', params, '0')),
+                                 bit_shift (atoi (get_keyword (tbl || '_fld_2_' || acl_seq || '_r_grant', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword (tbl || '_fld_2_' || acl_seq || '_w_grant', params, '0')), 1) +
+                                 atoi (get_keyword (tbl || '_fld_2_' || acl_seq || '_x_grant', params, '0')),
                                  1,
-                                 acl_inheritance);
+                                 0);
             WS.WS.ACL_ADD_ENTRY (acl_value,
                                  acl_user,
-                                 bit_shift (atoi (get_keyword ('f_fld_4_' || acl_seq || '_r_deny', params, '0')), 2) +
-                                 bit_shift (atoi (get_keyword ('f_fld_4_' || acl_seq || '_w_deny', params, '0')), 1) +
-                                 atoi (get_keyword ('f_fld_4_' || acl_seq || '_x_deny', params, '0')),
+                                 bit_shift (atoi (get_keyword (tbl || '_fld_3_' || acl_seq || '_r_deny', params, '0')), 2) +
+                                 bit_shift (atoi (get_keyword (tbl || '_fld_3_' || acl_seq || '_w_deny', params, '0')), 1) +
+                                 atoi (get_keyword (tbl || '_fld_3_' || acl_seq || '_x_deny', params, '0')),
                                  0,
-                                 acl_inheritance);
+                                 0);
           }
         }
       }
     }
   }
   return acl_value;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.acl_lines (
+  in _acl any,
+  in _mode varchar := 'view',
+  in _tbl varchar := 'f')
+{
+  declare N integer;
+  declare V any;
+
+  V := vector (0, 'This object only', 1, 'This object, subfolders and files', 2, 'Subfolders and files', 3, 'Inherited');
+  for (N := 0; N < length (_acl); N := N + 1)
+  {
+    if (_mode <> 'view' and (_acl[N][1] <> 3))
+    {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("%s", null, {fld_1: {mode: 51, value: "%s", formMode: "u", nrows: %d, tdCssText: "white-space: nowrap;", className: "_validate_"}, fld_2: {mode: 42, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_3: {mode: 42, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', _tbl, WEBDAV.DBA.account_iri (_acl[N][0]), 10, bit_and (_acl[N][2], 4), bit_and (_acl[N][2], 2), bit_and (_acl[N][2], 1), bit_and (_acl[N][3], 4), bit_and (_acl[N][3], 2), bit_and (_acl[N][3], 1)));
+    } else {
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("%s", {fld_1: {value: "%s"}, fld_2: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_3: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', _tbl, WEBDAV.DBA.account_iri (_acl[N][0]), bit_and (_acl[N][2], 4), bit_and (_acl[N][2], 2), bit_and (_acl[N][2], 1), bit_and (_acl[N][3], 4), bit_and (_acl[N][3], 2), bit_and (_acl[N][3], 1)));
+    }
+  }
 }
 ;
 
@@ -2243,32 +2288,34 @@ create procedure WEBDAV.DBA.acl_vector (
   declare N, I integer;
   declare aAcl, aTmp any;
 
-  aAcl := WS.WS.ACL_PARSE (acl, '0123', 0);
   aTmp := vector ();
-
-  for (N := 0; N < length (aAcl); N := N + 1)
+  if (not DB.DBA.is_empty_or_null (acl))
   {
-    if (not aAcl[N][1])
+    aAcl := WS.WS.ACL_PARSE (acl, '0123', 0);
+    for (N := 0; N < length (aAcl); N := N + 1)
     {
-      aTmp := vector_concat (aTmp, vector (vector (aAcl[N][0], aAcl[N][2], 0, aAcl[N][3])));
-    }
-  }
-  for (N := 0; N < length (aAcl); N := N + 1)
-  {
-    if (aAcl[N][1])
-    {
-      for (I := 0; I < length (aTmp); I := I + 1)
+      if (not aAcl[N][1])
       {
-        if ((aAcl[N][0] = aTmp[I][0]) and (aAcl[N][2] = aTmp[I][1]))
-        {
-          aset(aTmp, I, vector (aTmp[I][0], aTmp[I][1], aAcl[N][3], aTmp[I][3]));
-          goto _exit;
-        }
+        aTmp := vector_concat (aTmp, vector (vector (aAcl[N][0], aAcl[N][2], 0, aAcl[N][3])));
       }
-    _exit:
-      if (I = length (aTmp))
+    }
+    for (N := 0; N < length (aAcl); N := N + 1)
+    {
+      if (aAcl[N][1])
       {
-        aTmp := vector_concat (aTmp, vector (vector (aAcl[N][0], aAcl[N][2], aAcl[N][3], 0)));
+        for (I := 0; I < length (aTmp); I := I + 1)
+        {
+          if ((aAcl[N][0] = aTmp[I][0]) and (aAcl[N][2] = aTmp[I][1]))
+          {
+            aset(aTmp, I, vector (aTmp[I][0], aTmp[I][1], aAcl[N][3], aTmp[I][3]));
+            goto _exit;
+          }
+        }
+      _exit:
+        if (I = length (aTmp))
+        {
+          aTmp := vector_concat (aTmp, vector (vector (aAcl[N][0], aAcl[N][2], aAcl[N][3], 0)));
+        }
       }
     }
   }
@@ -5126,7 +5173,8 @@ create procedure WEBDAV.DBA.aci_send_mail_aq (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_params (
-  in params any)
+  in params any,
+  in tbl varchar := 's')
 {
   declare N, M, N2, M2 integer;
   declare aclNo, aclNo2, retValue, V, V2, T any;
@@ -5135,12 +5183,12 @@ create procedure WEBDAV.DBA.aci_params (
   retValue := vector ();
   for (N := 0; N < length (params); N := N + 2)
   {
-    if (params[N] like 's_fld_2_%')
+    if (params[N] like (tbl || '_fld_2_%'))
     {
-      aclNo := replace (params[N], 's_fld_2_', '');
-      if (aclNo = cast (atoi (replace (params[N], 's_fld_2_', '')) as varchar))
+      aclNo := replace (params[N], tbl || '_fld_2_', '');
+      if (aclNo = cast (atoi (replace (params[N], tbl || '_fld_2_', '')) as varchar))
       {
-        if (get_keyword ('s_fld_1_' || aclNo, params) = 'advanced')
+        if (get_keyword (tbl || '_fld_1_' || aclNo, params) = 'advanced')
         {
           M2 := 1;
           T := vector ();
@@ -5171,10 +5219,10 @@ create procedure WEBDAV.DBA.aci_params (
         }
         V := vector (M,
                      T,
-                     get_keyword ('s_fld_1_' || aclNo, params),
-                     atoi (get_keyword ('s_fld_3_' || aclNo || '_r', params, '0')),
-                     atoi (get_keyword ('s_fld_3_' || aclNo || '_w', params, '0')),
-                     atoi (get_keyword ('s_fld_3_' || aclNo || '_x', params, '0'))
+                     get_keyword (tbl || '_fld_1_' || aclNo, params),
+                     atoi (get_keyword (tbl || '_fld_3_' || aclNo || '_r', params, '0')),
+                     atoi (get_keyword (tbl || '_fld_3_' || aclNo || '_w', params, '0')),
+                     atoi (get_keyword (tbl || '_fld_3_' || aclNo || '_x', params, '0'))
                     );
         retValue := vector_concat (retValue, vector (V));
         M := M + 1;
@@ -5192,7 +5240,8 @@ create procedure WEBDAV.DBA.aci_lines (
   in _acl any,
   in _mode varchar := 'view',
   in _execute varchar := 'false',
-  in _advanced varchar := null)
+  in _advanced varchar := null,
+  in _tbl varchar := 's')
 {
   declare N integer;
 
@@ -5203,15 +5252,15 @@ create procedure WEBDAV.DBA.aci_lines (
   {
     if (_mode = 'view')
     {
-      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("%s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _tbl, _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
     }
     else if (_mode = 'disabled')
     {
-      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: ""}});});', _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("%s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: ""}});});', _tbl, _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
     }
     else
     {
-      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", noAdvanced: %s, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; text-align: center;"}});});', _acl[N][2], _advanced, WEBDAV.DBA.obj2json (_acl[N][1]), case when _acl[N][2] = 'public' then 'true' else 'false' end, case when _acl[N][2] = 'public' then 'display: none;' else '' end, _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("%s", null, {fld_1: {mode: 50, value: "%s", noAdvanced: %s, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; text-align: center;"}});});', _tbl, _acl[N][2], _advanced, WEBDAV.DBA.obj2json (_acl[N][1]), case when _acl[N][2] = 'public' then 'true' else 'false' end, case when _acl[N][2] = 'public' then 'display: none;' else '' end, _acl[N][3], _acl[N][4], _acl[N][5], _execute));
     }
   }
 }

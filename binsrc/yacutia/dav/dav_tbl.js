@@ -97,13 +97,15 @@ TBL.viewCell42 = function (td, prefix, fldName, No, fldOptions)
 TBL.clickCell42 = function (fld)
 {
   var fldName = fld.name;
+  var i = fldName.indexOf('_fld_');
+  var n = parseInt(fldName.substring(i+5,i+6));
   if (fldName.indexOf('_deny') != -1) {
     fldName = fldName.replace('_deny', '_grant');
-    fldName = fldName.replace('fld_4', 'fld_3');
+    fldName = fldName.replace('fld_'+n, 'fld_'+(n-1));
   }
   else if (fldName.indexOf('_grant') != -1) {
     fldName = fldName.replace('_grant', '_deny');
-    fldName = fldName.replace('fld_3', 'fld_4');
+    fldName = fldName.replace('fld_'+n, 'fld_'+(n+1));
   }
   $(fldName).checked = false;
 }
@@ -121,7 +123,7 @@ TBL.createCell45 = function (td, prefix, fldName, No, fldOptions)
         TBL.createCell45Options(fld, fldOptions.value);
       } catch (e) {Cartridges = null;}
     }
-    OAT.AJAX.GET('ajax.vsp?a=cartridges', '', x);
+    OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=cartridges', '', x);
   }
   td.appendChild(fld);
   return fld;
@@ -146,7 +148,7 @@ TBL.createCell46 = function (td, prefix, fldName, No, fldOptions)
         TBL.createCell46Options(fld, fldOptions.value);
       } catch (e) {MetaCartridges = null;}
     }
-    OAT.AJAX.GET('ajax.vsp?a=metaCartridges', '', x);
+    OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=metaCartridges', '', x);
   }
   td.appendChild(fld);
   return fld;

@@ -689,23 +689,11 @@
             <![CDATA[
               declare retValue any;
 
-              if      (detClass in ('', 'UnderVersioning'))
-                retValue := self.viewFields (detClass, what, mode);
-
-              else if (detClass = 'rdfSink')
-                retValue := self.viewFields (detClass, what, mode);
-
-              else if (detClass = 'HostFS')
+              if      (detClass in ('', 'UnderVersioning', 'rdfSink', 'HostFS', 'DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
                 retValue := self.viewFields (detClass, what, mode);
 
               else if (detClass = 'IMAP')
                 retValue := vector ('name', 'aci');
-
-              else if (detClass = 'S3')
-                retValue := self.viewFields (detClass, what, mode);
-
-              else if (detClass in ('DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
-                retValue := self.viewFields (detClass, what, mode);
 
               else if (detClass in ('CalDAV', 'CardDAV'))
               {
@@ -785,42 +773,6 @@
             ]]>
           </v:method>
 
-          <v:method name="detSpongerPrepare" arglist="in params any, in det varchar, in ndx integer, inout sponger varchar, inout cartridges varchar, inout metaCartridges varchar">
-            <![CDATA[
-              declare N integer;
-              declare ca_item, mca_item varchar;
-
-              cartridges := '';
-              metaCartridges := '';
-              sponger := get_keyword ('dav_' || det || '_sponger', params, 'off');
-              if (sponger = 'on')
-              {
-                ca_item := sprintf ('ca%d_item', ndx);
-                mca_item := sprintf ('mca%d_item', ndx);
-                for (N := 0; N < length (params); N := N + 2)
-                {
-                  if (params[N] = ca_item)
-                    cartridges := cartridges || ',' || trim (params[N+1]);
-                  else if (params[N] = mca_item)
-                    metaCartridges := metaCartridges || ',' || trim (params[N+1]);
-                }
-                cartridges := ltrim (cartridges, ',');
-                metaCartridges := ltrim (metaCartridges, ',');
-              }
-            ]]>
-          </v:method>
-
-          <v:method name="detSponger" arglist="in params any, in det varchar, in ndx integer">
-            <![CDATA[
-              declare sponger, cartridges, metaCartridges varchar;
-
-              self.detSpongerPrepare (params, det, ndx, sponger, cartridges, metaCartridges);
-              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-sponger', det), sponger);
-              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-cartridges', det), cartridges);
-              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-metaCartridges', det), metaCartridges);
-            ]]>
-          </v:method>
-
           <v:method name="detSpongerUI" arglist="in det varchar, in ndx integer">
             <![CDATA[
               declare S, T, graph varchar;
@@ -836,14 +788,14 @@
               if (det <> 'rdfSink')
               {
               http (sprintf (
-                '<tr>\n' ||
-                '  <th>\n' ||
-                  '    <label for="dav_%s_binding">Enable Named Graph Binding (on/off)</label>\n' ||
-                '  </th>\n' ||
-                '  <td>\n' ||
-                  '    <input type="checkbox" name="dav_%s_binding" id="dav_%s_binding" %s disabled="disabled" onchange="javascript: graphBindingChange(this, \'%s\', %d);" value="on" />\n' ||
-                '  </td>\n' ||
-                '</tr>\n',
+                  '<tr> \n' ||
+                  '  <th> \n' ||
+                  '    <label for="dav_%s_binding">Enable Named Graph Binding (on/off)</label> \n' ||
+                  '  </th> \n' ||
+                  '  <td> \n' ||
+                  '    <input type="checkbox" name="dav_%s_binding" id="dav_%s_binding" %s disabled="disabled" onchange="javascript: graphBindingChange(this, \'%s\', %d);" value="on" /> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n',
                 det,
                 det,
                 det,
@@ -854,7 +806,7 @@
               }
 
                 http (sprintf (
-                  '<tr id="dav%d_graph" %s>\n' ||
+                '<tr id="dav%d_graph" %s> \n' ||
                 '  <th width="30%%"> \n' ||
                   '    <label for="dav_%s_graph">Graph name</label> \n' ||
                   '  </th> \n' ||
@@ -877,7 +829,7 @@
                   S := WEBDAV.DBA.host_url () || WEBDAV.DBA.path_escape (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dav_path)));
 
                 http (sprintf (
-                  '<tr>\n' ||
+                  '<tr> \n' ||
                   '  <th> \n' ||
                   '    <label for="dav_%s_base">Base URI</label> \n' ||
                   '  </th> \n' ||
@@ -892,16 +844,132 @@
                 ));
               }
 
-              S := get_keyword ('sponger', rdfParams, 'on');
+              S := get_keyword ('graphSecurity', rdfParams, 'off');
               http (sprintf (
-                '<tr id="dav%d_sponger" %s>\n' ||
-                '  <th>\n' ||
-                '    <label for="dav_%s_sponger">Sponger (on/off)</label>\n' ||
-                '  </th>\n' ||
-                '  <td>\n' ||
-                '    <input type="checkbox" name="dav_%s_sponger" id="dav_%s_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}, unchecked: {hide: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}});" value="on" />\n' ||
-                '  </td>\n' ||
-                '</tr>\n',
+                '<tr id="dav%d_graphSecurity" %s> \n' ||
+                '  <th> \n' ||
+                '    <label for="dav_%s_graphSecurity">Use special graph security (on/off)</label> \n' ||
+                '  </th> \n' ||
+                '  <td> \n' ||
+                '    <input type="checkbox" name="dav_%s_graphSecurity" id="dav_%s_graphSecurity" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [''dav%d_graphSecurityACL'', ''dav%d_graphSecurityACI'']}, unchecked: {hide: [''dav%d_graphSecurityACL'', ''dav%d_graphSecurityACI'']}});" value="on" /> \n' ||
+                '  </td> \n' ||
+                '</tr> \n',
+                ndx,
+                case when graph = '' then 'style="display: none;"' else '' end,
+                det,
+                det,
+                det,
+                case when S = 'on' then 'checked="checked"' else '' end,
+                ndx,
+                ndx,
+                ndx,
+                ndx
+              ));
+
+              S := WEBDAV.DBA.acl_vector (get_keyword ('graphSecurityACL', rdfParams, ''));
+              http (sprintf (
+                '<tr id="dav%d_graphSecurityACL" style="display: none;"> \n' ||
+                '  <th valign="top">ODS users/groups</th> \n' ||
+                '  <td> \n' ||
+                '    <table width="100%%"> \n' ||
+                '      <tr> \n' ||
+                '        <td width="100%%"> \n' ||
+                '          <table id="gf_tbl" class="WEBDAV_formList" style="width: 100%%;" cellspacing="0"> \n' ||
+                '            <tr> \n' ||
+                '              <th nowrap="nowrap">User/Group (WebID)</th> \n' ||
+                '              <th width="1%%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th> \n' ||
+                '              <th width="1%%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th> \n' ||
+                '              <th width="1%%">Action</th> \n' ||
+                '            </tr> \n' ||
+                '            <tbody id="gf_tbody"> \n' ||
+                '              <tr id="gf_tr_no"><td colspan="4"><b>No Security</b></td></tr> \n' ||
+                '                <script type="text/javascript"> \n',
+                ndx
+              ));
+
+              if (self.dav_enable and self.editField ('acl'))
+              {
+                WEBDAV.DBA.acl_lines (S, '', _tbl=>'gf');
+              }
+              else
+              {
+                WEBDAV.DBA.acl_lines (S, _tbl=>'gs');
+              }
+
+              http (sprintf (
+                '              </script> \n' ||
+                '            </tbody> \n' ||
+                '          </table> \n' ||
+                '        </td> \n' ||
+                '        <td valign="top" nowrap="nowrap"> \n' ||
+                '          <span class="button pointer" onclick="TBL.createRow(''gf'', null, {fld_1: {mode: 51, formMode: ''u'', tdCssText: ''white-space: nowrap;'', className: ''_validate_''}, fld_2: {mode: 42, value: [1, 1, 0], suffix: ''_grant'', onclick: function(){TBL.clickCell42(this);}, tdCssText: ''width: 1%%; text-align: center;''}, fld_3: {mode: 42,  suffix: ''_deny'', onclick: function(){TBL.clickCell42(this);}, tdCssText: ''width: 1%%; text-align: center;''}});"> \n' ||
+                '            <img src="%s" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
+                '          </span><br /><br /> \n' ||
+                '        </td> \n' ||
+                '      </tr> \n' ||
+                '    </table> \n' ||
+                '  </td> \n' ||
+                '</tr> \n',
+                self.image_src ('dav/image/add_16.png')
+              ));
+
+              http (sprintf (
+                '<tr id="dav%d_graphSecurityACI" style="display: none;"> \n' ||
+                '  <th valign="top">WebID users</th> \n' ||
+                '  <td> \n' ||
+                '    <table width="100%%"> \n' ||
+                '      <tr> \n' ||
+                '        <td width="100%%"> \n' ||
+                '         <table id="gs_tbl" class="WEBDAV_formList" style="width: 100%%;" cellspacing="0"> \n' ||
+                '           <tr> \n' ||
+                '             <th width="1%%" nowrap="nowrap">Access Type</th> \n' ||
+                '             <th nowrap="nowrap">WebID</th> \n' ||
+                '             <th width="1%%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th> \n' ||
+                '             <th width="1%%">Action</th> \n' ||
+                '           </tr> \n' ||
+                '           <tbody id="gs_tbody"> \n' ||
+                '             <tr id="gs_tr_no"><td colspan="4"><b>No Security</b></td></tr> \n' ||
+                '                <script type="text/javascript"> \n',
+                ndx
+              ));
+
+              S := get_keyword ('graphSecurityACI', rdfParams);
+              if (self.dav_enable and self.editField ('aci'))
+              {
+                WEBDAV.DBA.aci_lines (S, '', 'true', _tbl=>'gs');
+              }
+              else
+              {
+                WEBDAV.DBA.aci_lines (S, 'disabled', _tbl=>'gs');
+              }
+
+              http (sprintf (
+                '              </script> \n' ||
+                '            </tbody> \n' ||
+                '          </table> \n' ||
+                '        </td> \n' ||
+                '        <td valign="top" nowrap="nowrap"> \n' ||
+                '          <span class="button pointer" onclick="TBL.createRow(''gs'', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, tdCssText: ''white-space: nowrap;'', className: ''_validate2_ _webid2_''}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, execute: true, tdCssText: ''width: 1%%; text-align: center;''}});"> \n' ||
+                '            <img src="%s" border="0" class="button" alt="Add Security" title="Add Security" /> Add \n' ||
+                '          </span><br /><br /> \n' ||
+                '        </td> \n' ||
+                '      </tr> \n' ||
+                '    </table> \n' ||
+                '  </td> \n' ||
+                '</tr> \n',
+                self.image_src ('dav/image/add_16.png')
+              ));
+
+              S := get_keyword ('sponger', rdfParams, 'off');
+              http (sprintf (
+                '<tr id="dav%d_sponger" %s> \n' ||
+                '  <th> \n' ||
+                '    <label for="dav_%s_sponger">Sponger (on/off)</label> \n' ||
+                '  </th> \n' ||
+                '  <td> \n' ||
+                '    <input type="checkbox" name="dav_%s_sponger" id="dav_%s_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}, unchecked: {hide: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}});" value="on" /> \n' ||
+                '  </td> \n' ||
+                '</tr> \n',
                 ndx,
                 case when graph = '' then 'style="display: none;"' else '' end,
                 det,
@@ -919,17 +987,17 @@
               cartridges := WEBDAV.DBA.cartridges_get ();
 
               http (sprintf (
-                '<tr id="dav%d_cartridge" style="display: none;">\n' ||
-                '  <th valign="top">Sponger Extractor Cartridges</th>\n' ||
-                '  <td>\n' ||
-                '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">\n' ||
-                '      <table id="ca%d_tbl" class="WEBDAV_grid" cellspacing="0">\n' ||
-                '        <thead>\n' ||
-                '          <tr>\n' ||
-                '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''ca%d_item'', true)" title="Select All" /></th>\n' ||
-                '            <th width="100%%">Cartridge</th>\n' ||
-                '          </tr>\n' ||
-                '        </thead>',
+                '<tr id="dav%d_cartridge" style="display: none;"> \n' ||
+                '  <th valign="top">Sponger Extractor Cartridges</th> \n' ||
+                '  <td> \n' ||
+                '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;"> \n' ||
+                '      <table id="ca%d_tbl" class="WEBDAV_grid" cellspacing="0"> \n' ||
+                '        <thead> \n' ||
+                '          <tr> \n' ||
+                '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''ca%d_item'', true)" title="Select All" /></th> \n' ||
+                '            <th width="100%%">Cartridge</th> \n' ||
+                '          </tr> \n' ||
+                '        </thead> \n',
                 ndx,
                 ndx,
                 ndx,
@@ -950,9 +1018,9 @@
                   T := case when cartridges[N][2] = 1 then 'checked="checked"' else '' end;
                 }
                 http (sprintf (
-                  '        <tr>\n' ||
-                  '          <td class="checkbox"><input type="checkbox" name="ca%d_item" value="%d" disabled="disabled" %s /></td>\n' ||
-                  '          <td>%V</td>\n' ||
+                  '        <tr> \n' ||
+                  '          <td class="checkbox"><input type="checkbox" name="ca%d_item" value="%d" disabled="disabled" %s /></td> \n' ||
+                  '          <td>%V</td> \n' ||
                   '        </tr>',
                   ndx,
                   cartridges[N][0],
@@ -966,30 +1034,29 @@
                 );
 
               http (
-                '      </table>\n' ||
-                '    </div>\n' ||
-                '  </td>\n' ||
+                '      </table> \n' ||
+                '    </div> \n' ||
+                '  </td> \n' ||
                 '</tr>'
               );
 
-              if (not WEBDAV.DBA.VAD_CHECK ('cartridges'))
-                return;
-
+              if (WEBDAV.DBA.VAD_CHECK ('cartridges'))
+              {
               selectedCartridges := get_keyword ('metaCartridges', rdfParams, '');
               selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
               cartridges := WEBDAV.DBA.metaCartridges_get ();
 
               http (sprintf (
-                '<tr id="dav%d_metaCartridge" style="display: none;">\n' ||
-                '  <th valign="top">Sponger Meta Cartridges</th>\n' ||
-                '  <td>\n' ||
-                '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;">\n' ||
-                '      <table id="mca%d_tbl" class="WEBDAV_grid" cellspacing="0">\n' ||
-                '        <thead>\n' ||
-                '          <tr>\n' ||
-                '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th>\n' ||
-                '            <th width="100%%">Meta Cartridge</th>\n' ||
-                '          </tr>\n' ||
+                  '<tr id="dav%d_metaCartridge" style="display: none;"> \n' ||
+                  '  <th valign="top">Sponger Meta Cartridges</th> \n' ||
+                  '  <td> \n' ||
+                  '    <div style="margin-bottom: 6px; max-height: 200px; overflow: auto;"> \n' ||
+                  '      <table id="mca%d_tbl" class="WEBDAV_grid" cellspacing="0"> \n' ||
+                  '        <thead> \n' ||
+                  '          <tr> \n' ||
+                  '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th> \n' ||
+                  '            <th width="100%%">Meta Cartridge</th> \n' ||
+                  '          </tr> \n' ||
                 '        </thead>',
                 ndx,
                 ndx,
@@ -1005,9 +1072,9 @@
                   T := case when cartridges[N][2] then 'checked="checked"' else '' end;
                 }
                 http (sprintf (
-                  '        <tr>\n' ||
-                  '          <td class="checkbox"><input type="checkbox" name="mca%d_item" value="%d" disabled="disabled" %s /></td>\n' ||
-                  '          <td>%V</td>\n' ||
+                    '        <tr> \n' ||
+                    '          <td class="checkbox"><input type="checkbox" name="mca%d_item" value="%d" disabled="disabled" %s /></td> \n' ||
+                    '          <td>%V</td> \n' ||
                   '        </tr>',
                   ndx,
                   cartridges[N][0],
@@ -1021,11 +1088,25 @@
                 );
 
               http (
-                '      </table>\n' ||
-                '    </div>\n' ||
-                '  </td>\n' ||
+                  '      </table> \n' ||
+                  '    </div> \n' ||
+                  '  </td> \n' ||
                 '</tr>'
               );
+              }
+
+              http (sprintf (
+                '<script type="text/javascript"> \n' ||
+                '  OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($(''dav_%s_graphSecurity''), {checked: {show: [''dav%d_graphSecurityACL'', ''dav%d_graphSecurityACI'']}})});\n' ||
+                '  OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($(''dav_%s_sponger''), {checked: {show: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}})});\n' ||
+                '</script>',
+                det,
+                ndx,
+                ndx,
+                det,
+                ndx,
+                ndx
+              ));
             ]]>
           </v:method>
 
@@ -1088,10 +1169,39 @@
               }
               if (labels[1] and not isnull (ndx))
               {
-                declare sponger, cartridges, metaCartridges varchar;
+                declare N integer;
+                declare graphSecurity, graphSecurityACL, graphSecurityACI, sponger, cartridges, metaCartridges varchar;
+                declare ca_item, mca_item varchar;
 
-                self.detSpongerPrepare (params, det, ndx, sponger, cartridges, metaCartridges);
-                retValue := vector_concat (retValue, vector ('sponger', sponger, 'cartridges', cartridges, 'metaCartridges', metaCartridges));
+
+
+                graphSecurity := get_keyword ('dav_' || det || '_graphSecurity', params, 'off');
+                graphSecurityACL := null;
+                graphSecurityACI := null;
+                if (graphSecurity = 'on')
+                {
+                  graphSecurityACL := WEBDAV.DBA.acl_params (params, tbl=>'gf', mode=>'short');
+                  graphSecurityACI := WEBDAV.DBA.aci_params (params, tbl=>'gs');
+                }
+
+                cartridges := '';
+                metaCartridges := '';
+                sponger := get_keyword ('dav_' || det || '_sponger', params, 'off');
+                if (sponger = 'on')
+                {
+                  ca_item := sprintf ('ca%d_item', ndx);
+                  mca_item := sprintf ('mca%d_item', ndx);
+                  for (N := 0; N < length (params); N := N + 2)
+                  {
+                    if (params[N] = ca_item)
+                      cartridges := cartridges || ',' || trim (params[N+1]);
+                    else if (params[N] = mca_item)
+                      metaCartridges := metaCartridges || ',' || trim (params[N+1]);
+                  }
+                  cartridges := ltrim (cartridges, ',');
+                  metaCartridges := ltrim (metaCartridges, ',');
+                }
+                retValue := vector_concat (retValue, vector ('graphSecurity', graphSecurity, 'graphSecurityACL', graphSecurityACL, 'graphSecurityACI', graphSecurityACI, 'sponger', sponger, 'cartridges', cartridges, 'metaCartridges', metaCartridges));
               }
               foreach (any label in labels[2]) do
               {
@@ -2054,8 +2164,9 @@
                     self.dav_enable := 0;
                 }
                 if (isnull (get_keyword ('dav_group', params)))
+                {
                   self.dav_acl := WEBDAV.DBA.DAV_GET (self.dav_item, 'acl');
-
+                }
                 if (self.command_mode = 10)
                 {
                   if (isnull (get_keyword ('dav_group', params)))
@@ -2094,30 +2205,31 @@
             </div>
              <div id="c1">
               <div class="tabs">
-                <vm:tabCaption tab="1"   tabs="18" caption="Main" />
+                <vm:tabCaption tab="1"   tabs="19" caption="Main" />
                 <v:template name="tform_5" type="simple" enabled="-- case when (self.viewField ('acl') or self.viewField ('aci')) and (self.command_mode = 10) then 1 else 0 end">
-                <vm:tabCaption tab="2"   tabs="18" caption="Sharing" />
+                <vm:tabCaption tab="2"   tabs="19" caption="Sharing" />
                 </v:template>
                 <v:template name="tform_7" type="simple" enabled="-- case when self.viewField ('version') and (self.command_mode = 10) and (self.dav_type = 'R') and not self.dav_is_redirect and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,acl') and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,meta') then 1 else 0 end">
-                <vm:tabCaption tab="9"   tabs="18" caption="Versions" />
+                <vm:tabCaption tab="9"   tabs="19" caption="Versions" />
                 </v:template>
                 <v:template name="tform_8" type="simple" enabled="-- equ (self.dav_type, 'C')">
-                <vm:tabCaption tab="4"   tabs="18" caption="WebMail" hide="1" />
-                <vm:tabCaption tab="5"   tabs="18" caption="Filter" hide="1" />
-                <vm:tabCaption tab="6"   tabs="18" caption="S3 Properties" hide="1" />
-                <vm:tabCaption tab="7"   tabs="18" caption="Criteria" hide="1" />
-                <vm:tabCaption tab="8"   tabs="18" caption="Linked Data Import" hide="1" />
+                <vm:tabCaption tab="4"   tabs="19" caption="WebMail" hide="1" />
+                <vm:tabCaption tab="5"   tabs="19" caption="Filter" hide="1" />
+                <vm:tabCaption tab="6"   tabs="19" caption="S3 Properties" hide="1" />
+                <vm:tabCaption tab="7"   tabs="19" caption="Criteria" hide="1" />
+                <vm:tabCaption tab="8"   tabs="19" caption="Linked Data Import" hide="1" />
                 <v:template name="tform_17" type="simple" enabled="-- case when (isstring (DB.DBA.vad_check_version ('SyncML'))) then 1 else 0 end">
-                <vm:tabCaption tab="10"  tabs="18" caption="SyncML" hide="1" />
+                <vm:tabCaption tab="10"  tabs="19" caption="SyncML" hide="1" />
                 </v:template>
-                <vm:tabCaption tab="11"  tabs="18" caption="IMAP Account" hide="1" />
+                <vm:tabCaption tab="11"  tabs="19" caption="IMAP Account" hide="1" />
                 <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
-                <vm:tabCaption tab="12"  tabs="18" caption="Google Drive" hide="1" />
-                <vm:tabCaption tab="13"  tabs="18" caption="Dropbox" hide="1" />
-                <vm:tabCaption tab="14"  tabs="18" caption="OneDrive" hide="1" />
-                <vm:tabCaption tab="15"  tabs="18" caption="Box Net" hide="1" />
-                <vm:tabCaption tab="16"  tabs="18" caption="WebDAV" hide="1" />
-                <vm:tabCaption tab="17"  tabs="18" caption="Rackspace" hide="1" />
+                <vm:tabCaption tab="12"  tabs="19" caption="Google Drive" hide="1" />
+                <vm:tabCaption tab="13"  tabs="19" caption="Dropbox" hide="1" />
+                <vm:tabCaption tab="14"  tabs="19" caption="OneDrive" hide="1" />
+                <vm:tabCaption tab="15"  tabs="19" caption="Box Net" hide="1" />
+                <vm:tabCaption tab="16"  tabs="19" caption="WebDAV" hide="1" />
+                <vm:tabCaption tab="17"  tabs="19" caption="Rackspace" hide="1" />
+                <vm:tabCaption tab="18"  tabs="19" caption="Social Networks" hide="1" />
                 </v:template>
                 </v:template>
               </div>
@@ -2339,6 +2451,7 @@
                                               1, 'Box',        'Box Net',
                                               1, 'WebDAV',     'WebDAV',
                                               1, 'RACKSPACE',  'Rackspace Cloud Files',
+                                              1, 'SN',         'Social Networks',
                                               1, 'nntp',       'Discussion',
                                               1, 'CardDAV',    'CardDAV',
                                               1, 'Blog',       'Blog',
@@ -2554,7 +2667,7 @@
                           <?vsp
                             http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_0" value="None" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/><b>None</b></label>', case when not strcontains (self.dav_encryption, 'AES256') then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
                             http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_1" value="AES256" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/><b>AES-256</b></label>', case when self.dav_encryption = 'AES256' then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
-                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_2" value="UserAES256" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {show: [''davRow_encryption_password'']}})"/><b>AES-256 (User''s Password)</b></label>', case when self.dav_encryption = 'UserAES256' then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
+                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_2" value="UserAES256" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {show: [''davRow_encryption_password'']}})"/><b>AES-256 (Password or Pass Phrase)</b></label>', case when self.dav_encryption = 'UserAES256' then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
                           ?>
                         </td>
                       </tr>
@@ -3719,7 +3832,7 @@
                 </v:on-post>
               </v:button>
               <v:button action="simple" name="cVerify" xhtml_id="cVerify" value="Verify" xhtml_onclick="WEBDAV.verifyDialog(); return false;" xhtml_style="display: none;"/>
-              <v:button action="simple" name="cUnmount" xhtml_id="cUnmount" value="Unmount" enabled="--case when self.dav_subClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE') then 1 else 0 end">
+              <v:button action="simple" name="cUnmount" xhtml_id="cUnmount" value="Unmount" enabled="--case when (self.dav_type = 'C') and (self.dav_detClass = '') and (self.dav_subClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')) then 1 else 0 end">
                 <v:on-post>
                   <![CDATA[
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
@@ -3802,7 +3915,23 @@
               </v:template>
               <div id="f_plain">
                 <?vsp
+                  if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30))
+                  {
+                    http (sprintf ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">%V</textarea>', get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar)))));
+                ?>
+                    <![CDATA[
+                      <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
+                      <script type="text/javascript">
+                        CKEDITOR.config.startupMode = 'source';
+                        var oEditor = CKEDITOR.replace('f_content_html');
+                      </script>
+                    ]]>
+                <?vsp
+                  }
+                  else
+                  {
                   http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar)))));
+                  }
                 ?>
               </div>
             </div>
@@ -3825,7 +3954,7 @@
                     item := WEBDAV.DBA.DAV_INIT (self.source);
                     if (not WEBDAV.DBA.DAV_ERROR (item))
                     {
-                      content := get_keyword ('f_content_plain', params, '');
+                      content := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30) then 'f_content_html' else 'f_content_plain' end, self.vc_page.vc_event.ve_params, '');
                       if (self.mimeType = 'text/turtle')
                       {
                         if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
@@ -3834,7 +3963,7 @@
                         if (get_keyword ('f_ttl_prefixes', params) = '1')
                            connection_set ('__WebDAV_ttl_prefixes__', 'yes');
                       }
-                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.source, content, WEBDAV.DBA.DAV_GET (item, 'mimeType'), WEBDAV.DBA.DAV_GET (item, 'permissions'), WEBDAV.DBA.DAV_GET (item, 'ownerID'), WEBDAV.DBA.DAV_GET (item, 'groupID'));
+                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.source, content, self.mimeType, WEBDAV.DBA.DAV_GET (item, 'permissions'), WEBDAV.DBA.DAV_GET (item, 'ownerID'), WEBDAV.DBA.DAV_GET (item, 'groupID'));
                       if (WEBDAV.DBA.DAV_ERROR (retValue))
                         signal ('TEST', WEBDAV.DBA.DAV_PERROR (retValue) || '<>');
                     }
@@ -4434,7 +4563,7 @@
                                     id := case when (rowset[1] = 'R') then sprintf ('id="%V"', path) else '' end;
                                     if ((self.returnName <> '') and (rowset[1] = 'R'))
                                     {
-                                      click := sprintf ('onclick="javascript: $(\'item_name\').value = \'%s\'; return false;"', replace (WEBDAV.DBA.dav_lpath (path)));
+                                      click := sprintf ('onclick="javascript: $(\'item_name\').value = \'%s\'; return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
                                     }
                                     else
                                     {
@@ -4776,6 +4905,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- S3 DET -->
   <xsl:template match="vm:search-dc-template6">
     <div id="6" class="tabContent" style="display: none;">
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
@@ -4864,11 +4994,6 @@
           self.detSpongerUI ('S3', 6);
         ?>
       </table>
-      <![CDATA[
-        <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_S3_sponger'), {checked: {show: ['dav6_cartridge', 'dav6_metaCartridge']}})});
-        </script>
-      ]]>
     </div>
   </xsl:template>
 
@@ -4947,11 +5072,6 @@
           self.detSpongerUI ('rdfSink', 8);
         ?>
       </table>
-      <![CDATA[
-        <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_rdfSink_sponger'), {checked: {show: ['dav8_cartridge', 'dav8_metaCartridge']}})});
-        </script>
-      ]]>
     </div>
   </xsl:template>
 
@@ -5356,6 +5476,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- SyncML -->
   <xsl:template match="vm:search-dc-template11">
     <div id="10" class="tabContent" style="display: none;">
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
@@ -5400,6 +5521,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- IMAP DET -->
   <xsl:template match="vm:search-dc-template12">
     <div id="11" class="tabContent" style="display: none;">
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
@@ -5540,14 +5662,13 @@
         <script type="text/javascript">
           if (document.location.protocol != 'https:')
             OAT.Dom.show('tr_ssl');
-
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_IMAP_sponger'), {checked: {show: ['dav11_cartridge', 'dav11_metaCartridge']}})});
         </script>
       ]]>
     </div>
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- GDrive DET -->
   <xsl:template match="vm:search-dc-template13">
     <div id="12" class="tabContent" style="display: none;">
       <?vsp
@@ -5613,15 +5734,11 @@
           </td>
         </tr>
       </table>
-      <![CDATA[
-        <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_GDrive_sponger'), {checked: {show: ['dav12_cartridge', 'dav12_metaCartridge']}})});
-        </script>
-      ]]>
     </div>
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- Dropbox DET -->
   <xsl:template match="vm:search-dc-template14">
     <div id="13" class="tabContent" style="display: none;">
       <?vsp
@@ -5687,15 +5804,11 @@
           </td>
         </tr>
       </table>
-      <![CDATA[
-        <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_Dropbox_sponger'), {checked: {show: ['dav13_cartridge', 'dav13_metaCartridge']}})});
-        </script>
-      ]]>
     </div>
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- SkyDrive DET -->
   <xsl:template match="vm:search-dc-template15">
     <div id="14" class="tabContent" style="display: none;">
       <?vsp
@@ -5761,15 +5874,11 @@
           </td>
         </tr>
       </table>
-      <![CDATA[
-        <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_SkyDrive_sponger'), {checked: {show: ['dav14_cartridge', 'dav14_metaCartridge']}})});
-        </script>
-      ]]>
     </div>
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- Box DET -->
   <xsl:template match="vm:search-dc-template16">
     <div id="15" class="tabContent" style="display: none;">
       <?vsp
@@ -5835,15 +5944,11 @@
           </td>
         </tr>
       </table>
-      <![CDATA[
-        <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_Box_sponger'), {checked: {show: ['dav15_cartridge', 'dav15_metaCartridge']}})});
-        </script>
-      ]]>
     </div>
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- WebDAV DET -->
   <xsl:template match="vm:search-dc-template17">
     <div id="16" class="tabContent" style="display: none;">
       <?vsp
@@ -6014,7 +6119,6 @@
       </table>
       <![CDATA[
         <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_sponger'), {checked: {show: ['dav16_cartridge', 'dav16_metaCartridge']}})});
           OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_0'), {checked: {show: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password'], hide: ['tr_dav_WebDAV_key', 'tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_display_name', 'tr_dav_WebDAV_email', 'tr_dav_WebDAV_authenticate']}})});
           OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_1'), {checked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password', 'tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_display_name', 'tr_dav_WebDAV_email', 'tr_dav_WebDAV_authenticate'], show: ['tr_dav_WebDAV_key']}})});
           OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_2'), {checked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password', 'tr_dav_WebDAV_key'], show: ['tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_authenticate'], exec: [oauthShowData]}})});
@@ -6033,6 +6137,7 @@
   </xsl:template>
 
   <!--=========================================================================-->
+  <!-- RACKSPACE DET -->
   <xsl:template match="vm:search-dc-template18">
     <div id="17" class="tabContent" style="display: none;">
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
