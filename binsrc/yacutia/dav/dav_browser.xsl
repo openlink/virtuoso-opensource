@@ -1014,6 +1014,29 @@
             ]]>
           </v:method>
 
+          <v:method name="detAuthenticateUI" arglist="in value varchar, in det varchar, in path varchar">
+            <![CDATA[
+              http (sprintf (
+                '<tr id="tr_dav_%s_display_name" style="display: %s"> ' ||
+                '  <th>User name</th> ' ||
+                '  <td id="td_dav_%s_display_name">%s</td> ' ||
+                '</tr> ' ||
+                '<tr id="tr_dav_%s_email" style="display: %s"> ' ||
+                '  <th>User email</th> ' ||
+                '  <td id="td_dav_%s_email"> %s</td> ' ||
+                '</tr>',
+                det,
+                case when value = 'Yes' then '' else 'none' end,
+                det,
+                WEBDAV.DBA.DAV_PROP_GET (path, 'virt:' || det || '-display_name', ''),
+                det,
+                case when (value = 'Yes') and (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:' || det || '-email', '') <> '') then '' else 'none' end,
+                det,
+                WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:' || det || '-email', '')
+              ));
+            ]]>
+          </v:method>
+
           <v:method name="detAccessTimestamp" arglist="in params any">
             <![CDATA[
               declare gmt any;
@@ -5577,23 +5600,8 @@
         </tr>
         <?vsp
           self.detSpongerUI ('GDrive', 12);
+          self.detAuthenticateUI (_value, 'GDrive', self.dav_path);
         ?>
-        <tr id="tr_dav_GDrive_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User name</th>
-          <td id="td_dav_GDrive_display_name">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:GDrive-display_name', ''));
-            ?>
-          </td>
-        </tr>
-        <tr id="tr_dav_GDrive_email" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User email</th>
-          <td id="td_dav_GDrive_email">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:GDrive-email', ''));
-            ?>
-          </td>
-        </tr>
         <tr>
           <th></th>
           <td>
@@ -5666,23 +5674,8 @@
         </tr>
         <?vsp
           self.detSpongerUI ('Dropbox', 13);
+          self.detAuthenticateUI (_value, 'Dropbox', self.dav_path);
         ?>
-        <tr id="tr_dav_Dropbox_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User name</th>
-          <td id="td_dav_Dropbox_display_name">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Dropbox-display_name', ''));
-            ?>
-          </td>
-        </tr>
-        <tr id="tr_dav_Dropbox_email" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User email</th>
-          <td id="td_dav_Dropbox_email">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Dropbox-email', ''));
-            ?>
-          </td>
-        </tr>
         <tr>
           <th></th>
           <td>
@@ -5755,23 +5748,8 @@
         </tr>
         <?vsp
           self.detSpongerUI ('SkyDrive', 14);
+          self.detAuthenticateUI (_value, 'SkyDrive', self.dav_path);
         ?>
-        <tr id="tr_dav_SkyDrive_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User name</th>
-          <td id="td_dav_SkyDrive_display_name">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:SkyDrive-display_name', ''));
-            ?>
-          </td>
-        </tr>
-        <tr id="tr_dav_SkyDrive_email" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User email</th>
-          <td id="td_dav_SkyDrive_email">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:SkyDrive-email', ''));
-            ?>
-          </td>
-        </tr>
         <tr>
           <th></th>
           <td>
@@ -5844,23 +5822,8 @@
         </tr>
         <?vsp
           self.detSpongerUI ('Box', 15);
+          self.detAuthenticateUI (_value, 'Box', self.dav_path);
         ?>
-        <tr id="tr_dav_Box_display_name" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User name</th>
-          <td id="td_dav_Box_display_name">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Box-display_name', ''));
-            ?>
-          </td>
-        </tr>
-        <tr id="tr_dav_Box_email" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>User email</th>
-          <td id="td_dav_Box_email">
-            <?vsp
-              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Box-email', ''));
-            ?>
-          </td>
-        </tr>
         <tr>
           <th></th>
           <td>
