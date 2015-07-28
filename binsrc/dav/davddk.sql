@@ -694,6 +694,7 @@ return vector (
 'BPEL_SPLIT_LIST',
 'WS.WS.SYS_DAV_RES_RES_CONTENT_INDEX_HOOK',
 'WS.WS.SYS_DAV_RES_RES_CONTENT_UNINDEX_HOOK',
+'WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL',
 'WS.WS.SYS_DAV_PROP_PROP_VALUE_INDEX_HOOK',
 'WS.WS.SYS_DAV_PROP_PROP_VALUE_UNINDEX_HOOK',
 'WS.WS.OPTIONS',
@@ -1175,25 +1176,32 @@ WS.WS.SYS_DAV_INIT_1 ()
 ;
 
 create procedure
-WS.WS.SYS_DAV_PROP_PROP_VALUE_INDEX_HOOK (inout vtb any, inout d_id integer)
+WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (inout vtb any, inout d_id integer, in mode integer)
 {
   for select PROP_NAME as pn, PROP_VALUE as pv from WS.WS.SYS_DAV_PROP where PROP_ID = d_id do
     {
       declare doc any;
+
       if (126 = __tag (pv))
+        {
         pv := blob_to_string (pv);
+        }
       if ((not isstring (pv)) or (pv = ''))
-        return 1;
+        {
+          return 1;
+        }
       if (193 <> pv[0])
         {
-          vt_batch_feed (vtb, pv, 0, 0);
+          vt_batch_feed (vtb, pv, mode, 0);
           return 1;
         }
       doc := deserialize (pv);
-      if (0 = length (doc))
-        return 1;
+      if ((not isentity (doc)) or (0 = length (doc)))
+        {
+          return 1;
+        }
       doc := xml_tree_doc (doc);
-      vt_batch_feed (vtb, doc, 0, 1);
+      vt_batch_feed (vtb, doc, mode, 1);
       return 1;
     }
   return 1;
@@ -1201,28 +1209,16 @@ WS.WS.SYS_DAV_PROP_PROP_VALUE_INDEX_HOOK (inout vtb any, inout d_id integer)
 ;
 
 create procedure
+WS.WS.SYS_DAV_PROP_PROP_VALUE_INDEX_HOOK (inout vtb any, inout d_id integer)
+{
+  return WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (vtb, d_id, 0);
+}
+;
+
+create procedure
 WS.WS.SYS_DAV_PROP_PROP_VALUE_UNINDEX_HOOK (inout vtb any, inout d_id integer)
 {
-  for select PROP_NAME as pn, PROP_VALUE as pv from WS.WS.SYS_DAV_PROP where PROP_ID = d_id do
-    {
-      declare doc any;
-      if (126 = __tag (pv))
-        pv := blob_to_string (pv);
-      if ((not isstring (pv)) or (pv = ''))
-        return 1;
-      if (193 <> pv[0])
-        {
-          vt_batch_feed (vtb, pv, 1, 0);
-          return 1;
-        }
-      doc := deserialize (pv);
-      if (0 = length (doc))
-        return 1;
-      doc := xml_tree_doc (doc);
-      vt_batch_feed (vtb, doc, 1, 1);
-      return 1;
-    }
-  return 1;
+  return WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (vtb, d_id, 1);
 }
 ;
 
