@@ -955,3 +955,408 @@ create procedure "VAD"."DBA"."VAD_REMOVE_PREVIOUS_VERSION" (in prod varchar, in 
   return 0;
 }
 ;
+
+create procedure "VAD"."DBA"."VAD_LIST" (in dir varchar := null, in fs_type int := 0)
+{
+  declare vads, name, ver, arr any;
+  declare pname, pver, pfull, pisdav, pdate any;
+  declare vaddir any;
+  declare nlist, ilist, alist, tmp any;
+  declare pcols int;
+
+  declare PKG_NAME, PKG_VER, PKG_DATE, PKG_INST, PKG_DESC, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST varchar;
+
+  result_names (PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST);
+  pcols := length (procedure_cols ('VAD.DBA.VAD_TEST_READ'));
+
+  nlist := vector ();
+  vaddir := dir;
+  if (vaddir is null and fs_type = 0)
+    vaddir := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir');
+
+  if (vaddir is null)
+    return;
+
+  declare exit handler for sqlstate '*'
+  {
+    goto merge;
+  };
+
+  if (vaddir not like '%/')
+    vaddir := vaddir || '/';
+
+  if (fs_type = 0)
+    arr := sys_dirlist (vaddir, 1);
+  else
+    arr := (select vector_agg (RES_NAME) from WS.WS.SYS_DAV_RES where RES_FULL_PATH like vaddir || '%' and RES_FULL_PATH = vaddir||RES_NAME);
+
+  foreach (any f in arr) do
+    {
+       if (f like '%.vad')
+	 {
+
+	   declare st, rc int;
+	   declare exit handler for sqlstate '*' {
+	     goto next_pkg;
+	   };
+
+	   pisdav := 0;
+           if (f like '%_dav.vad')
+             pisdav := 1;
+
+	   st := msec_time ();
+	   rc := 0;
+	   pname := null;
+	   if (pcols = 7)
+	     rc := "VAD"."DBA"."VAD_TEST_READ" (vaddir||f, pname, pver, pfull, pdate, fs_type, 1);
+	   else
+	     rc := "VAD"."DBA"."VAD_TEST_READ" (vaddir||f, pname, pver, pfull, pdate, fs_type);
+	   next_pkg:;
+           if (pname is not null)
+	     nlist := vector_concat (nlist, vector (pname, vector (pver, pdate, f)));
+	 }
+    }
+  merge:
+  declare exit handler for sqlstate '*'
+  {
+    resignal;
+  };
+  ilist := "VAD"."DBA"."VAD_GET_PACKAGES" ();
+  tmp := make_array (length (ilist) * 2, 'any');
+
+  for (declare i,l int, i := 0, l := length (ilist); i < l; i := i + 1)
+    {
+      declare isdav int;
+      isdav := 0;
+      if (exists (select top 1 1 from VAD.DBA.VAD_REGISTRY
+	    where R_KEY like sprintf ('/VAD/%s/%s/resources/dav/%%', ilist[i][1], ilist[i][2])))
+	isdav := 1;
+      tmp[i*2] := ilist[i][1];
+      tmp[(i*2)+1] := vector_concat (ilist[i], vector (null, null, null, isdav));
+    }
+  ilist := tmp;
+
+  tmp := vector ();
+  for (declare i,l int, i := 0, l := length (nlist); i < l; i := i + 2)
+    {
+      declare pos, nisdav int;
+      nisdav := 0;
+      if (nlist[i+1][2] like '%_dav.vad')
+	nisdav := 1;
+      if ((pos := position (nlist[i], ilist)))
+	{
+	  if ("VAD"."DBA"."VERSION_COMPARE" (ilist[pos][2], nlist[i+1][0]) = -1 and ilist[pos][9] = nisdav)
+	    {
+	      ilist[pos][6] := nlist[i+1][0];
+	      ilist[pos][7] := nlist[i+1][1];
+	      ilist[pos][8] := nlist[i+1][2];
+	    }
+	}
+      else
+	{
+	  declare suf any;
+	  suf := 0;
+	  if (nlist[i+1][2] like '%_dav.vad')
+	    suf := 1;
+	  tmp := vector_concat (tmp,
+	  	vector (nlist[i], vector (0, nlist[i], null, null, null, 'n/a', nlist[i+1][0], nlist[i+1][1], nlist[i+1][2], suf)));
+	}
+    }
+  ilist := vector_concat (ilist, tmp);
+  for (declare i,l int, i := 0, l := length (ilist); i < l; i := i + 2)
+    {
+      result
+	  (
+	      ilist[i+1][1],
+	      ilist[i+1][5],
+	      ilist[i+1][2],
+	      ilist[i+1][3],
+	      ilist[i+1][4],
+	      ilist[i+1][6],
+	      ilist[i+1][7],
+	      ilist[i+1][8],
+	      ilist[i+1][9]
+	  );
+    }
+}
+;
+
+create procedure "VAD"."DBA"."CREATE_VAD_LIST_VIEW" ()
+{
+    if (exists (select KEY_TABLE from "DB"."DBA"."SYS_KEYS" where "KEY_TABLE" = 'VAD.DBA.VAD_LIST'))
+        "VAD"."DBA"."VAD_EXEC_RETRYING" ('drop table VAD.DBA.VAD_LIST');
+    if (not exists (select "KEY_TABLE" from "DB"."DBA"."SYS_KEYS" where "KEY_TABLE" = 'VAD.DBA.VAD_LIST'))
+        "VAD"."DBA"."VAD_EXEC_RETRYING" ('create procedure view VAD.DBA.VAD_LIST as VAD.DBA.VAD_LIST (dir, fs_type)(PKG_NAME varchar,  PKG_DESC varchar,  PKG_VER varchar,  PKG_DATE varchar,  PKG_INST varchar, PKG_NVER varchar,  PKG_NDATE  varchar,  PKG_FILE varchar, PKG_DEST int)');
+}
+;
+
+"VAD"."DBA"."CREATE_VAD_LIST_VIEW" ()
+;
+
+--!
+-- Get a list of installed and available vads.
+--
+-- \return A key/value vector where the key is a vad name and the value is a vad detail
+-- vector. The latter consists of available version, installed version, vad filename, and vad dir type (\p 0 for fs and \p 1 for dav).
+--/
+create procedure "VAD"."DBA"."VAD_GET_AVAILABLE_VADS" (
+  in vadDir varchar := null,
+  in dirType int := 0)
+{
+  declare vads, vad any;
+
+  vads := vector ();
+  for (select PKG_NAME, PKG_FILE, PKG_VER as INSTALLED_VER, coalesce(PKG_NVER, PKG_VER) as AVAILABLE_VER from VAD.DBA.VAD_LIST where dir=vadDir and fs_type=dirType) do
+  {
+    vad := vector (AVAILABLE_VER, INSTALLED_VER, PKG_FILE, dirType);
+    vads := vector_concat (vads, vector (PKG_NAME, vad));
+  }
+  return vads;
+}
+;
+
+--!
+-- Tries hard to resolve the dependency tree of the given VAD file.
+--
+-- Throws a signal if any dependency could not be found or a loop was
+-- detected. Any parameters but \p fname, \p is_dav, \p vadDir and \p vadDirType are internal
+-- and need to be ignored.
+--
+-- \return A vector identifying the resolved dependency tree.
+-- - Each package will only be added to the tree once, ie. the first time it is encountered.
+-- - Only packages that are not yet installed will be added to the tree, meaning that the
+--   tree will contain all packages that need to be installed.
+-- - Each tree node represents a package in a key/value vector with the following keys:
+--   \p name is the package name, \p path is the path to the vad, \p pathType is either \p 1 (DAV) or
+--   \p 0 (FS) and refers to the type of the \p path, \p deps is a list of
+--   dependencies, ie. package nodes.
+--
+-- \sa DB.DBA.VAD_INSTALL_FROM_DEPENDENCY_TREE, DB.DBA.VAD_FLATTEN_DEPENDENCY_TREE
+--/
+create procedure "VAD"."DBA"."VAD_RESOLVE_DEPENDENCY_TREE" (
+  in fname varchar,
+  in is_dav integer,
+  in vadDir varchar := null,
+  in vadDirType int := 0,
+  in availableVads any := null,
+  in checkedVads any := null,
+  in parentPkgName varchar := null,
+  in depName varchar := null,
+  in requiredPkgVersion varchar := null,
+  in versionCompVal int := null)
+{
+--dbg_obj_print('DB.DBA.VAD_RESOLVE_DEPENDENCY_TREE (', fname, is_dav, vadDir, vadDirType, availableVads, checkedVads, parentPkgName, depName, requiredPkgVersion, versionCompVal, ')');
+  declare stickerData, s varchar;
+  declare flen, pos integer;
+  declare data any;
+  declare stickerTree, stickerDoc, items, dep, parr any;
+  declare pkgName, pkgTitle, pkgVersion, pkgDate, depVer varchar;
+  declare depTree any;
+
+  if (vadDir is null)
+  {
+    vadDir := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir');
+  }
+  vadDir := rtrim (vadDir, '/') || '/';
+
+  if (availableVads is null)
+  {
+    availableVads := "VAD"."DBA"."VAD_GET_AVAILABLE_VADS" (vadDir, vadDirType);
+  }
+  if (checkedVads is null)
+  {
+    checkedVads := vector ();
+  }
+
+
+  if (parentPkgName is not null)
+  {
+    -- See if we have the package in any version
+    dep := get_keyword (depName, availableVads);
+    if (dep is null)
+    {
+      signal ('37000', sprintf ('Vad package %s depends on %s. Please install.', parentPkgName, depName));
+    }
+    fname := vadDir || dep[2];
+    is_dav := dep[3];
+
+    -- Check if the available version matches the requirements
+    if("VAD"."DBA"."VERSION_COMPARE" (dep[0], requiredPkgVersion) <> versionCompVal)
+    {
+      signal ('37000', sprintf ('Vad package %s depends on %s version %s%s. Available version %s is not sufficient.', parentPkgName, depName, (case when versionCompVal = 1 then 'greater than ' when versionCompVal = -1 then 'smaller than ' end), requiredPkgVersion, dep[0]));
+    }
+  }
+
+  -- we also support plain filenames which live in the vad dir
+  if (position ('/', fname) = 0)
+  {
+    fname := vadDir || fname;
+  }
+
+  flen := "VAD"."DBA"."VAD_GET_STICKER_DATA_LEN" (fname, is_dav);
+  if (is_dav = 0)
+  {
+    stickerData := file_to_string_output (fname, 0, flen);
+  }
+  else
+  {
+    stickerData := string_output();
+    "VAD"."DBA"."BLOB_2_STRING_OUTPUT"(fname, 0, flen, stickerData);
+  }
+
+  -- Get header (already checked above)
+  pos := 0;
+  "VAD"."DBA"."VAD_GET_ROW" (stickerData, pos, s, data);
+
+  -- Get the sticker itself
+  "VAD"."DBA"."VAD_GET_ROW" (stickerData, pos, s, data);
+
+  -- parse the sticker
+  stickerTree := xml_tree (data);
+  stickerDoc := xml_tree_doc (stickerTree);
+
+
+  -- Extract package name
+  pkgName := xpath_eval ('/sticker/caption/name/@package', stickerDoc, 0);
+  if (length (pkgName) = 0) {
+    signal ('37000', sprintf ('Sticker for %s does not contain a package name!', fname));
+  }
+  pkgName := cast (pkgName[0] as varchar);
+
+  -- Extract package title
+  pkgTitle := xpath_eval ('/sticker/caption/name/prop[@name=\'Title\']', stickerDoc, 0);
+  if (length (pkgTitle) = 0) {
+    signal ('37000', sprintf ('Sticker for %s does not contain a package title!', fname));
+  }
+  pkgTitle := cast (xpath_eval ('@value', pkgTitle[0]) as varchar);
+
+  -- Extract package version
+  pkgVersion := xpath_eval ('/sticker/caption/version/@package', stickerDoc, 0);
+  if (length (pkgVersion) = 0) {
+    signal ('37000', sprintf ('Sticker for %s does not contain a package version!', fname));
+  }
+  pkgVersion := cast (pkgVersion[0] as varchar);
+
+  -- Extract package date
+  pkgDate := xpath_eval ('/sticker/caption/version/prop[@name=\'Release Date\']', stickerDoc, 0);
+  if (length (pkgDate) = 0) {
+    signal ('37000', sprintf ('Sticker for %s does not contain a package date!', fname));
+  }
+  pkgDate := cast (xpath_eval ('@value', pkgDate[0]) as varchar);
+
+
+  -- Prepare the result
+  depTree := vector ();
+
+  -- The vad code needs this parr object for something I do not undestand yet
+  parr := null;
+
+  items := xpath_eval ('/sticker/dependencies/require', stickerDoc, 0);
+  for (declare i int, i := 0; i < length (items); i := i+1)
+  {
+    depName := cast (xpath_eval ('name/@package', items[i]) as varchar);
+
+    depVer := cast (xpath_eval ('versions_earlier/@package', items[i]) as varchar);
+    if (depName is not null and length(depVer))
+    {
+      if (not "VAD"."DBA"."VAD_TEST_PACKAGE_LT" (parr, depName, depVer))
+      {
+        -- Check if we need to recurse into the vads deps
+        if (position (depName, checkedVads) = 0)
+        {
+          checkedVads := vector_concat (checkedVads, vector (depName));
+          depTree := vector_concat (depTree, vector ("VAD"."DBA"."VAD_RESOLVE_DEPENDENCY_TREE" (null, 0, vadDir, vadDirType, availableVads, checkedVads, pkgName, depName, depVer, -1)));
+        }
+      }
+    }
+
+    depVer := cast (xpath_eval ('version/@package', items[i]) as varchar);
+    if (depName is not null and length(depVer))
+    {
+      if (not "VAD"."DBA"."VAD_TEST_PACKAGE_EQ" (parr, depName, depVer))
+      {
+        -- Check if we need to recurse into the vads deps
+        if (position (depName, checkedVads) = 0)
+        {
+          checkedVads := vector_concat (checkedVads, vector (depName));
+          depTree := vector_concat (depTree, vector ("VAD"."DBA"."VAD_RESOLVE_DEPENDENCY_TREE" (null, 0, vadDir, vadDirType, availableVads, checkedVads, pkgName, depName, depVer, 0)));
+        }
+      }
+    }
+
+    depVer := cast (xpath_eval ('versions_later/@package', items[i]) as varchar);
+    if (depName is not null and length(depVer))
+    {
+      --dbg_obj_print('Checking dep ', depName, depVer);
+      if (not "VAD"."DBA"."VAD_TEST_PACKAGE_GT" (parr, depName, depVer))
+      {
+        -- Check if we need to recurse into the vads deps
+        if (position (depName, checkedVads) = 0)
+        {
+          checkedVads := vector_concat (checkedVads, vector (depName));
+          depTree := vector_concat (depTree, vector ("VAD"."DBA"."VAD_RESOLVE_DEPENDENCY_TREE" (null, 0, vadDir, vadDirType, availableVads, checkedVads, pkgName, depName, depVer, 1)));
+        }
+      }
+    }
+  }
+
+  return vector (
+    'name', pkgName,
+    'title', pkgTitle,
+    'version', pkgVersion,
+    'date', pkgDate,
+    'path', fname,
+    'pathType', is_dav,
+    'deps', depTree
+  );
+}
+;
+
+--!
+-- Convert the dependency tree into a flat list of package nodes.
+--
+-- The tree will be traversed depth-first bottom-up. Thus, the list can be installed from first to last.
+--/
+create procedure "VAD"."DBA"."VAD_FLATTEN_DEPENDENCY_TREE" (
+  in depTree any)
+{
+  declare r, stack, x, deps any;
+
+  r := vector ();
+
+  stack := vector (depTree);
+  while (length (stack) > 0)
+  {
+    -- pop the first element
+    x := stack[0];
+    stack := subseq (stack, 1);
+
+    -- remember the deps
+    deps := get_keyword ('deps', x);
+
+    -- Extract the plain package without deps
+    x := vector (
+      'name', get_keyword ('name', x),
+      'title', get_keyword ('title', x),
+      'version', get_keyword ('version', x),
+      'date', get_keyword ('date', x),
+      'path', get_keyword ('path', x),
+      'pathType', get_keyword ('pathType', x)
+    );
+
+    -- We reached the bottom, add to our result
+    if (length (deps) = 0)
+    {
+      r := vector_concat (r, vector (x));
+    }
+
+    -- Continue our depth traversal by stacking everything
+    else
+    {
+      stack := vector_concat (deps, vector (x), stack);
+    }
+  }
+
+  return r;
+}
+;
