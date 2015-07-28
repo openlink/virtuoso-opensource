@@ -27,14 +27,14 @@
         fast-render="1"
         xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
-  <vm:pagetitle>Persistent XML namespaces</vm:pagetitle>
+  <vm:pagetitle>Persistent Namespaces &amp; Prefixes</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
     </vm:variables>
     <vm:menu>
-      <vm:menuitem value="Persistent XML Namespaces"/>
+      <vm:menuitem value="Persistent Namespaces &amp; Prefixes"/>
     </vm:menu>
-    <vm:header caption="Persistent XML Namespaces">
+    <vm:header caption="Persistent Namespaces &amp; Prefixes">
     </vm:header>
     <vm:pagebody>
       <v:form name="frm1" method="POST" type="simple">
