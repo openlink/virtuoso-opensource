@@ -3198,7 +3198,7 @@ create procedure DAV_DELETE_INT (
     declare det, proc, graph varchar;
 
     det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
-    if (det in ('', 'IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+    if ((det = '') or DB.DBA.DAV_DET_IS_SPECIAL (det))
     {
       if (det = 'IMAP')
       {
@@ -5228,17 +5228,17 @@ create procedure WS.WS.WAC_DELETE (
     connection_set ('dav_acl_sync', null);
   }
   set_user_id ('dba');
-  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and 
-      	a.G = __i2idn (graph) and 
-  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
+  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and
+      	a.G = __i2idn (graph) and
+  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and
   	a.O = __i2idn ('http://www.w3.org/ns/auth/acl#Authorization') );
-  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and 
-      	a.G = __i2idn (graph) and 
-  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
+  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and
+      	a.G = __i2idn (graph) and
+  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and
   	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Filter') );
-  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and 
-      	a.G = __i2idn (graph) and 
-  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
+  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and
+      	a.G = __i2idn (graph) and
+  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and
   	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Criteria') );
 }
 ;
@@ -7546,7 +7546,7 @@ create procedure DB.DBA.DAV_SCHEDULER ()
   declare DETs any;
 
   set_user_id ('dba');
-  DETs := vector ('IMAP', 'S3', 'Box', 'Dropbox', 'GDrive', 'SkyDrive', 'WebDAV', 'RACKSPACE');
+  DETs := DB.DBA.DAV_DET_SPECIAL ();
   foreach (any det in DETs) do
   {
     if (__proc_exists ('DB.DBA.' || det || '_DAV_SCHEDULER'))

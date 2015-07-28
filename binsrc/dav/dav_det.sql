@@ -21,6 +21,19 @@
 --
 -- DAV related procs
 --
+create function DB.DBA.DAV_DET_SPECIAL ()
+{
+  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV');
+}
+;
+
+create function DB.DBA.DAV_DET_IS_SPECIAL (
+  in det varchar)
+{
+  return case when position (det, DB.DBA.DAV_DET_SPECIAL ()) then 1 else 0 end;
+}
+;
+
 create function DB.DBA.DAV_DET_DETCOL_ID (
   in id any)
 {
@@ -59,6 +72,162 @@ create function DB.DBA.DAV_DET_PATH_NAME (
   return right (path, length (path)-strrchr (path, '/')-1);
 }
 ;
+
+create function DB.DBA.DAV_DET_PROPPATCH (
+  in id any,
+  in path varchar,
+  in pa any,
+  in auth_uid varchar,
+  in auth_pwd varchar)
+{
+  declare retValue any;
+  declare j, m integer;
+  declare det varchar;
+  declare det_props, det_params any;
+  declare dpa, dpn, dpv any;
+
+  det := trim (cast (xpath_eval ('[xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/"] ./V:name/text()', pa) as varchar));
+
+  -- verify for DET properties
+  --
+  if      (det = 'DynamicResource' or det = 'DR')
+  {
+    det := 'DynRes';
+  }
+  else if (det = 'LinkedDataImport' or det = 'LDI')
+  {
+    det := 'rdfSink';
+  }
+  else if (det = 'SocialNetwork')
+  {
+    det := 'SN';
+  }
+  if ((det <> 'rdfSink') and (__proc_exists ('DB.DBA.' || det || '_DAV_AUTHENTICATE_HTTP') is null))
+  {
+    DB.DBA.DAV_SET_HTTP_STATUS (400);
+    return 1;
+  }
+  det_params := vector ();
+  det_props := xpath_eval ('[xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/"] ./V:params/*', pa, 0);
+  m := length (det_props);
+  for (j := 0; j < m; j := j + 1)
+  {
+    dpa := det_props[j];
+    dpn := cast (xpath_eval ('local-name(.)', dpa) as varchar);
+    dpv := trim (cast (xpath_eval ('text()', dpa) as varchar));
+    det_params := vector_concat (det_params, vector (dpn, dpv));
+  }
+
+  if (det in ('Box', 'Dropbox', 'SkyDrive', 'GDrive', 'SN'))
+  {
+    declare expire_in integer;
+    declare expire_time datetime;
+    declare service_id, service_name, service_sid varchar;
+    declare qry, st, msg, meta, rows any;
+
+    -- check if OAuth connection exist
+    service_id := get_keyword ('det_serviceId', det_params);
+    if      (det = 'SkyDrive')
+      service_name := 'windowslive';
+    else if (det = 'GDrive')
+      service_name := 'google';
+    else if (det = 'Box')
+      service_name := 'boxnet';
+    else if (det = 'SN')
+      service_name := get_keyword ('det_network', det_params);
+    else
+      service_name := lcase (det);
+
+    qry := ' select TOP 1 CS_SID                        \n' ||
+           '  from OAUTH.DBA.CLI_SESSIONS,              \n' ||
+           '       DB.DBA.WA_USER_OL_ACCOUNTS           \n' ||
+           ' where CS_SID = WUO_OAUTH_SID               \n' ||
+           '   and CS_SERVICE = ?                       \n' ||
+           '   and ((? is null) or (CS_SERVICE_ID = ?)) \n' ||
+           '   and position (\'dav\', CS_SCOPE) > 0     \n' ||
+           '   and WUO_U_ID = ?                         \n' ||
+           '   and WUO_TYPE = \'P\'';
+    st := '00000';
+    exec (qry, st, msg, vector (service_name, service_id, service_id, auth_uid), 0, meta, rows);
+    if (('00000' <> st) or (length (rows) = 0))
+    {
+      DB.DBA.DAV_SET_HTTP_STATUS (400);
+      return 1;
+    }
+    service_sid := rows[0][0];
+    st := '00000';
+    qry := 'select * from OAUTH.DBA.CLI_SESSIONS where CS_SID = ?';
+    exec (qry, st, msg, vector (service_sid), 0, meta, rows);
+    if (('00000' <> st) or (length (rows) = 0))
+    {
+      DB.DBA.DAV_SET_HTTP_STATUS (400);
+      return 1;
+    }
+    det_params := vector_concat (det_params, vector ('Authentication', 'Yes'));
+    -- Box, SkyDrive and GDrive - OAuth 2.0 params
+    if (det in ('Box', 'SkyDrive', 'GDrive'))
+    {
+      expire_time := rows[0][0];
+      if (isnull (expire_time) or (expire_time < now ()))
+        expire_time := now ();
+
+      expire_in := datediff ('second', now (), expire_time);
+      det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
+      det_params := vector_concat (det_params, vector ('refresh_token', rows[0][2]));
+      det_params := vector_concat (det_params, vector ('expire_in', expire_in));
+      det_params := vector_concat (det_params, vector ('access_timestamp', datestring (now ())));
+    }
+    -- Dropbox  - OAuth 1.0 params
+    else if (det in ('Dropbox'))
+    {
+      det_params := vector_concat (det_params, vector ('sid', service_sid));
+      det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
+    }
+    -- SN
+    else if (det in ('SN'))
+    {
+      det_params := vector_concat (det_params, vector ('sid', service_sid));
+    }
+  }
+
+  -- verify input DET params
+  retValue := null;
+  if (__proc_exists ('DB.DBA.' || det || '_VERIFY') is not null)
+  {
+    -- set DET type parameters
+    retValue := call ('DB.DBA.' || det || '_VERIFY') (path, det_params);
+  }
+  else if (__proc_exists ('WEBDAV.DBA.' || det || '_VERIFY') is not null)
+  {
+    retValue := call ('WEBDAV.DBA.' || det || '_VERIFY') (path, det_params);
+  }
+  if (not isnull (retValue))
+  {
+    return -17;
+  }
+
+  -- set DET type
+  if (det <> 'rdfSink')
+    retValue := DB.DBA.DAV_PROP_SET_INT (path, ':virtdet', det, null, null, 0, 0, 0, http_dav_uid ());
+
+  if (not WEBDAV.DBA.DAV_ERROR (retValue))
+  {
+    if (__proc_exists ('DB.DBA.' || det || '_CONFIGURE') is not null)
+    {
+      -- set DET type parameters
+      retValue := call ('DB.DBA.' || det || '_CONFIGURE') (id, det_params);
+    }
+    else if (__proc_exists ('WEBDAV.DBA.' || det || '_CONFIGURE') is not null)
+    {
+      retValue := call ('WEBDAV.DBA.' || det || '_CONFIGURE') (id, det_params);
+    }
+    if (DAV_HIDE_ERROR (retValue) is null)
+    {
+      return -17;
+    }
+  }
+  return 0;
+};
 
 create function DB.DBA.DAV_DET_DAV_LIST (
   in det varchar,
