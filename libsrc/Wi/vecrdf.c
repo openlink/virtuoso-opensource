@@ -543,7 +543,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	rb_sets[rb_fill++] = set;
 	rb_bits[set >> 3] |= 1 << (set & 7);
 	((db_buf_t *) dc->dc_values)[set] = empty_mark;
-	  dc->dc_n_values = set + 1;
+	dc->dc_n_values = MAX (dc->dc_n_values, set + 1);
       }
     else if ((DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp) && !no_iris)
       {
@@ -554,7 +554,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	  }
 	iri_bits[set >> 3] |= 1 << (set & 7);
 	((db_buf_t *) dc->dc_values)[set] = empty_mark;
-	  dc->dc_n_values = set + 1;
+	dc->dc_n_values = MAX (dc->dc_n_values, set + 1);
       }
     else
       {
@@ -700,7 +700,7 @@ from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_
 	  rb_sets[rb_fill++] = set;
 	  rb_bits[set >> 3] |= 1 << (set & 7);
 	  ((db_buf_t*)dc->dc_values)[set] = empty_mark;
-	  dc->dc_n_values = set + 1;
+	  dc->dc_n_values = MAX (dc->dc_n_values, set + 1);
 	}
 #if 0 /* write something meaningful here */
       else if ((DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp))
@@ -712,7 +712,7 @@ from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_
 	    }
 	  iri_bits[set >> 3] |= 1 << (set & 7);
 	  ((db_buf_t*)dc->dc_values)[set] = empty_mark;
-	  dc->dc_n_values = set + 1;
+	  dc->dc_n_values = MAX (dc->dc_n_values, set + 1);
 	}
       else
 	{
