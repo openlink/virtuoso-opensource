@@ -3712,7 +3712,8 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  new_fd = fd_open (new_log, LOG_OPEN_FLAGS);
 	  if (new_fd < 0)
 	    {
-	      log_error ("Cannot change to log file %s", new_log);
+	      int errn = errno;
+	      log_error ("Cannot change to log file %s, error : %s", new_log,  virt_strerror (errn));
 	      call_exit (1);
 	    }
 	  fd_close (tcpses_get_fd (dbs->dbs_log_session->dks_session),
