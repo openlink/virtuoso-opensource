@@ -10846,9 +10846,13 @@ create procedure DB.DBA.CL_EXEC_AND_LOG (in txt varchar, in args any)
 }
 ;
 
-create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now integer, in instances any, in triples any)
+create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now integer, in instances any, in triples any, in report_errors integer := 0) returns any
 {
-  declare chk any;
+  declare chk, errors_acc any;
+  if (report_errors)
+    vectorbld_init (errors_acc);
+  else
+    errors_acc := null;
 /* Pass 1. Deleting all obsolete instances. */
   foreach (any j in instances) do
     jso_delete (j[0], j[1], 1);
@@ -10859,8 +10863,41 @@ create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now int
   foreach (any j in instances) do
     DB.DBA.JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0, j[2]);
 /* Pass 4. Validation all instances. */
-  foreach (any j in instances) do
-    jso_validate (j[0], j[1], 1);
+--   foreach (any j in instances) do
+--     {
+--       if (report_errors)
+--         {
+--           whenever sqlstate '*' goto validation_err;
+--           jso_validate (j[0], j[1], 1);
+--           goto validated;
+-- validation_err:
+--           vectorbld_acc (errors_acc, vector_concat (vector (j[0], j[1], j[2], __SQL_STATE), split_and_decode (__SQL_MESSAGE, 0, '\0\0\n')));
+-- validated: ;
+--         }
+--       else
+--         jso_validate (j[0], j[1], 1);
+--     }
+  if (report_errors)
+    {
+      declare rep any;
+      rep := jso_validate_batch (instances, 1);
+      foreach (any r in rep) do
+        {
+          -- dbg_obj_princ ('Reported error/warning: ', r);
+          if (r[2])
+            vectorbld_acc (errors_acc, vector (r[0], r[1], NULL, '22023', r[3]));
+        }
+    }
+  else
+    {
+      declare rep any;
+      rep := jso_validate_batch (instances, 1);
+      foreach (any r in rep) do
+        {
+          if (r[2])
+            signal ('22023', r[3]);
+        }
+    }
 /* Pass 5. Pin all instances. */
   if (pin_now)
     {
@@ -10875,10 +10912,13 @@ create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now int
     UNAME'http://www.openlinksw.com/schemas/virtrdf#loadAs' );
   if ((1 <> length (chk)) or (cast (chk[0] as varchar) <> 'http://www.openlinksw.com/schemas/virtrdf#jsoTriple'))
     signal ('22023', 'JSO_LOAD_GRAPH_MEMONLY has not found expected metadata in the graph');
+  if (report_errors)
+    vectorbld_final (errors_acc);
+  return errors_acc;
 }
 ;
 
-create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1)
+create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1, in report_errors integer := 0) returns any
 {
   declare jgraph_iid IRI_ID;
   declare qry, stat, msg varchar;
@@ -10897,7 +10937,7 @@ create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 
   if (stat <> '00000')
     signal (stat, msg);
   triples := rset[0][0];
-  DB.DBA.JSO_LOAD_GRAPH_MEMONLY (jgraph, pin_now, instances, triples);
+  return DB.DBA.JSO_LOAD_GRAPH_MEMONLY (jgraph, pin_now, instances, triples, report_errors);
 }
 ;
 
@@ -10924,23 +10964,28 @@ create function DB.DBA.JSO_SYS_GRAPH () returns varchar
 ;
 
 -- same as DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH but no drop procedures
-create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO (in graphiri varchar := null)
+create function DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO (in graphiri varchar := null, in report_errors integer := 0) returns any
 {
+  declare res any;
   if (graphiri is null)
     graphiri := DB.DBA.JSO_SYS_GRAPH();
   if (not exists (select 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.RDF_QUAD'))
     return;
-  DB.DBA.JSO_LOAD_GRAPH (graphiri, 0);
+  res := DB.DBA.JSO_LOAD_GRAPH (graphiri, 0, report_errors);
   DB.DBA.JSO_PIN_GRAPH (graphiri);
+  return res;
 }
 ;
 
-create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null)
+create function DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null, in report_errors integer := 0) returns any
 {
+  declare res any;
   if (graphiri is null)
     graphiri := DB.DBA.JSO_SYS_GRAPH();
   commit work;
-  DB.DBA.JSO_LOAD_GRAPH (graphiri, 0);
+  res := DB.DBA.JSO_LOAD_GRAPH (graphiri, 0, report_errors);
+  if (length (res))
+    return res;
   DB.DBA.JSO_PIN_GRAPH (graphiri);
   for (select P_NAME from SYS_PROCEDURES
     where (
@@ -10956,6 +11001,7 @@ create procedure DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null)
       exec ('drop procedure DB.DBA."' || subseq (P_NAME, 7) || '"');
     }
   commit work;
+  return res;
 }
 ;
 
@@ -11238,6 +11284,8 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
   declare STAT, MSG varchar;
   declare graphiri_id IRI_ID;
   declare all_lists, prev_list, prev_subj any;
+  declare loop_count integer;
+  loop_count := 10;
   if (call_result_names)
     result_names (STAT, MSG);
   if (graphiri is null)
@@ -11272,6 +11320,7 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
       where { graph ?:graphiri_id {
               ?st virtrdf:qsAlterInProgress ?trx } };
     }
+retry_reload:
   if ((graphiri = DB.DBA.JSO_SYS_GRAPH ()) and fix_bugs)
     {
       declare txt1,txt2 varchar;
@@ -11466,7 +11515,30 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
   if ((graphiri = DB.DBA.JSO_SYS_GRAPH ()) and fix_bugs)
     {
       whenever sqlstate '*' goto jso_load_failed;
-      DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
+      if ((fix_bugs > 2) and (loop_count > 0))
+        {
+          declare load_res any;
+          loop_count := loop_count - 1;
+          load_res := DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (graphiri, 1);
+          if (length (load_res))
+            {
+              foreach (any r in load_res) do
+                {
+                  declare rsubj any;
+                  dbg_obj_princ ('Error loading RDF metadata: ', r);
+                  result (r[3], r[4]);
+                  rsubj := r[1];
+                  sparql define input:storage "" delete where { graph `iri(?:graphiri_id)` { `iri(?:rsubj)` ?p ?o . } };
+                  sparql define input:storage "" delete where { graph `iri(?:graphiri_id)` { ?s ?p `iri(?:rsubj)` . } };
+                  result ('00000', 'Deleting references from/to <' || id_to_iri_nosignal (rsubj) || '> from the system graph');
+                }
+              goto retry_reload;
+            }
+        }
+      else
+        {
+          DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
+        }
       result ('00000', 'Metadata from system graph are cached in memory-resident JSOs (JavaScript Objects)');
       return;
     }
@@ -11474,7 +11546,16 @@ create procedure DB.DBA.RDF_AUDIT_METADATA (in fix_bugs integer := 0, in unlocke
 
 jso_load_failed:
   result (__SQL_STATE, __SQL_MESSAGE);
-  result ('42000', 'The previous error can not be fixed automatically. Sorry.');
+  if ((fix_bugs > 2) or graphiri <> DB.DBA.JSO_SYS_GRAPH ())
+    result ('42000', 'The previous error can not be fixed automatically. Sorry.');
+  else
+    {
+      result ('42000', 'The previous error can not be fixed automatically now.');
+      result ('42000', 'You may wish to try the DB.DBA.RDF_AUDIT_METADATA with first parameter set to 3.');
+      result ('42000', 'With the mode 3, the procedure will erase data about incorrectly described subjects.');
+      result ('42000', 'This is especially useful to quickly return the storage to some functional state.');
+      result ('42000', 'Before trying mode 3, use RDF_BACKUP_METADATA().');
+    }
   return;
 }
 ;

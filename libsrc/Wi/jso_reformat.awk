@@ -618,14 +618,14 @@ match($0,"^JSO_STRUCT_BEGIN.*$",line)	{
   next
   }
 
-#          1                       2---------------------- 3             4---------------------- 5             6------- 7                             8--------
-match($0,"^(JSO_SCALAR[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
+#          1                       2---------------------- 3             4---------------------- 5             6------------- 7                             8--------
+match($0,"^(JSO_SCALAR[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+[0-9]*)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_scalar(line[2], "JSO_" line[4], line[6], line[8])
   next
   }
 
-#          1                       2---------------------- 3             4---------------------- 5             6------- 7
-match($0,"^(JSO_SCALAR[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*)$",line)	{
+#          1                       2---------------------- 3             4---------------------- 5             6------------- 7
+match($0,"^(JSO_SCALAR[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+[0-9]*)([[:blank:]]*)$",line)	{
   write_scalar(line[2], "JSO_" line[4], line[6], "")
   next
   }
@@ -635,14 +635,14 @@ match($0,"^JSO_SCALAR.*$",line)	{
   next
   }
 
-#          1                        2---------------------- 3             4---------------------- 5             6------- 7                             8--------
-match($0,"^(JSO_POINTER[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
+#          1                        2---------------------- 3             4---------------------- 5             6------------- 7                             8--------
+match($0,"^(JSO_POINTER[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+[0-9]*)([[:blank:]]*--!<[[:blank:]]*)([^\r\n]*)$",line)	{
   write_scalar(line[2], "JSO_IRI_OF_" line[4], line[6], line[8])
   next
   }
 
-#          1                        2---------------------- 3             4---------------------- 5             6------- 7
-match($0,"^(JSO_POINTER[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+)([[:blank:]]*)$",line)	{
+#          1                        2---------------------- 3             4---------------------- 5             6------------- 7
+match($0,"^(JSO_POINTER[[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([a-zA-Z_][a-zA-Z0-9_]*)([[:blank:]]+)([A-Z_]+[0-9]*)([[:blank:]]*)$",line)	{
   write_scalar(line[2], "JSO_IRI_OF_" line[4], line[6], "")
   next
   }

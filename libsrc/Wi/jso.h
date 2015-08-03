@@ -32,21 +32,28 @@
 /* Part 1. Java Script style objects with named instances and properties. */
 
 /* A property of a class MAY, MUST or SHOULD NOT appear in declaration of instances of the class. TBD: support for it :) */
-#define JSO_OPTIONAL	11	/*!< The property is fully optional */
-#define JSO_INHERITABLE	12	/*!< The property is required but it can be inherited */
-#define JSO_REQUIRED	13	/*!< The property is required, it should be specified directly even if can be inherited */
-#define JSO_PRIVATE	14	/*!< The property is never loaded. It's used only in C code */
-#define JSO_DEPRECATED	15	/*!< The property is deprecated and should not be specified at all */
+#define JSO_OPTIONAL		11	/*!< The property is fully optional */
+#define JSO_OPTIONAL_MIDTREE	12	/*!< The property is fully optional; even more, it makes optional all radios */
+#define JSO_INHERITABLE		13	/*!< The property is required but it can be inherited */
+#define JSO_REQUIRED		14	/*!< The property is required, it should be specified directly even if can be inherited */
+#define JSO_PRIVATE		15	/*!< The property is never loaded. It's used only in C code */
+#define JSO_DEPRECATED		16	/*!< The property is deprecated and should not be specified at all */
+#define JSO_RADIO1		21	/*!< The property belongs to a group #1 of properties such that exactly one property of the group is required and should be specified directly even if can be inherited */
+#define JSO_RADIO2		22	/*!< The property is like JSO_RADIO1 but the group is #2 */
+#define JSO_RADIO3		23	/*!< The property is like JSO_RADIO1 but the group is #3 */
+#define JSO_RADIO4		24	/*!< The property is like JSO_RADIO1 but the group is #4 */
+#define JSO_RADIO5		25	/*!< The property is like JSO_RADIO1 but the group is #5 */
+#define JSO_RADIO_COUNT		5	/*!< Count of JSO_RADIO1... JSO_RADIO5 values, increment if added more */
 
-#define JSO_ANY		"http://www.w3.org/2001/XMLSchema#any"			/*!< Arbitrary boxed SQL value */
-#define JSO_ANY_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-any"	/*!< A vector of arbitrary boxed SQL values */
-#define JSO_ANY_URI	"http://www.w3.org/2001/XMLSchema#anyURI"		/*!< boxed DV_UNAME in UTF-8 encoding */
-#define JSO_BOOLEAN	"http://www.w3.org/2001/XMLSchema#boolean"		/*!< Bool as ptrlong 1 or 0 */
-#define JSO_BITMASK	"http://www.openlinksw.com/schemas/virtrdf#bitmask"	/*!< Bitmask as ptrlong, can be loaded as OR of a list of values */
-#define JSO_DOUBLE	"http://www.w3.org/2001/XMLSchema#double"		/*!< Double float as unboxed double */
-#define JSO_INTEGER	"http://www.w3.org/2001/XMLSchema#integer"		/*!< Integer as ptrlong */
+#define JSO_ANY			"http://www.w3.org/2001/XMLSchema#any"				/*!< Arbitrary boxed SQL value */
+#define JSO_ANY_array		"http://www.openlinksw.com/schemas/virtrdf#array-of-any"		/*!< A vector of arbitrary boxed SQL values */
+#define JSO_ANY_URI		"http://www.w3.org/2001/XMLSchema#anyURI"			/*!< boxed DV_UNAME in UTF-8 encoding */
+#define JSO_BOOLEAN		"http://www.w3.org/2001/XMLSchema#boolean"			/*!< Bool as ptrlong 1 or 0 */
+#define JSO_BITMASK		"http://www.openlinksw.com/schemas/virtrdf#bitmask"		/*!< Bitmask as ptrlong, can be loaded as OR of a list of values */
+#define JSO_DOUBLE		"http://www.w3.org/2001/XMLSchema#double"			/*!< Double float as unboxed double */
+#define JSO_INTEGER		"http://www.w3.org/2001/XMLSchema#integer"			/*!< Integer as ptrlong */
 #define JSO_INTEGER_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-integer"	/*!< Either a vector of DV_LONG_INTs or DV_ARRAY_OF_LONG */
-#define JSO_STRING	"http://www.w3.org/2001/XMLSchema#string"		/*!< String, boxed DV_STRING */
+#define JSO_STRING		"http://www.w3.org/2001/XMLSchema#string"			/*!< String, boxed DV_STRING */
 #define JSO_STRING_array	"http://www.openlinksw.com/schemas/virtrdf#array-of-string"	/*!< A vector of DV_STRING-s */
 
 #define JSO_FIELD_OFFSET(dt,f) (((char *)(&(((dt *)NULL)->f)))-((char *)NULL))
@@ -87,7 +94,7 @@ typedef struct jso_array_descr_s {
 /*! A type for validation callback called at the end of jso_validate(). The callback can validate and optionally enrich the data.
 \c warning_acc_ptr is a pointer to set of 2-element vectors, each vector is a pair of pointer to jso_rtti_t and text of warning.
 \c inst_rtti is made void * because gcc 4.4.7 disliked proper typedef for proper type of pointer. */
-typedef void jso_validation_cbk_t (void * /* actually jso_rtti_t * */ inst_rtti, dk_set_t *warnings_log_ptr);
+typedef void jso_validation_cbk_t (void * /* actually jso_rtti_t * */ inst_rtti, dk_set_t *errors_log_ptr, dk_set_t *warnings_log_ptr);
 
 /*! Description of a JSO class */
 typedef struct jso_class_descr_s {

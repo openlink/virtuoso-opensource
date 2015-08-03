@@ -207,35 +207,35 @@ JSO_GROUP_BEGIN qmGraphRange virtrdf rdf_val_range	--!< Restrictions on graph
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
 JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
-JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_SCALAR rvrFixedValue ANY RADIO1
 JSO_GROUP_END
 JSO_GROUP_BEGIN qmSubjectRange virtrdf rdf_val_range	--!< Restrictions on subject
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
 JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
-JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_SCALAR rvrFixedValue ANY RADIO2
 JSO_GROUP_END
 JSO_GROUP_BEGIN qmPredicateRange virtrdf rdf_val_range	--!< Restrictions on predicate
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
 JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
-JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_SCALAR rvrFixedValue ANY RADIO3
 JSO_GROUP_END
 JSO_GROUP_BEGIN qmObjectRange virtrdf rdf_val_range	--!< Restrictions on object
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL
 JSO_SCALAR rvrLanguage ANY_URI OPTIONAL
-JSO_SCALAR rvrFixedValue ANY OPTIONAL
+JSO_SCALAR rvrFixedValue ANY RADIO4
 JSO_GROUP_END
-JSO_POINTER qmGraphMap qm_value OPTIONAL		--!< Graph map if triple has a variable in graph position
-JSO_POINTER qmSubjectMap qm_value OPTIONAL		--!< Subject map if triple has a variable in subject position
-JSO_POINTER qmPredicateMap qm_value OPTIONAL		--!< Predicate map if triple has a variable in predicate position
-JSO_POINTER qmObjectMap qm_value OPTIONAL		--!< Object map if triple has a variable in object position
+JSO_POINTER qmGraphMap qm_value RADIO1			--!< Graph map if triple has a variable in graph position
+JSO_POINTER qmSubjectMap qm_value RADIO2		--!< Subject map if triple has a variable in subject position
+JSO_POINTER qmPredicateMap qm_value RADIO3		--!< Predicate map if triple has a variable in predicate position
+JSO_POINTER qmObjectMap qm_value RADIO4			--!< Object map if triple has a variable in object position
 JSO_SCALAR qmTableName STRING OPTIONAL			--!< Table name where mapped rows are from, if this is the only table. Use only if there's no alias and hence no qmvATable
 JSO_POINTER qmATables qm_atable_array OPTIONAL		--!< Aliased tables whose aliases are used in qmConds but not in qmvConds
 JSO_SCALAR qmConds STRING_array OPTIONAL		--!< Join conditions and filters not included into qmvConds of columns
 JSO_SCALAR qmTableRowFilter STRING OPTIONAL		--!< DEPRECATED Filter expression that is true for rows that should be mapped, will appear in WHERE clauses
-JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL	--!< Array of user-defined submaps, should never appear in MJVs or default storage
+JSO_POINTER qmUserSubMaps quad_map_array OPTIONAL_MIDTREE   --!< Array of user-defined submaps, should never appear in MJVs or default storage
 JSO_SCALAR qmMatchingFlags BITMASK OPTIONAL		--!< What should be done in case of match of triple pattern to conditions of the quad map
 JSO_SCALAR qmPriorityOrder INTEGER OPTIONAL		--!< Integer to specify default order in parent's qmUserSubMaps
 JSO_SCALAR qmAliasesKeyrefdByQuad STRING_array OPTIONAL	--!< List of aliases such that any quad made by the quad map can be made from exactly one row from the alias, so quad identifies the row there
