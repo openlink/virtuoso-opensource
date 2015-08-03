@@ -1325,7 +1325,9 @@ fct_text (in tree any,
       txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);
       if (length (txs_arr) > wlimit)
 	signal ('22023', 'The request is too large');
+      http (' quad map virtrdf:DefaultQuadMap { graph ?g { ', txt);
       http (sprintf (' ?s%d %s ?o%d . ?o%d bif:contains  ''%s'' %s .', this_s, prop, this_s, this_s, txs_qr, sc_opt), txt);
+      http (' } } ', txt);
     }
 
   if ('property' = n)
@@ -1428,10 +1430,8 @@ fct_query (in tree any, in plain integer := 0)
   fct_text (xpath_eval ('//query', tree), 0, s, txt, pre, post, tree, plain);
 
   http (' where {', pre);
-  if (add_graph) http (' quad map virtrdf:DefaultQuadMap { graph ?g { ', pre);
   http (txt, pre);
   http (' }', pre);
-  if (add_graph) http (' } } ', pre);
   http (post, pre);
 
   return string_output_string (pre);

@@ -344,11 +344,7 @@ DAV_HOME_DIR_CREATE (in uid varchar) returns any
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
 
-    rc := DAV_PROP_SET_INT (path, 'virt:rdfSink-graph', 'urn:dav:' || replace (subseq (rtrim (path, '/'), 5), '/', ':'), null, null, 0, 0);
-    if (isnull (DAV_HIDE_ERROR (rc)))
-      goto _end;
-
-    rc := DAV_PROP_SET_INT (path, 'virt:rdfSink-sponger', 'on', null, null, 0, 0);
+    rc := DB.DBA.DAV_DET_RDF_PARAMS_SET_INT ('rdfSink', rc, vector ('graph', 'urn:dav:' || replace (subseq (rtrim (path, '/'), 5), '/', ':'), 'sponger', 'on'));
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
   }
@@ -661,7 +657,7 @@ DAV_DIR_FILTER_INT (in path varchar := '/DAV/', in rec_depth integer := 0, in co
     {
       return did;
     }
-  if ('R' = st or det is null)
+  if (('R' = st) or (det is null) or DB.DBA.DAV_DET_IS_WEBDAV_BASED (det))
     {
       if (auth_uid is null)
         uid := DAV_AUTHENTICATE (did, st, '1__', auth_uname, auth_pwd, uid);
@@ -728,7 +724,7 @@ else 1 end';
 
       for select SUBCOL_FULL_PATH, SUBCOL_ID, SUBCOL_DET
         from DB.DBA.DAV_PLAIN_SUBCOLS
-        where SUBCOL_DET is not null and (not (SUBCOL_DET like '%Filter')) and recursive = rec_depth and (root_id = did) and (root_path = path_string) and subcol_auth_uid = null and subcol_auth_pwd = null
+        where SUBCOL_DET is not null and (not (SUBCOL_DET like '%Filter')) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (SUBCOL_DET) and recursive = rec_depth and (root_id = did) and (root_path = path_string) and subcol_auth_uid = null and subcol_auth_pwd = null
       do
           {
               vectorbld_concat_acc (res, call (SUBCOL_DET || '_DAV_DIR_FILTER') (SUBCOL_ID, vector (''), SUBCOL_FULL_PATH, compilation, rec_depth, auth_uid));
@@ -2802,7 +2798,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
 
 
   declare c_id, depth integer;
-  declare rdf_graph any;
+  declare rdf_graph, rdf_params any;
   declare _col_p_id, _inherit any;
 
   -- delete RDF data from separate (file) graph (if exists)
@@ -2817,7 +2813,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
      whenever not found goto rdfg_found;
 look_again:
       select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
-      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
+      rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', c_id);
+      rdf_graph := get_keyword ('graph', rdf_params);
       if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
 	goto rdfg_found;
       c_id := _col_p_id;
@@ -2862,19 +2859,21 @@ create procedure RDF_SINK_FUNC (
   in ogid int)
 {
   -- dbg_obj_print ('RDF_SINK_FUNC', path);
-  declare rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges any;
+  declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges any;
   declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host, content any;
   declare exit handler for sqlstate '*'
   {
     goto _bad_content;
   };
 
-  -- get sponger parameter?
+  -- get sponger parameters?
   content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
-  rdf_base := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-base'), '');
-  rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-sponger'), 'on');
-  rdf_cartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-cartridges'), '');
-  rdf_metaCartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-metaCartridges'), '');
+  rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', c_id);
+  rdf_base := get_keyword ('base', rdf_params, '');
+  rdf_sponger := get_keyword ('sponger', rdf_params, 'on');
+  rdf_cartridges := get_keyword ('cartridges', rdf_params, '');
+  rdf_metaCartridges := get_keyword ('metaCartridges', rdf_params, '');
+
   -- upload into first (rdf_sink) graph
   if (RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
   {
@@ -3067,43 +3066,46 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
   declare xrc, val_match any;
   declare st, msg, meta, rows, opts any;
 
+  if (DB.DBA.is_empty_or_null (rdf_cartridges))
+    return 1;
+
   st := '00000';
   exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
   if ('00000' <> st)
     return 0;
 
-    cartridges := split_and_decode (rdf_cartridges, 0, '\0\0,');
+  cartridges := split_and_decode (rdf_cartridges, 0, '\0\0,');
   ps := null;
   aq := null;
   foreach (any row in rows) do
-    {
+  {
     cname := cast (row[0] as varchar);
-	    if (position (cname, cartridges))
-            goto _try;
+    if (position (cname, cartridges))
+      goto _try;
 
-        goto _try_next;
+    goto _try_next;
 
-    _try:
+  _try:
     val_match := case when (row[2] = 'MIME') then type else rdf_graph end;
     if (isstring (val_match) and regexp_match (row[1], val_match) is not null)
-      {
-	pname := row[3];
-	if (__proc_exists (pname) is null)
-          goto _try_next;
+    {
+      pname := row[3];
+      if (__proc_exists (pname) is null)
+        goto _try_next;
 
-        declare exit handler for sqlstate '*'
-        {
-          goto _try_next;
-        };
-	opts := vector_concat (vector (), row[5]);
-	xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], opts);
-	-- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
-	-- when no selection we stop processing when a given cartridge indicate to stop
-	if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
-          return 1;
-	      }
-    _try_next:;
+      declare exit handler for sqlstate '*'
+      {
+        goto _try_next;
+      };
+      opts := vector_concat (vector (), row[5]);
+      xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], opts);
+      -- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
+      -- when no selection we stop processing when a given cartridge indicate to stop
+      if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
+        return 1;
     }
+  _try_next:;
+  }
   return 1;
 }
 ;
@@ -3112,7 +3114,7 @@ create procedure RDF_SINK_DELETE (
   in path any)
 {
   declare c_id, _col_p_id, _inherit, depth integer;
-  declare rdf_graph, rdf_graph2 any;
+  declare rdf_params, rdf_graph any;
 
   c_id := DB.DBA.DAV_SEARCH_ID (subseq (path, 0, strrchr (path, '/') + 1), 'C');
   if (not isinteger (c_id) or (c_id < 0))
@@ -3124,9 +3126,12 @@ create procedure RDF_SINK_DELETE (
      whenever not found goto rdfg_found;
 look_again:
       select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
+      rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', c_id);
+      rdf_graph := get_keyword ('graph', rdf_params);
       rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
       if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
 	goto rdfg_found;
+
       c_id := _col_p_id;
       depth := depth + 1;
       rdf_graph := null;
@@ -3245,7 +3250,7 @@ create procedure DAV_DELETE_INT (
     declare det, proc, graph varchar;
 
     det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
-    if (det in ('', 'IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+    if ((det = '') or DB.DBA.DAV_DET_IS_SPECIAL (det))
     {
       if (det = 'IMAP')
       {
@@ -5319,27 +5324,18 @@ create procedure WS.WS.WAC_DELETE (
     connection_set ('dav_acl_sync', null);
   }
   set_user_id ('dba');
-  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE
-      	a.G = __i2idn (graph) and 
-  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
-  	a.O = __i2idn ('http://www.w3.org/ns/auth/acl#Authorization') do
-	{
-	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
-	}
-  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE
-      	a.G = __i2idn (graph) and 
-  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
-  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Filter') do
-	{
-	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
-	}
-  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE
-      	a.G = __i2idn (graph) and 
-  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
-  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Criteria') do
-	{
-	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
-	}
+  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and
+      	a.G = __i2idn (graph) and
+  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and
+  	a.O = __i2idn ('http://www.w3.org/ns/auth/acl#Authorization') );
+  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and
+      	a.G = __i2idn (graph) and
+  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and
+  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Filter') );
+  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and
+      	a.G = __i2idn (graph) and
+  	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and
+  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Criteria') );
 }
 ;
 
@@ -7646,7 +7642,7 @@ create procedure DB.DBA.DAV_SCHEDULER ()
   declare DETs any;
 
   set_user_id ('dba');
-  DETs := vector ('IMAP', 'S3', 'Box', 'Dropbox', 'GDrive', 'SkyDrive', 'WebDAV', 'RACKSPACE');
+  DETs := DB.DBA.DAV_DET_SPECIAL ();
   foreach (any det in DETs) do
   {
     if (__proc_exists ('DB.DBA.' || det || '_DAV_SCHEDULER'))
@@ -7684,7 +7680,7 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
   }
 
   old_mode := log_enable (3, 1);
-  for (select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph') do
+  for (select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-rdf') do
   {
     path := DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, 'C');
     for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
