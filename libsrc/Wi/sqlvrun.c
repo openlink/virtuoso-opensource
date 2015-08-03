@@ -2561,25 +2561,29 @@ aq_qr_func (caddr_t av, caddr_t * err_ret)
   }
   QR_RESET_CODE
   {
-      du_thread_t * prev_qi_thread = qi->qi_thread;
-      cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
+    du_thread_t *prev_qi_thread = qi->qi_thread;
+    cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
     if (RST_GB_ENOUGH == reset_code)
       {
+	qi->qi_client = NULL;
 	return (caddr_t) qi;
       }
     if (RST_ENOUGH == reset_code)
       {
+	qi->qi_client = NULL;
 	return (caddr_t) qi;
       }
     if (RST_ERROR == reset_code)
       {
 	*err_ret = thr_get_error_code (prev_qi_thread);
+	qi->qi_client = NULL;
 	return (caddr_t) qi;
       }
   }
   END_QR_RESET;
   cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
   qi_inc_branch_count (qi, 0, -1);	/* branch completed */
+  qi->qi_client = NULL;
   return (caddr_t) qi;
 }
 
