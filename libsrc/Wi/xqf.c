@@ -3556,6 +3556,7 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           xte->xe_doc.xd->xd_id_scan = XD_ID_SCAN_COMPLETED;
           xte->xe_doc.xd->xd_ns_2dict = ns_2dict;
           xte->xe_doc.xd->xd_namespaces_are_valid = 0;
+	  xte->xe_doc.xd->xout_encoding = box_dv_short_string ("UTF-8");
           /* test only : xte_word_range(xte,&l1,&l2); */
           return ((caddr_t) xte);
         }
