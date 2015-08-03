@@ -86,7 +86,7 @@ dbg_print_st (caddr_t * box, FILE * f)
       dk_free_box (n);
       return;
     }
-  if (ST_P (st, COL_DOTTED))
+  if (ST_COLUMN (st, COL_DOTTED))
     sqlo_print (("%s.%s ", st->_.col_ref.prefix, st->_.col_ref.name));
   else if (ST_P (st, CALL_STMT))
     {

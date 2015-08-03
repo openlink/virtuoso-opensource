@@ -1212,7 +1212,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	  {
 	    caddr_t col_alias = rds_get_info (target_rds, SQL_COLUMN_ALIAS);
 	    sqlc_exp_print (sc, ct, tree->_.as_exp.left, text, tlen, fill);
-	    if (ST_P (tree->_.as_exp.left, COL_DOTTED) && !tree->_.as_exp.left->_.col_ref.prefix &&
+	    if (ST_COLUMN (tree->_.as_exp.left, COL_DOTTED) && !tree->_.as_exp.left->_.col_ref.prefix &&
 		!CASEMODESTRCMP (tree->_.as_exp.left->_.col_ref.name, tree->_.as_exp.name))
 	      break;
 	    if (DV_STRINGP (col_alias) && box_length (col_alias) > 1 && toupper (col_alias[0]) == 'Y')

@@ -415,7 +415,7 @@ sinv_call_has_col (ST * tree)
       DO_BOX (ST *, arg, inx, tree->_.call.params)
       {
 	SKIP_AS (arg);
-	if (ST_P (arg, COL_DOTTED))
+	if (ST_COLUMN (arg, COL_DOTTED))
 	  {
 	    have_col = 1;
 	    break;
@@ -577,7 +577,7 @@ sinv_check_exp (sqlo_t * so, ST * tree)
     }
   else if (map_col)
     {
-      if (!ST_P (right, COL_DOTTED))
+      if (!ST_COLUMN (right, COL_DOTTED))
 	do_it = 1;
       else
 	{

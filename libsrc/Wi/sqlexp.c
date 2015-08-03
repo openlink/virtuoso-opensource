@@ -468,7 +468,7 @@ sqlg_unplace_ssl (sqlo_t * so, ST * tree)
   int inx;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
-  if (ST_P(tree, COL_DOTTED))
+  if (ST_COLUMN(tree, COL_DOTTED))
     return;
   dfe = sqlo_df_elt (so, tree);
   if (dfe && dfe->dfe_ssl)
@@ -767,7 +767,7 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
     {
       seg_return (ssl_new_constant (sc->sc_cc, (caddr_t) tree->_.op.arg_1));
     }
-  if (ST_P (tree, COL_DOTTED) ||
+  if (ST_COLUMN (tree, COL_DOTTED) ||
       ST_P (tree, FUN_REF))
     {
       state_slot_t * ssl;
