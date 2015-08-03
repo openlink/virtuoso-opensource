@@ -587,6 +587,7 @@ yy_new_error (const char *s, const char *state, const char *native)
   int is_semi;
   int this_lineno = global_scs->scs_scn3c.lineno;
   char buf_for_next [2000];
+  scn3_include_fragment_t *outer;
   if (global_scs->scs_scn3c.inside_error_reporter)
     goto jmp; /* see below */
   nlen = scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
@@ -604,6 +605,12 @@ yy_new_error (const char *s, const char *state, const char *native)
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
 
 jmp:
+  outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+  if (outer->_.sif_skipped_part)
+    {
+      dk_free_box (outer->_.sif_skipped_part);
+      outer->_.sif_skipped_part = NULL;
+    }
   longjmp_splice (&(global_scs->parse_reset), 1);
 }
 #endif
