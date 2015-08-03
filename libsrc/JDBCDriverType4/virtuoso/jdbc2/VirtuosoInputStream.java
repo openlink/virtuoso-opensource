@@ -475,6 +475,7 @@ class VirtuosoInputStream extends BufferedInputStream
    private final String convByte2UTF(byte[] data) throws IOException {
         int utflen = data.length;
         char[] c_arr = new char[utflen];
+        char bad_char = '?';
 
         int c, c2, c3;
         int count = 0;
@@ -502,10 +503,14 @@ class VirtuosoInputStream extends BufferedInputStream
                         c_arr[ch_count++]=(char)c;
                     } else {
                         c2 = (int) data[count-1];
+/***
                         if ((c2 & 0xC0) != 0x80)
-                            throw new UTFDataFormatException(
-                                "malformed input around byte " + count);
-                        c_arr[ch_count++]=(char)(((c & 0x1F) << 6) | (c2 & 0x3F));
+                            throw new UTFDataFormatException("malformed input around byte " + count);
+***/
+                        if ((c2 & 0xC0) != 0x80)
+                          c_arr[ch_count++] = bad_char;
+                        else
+                          c_arr[ch_count++] = (char)(((c & 0x1F) << 6) | (c2 & 0x3F));
                     }
                     break;
                 case 14:
@@ -516,17 +521,24 @@ class VirtuosoInputStream extends BufferedInputStream
                     } else {
                         c2 = (int) data[count-2];
                         c3 = (int) data[count-1];
+/***
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
-                            throw new UTFDataFormatException(
-                                "malformed input around byte " + (count-1));
-                        c_arr[ch_count++]=(char)(((c & 0x0F) << 12) |
+                            throw new UTFDataFormatException("malformed input around byte " + (count-1));
+***/
+                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
+                          c_arr[ch_count++] = bad_char;
+                        else
+                          c_arr[ch_count++] = (char)(((c & 0x0F) << 12) |
                                                     ((c2 & 0x3F) << 6)  |
                                                     ((c3 & 0x3F) << 0));
                     }
                     break;
                 default:
                     /* 10xx xxxx,  1111 xxxx */
+                    c_arr[ch_count++] = bad_char;
+/**
                     throw new UTFDataFormatException("malformed input around byte " + count);
+**/
             }
         }
         // The number of chars produced may be less than utflen
