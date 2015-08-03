@@ -1295,7 +1295,7 @@ create function DB.DBA.DAV_DET_COL_RDF_PARAMS (
   declare _prop_name, _prop_value, V any;
   declare exit handler for not found { return; };
 
-  _det := caolesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = _id), '');
+  _det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = _id), '');
   if (_det = '')
     return 0;
 
