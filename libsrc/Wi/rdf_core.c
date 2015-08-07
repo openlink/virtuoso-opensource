@@ -4310,7 +4310,7 @@ rdf_core_init (void)
     nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
   nic_set_n_ways (iri_prefix_cache, 64);
-  rdf_lang_cache = nic_allocate (255, 0, 0);
+  rdf_lang_cache = nic_allocate (1000, 0, 0);
   rdf_type_cache = nic_allocate (1000, 0, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
