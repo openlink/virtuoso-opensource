@@ -775,9 +775,12 @@ setp_non_agg_dep (setp_node_t * setp, caddr_t * inst, int nth_col, int set, char
 int
 cha_is_null (setp_node_t * setp, caddr_t * inst, int nth_col, int row_no)
 {
-  data_col_t *dc = QST_BOX (data_col_t *, inst, setp->setp_ha->ha_slots[nth_col]->ssl_index);
+  state_slot_t *ssl = setp->setp_ha->ha_slots[nth_col];
+  data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
   if (!dc->dc_any_null)
     return 0;
+  if (SSL_REF == ssl->ssl_type)
+    row_no = sslr_set_no (inst, ssl, row_no);
   return dc_is_null (dc, row_no);
 }
 
