@@ -296,7 +296,7 @@ dc_rb_id (data_col_t * dc, int inx)
 }
 
 void
-dc_set_rb (data_col_t * dc, int inx, int dt_lang, int flags, caddr_t val, caddr_t lng, int64 ro_id)
+dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, caddr_t lng, int64 ro_id)
 {
   int save;
   rdf_bigbox_t rbbt;
@@ -414,7 +414,7 @@ bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slo
       while (lc_next (&lc))
 	{
 	  int set = qst_vec_get_int64 (lc.lc_inst, sel->sel_set_no, lc.lc_position);
-	  int dt_lang = qst_vec_get_int64 (lc.lc_inst, sel->sel_out_slots[0], lc.lc_position);
+	  uint32 dt_lang = qst_vec_get_int64  (lc.lc_inst, sel->sel_out_slots[0], lc.lc_position);
 	  int flags = qst_vec_get_int64 (lc.lc_inst, sel->sel_out_slots[1], lc.lc_position);
 	  caddr_t val = lc_nth_col (&lc, 2);
 	  caddr_t lng = lc_nth_col (&lc, 3);
@@ -923,6 +923,7 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
   END_SET_LOOP;
 }
 
+void cu_rl_local_exec (cucurbit_t * cu);
 
 void
 bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
