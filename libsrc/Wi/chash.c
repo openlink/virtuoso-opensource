@@ -2382,7 +2382,10 @@ cha_ent_merge (setp_node_t * setp, chash_t * cha, int64 * tar, int64 * ent)
   {
     int op = go->go_op;
     if (GB_IS_NULL (ha, ent, inx))
-      continue;
+	{
+	  inx++;
+	  continue;
+	}
     switch (AGG_C (cha->cha_sqt[inx].sqt_dtp, op))
       {
       case AGG_C (DV_LONG_INT, AMMSC_COUNT):
