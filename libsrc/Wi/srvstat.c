@@ -217,7 +217,7 @@ extern size_t sqlo_max_mp_size;
 extern int enable_initial_plan;
 extern int32 enable_dt_leaf;
 extern int32 sqlo_compiler_exceeds_run_factor;
-
+extern int enable_n_best_plans;
 extern int enable_mem_hash_join;
 #ifdef CACHE_MALLOC
 extern int enable_no_free;
@@ -1796,6 +1796,7 @@ stat_desc_t dbf_descs [] =
     {"enable_initial_plan", &enable_initial_plan, SD_INT32},
     {"enable_dt_leaf", &enable_dt_leaf, SD_INT32},
     {"sqlo_compiler_exceeds_run_factor", &sqlo_compiler_exceeds_run_factor, SD_INT32},
+    {"enable_n_best_plans", &enable_n_best_plans, SD_INT32},
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},

@@ -6337,6 +6337,7 @@ jp_cmp (const void *s1, const void *s2)
   dk_set_t l2 = *(dk_set_t*)s2;
   df_elt_t * dfe1 = (df_elt_t*)l1->data;
   df_elt_t * dfe2 = (df_elt_t*)l2->data;
+  sqlo_t * so = dfe1->dfe_sqlo;
   float c1 = dfe1->dfe_arity;
   float c2 = dfe2->dfe_arity;
   if (!dfe1->dfe_is_joined && dfe2->dfe_is_joined)
@@ -6347,6 +6348,12 @@ jp_cmp (const void *s1, const void *s2)
     return 1;
   if (0 == c2)
     return -1;
+  if (!so->so_any_placed)
+    {
+      int outer1 = dfe1->_.table.ot->ot_is_outer, outer2 = dfe2->_.table.ot->ot_is_outer;
+      if (!(outer1 && outer2))
+	return outer1 ? -1 : 1;
+    }
   if (c1 / c2 < 1.1 && c1 / c2 > 0.9)
     return dfe1->dfe_unit > dfe2->dfe_unit ? -1 : 1;
   return dfe1->dfe_arity > dfe2->dfe_arity ? -1 : 1;
@@ -6480,6 +6487,7 @@ int enable_leaves = 1;
 int enable_joins_only = 0;
 int enable_jp = 1;
 int enable_initial_plan = 0;
+int enable_n_best_plans = 0;
 
 void
 sqlo_joins_only (sqlo_t * so, dk_set_t * res, int is_restr)
@@ -6546,9 +6554,10 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
 {
   int any_trans = 0, n_candidates;
   dk_set_t all_leaves = NULL;
-  int inx;
+  int inx, nth_best = 0;
+  float first_card, prev_card;
   dk_set_t res = NULL;
-  df_elt_t ** arr;
+  dk_set_t * arr;
   if (ot->ot_fixed_order || IS_FOR_XML (sqlp_union_tree_right (ot->ot_dt)))
     {
       DO_SET (df_elt_t *, dfe, &ot->ot_from_dfes)
@@ -6607,19 +6616,27 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
   sqlo_joins_only (so, &res, 0);
   if (enable_jp && so->so_any_placed)
     sqlo_joins_only (so, &res, 1);
-  arr = (df_elt_t **) dk_set_to_array (dk_set_nreverse (res)); /* reverse to preserve order among items of equal score, stable sort */
+  arr = (dk_set_t *) dk_set_to_array (dk_set_nreverse (res)); /* reverse to preserve order among items of equal score, stable sort */
   n_candidates = BOX_ELEMENTS (arr);
   qsort (arr, n_candidates, sizeof (caddr_t), (SO_REFINE_PLAN == so->so_plan_mode && !so->so_any_placed) ? jp_init_cost_cmp : jp_cmp);
   res = NULL;
-  DO_BOX (dk_set_t, elt, inx, arr)
+  prev_card = first_card = ((df_elt_t *)arr[n_candidates - 1]->data)->dfe_arity;
+  for (inx = n_candidates - 1; inx >= 0; inx--)
     {
+      dk_set_t elt = arr[inx];
       df_elt_t * dfe = (df_elt_t *)elt->data;
+      if (dfe->dfe_arity != prev_card)
+	{
+	  prev_card = dfe->dfe_arity;
+	  nth_best++;
+	  if (enable_n_best_plans && nth_best >= enable_n_best_plans)
+	    break;
+	}
       dfe->dfe_arity = dfe->dfe_unit = 0;
       if (SO_INITIAL_PLAN == so->so_plan_mode && so->so_any_placed && inx < n_candidates - 1)
 	continue; /* if doing initial plans and first op already placed, only try the best candidate */
       t_set_push (&res, (void*) elt);
     }
-  END_DO_BOX;
   dk_free_box ((caddr_t) arr);
   return ( res);
 }

@@ -204,6 +204,14 @@ sqlo_rdfs_type_card (df_elt_t * tb_dfe, df_elt_t * p_dfe, df_elt_t * o_dfe)
 
 
 int
+st_is_iri_test (ST * st)
+{
+  return st_is_call (st, "isiri_id", 1)
+    || st_is_call (st, "IS_NAMED_IRI_ID", 1);
+}
+
+
+int
 dfe_is_iri_id_test (df_elt_t * pred)
 {
   df_elt_t *rhs;
@@ -213,8 +221,8 @@ dfe_is_iri_id_test (df_elt_t * pred)
   if (DFE_BOP_PRED != pred->dfe_type || BOP_EQ != pred->_.bin.op || 0 != unbox ((ccaddr_t) pred->_.bin.left->dfe_tree))
     return 0;
   rhs = pred->_.bin.right;
-  if (st_is_call (rhs->dfe_tree, "isiri_id", 1)
-      || (DFE_BOP == rhs->dfe_type && rhs->_.bin.right && st_is_call (rhs->_.bin.right->dfe_tree, "isiri_id", 1)))
+  if (st_is_iri_test (rhs->dfe_tree)
+      || (DFE_BOP == rhs->dfe_type && rhs->_.bin.right && st_is_iri_test (rhs->_.bin.right->dfe_tree)))
   return 1;
   return 0;
 }
@@ -251,7 +259,7 @@ jp_fanout (join_plan_t * jp)
 	      misc_card *= 0.3;
 	      continue;
 	    }
-	  if (!PRED_IS_EQ (ps->ps_pred))
+	  if (!PRED_IS_EQ_OR_IN (ps->ps_pred))
 	    {
 	      misc_card *= 0.5;
 	      continue;
@@ -329,7 +337,14 @@ jp_fanout (join_plan_t * jp)
       if (is_s && !is_o)
 	return jp->jp_fanout = (p_stat[0] / s_card) * misc_card;
       if (!is_s && is_o)
-	return jp->jp_fanout = (p_stat[0] / o_card) * misc_card;
+	{
+	  if (DFE_BOP_PRED == is_o->dfe_type && 1 == is_o->_.bin.is_in_list)
+	    {
+	      ST ** in_list = sqlo_in_list (is_o, NULL, NULL);
+	      misc_card *= BOX_ELEMENTS (in_list) - 1;
+	    }
+	  return jp->jp_fanout = (p_stat[0] / o_card) * misc_card;
+	}
       if (is_s && is_o)
 	return (p_stat[0] / s_card / o_card) * misc_card;
       return jp->jp_fanout = p_stat[0];
@@ -348,7 +363,15 @@ jp_fanout (join_plan_t * jp)
       jp->jp_fanout = card;
     }
   else
-    jp->jp_fanout = 0.9;
+    {
+      op_table_t * ot = jp->jp_tb_dfe->_.sub.ot;
+      if (ot->ot_is_proc_view)
+	jp->jp_fanout = 0.5;
+      else
+	jp->jp_fanout = 10;
+    }
+  if (jp->jp_tb_dfe->_.table.ot->ot_is_outer && jp->jp_fanout < 1)
+    jp->jp_fanout = 1;
   return jp->jp_fanout;
 }
 
