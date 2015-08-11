@@ -1409,11 +1409,12 @@ artm_date_to_date (double *target, data_col_t * dc, int *sets, int first_set, in
   int inx, fill = 0;
   if (sets)
     {
+      db_buf_t tgt = ((db_buf_t) target);
       for (inx = 0; inx < n; inx++)
 	{
-	  db_buf_t tgt = ((db_buf_t) target) + fill;
 	  db_buf_t src = ((db_buf_t) dc->dc_values) + DT_LENGTH * sets[inx];
 	  memcpy_dt (tgt, src);
+	  tgt += DT_LENGTH;
 	}
     }
   else
