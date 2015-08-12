@@ -281,6 +281,13 @@ public class VirtuosoRepository implements Repository {
 	     					url = url + "roundrobin=1";
 				}
 		
+				if (url.toLowerCase().indexOf("log_enable=") == -1) {
+	   				if (url.charAt(url.length()-1) != '/')
+	     					url = url + "/log_enable=2";
+	   				else
+	     					url = url + "log_enable=2";
+				}
+		
 				java.sql.Connection connection = DriverManager.getConnection(url, user, password);
 				return new VirtuosoRepositoryConnection(this, connection);
 			}

@@ -107,6 +107,9 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_pwdclear)) != null)
           ((VirtuosoDataSource) ds).setPwdClear((String)refS.getContent());
 
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_log_enable)) != null)
+          ((VirtuosoDataSource) ds).setLog_Enable(Integer.parseInt((String)refS.getContent()));
+
 #ifdef SSL
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_certificate)) != null)
           ((VirtuosoDataSource) ds).setCertificate((String)refS.getContent());

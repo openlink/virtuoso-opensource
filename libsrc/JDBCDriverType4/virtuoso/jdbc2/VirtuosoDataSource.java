@@ -46,6 +46,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     protected String charSet;
     protected int loginTimeout = 0;
     protected String pwdclear;
+    protected int log_enable = -1;
 
 #ifdef SSL
     protected String certificate;
@@ -80,6 +81,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_charSet = "charSet";
     final static String n_loginTimeout = "loginTimeout";
     final static String n_pwdclear = "pwdclear";
+    final static String n_log_enable = "log_enable";
 
 #ifdef SSL
     final static String n_certificate = "certificate";
@@ -133,6 +135,9 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
     if (pwdclear != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_pwdclear, pwdclear));
+
+    if (log_enable != 1)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_log_enable, String.valueOf(log_enable)));
 
 #ifdef SSL
     if (certificate != null)
@@ -207,6 +212,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
     if (charSet != null)   prop.setProperty("charset", charSet);
     if (pwdclear != null)   prop.setProperty("pwdclear", pwdclear);
+
+    if (log_enable != -1)  prop.setProperty("log_enable", String.valueOf(log_enable));
 
 #ifdef SSL
     if (certificate!=null)      prop.setProperty("certificate", certificate);
@@ -431,6 +438,18 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return this.pwdclear;
   }
 
+
+  public void setLog_Enable(int bits) throws SQLException
+  {
+    if (bits<-1 || bits>3)
+      throw new SQLException("The log_enable options must be between -1 and 3");
+    log_enable = bits;
+  }
+
+  public int getLog_Enable() throws SQLException
+  {
+    return log_enable;
+  }
 
 #ifdef SSL
   public void setCertificate (String value)
