@@ -4586,10 +4586,15 @@ sc_data_to_ext (query_instance_t * qi, caddr_t dt)
   dtp_t dtp = DV_TYPE_OF (dt);
   if (DV_IRI_ID == dtp)
     {
-      caddr_t str = key_id_to_iri (qi, *(iri_id_t*)dt);
-      if (str)
-	box_flags (str) = BF_IRI;
-      return str;
+      if (MIN_64BIT_BNODE_IRI_ID <= unbox_iri_id (dt))
+	return box_copy (dt);
+      else
+	{
+	  caddr_t str = key_id_to_iri (qi, *(iri_id_t*)dt);
+	  if (str)
+	    box_flags (str) = BF_IRI;
+	  return str;
+	}
     }
   else if (DV_ARRAY_OF_POINTER == dtp)
     {
@@ -4670,12 +4675,65 @@ bif_stat_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       id_hash_iterator (&hit, ric->ric_samples);
       while (hit_next (&hit, (caddr_t*)&s_key, (caddr_t*)&smp))
 	{
-	  dk_set_push (&smps, list (3, sc_data_to_ext (qi, *(caddr_t*)s_key), box_float (smp->smp_card), box_float (smp->smp_inx_card)));
+	  caddr_t * ent = sc_data_to_ext (qi, *(caddr_t*)s_key);
+	  dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, unbox (ent[0]));
+	  if (key)
+	    {
+	      dk_free_box (ent[0]);
+	      ent[0] = box_dv_short_string (key->key_name);
+	    }
+	  dk_set_push (&smps, list (3, ent, box_float (smp->smp_card), box_float (smp->smp_inx_card)));
 	}
       dk_set_push (&rics, list (2, box_string (ric->ric_name), list_to_array (smps)));
     }
   END_DO_IDHASH;
   return list (3, list_to_array (cols), list_to_array (keys), list_to_array (rics));
+}
+
+dbe_key_t *
+key_by_name (char * name)
+{
+  DO_HT (ptrlong, id, dbe_key_t *, key, wi_inst.wi_schema->sc_id_to_key)
+    {
+      if (!strcmp (key->key_name, name))
+	return key;
+    }
+  END_DO_HT;
+  return NULL;
+}
+
+
+char * stat_trap = NULL;
+
+void
+stat_adjust_key (caddr_t * k)
+{
+  int64 op = unbox (k[1]);
+  int key_id = 0;
+  caddr_t kn = k[0];
+  if (DV_STRINGP (kn))
+    {
+      dbe_key_t * key = key_by_name (kn);
+      if (key)
+	{
+	  dk_free_box (kn);
+	  k[0] = box_num (key->key_id);
+	  int key_id = unbox (k[0]);
+	}
+    }
+  else
+    key_id = unbox (k[0]);
+
+  if (66 == op && BOX_ELEMENTS (k) == 4
+      &&DV_IRI_ID == DV_TYPE_OF (k[2]) &&  !k[3])
+    k[3] = box_iri_id (MIN_64BIT_BNODE_IRI_ID);
+#if 0
+  switch (key_id)
+    {
+    case 1001: k[0] = (caddr_t)275; break;
+    default: ;
+    }
+#endif
 }
 
 
@@ -4743,7 +4801,19 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       DO_BOX (caddr_t *, smp, inx2, rc[1])
 	{
 	  caddr_t k = sc_ext_to_data (qi, smp[0]);
+	  if (stat_trap)
+	    {
+	      caddr_t * k = (caddr_t*)smp[0];
+	      int inx;
+	      for (inx = 2; inx < BOX_ELEMENTS (k); inx++)
+		{
+		  caddr_t * elt = k[inx];
+		  if (DV_STRINGP (elt) && strstr (elt, stat_trap))
+		    bing ();
+		}
+	    }
 	  tb_sample_t smpl;
+	  stat_adjust_key ((caddr_t *)k);
 	  memzero (&smpl, sizeof (smpl));
 	  smpl.smp_time = approx_msec_real_time ();
 	  smpl.smp_card = unbox_float (smp[1]);
