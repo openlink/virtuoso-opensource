@@ -6351,7 +6351,7 @@ jp_cmp (const void *s1, const void *s2)
   if (!so->so_any_placed)
     {
       int outer1 = dfe1->_.table.ot->ot_is_outer, outer2 = dfe2->_.table.ot->ot_is_outer;
-      if (!(outer1 && outer2))
+      if (outer1 != outer2)
 	return outer1 ? -1 : 1;
     }
   if (c1 / c2 < 1.1 && c1 / c2 > 0.9)
