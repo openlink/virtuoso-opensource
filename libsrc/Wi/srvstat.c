@@ -217,6 +217,10 @@ extern size_t sqlo_max_mp_size;
 extern int enable_initial_plan;
 extern int32 enable_dt_leaf;
 extern int32 sqlo_compiler_exceeds_run_factor;
+extern int sqlo_n_layout_steps;
+extern int sqlo_n_best_layouts;
+extern int sqlo_n_full_layouts;
+
 extern int enable_n_best_plans;
 extern int enable_mem_hash_join;
 #ifdef CACHE_MALLOC
@@ -255,7 +259,7 @@ extern long tc_dfg_max_empty_mores;
 extern int mp_local_rc_sz;
 extern int enable_distinct_sas;
 extern int enable_inline_sqs;
-extern enable_joins_only;
+extern int enable_joins_only;
 int32 ha_rehash_pct = 300;
 extern int c_use_aio;
 extern int32 sqlo_sample_dep_cols;
@@ -1795,6 +1799,9 @@ stat_desc_t dbf_descs [] =
     {"sqlo_max_mp_size", &sqlo_max_mp_size},
     {"enable_initial_plan", &enable_initial_plan, SD_INT32},
     {"enable_dt_leaf", &enable_dt_leaf, SD_INT32},
+    {"sqlo_n_layout_steps", &sqlo_n_layout_steps, SD_INT32},
+    {"sqlo_n_best_layouts", &sqlo_n_best_layouts, SD_INT32},
+    {"sqlo_n_full_layouts", &sqlo_n_full_layouts, SD_INT32},
     {"sqlo_compiler_exceeds_run_factor", &sqlo_compiler_exceeds_run_factor, SD_INT32},
     {"enable_n_best_plans", &enable_n_best_plans, SD_INT32},
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
