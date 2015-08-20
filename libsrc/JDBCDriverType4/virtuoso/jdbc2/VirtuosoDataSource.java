@@ -78,6 +78,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_user = "user";
     final static String n_password = "password";
 
+    final static String n_charset = "charset";
     final static String n_charSet = "charSet";
     final static String n_loginTimeout = "loginTimeout";
     final static String n_pwdclear = "pwdclear";
@@ -131,7 +132,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
       ref.add(new StringRefAddr(VirtuosoDataSource.n_loginTimeout, String.valueOf(loginTimeout)));
 
     if (charSet != null)
-      ref.add(new StringRefAddr(VirtuosoDataSource.n_charSet, charSet));
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_charset, charSet));
 
     if (pwdclear != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_pwdclear, pwdclear));
