@@ -2816,6 +2816,11 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
     }
+  if (1 = sys_stat ('enable_vec') and not is_atomic ())
+    {
+      DB.DBA.TTLP_V (strg, base, graph, flags, 3, log_enable => log_enable, transactional => transactional);
+      return;
+    }
   old_log_mode := null;
   if (transactional = 0)
     {
@@ -2829,11 +2834,6 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
   if (1 <> sys_stat ('cl_run_local_only'))
     {
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
-      return;
-    }
-  if (1 = sys_stat ('enable_vec') and not is_atomic ())
-    {
-      DB.DBA.TTLP_V (strg, base, graph, flags, 3, log_enable => log_enable, transactional => transactional);
       return;
     }
   if (126 = __tag (strg))

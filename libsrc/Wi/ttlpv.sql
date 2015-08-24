@@ -546,6 +546,10 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
     }
   else
     threads := 0;
+  if (log_enable is not null)
+    {
+      old_log_mode := log_enable (log_enable, 1);
+    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
 
