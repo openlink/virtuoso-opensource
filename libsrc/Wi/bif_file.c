@@ -7100,7 +7100,7 @@ bif_file_init (void)
   bif_define ("string_to_file", bif_string_to_file);
   bif_define_ex ("server_root", bif_server_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("file_to_string", bif_file_to_string, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-  bif_define_ex ("file_to_string_output", bif_file_to_string_session, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_to_string_output", bif_file_to_string_session, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define_ex ("file_to_string_output_utf8", bif_file_to_string_session_utf8, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("file_append_to_string_output", bif_file_append_to_string_session, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("file_append_to_string_output_utf8", bif_file_append_to_string_session_utf8, BMD_RET_TYPE, &bt_integer, BMD_DONE);
