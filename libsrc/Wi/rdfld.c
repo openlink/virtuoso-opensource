@@ -176,7 +176,11 @@ cu_rl_local_exec (cucurbit_t * cu)
 		    id_hash_t *ht;
 		    if (dict_place && (ht = dict_ht (*dict_place)))
 		      {
-			caddr_t one = (caddr_t) 1, id_box = box_num (id);
+			caddr_t one = (caddr_t) 1, id_box;
+			if (ht->ht_mp)
+			  id_box = mp_box_num ((mem_pool_t *) (ht->ht_mp), id);
+			else
+			  id_box = box_num (id);
 			id_hash_set (ht, (caddr_t) & id_box, (caddr_t) & one);
 		      }
 		  }
@@ -197,7 +201,11 @@ cu_rl_local_exec (cucurbit_t * cu)
 		    id_hash_t *ht;
 		    if (dict_place && (ht = dict_ht (*dict_place)))
 		      {
-			caddr_t one = (caddr_t) 1, id_box = box_num (id);
+			caddr_t one = (caddr_t) 1, id_box;
+			if (ht->ht_mp)
+			  id_box = mp_box_num ((mem_pool_t *) (ht->ht_mp), id);
+			else
+			  id_box = box_num (id);
 			id_hash_set (ht, (caddr_t) & id_box, (caddr_t) & one);
 		      }
 		  }
