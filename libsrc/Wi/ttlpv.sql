@@ -494,7 +494,7 @@ create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph va
   app_env := vector (async_queue (threads, 1), rl_local_dpipe_gs (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   if (bit_and (flags, 2048))
     dpipe_set_rdf_load (app_env[1], 6);
-  g_iid := iri_to_id (graph);
+  g_iid := case when length (graph) > 0 then iri_to_id (graph) else null end;
   rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_RL_GS_NEW_GRAPH',
