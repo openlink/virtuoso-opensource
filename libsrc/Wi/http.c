@@ -1043,7 +1043,7 @@ next_fragment:
 	    }
 	  break;
       case 'r':
-	  snprintf (tmp, sizeof (tmp), "%*.*s", tmp_len, tmp_len, ws->ws_req_line && ws->ws_method != WM_ERROR ? ws->ws_req_line : "GET unspecified");
+	  snprintf (tmp, sizeof (tmp), "%.*s", tmp_len, ws->ws_req_line && ws->ws_method != WM_ERROR ? ws->ws_req_line : "GET unspecified");
 	  strcat_ck (tmp, ws->ws_proto);
 	  tmp [sizeof (tmp) - 1] = 0;
 	  break;
