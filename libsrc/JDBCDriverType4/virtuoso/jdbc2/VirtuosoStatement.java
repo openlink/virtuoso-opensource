@@ -102,7 +102,7 @@ public class VirtuosoStatement implements Statement
 
    protected boolean isCached = false;
 
-   protected boolean closeOnCompletion;
+   protected boolean closeOnCompletion = false;
 
 #if JDK_VER >= 14
    // Its params data
