@@ -2019,6 +2019,7 @@ create procedure WS.WS.PUT (
 	    rc := DAV_COL_CREATE_INT (newpath, _perms, null, null, null, null, 1, 0, 1, uid, gid);
 	  else
 	    rc := _col;
+	  DB.DBA.LDP_CREATE (newpath);
 	  http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (DAV_CONCAT_PATH (full_path, '/'))));
 	  http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, full_path)); 
 	  goto rcck;
