@@ -342,8 +342,12 @@ ECHO BOTH ": DAV browse page not retrieved (wrong password) : STATE=" $STATE " M
 
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/webid/api', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/DAV', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/webid/api', 1);
+
+select HP_HOST, HP_LISTEN_HOST, HP_LPATH from HTTP_PATH;
 
 --- XXX: this is timing ????
 delay (2);
@@ -496,6 +500,7 @@ ECHO BOTH ": HTTP test string_session tmp file : STATE=" $STATE "  LAST="  $LAST
 
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/webid/api', 1);
 
 select http_listen_host ('localhost:$U{HTTPPORT1}',2);
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
