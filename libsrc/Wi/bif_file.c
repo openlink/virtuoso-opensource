@@ -6702,6 +6702,111 @@ signal_error:
 }
 #endif
 
+#ifdef HAVE_BZ2
+#include <bzlib.h>
+
+typedef struct bz2_ctx_s 
+{
+  int fd;
+  BZFILE * bz2;
+} bz2_ctx_t;
+
+OFF_T
+bz2_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
+{
+  bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
+  if (whence == SEEK_SET && offset == 0)
+    {
+      LSEEK (ctx->fd, 0, SEEK_SET);
+      ctx->bz2 = BZ2_bzdopen (ctx->fd, "r");
+    }
+  return offset;
+}
+
+size_t
+bz2_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
+{
+  bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
+  return BZ2_bzread (ctx->bz2, buf, nbyte);
+}
+
+static size_t
+bz2_write (strsestmpfile_t * sesfile, const void *buf, size_t nbyte)
+{
+  return -1; /* write is not supported in gz stream for now */
+}
+
+int
+bz2_close (strsestmpfile_t * sesfile)
+{
+  bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
+  BZ2_bzclose (ctx->bz2);
+  dk_free (ctx, sizeof (bz2_ctx_t));
+  return 0;
+}
+
+caddr_t
+bif_bz2_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname = bif_string_arg (qst, args, 0, "bz2_file_open");
+  dk_session_t * ses = strses_allocate ();
+  caddr_t fname_cvt, err = NULL;
+  int fd = 0;
+  OFF_T off;
+  strsestmpfile_t * sesfile;
+  bz2_ctx_t * ctx;
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 0);
+  if (NULL != err)
+    goto signal_error;
+  fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
+
+  if (fd < 0)
+    {
+      int errn = errno;
+      err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
+	  fname_cvt, virt_strerror (errn));
+      goto signal_error;
+    }
+
+  off = LSEEK (fd, 0, SEEK_END);
+  if (off == -1)
+    {
+      int saved_errno = errno;
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
+    }
+  LSEEK (fd, 0, SEEK_SET);
+  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
+  sesfile = ses->dks_session->ses_file;
+  sesfile->ses_file_descriptor = -1;
+
+  sesfile->ses_lseek_func = bz2_lseek;
+  sesfile->ses_read_func = bz2_read;
+  sesfile->ses_wrt_func = bz2_write;
+  sesfile->ses_close_func = bz2_close;
+
+  sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = INT64_MAX;
+  ctx = dk_alloc (sizeof (bz2_ctx_t));
+  ctx->fd = fd;
+  ctx->bz2 = BZ2_bzdopen (fd, "r");
+  sesfile->ses_file_ctx = ctx;
+  sesfile->ses_fd_is_stream = 1;
+
+  dk_free_box (fname_cvt);
+  return (caddr_t) ses;
+signal_error:
+  /* cleanup */
+  dk_free_box (fname_cvt);
+  dk_free_box ((caddr_t) ses);
+  sqlr_resignal (err);
+  return NULL;
+}
+#endif
+
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #define fseeko64 fseeko
 #define ftello64 ftello
@@ -7359,6 +7464,9 @@ bif_file_init (void)
   bif_define_ex ("gz_file_open", bif_gz_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
 #ifdef HAVE_LZMA
   bif_define_ex ("xz_file_open", bif_xz_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
+#endif
+#ifdef HAVE_BZ2
+  bif_define_ex ("bz2_file_open", bif_bz2_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
 #endif
   bif_define_ex ("get_csv_row", bif_get_csv_row, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("get_plaintext_row", bif_get_plaintext_row, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
