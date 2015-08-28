@@ -1699,6 +1699,75 @@ fi
 AC_SUBST(LZMA_CFLAGS)
 AC_SUBST(LZMA_LDFLAGS)
 
+
+##########################################################################
+##									##
+##  Check out system bz2 library					##
+##									##
+##########################################################################
+AC_ARG_WITH(bz2, [dnl
+AC_HELP_STRING([--with-bz2(=DIR)], [enable the bz2 decompressor (default)])
+AC_HELP_STRING([--disable-bz2], [disable the bz2 decompressor ])dnl
+], [
+     case "${enableval}" in
+       yes)	with_bz2="yes" ;;
+       no)	with_bz2="no" ;;
+       /*)	with_bz2="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-bz2) ;;
+     esac
+  ],
+  [ with_bz2="yes" ]
+)
+
+if test "x$with_bz2" != "xno"
+then
+    AC_MSG_CHECKING([BZ2 library usability])
+    old_CFLAGS="$CFLAGS"
+    save_LIBS="$LIBS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_bz2" in
+	yes)
+	   BZ2_CFLAGS=""
+	   BZ2_LDFLAGS="-lbz2"
+	   ;;
+	*)
+	   BZ2_CFLAGS="-I$with_bz2/include"
+	   BZ2_LDFLAGS="-L$with_bz2/lib -lbz2"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_bz2/lib"
+	   export LD_LIBRARY_PATH
+	   ;;
+    esac
+
+    CFLAGS="$CFLAGS $BZ2_CFLAGS"
+    LIBS="$LIBS $BZ2_LDFLAGS"
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <bzlib.h>
+int
+main ()
+{
+  BZ2_bzDecompressInit(NULL, 0, 0);
+}],
+[
+ AC_MSG_RESULT(good)
+ srvrlibs="$srvrlibs $BZ2_LDFLAGS"
+ AC_DEFINE(HAVE_BZ2, 1, [BZ2 support])
+],
+[
+ AC_MSG_RESULT([bad. Check config.log for details])
+ with_bz2="no"
+])
+    CFLAGS="$old_CFLAGS"
+    LIBS="$save_LIBS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+fi
+AC_SUBST(BZIP2_CFLAGS)
+AC_SUBST(BZIP2_LDFLAGS)
+
 dnl PUT OTHER EXTENSIONS HERE
 
 
