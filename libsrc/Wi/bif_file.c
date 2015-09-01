@@ -6707,18 +6707,24 @@ signal_error:
 
 typedef struct bz2_ctx_s 
 {
-  int fd;
+  FILE * fp;
   BZFILE * bz2;
+  size_t pos;
 } bz2_ctx_t;
 
 OFF_T
 bz2_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
 {
-  bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
+  bz2_ctx_t * ctx = sesfile->ses_file_ctx;
+  int err = 0;
   if (whence == SEEK_SET && offset == 0)
     {
-      LSEEK (ctx->fd, 0, SEEK_SET);
-      ctx->bz2 = BZ2_bzdopen (ctx->fd, "r");
+      fseek (ctx->fp, 0, SEEK_SET);
+      BZ2_bzReadClose (&err, ctx->bz2);
+      if (err != BZ_OK)
+	return -1;
+      ctx->bz2 = BZ2_bzReadOpen (&err, ctx->fp, 0, 0, NULL, 0);
+      ctx->pos = 0;
     }
   return offset;
 }
@@ -6727,7 +6733,36 @@ size_t
 bz2_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
 {
   bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
-  return BZ2_bzread (ctx->bz2, buf, nbyte);
+  size_t rc;
+  int err = 0;
+  char * msg = NULL;
+  if (!ctx->bz2)
+    return 0;
+  rc = BZ2_bzRead(&err, ctx->bz2, buf, nbyte);
+  if (err != BZ_OK && err != BZ_STREAM_END)
+    return -1;
+  if (BZ_STREAM_END == err)
+    {
+      void *unusedp;
+      int i;
+      unsigned char unused[BZ_MAX_UNUSED];
+      int32 nUnused;
+      BZ2_bzReadGetUnused (&err, ctx->bz2, &unusedp, &nUnused);
+      if (err != BZ_OK)
+	return -1;
+      for (i = 0; i < nUnused; i++) unused[i] = ((unsigned char *)unusedp)[i];
+      BZ2_bzReadClose (&err, ctx->bz2);
+      if (err != BZ_OK)
+	return -1;
+      if (!feof (ctx->fp))
+	ctx->bz2 = BZ2_bzReadOpen (&err, ctx->fp, 0, 0, unused, nUnused);
+      else
+	ctx->bz2 = NULL;
+      if (err != BZ_OK)
+	return -1;
+    }
+  ctx->pos += rc;
+  return rc;
 }
 
 static size_t
@@ -6740,7 +6775,10 @@ int
 bz2_close (strsestmpfile_t * sesfile)
 {
   bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
-  BZ2_bzclose (ctx->bz2);
+  int err = 0;
+  if (ctx->bz2)
+    BZ2_bzReadClose (&err, ctx->bz2);
+  fclose (ctx->fp);
   dk_free (ctx, sizeof (bz2_ctx_t));
   return 0;
 }
@@ -6751,7 +6789,7 @@ bif_bz2_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t fname = bif_string_arg (qst, args, 0, "bz2_file_open");
   dk_session_t * ses = strses_allocate ();
   caddr_t fname_cvt, err = NULL;
-  int fd = 0;
+  int fd = 0, bzerr = 0;
   OFF_T off;
   strsestmpfile_t * sesfile;
   bz2_ctx_t * ctx;
@@ -6791,8 +6829,9 @@ bif_bz2_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = INT64_MAX;
   ctx = dk_alloc (sizeof (bz2_ctx_t));
-  ctx->fd = fd;
-  ctx->bz2 = BZ2_bzdopen (fd, "r");
+  ctx->fp = fdopen (fd, "r");
+  ctx->bz2 = BZ2_bzReadOpen (&bzerr, ctx->fp, 0, 0, NULL, 0);
+  ctx->pos = 0;
   sesfile->ses_file_ctx = ctx;
   sesfile->ses_fd_is_stream = 1;
 
