@@ -71,7 +71,11 @@ create procedure dbp_ldd_set_ns_decl ()
    l := length (arr);
    for (i := 0; i < l; i := i + 2)
       {
+	declare pre any;
 	XML_REMOVE_NS_BY_PREFIX (arr[i+1], 2);
+	pre := (select NS_PREFIX from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_URL = arr[i]);
+	if (pre is not null)
+	  XML_REMOVE_NS_BY_PREFIX (pre, 2);
 	XML_SET_NS_DECL (arr[i+1], arr[i], 2);
       }
 }
