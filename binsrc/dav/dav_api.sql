@@ -7547,12 +7547,33 @@ _exit:;
 -- DAV SCHEDULER
 --
 -------------------------------------------------------------------------------
+create function DB.DBA.DAV_EXPIRE_SCHEDULER (
+  in queue_id integer)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_EXPIRE_SCHEDULER (', queue_id, ')');
+  declare _now, _today datetime;
+
+  _now := curdatetime ();
+  _today := cast (stringdate (sprintf ('%d.%d.%d', year (_now), month (_now), dayofmonth (_now))) as date);
+  for (select PROP_TYPE, PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:expireDate' and cast (PROP_VALUE as date) <= _today) do
+  {
+    DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, PROP_TYPE), 1, null, null, 0);
+  }
+
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+}
+;
+
 create procedure DB.DBA.DAV_SCHEDULER ()
 {
   -- dbg_obj_princ ('DB.DBA.DAV_SCHEDULER');
   declare DETs any;
 
   set_user_id ('dba');
+
+  -- Added expire date task
+  DB.DBA.DAV_QUEUE_ADD ('EXPIRED', 0, 'DB.DBA.DAV_EXPIRE_SCHEDULER', vector ());
+
   DETs := DB.DBA.DAV_DET_SPECIAL ();
   foreach (any det in DETs) do
   {
