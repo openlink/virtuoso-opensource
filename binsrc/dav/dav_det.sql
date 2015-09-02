@@ -829,7 +829,7 @@ create function DB.DBA.DAV_DET_CONTENT_ROLLBACK (
 create function DB.DBA.DAV_DET_CONTENT_MD5 (
   in id any)
 {
-  return md5 (cast ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id)) as varchar));
+  return md5 (blob_to_string_output ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))));
 }
 ;
 
