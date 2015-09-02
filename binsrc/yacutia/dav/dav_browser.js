@@ -238,38 +238,6 @@ function getSelected (frm, txt)
   return s;
 }
 
-function getFileName(obj)
-{
-  var S = obj.value;
-  var N;
-  if (S.lastIndexOf('\\') > 0)
-    N = S.lastIndexOf('\\') + 1;
-  else
-    N = S.lastIndexOf('/') + 1;
-  S = S.substr(N, S.length);
-  if (S.indexOf('?') > 0) {
-    N = S.indexOf('?');
-    S = S.substr(0, N);
-  }
-  if (S.indexOf('#') > 0) {
-    N = S.indexOf('#');
-    S = S.substr(0, N);
-  }
-  if (document.forms['F1'].elements['dav_destination']) {
-    if (document.F1.dav_destination[1].checked == '1') {
-      N = S.indexOf('.rdf');
-      S = S.substr(0, N);
-    }
-    if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1')) {
-      N = S.indexOf('.rdf');
-      if (N == -1)
-        S = S + '.rdf';
-    }
-  }
-  if ($('dav_name'))
-    $('dav_name').value = S;
-}
-
 function graphBindingChange(obj, det, ndx)
 {
   destinationChange(obj, {"checked": {"show": ['dav'+ndx+'_graph', 'dav'+ndx+'_sponger']}, "unchecked": {"hide": ['dav'+ndx+'_graph', 'dav'+ndx+'_sponger'], "clear": ['dav_'+det+'_graph']}});
@@ -1619,5 +1587,121 @@ WEBDAV.datePopup = function(objName, format, weekStart, cb) {
       cb();
   }
   c.show(coords[0], coords[1] + 30, x, d);
+}
+
+WEBDAV.getFileName = function (obj)
+{
+  var davName = $('dav_name');
+  if (!davName) {
+    return;
+  }
+  var S = obj.value;
+  var N;
+  if (S.lastIndexOf('\\') > 0) {
+    N = S.lastIndexOf('\\') + 1;
+  }
+  else {
+    N = S.lastIndexOf('/') + 1;
+  }
+  S = S.substr(N, S.length);
+  if (S.indexOf('?') > 0) {
+    N = S.indexOf('?');
+    S = S.substr(0, N);
+  }
+  if (S.indexOf('#') > 0) {
+    N = S.indexOf('#');
+    S = S.substr(0, N);
+  }
+  if (document.forms['F1'].elements['dav_destination']) {
+    if (document.F1.dav_destination[1].checked == '1') {
+      N = S.indexOf('.rdf');
+      S = S.substr(0, N);
+    }
+    if ((document.F1.dav_destination[0].checked == '1') && (document.F1.dav_source[2].checked == '1')) {
+      N = S.indexOf('.rdf');
+      if (N == -1) {
+        S = S + '.rdf';
+      }
+    }
+  }
+  davName.value = S;
+  WEBDAV.mimeTypeByExt(S);
+}
+
+WEBDAV.mimeTypeByExt = function (name)
+{
+  if ($("dav_mime")) {
+    if (!name) {
+      name = $("dav_name").value;
+    }
+    var x = function (txt) {
+      if (txt != "")
+      {
+        var davMime = $("dav_mime");
+        if (davMime) {
+          davMime.value = txt;
+        }
+      }
+    }
+    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=mimeTypeByExt&fileName='+name, x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+  }
+}
+
+WEBDAV.nameByMimeType = function ()
+{
+  var dav_name = $("dav_name");
+  var dav_mime = $("dav_mime");
+  if (dav_name && dav_mime) {
+    var x = function (data) {
+      var o = OAT.JSON.parse(data);
+      if (o.length)
+      {
+        var dav_name = $("dav_name");
+        var namesDiv = $('namesDiv');
+        if (namesDiv)
+          OAT.Dom.unlink(namesDiv);
+
+        var content =
+          '<div style="padding: 0.5em;">' +
+          '  <table style="width: 100%;">' +
+          '    <tr>' +
+          '      <td style="padding-left: 30px;"><ul>';
+        var nameLength = 0;
+        for (var i = 0; i < o.length; i++) {
+          content += '<label><input type="checkbox" name="dav_names_' + i + '" id="dav_names_' + i + '" value="' + o[i] + '" onclick="javascript: WEBDAV.nameByMimeTypeSelect(this); namesDialog.hide(); " /><b>' + o[i] + '</b></label></br>';
+          if (o[i].length > nameLength) {
+            nameLength = o[i].length;
+          }
+        }
+        content +=
+          '      </ul></td>' +
+          '    </tr>' +
+          '    <tr><td align="center" colspan="2"><hr /><td></tr>' +
+          '    <tr>' +
+          '      <td align="center">' +
+          '        <input type="button" value="Close" onclick="javascript: namesDialog.hide(); return false;" />' +
+          '      <td>' +
+          '    </tr>' +
+          '  </table>' +
+          '</div>'
+        ;
+        namesDiv = OAT.Dom.create('div', {height: 125 + (o.length * 14) + 'px', overflow: 'hidden'});
+        namesDiv.id = 'namesDiv';
+        namesDiv.innerHTML = content;
+        namesDialog = new OAT.Dialog('Select new file name related to mime type:', namesDiv, {width: 150 + Math.min((nameLength * 10), 400), buttons: 0, resize: 0, modal: 1});
+        namesDialog.cancel = namesDialog.hide;
+        namesDialog.show();
+      }
+    }
+    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=nameByMimeType&fileName='+dav_name.value+'&mimeType='+dav_mime.value, x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+  }
+}
+
+WEBDAV.nameByMimeTypeSelect = function (obj)
+{
+  var dav_name = $("dav_name");
+  if (dav_name) {
+    dav_name.value = obj.value;
+  }
 }
 

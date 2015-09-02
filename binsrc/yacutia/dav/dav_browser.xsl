@@ -2283,9 +2283,9 @@
                           <label id="dav_file_label">File</label>
                         </th>
                         <td>
-                          <input type="file" name="dav_file" id="dav_file" onchange="javascript: F1.dav_source[0].checked=true; getFileName(this);" onblur="javascript: getFileName(this);" onfocus="javascript: F1.dav_source[0].checked=true;" size="60" />
-                          <input type="text" name="dav_url"  id="dav_url"  value="<?V get_keyword ('dav_url', self.vc_page.vc_event.ve_params, get_keyword ('URI', self.vc_page.vc_event.ve_params, '')) ?>" onblur="javascript: getFileName(this);" onfocus="javascript: F1.dav_source[1].checked=true;" size="60" style="display: none;"/>
-                          <input type="text" name="dav_rdf"  id="dav_rdf"  value="<?V get_keyword ('dav_rdf', self.vc_page.vc_event.ve_params, '') ?>" onblur="javascript: getFileName(this);" onfocus="javascript: F1.dav_source[2].checked=true;" size="60" style="display: none;"/>
+                          <input type="file" name="dav_file" id="dav_file" onchange="javascript: F1.dav_source[0].checked=true; WEBDAV.getFileName(this);" onblur="javascript: WEBDAV.getFileName(this);" onfocus="javascript: F1.dav_source[0].checked=true;" size="60" />
+                          <input type="text" name="dav_url"  id="dav_url"  value="<?V get_keyword ('dav_url', self.vc_page.vc_event.ve_params, get_keyword ('URI', self.vc_page.vc_event.ve_params, '')) ?>" onblur="javascript: WEBDAV.getFileName(this);" onfocus="javascript: F1.dav_source[1].checked=true;" size="60" style="display: none;"/>
+                          <input type="text" name="dav_rdf"  id="dav_rdf"  value="<?V get_keyword ('dav_rdf', self.vc_page.vc_event.ve_params, '') ?>" onblur="javascript: WEBDAV.getFileName(this);" onfocus="javascript: F1.dav_source[2].checked=true;" size="60" style="display: none;"/>
                         </td>
                       </tr>
                     </v:template>
@@ -2298,7 +2298,7 @@
                         <td>
                           <v:text name="rdfGraph_prefix" xhtml_id="rdfGraph_prefix" type="hidden" value="--self.detGraphUI2 ()" />
                           <v:text name="rdfBase_prefix"  xhtml_id="rdfBase_prefix" type="hidden" value="--WEBDAV.DBA.host_url () || WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dir_path))" />
-                          <v:text name="dav_name"        xhtml_id="dav_name" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();">
+                          <v:text name="dav_name"        xhtml_id="dav_name" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();" xhtml_onchange="javascript: WEBDAV.mimeTypeByExt();">
                             <v:before-render>
                               <![CDATA[
                                 control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('name') then ' disabled' else '' end);
@@ -2317,7 +2317,7 @@
                         </th>
                         <td>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled">
+                            <v:text name="dav_mime" xhtml_id="dav_mime" value="--get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType'))" format="%s" xhtml_disabled="disabled" xhtml_onchange="javascript: WEBDAV.nameByMimeType();">
                               <v:before-render>
                                 <![CDATA[
                                   control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('mime') then ' disabled' else '' end);
