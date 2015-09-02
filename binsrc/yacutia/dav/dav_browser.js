@@ -1530,3 +1530,94 @@ WEBDAV.progressStop = function()
   WEBDAV.progress.timer = null;
   OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=progress&sa=stop&id='+WEBDAV.progress.id+urlParam('sid')+urlParam('realm'), null, {async: false});
 }
+
+WEBDAV.datePopup = function(objName, format, weekStart, cb) {
+  var dateParse = function (dateString, format) {
+    var result = null;
+    if ((format == 'yyyy-MM-dd') || (format == 'yyyy.MM.dd') || (format == 'yyyy/MM/dd')) {
+      var pattern = new RegExp(
+          '^((?:19|20)[0-9][0-9])[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$');
+      if (dateString.match(pattern)) {
+        dateString = dateString.replace(/\//g, '-');
+        dateString = dateString.replace(/\./g, '-');
+        result = dateString.split('-');
+        result = [ parseInt(result[0], 10), parseInt(result[1], 10), parseInt(result[2], 10) ];
+      }
+    }
+    else if ((format == 'dd-MM-yyyy') || (format == 'dd.MM.yyyy') || (format == 'dd/MM/yyyy')) {
+      var pattern = new RegExp(
+          '^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])$');
+      if (dateString.match(pattern)) {
+        dateString = dateString.replace(/\//g, '-');
+        dateString = dateString.replace(/\./g, '-');
+        result = dateString.split('-');
+        result = [ parseInt(result[2], 10), parseInt(result[1], 10), parseInt(result[0], 10) ];
+      }
+    }
+    else if ((format == 'MM-dd-yyyy') || (format == 'MM.dd.yyyy') || (format == 'MM/dd/yyyy')) {
+      var pattern = new RegExp(
+          '^(0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])[- /.]((?:19|20)[0-9][0-9])$');
+      if (dateString.match(pattern)) {
+        dateString = dateString.replace(/\//g, '-');
+        dateString = dateString.replace(/\./g, '-');
+        result = dateString.split('-');
+        result = [ parseInt(result[2], 10), parseInt(result[0], 10), parseInt(result[1], 10) ];
+      }
+    }
+    return result;
+  }
+
+  if (!format)
+    format = 'yyyy-MM-dd';
+
+  var obj = $(objName);
+  var d = dateParse(obj.value, format);
+  var c = new OAT.Calendar({popup: true});
+  if (weekStart != undefined)
+    c.weekStartIndex = weekStart;
+  var coords = OAT.Dom.position(obj);
+  if (isNaN(coords[0]))
+    coords = [ 0, 0 ];
+
+  var x = function(date) {
+    var dateFormat = function(date, format) {
+      function long(d) {
+        return ((d < 10) ? "0" : "") + d;
+      }
+      var result = "";
+      var chr;
+      var token;
+      var i = 0;
+      while (i < format.length) {
+        chr = format.charAt(i);
+        token = "";
+        while ((format.charAt(i) == chr) && (i < format.length)) {
+          token += format.charAt(i++);
+        }
+        if (token == "y")
+          result += "" + date[0];
+        else if (token == "yy")
+          result += date[0].substring(2, 4);
+        else if (token == "yyyy")
+          result += date[0];
+        else if (token == "M")
+          result += date[1];
+        else if (token == "MM")
+          result += long(date[1]);
+        else if (token == "d")
+          result += date[2];
+        else if (token == "dd")
+          result += long(date[2]);
+        else
+          result += token;
+      }
+      return result;
+    }
+
+    obj.value = dateFormat(date, format);
+    if (cb)
+      cb();
+  }
+  c.show(coords[0], coords[1] + 30, x, d);
+}
+

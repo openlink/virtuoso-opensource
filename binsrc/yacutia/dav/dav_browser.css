@@ -50,6 +50,10 @@ a:hover {
   width: 250px;
 }
 
+.field-shorter {
+  width: 125px;
+}
+
 .field-max {
   width: 98%;
 }

@@ -627,13 +627,13 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
                 retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if (detClass = 'HostFS')
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
@@ -642,13 +642,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
               else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -2794,7 +2794,7 @@
                           <v:select-list name="dav_index" xhtml_id="dav_index" value="-- get_keyword ('dav_index', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'freeText'))" xhtml_disabled="disabled">
                             <v:before-render>
                               <![CDATA[
-                                control.vc_add_attribute ('class', case when self.dav_enable and not self.editField ('textSearch') then 'disabled' else '' end);
+                                control.vc_add_attribute ('class', 'field-shorter' || case when self.dav_enable and not self.editField ('textSearch') then 'disabled' else '' end);
                               ]]>
                             </v:before-render>
                             <v:item name="Off" value="N" />
@@ -2813,7 +2813,7 @@
                           <v:select-list name="dav_permissions_inheritance" xhtml_id="dav_permissions_inheritance" value="-- get_keyword ('dav_permissions_inheritance', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'permissions-inheritance'))" xhtml_disabled="disabled">
                             <v:before-render>
                               <![CDATA[
-                                control.vc_add_attribute ('class', case when self.dav_enable and not self.editField ('inheritancePermissions') then 'disabled' else '' end);
+                                control.vc_add_attribute ('class', 'field-shorter' || case when self.dav_enable and not self.editField ('inheritancePermissions') then 'disabled' else '' end);
                               ]]>
                             </v:before-render>
                             <v:item name="Off" value="N" />
@@ -2832,7 +2832,7 @@
                           <v:select-list name="dav_metagrab" xhtml_id="dav_metagrab" value="--get_keyword ('dav_metagrab', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'metaGrab'))" xhtml_disabled="disabled">
                             <v:before-render>
                               <![CDATA[
-                                control.vc_add_attribute ('class', case when self.dav_enable and not self.editField ('metadata') then 'disabled' else '' end);
+                                control.vc_add_attribute ('class', 'field-shorter' || case when self.dav_enable and not self.editField ('metadata') then 'disabled' else '' end);
                               ]]>
                             </v:before-render>
                             <v:item name="Off" value="N" />
@@ -2850,6 +2850,19 @@
                             <input type="checkbox" name="dav_recursive" id="dav_recursive" disabled="disabled" title="Recursive" class="<?V case when self.dav_enable and not self.editField ('recursive') then 'disabled' else '' end ?>" />
                             <b> Apply changes to all subfolders and resources</b>
                           </label>
+                        </td>
+                      </tr>
+                    </v:template>
+                    <v:template name="tf_16a" type="simple" enabled="-- case when self.viewField ('metadata') and not self.dav_is_redirect then 1 else 0 end">
+                      <tr id="davRow_metadata" width="30%">
+                        <th>
+                          <vm:label for="dav_expireDate" value="--'Expiration Date'" />
+                        </th>
+                        <td>
+                          <v:text name="dav_expireDate" xhtml_id="dav_expireDate" value="--self.get_fieldProperty ('dav_expireDate', self.dav_path, 'virt:expireDate', '')" xhtml_onclick="javascript: WEBDAV.datePopup(\'dav_expireDate\');" xhtml_disabled="disabled" xhtml_class="field-shorter" />
+                          <vm:if test="self.editField ('expireDate') and self.dav_enable">
+                            <input type="button" value="Select" onclick="javascript: WEBDAV.datePopup('dav_expireDate'); return false;" disabled="disabled" class="button" />
+                          </vm:if>
                         </td>
                       </tr>
                     </v:template>
@@ -3129,7 +3142,7 @@
                     declare N, M, retValue, dav_owner, dav_group, dav_encryption_state integer;
                     declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, dav_turtleRedirect, dav_turtleRedirectParams, msg, _p varchar;
                     declare properties, c_properties any;
-                    declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content any;
+                    declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content, dav_expireDate any;
                     declare params, detParams, itemList any;
                     declare tmp any;
 
@@ -3797,9 +3810,27 @@
                       _exec_11:;
                       }
 
+                      if (not self.editField ('expireDate'))
+                        goto _exec_12;
+
+                      dav_expireDate := cast (dav_expireDate as varchar);
+                      tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:expireDate', '');
+                      if (coalesce (dav_expireDate, '') <> tmp)
+                      {
+                        if (coalesce (dav_expireDate, '') = '')
+                        {
+                          WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, 'virt:expireDate');
+                        }
+                        else
+                        {
+                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:expireDate', dav_expireDate);
+                        }
+                      }
+
+                    _exec_12:;
                       -- properties
                       if (not self.editField ('properties'))
-                        goto _exec_12;
+                        goto _exec_13;
 
                       properties := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, '%', vector ('redirectref', 'LDP', 'virt:%', 'DAV:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
                       for (N := 0; N < length (properties); N := N + 1)
@@ -3811,14 +3842,14 @@
                         WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, c_properties[N][0], c_properties[N][1]);
                       }
 
-                    _exec_12:;
+                    _exec_13:;
                       -- symbolic link
                       if (not self.editField ('link') or not self.dav_is_redirect)
-                        goto _exec_13;
+                        goto _exec_14;
 
                       WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'redirectref', dav_link);
 
-                    _exec_13:;
+                    _exec_14:;
                       -- Auto versioning
                       if ((self.dav_type = 'C') or (self.command_mode <> 10))
                       {
