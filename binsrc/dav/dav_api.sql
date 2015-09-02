@@ -2726,7 +2726,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
 		 RES_MOD_TIME = mod_time,
 		 RES_TYPE = type,
 		 RES_CONTENT = content,
-		 ROWGUID = _rowguid
+		 ROWGUID = _rowguid,
+		 RES_SIZE = null
 	   where current of res_cr;
 	}
       else -- when it is cluster do it by PK for now
@@ -2739,7 +2740,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
 		 RES_MOD_TIME = mod_time,
 		 RES_TYPE = type,
 		 RES_CONTENT = content,
-		 ROWGUID = _rowguid
+		 ROWGUID = _rowguid,
+		 RES_SIZE = null
 	  where RES_ID = id;
 	}
       if (_is_xper_res)
@@ -3498,10 +3500,10 @@ DAV_COPY_INT (in path varchar,
                                        where RES_ID = d_id;
             }
           else
-            for select RES_TYPE as rt, RES_CONTENT as rcnt from WS.WS.SYS_DAV_RES where RES_ID = id do
+            for select RES_TYPE as rt, RES_CONTENT as rcnt, RES_SIZE as rsize from WS.WS.SYS_DAV_RES where RES_ID = id do
               {
                 update WS.WS.SYS_DAV_RES set RES_CONTENT = rcnt, RES_TYPE = rt, RES_OWNER = ouid,
-                                           RES_GROUP = ogid, RES_PERMS = permissions, RES_MOD_TIME = now ()
+                                           RES_GROUP = ogid, RES_PERMS = permissions, RES_MOD_TIME = now (), RES_SIZE = rsize
                                        where RES_ID = d_id;
               }
           newid := d_id;
