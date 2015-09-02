@@ -55,8 +55,8 @@ DAVSTATE.readState = function ()
   {
     if (!state) {
       var state = new Object();
-      state.column = 'column_#1';
-      state.direction = 'asc';
+      state.column = 'column_#4';
+      state.direction = 'desc';
     }
     return state;
   }

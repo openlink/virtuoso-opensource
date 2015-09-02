@@ -468,7 +468,10 @@
                     self.dir_direction := get_keyword ('direction', state, case when (columnName = 'column_#4') then 'desc' else 'asc' end);
                   }
                 }
+                if (columnName = '')
+                {
                 columnName := self.dir_order;
+              }
               }
               else
               {
@@ -480,13 +483,20 @@
                 }
               }
               if (not self.enabledColumn(columnName))
+              {
                 columnName := 'column_#1';
+                if (self.dir_order = columnName)
+                {
+                  self.dir_direction := either (equ (self.dir_direction, 'asc'), 'desc', 'asc');
+                } else {
+                  self.dir_direction := 'asc';
+                }
+              }
 
               self.dir_order := columnName;
               self.settings := WEBDAV.DBA.set_keyword ('orderBy', self.settings, self.dir_order);
               self.settings := WEBDAV.DBA.set_keyword ('orderDirection', self.settings, self.dir_direction);
               WEBDAV.DBA.settings_save (self.account_id, self.settings);
-              self.ds_items.vc_reset();
             ]]>
           </v:method>
 
