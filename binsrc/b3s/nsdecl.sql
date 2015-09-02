@@ -36,11 +36,11 @@ DB.DBA.XML_SET_NS_DECL ('content', 'http://purl.org/rss/1.0/modules/content/', 2
 DB.DBA.XML_SET_NS_DECL ('cv', 'http://purl.org/captsolo/resume-rdf/0.2/cv#', 2);
 DB.DBA.XML_SET_NS_DECL ('cvbase', 'http://purl.org/captsolo/resume-rdf/0.2/base#', 2);
 DB.DBA.XML_SET_NS_DECL ('dawgt', 'http://www.w3.org/2001/sw/DataAccess/tests/test-dawg#', 2);
-DB.DBA.XML_SET_NS_DECL ('dbpedia', 'http://dbpedia.org/resource/', 2);
-DB.DBA.XML_SET_NS_DECL ('dbpedia-owl', 'http://dbpedia.org/ontology/', 2);
-DB.DBA.XML_SET_NS_DECL ('dbpprop', 'http://dbpedia.org/property/', 2);
+DB.DBA.XML_SET_NS_DECL ('dbr', 'http://dbpedia.org/resource/', 2);
+DB.DBA.XML_SET_NS_DECL ('dbo', 'http://dbpedia.org/ontology/', 2);
+DB.DBA.XML_SET_NS_DECL ('dbp', 'http://dbpedia.org/property/', 2);
 DB.DBA.XML_SET_NS_DECL ('dc', 'http://purl.org/dc/elements/1.1/', 2);
-DB.DBA.XML_SET_NS_DECL ('dcterms', 'http://purl.org/dc/terms/', 2);
+DB.DBA.XML_SET_NS_DECL ('dct', 'http://purl.org/dc/terms/', 2);
 DB.DBA.XML_SET_NS_DECL ('digg', 'http://digg.com/docs/diggrss/', 2);
 DB.DBA.XML_SET_NS_DECL ('ebay', 'urn:ebay:apis:eBLBaseComponents', 2);
 DB.DBA.XML_SET_NS_DECL ('enc', 'http://purl.oclc.org/net/rss_2.0/enc#', 2);
