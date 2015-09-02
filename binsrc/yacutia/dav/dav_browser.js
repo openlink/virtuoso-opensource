@@ -310,7 +310,7 @@ function updateLabel(value)
   if (!value)
     return;
 
-  hideLabel(4, 17);
+  hideLabel(4, 18);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -339,6 +339,8 @@ function updateLabel(value)
     showLabel(16, 16);
   else if (value == 'RACKSPACE')
     showLabel(17, 17);
+  else if (value == 'FTP')
+    showLabel(18, 18);
 
   if (value == 'WebDAV')
     OAT.Dom.show('cVerify');

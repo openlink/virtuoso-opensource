@@ -599,7 +599,7 @@
               else if (detClass = 'Share')
                 retValue := vector ('edit', 'view', 'delete', 'rename', 'tag', 'properties', 'share');
 
-              else if (detClass in ('DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+              else if (detClass in ('DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
                 retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'properties', 'share');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
@@ -647,7 +647,7 @@
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
-              else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+              else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
@@ -689,7 +689,7 @@
             <![CDATA[
               declare retValue any;
 
-              if      (detClass in ('', 'UnderVersioning', 'rdfSink', 'HostFS', 'DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+              if      (detClass in ('', 'UnderVersioning', 'rdfSink', 'HostFS', 'DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
                 retValue := self.viewFields (detClass, what, mode);
 
               else if (detClass = 'IMAP')
@@ -753,6 +753,10 @@
               else if (detClass = 'WebDAV')
               {
                 retValue := vector (1, 1, vector ('activity', 'checkInterval', 'path', 'authenticationType', 'user', 'password', 'key', 'oauth', 'graph'));
+              }
+              else if (detClass = 'FTP')
+              {
+                retValue := vector (1, 1, vector ('activity', 'checkInterval', 'host', 'path', 'user', 'password', 'graph'));
               }
               else if (detClass = 'oMail')
               {
@@ -2205,31 +2209,32 @@
             </div>
              <div id="c1">
               <div class="tabs">
-                <vm:tabCaption tab="1"   tabs="19" caption="Main" />
+                <vm:tabCaption tab="1"   tabs="20" caption="Main" />
                 <v:template name="tform_5" type="simple" enabled="-- case when (self.viewField ('acl') or self.viewField ('aci')) and (self.command_mode = 10) then 1 else 0 end">
-                <vm:tabCaption tab="2"   tabs="19" caption="Sharing" />
+                <vm:tabCaption tab="2"   tabs="20" caption="Sharing" />
                 </v:template>
                 <v:template name="tform_7" type="simple" enabled="-- case when self.viewField ('version') and (self.command_mode = 10) and (self.dav_type = 'R') and not self.dav_is_redirect and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,acl') and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,meta') then 1 else 0 end">
-                <vm:tabCaption tab="9"   tabs="19" caption="Versions" />
+                <vm:tabCaption tab="9"   tabs="20" caption="Versions" />
                 </v:template>
                 <v:template name="tform_8" type="simple" enabled="-- equ (self.dav_type, 'C')">
-                <vm:tabCaption tab="4"   tabs="19" caption="WebMail" hide="1" />
-                <vm:tabCaption tab="5"   tabs="19" caption="Filter" hide="1" />
-                <vm:tabCaption tab="6"   tabs="19" caption="S3 Properties" hide="1" />
-                <vm:tabCaption tab="7"   tabs="19" caption="Criteria" hide="1" />
-                <vm:tabCaption tab="8"   tabs="19" caption="Linked Data Import" hide="1" />
+                <vm:tabCaption tab="4"   tabs="20" caption="WebMail" hide="1" />
+                <vm:tabCaption tab="5"   tabs="20" caption="Filter" hide="1" />
+                <vm:tabCaption tab="6"   tabs="20" caption="S3 Properties" hide="1" />
+                <vm:tabCaption tab="7"   tabs="20" caption="Criteria" hide="1" />
+                <vm:tabCaption tab="8"   tabs="20" caption="Linked Data Import" hide="1" />
                 <v:template name="tform_17" type="simple" enabled="-- case when (isstring (DB.DBA.vad_check_version ('SyncML'))) then 1 else 0 end">
-                <vm:tabCaption tab="10"  tabs="19" caption="SyncML" hide="1" />
+                <vm:tabCaption tab="10"  tabs="20" caption="SyncML" hide="1" />
                 </v:template>
-                <vm:tabCaption tab="11"  tabs="19" caption="IMAP Account" hide="1" />
+                <vm:tabCaption tab="11"  tabs="20" caption="IMAP Account" hide="1" />
                 <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
-                <vm:tabCaption tab="12"  tabs="19" caption="Google Drive" hide="1" />
-                <vm:tabCaption tab="13"  tabs="19" caption="Dropbox" hide="1" />
-                <vm:tabCaption tab="14"  tabs="19" caption="OneDrive" hide="1" />
-                <vm:tabCaption tab="15"  tabs="19" caption="Box Net" hide="1" />
-                <vm:tabCaption tab="16"  tabs="19" caption="WebDAV" hide="1" />
-                <vm:tabCaption tab="17"  tabs="19" caption="Rackspace" hide="1" />
-                <vm:tabCaption tab="18"  tabs="19" caption="Social Networks" hide="1" />
+                <vm:tabCaption tab="12"  tabs="20" caption="Google Drive" hide="1" />
+                <vm:tabCaption tab="13"  tabs="20" caption="Dropbox" hide="1" />
+                <vm:tabCaption tab="14"  tabs="20" caption="OneDrive" hide="1" />
+                <vm:tabCaption tab="15"  tabs="20" caption="Box Net" hide="1" />
+                <vm:tabCaption tab="16"  tabs="20" caption="WebDAV" hide="1" />
+                <vm:tabCaption tab="17"  tabs="20" caption="Rackspace" hide="1" />
+                <vm:tabCaption tab="18"  tabs="20" caption="Social Networks" hide="1" />
+                <vm:tabCaption tab="19"  tabs="20" caption="FTP" hide="1" />
                 </v:template>
                 </v:template>
               </div>
@@ -2451,7 +2456,7 @@
                                               1, 'Box',        'Box Net',
                                               1, 'WebDAV',     'WebDAV',
                                               1, 'RACKSPACE',  'Rackspace Cloud Files',
-                                              1, 'SN',         'Social Networks',
+                                              1, 'FTP',        'FTP',
                                               1, 'nntp',       'Discussion',
                                               1, 'CardDAV',    'CardDAV',
                                               1, 'Blog',       'Blog',
@@ -3108,6 +3113,9 @@
                   <v:template name="src_18" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'RACKSPACE') then 1 else 0 end">
                     <vm:search-dc-template18 />
                   </v:template>
+                  <v:template name="src_19" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'FTP') then 1 else 0 end">
+                    <vm:search-dc-template19 />
+                  </v:template>
                 </v:template>
                 <v:template type="simple" enabled="-- equ (self.dav_type, 'R')">
                   <vm:search-dc-template9 />
@@ -3652,6 +3660,10 @@
                         else if (dav_detType = 'RACKSPACE')
                         {
                           detParams := self.detParamsPrepare (dav_detType, 17);
+                        }
+                        else if (dav_detType = 'FTP')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 19);
                         }
                         if (not isnull (detParams))
                         {
@@ -5944,6 +5956,7 @@
           </td>
         </tr>
       </table>
+      </vm:if>
     </div>
   </xsl:template>
 
@@ -6247,6 +6260,106 @@
           OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_RACKSPACE_sponger'), {checked: {show: ['dav17_cartridge', 'dav17_metaCartridge']}})});
         </script>
       ]]>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <!-- FTP DET -->
+  <xsl:template match="vm:search-dc-template19">
+    <div id="18" class="tabContent" style="display: none;">
+      <?vsp
+        declare _value any;
+
+        _value := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:FTP-authenticationType', 'No');
+      ?>
+      <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
+        <tr>
+          <th width="30%">
+            <v:label for="dav_FTP_activity" value="--'Activity manager (on/off)'" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_FTP_activity', self.dav_path, 'virt:FTP-activity', 'off');
+              http (sprintf ('<input type="checkbox" name="dav_FTP_activity" id="dav_FTP_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <vm:label for="dav_FTP_checkInterval" value="Check for updates every" />
+          </th>
+          <td>
+            <v:text name="dav_FTP_checkInterval" xhtml_id="dav_FTP_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_FTP_checkInterval', self.dav_path, 'virt:FTP-checkInterval', '15');
+                ]]>
+              </v:before-data-bind>
+            </v:text> minutes
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_FTP_host" value="--'FTP - host'" />
+          </th>
+          <td>
+            <v:text name="dav_FTP_host" xhtml_id="dav_FTP_host" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_FTP_host', self.dav_path, 'virt:FTP-host', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_FTP_path" value="--'- path'" />
+          </th>
+          <td>
+            <v:text name="dav_FTP_path" xhtml_id="dav_FTP_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_FTP_path', self.dav_path, 'virt:FTP-path', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr id="tr_dav_FTP_user">
+          <th>
+            <v:label for="dav_FTP_user" value="--'User Name'" />
+          </th>
+          <td>
+            <v:text name="dav_FTP_user" xhtml_id="dav_FTP_user" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_FTP_user', self.dav_path, 'virt:FTP-user', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr id="tr_dav_FTP_password">
+          <th>
+            <v:label for="dav_FTP_password" value="--'User Password'" />
+          </th>
+          <td>
+            <v:text type="password" name="dav_FTP_password" xhtml_id="dav_FTP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := '**********';
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <?vsp
+          self.detSpongerUI ('FTP', 19);
+        ?>
+      </table>
     </div>
   </xsl:template>
 
