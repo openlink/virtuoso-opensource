@@ -1630,8 +1630,8 @@ AM_CONDITIONAL(WITH_ZLIB, test "x$with_zlib" = "xinternal")
 ##  Check out system lzma library					##
 ##									##
 ##########################################################################
-AC_ARG_WITH(lzma, [dnl
-AC_HELP_STRING([--with-lzma(=DIR)], [enable the lzma decompressor (default)])
+AC_ARG_ENABLE(lzma, [dnl
+AC_HELP_STRING([--enable-lzma(=DIR)], [enable the lzma decompressor (default)])
 AC_HELP_STRING([--disable-lzma], [disable the lzma decompressor LZMA])dnl
 ], [
      case "${enableval}" in
@@ -1685,7 +1685,9 @@ main ()
 [
  AC_MSG_RESULT(good)
  srvrlibs="$srvrlibs $LZMA_LDFLAGS"
+ INCL="$INCL $LZMA_CFLAGS"
  AC_DEFINE(HAVE_LZMA, 1, [LZMA support])
+ BUILD_OPTS="$BUILD_OPTS lzma"
 ],
 [
  AC_MSG_RESULT([bad. Check config.log for details])
@@ -1705,8 +1707,8 @@ AC_SUBST(LZMA_LDFLAGS)
 ##  Check out system bz2 library					##
 ##									##
 ##########################################################################
-AC_ARG_WITH(bz2, [dnl
-AC_HELP_STRING([--with-bz2(=DIR)], [enable the bz2 decompressor (default)])
+AC_ARG_ENABLE(bz2, [dnl
+AC_HELP_STRING([--enable-bz2(=DIR)], [enable the bz2 decompressor (default)])
 AC_HELP_STRING([--disable-bz2], [disable the bz2 decompressor ])dnl
 ], [
      case "${enableval}" in
@@ -1754,7 +1756,9 @@ main ()
 [
  AC_MSG_RESULT(good)
  srvrlibs="$srvrlibs $BZ2_LDFLAGS"
+ INCL="$INCL $BZ2_CFLAGS"
  AC_DEFINE(HAVE_BZ2, 1, [BZ2 support])
+ BUILD_OPTS="$BUILD_OPTS bz2"
 ],
 [
  AC_MSG_RESULT([bad. Check config.log for details])
