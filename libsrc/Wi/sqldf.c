@@ -6548,6 +6548,7 @@ sqlo_check_order_dbg (op_table_t * ot)
 
 
 #define SQLO_BACKTRACK ((dk_set_t)-1)
+int enable_always_order;
 
 dk_set_t
 sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set_t * new_leaves)
@@ -6558,7 +6559,7 @@ sqlo_layout_sort_tables (sqlo_t *so, op_table_t * ot, dk_set_t from_dfes, dk_set
   float first_card, prev_card;
   dk_set_t res = NULL;
   dk_set_t * arr;
-  if (ot->ot_fixed_order || IS_FOR_XML (sqlp_union_tree_right (ot->ot_dt)))
+  if (enable_always_order || ot->ot_fixed_order || IS_FOR_XML (sqlp_union_tree_right (ot->ot_dt)))
     {
       DO_SET (df_elt_t *, dfe, &ot->ot_from_dfes)
 	{
