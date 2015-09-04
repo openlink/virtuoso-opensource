@@ -233,11 +233,20 @@ ECHO BOTH $IF $EQU $STATE 'OK'  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": FTP update permission /DAV/u1/words.esp \n";
 
+update WS.WS.SYS_DAV_COL set COL_PERMS = '110100110R' where COL_NAME = 'u1';
+ECHO BOTH $IF $EQU $STATE 'OK'  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": FTP update permission /DAV/u1/ \n";
 
 select ftp_put ('localhost:$U{FTPPORT}', 'anonymous', 'test@test.com', 'test_file', 'u1/words.esp', 1);
 ECHO BOTH $IF $EQU $STATE 'OK'  "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": FTP upload user anonymous /u1/words.esp \n";
+
+update WS.WS.SYS_DAV_COL set COL_PERMS = '110100100R' where COL_NAME = 'u1';
+ECHO BOTH $IF $EQU $STATE 'OK'  "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": FTP update permission /DAV/u1/ \n";
 
 
 select ftp_put ('localhost:$U{FTPPORT}', 'anonymous', 'test@test.com', 'test_file', 'u1/test_file', 1);
