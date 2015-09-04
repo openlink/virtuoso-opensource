@@ -2869,6 +2869,11 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
     }
+  if (1 = sys_stat ('enable_vec') and not is_atomic ())
+    {
+      DB.DBA.TTLP_V (strg, base, graph, flags, 3, log_enable => log_enable, transactional => transactional);
+      return;
+    }
   old_log_mode := null;
   if (transactional = 0)
     {
