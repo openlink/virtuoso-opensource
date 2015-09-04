@@ -386,6 +386,9 @@ pl_clk_lt_refs (page_lock_t * pl, row_lock_t * rl)
 }
 
 
+void lt_add_pl_simple (lock_trx_t * lt, page_lock_t * pl);
+
+
 void
 itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl, int no_escalation)
 {
@@ -421,6 +424,7 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       if (IS_MT_BRANCH (itc->itc_ltrx) && itc->itc_lock_lt == itc->itc_ltrx)
 	{
 	  /* page lock owned by closing main lt.  Must now put a row for the closing branch, to rb later.  So must go to row locks because will be 2 owners */
+	  lt_add_pl_simple (itc->itc_lock_lt, itc->itc_pl);
 	  page_lock_to_row_locks (buf);
 	  no_escalation = 1;
 	}
@@ -655,6 +659,31 @@ lt_pl_add_main_lt (lock_trx_t * lt, int * has_txn, int flags)
   if (!in_txn)
     *has_txn = 1;
   return main_lt;
+}
+
+
+void
+lt_add_pl_simple (lock_trx_t * lt, page_lock_t * pl)
+{
+  /* add the lt to the owners of pl.  Done when a pl could be added from a branch to the main lt but the main lt went out before adding an rl or rl + clk.  In this case the branch must reference the pl */
+  IN_LT_LOCKS (lt);
+  sethash ((void*)pl, &lt->lt_lock, (void*)1);
+  LEAVE_LT_LOCKS (lt);
+
+  if (pl->pl_is_owner_list)
+    {
+      dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
+    }
+  else if (!pl->pl_owner)
+    pl->pl_owner = lt;
+  else
+    {
+      lock_trx_t *prev = pl->pl_owner;
+      pl->pl_is_owner_list = 1;
+      pl->pl_owner = NULL;
+      dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) prev);
+      dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
+    }
 }
 
 
