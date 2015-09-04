@@ -263,6 +263,16 @@ S_NL		((\r\n)|(\n\r)|\n|\r)
 S_NLNL		((\r\n([ \t]*)\r\n)|(\n\r([ \t]*)\n\r)|(\n([ \t]*)\n)|(\r([ \t]*)\r))
 HEX		([0-9A-Fa-f])
 
+PN_CHARS_BASE	([A-Za-z\x7f-\xfe])
+PN_CHARS_U	([A-Za-z_\x7f-\xfe])
+PN_CHARS_U_09	([A-Za-z0-9_\x7f-\xfe])
+PN_CHARS	([A-Za-z0-9_\x7f-\xfe-])
+PN_PREFIX	({PN_CHARS_BASE}(([.]*{PN_CHARS})*))
+PN_LOCAL	(({PN_CHARS_U_09}|{PLX})(([.]*({PN_CHARS}|[:]|{PLX}))*))
+PLX		({PERCENT}|{TTL_CR_PLX})
+PERCENT		([%]{HEX}{HEX})
+
+
 SPAR_NCCHAR1p	([A-Za-z\x7f-\xfe])
 SPAR_NCCHAR1	([A-Za-z\x7f-\xfe_])
 SPAR_VARNAME	([A-Za-z0-9\x7f-\xfe_]+)
@@ -393,7 +403,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
-<INITIAL>{SPAR_NCNAME_PREFIX}":"					{ TTL_TOKBOX_Q_SAVE(0,QNAME_NS,"namespace"); }
+<INITIAL>{PN_PREFIX}":"							{ TTL_TOKBOX_Q_SAVE(0,QNAME_NS,"namespace"); }
 
 <GARBAGE_BOL,GARBAGE,TWO_CRS>{SPAR_NCNAME_PREFIX}":"			{ if (ttlp_qname_prefix_is_explicit_and_valid (ttlp_arg, yytext)) { TTLYYBEGIN(INITIAL); TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); } }
 
@@ -402,7 +412,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       TTLYYBEGIN (GARBAGE);
     else
       TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
-<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"{SPAR_NCNAME}			{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"({PN_CHARS_U_09})(([.]*{PN_CHARS})*)	{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
 
 <INITIAL>"_:"{SPAR_NCCHAR_X}+	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
