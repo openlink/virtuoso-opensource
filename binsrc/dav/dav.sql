@@ -6385,11 +6385,11 @@ create procedure DB.DBA.LDP_DELETE (
 
   graph := WS.WS.DAV_IRI (path);
   SPARQL clear graph ?:graph;
-  delete
-    from DB.DBA.RDF_QUAD b
-   where exists (select 1
-                   from DB.DBA.RDF_QUAD a
-                  WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and	a.P = __i2idn ('http://www.w3.org/ns/ldp#contains') and a.O = __i2idn (graph));
+  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE 
+    a.P = __i2idn ('http://www.w3.org/ns/ldp#contains') and a.O = __i2idn (graph) do
+    {
+      delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
+    }
 }
 ;
 
