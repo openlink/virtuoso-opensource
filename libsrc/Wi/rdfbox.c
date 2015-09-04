@@ -174,7 +174,74 @@ rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
 iri_id_t bnode_t_treshold = ~((iri_id_t)0);
 
 int
-rb_uname_to_flags_of_parseable_datatype (caddr_t dt_uname)
+rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname)
+{
+  if (uname_xmlschema_ns_uri_hash_byte == dt_uname)
+    return rb_type__xsd_byte;
+  if (uname_xmlschema_ns_uri_hash_decimal == dt_uname)
+    return rb_type__xsd_decimal;
+  if (uname_xmlschema_ns_uri_hash_double == dt_uname)
+    return rb_type__xsd_double;
+  if (uname_xmlschema_ns_uri_hash_float == dt_uname)
+    return rb_type__xsd_float;
+  if (uname_xmlschema_ns_uri_hash_int == dt_uname)
+    return rb_type__xsd_int;
+  if (uname_xmlschema_ns_uri_hash_integer == dt_uname)
+    return rb_type__xsd_integer;
+  if (uname_xmlschema_ns_uri_hash_long == dt_uname)
+    return rb_type__xsd_long;
+  if (uname_xmlschema_ns_uri_hash_negativeInteger == dt_uname)
+    return rb_type__xsd_negativeInteger;
+  if (uname_xmlschema_ns_uri_hash_nonNegativeInteger == dt_uname)
+    return rb_type__xsd_nonNegativeInteger;
+  if (uname_xmlschema_ns_uri_hash_nonPositiveInteger == dt_uname)
+    return rb_type__xsd_nonPositiveInteger;
+  if (uname_xmlschema_ns_uri_hash_positiveInteger == dt_uname)
+    return rb_type__xsd_positiveInteger;
+  if (uname_xmlschema_ns_uri_hash_short == dt_uname)
+    return rb_type__xsd_short;
+  if (uname_xmlschema_ns_uri_hash_unsignedByte == dt_uname)
+    return rb_type__xsd_unsignedByte;
+  if (uname_xmlschema_ns_uri_hash_unsignedInt == dt_uname)
+    return rb_type__xsd_unsignedInt;
+  if (uname_xmlschema_ns_uri_hash_unsignedLong == dt_uname)
+    return rb_type__xsd_unsignedLong;
+  if (uname_xmlschema_ns_uri_hash_unsignedShort == dt_uname)
+    return rb_type__xsd_unsignedShort;
+  if (uname_xmlschema_ns_uri_hash_boolean == dt_uname)
+    return rb_type__xsd_boolean;
+  if (uname_xmlschema_ns_uri_hash_date == dt_uname)
+    return rb_type__xsd_date;
+  if (uname_xmlschema_ns_uri_hash_duration == dt_uname)
+    return rb_type__xsd_duration;
+  if (uname_xmlschema_ns_uri_hash_gDay == dt_uname)
+    return rb_type__xsd_gDay;
+  if (uname_xmlschema_ns_uri_hash_gMonth == dt_uname)
+    return rb_type__xsd_gMonth;
+  if (uname_xmlschema_ns_uri_hash_gMonthDay == dt_uname)
+    return rb_type__xsd_gMonthDay;
+  if (uname_xmlschema_ns_uri_hash_gYear == dt_uname)
+    return rb_type__xsd_gYear;
+  if (uname_xmlschema_ns_uri_hash_gYearMonth == dt_uname)
+    return rb_type__xsd_gYearMonth;
+  if (uname_xmlschema_ns_uri_hash_yearMonthDuration == dt_uname)
+    return rb_type__xsd_yearMonthDuration;
+
+  /* (uname_xmlschema_ns_uri_hash_dayTimeDuration       == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_dateTime              == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_dateTimeStamp         == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_hexBinary             == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_language              == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_normalizedString      == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_string                == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_time                  == dt_uname) */
+  /* (uname_xmlschema_ns_uri_hash_token                 == dt_uname) */
+
+  return 0;
+}
+
+int
+rb_uname_to_flags_of_parseable_datatype (ccaddr_t dt_uname)
 {
   if
     ( (uname_xmlschema_ns_uri_hash_byte		    == dt_uname)
@@ -6497,8 +6564,8 @@ rdf_box_init ()
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
   bif_define_ex ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rdf_set_bnode_t_treshold);
-  bif_define ("rdf_box", bif_rdf_box);
-  bif_define ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id);
+  bif_define_ex ("rdf_box", bif_rdf_box, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id, BMD_IS_PURE, BMD_DONE);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
   bif_define_ex ("is_rdf_box", bif_is_rdf_box, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_set_data", bif_rdf_box_set_data, BMD_RET_TYPE, &bt_any, BMD_DONE);

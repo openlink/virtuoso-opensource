@@ -2630,6 +2630,7 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
   if ((NULL != type) && (NULL == lang))
     {
       caddr_t dflt_xsd_type_of_box = xsd_type_of_box (value);
+      int dt_twobytes_for_bif = 0;
       int box_is_plain_num = ((type == dflt_xsd_type_of_box)
         || ((uname_xmlschema_ns_uri_hash_decimal == type) && (uname_xmlschema_ns_uri_hash_double == dflt_xsd_type_of_box))
         || ((uname_xmlschema_ns_uri_hash_boolean == type) && (DV_LONG_INT == DV_TYPE_OF (value)) && ((0 == unbox(value)) || (1 == unbox(value)))) );
@@ -2644,6 +2645,16 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;
         }
+      dt_twobytes_for_bif = rb_uname_to_wellknown_datatype_twobyte (type);
+      if (dt_twobytes_for_bif)
+	{
+	  char buf[50];
+	  ssg_puts_with_comment (" rdf_box (", "sqlval of typed literal");
+	  ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+	  sprintf (buf, ", %d, 257, 0, 1)", dt_twobytes_for_bif);
+	  ssg_puts (buf);
+	  return;
+	}
     }
   ssg_puts_with_comment (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (", "sqlval of typed literal");
   if (DV_DATETIME == DV_TYPE_OF (value))
@@ -2706,34 +2717,48 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
   value_dtp = DV_TYPE_OF (value);
   if ((NULL != datatype) || (NULL != language))
     {
+      int dt_twobytes_for_bif = 0;
       if ((NULL == language) && (datatype == xsd_type_of_box (value)))
         {
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_ABORT_ON_CAST);
           return;
         }
-      ssg_puts_with_comment (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (", "lit as long");
-      if (DV_DATETIME == value_dtp)
+      if (NULL == language)
+        dt_twobytes_for_bif = rb_uname_to_wellknown_datatype_twobyte (datatype);
+      if (dt_twobytes_for_bif)
         {
-          char temp[100];
-          int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (datatype);
-          dt_to_iso8601_string_ext (value, temp, sizeof (temp), mode);
-          ssg_putchar ('\'');
-          ssg_puts (temp);
-          ssg_putchar ('\'');
+          char buf[50];
+          ssg_puts_with_comment (" rdf_box (", "lit as long");
+          ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+          sprintf (buf, ", %d, 257, 0, 1)", dt_twobytes_for_bif);
+          ssg_puts (buf);
         }
       else
-        ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
-      ssg_putchar (',');
-      if (NULL != datatype)
-        ssg_print_box_as_sql_atom (ssg, datatype, SQL_ATOM_UNAME_ALLOWED);
-      else
-        ssg_puts (" NULL");
-      ssg_putchar (',');
-      if (NULL != language)
-        ssg_print_box_as_sql_atom (ssg, language, SQL_ATOM_ASCII_ONLY);
-      else
-        ssg_puts (" NULL");
-      ssg_putchar (')');
+        {
+          ssg_puts_with_comment (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (", "lit as long");
+          if (DV_DATETIME == value_dtp)
+            {
+              char temp[100];
+              int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (datatype);
+              dt_to_iso8601_string_ext (value, temp, sizeof (temp), mode);
+              ssg_putchar ('\'');
+              ssg_puts (temp);
+              ssg_putchar ('\'');
+            }
+          else
+            ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+          ssg_putchar (',');
+          if (NULL != datatype)
+            ssg_print_box_as_sql_atom (ssg, datatype, SQL_ATOM_UNAME_ALLOWED);
+          else
+            ssg_puts (" NULL");
+          ssg_putchar (',');
+          if (NULL != language)
+            ssg_print_box_as_sql_atom (ssg, language, SQL_ATOM_ASCII_ONLY);
+          else
+            ssg_puts (" NULL");
+          ssg_putchar (')');
+        }
       return;
     }
   if ((DV_STRING == value_dtp) || (DV_WIDE == value_dtp) ||

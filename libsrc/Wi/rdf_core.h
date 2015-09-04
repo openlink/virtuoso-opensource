@@ -48,7 +48,8 @@ extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, ca
 #define RDF_TYPE_PARSEABLE_TO_NUMERIC 0x2
 #define RDF_TYPE_PARSEABLE_TO_DTDURATION	0x4
 #define RDF_TYPE_PARSEABLE_TO_DATETIME		0x8
-int rb_uname_to_flags_of_parseable_datatype (caddr_t dt_uname);
+extern int rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname);
+extern int rb_uname_to_flags_of_parseable_datatype (ccaddr_t dt_uname);
 extern int rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte);
 /*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
 extern caddr_t xsd_type_of_box (caddr_t arg);
