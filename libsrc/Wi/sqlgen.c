@@ -1143,7 +1143,7 @@ sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   ts->ts_is_outer = tb_dfe->_.table.ot->ot_is_outer;
   order_ks = ts->ts_order_ks;
   if (order_ks && order_ks->ks_spec.ksp_spec_array)
-    ts->ts_is_unique = tb_dfe->_.table.is_unique;
+    ts->ts_is_unique = ts_check_unq (ts, tb_dfe->_.table.is_unique);
   /* if the order key has no spec then this can't be a full match of the key.  The situation is a contradiction, can happen if there is a unique pred but the wrong key.  Aberration of score function is possible cause.*/
 
   if (order_ks)
