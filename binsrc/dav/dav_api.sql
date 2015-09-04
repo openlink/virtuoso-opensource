@@ -5340,7 +5340,7 @@ create procedure WS.WS.WAC_DELETE (
           and	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
           and	a.O = __i2idn ('http://www.w3.org/ns/auth/acl#Authorization')) do
 	{
-	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS or O = SS;
+	  delete from DB.DBA.RDF_QUAD where G = GG and (S = SS or O = SS);
 	}
   for (select a.G as GG, a.S as SS
          from DB.DBA.RDF_QUAD a
@@ -5348,7 +5348,7 @@ create procedure WS.WS.WAC_DELETE (
           and a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
           and a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Filter')) do
 	{
-	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS or O = SS;
+	  delete from DB.DBA.RDF_QUAD where G = GG and (S = SS or O = SS);
 	}
   for (select a.G as GG, a.S as SS
          from DB.DBA.RDF_QUAD a
@@ -5356,7 +5356,7 @@ create procedure WS.WS.WAC_DELETE (
           and a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
           and a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Criteria')) do
 	{
-	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS or O = SS;
+	  delete from DB.DBA.RDF_QUAD where G = GG and (S = SS or O = SS);
 	}
 }
 ;
