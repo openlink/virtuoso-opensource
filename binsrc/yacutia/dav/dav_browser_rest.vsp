@@ -384,5 +384,43 @@
     http_header ('Content-Type: text/plain\r\n');
     http (DB.DBA.params2json (returnData));
   }
+  else if (action = 'mimeTypeByExt')
+  {
+    declare fileName varchar;
+
+    fileName := get_keyword ('fileName', params, '');
+    returnData := http_mime_type (fileName);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (returnData);
+  }
+  else if (action = 'nameByMimeType')
+  {
+    declare fileName, mimeType varchar;
+
+    returnData := vector ();
+    fileName := get_keyword ('fileName', params, '');
+    if (not isnull (strrchr (fileName, '.')))
+    {
+      mimeType := get_keyword ('mimeType', params, '');
+      if (http_mime_type (fileName) <> mimeType)
+      {
+        declare name, ext varchar;
+
+        name := left (fileName, strrchr (fileName, '.'));
+        for (select T_EXT from WS.WS.SYS_DAV_RES_TYPES where T_TYPE = mimeType order by T_EXT) do
+        {
+          returnData := vector_concat (returnData, vector (name || '.' || T_EXT));
+        }
+      }
+    }
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json(returnData));
+  }
   return;
 ?>

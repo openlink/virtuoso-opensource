@@ -23,7 +23,7 @@
 --
 create function DB.DBA.DAV_DET_SPECIAL ()
 {
-  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV');
+  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
 }
 ;
 
@@ -36,7 +36,7 @@ create function DB.DBA.DAV_DET_IS_SPECIAL (
 
 create function DB.DBA.DAV_DET_WEBDAV_BASED ()
 {
-  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN');
+  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
 }
 ;
 
@@ -543,15 +543,26 @@ create function DB.DBA.DAV_DET_PARAM_REMOVE (
 --
 -- RDF related params functions
 --
+create function DB.DBA.DAV_DET_RDF_DEFAULT_KEYS ()
+{
+  return vector ('sponger', 'cartridges', 'metaCartridges', 'graph');
+}
+;
+
 create function DB.DBA.DAV_DET_RDF_PARAMS_SET (
   in _det varchar,
   in _id any,
   in _params any,
-  in _keys any)
+  in _keys any := null)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_DET_RDF_PARAMS_SET (', _det, _id, _params, _keys, ')');
   declare N integer;
   declare _data any;
+
+  if (isnull (_keys))
+  {
+    _keys := DB.DBA.DAV_DET_RDF_DEFAULT_KEYS ();
+  }
 
   _data := vector ();
   for (N := 0; N < length (_keys); N := N + 1)
@@ -583,7 +594,7 @@ create function DB.DBA.DAV_DET_RDF_PARAMS_GET (
   retValue := DB.DBA.DAV_PROP_GET_INT (_id, 'C', sprintf ('virt:%s-rdf', _det), 0);
   if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
   {
-    return vector ('sponger', 'off');
+    return vector ('sponger', 'off', 'graphSecurity', 'off');
   }
   return deserialize (retValue);
 }
@@ -829,7 +840,7 @@ create function DB.DBA.DAV_DET_CONTENT_ROLLBACK (
 create function DB.DBA.DAV_DET_CONTENT_MD5 (
   in id any)
 {
-  return md5 (cast ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id)) as varchar));
+  return md5 (blob_to_string_output ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))));
 }
 ;
 
@@ -1631,7 +1642,9 @@ create procedure DB.DBA.DAV_DET_RDF_UPDATE ()
       }
       if (length (rdf_params))
       {
+        set triggers off;
         DB.DBA.DAV_DET_RDF_PARAMS_SET_INT (COL_DET, COL_ID, rdf_params);
+        set triggers on;
       }
     }
   }

@@ -1508,7 +1508,7 @@ create function DB.DBA.S3__listBuckets (
   declare xt, xtItems, buckets any;
 
   path := '/';
-  dateUTC := date_rfc1123 (now());
+  dateUTC := date_rfc1123 (curdatetime_tz ());
 
   commit work;
   reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, path);
@@ -1569,7 +1569,7 @@ create function DB.DBA.S3__listBucket (
 
   bucket := '/' || DB.DBA.S3__bucketFromUrl (url) || '/';
   bucketPath := DB.DBA.S3__pathFromUrl (url);
-  dateUTC := date_rfc1123 (now());
+  dateUTC := date_rfc1123 (curdatetime_tz ());
 
   commit work;
   reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, bucket);
@@ -1664,7 +1664,7 @@ create function DB.DBA.S3__putObject (
   declare id, davEntry any;
 
   params := DB.DBA.S3__params (detcol_id);
-  dateUTC := date_rfc1123 (now());
+  dateUTC := date_rfc1123 (curdatetime_tz ());
   s3Path := DB.DBA.S3__parts2path (get_keyword ('BucketName', params), get_keyword ('path', params), path_parts, what);
 
   workPath := DB.DBA.S3__encode (s3Path);
@@ -1746,7 +1746,7 @@ create function DB.DBA.S3__headObject (
   if (isnull (params))
     params := DB.DBA.S3__params (detcol_id);
 
-  dateUTC := date_rfc1123 (now());
+  dateUTC := date_rfc1123 (curdatetime_tz ());
   s3Path := DB.DBA.S3__parts2path (get_keyword ('BucketName', params), get_keyword ('path', params), path_parts, what);
 
   workPath := DB.DBA.S3__encode (s3Path);
@@ -1884,7 +1884,7 @@ create function DB.DBA.S3__copySingleObject (
   if (isnull (params))
     params := DB.DBA.S3__params (detcol_id);
 
-  dateUTC := date_rfc1123 (now());
+  dateUTC := date_rfc1123 (curdatetime_tz ());
   s3Path := DB.DBA.S3__parts2path (get_keyword ('BucketName', params), get_keyword ('path', params), path_parts, what);
 
   dstPath := DB.DBA.S3__encode (s3Path);
@@ -2005,7 +2005,7 @@ create function DB.DBA.S3__deleteObject (
   declare params any;
 
   params := DB.DBA.S3__params (detcol_id);
-  dateUTC := date_rfc1123 (now());
+  dateUTC := date_rfc1123 (curdatetime_tz ());
   s3Path := DB.DBA.S3__paramGet (id, what, 'path', 0);
 
   N := 0;
@@ -2143,7 +2143,7 @@ create function DB.DBA.S3__downloads_aq (
       goto _continue;
 
     path := DB.DBA.S3__encode (listID);
-    dateUTC := date_rfc1123 (now());
+    dateUTC := date_rfc1123 (curdatetime_tz ());
 
     commit work;
     reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, path);
