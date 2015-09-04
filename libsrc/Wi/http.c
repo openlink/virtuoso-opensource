@@ -915,7 +915,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
 {
   char * new_log = NULL;
   char tmp[4096];
-  int tmp_len = sizeof (tmp) - 1;
+  int tmp_len = sizeof (tmp) - sizeof (ws->ws_proto) - 1;
   char format[100];
   char buf[DKSES_OUT_BUFFER_LENGTH];
   char *volatile ptr;
