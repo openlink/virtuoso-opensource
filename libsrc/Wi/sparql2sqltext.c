@@ -5969,8 +5969,16 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
       if (VALUES_L == tree->_.retval.gp->_.gp.subtype)
         {
           SPART *binv = tree->_.retval.gp->_.gp.subquery;
-          int pos = sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, binv, e_varname);
-          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "BND", (SPAR_MAX_BINDINGS_VIEW_CN >= BOX_ELEMENTS (binv->_.binv.vars)), e_varname);
+          if (0 == binv->_.binv.rows_in_use)
+            {
+              ssg_puts (" NULL");
+              ssg_puts_comment ("value from empty binv");
+            }
+          else
+            {
+              int pos = sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, binv, e_varname);
+              ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "BND", (SPAR_MAX_BINDINGS_VIEW_CN >= BOX_ELEMENTS (binv->_.binv.vars)), e_varname);
+            }
           goto print_asname; /* see below */
         }
     }
