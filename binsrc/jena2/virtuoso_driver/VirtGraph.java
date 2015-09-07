@@ -84,6 +84,8 @@ public class VirtGraph extends GraphBase {
     protected boolean useReprepare = true;
     protected String sparqlPrefix = null;
     protected boolean insertBNodeAsVirtuosoIRI = false;
+    protected boolean resetBNodesDictAfterCall = false;
+    protected boolean resetBNodesDictAfterCommit = true;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
@@ -93,6 +95,7 @@ public class VirtGraph extends GraphBase {
     protected VirtTransactionHandler tranHandler = null;
     private final Object lck_add = new Object();
 
+    private boolean isBNodesDictCreated = false;
     private boolean batch_add_executed = false;
     PreparedStatement psInsert = null;
     java.sql.Statement stInsert_Cmd = null;
@@ -349,13 +352,66 @@ public class VirtGraph extends GraphBase {
         this.sparqlPrefix = val;
     }
 
+
+    /**
+     * Get the insertBNodeAsURI state for connection
+     */
     public boolean getInsertBNodeAsVirtuosoIRI() {
         return this.insertBNodeAsVirtuosoIRI;
     }
 
-
+    /**
+     * Set the insertBNodeAsURI state for connection(default false) 
+     * 
+     * @param v
+     *        true - insert BNode as Virtuoso IRI
+     *        false - insert BNode as Virtuoso Native BNode
+     */
     public void setInsertBNodeAsVirtuosoIRI(boolean v) {
         this.insertBNodeAsVirtuosoIRI = v;
+    }
+
+
+    /**
+     * Get the resetBNodesDictAfterCall state for connection
+     */
+    public boolean getResetBNodesDictAfterCall() {
+        return this.resetBNodesDictAfterCall;
+    }
+
+    /**
+     * Set the resetBNodesDictAfterCall (reset server side BNodes Dictionary,
+     * that is used for map between Jena Bnodes and Virtuoso BNodes, after each
+     * add call). The default state for connection is false 
+     * 
+     * @param v
+     *        true  - reset BNodes Dictionary after each add(add batch) call
+     *        false - not reset BNode Dictionary after each add(add batch) call
+     */
+    public void setResetBNodesDictAfterCall(boolean v) {
+        this.resetBNodesDictAfterCall = v;
+    }
+
+
+    /**
+     * Get the resetBNodesDictAfterCommit state for connection
+     */
+    public boolean getResetBNodesDictAfterCommit() {
+        return this.resetBNodesDictAfterCommit;
+    }
+
+    /**
+     * Set the resetBNodesDictAfterCommit (reset server side BNodes Dictionary,
+     * that is used for map between Jena Bnodes and Virtuoso BNodes, 
+     * after commit/rollback).
+     * The default state for connection is true 
+     * 
+     * @param v
+     *        true  - reset BNodes Dictionary after each commit/rollack
+     *        false - not reset BNode Dictionary after each commit/rollback
+     */
+    public void setResetBNodesDictAfterCommit(boolean v) {
+        this.resetBNodesDictAfterCommit = v;
     }
 
 
@@ -674,40 +730,36 @@ public class VirtGraph extends GraphBase {
                 }
 
             } else {
-/**
-                java.sql.PreparedStatement ps;
-                ps = prepareStatement(S_TTLP_INSERT);
-                int transactional = connection.getAutoCommit() ? 0 : 1;
+                boolean isAutocommit = connection.getAutoCommit();;
 
-                StringBuilder data = new StringBuilder(1024);
-                data.append(Node2Str_add(nS));
-                data.append(' ');
-                data.append(Node2Str_add(nP));
-                data.append(' ');
-                data.append(Node2Str_add(nO));
-                data.append(" .");
+                if (insertBNodeAsVirtuosoIRI 
+                    || resetBNodesDictAfterCall
+                    || isAutocommit) 
+                {
+                    java.sql.Statement st = createStatement();
 
-                ps.setString(1, data.toString());
-                ps.setString(2, _gName);
-                ps.setInt(3, transactional);
-                ps.executeUpdate();
-                ps.close();
-**/
-                java.sql.Statement st = createStatement();
+                    StringBuilder data = new StringBuilder(1024);
+                    data.append("sparql insert into <");
+                    data.append(_gName);
+                    data.append("> { ");
+                    data.append(Node2Str_add(nS));
+                    data.append(' ');
+                    data.append(Node2Str_add(nP));
+                    data.append(' ');
+                    data.append(Node2Str_add(nO));
+                    data.append(" .}");
 
-                StringBuilder data = new StringBuilder(1024);
-                data.append("sparql insert into <");
-                data.append(_gName);
-                data.append("> { ");
-                data.append(Node2Str_add(nS));
-                data.append(' ');
-                data.append(Node2Str_add(nP));
-                data.append(' ');
-                data.append(Node2Str_add(nO));
-                data.append(" .}");
-
-                st.execute(data.toString());
-                st.close();
+                    st.execute(data.toString());
+                    st.close();
+                } 
+                else 
+                {
+                   createBNodesDict();
+                   PreparedStatement ps = prepareStatement(S_BATCH_INSERT);
+                   bindBatchParams(ps, nS, nP, nO, _gName);
+                   ps.execute();
+                   ps.close();
+                }
             }
         } catch (Exception e) {
             throw new AddDeniedException(e.toString());
@@ -975,19 +1027,47 @@ public class VirtGraph extends GraphBase {
 
 
 
+    protected void createBNodesDict() {
+        synchronized(lck_add) {
+            try {
+                if (isBNodesDictCreated)
+                  return;
+
+                if (!insertBNodeAsVirtuosoIRI) {
+                    if (stInsert_Cmd == null)
+                        stInsert_Cmd = createStatement();
+                    stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
+                    isBNodesDictCreated = true;
+                }
+            } catch (SQLException e) {
+                throw new JenaException(e);
+            }
+        }
+    }
+
+    protected void dropBNodesDict() {
+        synchronized(lck_add) {
+            try {
+                if (!isBNodesDictCreated)
+                  return;
+
+                if (stInsert_Cmd == null)
+                    stInsert_Cmd = createStatement();
+                stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                isBNodesDictCreated = false;
+            } catch (SQLException e) {
+                throw new JenaException(e);
+            }
+        }
+    }
+
+
     protected void startBatchAdd() {
         synchronized(lck_add) {
             if (batch_add_executed)
                 throw new JenaException("Batch mode is started already");
             batch_add_executed = true;
-            try {
-                if (!insertBNodeAsVirtuosoIRI) {
-                    stInsert_Cmd = createStatement();
-                    stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
-                }
-            } catch (SQLException e) {
-                throw new JenaException(e);
-            }
+            createBNodesDict();
         }
     }
 
@@ -1001,9 +1081,8 @@ public class VirtGraph extends GraphBase {
                     psInsert.clearBatch();
                     psInsert_Count = 0;
                 }
-                if (stInsert_Cmd!=null) {
-                    stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
-                }
+                if (resetBNodesDictAfterCall)
+                    dropBNodesDict();
             } catch (SQLException e) {
                 throw new JenaException(e);
             }
@@ -1013,13 +1092,15 @@ public class VirtGraph extends GraphBase {
                     psInsert.close();
                 } catch (Exception e) {}
             }
-            if (stInsert_Cmd!=null) {
-                try {
-                    stInsert_Cmd.close();
-                } catch (Exception e) {}
+            if (resetBNodesDictAfterCall) {
+                if (stInsert_Cmd!=null) {
+                    try {
+                        stInsert_Cmd.close();
+                    } catch (Exception e) {}
+                }
+                stInsert_Cmd = null;
             }
             psInsert = null;
-            stInsert_Cmd = null;
             batch_add_executed = false;
         }
     }
@@ -1081,22 +1162,33 @@ public class VirtGraph extends GraphBase {
     }
 **/
 
+    void performAdd_batch(String _gName, Node nS, Node nP, Node nO) {
+        _gName = (_gName != null ? _gName : this.graphName);
+
+        try {
+            psInsert = addToQuadStore_batch(psInsert, nS, nP, nO, _gName);
+            psInsert_Count++;
+
+            if (psInsert_Count > BATCH_SIZE) {
+                psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
+             }
+
+        } catch (Exception e) {
+            throw new AddDeniedException(e.toString());
+        }
+    }
+
     //--java5 or newer    @SuppressWarnings("unchecked")
     void add(String _gName, Iterator<Triple> it, List<Triple> list) {
         synchronized (lck_add) {
-            PreparedStatement _ps = null;
-            java.sql.Statement _st_cmd = null;
             _gName = (_gName != null ? _gName : graphName);
 
             checkOpen();
 
             try {
-                if (!insertBNodeAsVirtuosoIRI) {
-                    _st_cmd = createStatement();
-                    _st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
-                }
+                startBatchAdd();
 
-                int count = 0;
                 while (it.hasNext()) {
                     Triple t = it.next();
 
@@ -1107,34 +1199,14 @@ public class VirtGraph extends GraphBase {
                     Node nP = t.getPredicate();
                     Node nO = t.getObject();
 
-                    _ps = addToQuadStore_batch(_ps, nS, nP, nO, _gName);
-                    count++;
-                    if (count > BATCH_SIZE) {
-                        _ps = flushDelayAdd_batch(_ps, count);
-                        count = 0;
-                    }
+                    performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                if (count > 0)
-                    _ps = flushDelayAdd_batch(_ps, count);
-                if (_st_cmd!=null)
-                    _st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                stopBatchAdd();
 
             } catch (Exception e) {
                 throw new JenaException(e);
-            } finally {
-                if (_ps != null) {
-                    try {
-                        _ps.close();
-                    } catch (Exception e) {
-                    }
-                }
-                if (_st_cmd != null) {
-                    try {
-                        _st_cmd.close();
-                    } catch (Exception e) {
-                    }
-                }
             }
         }
     }
@@ -1142,19 +1214,13 @@ public class VirtGraph extends GraphBase {
 
     protected void add(String _gName, Iterator<Statement> it) {
         synchronized (lck_add) {
-            PreparedStatement _ps = null;
-            java.sql.Statement _st_cmd = null;
             _gName = (_gName != null ? _gName : graphName);
 
             checkOpen();
 
             try {
-                if (!insertBNodeAsVirtuosoIRI) {
-                    _st_cmd = createStatement();
-                    _st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
-                }
+                startBatchAdd();
 
-                int count = 0;
                 while (it.hasNext()) {
                     Statement t = it.next();
 
@@ -1162,34 +1228,13 @@ public class VirtGraph extends GraphBase {
                     Node nP = t.getPredicate().asNode();
                     Node nO = t.getObject().asNode();
 
-                    _ps = addToQuadStore_batch(_ps, nS, nP, nO, _gName);
-                    count++;
-                    if (count > BATCH_SIZE) {
-                        _ps = flushDelayAdd_batch(_ps, count);
-                        count = 0;
-                    }
+                    performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                if (count > 0)
-                    _ps = flushDelayAdd_batch(_ps, count);
-                if (_st_cmd!=null)
-                    _st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                stopBatchAdd();
 
             } catch (Exception e) {
-                throw new JenaException(e);
-            } finally {
-                if (_ps != null) {
-                    try {
-                        _ps.close();
-                    } catch (Exception e) {
-                    }
-                }
-                if (_st_cmd != null) {
-                    try {
-                        _st_cmd.close();
-                    } catch (Exception e) {
-                    }
-                }
             }
         }
     }

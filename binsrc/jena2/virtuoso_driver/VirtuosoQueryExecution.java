@@ -348,7 +348,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
             return query;
 
         StringBuffer buf = new StringBuffer();
-        String delim = " ,)(;.";
+        String delim = " ,)(;.}{";
         int i = 0;
         char ch;
         int qlen = query.length();
