@@ -5485,7 +5485,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
   if (not DB.DBA.LDP_ENABLED (id))
     return;
 
-  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
+  for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
   {
     uri := WS.WS.DAV_IRI (path);
     TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
@@ -5498,7 +5498,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
 	      TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
 	    }
 	  }
-    for select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null do
+    for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
 	  {
 	    ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
 	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
@@ -5684,7 +5684,7 @@ create procedure WEBDAV.DBA.progress_start (
   declare target, overwrite any;
   declare tagsPublic, tagsPrivate any;
   declare acl_value, aci_value, dav_acl, old_dav_acl any;
-  declare prop_owner, prop_group integer;
+  declare prop_owner, prop_group any;
   declare prop_mime, prop_add_perms, prop_rem_perms, prop_perms, one, zero varchar;
   declare c_properties, c_property, c_value, c_action any;
 
@@ -5768,11 +5768,14 @@ create procedure WEBDAV.DBA.progress_start (
         else if (command = 'unmount')
         {
           if (get_keyword ('f_unmount', params) = 'D')
-            retValue := WEBDAV.DBA.DAV_DELETE (itemPath);
-
-          if (get_keyword ('f_unmount', params) = 'U')
           {
-            declare N integer;
+            -- delete all
+
+            retValue := WEBDAV.DBA.DAV_DELETE (itemPath);
+          }
+          else if (get_keyword ('f_unmount', params) = 'U')
+          {
+            -- unmount only
             declare _detType, _path varchar;
             declare _properties any;
 
@@ -5782,15 +5785,19 @@ create procedure WEBDAV.DBA.progress_start (
             {
               _path := DB.DBA.DAV_SEARCH_PATH (COL_ID, 'C');
               _properties := WEBDAV.DBA.DAV_PROP_LIST (_path, sprintf ('virt:%s%%', _detType), vector ());
-              for (N := 0; N < length (_properties); N := N + 1)
-                WEBDAV.DBA.DAV_PROP_REMOVE (_path, _properties[N][0]);
+              for (L := 0; L < length (_properties); L := L + 1)
+              {
+                WEBDAV.DBA.DAV_PROP_REMOVE (_path, _properties[L][0]);
+              }
             }
             for (select RES_ID from WS.WS.SYS_DAV_RES where DB.DBA.DAV_SEARCH_PATH (RES_ID, 'R') like (itemPath || '%')) do
             {
               _path := DB.DBA.DAV_SEARCH_PATH (RES_ID, 'R');
               _properties := WEBDAV.DBA.DAV_PROP_LIST (_path, sprintf ('virt:%s%%', _detType), vector ());
-              for (N := 0; N < length (_properties); N := N + 1)
-                WEBDAV.DBA.DAV_PROP_REMOVE (_path, _properties[N][0]);
+              for (L := 0; L < length (_properties); L := L + 1)
+              {
+                WEBDAV.DBA.DAV_PROP_REMOVE (_path, _properties[L][0]);
+              }
             }
           }
         }
@@ -5920,7 +5927,7 @@ create procedure WEBDAV.DBA.progress_start (
       {
         retValue := item;
       }
-      results[length(results)-1] := case when WEBDAV.DBA.DAV_ERROR (retValue) then WEBDAV.DBA.DAV_PERROR (retValue) else 'OK' end;
+      results[length(results)-1] := case when WEBDAV.DBA.DAV_ERROR (retValue) then VALIDATE.DBA.clear (WEBDAV.DBA.DAV_PERROR (retValue)) else 'OK' end;
 
       -- set registry data
       M := M + 1;

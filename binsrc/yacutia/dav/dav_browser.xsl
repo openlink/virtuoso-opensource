@@ -5997,7 +5997,6 @@
           </td>
         </tr>
       </table>
-      </vm:if>
     </div>
   </xsl:template>
 
