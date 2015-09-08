@@ -5485,7 +5485,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
   if (not DB.DBA.LDP_ENABLED (id))
     return;
 
-  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
+  for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
   {
     uri := WS.WS.DAV_IRI (path);
     TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
@@ -5498,7 +5498,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
 	      TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
 	    }
 	  }
-    for select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null do
+    for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
 	  {
 	    ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
 	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
