@@ -1471,10 +1471,13 @@ ce_result (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 o
       else if (DCT_BOXES & dc->dc_type)
 	{
 	  dtp_t dtp = CE_IS_IRI & flags ? DV_IRI_ID : DV_LONG_INT;
+	  dtp_t cl_dtp = cpo->cpo_cl && (DV_SINGLE_FLOAT == cpo->cpo_cl->cl_sqt.sqt_col_dtp
+	      || DV_DOUBLE_FLOAT == cpo->cpo_cl->cl_sqt.sqt_col_dtp) ? dtp_canonical[cpo->cpo_cl->cl_sqt.sqt_col_dtp] : dtp;
 	  for (ctr = 0; ctr < rl; ctr++)
 	    {
 	      caddr_t box =
-		  DCT_FROM_POOL & dc->dc_type ? mp_alloc_box (dc->dc_mp, sizeof (int64), dtp) : dk_alloc_box (sizeof (int64), dtp);
+		  DCT_FROM_POOL & dc->dc_type ? mp_alloc_box (dc->dc_mp, sizeof (int64), cl_dtp) : dk_alloc_box (sizeof (int64),
+		  cl_dtp);
 	      *(int64 *) box = offset;
 	      ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box;
 	    }
