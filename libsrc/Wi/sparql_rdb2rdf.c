@@ -395,7 +395,7 @@ void
 rdb2rdf_set_rvr_by_const_or_qmv (rdb2rdf_ctx_t *rrc, rdf_val_range_t *rvr, ccaddr_t fld_const, qm_value_t *fld_qmv)
 {
   if (NULL != fld_const)
-    sparp_rvr_set_by_constant (NULL, rvr, NULL, (SPART *)fld_const);
+    sparp_rvr_set_by_constant (NULL, rvr, NULL, (SPART *)fld_const, NULL);
   else
     {
       rdf_val_range_t *qmv_or_fmt_rvr = NULL;

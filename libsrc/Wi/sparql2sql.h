@@ -275,7 +275,7 @@ extern sparp_equiv_t *sparp_equiv_exact_copy (sparp_t *sparp, sparp_equiv_t *ori
 
 /*! Tries to restrict \c primary by \c datatype and/or value.
 If neither datatype nor value is provided, SPARP_EQUIV_MERGE_OK is returned. */
-extern int sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *primary, ccaddr_t datatype, SPART *value);
+extern int sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *primary, ccaddr_t datatype, SPART *value, ccaddr_t orig_text);
 
 /*! Removes unused \c garbage from the list of equivs of its gp.
 The debug version GPFs if the \c garbage is somehow used. */
@@ -388,7 +388,7 @@ If dest is equal to SPARP_RVR_CREATE then it allocates new rvr otherwise it over
 extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, const rdf_val_range_t *src);
 
 /*! Tries to zap \c dest and then restrict it by \c datatype and/or value. */
-extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value);
+extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value, ccaddr_t orig_text);
 
 /*! Restricts \c dest by additional restrictions from \c addon_restrictions.
 The operation checks for validity of resulting combination of the \c rvrRestrictions bits and may set SPART_VARR_CONFLICT.

@@ -119,6 +119,7 @@ void rdf_ds_load_all (void)
   qmf->qmfValRange.rvrDatatype = NULL;
   qmf->qmfValRange.rvrLanguage = NULL;
   qmf->qmfValRange.rvrFixedValue = NULL;
+  qmf->qmfValRange.rvrFixedOrigText = NULL;
   qmf->qmfValRange.rvrSprintffs = NULL;
   qmf->qmfValRange.rvrSprintffCount = 0;
   qmf->qmfValRange.rvrIriClasses = NULL;
@@ -166,6 +167,7 @@ void rdf_ds_load_all (void)
   qmf->qmfValRange.rvrDatatype = NULL;
   qmf->qmfValRange.rvrLanguage = NULL;
   qmf->qmfValRange.rvrFixedValue = NULL;
+  qmf->qmfValRange.rvrFixedOrigText = NULL;
   qmf->qmfValRange.rvrSprintffs = NULL;
   qmf->qmfValRange.rvrSprintffCount = 0;
   qmf->qmfValRange.rvrIriClasses = NULL;
@@ -2579,6 +2581,11 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
+          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
+            {
+              ssg_print_float_literal_as_original (ssg, lit);
+              return;
+            }
           dt = lit->_.lit.datatype;
           lang = lit->_.lit.language;
         }
@@ -2693,10 +2700,9 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
-          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value)))
+          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
             {
-              ssg_putchar (' ');
-              ssg_puts (lit->_.lit.original_text);
+              ssg_print_float_literal_as_original (ssg, lit);
               return;
             }
           datatype = lit->_.lit.datatype;
@@ -6231,6 +6237,8 @@ ssg_print_rvr_fixed_val (spar_sqlgen_t *ssg, rdf_val_range_t *rvr, ssg_valmode_t
     goto use_temporary_literal;
   if (!(rvr->rvrRestrictions & SPART_VARR_TYPED))
     goto use_sql_box;
+  if ((NULL != rvr->rvrFixedOrigText) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (rvr->rvrFixedValue)) || DV_SINGLE_FLOAT == DV_TYPE_OF (rvr->rvrFixedValue) || DV_NUMERIC == DV_TYPE_OF (rvr->rvrFixedValue)))
+    goto use_temporary_literal;
   if ((rvr->rvrDatatype == uname_xmlschema_ns_uri_hash_string) || (rvr->rvrDatatype != xsd_type_of_box ((caddr_t)(rvr->rvrFixedValue))))
     goto use_temporary_literal;
 
@@ -6245,6 +6253,7 @@ use_temporary_literal:
       lit->_.lit.val = (caddr_t)(rvr->rvrFixedValue);
       lit->_.lit.datatype = (caddr_t)(rvr->rvrDatatype);
       lit->_.lit.language = (caddr_t)(rvr->rvrLanguage);
+      lit->_.lit.original_text = (caddr_t)(rvr->rvrFixedOrigText);
       ssg_print_scalar_expn (ssg, lit, needed, asname);
     }
 }
@@ -7427,8 +7436,8 @@ name_is_non_ghost: ;
       if (SPART_VARR_FIXED & restrs_not_filtered_in_subqs)
         {
 	  SPART *rval, *bop;
-          if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE))
-            rval = spartlist (ssg->ssg_sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, eq->e_rvr.rvrFixedValue);
+	  if (((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE)) || (NULL != eq->e_rvr.rvrFixedOrigText))
+	    rval = spartlist (ssg->ssg_sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, eq->e_rvr.rvrFixedOrigText);
 	  else
 	    rval = (SPART *) (eq->e_rvr.rvrFixedValue);
 	  bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, rval);

@@ -1727,10 +1727,10 @@ sparp_equiv_exact_copy (sparp_t *sparp, sparp_equiv_t *orig)
 #endif
 
 int
-sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t datatype, SPART *value)
+sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *pri, ccaddr_t datatype, SPART *value, ccaddr_t orig_text)
 {
   rdf_val_range_t tmp;
-  sparp_rvr_set_by_constant (sparp, &tmp, datatype, value);
+  sparp_rvr_set_by_constant (sparp, &tmp, datatype, value, orig_text);
   sparp_rvr_tighten (sparp, &tmp, &(pri->e_rvr), ~0);
   if (tmp.rvrRestrictions & SPART_VARR_CONFLICT)
     return SPARP_EQUIV_MERGE_ROLLBACK;
@@ -1821,7 +1821,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
   if ((0 != pri->e_subquery_uses) || (0 != sec->e_subquery_uses))
     return SPARP_EQUIV_MERGE_ROLLBACK;
 #endif
-  ret = sparp_equiv_restrict_by_constant (sparp, pri, sec->e_rvr.rvrDatatype, (SPART *)(sec->e_rvr.rvrFixedValue));
+  ret = sparp_equiv_restrict_by_constant (sparp, pri, sec->e_rvr.rvrDatatype, (SPART *)(sec->e_rvr.rvrFixedValue), sec->e_rvr.rvrFixedOrigText);
   if (SPARP_EQUIV_MERGE_ROLLBACK == ret)
     return ret;
   pri->e_varnames = t_list_concat ((caddr_t)(pri->e_varnames), (caddr_t)(sec->e_varnames));
@@ -2470,7 +2470,7 @@ sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, const rdf_val_range_t *sr
 }
 
 void
-sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value)
+sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value, ccaddr_t orig_text)
 {
   memset (dest, 0, sizeof (rdf_val_range_t));
   if (NULL != datatype)
@@ -2520,6 +2520,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
           if (DV_ARRAY_OF_POINTER == valtype)
             {
               dest->rvrFixedValue = value->_.lit.val;
+              dest->rvrFixedOrigText = value->_.lit.original_text;
               dest->rvrDatatype = value->_.lit.datatype;
               dest->rvrLanguage = value->_.lit.language;
               if ((NULL == dest->rvrDatatype) && (NULL == dest->rvrLanguage) && (DV_STRING != valtype))
@@ -2535,6 +2536,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
           else
             {
               dest->rvrFixedValue = (caddr_t)value;
+              dest->rvrFixedOrigText = orig_text;
               dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
@@ -2636,6 +2638,8 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
         {
           if (DVC_MATCH != cmp_boxes_safe (dest->rvrFixedValue, addon->rvrFixedValue, NULL, NULL))
             goto conflict; /* see below */
+          if ((NULL != dest->rvrFixedOrigText) && (NULL != addon->rvrFixedOrigText) && strcmp (dest->rvrFixedOrigText, addon->rvrFixedOrigText))
+            goto conflict; /* see below */
         }
       else
         {
@@ -2644,6 +2648,7 @@ sparp_rvr_tighten (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon
                 GPF_T1("sparp_" "rvr_tighten(): addon->rvrFixedValue is not a literal");
 #endif
           dest->rvrFixedValue = addon->rvrFixedValue;
+          dest->rvrFixedOrigText = addon->rvrFixedOrigText;
           dest->rvrDatatype = addon->rvrDatatype;
           dest->rvrLanguage = addon->rvrLanguage;
         }
@@ -2835,7 +2840,10 @@ sparp_rvr_loose (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *addon, 
             }
         }
       dest->rvrFixedValue = NULL;
+      dest->rvrFixedOrigText = NULL;
     }
+  else if ((NULL == dest->rvrFixedOrigText) || (NULL == addon->rvrFixedOrigText) || strcmp (dest->rvrFixedOrigText, addon->rvrFixedOrigText))
+    dest->rvrFixedOrigText = NULL;
   if (new_restr & changeable_flags & SPART_VARR_SPRINTFF)
     sparp_rvr_add_sprintffs (sparp, dest, addon->rvrSprintffs, addon->rvrSprintffCount);
   else
@@ -3824,7 +3832,7 @@ sparp_extract_filters_replaced_by_equiv (sparp_t *sparp, sparp_equiv_t *eq, dk_s
       else if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
         r = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
       else
-        r = spartlist (sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, NULL);
+        r = spartlist (sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, eq->e_rvr.rvrFixedOrigText);
       t_set_push (filts_from_equiv_ret, spartlist (sparp, 3, BOP_EQ, spar_make_variable (sparp, sample_varname), r));
     }
   if (repl_bits & SPART_VARR_NOT_NULL)
@@ -4935,6 +4943,7 @@ void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr, int hot_bits, char
   int varr_bits = rvr->rvrRestrictions;
   ccaddr_t fixed_dt = rvr->rvrDatatype;
   ccaddr_t fixed_val = rvr->rvrFixedValue;
+  ccaddr_t fixed_orig_text = rvr->rvrFixedOrigText;
   spart_dump_varr_bits (ses, varr_bits, hot_bits, hot_sign);
   if (varr_bits & SPART_VARR_TYPED)
     {
@@ -4977,6 +4986,12 @@ void spart_dump_rvr (dk_session_t *ses, rdf_val_range_t *rvr, int hot_bits, char
         tail += sprintf (tail, "^^'%.50s'", lit_dt);
       if (NULL != lit_lang)
         tail += sprintf (tail, "@'%.50s'", lit_lang);
+      SES_PRINT (ses, buf);
+    }
+  if (NULL != fixed_orig_text)
+    {
+      tail = buf;
+      tail += sprintf (tail, " written as '%.50s'", fixed_orig_text);
       SES_PRINT (ses, buf);
     }
   if (rvr->rvrIriClassCount)

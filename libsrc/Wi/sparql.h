@@ -58,8 +58,8 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPARP_DEBUG_WEIRD(sparp,msg)
 #endif
 
-/*! Number of NULLs should match number of fields in rdf_val_range_t */
-#define SPART_RVR_LIST_OF_NULLS NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL
+/*				restr	dtype	lang	fixed	otext	sprintf	count	class	count	redcuts	count	*/
+#define SPART_RVR_LIST_OF_NULLS	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL,	NULL
 
 #define SPAR_ALIAS		(ptrlong)1001	/*!< Alias, (expn AS ?varname). spar_dealias() is identity function for non-aliases and returns expn for aliases. Alias of alias can be treated as an error. */
 #define SPAR_BLANK_NODE_LABEL	(ptrlong)1002
