@@ -1523,6 +1523,9 @@ ce_result (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 o
 	    box = DCT_FROM_POOL & dc->dc_type
 		? mp_box_deserialize_ce_string (dc->dc_mp, val, len, offset)
 		: mp_box_deserialize_ce_string (NULL, val, len, offset);
+	  if (cpo->cpo_cl && (DV_SINGLE_FLOAT == cpo->cpo_cl->cl_sqt.sqt_col_dtp
+		  || DV_DOUBLE_FLOAT == cpo->cpo_cl->cl_sqt.sqt_col_dtp))
+	    box_tag_modify (box, cpo->cpo_cl->cl_sqt.sqt_col_dtp);
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box;
 	  for (ctr = 1; ctr < rl; ctr++)
 	    {
@@ -1640,20 +1643,41 @@ ce_result (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64 o
 }
 
 
+int
+clk_is_in_sets (it_cursor_t * itc, col_row_lock_t * clk, int *nth_match_ret)
+{
+  int inx;
+  for (inx = itc->itc_match_in; inx < itc->itc_n_matches; inx++)
+    {
+      if (itc->itc_matches[inx] == clk->clk_pos)
+	return 1;
+      if (itc->itc_matches[inx] > clk->clk_pos)
+	{
+	  *nth_match_ret = inx;
+	  return 0;
+	}
+    }
+  return 0;
+}
+
+
 void
-cpo_next_pre (col_pos_t * cpo, int is_first)
+cpo_next_pre (col_pos_t * cpo, row_no_t row, int is_first)
 {
   it_cursor_t *itc = cpo->cpo_itc;
   row_lock_t *rl = itc->itc_rl;
+  int64 w_id = itc->itc_ltrx->lt_rc_w_id ? itc->itc_ltrx->lt_rc_w_id : itc->itc_ltrx->lt_w_id;
   int n_significant = itc->itc_insert_key->key_n_significant;
   int inx;
+  int nth_match = itc->itc_match_in;
   if (!is_first)
     cpo->cpo_clk_inx++;
   for (inx = cpo->cpo_clk_inx; inx < rl->rl_n_cols; inx++)
     {
       col_row_lock_t *clk = rl->rl_cols[inx];
       if (clk->clk_change & CLK_REVERT_AT_ROLLBACK
-	  && clk->pl_owner != itc->itc_ltrx && clk->clk_rbe[cpo->cpo_cl->cl_nth - n_significant])
+	  && (itc->itc_n_matches ? clk_is_in_sets (itc, clk, &nth_match) : clk->clk_pos >= row)
+	  && clk->pl_owner->lt_w_id != w_id && clk->clk_rbe[cpo->cpo_cl->cl_nth - n_significant])
 	break;
     }
   if (inx >= rl->rl_n_cols)
@@ -1690,7 +1714,7 @@ ce_preimage (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64
 		  pre = ((db_buf_t *) clk->clk_rbe)[cpo->cpo_cl->cl_nth - n_significant];
 		  DB_BUF_TLEN (pre_len, pre[0], pre);
 		  (cpo->cpo_dc ? ce_result : ce_filter) (cpo, r, CE_VEC | CET_ANY, pre, pre_len, 0, 1);
-		  cpo_next_pre (cpo, 0);
+		  cpo_next_pre (cpo, r + 1, 0);
 		}
 	      else
 		(cpo->cpo_dc ? ce_result : ce_filter) (cpo, r, flags, val, len, offset, 1);
@@ -1710,7 +1734,10 @@ ce_preimage (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, int64
 		  pre = ((db_buf_t *) clk->clk_rbe)[cpo->cpo_cl->cl_nth - n_significant];
 		  DB_BUF_TLEN (pre_len, pre[0], pre);
 		  next = (cpo->cpo_dc ? ce_result : ce_filter) (cpo, r, CE_VEC | CET_ANY, pre, pre_len, 0, 1);
-		  cpo_next_pre (cpo, 0);
+		  /* advance if in last pos or if next is other than this pos */
+		  if (itc->itc_match_in >= itc->itc_n_matches - 1
+		      || itc->itc_matches[itc->itc_match_in] != itc->itc_matches[itc->itc_match_in + 1])
+		    cpo_next_pre (cpo, itc->itc_matches[itc->itc_match_in + 1], 0);
 		}
 	      else
 		next = (cpo->cpo_dc ? ce_result : ce_filter) (cpo, r, flags, val, len, offset, 1);
@@ -1730,7 +1757,7 @@ cs_preimage_init (col_pos_t * cpo, int from)
   it_cursor_t *itc = cpo->cpo_itc;
   row_no_t ign = 0;
   itc_clk_at (itc, from, &cpo->cpo_clk_inx, &ign);
-  cpo_next_pre (cpo, 1);
+  cpo_next_pre (cpo, from, 1);
   if (COL_NO_ROW != cpo->cpo_next_pre)
     cpo->cpo_value_cb = ce_preimage;
 }
