@@ -1145,7 +1145,7 @@ future_wrapper (void *ignore)
 	}
 
       if (error)
-	dk_free_tree (arguments);
+	dk_free_tree ((caddr_t)arguments);
       else
 	dk_free_box_and_int_boxes ((caddr_t) arguments);
 
@@ -1210,7 +1210,7 @@ future_wrapper (void *ignore)
 	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
 #endif
 	    CB_DONE;
-	    dk_free_tree (ret_block);
+	    dk_free_tree ((caddr_t)ret_block);
 	  }
       }
 
@@ -1534,7 +1534,7 @@ frq_create (dk_session_t * ses, caddr_t * request)
     {
       sr_report_future_error (ses, "", "invalid future request length");
       if (IS_BOX_POINTER (request))
-	dk_free_tree (request);
+	dk_free_tree ((caddr_t)request);
       SESSTAT_CLR (ses->dks_session, SST_OK);
       SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
       dk_free (future_request, sizeof (future_request_t));
@@ -1557,12 +1557,12 @@ frq_create (dk_session_t * ses, caddr_t * request)
       printf ("\nUnknown service %s requested. req no = %d", svc, (int) unbox (request[FRQ_COND_NUMBER]));
       dk_free (future_request, sizeof (future_request_t));
       if (IS_BOX_POINTER (request))
-	dk_free_tree (request);
+	dk_free_tree ((caddr_t)request);
       return NULL;
     }
 
   future_request->rq_condition = (long) unbox (request[FRQ_COND_NUMBER]);	/* mty HUHTI */
-  args = request[FRQ_ARGUMENTS];
+  args = (caddr_t*)request[FRQ_ARGUMENTS];
   if (IS_BOX_POINTER (args) && DV_TYPE_OF (args) == DV_ARRAY_OF_POINTER)
     {
       future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
@@ -2340,7 +2340,7 @@ read_service_request (dk_session_t * ses)
 
   if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) && !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) && (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
     {
-      dk_free_tree (request);
+      dk_free_tree ((caddr_t)request);
       sr_report_future_error (ses, "", "invalid future box");
       SESSTAT_CLR (ses->dks_session, SST_OK);
       SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
@@ -2613,7 +2613,6 @@ dk_session_clear (dk_session_t * ses)
 #ifndef NO_THREAD
 int32 max_bad_rpc_on_connection = 100;
 int32 max_bad_rpc_timeout = 60;
-dk_mutex_t bad_rpc_mtx;
 
 static int
 accept_client (dk_session_t * ses)
@@ -5069,12 +5068,12 @@ void
 ssl_thread_setup ()
 {
   int i;
-  lock_cs = dk_alloc (CRYPTO_num_locks() * sizeof (dk_mutex_t *));
+  lock_cs = (dk_mutex_t **)dk_alloc (CRYPTO_num_locks() * sizeof (dk_mutex_t *));
   for (i = 0; i < CRYPTO_num_locks (); i ++)
     {
       lock_cs [i] = mutex_allocate ();
     }
-  CRYPTO_set_locking_callback ((void (*) (int, int, char *, int)) ssl_locking_callback);
+  CRYPTO_set_locking_callback ((void (*) (int, int, const char *, int)) ssl_locking_callback);
   CRYPTO_set_id_callback ((unsigned long (*)()) ssl_thread_id);
 }
 #endif

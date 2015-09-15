@@ -371,7 +371,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
     {
       if (DV_NON_BOX == dtp)
         return (caddr_t)mp_large_alloc (mp, len1);
-      ptr = (caddr_t)mp_large_alloc (mp, len1 + 8);
+      ptr = (dtp_t*)mp_large_alloc (mp, len1 + 8);
       ptr += 4;
       WRITE_BOX_HEADER (ptr, len1, dtp);
       memzero (ptr, len1);
@@ -1467,7 +1467,7 @@ mp_mmap_mark (void * __ptr, size_t sz, int flag)
   if (!flag && !map) GPF_T1 ("freeing mmap mark where no mapping");
   if (!map)
     {
-      map = dk_pool_map[map_off] = malloc (sizeof (dk_pool_4g_t));
+      map = dk_pool_map[map_off] = (dk_pool_4g_t*)malloc (sizeof (dk_pool_4g_t));
       memzero (map, sizeof (dk_pool_4g_t));
     }
   ptr &= 0xffffffff;
@@ -1485,7 +1485,7 @@ mp_mmap_mark (void * __ptr, size_t sz, int flag)
 	  if (!flag && !map) GPF_T1 ("freeing mmap mark where no mapping");
 	  if (!map)
 	    {
-	      map = dk_pool_map[map_off] = malloc (sizeof (dk_pool_4g_t));
+	      map = dk_pool_map[map_off] = (dk_pool_4g_t*)malloc (sizeof (dk_pool_4g_t));
 	      memzero (map, sizeof (dk_pool_4g_t));
 	    }
 	}

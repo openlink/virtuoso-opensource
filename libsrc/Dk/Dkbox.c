@@ -2510,7 +2510,7 @@ dk_box_initialize (void)
 #ifdef MALLOC_DEBUG
   dk_mem_hooks_2 (DV_NON_BOX, box_copy_non_box, NULL, 0, box_mp_copy_non_box);
 #endif
-  dk_mem_hooks (DV_RBUF,  box_non_copiable, rbuf_free_cb, 0);
+  dk_mem_hooks (DV_RBUF,  box_non_copiable, (box_destr_f)rbuf_free_cb, 0);
   uname_mutex = mutex_allocate ();
   if (NULL == uname_mutex)
     GPF_T;

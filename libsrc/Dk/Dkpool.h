@@ -402,11 +402,11 @@ extern box_tmp_copy_f box_tmp_copier[256];
     mem_block_t * f = mp->mp_first; \
     if (f && f->mb_fill + __len <= f->mb_size) \
       { \
-	(x) = (void *)(((char*)f) + f->mb_fill); \
+	*(void**)&(x) = (void *)(((char*)f) + f->mb_fill);	\
 	f->mb_fill += __len; \
       } \
     else \
-      (x) = (void *)mp_alloc_box (mp, len2, DV_NON_BOX); \
+      *(void**)&(x) = (void *)mp_alloc_box (mp, len2, DV_NON_BOX);	\
   }
 #endif
 

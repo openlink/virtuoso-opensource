@@ -302,7 +302,7 @@ read_object (dk_session_t * session)
     if (session->dks_pending_obj)
       {
 	caddr_t box;
-	while (NULL != (box = dk_set_pop (&session->dks_pending_obj)))
+	while (NULL != (box = (caddr_t)dk_set_pop (&session->dks_pending_obj)))
 	  dk_free_tree (box);
       }
   }
@@ -376,7 +376,7 @@ box_read_flags (dk_session_t * session, dtp_t dtp)
     }
   else
     {
-      char *string = scan_session_boxing (session);
+      char *string = (caddr_t)scan_session_boxing (session);
       if (IS_BOX_POINTER (string))
         {
           box_flags (string) = flags;
@@ -622,7 +622,7 @@ rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
     rb->rb_ro_id = read_long (ses);
   if (flags & RBS_COMPLETE)
     {
-      rb->rb_box = scan_session_boxing (ses);
+      rb->rb_box = (caddr_t)scan_session_boxing (ses);
       rb->rb_is_complete = 1;
     }
   return (void*)rb;
@@ -649,7 +649,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 	  rbb->rbb_chksum[len] = 0;
 	}
       else
-	((rdf_bigbox_t *) rb)->rbb_chksum = scan_session_boxing (ses);
+	((rdf_bigbox_t *) rb)->rbb_chksum = (caddr_t)scan_session_boxing (ses);
     }
   else
     {
@@ -662,7 +662,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 	  rb->rb_box[len] = 0;
 	}
       else
-	rb->rb_box = scan_session_boxing (ses);
+	rb->rb_box = (caddr_t)scan_session_boxing (ses);
     }
   if (flags & RBS_OUTLINED)
     {
@@ -725,7 +725,7 @@ init_readtable (void)
 
   for (i = 0; i < 256; i++)
     if (NULL == readtable[i])
-      readtable[i] = box_read_error;
+      readtable[i] = (macro_char_func)box_read_error;
 
   readtable[DV_NULL] = imm_read_null;
   readtable[DV_SHORT_INT] = imm_read_short_int;
