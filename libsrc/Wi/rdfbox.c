@@ -2962,7 +2962,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
       int ctr;
       caddr_t *tmp;
 /*INDENT-OFF*/
-      tmp = (caddr_t *)list (29*2,
+      tmp = (caddr_t *)list (30*2,
         "text/rdf+n3"				, "TTL"			, /*  0 */
         "text/rdf+ttl"				, "TTL"			, /*  1 */
         "text/rdf+turtle"			, "TTL"			, /*  2 */
@@ -2991,8 +2991,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/csv"				, "CSV"			, /* 25 */
         "text/tab-separated-values"		, "TSV"			, /* 26 */
         "application/x-nice-turtle"		, "NICE_TTL"		, /* 27 */
-        "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	/* 28 Increase count in this list() call when add more MIME types! */
-        );
+        "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	, /* 28 */
+        "text/x-html+tr"				, "HTML;TR"		); /* 29 Increase count in this list() call when add more MIME types! */
 /*INDENT-ON*/
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);

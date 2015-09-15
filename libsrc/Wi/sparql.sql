@@ -4968,7 +4968,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
 create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, inout ses any)
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
-  declare subj_text, s_itemid, p_itemprop, nice_host, describe_path, about_path varchar;
+  declare subj_text, val, p_itemprop, nice_host, describe_path, about_path varchar;
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
@@ -5042,19 +5042,25 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           if (prev_subj is not null)
             http ('\n</td></tr>', ses);
           split := sparql_iri_split_rdfa_qname (subj, nsdict, 2);
-          s_itemid := replace (id_to_iri (subj), '"', '%22');
+          val := id_to_iri (subj);
           -- dbg_obj_princ ('Split of ', subj, ' is ', split);
-          if (about_path is null)
+          if (about_path is not null)
             {
-              if ('' = split[1])		subj_text := sprintf ('\n<td><a href="%s">%V</a></td>'		, s_itemid, split[2]);
-              else if (isstring (split[0]))	subj_text := sprintf ('\n<td><a href="%s">%V:%V</a></td>'	, s_itemid, split[0], split[2]);
-              else				subj_text := sprintf ('\n<td><a href="%s">%V%V</a></td>'	, s_itemid, split[1], split[2]);
+              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[2]			, about_path, val)	, ses);
+              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[0], split[2]	, about_path, val)	, ses);
+              else				http (sprintf ('\n<a href="%U">%V%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[1], split[2]	, about_path, val)	, ses);
+            }
+          else if (describe_path is not null)
+            {
+              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'		, val, split[2]			, describe_path, val)	, ses);
+              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'	, val, split[0], split[2]	, describe_path, val)	, ses);
+              else				http (sprintf ('\n<a href="%U">%V%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'	, val, split[1], split[2]	, describe_path, val)	, ses);
             }
           else
             {
-              if ('' = split[1])		subj_text := sprintf ('\n<td><a href="%s">%V</a>    (<a href="%s%s">/about</a>)</td>'	, s_itemid, split[2]		, about_path, s_itemid);
-              else if (isstring (split[0]))	subj_text := sprintf ('\n<td><a href="%s">%V:%V</a> (<a href="%s%s">/about</a>)</td>'	, s_itemid, split[0], split[2]	, about_path, s_itemid);
-              else				subj_text := sprintf ('\n<td><a href="%s">%V%V</a>  (<a href="%s%s">/about</a>)</td>'	, s_itemid, split[1], split[2]	, about_path, s_itemid);
+              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a></td>'	, val, split[2])		, ses);
+              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a></td>'	, val, split[0], split[2])	, ses);
+              else				http (sprintf ('\n<a href="%U">%V%V</a></td>'	, val, split[1], split[2])	, ses);
             }
           prev_subj := subj;
           prev_pred := null;
@@ -5073,7 +5079,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           else				http (sprintf ('\n<td><a href="%s">%V%V</a>'	, p_itemprop, split[1], split[2])	, ses);
           if (describe_path is not null)
             http (sprintf (' (<a href="%s%U">/describe</a>)</td>'	, describe_path, id_to_iri (pred)), ses);
-          http (sprintf ('</td>\n<td itemscope itemid="%s">', s_itemid), ses);
+          http (sprintf ('</td>\n<td itemscope itemid="%U">', val), ses);
           prev_pred := pred;
           obj_needs_br := 0;
         }
