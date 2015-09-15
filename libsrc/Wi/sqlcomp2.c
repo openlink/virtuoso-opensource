@@ -148,6 +148,7 @@ fun_ref_free (fun_ref_node_t * fref)
   clb_free (&fref->clb);
   dk_set_free (fref->fnr_select_nodes);
   dk_set_free (fref->fnr_prev_hash_fillers);
+  dk_set_free (fref->fnr_cl_merge_temps);
 }
 
 
