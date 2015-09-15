@@ -509,7 +509,7 @@ create view ODS_BLOG_POST_TAGS as select
 	BLOG..BLOG_TAGS_STAT,
 	BLOG..SYS_BLOG_INFO,
 	DB.DBA.SYS_USERS
-	where blogid = BI_BLOG_ID and BI_OWNER = U_ID;
+	where blogid = BI_BLOG_ID and BI_OWNER = U_ID option (loop);
 
 create view ODS_BLOG_COMMENTS as select
 	U_NAME,
