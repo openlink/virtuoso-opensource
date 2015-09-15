@@ -750,8 +750,8 @@ if (_subject <> '') {
     <!-- AddThis Button END -->
   </div><!-- ft_s -->
 <?vsp } ?>
-      <div id="ft_t">
-        Alternative Linked Data Views:
+      <div id="ft_t"><br/>
+        Alternative Linked Data Documents:
 	<?vsp if (VAD_CHECK_VERSION ('html5pivotviewer') is not null) { ?>	
 	<a href="/HtmlPivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (HTML5)" target="_blank">PivotViewer</a> 
 	|
@@ -769,7 +769,7 @@ if (_subject <> '') {
 	<?vsp } ?>
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
 
-        &nbsp; &nbsp; Raw Linked Data Formats: &nbsp; 
+        &nbsp; &nbsp; Content Formats: &nbsp; 
 	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img src="/fct/images/cxml_doc.png" class="dicon"/></a> 
 	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img src="/fct/images/csv_doc.png" class="dicon"/></a>  
 	&nbsp; &nbsp; RDF &nbsp; 

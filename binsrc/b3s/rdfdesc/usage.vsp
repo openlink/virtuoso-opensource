@@ -338,7 +338,7 @@
   </div><!-- ft_s -->
 <?vsp } ?>
       <div id="ft_t">
-        Alternative Linked Data Views:
+        Alternative Linked Data Documents:
 	<?vsp if (VAD_CHECK_VERSION ('html5pivotviewer') is not null) { ?>	
 	<a href="/HtmlPivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (HTML5)" target="_blank">PivotViewer</a> 
 	|
