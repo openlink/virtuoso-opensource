@@ -3860,6 +3860,7 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
     fd = dbs->dbs_fd;
   memset (&db, 0, sizeof (db));
   strcpy_ck (db.db_ver, DBMS_SRV_VER_ONLY);
+  db_version_string = DBMS_SRV_VER_ONLY;
   if (!rdf_no_string_inline)
     strcpy_ck (db.db_generic, "3100");
   else
