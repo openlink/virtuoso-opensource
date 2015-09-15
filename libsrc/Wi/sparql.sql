@@ -7659,12 +7659,14 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
       if (isiri_id (g_iri))
         g_iri := id_to_iri (g_iri);
       g_iid := iri_to_id (g_iri);
+      old_log_enable := log_enable (log_mode, 1);
       if (__rdf_graph_is_in_enabled_repl (g_iid))
         {
+	  declare lm int;
+	  lm := log_enable (null);
           repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
-          repl_text ('__rdf_repl', 'sparql define input:storage "" clear graph iri ( ?? )', g_iri);
+          repl_text ('__rdf_repl', sprintf ('sparql define input:storage "" define sql:log-enable %d clear graph iri ( ?? )', lm), g_iri);
         }
-      old_log_enable := log_enable (log_mode, 1);
       declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
       exec (sprintf ('
       delete from DB.DBA.RDF_QUAD
@@ -8360,12 +8362,14 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
     signal ('22023', sprintf ('SPARQL 1.1 can not %s non-replicated graph <%s> to replicated graph <%s>, both should be in same replication status', src_g_iri, tgt_g_iri));
   if ('ADD' <> opname)
     DB.DBA.SPARUL_CLEAR (tgt_g_iri, 0, uid, log_mode, 0, options, silent);
+  old_log_enable := log_enable (log_mode, 1);
   if (src_repl and tgt_repl)
     {
+      declare lm int;
+      lm := log_enable (null);
       repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
-      repl_text ('__rdf_repl', 'sparql define input:storage "" add iri( ?? ) to iri( ?? )', src_g_iri, tgt_g_iri);
+      repl_text ('__rdf_repl', sprintf ('sparql define input:storage "" define sql:log-enable %d add iri( ?? ) to iri( ?? )', lm), src_g_iri, tgt_g_iri);
     }
-  old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   stat := '00000';
   qry := sprintf ('insert soft DB.DBA.RDF_QUAD (G,S,P,O) select __i2id (''%S''), t.S, t.P, t.O from DB.DBA.RDF_QUAD t where t.G = __i2id (''%S'') ',
