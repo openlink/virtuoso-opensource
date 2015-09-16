@@ -3571,7 +3571,7 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	  if (!err)
 	    {
 	      rdf_box_t * rb = rb_allocate ();
-	      geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+	      geo_calc_bounding ((geo_t *) g, GEO_CALC_BOUNDING_DO_ALL);
 	      rb->rb_type = RDF_BOX_GEO;
 	      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
 	      rb->rb_box = g;
