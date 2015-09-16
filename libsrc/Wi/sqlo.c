@@ -1956,6 +1956,10 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 {
   int res = 0;
   ST *tree = *ptree;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &tree, 8000))
+    sqlc_error (so->so_sc->sc_cc, ".....", "Stack Overflow");
+  if (DK_MEM_RESERVE)
+    sqlc_error (so->so_sc->sc_cc, ".....", "Out of memory");
   if (ST_P (tree, SELECT_STMT))
     {
       res += sqlo_expand_jts (so, &tree->_.select_stmt.table_exp, tree, select_stmt ? 0 : 1);
