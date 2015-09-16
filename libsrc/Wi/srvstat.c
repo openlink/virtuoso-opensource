@@ -4718,7 +4718,7 @@ stat_adjust_key (caddr_t * k)
 	{
 	  dk_free_box (kn);
 	  k[0] = box_num (key->key_id);
-	  int key_id = unbox (k[0]);
+	  key_id = unbox (k[0]);
 	}
     }
   else
@@ -4800,6 +4800,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	continue;
       DO_BOX (caddr_t *, smp, inx2, rc[1])
 	{
+      tb_sample_t smpl;
 	  caddr_t k = sc_ext_to_data (qi, smp[0]);
 	  if (stat_trap)
 	    {
@@ -4812,7 +4813,6 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		    bing ();
 		}
 	    }
-	  tb_sample_t smpl;
 	  stat_adjust_key ((caddr_t *)k);
 	  memzero (&smpl, sizeof (smpl));
 	  smpl.smp_time = approx_msec_real_time ();
