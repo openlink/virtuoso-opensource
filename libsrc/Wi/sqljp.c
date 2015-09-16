@@ -228,7 +228,11 @@ dfe_is_iri_id_test (df_elt_t * pred)
 }
 
 
+#define DFE_HAS_OT(dfe) (DFE_TABLE == dfe->dfe_type || DFE_DT == dfe->dfe_type)
+
+
 extern caddr_t rdfs_type;
+
 
 float
 jp_fanout (join_plan_t * jp)
@@ -362,7 +366,7 @@ jp_fanout (join_plan_t * jp)
 	}
       jp->jp_fanout = card;
     }
-  else
+  else if (DFE_DT == jp->jp_tb_dfe->dfe_type)
     {
       op_table_t * ot = jp->jp_tb_dfe->_.sub.ot;
       if (ot->ot_is_proc_view)
@@ -370,8 +374,13 @@ jp_fanout (join_plan_t * jp)
       else
 	jp->jp_fanout = 10;
     }
+  if (DFE_HAS_OT (jp->jp_tb_dfe))
+    {
   if (jp->jp_tb_dfe->_.table.ot->ot_is_outer && jp->jp_fanout < 1)
     jp->jp_fanout = 1;
+    }
+  else
+    jp->jp_fanout = 0.7;	/* no ot, not a table or dt */
   return jp->jp_fanout;
 }
 
