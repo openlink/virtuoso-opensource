@@ -2037,6 +2037,18 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 	}
       END_DO_BOX;
     }
+  else if (ST_P (tree, COALESCE_EXP) ||
+      ST_P (tree, SIMPLE_CASE) ||
+      ST_P (tree, SEARCHED_CASE) ||
+      ST_P (tree, COMMA_EXP))
+    {
+      int inx;
+      _DO_BOX (inx, tree->_.comma_exp.exps)
+	{
+	  res += sqlo_expand_jts (so, &(tree->_.comma_exp.exps[inx]), select_stmt, was_top);
+	}
+      END_DO_BOX;
+    }
   else if (ARRAYP (tree))
     {
       int inx;
