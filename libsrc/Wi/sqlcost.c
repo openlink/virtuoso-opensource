@@ -1734,7 +1734,9 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
   cli->cli_user = usr;
   cli->cli_anytime_started = at_start;
   cli->cli_rpc_timeout = rpc_timeout;
-  log_error ("compiler text card estimate got error %s %s, assuming unknown count", !err ? "" : ERR_STATE (err), !err ? "no message:" : ERR_MESSAGE (err));
+#ifndef NDEBUG
+  log_warning ("compiler text card estimate got error %s %s, assuming unknown count", !err ? "" : ERR_STATE (err), !err ? "no message:" : ERR_MESSAGE (err));
+#endif
   if (err)
     dk_free_tree (err);
   if (entered)
