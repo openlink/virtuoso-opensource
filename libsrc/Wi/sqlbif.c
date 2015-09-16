@@ -12020,8 +12020,7 @@ print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret,
   END_WRITE_FAIL (out);
   if (!STRSES_CAN_BE_STRING (out))
     {
-      *err_ret = STRSES_LENGTH_ERROR ("serialize");
-      res = NULL;
+      return out;
     }
   else
     res = strses_string (out);
@@ -12049,6 +12048,10 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (box_deserialize_string (xx, 0, 0));
   if (DV_DB_NULL == dtp)
     return NEW_DB_NULL;
+  if (DV_STRING_SESSION == dtp)
+    {
+      return read_object (xx);
+    }
   if (!IS_BLOB_HANDLE_DTP(dtp))
     sqlr_new_error ("22023", "SR581", "deserialize() requires a blob or NULL or string argument");
   if (((blob_handle_t *) xx)->bh_ask_from_client)
