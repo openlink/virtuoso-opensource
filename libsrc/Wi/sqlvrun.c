@@ -2796,6 +2796,17 @@ typedef struct ts_split_state_s
 #define TSS_LAST 2
 #define TSS_AT_END 3
 
+#define ITC_MODE_VARS char dm_save; char lm_save
+
+#define ITC_SAMPLE_MODE(itc) {	\
+  lm_save = itc->itc_lock_mode; \
+  dm_save = itc->itc_dive_mode; \
+  itc->itc_dive_mode = PA_READ_ONLY; \
+  itc->itc_lock_mode = 0; }
+
+#define ITC_RESTORE_MODE(itc) { \
+  itc->itc_dive_mode = dm_save; \
+  itc->itc_lock_mode = lm_save; }
 
 int
 itc_angle (it_cursor_t * itc, buffer_desc_t ** buf_ret, int angle, placeholder_t * prev, ts_split_state_t * tsp)
@@ -2809,12 +2820,13 @@ itc_angle (it_cursor_t * itc, buffer_desc_t ** buf_ret, int angle, placeholder_t
   float cost;
   int64 n_leaves;
   int rc;
+  ITC_MODE_VARS;
   if (itc->itc_insert_key->key_is_col && !itc->itc_is_col)
     itc_col_init (itc);		/* init the column inx data while the row specs are in place, else gonna miss cr's */
   ITC_SAVE_ROW_SPECS (itc);
   ITC_NO_ROW_SPECS (itc);
   itc->itc_random_search = RANDOM_SEARCH_ON;
-
+  ITC_SAMPLE_MODE (itc);
   if (!itc->itc_key_spec.ksp_spec_array)
     est = tsp->tsp_card_est = dbe_key_count (itc->itc_insert_key) / key_n_partitions (itc->itc_insert_key);
   else if (tsp->tsp_ts && tsp->tsp_ts->ts_inx_cardinality)
@@ -2826,6 +2838,7 @@ itc_angle (it_cursor_t * itc, buffer_desc_t ** buf_ret, int angle, placeholder_t
   itc_clear_stats (itc);
   itc->itc_st.mode = ITC_STAT_ANGLE;
   est2 = itc_sample_1 (itc, buf_ret, &n_leaves, angle);
+  ITC_RESTORE_MODE (itc);
   if (-1 == est)
     est = tsp->tsp_card_est = est2;
   ITC_RESTORE_ROW_SPECS (itc);
@@ -3901,7 +3914,10 @@ qi_add_stats (QI * qi, QI ** qis, query_t * qr)
   DO_BOX (query_instance_t *, branch, inx, qis)
     {
       if (branch && qi != branch)
-	qi_branch_stats (qi, branch, qr);
+	{
+	  qi->qi_n_affected += branch->qi_n_affected;
+	  qi_branch_stats (qi, branch, qr);
+	}
     }
   END_DO_BOX;
 }
@@ -3911,7 +3927,7 @@ void
 ts_aq_result (table_source_t * ts, caddr_t * inst)
 {
   /* a ts completed itts branches.  Add up the results.  Can be in a fref or a scalar/exists subq. */
-  if (prof_on)
+  if (prof_on || !ts->src_gen.src_query->qr_select_node)
     {
       qi_add_stats ((QI*)inst, qst_get (inst, ts->ts_aq_qis), ts->src_gen.src_query);
     }
