@@ -500,7 +500,7 @@
 			    _root_col := self._root;
 			  for select RM_DESCRIPTION, RM_PID, VM_ID from (select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = _root_col) x 
 			  	right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID)  
-			  	order by RM_ID do {
+			  	order by RM_ID option (loop) do {
 			   ?>
 			   <tr class="<?V case when mod(ix, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
 			       <td>
