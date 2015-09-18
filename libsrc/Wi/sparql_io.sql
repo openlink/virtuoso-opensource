@@ -2661,11 +2661,16 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
     }
   else
     {
+      declare lbl any;
+      if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
+	lbl := 'HTML (Faceted Browsing Links)';
+      else	
+	lbl := 'HTML (Basic Browsing Links)';
       if (not length (format)) format := 'text/html';
       opts := vector (
         vector ('Auto'							, 'auto'				),
         vector ('HTML'							, 'text/html'				),
-        vector ('HTML (pretty-printed table for browsing, not for export)', 'text/x-html+tr'	),
+        vector (lbl							, 'text/x-html+tr'	),
         vector ('Spreadsheet'						, 'application/vnd.ms-excel'		),
         vector ('XML'							, 'application/sparql-results+xml'	),
         vector ('JSON'							, 'application/sparql-results+json'	),
