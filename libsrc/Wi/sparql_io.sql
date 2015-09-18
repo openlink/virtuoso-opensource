@@ -2526,7 +2526,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('				format.options[ctr] = null;\n');
     http('			ctr = 1;\n');
     http('			format.options[ctr++] = new Option(\'HTML\',\'text/html\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML (pretty-printed table for browsing, not for export)\',\'text/x-html+tr\');\n');
+    if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
+      http('			format.options[ctr++] = new Option(\'HTML (Faceted Browsing Links)\',\'text/x-html+tr\');\n');
+    else
+      http('			format.options[ctr++] = new Option(\'HTML (Basic Browsing Links)\',\'text/x-html+tr\');\n');
     http('			format.options[ctr++] = new Option(\'Spreadsheet\',\'application/vnd.ms-excel\');\n');
     http('			format.options[ctr++] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
     http('			format.options[ctr++] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
