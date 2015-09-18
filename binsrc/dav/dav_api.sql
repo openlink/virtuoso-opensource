@@ -2667,7 +2667,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
             }
           pid := DAV_SEARCH_ID (path, 'P');
           -- dbg_obj_princ ('will authenticate collection id', pid);
-          auth_uid := DAV_AUTHENTICATE (pid, 'C', '11_', auth_uname, auth_pwd);
+          auth_uid := DAV_AUTHENTICATE (pid, 'C', '1__', auth_uname, auth_pwd);
           if (auth_uid < 0)
             {
               -- dbg_obj_princ ('failed auth on parent, DAV_RES_UPLOAD_STRSES_INT returns ', auth_uid);
