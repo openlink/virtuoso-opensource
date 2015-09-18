@@ -149,6 +149,30 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 ;
 
 -- XXX should probably find the most specific if more than one class and inference rule is set
+create procedure 
+b3s_e_type (in subj varchar)
+{
+  declare meta, data, ll any;
+  declare i int;
+
+  ll := 'http://www.w3.org/2002/07/owl#Thing';
+
+  if (length (subj))
+    {	
+      exec (sprintf ('sparql select ?tp where { <%S> a ?tp }', subj), null, null, vector (), 100, meta, data);
+
+      if (length (data))
+	{
+	  for (i := 0; i < length (data); i := i + 1) 
+            {
+              if (data[i][0] is not null)
+  	        return data[i][0];
+            }
+	}
+    }
+  return ll;
+}
+;
 
 create procedure
 b3s_type (in subj varchar,
@@ -842,7 +866,7 @@ b3s_http_print_r (in subj any, in _object any, in sid varchar, in prop any, in l
 	 itemid := _object;
      }
    http (sprintf ('\t<li%s itemid="%s" itemscope itemtype="%s"><span class="literal">', 
-   	case visible when 0 then ' style="display:none;"' else '' end, itemid, 'http://www.w3.org/2002/07/owl#Thing'));
+   	case visible when 0 then ' style="display:none;"' else '' end, itemid, b3s_e_type (itemid)));
 again:
    if (__tag (_object) = 246)
      {
