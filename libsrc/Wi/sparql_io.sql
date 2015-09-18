@@ -1741,25 +1741,30 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
           goto end_of_val_print; -- see below
 
 iri_print:
-          split := sparql_iri_split_rdfa_qname (val, nsdict, 2);
-          if (about_path is not null)
-            {
-              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[2]			, about_path, val)	, ses);
-              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[0], split[2]	, about_path, val)	, ses);
-              else				http (sprintf ('\n<a href="%U">%V%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[1], split[2]	, about_path, val)	, ses);
-            }
-          else if (describe_path is not null)
-            {
-              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'		, val, split[2]			, describe_path, val)	, ses);
-              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'	, val, split[0], split[2]	, describe_path, val)	, ses);
-              else				http (sprintf ('\n<a href="%U">%V%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'	, val, split[1], split[2]	, describe_path, val)	, ses);
-            }
-          else
-            {
-              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a></td>'	, val, split[2])		, ses);
-              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a></td>'	, val, split[0], split[2])	, ses);
-              else				http (sprintf ('\n<a href="%U">%V%V</a></td>'	, val, split[1], split[2])	, ses);
-            }
+-- If you want to print QNames instead of full IRIs, uncomment this and comment out the IFs below:
+--          split := sparql_iri_split_rdfa_qname (val, nsdict, 2);
+--          if (describe_path is not null)
+--            {
+--              if ('' = split[1])		http (sprintf ('\n<a href="%s%U">%V</a></td>'		, describe_path, val, split[2]		)	, ses);
+--              else if (isstring (split[0]))	http (sprintf ('\n<a href="%s%U">%V:%V</a></td>'	, describe_path, val, split[0], split[2])	, ses);
+--              else				http (sprintf ('\n<a href="%s%U">%V%V</a></td>'		, describe_path, val, split[1], split[2])	, ses);
+--            }
+--          else if (about_path is not null)
+--            {
+--              if ('' = split[1])		http (sprintf ('\n<a href="%s%U">%V</a></td>'		, about_path, val, split[2]		)	, ses);
+--              else if (isstring (split[0]))	http (sprintf ('\n<a href="%s%U">%V:%V</a></td>'	, about_path, val, split[0], split[2]	)	, ses);
+--              else				http (sprintf ('\n<a href="%s%U">%V%V</a></td>'		, about_path, val, split[1], split[2]	)	, ses);
+--            }
+--          else
+--            {
+--              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a></td>'	, val, split[2])		, ses);
+--              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a></td>'	, val, split[0], split[2])	, ses);
+--              else				http (sprintf ('\n<a href="%U">%V%V</a></td>'	, val, split[1], split[2])	, ses);
+--            }
+
+          if (describe_path is not null)	http (sprintf ('\n<a href="%s%U">%V</a></td>'		, describe_path, val, val	)	, ses);
+          else if (about_path is not null)	http (sprintf ('\n<a href="%s%U">%V</a></td>'		, about_path, val, val		)	, ses);
+          else					http (sprintf ('\n<a href="%U">%V</a></td>'		, val, val			)	, ses);
 
 end_of_val_print: ;
         }
