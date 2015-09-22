@@ -1923,6 +1923,12 @@ create procedure WS.WS.PUT (
        --dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
     if (_col is not null) -- SPARQL query on container
       rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    else if (res_id_ is not null)
+    {
+      rc := DAV_AUTHENTICATE_HTTP (res_id_, 'R', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+      if (rc >= 0)
+        rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    }
     else
     rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
     --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, auth_name, auth_pwd, uid, gid, _perms);
