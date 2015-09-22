@@ -103,8 +103,10 @@ typedef struct jso_class_descr_s {
   const char *  jsocd_class_iri;	/*!< IRI for loading from RDF graphs, will be used as value of rdf:type property of an instance */
   const char *	jsocd_ns_uri;		/*!< Namespace URI, it will be used for fields as well */
   const char *	jsocd_local_name;	/*!< Local part of jsocd_class_iri */
+  caddr_t	jsocd_rwlock_id;	/*!< the id of the icc_lock that will be locked exclusively by bif_jso_validate_and_pin() */
   jso_validation_cbk_t *jsocd_validation_cbk;
-  dk_hash_t *	jsocd_rttis;		/*!< Hashtable to get jso_rtti_t of an instance by instance IRI */
+  dk_hash_t *	jsocd_pinned_rttis;	/*!< Hashtable to get jso_rtti_t of an pinned instance by instance IRI */
+  dk_hash_t *	jsocd_draft_rttis;	/*!< Hashtable to get jso_rtti_t of an draft instance by instance IRI */
   struct {
     jso_struct_descr_t sd;
     jso_array_descr_t ad;
@@ -140,8 +142,17 @@ extern void jso_define_const (const char *iri, ptrlong value);
 /*! Initialization of an class description that can be used later in loading instances of that class */
 extern void jso_define_class (jso_class_descr_t *jsocd);
 
-/*! The function searches for an loaded instance such that { ?jinstance rdf:type ?jclass } */
-extern void jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd_ptr, jso_rtti_t **inst_rtti_ptr, int quiet_if_deleted);
+#define JSO_GET_OK 0
+#define JSO_GET_BAD_CD_IRI 1
+#define JSO_GET_BAD_INSTANCE_IRI 2
+#define JSO_GET_INSTANCE_CD_MISMATCH 3
+#define JSO_GET_BAD_RTTI_STATUS 4
+
+/*! The function searches for an pinned instance such that { ?jinstance rdf:type ?jclass }, always quiet */
+extern int jso_get_pinned_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd_ptr, jso_rtti_t **inst_rtti_ptr);
+
+/*! The function searches for an draft instance such that { ?jinstance rdf:type ?jclass }, does not signal an error if \c quiet */
+extern int jso_get_draft_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd_ptr, jso_rtti_t **inst_rtti_ptr, int quiet);
 
 /*! The function returns a description of member field pointed to by \c inst_member_field assuming that this is a field of instance described by \c inst_rtti and the category is JSO_CAT_STRUCT */
 extern jso_field_descr_t *jso_get_fd_by_rtti_and_member (jso_rtti_t *inst_rtti, void *inst_member_field);
@@ -151,8 +162,9 @@ extern caddr_t jso_dbg_text_fd_and_member_field (jso_field_descr_t *fd, void *in
 extern dk_hash_t *jso_consts;		/*!< All known named constants, e.g., made by jso_define_const() */
 extern dk_hash_t *jso_classes;		/*!< All known JSO classes, e.g., made by jso_define_class() */
 extern dk_hash_t *jso_properties;	/*!< All known property names of all JSO classes, to cross-check classes for duplicate names */
-extern dk_hash_t *jso_rttis_of_names;	/*!< All JSO class instances of all classes, to distinguish between missing instances and type mismatches */
-extern dk_hash_t *jso_rttis_of_structs;	/*!< Similar to jso_rttis_of_names but keys are 'jrtti_self' structures, not instance IRIs */
+extern dk_hash_t *jso_pinned_rttis_of_names;	/*!< All pinned JSO class instances of all classes, to distinguish between missing instances and type mismatches on post-mortem debugging */
+extern dk_hash_t *jso_draft_rttis_of_names;	/*!< All draft JSO class instances of all classes, to distinguish between missing instances and type mismatches */
+extern dk_hash_t *jso_rttis_of_structs;	/*!< Similar to union of \c jso_pinned_rttis_of_names and \c jso_draft_rttis_of_names but keys are 'jrtti_self' structures, not instance IRIs */
 
 /* Part 2. A small storage of triples that are not preset properties of objects. */
 

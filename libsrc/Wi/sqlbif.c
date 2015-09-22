@@ -12194,17 +12194,19 @@ bif_composite_ref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-icc_lock_t *icc_lock_alloc (caddr_t name, client_connection_t * cli, query_instance_t * qi)
+icc_lock_t *
+icc_lock_alloc (caddr_t name, client_connection_t * cli, query_instance_t * qi)
 {
   NEW_VARZ (icc_lock_t, res);
-  res->iccl_name = name                                                               ;
+  res->iccl_name = name;
   res->iccl_cli = cli;
   res->iccl_qi = qi;
   return res;
 }
 
 
-icc_lock_t *icc_lock_from_hashtable (caddr_t name)
+icc_lock_t *
+icc_lock_from_hashtable (caddr_t name)
 {
   icc_lock_t **hash_lock_ptr;
   icc_lock_t *hash_lock;
@@ -12215,7 +12217,7 @@ icc_lock_t *icc_lock_from_hashtable (caddr_t name)
   if (NULL == hash_lock_ptr)
     {
       hash_lock = icc_lock_alloc (box_copy (name), NULL, NULL);
-      hash_lock->iccl_sem = semaphore_allocate (1);
+      hash_lock->iccl_rwlock = rwlock_allocate();
       id_hash_set (icc_locks, (caddr_t)(&(hash_lock->iccl_name)), (caddr_t)(&(hash_lock)));
     }
   else
@@ -12225,7 +12227,8 @@ icc_lock_t *icc_lock_from_hashtable (caddr_t name)
 }
 
 
-int icc_lock_release (caddr_t name, client_connection_t *cli)
+int
+icc_lock_release (caddr_t name, client_connection_t *cli)
 {
   int sem_leave = 0;
   icc_lock_t *hash_lock;
@@ -12247,7 +12250,7 @@ int icc_lock_release (caddr_t name, client_connection_t *cli)
     {
       hash_lock->iccl_qi = NULL;
       hash_lock->iccl_cli = NULL;
-      semaphore_leave (hash_lock->iccl_sem);
+      rwlock_unlock (hash_lock->iccl_rwlock);
     }
   return 1;
 }
@@ -12293,17 +12296,23 @@ caddr_t bif_icc_try_lock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       return NEW_DB_NULL;
     }
   hash_lock = icc_lock_from_hashtable (name);
-  if (ICCL_WAIT & flags)
-    semaphore_enter (hash_lock->iccl_sem);
-  else
+  switch ((ICCL_WAIT | ICCL_RDONLY) & flags)
     {
-      if (!semaphore_try_enter (hash_lock->iccl_sem))
-	return box_num (0);
+    case ICCL_WAIT:
+      rwlock_wrlock (hash_lock->iccl_rwlock); break;
+    case ICCL_WAIT | ICCL_RDONLY:
+      rwlock_rdlock (hash_lock->iccl_rwlock); break;
+    case 0:
+      if (!rwlock_trywrlock (hash_lock->iccl_rwlock))
+        return box_num (0);
+    case ICCL_RDONLY:
+      if (!rwlock_trywrlock (hash_lock->iccl_rwlock))
+        return box_num (0);
     }
   hash_lock->iccl_cli = qi->qi_client;
   cli_lock = icc_lock_alloc (hash_lock->iccl_name, cli, ((flags & ICCL_IS_LOCAL) ? qi : NULL));
   hash_lock->iccl_qi = cli_lock->iccl_qi;
-  cli_lock->iccl_sem = hash_lock->iccl_sem;
+  cli_lock->iccl_rwlock = hash_lock->iccl_rwlock;
   cli->cli_icc_lock = cli_lock;
   if (flags & ICCL_IS_LOCAL)
     qi->qi_icc_lock = cli_lock;
@@ -12320,15 +12329,16 @@ caddr_t bif_icc_lock_at_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t *
   icc_lock_t *hash_lock, *cli_lock;
   if (NULL != cli->cli_icc_lock)
     {
-      sqlr_new_error ("42000", "ICC03", "Unable to schedule ICC lock '%s' in the client connection that has %s the lock '%s' already.",
-  name,
-  (cli->cli_icc_lock->iccl_waits_for_commit ? "scheduled" : "obtained"),
-  cli->cli_icc_lock->iccl_name );
+      sqlr_new_error ("42000", "ICC03", "Unable to schedule ICC lock '%s' in the client connection that has %s the %s lock '%s' already.",
+        name,
+        ((cli->cli_icc_lock->iccl_flags & ICCL_SHEDULED_ON_COMMIT) ? "scheduled" : "obtained"),
+        ((cli->cli_icc_lock->iccl_flags & ICCL_RDONLY) ? "read-only" : "exclusive"),
+        cli->cli_icc_lock->iccl_name );
     }
   hash_lock = icc_lock_from_hashtable (name);
   cli_lock = icc_lock_alloc (hash_lock->iccl_name, cli, ((flags & ICCL_IS_LOCAL) ? qi : NULL));
-  cli_lock->iccl_waits_for_commit = 1;
-  cli_lock->iccl_sem = hash_lock->iccl_sem;
+  cli_lock->iccl_flags = flags | ICCL_SHEDULED_ON_COMMIT;
+  cli_lock->iccl_rwlock = hash_lock->iccl_rwlock;
   cli->cli_icc_lock = cli_lock;
   if (flags & ICCL_IS_LOCAL)
     qi->qi_icc_lock = cli_lock;
@@ -12396,20 +12406,23 @@ bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
          So it is possible to wait for an icc mutex without the danger of deadlock. */
       if (qi->qi_client->cli_icc_lock)
 	{
-	  icc_lock_t *cli_lock = qi->qi_client->cli_icc_lock;
-	  if (cli_lock->iccl_waits_for_commit)
-	    {
-	      icc_lock_t *hash_lock = icc_lock_from_hashtable (cli_lock->iccl_name);
-	      cli_lock->iccl_waits_for_commit = 0;
-	      IO_SECT (qst)
-	      {
-		semaphore_enter (cli_lock->iccl_sem);
-	      }
-	      END_IO_SECT (err_ret);
-	      hash_lock->iccl_cli = qi->qi_client;
-	      hash_lock->iccl_qi = cli_lock->iccl_qi;
-	    }
-	}
+          icc_lock_t *cli_lock = qi->qi_client->cli_icc_lock;
+          if (cli_lock->iccl_flags & ICCL_SHEDULED_ON_COMMIT)
+            {
+              icc_lock_t *hash_lock = icc_lock_from_hashtable (cli_lock->iccl_name);
+              cli_lock->iccl_flags &= ~ICCL_SHEDULED_ON_COMMIT;
+              IO_SECT (qst)
+              {
+                if (cli_lock->iccl_flags & ICCL_RDONLY)
+                  rwlock_rdlock (cli_lock->iccl_rwlock);
+                else
+                  rwlock_wrlock (cli_lock->iccl_rwlock);
+              }
+              END_IO_SECT (err_ret);
+              hash_lock->iccl_cli = qi->qi_client;
+              hash_lock->iccl_qi = cli_lock->iccl_qi;
+            }
+        }
     }
   return 0;
 }

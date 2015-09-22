@@ -4872,7 +4872,7 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
     {
       SPART *sinv = SPARP_SINV (sparp, unbox (((caddr_t *)sinv_idx_and_qms)[0]));
       triple_storage_iri = sinv->_.sinv.storage_uri;
-      triple_storage = sparp_find_storage_by_name (triple_storage_iri);
+      triple_storage = sparp_find_storage_by_name (sparp, triple_storage_iri);
       if (NULL == triple_storage)
         spar_internal_error (sparp, "quad storage metadata are lost");
       if ((SPART **)((ptrlong)(_STAR)) == sources)
@@ -7106,7 +7106,7 @@ sparp_rewrite_all (sparp_t *sparp, SPART *req_top, int safely_copy_retvals)
 {
   ptrlong top_type = SPART_TYPE (req_top);
   if ((NULL == sparp->sparp_env->spare_storage_name) && (NULL == sparp->sparp_storage))
-    sparp->sparp_storage = sparp_find_storage_by_name (NULL);
+    sparp->sparp_storage = sparp_find_storage_by_name (sparp, NULL);
   if (SPAR_QM_SQL_FUNCALL == top_type)
     return req_top;
   if (SPAR_CODEGEN == top_type)

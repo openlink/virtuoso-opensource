@@ -1612,9 +1612,12 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
     {
       if (SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions)
         {
-          caddr_t qmf_name = (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) ? uname_rdfdf_ns_uri_default_iid : uname_rdfdf_ns_uri_default_iid_nullable;
-          jso_rtti_t *qmf_rtti = (jso_rtti_t *)gethash (qmf_name, jso_rttis_of_names);
-          if ((NULL != qmf_rtti) && JSO_STATUS_LOADED == qmf_rtti->jrtti_status)
+          int eq_not_null = (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions);
+          caddr_t qmf_name = eq_not_null ? uname_rdfdf_ns_uri_default_iid : uname_rdfdf_ns_uri_default_iid_nullable;
+          jso_class_descr_t *qmf_cd = NULL;
+          jso_rtti_t *qmf_rtti = NULL;
+          if (JSO_GET_OK != jso_get_pinned_cd_and_rtti (uname_virtrdf_ns_uri_QuadMapFormat, qmf_name, &qmf_cd, &qmf_rtti))
+            return (ssg_valmode_t)(eq_not_null ? qm_format_default : qm_format_default_nullable);
             return (ssg_valmode_t)(qmf_rtti->jrtti_self);
         }
       if (SPART_VARR_IS_BOOL & eq->e_rvr.rvrRestrictions)

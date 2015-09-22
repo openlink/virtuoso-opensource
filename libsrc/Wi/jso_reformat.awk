@@ -100,6 +100,10 @@ function write_array_h (c_name, type_ns, type_local, el_c_name, el_ns, el_local,
     print "/*! " cmt " */"
   print "#define JSO_IRI_OF_" c_name " " c_esc(type_ns type_local)
   print "typedef " el_c_name " *" c_name "_t;"
+      print ""
+      if (cmt != "")
+        print "/*! JSO description of " cmt " */"
+      print "extern jso_class_descr_t jso__" c_name ";"
     }
 }
 
@@ -144,8 +148,11 @@ function write_scalar_h (c_name, type, status, cmt)
 function write_struct_end_h ()
 {
   print "} " struct_c_name "_t;"
+  print ""
+  if (cmt != "")
+    print "/*! JSO description of " cmt " */"
+  print "extern jso_class_descr_t jso__" struct_c_name ";"
 }
-
 
 function top_c ()
 {
@@ -177,7 +184,7 @@ function write_array_c (c_name, type_ns, type_local, el_c_name, el_ns, el_local,
   print "  JSO_CAT_ARRAY, " c_esc("array of " el_c_name) ","
   print " " c_esc(type_ns type_local), ","
   print " " c_esc(type_ns), "," c_esc(type_local), ","
-      print "  NULL /* jsocd_validation_cbk */, NULL /* jsocd_rttis */, {"
+      print "  NULL /* jsocd_rwlock_id */, NULL /* jsocd_validation_cbk */, NULL /* jsocd_pinned_rttis */, NULL /* jsocd_draft_rttis */, {"
   print "    { 0, -1, NULL, NULL },"
   print "    { " c_esc(el_ns el_local), ", " mincount ", " maxcount "} } };"
   post_init = post_init "\n  jso_define_class(&jso__" c_name ");"
@@ -225,7 +232,7 @@ function write_struct_end_c ()
   print "  JSO_CAT_STRUCT, " c_esc("struct " struct_c_name "_s") ","
   print " " c_esc(struct_type_ns struct_type_local), ","
   print " " c_esc(struct_type_ns), "," c_esc(struct_type_local), ","
-  print "  NULL /* jsocd_validation_cbk */, NULL /* jsocd_rttis */, {"
+  print "  NULL /* jsocd_rwlock_id */, NULL /* jsocd_validation_cbk */, NULL /* jsocd_pinned_rttis */, NULL /* jsocd_draft_rttis */, {"
   print "    {"
   print "      sizeof (" struct_c_name "_t),"
   print "      -1, jso_fields__" struct_c_name ", NULL /* jsosd_field_hash */, NULL /* jsosd_fields_by_idx */ },"

@@ -1377,13 +1377,11 @@ caddr_t
 bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t *graph_xlat, int rule_id_seed, int only_list_tables)
 {
   caddr_t storage_name = uname_virtrdf_ns_uri_SyncToQuads;
-  quad_storage_t *storage = sparp_find_storage_by_name (storage_name);
+  icc_lock_t *lock = icc_lock_from_hashtable (jso__quad_storage.jsocd_rwlock_id);
   caddr_t result = NULL;
   dk_session_t *ses1 = NULL;
   dk_session_t *ses2 = NULL;
-
-  if (NULL == storage)
-    sqlr_new_error ("22023", "SR639", "Quad storage <%.500s> does not exist or unusable", storage_name);
+  rwlock_rdlock (lock->iccl_rwlock);
   MP_START ();
   QR_RESET_CTX
     {
@@ -1391,7 +1389,10 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t 
       int qm_ctr;
       rdb2rdf_ctx_t rrc;
       rdb2rdf_optree_t *prev_top_rro = NULL;
-      memset (&rrc, 0, sizeof (rdb2rdf_ctx_t));
+      quad_storage_t *storage = sparp_find_storage_by_name (NULL, storage_name);
+      if (NULL == storage)
+        sqlr_new_error ("22023", "SR639", "Quad storage <%.500s> does not exist or unusable", storage_name);
+          memset (&rrc, 0, sizeof (rdb2rdf_ctx_t));
       rrc.rrc_rule_id_seed = rule_id_seed;
       if (NULL != graph_xlat)
         {
@@ -1485,6 +1486,7 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t 
       caddr_t err = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
+      rwlock_unlock (lock->iccl_rwlock);
       MP_DONE ();
       dk_free_box ((caddr_t)ses1);
       dk_free_box ((caddr_t)ses2);
@@ -1492,6 +1494,7 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t 
       sqlr_resignal (err);
     }
   END_QR_RESET
+  rwlock_unlock (lock->iccl_rwlock);
   MP_DONE ();
   return result;
 }

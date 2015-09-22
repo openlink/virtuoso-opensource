@@ -530,7 +530,7 @@ extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_t
 extern int sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn);
 
 /*! This searches for storage by its name. NULL arg means default (or no storage if there's no default loaded), empty UNAME means no storage */
-extern quad_storage_t *sparp_find_storage_by_name (ccaddr_t name);
+extern quad_storage_t *sparp_find_storage_by_name (sparp_t *sparp, ccaddr_t name);
 
 /*! This searches for quad map by its name. */
 extern quad_map_t *sparp_find_quad_map_by_name (ccaddr_t name);

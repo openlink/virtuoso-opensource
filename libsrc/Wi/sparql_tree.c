@@ -4205,19 +4205,26 @@ sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn)
 }
 
 quad_storage_t *
-sparp_find_storage_by_name (ccaddr_t name)
+sparp_find_storage_by_name (sparp_t *sparp, ccaddr_t name)
 {
+  int jso_get_status;
   jso_class_descr_t *quad_storage_cd;
   jso_rtti_t *ds_rtti;
   if (NULL == name)
     name = uname_virtrdf_ns_uri_DefaultQuadStorage;
   if ('\0' == name[0])
     return NULL;
-  jso_get_cd_and_rtti (
-    uname_virtrdf_ns_uri_QuadStorage,
-    name,
-    &quad_storage_cd, &ds_rtti, 1 );
-  if ((NULL != ds_rtti) && (JSO_STATUS_LOADED == ds_rtti->jrtti_status))
+  if (NULL != sparp)
+    {
+      if (NULL == sparp->sparp_sparqre->sparqre_metadata_rwlock)
+        {
+          icc_lock_t *lock = icc_lock_from_hashtable (jso__quad_storage.jsocd_rwlock_id);
+          rwlock_rdlock (lock->iccl_rwlock);
+          sparp->sparp_sparqre->sparqre_metadata_rwlock = lock->iccl_rwlock;
+        }
+    }
+  jso_get_status = jso_get_pinned_cd_and_rtti (uname_virtrdf_ns_uri_QuadStorage, name, &quad_storage_cd, &ds_rtti);
+  if (JSO_GET_OK == jso_get_status)
     return (quad_storage_t *)(ds_rtti->jrtti_self);
   return NULL;
 }
@@ -4225,13 +4232,11 @@ sparp_find_storage_by_name (ccaddr_t name)
 quad_map_t *
 sparp_find_quad_map_by_name (ccaddr_t name)
 {
+  int jso_get_status;
   jso_class_descr_t *quad_map_cd;
   jso_rtti_t *ds_rtti;
-  jso_get_cd_and_rtti (
-    uname_virtrdf_ns_uri_QuadMap,
-    name,
-    &quad_map_cd, &ds_rtti, 1 );
-  if ((NULL != ds_rtti) && (JSO_STATUS_LOADED == ds_rtti->jrtti_status))
+  jso_get_status = jso_get_pinned_cd_and_rtti (uname_virtrdf_ns_uri_QuadMap, name, &quad_map_cd, &ds_rtti);
+  if (JSO_GET_OK == jso_get_status)
     return (quad_map_t *)(ds_rtti->jrtti_self);
   return NULL;
 }

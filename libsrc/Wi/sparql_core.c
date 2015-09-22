@@ -1084,7 +1084,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           if (NULL != sparp->sparp_env->spare_storage_name)
             spar_error (sparp, "'define %.30s' is used more than once", param);
           sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
-          sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_env->spare_storage_name);
+          sparp->sparp_storage = sparp_find_storage_by_name (sparp, sparp->sparp_env->spare_storage_name);
           if ((NULL == sparp->sparp_storage) && ('\0' != value[0]))
             spar_error (sparp, "Quad storage <%.100s> does not exists or is in unusable state", value);
           if ((sparp->sparp_storage != old_storage)
@@ -1306,7 +1306,7 @@ sparp_configure_storage_and_macro_libs (sparp_t *sparp)
   if (sparp->sparp_storage_is_set)
     return;
   sparp->sparp_storage_is_set = 1;
-  sparp->sparp_storage = sparp_find_storage_by_name (sparp->sparp_env->spare_storage_name);
+  sparp->sparp_storage = sparp_find_storage_by_name (sparp, sparp->sparp_env->spare_storage_name);
   if ((NULL != sparp->sparp_storage) && !sparp->sparp_disable_storage_macro_lib)
     {
       sparql_macro_library_t *smlib = sparp->sparp_storage->qsMacroLibrary;
@@ -1344,12 +1344,9 @@ sparp_configure_storage_and_macro_libs (sparp_t *sparp)
           sparql_macro_library_t *sml;
           SPART **smllist;
           caddr_t *smlincludes;
-          int new_defm_ctr, old_defm_count, incl_ctr;
-          jso_get_cd_and_rtti (
-            uname_virtrdf_ns_uri_QuadStorage,
-            lib_name,
-            &sml_cd, &sml_rtti, 1 );
-          if ((NULL == sml_rtti) || (JSO_STATUS_LOADED != sml_rtti->jrtti_status))
+          int jso_get_status, new_defm_ctr, old_defm_count, incl_ctr;
+          jso_get_status = jso_get_pinned_cd_and_rtti (uname_virtrdf_ns_uri_QuadStorage, lib_name, &sml_cd, &sml_rtti);
+          if (JSO_GET_OK != jso_get_status)
             spar_error (sparp, "Unknown SPARQL macro library <%.100s>", lib_name);
           sml = (sparql_macro_library_t *)(sml_rtti->jrtti_self);
           sparp_qr_uses_jso (sparp, (caddr_t)sml, NULL);
@@ -5533,6 +5530,11 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
 #ifdef SPARQL_DEBUG
       printf ("\nsparp_compile_subselect() caught parse error: %s\n", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
 #endif
+      if (NULL != sparqre->sparqre_metadata_rwlock)
+        {
+          rwlock_unlock (sparqre->sparqre_metadata_rwlock);
+          sparqre->sparqre_metadata_rwlock = NULL;
+        }
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       return;
     }
@@ -5551,6 +5553,11 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg.ssg_tree = sparp->sparp_entire_query;
       ssg.ssg_comment_sql = sparp->sparp_sg->sg_comment_sql;
   ssg_make_whole_sql_text (&ssg);
+  if (NULL != sparqre->sparqre_metadata_rwlock)
+    {
+      rwlock_unlock (sparqre->sparqre_metadata_rwlock);
+      sparqre->sparqre_metadata_rwlock = NULL;
+    }
   if (NULL != sparqre->sparqre_catched_error)
     {
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
@@ -5588,6 +5595,11 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sparp = sparp_query_parse (str, &sparqre, rewrite_all);
   if (NULL != sparqre.sparqre_catched_error)
     {
+      if (NULL != sparqre.sparqre_metadata_rwlock)
+        {
+          rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+          sparqre.sparqre_metadata_rwlock = NULL;
+        }
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
@@ -5630,6 +5642,11 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       }
   }
 #endif
+  if (NULL != sparqre.sparqre_metadata_rwlock)
+    {
+      rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+      sparqre.sparqre_metadata_rwlock = NULL;
+    }
   SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
   MP_DONE ();
   return (caddr_t)res;
@@ -5658,6 +5675,11 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
+      if (NULL != sparqre.sparqre_metadata_rwlock)
+        {
+          rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+          sparqre.sparqre_metadata_rwlock = NULL;
+        }
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
@@ -5683,6 +5705,11 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       thr_set_error_code (self, NULL);
     }
   END_QR_RESET
+  if (NULL != sparqre.sparqre_metadata_rwlock)
+    {
+      rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+      sparqre.sparqre_metadata_rwlock = NULL;
+    }
   if (NULL != sparqre.sparqre_catched_error)
     {
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
@@ -5722,6 +5749,11 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
+      if (NULL != sparqre.sparqre_metadata_rwlock)
+        {
+          rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+          sparqre.sparqre_metadata_rwlock = NULL;
+        }
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
@@ -5735,6 +5767,11 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_tree = sparp->sparp_entire_query;
   ssg.ssg_comment_sql = sparp->sparp_sg->sg_comment_sql;
   ssg_make_whole_sql_text (&ssg);
+  if (NULL != sparqre.sparqre_metadata_rwlock)
+    {
+      rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+      sparqre.sparqre_metadata_rwlock = NULL;
+    }
   if (NULL != sparqre.sparqre_catched_error)
     {
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
@@ -5909,7 +5946,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       int ml_make_mode = ((flags & 1) ? SPAR_ML_MAKE_BNODE_IF_NULL : SPAR_ML_MAKE_VAR_IF_NULL);
       if (DV_STRING == DV_TYPE_OF (storage_name))
         storage_name = t_box_dv_uname_string (storage_name);
-      sparp.sparp_storage = sparp_find_storage_by_name (storage_name);
+      sparp.sparp_storage = sparp_find_storage_by_name (&sparp, storage_name);
       t_set_push (&(spare.spare_context_gp_subtypes), (caddr_t)((ptrlong)WHERE_L));
       triple = spar_make_plain_triple (&sparp,
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_GRAPH_IDX]		, ml_make_mode),
@@ -6049,14 +6086,24 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
       sparqre.sparqre_catched_error = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
-      if (SQL_SUCCESS != sparqre.sparqre_catched_error) /* if err is SQL_SUCCESS will be done bellow as no jump will occur */
+      if (SQL_SUCCESS != sparqre.sparqre_catched_error) /* if err is SQL_SUCCESS will be done below as no jump will occur */
 	{
+          if (NULL != sparqre.sparqre_metadata_rwlock)
+            {
+              rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+              sparqre.sparqre_metadata_rwlock = NULL;
+            }
 	  ssg_free_internals (&ssg);
 	  MP_DONE ();
 	}
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
   END_QR_RESET
+  if (NULL != sparqre.sparqre_metadata_rwlock)
+    {
+      rwlock_unlock (sparqre.sparqre_metadata_rwlock);
+      sparqre.sparqre_metadata_rwlock = NULL;
+    }
   ssg_free_internals (&ssg);
   MP_DONE ();
   return (caddr_t)res;
@@ -6313,6 +6360,7 @@ sparql_init (void)
 {
   caddr_t err;
   rdf_ds_load_all();
+  jso__quad_storage.jsocd_rwlock_id = box_dv_short_string (" SPARQL_optimizer/*");
   iri_to_id_nosignal_cached_qr = sql_compile_static (iri_to_id_nosignal_text, bootstrap_cli, &err, SQLC_STATIC_PRESERVES_TREE);
   id_to_iri_cached_qr = sql_compile_static (id_to_iri_text, bootstrap_cli, &err, SQLC_STATIC_PRESERVES_TREE);
   bif_define ("sparql_to_sql_text", bif_sparql_to_sql_text);

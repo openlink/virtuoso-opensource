@@ -69,6 +69,7 @@ typedef struct spar_query_env_s
   int			sparqre_key_gen;
   caddr_t		sparqre_compiled_text;
   caddr_t		sparqre_catched_error;
+  rwlock_t *		sparqre_metadata_rwlock;
   const char *		sparqre_dbg_query_text;	/*!< A source text as passed to the top-level sparql compilation. For debug purposes and for mem pool callback only. Can be NULL. */
   struct sparp_s *	sparqre_dbg_sparp;  /*!< A top-level instance of sparql compiler. For debug purposes and for mem pool callback only. Can be NULL; when non-NULL then the structure under pointer may be half-full. */
 } spar_query_env_t;
@@ -1224,20 +1225,18 @@ void udt_can_write_to (sql_type_t *sqt, caddr_t data, caddr_t *err_ret);
 
 /* interconnection communication */
 
-#define ICCL_IS_LOCAL	0x01
-#define ICCL_WAIT 2
+#define ICCL_IS_LOCAL		0x01
+#define ICCL_WAIT		0x02
+#define ICCL_RDONLY		0x04
+#define ICCL_SHEDULED_ON_COMMIT	0x10
 
 typedef struct icc_lock_s
 {
   caddr_t		iccl_name;
   client_connection_t *	iccl_cli;
   query_instance_t *	iccl_qi;
-  int			iccl_waits_for_commit;
-  /* Semaphore is used here instead of mutex in order to bypass
-     assertion checking when MTX_DEBUG is on.  */
-  /* dk_mutex_t *	iccl_mutex; */
-  semaphore_t *		iccl_sem;
-
+  rwlock_t *		iccl_rwlock;
+  int			iccl_flags;
 } icc_lock_t;
 
 extern id_hash_t *icc_locks;

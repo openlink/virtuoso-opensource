@@ -733,9 +733,9 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   if (lt->lt_client->cli_icc_lock)
     {
       icc_lock_t *cli_lock = lt->lt_client->cli_icc_lock;
-      if (cli_lock->iccl_waits_for_commit)
+      if (cli_lock->iccl_flags & ICCL_SHEDULED_ON_COMMIT)
 	{
-	  cli_lock->iccl_waits_for_commit = 0;
+	  cli_lock->iccl_flags &= ~ICCL_SHEDULED_ON_COMMIT;
 	  lt->lt_client->cli_icc_lock = NULL;
 	  if (NULL != cli_lock->iccl_qi)
 	    cli_lock->iccl_qi->qi_icc_lock = NULL;

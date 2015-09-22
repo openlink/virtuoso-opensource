@@ -10863,7 +10863,7 @@ create procedure DB.DBA.CL_EXEC_AND_LOG (in txt varchar, in args any)
 
 create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now integer, in instances any, in triples any, in report_errors integer := 0) returns any
 {
-  declare chk, errors_acc any;
+  declare chk, rep, errors_acc any;
   if (report_errors)
     vectorbld_init (errors_acc);
   else
@@ -10877,25 +10877,10 @@ create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now int
 /* Pass 3. Loading all instances, including loading inherited values. */
   foreach (any j in instances) do
     DB.DBA.JSO_LOAD_INSTANCE (jgraph, j[1], 0, 0, j[2]);
-/* Pass 4. Validation all instances. */
---   foreach (any j in instances) do
---     {
---       if (report_errors)
---         {
---           whenever sqlstate '*' goto validation_err;
---           jso_validate (j[0], j[1], 1);
---           goto validated;
--- validation_err:
---           vectorbld_acc (errors_acc, vector_concat (vector (j[0], j[1], j[2], __SQL_STATE), split_and_decode (__SQL_MESSAGE, 0, '\0\0\n')));
--- validated: ;
---         }
---       else
---         jso_validate (j[0], j[1], 1);
---     }
+/* Pass 4. Validation all instances then pinning them, all in one atomic operation (probably under one exclusively obtained rwlock). */
+  rep := jso_validate_and_pin_batch (instances, 1, 1);
   if (report_errors)
     {
-      declare rep any;
-      rep := jso_validate_batch (instances, 1);
       foreach (any r in rep) do
         {
           -- dbg_obj_princ ('Reported error/warning: ', r);
@@ -10905,21 +10890,13 @@ create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now int
     }
   else
     {
-      declare rep any;
-      rep := jso_validate_batch (instances, 1);
       foreach (any r in rep) do
         {
           if (r[2])
             signal ('22023', r[3]);
         }
     }
-/* Pass 5. Pin all instances. */
-  if (pin_now)
-    {
-      foreach (any j in instances) do
-        jso_pin (j[0], j[1]);
-    }
-/* Pass 6. Load all separate triples */
+/* Pass 5. Load all separate triples */
   foreach (any t in triples) do
     jso_triple_add (t[0], t[1], t[2]);
   chk := jso_triple_get_objs (
@@ -10933,11 +10910,11 @@ create function DB.DBA.JSO_LOAD_GRAPH_MEMONLY (in jgraph varchar, in pin_now int
 }
 ;
 
-create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1, in report_errors integer := 0) returns any
+create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 1, in report_errors integer := 0, in drop_procedures integer := 1) returns any
 {
   declare jgraph_iid IRI_ID;
   declare qry, stat, msg varchar;
-  declare instances, mdata, rset, triples any;
+  declare instances, mdata, rset, triples, res any;
   -- dbg_obj_princ ('JSO_LOAD_GRAPH (', jgraph, ')');
   jgraph_iid := iri_ensure (jgraph);
   DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
@@ -10952,22 +10929,25 @@ create function DB.DBA.JSO_LOAD_GRAPH (in jgraph varchar, in pin_now integer := 
   if (stat <> '00000')
     signal (stat, msg);
   triples := rset[0][0];
-  return DB.DBA.JSO_LOAD_GRAPH_MEMONLY (jgraph, pin_now, instances, triples, report_errors);
-}
-;
-
-create function DB.DBA.JSO_PIN_GRAPH_MEMONLY (in jgraph varchar, in instances any)
-{
-  foreach (any j in instances) do
-    jso_pin (j[0], j[1]);
-}
-;
-
-create function DB.DBA.JSO_PIN_GRAPH (in jgraph varchar)
-{
-  declare instances any;
-  DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (jgraph, instances);
-  DB.DBA.JSO_PIN_GRAPH_MEMONLY (jgraph, instances);
+  res := DB.DBA.JSO_LOAD_GRAPH_MEMONLY (jgraph, pin_now, instances, triples, report_errors);
+  if (drop_procedures)
+    {
+      for (select P_NAME from SYS_PROCEDURES
+        where (
+          (P_NAME > 'DB.DBA.SPARQL_DESC_DICT') and
+          (P_NAME < 'DB.DBA.SPARQL_DESC_DICU') and
+          (
+            (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_QMV1_%') or
+            (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_CBD_QMV1_%') or
+            (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_OBJCBD_QMV1_%') or
+            (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_SCBD_QMV1_%') ) )
+        for update) do
+        {
+          exec ('drop procedure DB.DBA."' || subseq (P_NAME, 7) || '"');
+        }
+      commit work;
+    }
+  return res;
 }
 ;
 
@@ -10975,48 +10955,6 @@ create function DB.DBA.JSO_PIN_GRAPH (in jgraph varchar)
 create function DB.DBA.JSO_SYS_GRAPH () returns varchar
 {
   return 'http://www.openlinksw.com/schemas/virtrdf#';
-}
-;
-
--- same as DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH but no drop procedures
-create function DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH_RO (in graphiri varchar := null, in report_errors integer := 0) returns any
-{
-  declare res any;
-  if (graphiri is null)
-    graphiri := DB.DBA.JSO_SYS_GRAPH();
-  if (not exists (select 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.RDF_QUAD'))
-    return;
-  res := DB.DBA.JSO_LOAD_GRAPH (graphiri, 0, report_errors);
-  DB.DBA.JSO_PIN_GRAPH (graphiri);
-  return res;
-}
-;
-
-create function DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (in graphiri varchar := null, in report_errors integer := 0) returns any
-{
-  declare res any;
-  if (graphiri is null)
-    graphiri := DB.DBA.JSO_SYS_GRAPH();
-  commit work;
-  res := DB.DBA.JSO_LOAD_GRAPH (graphiri, 0, report_errors);
-  if (length (res))
-    return res;
-  DB.DBA.JSO_PIN_GRAPH (graphiri);
-  for (select P_NAME from SYS_PROCEDURES
-    where (
-      (P_NAME > 'DB.DBA.SPARQL_DESC_DICT') and
-      (P_NAME < 'DB.DBA.SPARQL_DESC_DICU') and
-      (
-        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_QMV1_%') or
-        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_CBD_QMV1_%') or
-        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_OBJCBD_QMV1_%') or
-        (P_NAME like 'DB.DBA.SPARQL_DESC_DICT_SCBD_QMV1_%') ) )
-    for update) do
-    {
-      exec ('drop procedure DB.DBA."' || subseq (P_NAME, 7) || '"');
-    }
-  commit work;
-  return res;
 }
 ;
 
@@ -11534,7 +11472,7 @@ retry_reload:
         {
           declare load_res any;
           loop_count := loop_count - 1;
-          load_res := DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH (graphiri, 1);
+          load_res := DB.DBA.JSO_LOAD_GRAPH (graphiri, 1, 0, 1);
           if (length (load_res))
             {
               foreach (any r in load_res) do
@@ -11552,7 +11490,7 @@ retry_reload:
         }
       else
         {
-          DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
+          DB.DBA.JSO_LOAD_SYS_GRAPH (graphiri, 1, 0, 1);
         }
       result ('00000', 'Metadata from system graph are cached in memory-resident JSOs (JavaScript Objects)');
       return;
@@ -11653,7 +11591,7 @@ create function DB.DBA.RDF_QM_APPLY_CHANGES (in deleted any, in affected any) re
 {
   declare ctr, len integer;
   commit work;
-  DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
+  DB.DBA.JSO_LOAD_GRAPH (DB.DBA.JSO_SYS_GRAPH(), 1, 0, 1);
   len := length (deleted);
   for (ctr := 0; ctr < len; ctr := ctr + 2)
     {
@@ -16643,7 +16581,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
       commit work;
       cl_exec ('checkpoint');
     }
-  DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
+  DB.DBA.JSO_LOAD_GRAPH (DB.DBA.JSO_SYS_GRAPH(), 1, 0, 1);
   sequence_set ('RDF_URL_IID_NAMED', 1010000, 1);
   sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()) + 10000, 1);
   sequence_set ('RDF_URL_IID_NAMED_BLANK', iri_id_num (min_named_bnode_iri_id ()) + 10000, 1);

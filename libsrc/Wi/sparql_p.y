@@ -1520,7 +1520,7 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' 'Silent'? VarOrIRIref S
 		  sinv_storage_uri );
 		sparp_arg->sparp_inner_permitted_syntax = -1;
 		sparp_arg->sparp_env->spare_storage_name = sinv_storage_uri;
-		sparp_arg->sparp_storage = sparp_find_storage_by_name (sinv_storage_uri);
+		sparp_arg->sparp_storage = sparp_find_storage_by_name (sparp_arg, sinv_storage_uri);
 		sparp_arg->sparp_storage_is_set = 1;
 		}
 	    spar_service_options_list_opt {
