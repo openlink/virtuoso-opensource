@@ -185,6 +185,12 @@ typedef struct lt_cl_branch_s {
 #endif
 
 
+typedef struct log_merge_s
+{
+  dk_session_t *	lm_log;
+  dk_set_t	lm_blob_log;
+} log_merge_t;
+
 typedef struct lock_trx_s
   {
     char			lt_status;
@@ -239,6 +245,7 @@ typedef struct lock_trx_s
     int			lt_log_fd;
     caddr_t		lt_log_name;
     dk_set_t		lt_blob_log; /* pdl of blob start addresses to log. Zero if overwritten in the same trx */
+    dk_set_t	lt_log_merge;
     char		lt_timestamp[DT_LENGTH];
     char		lt_approx_dt[DT_LENGTH];
     char		lt_mt_waits; /* if branch or main lt of mt txn with writing branches with same rc w id.  Do not remove waits from wait graph, could be waiting on many threads */
@@ -908,6 +915,8 @@ lock_trx_t * itc_main_lt (it_cursor_t * itc, buffer_desc_t * buf);
 lock_trx_t * lt_main_lt (lock_trx_t * lt);
 int lt_has_delta (lock_trx_t * lt);
 int lt_set_is_branch (dk_set_t list, lock_trx_t * lt, lock_trx_t ** main_lt_ret);
+void  log_merge_commit (lock_trx_t * lt);
+void lt_free_merge (lock_trx_t * lt);
 int lt_log_merge (lock_trx_t * lt, int in_txn);
 #define NO_LOCK_LT ((lock_trx_t*)-1L)
 
