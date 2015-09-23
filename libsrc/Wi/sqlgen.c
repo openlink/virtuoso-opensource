@@ -2193,7 +2193,6 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
       tn->tn_path_ctr = cc_new_instance_slot (sc->sc_cc);
       tn->tn_keep_path = 1;
     }
-  tn->tn_after_join_test = sqlg_pred_body (so, dt_dfe->_.sub.after_join_test);
   if (trans->_.trans.min)
     tn->tn_min_depth = scalar_exp_generate (sc, trans->_.trans.min, pre_code);
   if (trans->_.trans.max)
