@@ -2796,15 +2796,18 @@ typedef struct ts_split_state_s
 #define TSS_LAST 2
 #define TSS_AT_END 3
 
-#define ITC_MODE_VARS char dm_save; char lm_save
+#define ITC_MODE_VARS char dm_save; char lm_save; char iso_save
 
 #define ITC_SAMPLE_MODE(itc) {	\
   lm_save = itc->itc_lock_mode; \
   dm_save = itc->itc_dive_mode; \
+  iso_save = itc->itc_isolation; \
+  itc->itc_isolation = 0; \
   itc->itc_dive_mode = PA_READ_ONLY; \
   itc->itc_lock_mode = 0; }
 
 #define ITC_RESTORE_MODE(itc) { \
+  itc->itc_isolation = iso_save; \
   itc->itc_dive_mode = dm_save; \
   itc->itc_lock_mode = lm_save; }
 
