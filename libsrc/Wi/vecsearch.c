@@ -477,6 +477,9 @@ next_set:
 	    {
 	      all_eq = 0;
 	      first_diff = nth_part;
+	      /* if there are ranges after eqs and then do a reset for a different range start, not guaranteed to be to the right  of prev range. */
+	      if (CMP_EQ != sp->sp_min_op)
+		first_diff = itc->itc_n_vec_sort_cols;
 	    }
 	}
       if (DCT_NUM_INLINE & dc->dc_type)

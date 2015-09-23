@@ -3447,14 +3447,18 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 int
 sp_ssl_count (sql_comp_t * sc, search_spec_t * sp, unsigned char *n_eq, int *cast_changes_card)
 {
-  /* set n_eqs to be the count of leading eqs */
+  /* set n_eqs to be the count of sortable search params.  These are leading eqs and optionally one lower bound if one follows eqs. Should also sort to have increasing lower bound for eq prefix */
   int n = 0, all_eq = 1;
   for (sp = sp; sp; sp = sp->sp_next)
     {
       if (all_eq && sp->sp_min_op != CMP_EQ)
 	{
 	  if (n_eq)
-	    *n_eq = n;
+	    {
+	      *n_eq = n;
+	      if (sp->sp_min_ssl && SSL_CONSTANT != sp->sp_min_ssl->ssl_type && !sp->sp_min_ssl->ssl_qr_global)
+		(*n_eq)++;
+	    }
 	  all_eq = 0;
 	}
       if (sp->sp_min_ssl)
