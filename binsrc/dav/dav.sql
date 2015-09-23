@@ -2948,6 +2948,8 @@ again:
           hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
           if (strcasestr (hdr_str, 'Content-Type:') is null)
             hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
+	  if (modt is not null and strcasestr (hdr_str, 'Last-Modified:') is null)
+	    hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', soap_print_box (modt, '', 1));
 
           hdr_path := DAV_CONCAT_PATH ('/', full_path);
           if (hdr_path not like '%,meta')
