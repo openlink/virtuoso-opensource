@@ -1421,7 +1421,15 @@ cpt_neodisk_page (const void *key, void *value)
       if (cp_remap)
 	{
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em  (it_from_g->it_storage, cp_remap);
+	  else 
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, cp_remap, EXT_REMAP);
+	  else
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, cp_remap);
+	  dp_set_backup_flag (cpt_dbs, cp_remap, 0);
 	}
       if (it_from_g->it_col_extent_maps)
 	em = dbs_dp_to_em  (it_from_g->it_storage, logical);
@@ -1444,8 +1452,16 @@ cpt_neodisk_page (const void *key, void *value)
 	  (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
       if (cp_remap)
 	{
+	  extent_map_t * em;
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em  (it_from_g->it_storage, logical);
+	  else 
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, cp_remap, EXT_REMAP);
+	  else 
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, cp_remap);
 	}
     }
   else
@@ -1468,12 +1484,18 @@ cpt_neodisk_page (const void *key, void *value)
 	{
 	  /* dirty after image will go to logical anyway.
 	   * May just as well write it to logical as to remap. */
-
+	  extent_map_t * em;
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
 	  /* remhash is allowed because the cpt remap might have been made in the sethash above */
-	  em_free_dp (it_from_g->it_extent_map, physical, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em  (it_from_g->it_storage, physical);
+	  else 
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, physical, EXT_REMAP);
+	  else 
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, physical);
 	  rdbg_printf (("[C Unremap L %ld R %ld ]", logical, physical));
-
 	  after_image->bd_physical_page = after_image->bd_page;
 	  TC (tc_cpt_unremap_dirty);
 	}
