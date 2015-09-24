@@ -5920,8 +5920,8 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS (
   in rc integer)
 {
   http_request_status (DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (rc));
-  }
-    ;
+}
+;
 
 create procedure DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (
   in rc integer)
