@@ -6154,8 +6154,8 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS (
   st := DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (rc);
   if (length (st))
     http_request_status (st);
-  }
-    ;
+}
+;
 
 create procedure DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (
   in rc integer)
