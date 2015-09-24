@@ -1793,6 +1793,7 @@ create procedure WS.WS.PUT (
   declare client_etag, server_etag, res_name_, rc_type varchar;
   declare res_id_, id_ integer;
   declare mod_time datetime;
+  declare o_perms, o_uid, o_gid any;
 
   whenever sqlstate '*' goto error_ret;
 
@@ -1955,13 +1956,16 @@ create procedure WS.WS.PUT (
       content_type := 'text/html';
     }
   client_etag := trim(WS.WS.FINDPARAM (lines, 'If-Match:'), '" \r\n');
+  o_perms := _perms;
+  o_uid := uid;
+  o_gid := gid;
   if ((res_id_ is not null or _col is not null) and length (client_etag))
     {
       if (res_id_ is not null)
       {
 	if (isinteger(res_id_))
  	{
-	select RES_COL, RES_NAME, RES_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
+	select RES_COL, RES_NAME, RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS into id_, res_name_, mod_time, o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
 		server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
 	}
 	else
@@ -2039,7 +2043,7 @@ create procedure WS.WS.PUT (
     }
 
   rc := -28;
-  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, uid, gid, 0, 1);
+  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, o_perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, o_uid, o_gid, 0, 1);
   --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
   if (_atomPub and (_method = 'PUT') and not is_empty_or_null (_name) and (_name <> _oldName))
   {
