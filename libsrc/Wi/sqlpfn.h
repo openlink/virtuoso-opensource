@@ -128,7 +128,6 @@ void sqlp_no_table (char *pref, char *name);
 caddr_t sqlp_view_u_id (void);
 caddr_t sqlp_view_g_id (void);
 
-extern dk_set_t html_lines;
 
 caddr_t sqlp_html_string (void);
 

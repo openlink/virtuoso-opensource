@@ -44,6 +44,7 @@ typedef struct scn3_context_s
   char *last_keyword_yytext;
   int last_keyword_yyleng;
   dk_session_t *split_ses;
+  dk_set_t html_lines;
   } scn3_context_t;
 
 typedef struct sql_compile_state_s /* serialized in parse_sem */
@@ -105,6 +106,7 @@ typedef struct sql_compile_state_s /* serialized in parse_sem */
 #define sqlg_count_qr_global_refs global_scs->scs_count_qr_global_refs
 #define sqlc_inside_sem global_scs->scs_inside_sem
 #define sqlc_current_sc global_scs->scs_current_sc
+#define html_lines global_scs->scs_scn3c.html_lines
 
 #define SET_SCS(scs) \
   THREAD_CURRENT_THREAD->thr_sql_scs = (void*)scs
