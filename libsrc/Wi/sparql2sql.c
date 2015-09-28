@@ -8106,6 +8106,7 @@ sparp_rewrite_grab (sparp_t *sparp, SPART *req_top)
   dk_set_t new_vars = NULL;
   dk_set_t sa_graphs = NULL;
   dk_set_t grab_params = NULL;
+  dk_set_t final_completions = NULL;
   sql_comp_t sc;
   int sub_sparp_ctr;
   ptrlong rgc_flags = 0;
@@ -8169,7 +8170,23 @@ sparp_rewrite_grab (sparp_t *sparp, SPART *req_top)
     {
       spar_sqlgen_t ssg;
       sparp_t *sub_sparp = sub_sparps [sub_sparp_ctr];
-      sub_sparp->sparp_entire_query = sparp_rewrite_qm (sub_sparp, sub_sparp->sparp_entire_query);
+      SPART *sub_top = sub_sparp->sparp_entire_query = sparp_rewrite_qm (sub_sparp, sub_sparp->sparp_entire_query);
+      if (2 == sub_sparp_ctr)
+        {
+          int ret_ctr;
+          DO_BOX_FAST (SPART *, ret, ret_ctr, sub_top->_.req_top.retvals)
+            {
+              rdf_val_range_t ret_rvr;
+              caddr_t completion_fn;
+              sparp_get_expn_rvr (sub_sparp, ret, &ret_rvr, 0);
+              if ((SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & ret_rvr.rvrRestrictions)
+                completion_fn = NULL;
+              else
+                completion_fn = t_box_dv_short_string ("__ro2sq");
+              t_set_push (&final_completions, completion_fn);
+            }
+          END_DO_BOX_FAST;
+        }
       memset (&ssg, 0, sizeof (spar_sqlgen_t));
       memset (&sc, 0, sizeof (sql_comp_t));
       sc.sc_client = sub_sparp->sparp_sparqre->sparqre_cli;
@@ -8212,7 +8229,7 @@ sparp_rewrite_grab (sparp_t *sparp, SPART *req_top)
     } END_DO_SET()
   ret_limit_expn = req_top->_.req_top.limit;
   ret_limit_expn = ((NULL == ret_limit_expn) ? (SPART *)t_NEW_DB_NULL : sparp_tree_full_copy (sparp, ret_limit_expn, NULL));
-  rewritten_req_top = spartlist (sparp, 21, SPAR_CODEGEN,					/* #0 */
+  rewritten_req_top = spartlist (sparp, 13, SPAR_CODEGEN,					/* #0 */
     t_box_num ((ptrlong)(ssg_grabber_codegen)),							/* #1 */
     sparp_treelist_full_copy (sparp, sparp->sparp_entire_query->_.req_top.retvals, NULL),		/* #2 */
     t_box_dv_short_string ("sql:RDF_GRAB"),							/* #3 */
@@ -8222,7 +8239,8 @@ sparp_rewrite_grab (sparp_t *sparp, SPART *req_top)
     ((NULL == rgc->rgc_consts) ? NULL :
       spar_make_vector_qm_sql (sparp, (SPART **)(t_revlist_to_array (rgc->rgc_consts))) ),	/* #9 */
     t_box_copy (rgc->rgc_depth),									/* #10 */
-    (ptrlong)use_plain_return );								/* #11 */
+    (ptrlong)use_plain_return,									/* #11 */
+    (caddr_t *)(t_revlist_to_array (final_completions)) );					/* #12 Increase length of spartlist if more items are added! */
     /* Note that the uid is not in the list of codegen arguments! */
   return rewritten_req_top;
 }
@@ -8242,6 +8260,7 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
   SPART *const_vector_expn	= (SPART *)(spart->_.codegen.args [argctr++]);	/* #9 */
   caddr_t depth			= (caddr_t)(spart->_.codegen.args [argctr++]);	/* #10 */
   int use_plain_return		= (ptrlong)(spart->_.codegen.args [argctr++]);	/* #11 */
+  caddr_t *final_completions	= (caddr_t *)(spart->_.codegen.args [argctr++]);	/* #12 */
   int varctr, varcount = BOX_ELEMENTS (retvals);
   int need_comma;
   caddr_t call_alias = t_box_sprintf (0x100, "grabber-t%d", ssg->ssg_sparp->sparp_key_gen);
@@ -8265,10 +8284,16 @@ ssg_grabber_codegen (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...)
         {
           char buf[30];
           char *asname;
+          caddr_t completion_fn = final_completions[varctr];
           if (varctr)
             ssg_puts (", ");
+          if (NULL != completion_fn)
+            {
+              ssg_puts (completion_fn);
+              ssg_puts (" (");
+            }
           ssg_prin_id (ssg, call_alias);
-          sprintf (buf, ".rset[%d] as ", varctr);
+          sprintf (buf, ".rset[%d]%s as ", varctr, ((NULL != completion_fn) ? ")" : ""));
           ssg_puts (buf);
           asname = spar_alias_name_of_ret_column (retvals [varctr]);
           if (NULL == asname)
