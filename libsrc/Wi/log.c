@@ -2247,12 +2247,15 @@ query_t *
 log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, int is_rfwd)
 {
   /* if is_rfwd this is roll forward and no cluster is not specified since the host may have multiple partitions (except for replicated tables)  if elastic cluster */
+  client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
   string_buffer sb;
   caddr_t err;
   char temp1[MAX_NAME_LEN], temp2[MAX_NAME_LEN], temp3[MAX_NAME_LEN];
   key_id_t old_key = key->key_migrate_to;
+  if (!cli)
+    cli = bootstrap_cli;
   if (key->key_partition && clm_replicated == key->key_partition->kpd_map)
     is_rfwd = 0;
   while (key->key_migrate_to)
@@ -2329,7 +2332,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
       default:
       GPF_T1 ("log_key_ins_del_qr: invalid operation");
     }
-  res = sql_compile (sb.sb_buf, bootstrap_cli, &err, SQLC_DEFAULT);
+  res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
       err_log_error (err);
@@ -2349,6 +2352,7 @@ id_hash_t * upd_replay_cache;
 query_t *
 log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
 {
+  client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
   string_buffer sb;
@@ -2357,6 +2361,8 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   query_t ** place;
   caddr_t h_key;
   char **names;
+  if (!cli)
+    cli = bootstrap_cli;
   while (key->key_migrate_to)
     key = sch_id_to_key (wi_inst.wi_schema, key->key_migrate_to);
   if (!upd_replay_cache)
@@ -2397,7 +2403,7 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   sb_printf (&sb, " option (no identity, no trigger)");
   dk_free (names, n_cols * sizeof(char*));
 
-  res = sql_compile (sb.sb_buf, bootstrap_cli, &err, SQLC_DEFAULT);
+  res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
       err_log_error (err);
