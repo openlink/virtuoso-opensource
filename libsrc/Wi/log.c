@@ -2680,7 +2680,7 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
   if (!key)
     {
       dk_free_tree ((caddr_t)row);
-      return srv_make_new_error ("42000", "RFWNK", "No key %d", unbox (row[0]));
+      return srv_make_new_error ("42000", "RFWNK", "No key " BOXINT_FMT, unbox (row[0]));
     }
   rd.rd_allocated = RD_AUTO;
   rd.rd_values = &row[1];
@@ -2804,7 +2804,6 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
       dc_append_box (dc, arg);
       dk_free_tree (to_free);
     }
- ret:
   dk_free_tree (row);
   return SQL_SUCCESS;
 }
