@@ -1095,7 +1095,7 @@ rbs_ro_id (db_buf_t rbs)
   if (RBS_EXT_TYPE & flags)
     {
       l = 2;
-      if (RBS_HAS_TYPE & flags)
+      if (!(RBS_HAS_TYPE & flags))
 	l += 2;
       hl = 0;
       goto ret_id;
