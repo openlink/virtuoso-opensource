@@ -154,12 +154,15 @@ b3s_e_type (in subj varchar)
 {
   declare meta, data, ll any;
   declare i int;
+  declare stat, msg any;
 
   ll := 'http://www.w3.org/2002/07/owl#Thing';
 
   if (length (subj))
     {	
-      exec (sprintf ('sparql select ?tp where { <%S> a ?tp }', subj), null, null, vector (), 100, meta, data);
+      stat := '00000';
+      data := null;
+      exec (sprintf ('sparql select ?tp where { <%S> a ?tp }', subj), stat, msg, vector (), 100, meta, data);
 
       if (length (data))
 	{
