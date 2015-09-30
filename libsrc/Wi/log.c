@@ -3500,10 +3500,11 @@ int dbf_first_to_replay = 0;
 int dbf_stop_rfwd;
 
 client_connection_t *
-log_set_immediate_client (client_connection_t * cli)
+log_set_immediate_client (client_connection_t * cli, client_connection_t * old_sqlc_cli)
 {
   dk_session_t * ses;
   client_connection_t * old;
+  sqlc_set_client (old_sqlc_cli);
   if ((ses = IMMEDIATE_CLIENT))
     {
       old = DKS_DB_DATA (ses);
@@ -3530,7 +3531,8 @@ log_replay_file (int fd)
   client_connection_t *cli = client_connection_create ();
   dk_session_t *file_in = dk_session_allocate (SESCLASS_TCPIP);
   dk_session_t trx_ses;
-  client_connection_t * save_cli = log_set_immediate_client (cli);
+  client_connection_t * old_sqlc_cli = sqlc_client ();
+  client_connection_t * save_cli = log_set_immediate_client (cli, NULL);
   scheduler_io_data_t trx_sio;
   dk_session_t *str_in = &trx_ses;
   caddr_t trx_string;
@@ -3694,7 +3696,7 @@ log_error (" ** log_rec_start=" OFF_T_PRINTF_FMT, log_rec_start);
   if (cli->cli_trx)
     lt_done (cli->cli_trx);
   LEAVE_TXN;
-  log_set_immediate_client (save_cli);
+  log_set_immediate_client (save_cli, old_sqlc_cli);
   client_connection_free (cli);
   enable_mt_ft_inx = mt_ft_save;
   log_info ("Roll forward complete");
