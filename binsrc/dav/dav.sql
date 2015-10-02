@@ -2538,7 +2538,7 @@ again:
     {
       tgt_type := 'C';
       tgt_id := _col_id;
-      if (get_keyword ('a', params) in ('new', 'create', 'upload', 'link', 'update'))
+      if (get_keyword ('a', params) in ('new', 'create', 'upload', 'link', 'update', 'imap'))
         tgt_perms := '_1_';
     }
     else
@@ -5739,7 +5739,7 @@ create function WS.WS.DAV_DIR_LIST (
     params := vector_concat (params, vector ('dir', full_path));
 
     action := get_keyword ('a', params, '');
-    if (action in ('new', 'upload', 'create', 'link', 'update', 'edit'))
+    if (action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap'))
       params := vector_concat (params, vector ('a', action));
 
     if (not isnull (auth_uname))
