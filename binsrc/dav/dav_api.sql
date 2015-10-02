@@ -3276,6 +3276,10 @@ create procedure DAV_DELETE_INT (
             return rrc;
           }
         }
+        if (__proc_exists ('DB.DBA.IMAP__ownerErase') is not null)
+        {
+          DB.DBA.IMAP__ownerErase (id);
+        }
         connection_set ('dav_store', null);
       }
       else

@@ -67,6 +67,22 @@ create function DB.DBA.DAV_DET_DAV_ID (
 }
 ;
 
+create function DB.DBA.DAV_DET_NAME_FIX (
+  in name varchar)
+{
+  declare N integer;
+  declare S varchar;
+
+  S := vector ('/', '\\', ':', '?', '#', '&', '\n');
+  for (N := 0; N < length (S); N := N + 1)
+  {
+    name := replace (name, S[N], '_');
+  }
+
+  return name;
+}
+;
+
 create function DB.DBA.DAV_DET_PATH (
   in detcol_id any,
   in subPath_parts any)
