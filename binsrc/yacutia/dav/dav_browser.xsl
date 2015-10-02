@@ -145,14 +145,17 @@
           <v:variable name="chars" type="integer" default="60" />
 
           <v:variable name="v_step" type="varchar" default="''" persist="0" />
-          <v:variable name="v_source" type="varchar" persist="0"/>
-          <v:variable name="v_target" type="varchar" persist="0"/>
-          <v:variable name="v_path" type="varchar" persist="0"/>
-          <v:variable name="v_parent" type="varchar" persist="0"/>
-          <v:variable name="v_old" type="varchar" persist="0"/>
-          <v:variable name="v_new" type="varchar" persist="0"/>
-          <v:variable name="overwriteFlag" type="integer" value="0" persist="0"/>
+          <v:variable name="v_source" type="varchar" persist="0" />
+          <v:variable name="v_target" type="varchar" persist="0" />
+          <v:variable name="v_path" type="varchar" persist="0" />
+          <v:variable name="v_parent" type="varchar" persist="0" />
+          <v:variable name="v_old" type="varchar" persist="0" />
+          <v:variable name="v_new" type="varchar" persist="0" />
+          <v:variable name="overwriteFlag" type="integer" value="0" persist="0" />
           <v:variable name="mimeType" type="any" />
+
+          <v:variable name="imap_filterId" type="integer" value="-1" persist="0" />
+          <v:variable name="imap_filter" type="any" value="null" persist="0" />
 
           <v:method name="webdav_redirect" arglist="in path varchar, in parts varchar">
             <![CDATA[
@@ -470,8 +473,8 @@
                 }
                 if (columnName = '')
                 {
-                columnName := self.dir_order;
-              }
+                  columnName := self.dir_order;
+                }
               }
               else
               {
@@ -819,22 +822,22 @@
                 ));
               }
 
-                http (sprintf (
+              http (sprintf (
                 '<tr id="dav%d_graph" %s> \n' ||
                 '  <th width="30%%"> \n' ||
-                  '    <label for="dav_%s_graph">Graph name</label> \n' ||
-                  '  </th> \n' ||
-                  '  <td> \n' ||
-                  '    <input type="text" name="dav_%s_graph" id="dav_%s_graph" value="%V" disabled="disabled" class="field-text" /> \n' ||
-                  '  </td> \n' ||
-                  '</tr> \n',
-                  ndx,
-                  case when graph = '' then 'style="display: none;"' else '' end,
-                  det,
-                  det,
-                  det,
-                  graph
-                ));
+                '    <label for="dav_%s_graph">Graph name</label> \n' ||
+                '  </th> \n' ||
+                '  <td> \n' ||
+                '    <input type="text" name="dav_%s_graph" id="dav_%s_graph" value="%V" disabled="disabled" class="field-text" /> \n' ||
+                '  </td> \n' ||
+                '</tr> \n',
+                ndx,
+                case when graph = '' then 'style="display: none;"' else '' end,
+                det,
+                det,
+                det,
+                graph
+              ));
 
               if (det = 'rdfSink')
               {
@@ -1056,11 +1059,11 @@
 
               if (WEBDAV.DBA.VAD_CHECK ('cartridges'))
               {
-              selectedCartridges := get_keyword ('metaCartridges', rdfParams, '');
-              selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
-              cartridges := WEBDAV.DBA.metaCartridges_get ();
+                selectedCartridges := get_keyword ('metaCartridges', rdfParams, '');
+                selectedCartridges := split_and_decode (selectedCartridges, 0, '\0\0,');
+                cartridges := WEBDAV.DBA.metaCartridges_get ();
 
-              http (sprintf (
+                http (sprintf (
                   '<tr id="dav%d_metaCartridge" style="display: none;"> \n' ||
                   '  <th valign="top">Sponger Meta Cartridges</th> \n' ||
                   '  <td> \n' ||
@@ -1071,42 +1074,42 @@
                   '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th> \n' ||
                   '            <th width="100%%">Meta Cartridge</th> \n' ||
                   '          </tr> \n' ||
-                '        </thead>',
-                ndx,
-                ndx,
-                ndx,
-                ndx
-              ));
-              for (N := 0; N < length (cartridges); N := N + 1)
-              {
-                if (S = 'on')
+                  '        </thead>',
+                  ndx,
+                  ndx,
+                  ndx,
+                  ndx
+                ));
+                for (N := 0; N < length (cartridges); N := N + 1)
                 {
-                  T := case when WEBDAV.DBA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end;
-                } else {
-                  T := case when cartridges[N][2] then 'checked="checked"' else '' end;
-                }
-                http (sprintf (
+                  if (S = 'on')
+                  {
+                    T := case when WEBDAV.DBA.vector_contains (selectedCartridges, cast (cartridges[N][0] as varchar)) then 'checked="checked"' else '' end;
+                  } else {
+                    T := case when cartridges[N][2] then 'checked="checked"' else '' end;
+                  }
+                  http (sprintf (
                     '        <tr> \n' ||
                     '          <td class="checkbox"><input type="checkbox" name="mca%d_item" value="%d" disabled="disabled" %s /></td> \n' ||
                     '          <td>%V</td> \n' ||
-                  '        </tr>',
-                  ndx,
-                  cartridges[N][0],
-                  T,
-                  cartridges[N][1]
-                ));
-              }
-              if (length (cartridges) = 0)
-                http (
-                '        <tr><td colspan="2"><b>No available meta cartridges</b></td></tr>'
-                );
+                    '        </tr>',
+                    ndx,
+                    cartridges[N][0],
+                    T,
+                    cartridges[N][1]
+                  ));
+                }
+                if (length (cartridges) = 0)
+                  http (
+                  '        <tr><td colspan="2"><b>No available meta cartridges</b></td></tr>'
+                  );
 
-              http (
+                http (
                   '      </table> \n' ||
                   '    </div> \n' ||
                   '  </td> \n' ||
-                '</tr>'
-              );
+                  '</tr>'
+                );
               }
 
               http (sprintf (
@@ -1430,7 +1433,7 @@
               }
               else if (self.dav_action <> '')
               {
-                if (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit'))
+                if (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap'))
                 {
                   if (not WEBDAV.DBA.write_permission (self.dir_path))
                   {
@@ -1473,6 +1476,11 @@
                       self.source := get_keyword ('_path', params, self.dir_path);
                       self.command_push (20, 0);
                     }
+                    else if ((self.dav_action = 'imap') and WEBDAV.DBA.VAD_CHECK ('Mail') and (__proc_exists ('DB.DBA.IMAP__ownerErase') is not null))
+                    {
+                      self.source := self.dir_path;
+                      self.command_push (100, 0);
+                    }
                   }
                 }
               }
@@ -1484,7 +1492,7 @@
           <?vsp
             http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo));
             http (sprintf ('<input type="hidden" name="retname" id="retname" value="%s" />', self.returnName));
-            if ((self.mode = 'webdav') and (self.command in (10, 14)) and (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit')))
+            if ((self.mode = 'webdav') and (self.command in (10, 14)) and (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap')))
               http (sprintf ('<input type="hidden" name="a" id="a" value="%s" />', self.dav_action));
           ?>
           <div class="toolbar">
@@ -1873,6 +1881,16 @@
                     {
                       self.vc_redirect (sprintf ('%s/settings.vspx?sa=bookmarklet', ODRIVE.WA.odrive_url (self.domain_id)));
                       return;
+                    }
+                    else if ((_action = 'imap') and WEBDAV.DBA.VAD_CHECK ('Mail') and (__proc_exists ('DB.DBA.IMAP__ownerErase') is not null))
+                    {
+                      self.source := get_keyword ('_path', params, '');
+                      if (not WEBDAV.DBA.write_permission (self.source) and (self.mode = 'webdav'))
+                      {
+                        self.webdav_redirect (self.source, 'a=imap');
+                        return;
+                      }
+                      self.command_push (100, 0);
                     }
                     self.vc_data_bind (self.vc_page.vc_event);
                    ]]>
@@ -3613,8 +3631,8 @@
                             itemList := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, 'virt:%', vector (sprintf ('virt:%s-%%', dav_detType), 'virt:aci_meta%'));
                             foreach (any item in itemList) do
                             {
-                              DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
-                            }
+                                DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
+                              }
                             WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
                           }
                         }
@@ -4366,11 +4384,401 @@
                 <v:on-post>
                   <![CDATA[
                     self.command_pop (null);
-                    self.vc_data_bind (self.vc_page.vc_event);
+                    self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
               </v:button>
             </div>
+          </v:template>
+
+          <v:template type="simple" name="template_10x" enabled="--case when (self.command in (100, 101, 102)) then 1 else 0 end">
+
+            <v:template type="simple" name="template_100" enabled="--case when (self.command in (100)) then 1 else 0 end">
+              <div class="WEBDAV_formHeader">
+                IMAP DET Folder <?V self.source ?> : Filters
+              </div>
+
+              <div id="dav_list">
+                <div style="padding: 0 0 0.5em 0;">
+                  <v:button action="simple" style="url" name="Back_100" value="Back" xhtml_class="button">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Back" title="Back" /> Back', self.image_src ('dav/image/back_16.png'));
+                      ]]>
+                    </v:after-data-bind>
+                    <v:on-post>
+                      <![CDATA[
+                        if (self.mode = 'webdav')
+                        {
+                          self.webdav_redirect (WEBDAV.DBA.path_parent (self.source, 1), '');
+                          return;
+                        }
+                        self.command_pop (null);
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  &amp;nbsp;
+                  <v:button action="simple" style="url" value="Create Filter" name="filterCreate" xhtml_class="button">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Create Filter" title="Create Filter" /> Create Filter', self.image_src ('dav/image/add_16.png'));
+                      ]]>
+                    </v:after-data-bind>
+                    <v:on-post>
+                      <![CDATA[
+                        self.imap_filterId := -1;
+
+                        self.dav_action := '';
+                        self.command_pop (null);
+                        self.command_push (101, 0);
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+
+                  <v:button action="simple" style="url" value="Delete" name="filterDelete" xhtml_class="button">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        control.ufl_value := sprintf ('<img src="%s" border="0" alt="Delete Filter(s)" title="Delete Filter(s)" /> Delete', self.image_src ('dav/image/trash_16.png'));
+                      ]]>
+                    </v:after-data-bind>
+                    <v:on-post>
+                      <![CDATA[
+                        declare N integer;
+                        declare _owner varchar;
+                        declare _items any;
+
+                        _owner := DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C'));
+                        _items := self.getItems (self.vc_page.vc_event.ve_params);
+                        for (N := 0; N < length (_items); N := N + 2)
+                        {
+                          MAIL.WA.filter_delete (_owner, atoi (_items[N]));
+                        }
+
+                        self.dav_action := '';
+                        self.command_pop (null);
+                        self.command_push (100, 0);
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+
+                <v:data-source name="dsf_rc" expression-type="sql" nrows="0" initial-offset="0">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      control.ds_sql := sprintf ('select MF_ID, MF_NAME, MF_ACTIVE, MF_ORDER from DB.DBA.MAIL_FILTER where MF_OWN = \'%s\' order by MF_ORDER, MF_NAME', DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C')));
+                    ]]>
+                  </v:before-data-bind>
+                  <v:after-data-bind>
+                    control.ds_make_statistic ();
+                  </v:after-data-bind>
+                </v:data-source>
+
+                <v:data-set name="dsf" data-source="self.dsf_rc" scrollable="1">
+                  <v:template name="dsf_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                    <table id="filters" class="WEBDAV_grid" style="border: 0px;">
+                      <thead>
+                        <tr>
+                          <th class="checkbox">
+                            <input type="checkbox" onclick="selectAllCheckboxes(this, 'cb_item')" value="Select All" name="cb_all" />
+                          </th>
+                          <th width="100%">Filter</th>
+                          <th class="action">Action</th>
+                        </tr>
+                      </thead>
+                    </table>
+                  </v:template>
+
+                  <v:template name="dsf_repeat" type="repeat" name-to-remove="" set-to-remove="">
+
+                    <v:template name="dsf_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr>
+                          <td colspan="3">No filters</td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                    <v:template name="dsf_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                      <table>
+                        <tr>
+                          <td class="checkbox">
+                            <?vsp
+                              http (sprintf ('<input type="checkbox" name="cb_item" value="%d" title="%V" />', control.te_rowset[0], control.te_rowset[1]));
+                            ?>
+                          </td>
+                          <td>
+                            <v:label value="--(control.vc_parent as vspx_row_template).te_column_value('MF_NAME')" format="%s"/>
+                          </td>
+                          <td class="action">
+                            <v:button action="simple" style="url" value="Create Filter" name="filterUpdate">
+                              <v:after-data-bind>
+                                <![CDATA[
+                                  control.ufl_value := sprintf ('<img src="%s" border="0" alt="Update Filter" title="Update Filter" />', self.image_src ('dav/image/edit_16.png'));
+                                ]]>
+                              </v:after-data-bind>
+                              <v:on-post>
+                                <![CDATA[
+                                  self.imap_filterId := (control.vc_parent as vspx_row_template).te_column_value('MF_ID');
+
+                                  self.dav_action := '';
+                                  self.command_pop (null);
+                                  self.command_push (101, 0);
+                                  self.vc_data_bind(e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                    </v:template>
+
+                  </v:template>
+
+                  <v:template name="dsf_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                    <table>
+                      <tfoot>
+                        <tr align="right" >
+                          <td colspan="3">
+                            <vm:ds-navigation data-set="dsf"/>
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </v:template>
+
+                </v:data-set>
+              </div>
+
+            </v:template>
+
+            <v:template type="simple" name="template_101" enabled="--case when (self.command in (101, 102)) then 1 else 0 end">
+
+              <v:before-data-bind>
+                <![CDATA[
+                  declare _owner varchar;
+
+                  _owner := DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C'));
+                  self.imap_filter := xml_tree_doc (xml_tree (MAIL.WA.filter_list (_owner, self.imap_filterId)));
+                ]]>
+              </v:before-data-bind>
+
+              <div class="WEBDAV_formHeader">
+                IMAP DET Folder <?V self.source ?> : Filter <?V case when self.command = 101 then ' Create' else 'Update' end ?>
+              </div>
+
+              <table class="WEBDAV_formBody" cellspacing="0">
+                <tr>
+                  <th width="30%">
+                    <v:label for="imap_filterName" value="--'Filter Name'" />
+                  </th>
+                  <td>
+                    <input type="hidden" id="imapOwner" name="imapOwner" value="<?V DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C')) ?>" />
+                    <v:text name="imap_filterName" format="%s" value="--xpath_eval ('string (/filter/name)', self.imap_filter);" xhtml_class="field-text" />
+                  </td>
+                </tr>
+          	    <tr>
+          	      <th>
+          	        <v:label for="imap_filterActive" value="--'Apply filter when'" />
+          	      </th>
+          	      <td>
+                    <v:select-list name="imap_filterActive" xhtml_id="imap_filterActive" value="--xpath_eval ('string (/filter/active)', self.imap_filter);">
+                      <v:item name="Never" value="0" />
+                      <v:item name="Checking Mail" value="2" />
+                      <v:item name="Manually Run" value="3" />
+                      <v:item name="Checking Mail or Manually Run" value="1" />
+                    </v:select-list>
+          	      </td>
+          	    </tr>
+          	    <tr>
+          	      <th valign="top">Apply filter actions when</th>
+          	      <td>
+                    <label>
+                      <v:radio-button name="imap_filterMode_0" xhtml_id="imap_filterMode_0" group-name="imap_filterMode" value="0">
+                        <v:after-data-bind>
+                          <![CDATA[
+                            control.ufl_selected := case when xpath_eval ('string (/filter/mode)', self.imap_filter) = '0' then 1 else 0 end;
+                          ]]>
+                        </v:after-data-bind>
+                      </v:radio-button>
+              			  all criteria are matched
+              	    </label>
+              	    <br />
+                    <label>
+                      <v:radio-button name="imap_filterMode_1" xhtml_id="imap_filterMode_1" group-name="imap_filterMode" value="1">
+                        <v:after-data-bind>
+                          <![CDATA[
+                            control.ufl_selected := case when xpath_eval ('string (/filter/mode)', self.imap_filter) = '1' then 1 else 0 end;
+                          ]]>
+                        </v:after-data-bind>
+                      </v:radio-button>
+              			  any of criteria is matched
+              	    </label>
+          	      </td>
+          	    </tr>
+          	    <tr>
+                  <th colspan="2" style="background-color: #EAEAEE; text-align: center;">Criteria</th>
+          	    </tr>
+          	    <tr>
+          	      <td colspan="2" style="background-color: #FFF;">
+          		      <table style="width: 100%;" cellspacing="0">
+          		        <tr>
+          		          <td width="100%">
+                		      <table id="search_tbl" class="WEBDAV_formList">
+                		        <thead>
+                		          <tr>
+                		            <th width="30%">Field</th>
+                		            <th width="20%">Condition</th>
+                		            <th>Value</th>
+                		            <th width="80px">Action</th>
+                		          </tr>
+                		        </thead>
+                		        <tbody id="search_tbody">
+                		          <tr id="search_tr_no">
+                		            <td colspan="4">No Criteria</td>
+                		          </tr>
+                              <![CDATA[
+                  	    		    <script type="text/javascript">
+                                <?vsp
+                                  declare L, N integer;
+                                  declare entry, f1, f2, f3, f4 any;
+
+                                  L := xpath_eval ('count (/filter/criteria/entry)', self.imap_filter);
+                                  for (N := 1; N <= L; N := N + 1)
+                                  {
+                                    entry := xpath_eval ('/filter/criteria/entry', self.imap_filter, N);
+                                    f1 := cast (xpath_eval ('@field', entry) as varchar);
+                                    f2 := cast (xpath_eval ('@fieldExt', entry) as varchar);
+                                    f3 := cast (xpath_eval ('@criteria', entry) as varchar);
+                                    f4 := cast (xpath_eval ('.', entry) as varchar);
+
+                  					        http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("search", null, {fld_1: {mode: 70, value: "%s", valueExt: "%s"}, fld_2: {mode: 71, value: "%s", tdCssText: "vertical-align: top;"}, fld_3: {mode: 72, value: "%s", tdCssText: "vertical-align: top;"}});});', f1, f2, f3, f4));
+                                  }
+                                ?>
+                  	    		    </script>
+                              ]]>
+                		        </tbody>
+                		      </table>
+                	      </td>
+                	      <td nowrap="nowrap" valign="top">
+              	          <span class="button pointer">
+              	            <xsl:attribute name="onclick">javascript: TBL.createRow('search', null, {fld_1: {mode: 70}, fld_2: {mode: 71, tdCssText: 'vertical-align: top;'}, fld_3: {mode: 72, tdCssText: 'vertical-align: top;'}});</xsl:attribute>
+                            <img src="<?V self.image_src ('dav/image/add_16.png') ?>" border="0" class="button" alt="Add Security" title="Add Security" /> Add
+              	          </span>
+                	      </td>
+               	      </tr>
+               	    </table>
+               	  </td>
+          	    </tr>
+          	    <tr>
+                  <th colspan="2" style="background-color: #EAEAEE; text-align: center;">Commands</th>
+          	    </tr>
+          	    <tr>
+          	      <td colspan="2" style="background-color: #FFF;">
+          		      <table style="width: 100%;" cellspacing="0">
+          		        <tr>
+          		          <td width="100%">
+                		      <table id="action_tbl" class="WEBDAV_formList">
+                		        <thead>
+                		          <tr>
+                		            <th width="50%">Command</th>
+                		            <th>Value</th>
+                		            <th width="80px">Action</th>
+                		          </tr>
+                		        </thead>
+                		        <tbody id="action_tbody">
+                		          <tr id="action_tr_no">
+                		            <td colspan="3">No Commands</td>
+                		          </tr>
+                              <![CDATA[
+                  	    		    <script type="text/javascript">
+                                <?vsp
+                                  declare L, N integer;
+                                  declare entry, f1, f2 any;
+
+                                  L := xpath_eval ('count (/filter/actions/entry)', self.imap_filter);
+                                  for (N := 1; N <= L; N := N + 1)
+                                  {
+                                    entry := xpath_eval ('/filter/actions/entry', self.imap_filter, N);
+                                    f1 := cast (xpath_eval ('@action', entry) as varchar);
+                                    f2 := cast (xpath_eval ('.', entry) as varchar);
+
+                  					        http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("action", null, {fld_1: {mode: 75, value: "%s"}, fld_2: {mode:76, value: "%s"}});});', f1, f2));
+                                  }
+                                ?>
+                  	    		    </script>
+                              ]]>
+                		        </tbody>
+                		      </table>
+                	      </td>
+                	      <td nowrap="nowrap" valign="top">
+              	          <span class="button pointer">
+              	            <xsl:attribute name="onclick">javascript: TBL.createRow('action', null, {fld_1: {mode: 75}, fld_2: {mode: 76}});</xsl:attribute>
+                            <img src="<?V self.image_src ('dav/image/add_16.png') ?>" border="0" class="button" alt="Add Security" title="Add Security" /> Add
+              	          </span>
+                	      </td>
+               	      </tr>
+               	    </table>
+               	  </td>
+          	    </tr>
+              </table>
+
+              <div class="WEBDAV_formFooter">
+                <v:button action="simple" name="OK_101" value="OK" xhtml_class="button">
+                  <v:on-post>
+                    <![CDATA[
+                      declare _owner varchar;
+                      declare A, C any;
+                      declare tmp, params, imap_filterName, imap_filterActive, imap_filterMode, imap_filterCriteria, imap_filterActions any;
+                      declare exit handler for SQLSTATE '*'
+                      {
+                        if (__SQL_STATE = 'TEST')
+                        {
+                          self.vc_error_message := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        resignal;
+                      };
+
+                      params := self.vc_page.vc_event.ve_params;
+
+                      _owner := DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C'));
+                      imap_filterName := self.imap_filterName.ufl_value;
+                      imap_filterActive := self.imap_filterActive.ufl_value;
+                      imap_filterMode := case when (self.imap_filterMode_0.ufl_selected) then 0 else 1 end;
+                      C := MAIL.WA.filter_params_criteria ('search_', params, imap_filterCriteria, tmp);
+                      A := MAIL.WA.filter_params_actions ('action_', params, imap_filterActions, tmp);
+                      if ((A = 0) or (C = 0))
+                      {
+                        signal ('TEST', 'Filter must have at least one criteria and one action!');
+                      }
+
+                      MAIL.WA.filter_save (_owner, self.imap_filterId, imap_filterName, imap_filterActive, DB.DBA.IMAP__mea_id (_owner), imap_filterMode, imap_filterCriteria, imap_filterActions);
+
+                      self.imap_filter := null;
+                      self.command_pop (null);
+                      self.command_push (100, 0);
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+
+                <v:button action="simple" name="Cancel_101" value="Cancel" xhtml_class="button">
+                  <v:on-post>
+                    <![CDATA[
+                      self.imap_filter := null;
+                      self.command_pop (null);
+                      self.command_push (100, 0);
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
+
           </v:template>
 
           <!-- Header -->
@@ -4728,10 +5136,14 @@
                                     declare id any;
 
                                     id := DB.DBA.DAV_SEARCH_ID (path, rowset[1]);
-                                    if (permission <> '')
-                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
 
+                                    if ((permission <> '') or (self.mode = 'webdav'))
+                                    {
+                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
+                                    }
                                     if (
+                                         (rowset[1] = 'R')
+                                         and
                                          (
                                            (__tag (id) <> 193)
                                            or
@@ -4769,6 +5181,16 @@
                                       {
                                         http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="%s" onclick="javascript: vspxEdit(\'%V\');" />', self.image_src ('dav/image/edit_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
+                                    }
+                                    if (
+                                         (rowset[1] = 'C')
+                                         and WEBDAV.DBA.VAD_CHECK ('Mail')
+                                         and (__proc_exists ('DB.DBA.IMAP__ownerErase') is not null)
+                                         and isinteger (DB.DBA.DAV_SEARCH_ID (path, rowset[1]))
+                                         and (WEBDAV.DBA.det_type (path, rowset[1]) = 'IMAP')
+                                       )
+                                    {
+                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="IMAP Filters" src="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'imap\', \'_path\', \'%V\');" />', self.image_src ('dav/image/filter_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                     }
                                   ?>
                               </td>
