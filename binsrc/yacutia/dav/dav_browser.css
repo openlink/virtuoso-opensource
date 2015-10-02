@@ -221,7 +221,7 @@ img.toolbar {
   overflow: auto;
 }
 
-span.button {
+span.button, a.button {
   background: none repeat scroll 0 0 #99B3C5;
   border: 1px solid #7F94A5;
   border-radius: 5px;

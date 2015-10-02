@@ -422,5 +422,57 @@
     http_header ('Content-Type: text/plain\r\n');
     http (DB.DBA.obj2json(returnData));
   }
+  else if (action = 'imapFilter')
+  {
+    declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
+
+    MAIL.WA.dc_predicateMetas (predicateMetas);
+    MAIL.WA.dc_compareMetas (compareMetas);
+    MAIL.WA.dc_actionMetas (actionMetas);
+    folders := MAIL.WA.folder_list (get_keyword ('owner', params));
+    headers := MAIL.WA.dc_headersList ();
+    triplets := MAIL.WA.dc_tripletList ();
+
+    returnData := vector (predicateMetas, compareMetas, actionMetas, folders, headers, triplets);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
+  }
+  else if (action = 'qrcode')
+  {
+    declare href, qrcode varchar;
+
+    href := get_keyword ('href', params, '');
+    qrcode := WEBDAV.DBA.qrcode (href);
+    http ('<div style="padding: 1em;">');
+    http ('<table style="width: 100%;">');
+    http ('  <tr>');
+    http ('    <td style="text-align: center;">');
+    http ('      <img alt="QRcode image" src="data:image/jpg;base64,'); http (qrcode); http ('" />');
+    http ('    </td>');
+    http ('  </tr>');
+    http ('</table>');
+    http ('</div>');
+  }
+  else if (action = 'imapFilter')
+  {
+    declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
+
+    MAIL.WA.dc_predicateMetas (predicateMetas);
+    MAIL.WA.dc_compareMetas (compareMetas);
+    MAIL.WA.dc_actionMetas (actionMetas);
+    folders := MAIL.WA.folder_list (get_keyword ('owner', params));
+    headers := MAIL.WA.dc_headersList ();
+    triplets := MAIL.WA.dc_tripletList ();
+
+    returnData := vector (predicateMetas, compareMetas, actionMetas, folders, headers, triplets);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
+  }
   return;
 ?>

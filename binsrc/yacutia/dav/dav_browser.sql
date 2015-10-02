@@ -1547,9 +1547,6 @@ create procedure WEBDAV.DBA.effective_permissions (
   if (WEBDAV.DBA.DAV_ERROR (id))
     return 0;
 
-  if (isstring(permission))
-    permission := vector (permission);
-
   auth_name := coalesce (WEBDAV.DBA.account (), 'nobody');
   uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = auth_name);
   gid := (select U_GROUP from DB.DBA.SYS_USERS where U_NAME = auth_name);
@@ -1565,6 +1562,9 @@ create procedure WEBDAV.DBA.effective_permissions (
   -- administrators
   if (gid = 3)
     return 1;
+
+  if (isstring(permission))
+    permission := vector (permission);
 
   for (N := 0; N < length (permission); N := N + 1)
   {
