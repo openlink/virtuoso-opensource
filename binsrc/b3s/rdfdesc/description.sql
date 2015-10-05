@@ -646,9 +646,11 @@ b3s_uri_curie (in uri varchar)
 
   delim := -1;
 
-  uriSearch := uri;
   if (uri is null)
     return '';
+  if (iswidestring (uri))
+    uri := charset_recode (uri, '_WIDE_', 'UTF-8');
+  uriSearch := uri;
   nsPrefix := null;
   while (nsPrefix is null and delim <> 0) {
 
