@@ -40,11 +40,12 @@
       <v:variable name="_dav" type="varchar" default="''" persist="0" />
       <v:variable name="_del" type="varchar" default="''" persist="0" />
       <v:variable name="_redir" type="varchar" default="''" persist="0" />
-      <v:variable name="_store" type="varchar" default="''" persist="0" />
+      <v:variable name="_store" type="int" default="0" persist="0" />
       <v:variable name="_get_rdf" type="int" default="0" persist="0" />
       <v:variable name="_ask_rdf" type="int" default="0" persist="0" />
       <v:variable name="_udata" type="any" default="NULL" persist="0" />
       <v:variable name="_auth" type="varchar" default="''" persist="0" />
+      <v:variable name="_auth_ldp" type="varchar" default="''" persist="0" />
       <v:variable name="mode" type="varchar" default="''" persist="0" param-name="mode"/>
       <v:variable name="_old_url" type="varchar" default="''" persist="0" />
       <v:variable name="target_url" type="varchar" default="''" persist="0" />
@@ -64,6 +65,12 @@
       <v:variable name="_thr" type="int" default="1" persist="0" />
       <v:variable name="_delay" type="float" default="1" persist="0" />
       <v:variable name="_head" type="varchar" default="null" persist="0" />
+      <v:variable name="_use_tidy" type="varchar" default="'N'" persist="0" />
+      <v:variable name="_store_type" type="varchar" default="null" persist="0" />
+      <v:variable name="target_ldp_uid" type="varchar" default="''" persist="0" />
+      <v:variable name="target_ldp_pwd" type="varchar" default="''" persist="0" />
+      <v:variable name="_ldpr_creation_method" type="varchar" default="''" persist="0" />
+      <v:variable name="_folder_tree" type="varchar" default="''" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -179,8 +186,6 @@
           }
         ]]>
       </v:before-data-bind>
-      <script type="text/javascript" src="admin_utils.js">
-      </script>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>

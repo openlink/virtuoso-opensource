@@ -295,7 +295,10 @@ get_again:
 	    WS.WS.GET_URLS (_host, _url, _root, _content, lev + 1, _c_type);
 
 	  if (store_hook is not null and __proc_exists (store_hook))
-	    call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, _udata, lev + 1);
+	  {
+	    call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, 
+		vector_concat (_udata, vector ('start_url', _start_url)), lev + 1);
+	  }
 	  else
 	    {
 	      WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag, conv_html);
