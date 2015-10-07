@@ -43,214 +43,182 @@
   </head>
   <body>
     <v:page name="vdir_browser"
-   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-   style="yacutia_style.xsl"
-   xmlns:vm="http://www.openlinksw.com/vspx/macro"
-   >
-  <!-- Parameters -->
-  <v:variable name="caption" persist="0" type="varchar" default="'Select file'" />
-  <v:variable name="dir_separator" persist="0" type="varchar" default="'/'" />
-  <v:variable name="quote_char" persist="0" type="varchar" default="''" />
-  <v:variable name="template_char" persist="0" type="varchar" default="'*'" />
-  <v:variable name="crfolder_proc_name" persist="0" type="varchar" default="''" />
-  <v:variable name="content_proc_name" persist="0" type="varchar" default="''" />
-  <v:variable name="content_meta_proc_name" persist="0" type="varchar" default="''" />
-  <v:variable name="multi_select" persist="0" type="integer" default="0" />
-  <v:variable name="dir_select" persist="0" type="integer" default="0" />
-  <v:variable name="retname" persist="0" type="varchar" default="''" />
-  <v:variable name="filter" persist="0" type="varchar" default="''" />
-  <v:variable name="crfolder_mode" persist="0" type="integer" default="0" />
+            fast-render="1"
+            style="yacutia_style.xsl"
+            xmlns:xhtml="http://www.w3.org/1999/xhtml"
+            xmlns:v="http://www.openlinksw.com/vspx/"
+            xmlns:vm="http://www.openlinksw.com/vspx/macro"
+    >
+    <!-- Parameters -->
+    <v:variable name="caption" persist="0" type="varchar" default="'Select file'" />
+    <v:variable name="dir_separator" persist="0" type="varchar" default="'/'" />
+    <v:variable name="quote_char" persist="0" type="varchar" default="''" />
+    <v:variable name="template_char" persist="0" type="varchar" default="'*'" />
+    <v:variable name="crfolder_proc_name" persist="0" type="varchar" default="''" />
+    <v:variable name="content_proc_name" persist="0" type="varchar" default="''" />
+    <v:variable name="content_meta_proc_name" persist="0" type="varchar" default="''" />
+    <v:variable name="multi_select" persist="0" type="integer" default="0" />
+    <v:variable name="dir_select" persist="0" type="integer" default="0" />
+    <v:variable name="retname" persist="0" type="varchar" default="''" />
+    <v:variable name="filter" persist="0" type="varchar" default="''" />
+    <v:variable name="crfolder_mode" persist="0" type="integer" default="0" />
 
-  <!-- State Vars -->
-  <v:variable name="rootdir" persist="0" type="varchar" default="''" />
-  <v:variable name="curpath" persist="0" type="varchar" default="''" />
-  <v:variable name="sel_items" persist="0" type="varchar" default="''" />
+    <!-- State Vars -->
+    <v:variable name="rootdir" persist="0" type="varchar" default="''" />
+    <v:variable name="curpath" persist="0" type="varchar" default="''" />
+    <v:variable name="sel_items" persist="0" type="varchar" default="''" />
 
-  <v:on-init>
-  <v:script><![CDATA[
-    if( get_keyword('content-proc', params, '') <> '' ) {
-      self.retname := get_keyword('retname', params, '');
-      self.caption := get_keyword('caption', params, '');
-      self.dir_separator := get_keyword('dir-separator', params, '');
-      self.quote_char := get_keyword('quote-char', params, '');
-      self.template_char := get_keyword('filter-char', params, '');
-      self.crfolder_proc_name := get_keyword('crfolder-proc', params, '');
-      self.content_proc_name := get_keyword('content-proc', params, '');
-      self.content_meta_proc_name := get_keyword('content-meta-proc', params, '');
-      self.multi_select := atoi(get_keyword('multi-sel', params, '0'));
-      self.dir_select := atoi(get_keyword('dir-sel', params, '0'));
-      self.rootdir := '';
-      self.filter := get_keyword('filter', params, '');
+    <v:on-init>
+      <![CDATA[
+        if( get_keyword('content-proc', params, '') <> '' ) {
+          self.retname := get_keyword('retname', params, '');
+          self.caption := get_keyword('caption', params, '');
+          self.dir_separator := get_keyword('dir-separator', params, '');
+          self.quote_char := get_keyword('quote-char', params, '');
+          self.template_char := get_keyword('filter-char', params, '');
+          self.crfolder_proc_name := get_keyword('crfolder-proc', params, '');
+          self.content_proc_name := get_keyword('content-proc', params, '');
+          self.content_meta_proc_name := get_keyword('content-meta-proc', params, '');
+          self.multi_select := atoi(get_keyword('multi-sel', params, '0'));
+          self.dir_select := atoi(get_keyword('dir-sel', params, '0'));
+          self.rootdir := '';
+          self.filter := get_keyword('filter', params, '');
 
-      if( get_keyword('start-path', params, '') <> '')
-      {
-        self.curpath := get_keyword('start-path', params);
-        if (self.content_proc_name = 'db.dba.fs_browse_proc')
-        {
-          declare root_path varchar;
-          root_path := cfg_item_value(virtuoso_ini_path(), 'HTTPServer','ServerRoot');
-          root_path := rtrim(root_path, '/');
-          self.curpath := trim(self.curpath, '/');
-          self.curpath := concat(root_path, '/', self.curpath);
-          self.curpath := rtrim(self.curpath, '/.');
+          if( get_keyword('start-path', params, '') <> '')
+          {
+            self.curpath := get_keyword('start-path', params);
+            if (self.content_proc_name = 'db.dba.fs_browse_proc')
+            {
+              declare root_path varchar;
+              root_path := cfg_item_value(virtuoso_ini_path(), 'HTTPServer','ServerRoot');
+              root_path := rtrim(root_path, '/');
+              self.curpath := trim(self.curpath, '/');
+              self.curpath := concat(root_path, '/', self.curpath);
+              self.curpath := rtrim(self.curpath, '/.');
+            }
+          }
+          else if( self.curpath = '')
+            self.curpath := self.rootdir;
+
+          if( self.dir_select > 0 ) {
+            self.sel_items := self.curpath;
+            self.multi_select := 0;
+          }
         }
-      }
-      else if( self.curpath = '')
-        self.curpath := self.rootdir;
-
-      if( self.dir_select > 0 ) {
-        self.sel_items := self.curpath;
-        self.multi_select := 0;
-      }
-    }
-    if( length(self.curpath) > 1)
-      self.curpath := rtrim( self.curpath, self.dir_separator);
-  ]]></v:script>
-  </v:on-init>
-  <v:form name="form1" type="simple" method="POST" action="vdir_browser.vspx">
-    <table class="vdir_headertable" width="100%" border="0" cellspacing="0" cellpadding="2">
-      <tr class="vdir_headertr" align="left">
-        <td class="vdir_headertd">
-          <label for="t_path">Contents of</label>
-          <v:text name="t_path" xhtml_id="t_path" value="''" format="%s">
-            <v:before-render><v:script><![CDATA[ control.ufl_value := self.curpath; ]]></v:script></v:before-render>
-          </v:text>
-          <v:button name="b_go_path" value="Go" action="simple">
-            <v:on-post><v:script><![CDATA[
-              self.curpath := self.t_path.ufl_value;
-              if( length(self.curpath) > 1)
-                self.curpath := rtrim( self.curpath, self.dir_separator);
-              -- self.ds_items.vc_reset();
-              self.ds_items.vc_data_bind(e);
-            ]]></v:script></v:on-post>
-          </v:button>
-        </td>
-        <td class="vdir_headertd">
-	  <v:button name="b_up" style="image" value="images/dav_browser/up_16.png" xhtml_alt="Up one level" action="simple"
-	    text="&nbsp;Browse...">
-            <v:before-render>
-              <v:script><![CDATA[ control.ufl_active := case when length(self.curpath) > 0 then 1 else 0 end; ]]></v:script>
-            </v:before-render>
-            <v:on-post><v:script><![CDATA[
-                declare pos integer;
-                pos := strrchr( self.curpath, self.dir_separator[0] );
-                if( isnull(pos) ) pos := 0;
-                self.curpath := left(self.curpath, pos);
-                if( self.dir_select <> 0 ) self.sel_items := concat(self.curpath, self.dir_separator);
-                -- self.ds_items.vc_reset();
-                self.ds_items.vc_data_bind (e);
-            ]]></v:script></v:on-post>
-          </v:button>
-        </td>
-        <td class="vdir_headertd">
-	  <v:button name="b_create" style="image" value="images/dav_browser/foldr_new_16.png" xhtml_alt="Create new folder" action="simple">
-            <v:before-render>
-              <v:script><![CDATA[ control.ufl_active := case when length(self.crfolder_proc_name) > 0 then 1 else 0 end; ]]></v:script>
-            </v:before-render>
-            <v:on-post>
-              <v:script><![CDATA[ self.crfolder_mode := case when self.crfolder_mode<>0 then 0 else 1 end; ]]></v:script>
-            </v:on-post>
-          </v:button>
-        </td>
-      </tr>
-      <v:template name="temp_crfold" type="simple" enabled="--case when (self.crfolder_mode<>0) then 1 else 0 end">
+        if( length(self.curpath) > 1)
+          self.curpath := rtrim( self.curpath, self.dir_separator);
+      ]]>
+    </v:on-init>
+    <v:form name="form1" type="simple" method="POST" action="vdir_browser.vspx">
+      <table class="vdir_headertable" width="100%" border="0" cellspacing="0" cellpadding="2">
         <tr class="vdir_headertr" align="left">
-          <td class="vdir_headertd" colspan="3">
-            <label for="t_newfolder">New folder</label>
-            <v:text name="t_newfolder" xhtml_id="t_newfolder" value="''" format="%s"/>
-            <v:button name="b_new_folder" value="Create" action="simple">
-              <v:on-post><v:script><![CDATA[
-                if( length(self.t_newfolder.ufl_value) > 0 and length(self.crfolder_proc_name) > 0) {
-                  CALL(self.crfolder_proc_name)(self.curpath, self.t_newfolder.ufl_value);
+          <td class="vdir_headertd">
+            <label for="t_path">Contents of</label>
+            <v:text name="t_path" xhtml_id="t_path" value="''" format="%s">
+              <v:before-render><v:script><![CDATA[ control.ufl_value := self.curpath; ]]></v:script></v:before-render>
+            </v:text>
+            <v:button name="b_go_path" value="Go" action="simple">
+              <v:on-post>
+                <![CDATA[
+                  self.curpath := self.t_path.ufl_value;
+                  if( length(self.curpath) > 1)
+                    self.curpath := rtrim( self.curpath, self.dir_separator);
                   -- self.ds_items.vc_reset();
                   self.ds_items.vc_data_bind(e);
-                }
-                self.crfolder_mode := 0;
-              ]]></v:script></v:on-post>
+                ]]>
+              </v:on-post>
+            </v:button>
+          </td>
+          <td class="vdir_headertd">
+            <v:button name="b_up" style="image" value="images/icons/up_16.png" xhtml_alt="Up one level" action="simple" text="&nbsp;Browse...">
+              <v:before-render>
+                <![CDATA[
+                  control.ufl_active := case when length(self.curpath) > 0 then 1 else 0 end;
+                ]]>
+              </v:before-render>
+              <v:on-post>
+                <![CDATA[
+                  declare pos integer;
+
+                  pos := strrchr( self.curpath, self.dir_separator[0] );
+                  if( isnull(pos) )
+                    pos := 0;
+                  self.curpath := left(self.curpath, pos);
+                  if( self.dir_select <> 0 )
+                    self.sel_items := concat(self.curpath, self.dir_separator);
+                  -- self.ds_items.vc_reset();
+                  self.ds_items.vc_data_bind (e);
+                ]]>
+              </v:on-post>
+            </v:button>
+          </td>
+          <td class="vdir_headertd">
+            <v:button name="b_create" style="image" value="images/icons/add_16.png" xhtml_alt="Create new folder" action="simple">
+              <v:before-render>
+                <![CDATA[
+                  control.ufl_active := case when length(self.crfolder_proc_name) > 0 then 1 else 0 end;
+                ]]>
+              </v:before-render>
+              <v:on-post>
+                <![CDATA[
+                  self.crfolder_mode := case when self.crfolder_mode<>0 then 0 else 1 end;
+                ]]>
+              </v:on-post>
             </v:button>
           </td>
         </tr>
-      </v:template>
-    </table>
-    <table class="listing" width="100%" border="0" cellspacing="0" cellpadding="2">
-    <v:data-set name="ds_items" data="--CALL(self.content_proc_name)(curpath, filter)" meta="--CALL (self.content_meta_proc_name)()" nrows="15" scrollable="1" width="80">
-      <v:param name="curpath" value="self.curpath" />
-      <v:param name="filter" value="self.filter" />
-      <v:template name="header1" type="simple">
-          <tr class="listing_header_row">
-            <th>Name</th>
-            <?vsp
-                  declare j integer;
-                  j := 3;
-                  while( j < length((control.vc_parent as vspx_data_set).ds_row_meta) ) {
-		  http( '<th>' );
-                    http( coalesce( (control.vc_parent as vspx_data_set).ds_row_meta[j], '') );
-		    http('</th>');
-                    j := j + 1;
-                  }
-            ?>
-          </tr>
-          <?vsp if(length(self.curpath) > 0) { ?>
-	  <tr>
-            <td>
-	      <v:button name="b_up2" style="image" value="images/dav_browser/up_16.png" xhtml_alt="Up one level" action="simple">
-                <v:on-post><v:script><![CDATA[
-                    declare pos integer;
-                    declare before_path varchar;
-                    pos := strrchr( self.curpath, self.dir_separator[0] );
-                    if( isnull(pos) ) pos := 0;
-                    before_path := self.curpath;
-                    self.curpath := left(self.curpath, pos);
-                    if (self.content_proc_name = 'db.dba.fs_browse_proc')
-                    {
-                      declare state, msg, descs, rows any;
-                      state := '00000';
-                      exec('sys_dirlist(?, ?)', state, msg, vector(self.curpath, 0));
-                      if (state <> '00000')
-                        self.curpath := before_path;
+        <v:template name="temp_crfold" type="simple" enabled="--case when (self.crfolder_mode<>0) then 1 else 0 end">
+          <tr class="vdir_headertr" align="left">
+            <td class="vdir_headertd" colspan="3">
+              <label for="t_newfolder">New folder</label>
+              <v:text name="t_newfolder" xhtml_id="t_newfolder" value="''" format="%s"/>
+              <v:button name="b_new_folder" value="Create" action="simple">
+                <v:on-post>
+                  <![CDATA[
+                    if ( length(self.t_newfolder.ufl_value) > 0 and length(self.crfolder_proc_name) > 0) {
+                      CALL(self.crfolder_proc_name)(self.curpath, self.t_newfolder.ufl_value);
+                      -- self.ds_items.vc_reset();
+                      self.ds_items.vc_data_bind(e);
                     }
-
-                    if( self.dir_select <> 0 ) self.sel_items := concat(self.curpath, self.dir_separator);
-                    -- self.ds_items.vc_reset();
-                    self.ds_items.vc_data_bind(e);
-                ]]></v:script></v:on-post>
+                    self.crfolder_mode := 0;
+                  ]]>
+                </v:on-post>
               </v:button>
             </td>
-            <?vsp
-              http( sprintf( '<td colspan="%d"/>', length((control.vc_parent as vspx_data_set).ds_row_meta) ) );
-            ?>
           </tr>
-          <?vsp } ?>
-      </v:template>
-      <v:template name="rows" type="repeat">
-        <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
-          <table>
-            <tr class="<?V case when mod (control.te_ctr,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-          <?vsp
-            declare imgname varchar;
-            declare rowset any;
-            rowset := (control as vspx_row_template).te_rowset;
-            if( length(rowset) > 2 and not isnull(rowset[2]) )
-              imgname := rowset[2];
-            else if( rowset[0] <> 0 )
-	      imgname := 'images/dav_browser/foldr_16.png';
-            else
-	     imgname := 'images/dav_browser/file_gen_16.png';
-          ?>
-              <td><img src="<?V imgname ?>" />
-                <?vsp if( self.dir_select = 0 OR rowset[0] <> 0) { ?>
-                <v:button name="b_item" style = "url" action="simple" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s">
-                 <v:on-post><script><![CDATA[
-                    declare before_path varchar;
-                    if( (control.vc_parent as vspx_row_template).te_rowset[0] <> 0 ) {
-                      if( length(self.curpath) > 0)
-                        self.curpath := concat( self.curpath, self.dir_separator);
+        </v:template>
+      </table>
+      <table class="listing" width="100%" border="0" cellspacing="0" cellpadding="2">
+        <v:data-set name="ds_items" data="--CALL(self.content_proc_name)(curpath, filter)" meta="--CALL (self.content_meta_proc_name)()" nrows="15" scrollable="1" width="80">
+          <v:param name="curpath" value="self.curpath" />
+          <v:param name="filter" value="self.filter" />
+          <v:template name="header1" type="simple">
+            <tr class="listing_header_row">
+              <th>Name</th>
+              <?vsp
+                declare j integer;
+                j := 3;
+                while( j < length((control.vc_parent as vspx_data_set).ds_row_meta) )
+                {
+                  http( '<th width="1%">' );
+                  http( coalesce( (control.vc_parent as vspx_data_set).ds_row_meta[j], '') );
+                  http('</th>');
+                  j := j + 1;
+                }
+              ?>
+            </tr>
+            <?vsp if(length(self.curpath) > 0) { ?>
+            <tr>
+              <td>
+                <v:button name="b_up2" style="image" value="images/icons/up_16.png" xhtml_alt="Up one level" action="simple">
+                  <v:on-post>
+                    <![CDATA[
+                      declare pos integer;
+                      declare before_path varchar;
+                      pos := strrchr( self.curpath, self.dir_separator[0] );
+                      if( isnull(pos) ) pos := 0;
                       before_path := self.curpath;
-                      self.curpath := concat( self.curpath,
-                                              self.quote_char,
-                                              (control.vc_parent as vspx_row_template).te_rowset[1],
-                                              self.quote_char);
+                      self.curpath := left(self.curpath, pos);
                       if (self.content_proc_name = 'db.dba.fs_browse_proc')
                       {
                         declare state, msg, descs, rows any;
@@ -259,87 +227,151 @@
                         if (state <> '00000')
                           self.curpath := before_path;
                       }
+
+                      if( self.dir_select <> 0 ) self.sel_items := concat(self.curpath, self.dir_separator);
                       -- self.ds_items.vc_reset();
-                      self.ds_items.vc_data_bind (e);
-                      if( self.dir_select <> 0 )
-                          self.sel_items := concat(self.curpath, self.dir_separator);
-                    }
-                    else if( self.dir_select = 0 ) {
-                      if(self.multi_select <> 0 and length(self.sel_items) > 0)
-                        self.sel_items := concat( self.sel_items, ',',
-                                                  concat(self.curpath, self.dir_separator, self.quote_char, (control.vc_parent as vspx_row_template).te_rowset[1], self.quote_char));
-                      else
-                        self.sel_items := concat(self.curpath, self.dir_separator, self.quote_char, (control.vc_parent as vspx_row_template).te_rowset[1], self.quote_char);
-                    }
-                 ]]></script></v:on-post>
+                      self.ds_items.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
                 </v:button>
-                <?vsp } else {
-                  http( rowset[1] );
-                } ?>
               </td>
-          <?vsp
-                declare j integer;
-                j := 3;
-                while( j < length(rowset) ) {
-                  http( '<td>' || coalesce(rowset[j], '') || '</td>' );
-                  j := j + 1;
-                }
-          ?>
+              <?vsp
+                http( sprintf( '<td colspan="%d"/>', length((control.vc_parent as vspx_data_set).ds_row_meta) ) );
+              ?>
             </tr>
-          </table>
-        </v:template>
-      </v:template>
-      <v:template name="template3" type="simple">
-          <tr class="vdir_listrow">
-            <td colspan="2" align="center"  class="listing_col_action">
-	      <vm:ds-navigation data-set="ds_items"/>
+            <?vsp } ?>
+          </v:template>
+          <v:template name="rows" type="repeat">
+            <v:template name="template4" type="browse" name-to-remove="table" set-to-remove="both">
+              <table>
+                <tr class="<?V case when mod (control.te_ctr,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                  <?vsp
+                    declare imgname varchar;
+                    declare rowset any;
+
+                    rowset := (control as vspx_row_template).te_rowset;
+                    if (length(rowset) > 2 and not isnull(rowset[2]))
+                      imgname := rowset[2];
+                    else if( rowset[0] <> 0 )
+                      imgname := 'images/icons/foldr_16.png';
+                    else
+                      imgname := 'images/icons/docs_16.png';
+                  ?>
+                  <td>
+                    <img src="<?V imgname ?>" />
+                    <?vsp
+                    if ( self.dir_select = 0 OR rowset[0] <> 0)
+                    {
+                    ?>
+                    <v:button name="b_item" style = "url" action="simple" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s">
+                      <v:on-post>
+                        <![CDATA[
+                          declare before_path varchar;
+                          if( (control.vc_parent as vspx_row_template).te_rowset[0] <> 0 )
+                          {
+                            if( length(self.curpath) > 0)
+                              self.curpath := concat( self.curpath, self.dir_separator);
+
+                            before_path := self.curpath;
+                            self.curpath := concat( self.curpath,
+                                                    self.quote_char,
+                                                    (control.vc_parent as vspx_row_template).te_rowset[1],
+                                                    self.quote_char);
+                            if (self.content_proc_name = 'db.dba.fs_browse_proc')
+                            {
+                              declare state, msg, descs, rows any;
+                              state := '00000';
+                              exec('sys_dirlist(?, ?)', state, msg, vector(self.curpath, 0));
+                              if (state <> '00000')
+                                self.curpath := before_path;
+                            }
+                            -- self.ds_items.vc_reset();
+                            self.ds_items.vc_data_bind (e);
+                            if ( self.dir_select <> 0 )
+                              self.sel_items := concat(self.curpath, self.dir_separator);
+                          }
+                          else if( self.dir_select = 0 )
+                          {
+                            if(self.multi_select <> 0 and length(self.sel_items) > 0)
+                              self.sel_items := concat( self.sel_items, ',', concat(self.curpath, self.dir_separator, self.quote_char, (control.vc_parent as vspx_row_template).te_rowset[1], self.quote_char));
+                            else
+                              self.sel_items := concat(self.curpath, self.dir_separator, self.quote_char, (control.vc_parent as vspx_row_template).te_rowset[1], self.quote_char);
+                          }
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <?vsp
+                    }
+                    else
+                    {
+                      http( rowset[1] );
+                    }
+                    ?>
+                  </td>
+                  <?vsp
+                    declare j integer;
+
+                    j := 3;
+                    while( j < length(rowset) )
+                    {
+                      http( '<td>' || coalesce(rowset[j], '') || '</td>' );
+                      j := j + 1;
+                    }
+                  ?>
+                  </tr>
+                </table>
+              </v:template>
+            </v:template>
+            <v:template name="template3" type="simple">
+              <tr class="vdir_listrow">
+                <td colspan="2" align="center"  class="listing_col_action">
+                  <vm:ds-navigation data-set="ds_items"/>
+                </td>
+              </tr>
+            </v:template>
+          </v:data-set>
+        </table>
+        <table>
+          <tr>
+            <td>Resource Name</td>
+            <td>
+              <v:text name="item_name" value="--''" type="simple" xhtml_size="18" >
+                <v:before-render>
+                  <![CDATA[
+                    control.ufl_value := self.sel_items;
+                  ]]>
+                </v:before-render>
+              </v:text>
+            </td>
+            <td>
+              <input type="button" name="b_return" value="Select" onClick="javascript:  selectRow ('form1', '(NULL)','')" />
+              <v:button name="b_cancel" action="simple" value="Cancel" xhtml_onClick="javascript: if (opener != null) opener.focus(); window.close()"/>
             </td>
           </tr>
-      </v:template>
-    </v:data-set>
-  </table>
-    <table>
-      <tr>
-        <td>Resource Name</td>
-        <td>
-          <v:text name="item_name" value="--''" type="simple" xhtml_size="18" >
-            <v:before-render>
-              <script><![CDATA[
-                control.ufl_value := self.sel_items;
-              ]]></script>
-            </v:before-render>
-          </v:text>
-        </td>
-        <td>
-          <input type="button" name="b_return" value="Select"
-                 onClick="javascript:  selectRow ('form1', '(NULL)','')" />
-
-          <!--v:button name="b_return" action="return" value="Select" xhtml_onClick="javascript: this.<?V self.retname ?> = opener.<?V self.retname ?>; if (<?V self.retname ?> != null ) <?V self.retname ?>.value = document.form1.item_name.value; opener.focus(); close();">
-            <v:field name="filename" ref="item_name"/>
-          </v:button-->
-          <v:button name="b_cancel" action="simple" value="Cancel" xhtml_onClick="javascript: if (opener != null) opener.focus(); window.close()"/>
-        </td>
-      </tr>
-      <tr>
-        <td>Filter</td>
-        <td>
-          <v:text name="t_filter" value="--''" type="simple" xhtml_size="10" >
-            <v:before-render><v:script><![CDATA[
-                control.ufl_value := self.filter;
-            ]]></v:script></v:before-render>
-          </v:text>
-          <v:button name="b_apply" action="simple" value="Apply">
-            <v:on-post><v:script><![CDATA[
-              self.filter := self.t_filter.ufl_value;
-              -- self.ds_items.vc_reset();
-              self.ds_items.vc_data_bind(e);
-            ]]></v:script></v:on-post>
-          </v:button>
-        </td>
-        <td/>
-      </tr>
-    </table>
-  </v:form>
-</v:page>
-</body>
+          <tr>
+            <td>Filter</td>
+            <td>
+              <v:text name="t_filter" value="--''" type="simple" xhtml_size="10" >
+                <v:before-render>
+                  <![CDATA[
+                    control.ufl_value := self.filter;
+                  ]]>
+                </v:before-render>
+              </v:text>
+              <v:button name="b_apply" action="simple" value="Apply">
+                <v:on-post>
+                  <![CDATA[
+                    self.filter := self.t_filter.ufl_value;
+                    -- self.ds_items.vc_reset();
+                    self.ds_items.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+            <td />
+          </tr>
+        </table>
+      </v:form>
+    </v:page>
+  </body>
 </html>
