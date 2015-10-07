@@ -109,7 +109,8 @@ create table WS.WS.VFS_SITE_RDF_MAP (
     VM_ID   integer identity,
     VM_HOST varchar,
     VM_ROOT varchar,
-    VM_RDF_MAP int,	-- ref to SYS_RDF_MAPPERS table
+    VM_RDF_MAP integer,	-- Ref to DB.DBA.SYS_RDF_MAPPERS table or DB.DBA.RDF_META_CARTRIDGES
+    VM_RDF_MAP_TYPE integer default 0,	-- DB.DBA.SYS_RDF_MAPPERS table (0) or DB.DBA.RDF_META_CARTRIDGES (1)
     VM_SEQ  integer identity,
     primary key (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ))
 ;
@@ -219,7 +220,8 @@ alter table WS.WS.VFS_QUEUE add VQ_ORIGIN IRI_ID_8
 alter table WS.WS.VFS_URL add VU_RES_ID int
 ;
 
--- -----------------------------------------------
+alter table WS.WS.VFS_SITE_RDF_MAP add VM_RDF_MAP_TYPE integer default 0
+;
 
 create procedure WS.WS.VFS_UPGRADE ()
 {

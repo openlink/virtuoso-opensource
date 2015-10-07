@@ -193,8 +193,9 @@ yacutia_http_log_ui_labels ()
 
 create procedure adm_menu_tree ()
 {
-  declare wa_available, rdf_available integer;
+  declare wa_available, rdf_available, policy_vad integer;
   wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
+  policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
   rdf_available := check_package ('cartridges');
   return concat (
 '<?xml version="1.0" ?>
@@ -508,7 +509,7 @@ create procedure adm_menu_tree ()
    <node name="R2RML" url="r2rml_gen.vspx" id="273" place="1"/>'
    end,
   '<node name="Quad Store Upload" url="rdf_import.vspx" id="271" allowed="rdf_import_page"/>',
-   case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
+   case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then
   '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx" id="271" allowed="rdf_psh_sub_page"/>'
    end,
 '</node>
@@ -1804,18 +1805,18 @@ create procedure sql_dump_vdb_tables (in table_list any)
   declare ses any;
   declare tmp any;
   ses := string_output ();
-  http ('-- Data Sources \n', ses); 
+  http ('-- Data Sources \n', ses);
   for select distinct DS_DSN, DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) as pwd
     from DB.DBA.SYS_DATA_SOURCE join DB.DBA.SYS_REMOTE_TABLE on (DS_DSN = RT_DSN) where RT_NAME in (table_list) do
       {
 	http (sprintf ('vd_remote_data_source (\'%S\', \'\', \'%S\', \'%S\'); \n', DS_DSN, DS_UID, pwd), ses);
       }
-  http ('\n\n-- Tables \n', ses); 
+  http ('\n\n-- Tables \n', ses);
   for select RT_DSN, RT_NAME, RT_REMOTE_NAME from DB.DBA.SYS_REMOTE_TABLE where RT_NAME in (table_list) do
     {
       tmp := create_table_sql (RT_NAME);
-      http (tmp, ses); 
-      http ('\n', ses); 
+      http (tmp, ses);
+      http ('\n', ses);
       http (sprintf ('vd_remote_table (\'%S\', \'%S\', \'%S\'); \n', RT_DSN, RT_NAME, RT_REMOTE_NAME), ses);
       http (sprintf ('__ddl_changed (\'%S\'); \n\n', RT_NAME), ses);
     }
@@ -2012,6 +2013,7 @@ db.dba.dav_br_map_icon (in type varchar)
   return ('gen_file_16.png');
 }
 ;
+
 
 --
 -- XXX add weeks, months, years.
@@ -4278,7 +4280,7 @@ create procedure www_tree (in path any)
 {
   declare ss, i any;
   set isolation='uncommitted';
-  if (path is null) 
+  if (path is null)
     path := '*LISTENERS*';
   ss := string_output ();
   http ('<www>', ss);
@@ -4801,7 +4803,7 @@ create procedure y_make_url_from_vd (in host varchar, in lhost varchar, in path 
   if (sec = 'SSL')
     return sprintf ('https://%s%s%s/', host, port, rtrim(path, '/'));
   else
-  return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
+    return sprintf ('http://%s%s%s/', host, port, rtrim(path, '/'));
 };
 
 create procedure y_escape_local_name (in nam varchar)
@@ -4909,7 +4911,7 @@ create procedure Y_SYNCML_DETECT (
   if (__proc_exists ('DB.DBA.yac_syncml_detect') is not null)
     return DB.DBA.yac_syncml_detect (path);
 
-   return 0;
+  return 0;
 }
 ;
 
@@ -5141,7 +5143,7 @@ create procedure yac_list_keys (in username varchar)
   arr := USER_GET_OPTION (username, 'KEYS');
   for (declare i, l int, i := 0, l := length (arr); i < l; i := i + 2)
     {
-    if (length (arr[i]))
+      if (length (arr[i]))
         result (arr[i], arr[i+1][0]);
     }
 }
@@ -5483,7 +5485,7 @@ create procedure
 y_trunc_uri (in s varchar, in maxlen int := 80)
 {
   declare _s varchar;
-  declare _h int; 
+  declare _h int;
 
   _s := trim(s);
 
@@ -5513,7 +5515,7 @@ create procedure y_csv_cb (inout r any, in inx int, inout cbd any)
 {
   if (cbd is null)
     cbd := vector ();
-  cbd := vector_concat (cbd, vector (r));   
+  cbd := vector_concat (cbd, vector (r));
 }
 ;
 
@@ -5521,7 +5523,7 @@ create procedure  y_csv_get_cols (inout ss any, in hr int, in offs int, in opts 
 {
   declare h, res any;
   declare inx, j, ncols, no_head int;
-  
+
   h := null;
   no_head := 0;
   if (hr < 0)
@@ -5537,44 +5539,44 @@ create procedure  y_csv_get_cols (inout ss any, in hr int, in offs int, in opts 
     {
       declare _row any;
       _row := h[hr];
-      for (j := 0; j < length (_row); j := j + 1)           
+      for (j := 0; j < length (_row); j := j + 1)
         {
 	  res := vector_concat (res, vector (vector (SYS_ALFANUM_NAME (cast (_row[j] as varchar)), null)));
         }
       for (inx := offs; inx < length (h); inx := inx + 1)
-       { 
+       {
 	 _row := h[inx];
-         for (j := 0; j < length (_row); j := j + 1)           
+         for (j := 0; j < length (_row); j := j + 1)
 	   {
 	     if (res[j][1] is null and not (isstring (_row[j]) and _row[j] = '') and _row[j] is not null)
                res[j][1] := __tag (_row[j]);
              else if (__tag (_row[j]) <> res[j][1] and 189 = res[j][1] and (isdouble (_row[j]) or isfloat (_row[j])))
 	       res[j][1] := __tag (_row[j]);
              else if (__tag (_row[j]) <> res[j][1] and isinteger (_row[j]) and (res[j][1] = 219 or 190 = res[j][1]))
-	       ;  
+	       ;
              else if (__tag (_row[j]) <> res[j][1])
                res[j][1] := -1;
 	   }
-       } 
+       }
     }
   for (inx := 0; inx < length (res); inx := inx + 1)
-    { 
+    {
        if (not isstring (res[inx][0]) and not isnull (res[inx][0]))
-         no_head := 1;	 
+         no_head := 1;
        else if (trim (res[inx][0]) = '' or isnull (res[inx][0]))
-         res[inx][0] := sprintf ('COL%d', inx);	 
-    }  
+         res[inx][0] := sprintf ('COL%d', inx);
+    }
   for (inx := 0; inx < length (res); inx := inx + 1)
-    { 
+    {
        if (res[inx][1] = -1 or res[inx][1] is null)
-         res[inx][1] := 'VARCHAR';	 
+         res[inx][1] := 'VARCHAR';
        else
-         res[inx][1] := dv_type_title (res[inx][1]);	 
-    }  
+         res[inx][1] := dv_type_title (res[inx][1]);
+    }
   if (no_head)
     {
       for (inx := 0; inx < length (res); inx := inx + 1)
-	{ 
+	{
 	   res[inx][0] := sprintf ('COL%d', inx);
 	}
     }
@@ -5610,99 +5612,112 @@ create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
 {
   declare ses any;
   ses := string_output ();
-  for select * from WS.WS.VFS_SITE do 
+  for select * from WS.WS.VFS_SITE do
+  {
+    if (ids is not null and not position (VS_ID, ids))
+      goto skipit;
+    http (sprintf ('-- Crawling descriptor for %s\n', VS_DESCR), ses);
+    http (
+      'INSERT SOFT WS.WS.VFS_SITE (\n\tVS_DESCR,\n\tVS_HOST,\n\tVS_URL,\n\tVS_INX,\n\tVS_OWN,\n\tVS_ROOT,\n\tVS_NEWER,\n' ||
+      '\tVS_DEL,\n\tVS_FOLLOW,\n\tVS_NFOLLOW,\n\tVS_SRC,\n\tVS_OPTIONS,\n\tVS_METHOD,\n\tVS_OTHER,\n\tVS_OPAGE,\n\tVS_REDIRECT,\n'||
+      '\tVS_STORE,\n\tVS_UDATA,\n\tVS_DLOAD_META,\n\tVS_INST_ID,\n\tVS_EXTRACT_FN,\n\tVS_STORE_FN,\n\tVS_DEPTH,'||
+      '\n\tVS_CONVERT_HTML,\n\tVS_XPATH,\n\tVS_BOT,\n\tVS_IS_SITEMAP,\n\tVS_ACCEPT_RDF,\n\tVS_THREADS,\n\tVS_ROBOTS,\n\tVS_DELAY,\n\tVS_TIMEOUT,\n\tVS_HEADERS)\n VALUES (\n',
+      ses
+    );
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DESCR),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_HOST),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_URL),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_INX),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OWN),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROOT),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (cast (VS_NEWER as varchar)),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEL),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_FOLLOW),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_NFOLLOW),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_SRC),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OPTIONS),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_METHOD),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OTHER),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OPAGE),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_REDIRECT),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_STORE),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (sprintf ('serialize (%s)', DB.DBA.SYS_SQL_VAL_PRINT (deserialize (VS_UDATA))),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DLOAD_META),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_INST_ID),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_EXTRACT_FN),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_STORE_FN),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEPTH),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_CONVERT_HTML),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_XPATH),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_BOT),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_IS_SITEMAP),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ACCEPT_RDF),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_THREADS),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROBOTS),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DELAY),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_TIMEOUT),ses); http (',\n', ses);
+    http ('\t', ses);
+    http (DB.DBA.SYS_SQL_VAL_PRINT (VS_HEADERS),ses); http ('\n', ses);
+    http (');\n', ses);
+    for select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = VS_HOST and VM_ROOT = VS_ROOT order by VM_SEQ do
     {
-      if (ids is not null and not position (VS_ID, ids))
-        goto skipit;	
-      http (sprintf ('-- Crawling descriptor for %s\n', VS_DESCR), ses);
-      http ('INSERT SOFT WS.WS.VFS_SITE (\n\tVS_DESCR,\n\tVS_HOST,\n\tVS_URL,\n\tVS_INX,\n\tVS_OWN,\n\tVS_ROOT,\n\tVS_NEWER,\n' ||
-		'\tVS_DEL,\n\tVS_FOLLOW,\n\tVS_NFOLLOW,\n\tVS_SRC,\n\tVS_OPTIONS,\n\tVS_METHOD,\n\tVS_OTHER,\n\tVS_OPAGE,\n\tVS_REDIRECT,\n'||
-		'\tVS_STORE,\n\tVS_UDATA,\n\tVS_DLOAD_META,\n\tVS_INST_ID,\n\tVS_EXTRACT_FN,\n\tVS_STORE_FN,\n\tVS_DEPTH,'||
-		'\n\tVS_CONVERT_HTML,\n\tVS_XPATH,\n\tVS_BOT,\n\tVS_IS_SITEMAP,\n\tVS_ACCEPT_RDF,\n\tVS_THREADS,\n\tVS_ROBOTS,\n\tVS_DELAY,\n\tVS_TIMEOUT,\n\tVS_HEADERS)\n VALUES (\n',
-            ses			 
-	  );
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DESCR),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_HOST),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_URL),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_INX),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OWN),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROOT),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (cast (VS_NEWER as varchar)),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEL),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_FOLLOW),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_NFOLLOW),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_SRC),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OPTIONS),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_METHOD),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OTHER),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_OPAGE),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_REDIRECT),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_STORE),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (sprintf ('serialize (%s)', DB.DBA.SYS_SQL_VAL_PRINT (deserialize (VS_UDATA))),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DLOAD_META),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_INST_ID),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_EXTRACT_FN),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_STORE_FN),ses); http (',\n', ses);
-      http ('\t', ses);	  
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DEPTH),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_CONVERT_HTML),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_XPATH),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_BOT),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_IS_SITEMAP),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ACCEPT_RDF),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_THREADS),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_ROBOTS),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_DELAY),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_TIMEOUT),ses); http (',\n', ses);
-      http ('\t', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (VS_HEADERS),ses); http ('\n', ses);
+      http ('\n', ses);
+      http ('insert soft WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE) values (', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VM_HOST),ses); http (',', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (VM_ROOT),ses); http (',', ses);
+      if (coalesce (VM_RDF_MAP_TYPE, 0) = 0)
+      {
+        http ('(select MC_ID from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = ', ses);
+        http (DB.DBA.SYS_SQL_VAL_PRINT ((select MC_HOOK from DB.DBA.RDF_META_CARTRIDGES where MC_ID = VM_RDF_MAP)),ses);
+        http (')', ses);
+      }
+      else
+      {
+        http ('(select MC_ID from SYS_RDF_MAPPERS where RM_HOOK = ', ses);
+        http (DB.DBA.SYS_SQL_VAL_PRINT ((select RM_HOOK from SYS_RDF_MAPPERS where RM_PID = VM_RDF_MAP)),ses);
+        http (')', ses);
+      }
       http (');\n', ses);
-      for select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = VS_HOST and VM_ROOT = VS_ROOT order by VM_SEQ do 
-	{
-	  http ('\n', ses);
-	  http ('insert soft WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP) values (', ses);
-	  http (DB.DBA.SYS_SQL_VAL_PRINT (VM_HOST),ses); http (',', ses);	
-	  http (DB.DBA.SYS_SQL_VAL_PRINT (VM_ROOT),ses); http (',', ses);
-	  http ('(select RM_PID from SYS_RDF_MAPPERS where RM_HOOK = ', ses);
-	  http (DB.DBA.SYS_SQL_VAL_PRINT ((select RM_HOOK from SYS_RDF_MAPPERS where RM_PID = VM_RDF_MAP)),ses); 
-	  http ('));', ses);
-	}
-      http ('\n', ses);
-      http ('\n', ses);
-      http ('\n', ses);
-      skipit:;
+      http (DB.DBA.SYS_SQL_VAL_PRINT (coalesce (VM_RDF_MAP_TYPE, 0)),ses); http ('\n', ses);
+      http (');\n', ses);
     }
+    http ('\n', ses);
+    http ('\n', ses);
+    http ('\n', ses);
+  skipit:;
+  }
   http ('WS.WS.VFS_INIT_QUEUE ();\n', ses);
   return ses;
 }
@@ -5740,8 +5755,8 @@ create procedure y_parse_link_headers (in s varchar, in rel varchar, in val varc
       tmp := trim (tmp, ' ,');
       tmp := split_and_decode (tmp, 0, '\0\0;=');
       for (declare i, l int, i := 0, l := length (tmp); i < l; i := i + 1)
-        tmp[i] := trim (tmp[i], '" '); 
-      cur := en; 
+        tmp[i] := trim (tmp[i], '" ');
+      cur := en;
       cur_rel := get_keyword (rel, tmp);
       if (cur_rel = val)
 	{
@@ -5776,10 +5791,10 @@ create procedure y_list_webids (in uname varchar)
 	  pass := x[3];
 	  if (fmt = 3)
 	    fmt := 1;
-	  else if (fmt = 1) 
-	    fmt := 0;  
-	  id := get_certificate_info (7, cert, fmt, pass, '2.5.29.17'); 
-	  if (id is null) 
+	  else if (fmt = 1)
+	    fmt := 0;
+	  id := get_certificate_info (7, cert, fmt, pass, '2.5.29.17');
+	  if (id is null)
 	    goto next;
 	  alts := regexp_replace (id, ',[ ]*', ',', 1, null);
 	  alts := split_and_decode (alts, 0, '\0\0,:');
@@ -5801,11 +5816,11 @@ create procedure construct_table_sql( in tablename varchar ) returns varchar
 {
   declare sql varchar;
   declare k integer;
-  
+
   sql := 'SELECT ';
   k := 0;
 
-    for SELECT c."COLUMN" as COL_NAME 
+    for SELECT c."COLUMN" as COL_NAME
       from  DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, "SYS_COLS" c
       where
             name_part (k.KEY_TABLE, 0) =  name_part (tablename, 0) and
@@ -5817,17 +5832,17 @@ create procedure construct_table_sql( in tablename varchar ) returns varchar
         and k.KEY_MIGRATE_TO is null
         and kp.KP_KEY_ID = k.KEY_ID
         and c.COL_ID = kp.KP_COL
-	order by kp.KP_NTH do 
+	order by kp.KP_NTH do
 	{
       if (k > 0 )
           sql := concat( sql, ',' );
       else k := 1;
 
       sql := concat( sql, COL_NAME);
-      
+
   }
   sql := concat(sql, ' FROM ', tablename);
-  
+
   return sql;
 }
 ;
@@ -5841,7 +5856,7 @@ create procedure vector_to_text_opt (in v any)
   r := '';
   for (i := 0; i < length (v); i := i + 2)
     r := r || v[i] || '=' || v[i+1] || ';\r\n';
-  return r;  
+  return r;
 }
 ;
 
@@ -5862,8 +5877,8 @@ create procedure text_opt_to_vector (in s varchar)
     {
       arr[inx] := trim (x);
       inx := inx + 1;
-    } 
-  return arr; 
+    }
+  return arr;
 }
 ;
 
@@ -5871,12 +5886,12 @@ create procedure DI_TAG (in fp any, in w any, in dgst any := 'MD5', in fmt any :
 {
   declare x, u, pref any;
   u := sprintf ('&http=%{WSHost}s');
-  x := hex2bin (lower (replace (fp, ':', '')));  
+  x := hex2bin (lower (replace (fp, ':', '')));
   x := encode_base64url (cast (x as varchar));
   if (fmt <> 'sparql')
     pref := 'ID Claim: ';
-  else  
-    pref := ''; 
+  else
+    pref := '';
   return sprintf ('%sdi:%s;%s?hashtag=webid%s', pref, lower (dgst), x, u);
 }
 ;
@@ -5891,10 +5906,10 @@ create procedure URL_REMOVE_FRAG (in uri any)
 }
 ;
 
-create procedure 
+create procedure
 make_cert_iri (in key_name varchar)
 {
-  return sprintf ('http://%{WSHost}s/issuer/key/%s/%s#this', user, key_name); 
+  return sprintf ('http://%{WSHost}s/issuer/key/%s/%s#this', user, key_name);
 }
 ;
 
@@ -5926,46 +5941,46 @@ make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
 
   tag := DI_TAG (cert_fingerprint, webid, digest_type, 'sparql');
 
-  key_iri := sprintf ('http://%{WSHost}s/issuer/key/%s/%s', user, key_name); 
+  key_iri := sprintf ('http://%{WSHost}s/issuer/key/%s/%s', user, key_name);
   webid := make_cert_iri (key_name);
   cer_iri := url_remove_frag (webid) || '#cert' || replace (cert_fingerprint, ':', '');
 
   stmt := sprintf ('
-SPARQL  
+SPARQL
 PREFIX rsa: <http://www.w3.org/ns/auth/rsa#>
 PREFIX cert: <http://www.w3.org/ns/auth/cert#>
 PREFIX oplcert: <http://www.openlinksw.com/schemas/cert#>
 PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
-INSERT 
+INSERT
 INTO GRAPH <http://%{WSHost}s/pki>
- {  
+ {
     <%s>       cert:key <%s> ;
-    	       a foaf:Agent .		
-    <%s>       a cert:RSAPublicKey ;  
-               cert:modulus "%s"^^xsd:hexBinary ;    
-               cert:exponent "%d"^^xsd:int .   
+    	       a foaf:Agent .
+    <%s>       a cert:RSAPublicKey ;
+               cert:modulus "%s"^^xsd:hexBinary ;
+               cert:exponent "%d"^^xsd:int .
 
     <%s>       oplcert:hasCertificate <%s> .
     <%s>       a oplcert:Certificate ;
                oplcert:fingerprint "%s" ;
                oplcert:fingerprint-digest "%s" ;
                oplcert:subject "%s" ;
-       	       oplcert:issuer "%s" ; 	 
-               oplcert:notBefore "%s"^^xsd:dateTime ; 	 
-               oplcert:notAfter "%s"^^xsd:dateTime ; 	 
+       	       oplcert:issuer "%s" ;
+               oplcert:notBefore "%s"^^xsd:dateTime ;
+               oplcert:notAfter "%s"^^xsd:dateTime ;
                oplcert:serial "%s" ;
 	       oplcert:digestURI <%s> ;
 	       %s
-    	       %s		   
+    	       %s
 	       oplcert:hasPublicKey <%s> .
  }
 ',  webid, key_iri,
     key_iri, cert_modulus, cert_exponent,
     webid, cer_iri,
-    cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer, 
-    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)), 
-    cert_serial, tag, 
+    cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer,
+    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)),
+    cert_serial, tag,
     case when san is not null then sprintf ('oplcert:subjectAltName <%s> ; ', san) else '' end,
     case when ian is not null then sprintf ('oplcert:issuerAltName <%s> ;', ian) else '' end,
     key_iri);
@@ -5996,12 +6011,12 @@ create procedure PKI.DBA."key" (in "key_name" varchar, in "username" varchar) __
         http (encode_base64 (cast (xenc_pubkey_DER_export (k) as varchar)));
       else if (strstr (pref_acc, 'text/plain') is not null)
         http (xenc_pubkey_PEM_export (k));
-      else if (strstr (pref_acc, 'text/html') is not null or strstr (pref_acc, '*/*') is not null)	
+      else if (strstr (pref_acc, 'text/html') is not null or strstr (pref_acc, '*/*') is not null)
 	{
 	   http_status_set (303);
 	   http_header (http_header_get () || sprintf ('Location: /describe/?url=http://%{WSHost}s/issuer/key/%s/%s\r\n', "username", "key_name"));
 	   return '';
-	}	
+	}
       else
         {
 	  declare qr, path, params, lines any;
@@ -6012,7 +6027,7 @@ create procedure PKI.DBA."key" (in "key_name" varchar, in "username" varchar) __
 	  lines := http_request_header ();
 	  WS.WS."/!sparql/" (path, params, lines);
 	  return '';
-	}  
+	}
       http_header (sprintf ('Content-Type: %s\r\n', pref_acc));
     }
   return '';
@@ -6021,7 +6036,7 @@ create procedure PKI.DBA."key" (in "key_name" varchar, in "username" varchar) __
 
 create procedure PKI_INIT ()
 {
-  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = 'PKI')) 
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = 'PKI'))
     return;
   DB.DBA.USER_CREATE ('PKI', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'PKI'));
 };
