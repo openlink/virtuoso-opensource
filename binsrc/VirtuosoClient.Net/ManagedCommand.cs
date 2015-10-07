@@ -63,6 +63,7 @@ namespace OpenLink.Data.Virtuoso
 		private bool isLastResult = false;
 		private bool isLastRow = false;
 		private bool isLastInBatch = false;
+		private bool isWaitedResult = false;
 
 		private object[] prefetchRow = null;
 		private object[] currentRow = null;
@@ -90,18 +91,16 @@ namespace OpenLink.Data.Virtuoso
 
 		public void Cancel ()
 		{
-			Future future = new Future (Service.FreeStmt, GetId (), (int) CLI.FreeStmtOption.SQL_CLOSE);
-			try
-			{
-				connection.futures.Add (future);
-				future.SendRequest (connection.Session);
-				future.GetResult (connection.Session, connection.futures);
-			}
-			finally
-			{
-				connection.futures.Remove (future);
-			}
+                        lock(this)
+                        {
+                          if (pendingFuture != null && isWaitedResult)
+                            {
+								Future cancel = new Future (Service.Cancel);
+								cancel.SendRequest (connection.Session);
+                            }
+                        }  
 		}
+
 
 		public void SetTimeout (int timeout)
 		{
@@ -318,12 +317,24 @@ namespace OpenLink.Data.Virtuoso
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.CloseCursor ()");
 
-            if (isExecuted)
-            {
-			  currentRow = prefetchRow = null;
-			  if (!isLastRow)
-				  Cancel ();
-            }
+                        if (isExecuted)
+                        {
+			      currentRow = prefetchRow = null;
+			      if (!isLastRow)
+			      {
+			          Future future = new Future (Service.FreeStmt, GetId (), (int) CLI.FreeStmtOption.SQL_CLOSE);
+			          try
+			          {
+				      connection.futures.Add (future);
+				      future.SendRequest (connection.Session);
+				      future.GetResult (connection.Session, connection.futures);
+			          }
+			          finally
+			          {
+				      connection.futures.Remove (future);
+			          }
+			      }
+                        }
 
 			if (pendingFuture != null && connection.futures != null)
 			{
@@ -639,7 +650,9 @@ namespace OpenLink.Data.Virtuoso
 			bool warningPending = false;
 			for (;;)
 			{
+				lock (this) { isWaitedResult = true; }
 				object result = pendingFuture.GetNextResult (connection.Session, connection.futures);
+				lock(this) { isWaitedResult = false; }
 				if (result is object[])
 				{
 					object[] results = (object[]) result;
@@ -815,16 +828,19 @@ namespace OpenLink.Data.Virtuoso
 				CloseCursor ();
 			}
 			*/
-			Future future = new Future (Service.FreeStmt, GetId (), (int) CLI.FreeStmtOption.SQL_DROP);
-			try
+			if (connection.futures != null)
 			{
-			        connection.futures.Add (future);
-			        future.SendRequest (connection.Session);
-			        future.GetResult (connection.Session, connection.futures);
-			}
-			finally
-			{
-			        connection.futures.Remove (future);
+				Future future = new Future(Service.FreeStmt, GetId(), (int)CLI.FreeStmtOption.SQL_DROP);
+				try
+				{
+					connection.futures.Add(future);
+					future.SendRequest(connection.Session);
+					future.GetResult(connection.Session, connection.futures);
+				}
+				finally
+				{
+					connection.futures.Remove(future);
+				}
 			}
 		}
 	}
