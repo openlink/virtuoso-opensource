@@ -1597,3 +1597,48 @@ ECHO BOTH ": long sql statement, over 64K ssls STATE=" $STATE " MESSAGE=" $MESSA
 select cast (cast ('2012-05-29T17:44:44.356+0010' as dateTime) as varchar);
 echo both $if $equ $last[1]  "2012-05-29 17:44:44.356+00:10" "PASSED" "***FAILED";
 echo both ":  cast of Oracle Java datetime syntax string to DATETIME\n";
+
+insert into rdf_quad values (#i1, #i1, #i1, 'xx');
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": insert string into O column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+insert into rdf_quad values (#i1, #i1, #i1, N'xx');
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": insert wide string into O column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- check insert via rdf view
+create table "ntest" ("id" int primary key, "dt" nvarchar);
+
+insert into "ntest" values (1, N'abc');
+insert into "ntest" values (2, N'defg');
+
+SPARQL
+prefix DB: <http://localhost/schemas/DB/> 
+create iri class DB:ntest "http://localhost/DB/ntest/id/%d#this" (in _id integer not null) . ;
+
+
+SPARQL
+prefix DB: <http://localhost/schemas/DB/> 
+alter quad storage virtrdf:DefaultQuadStorage 
+ from "DB"."DBA"."ntest" as ntest_s
+ { 
+   create DB:qm-ntest as graph iri ("http://localhost/DB#") option (exclusive) 
+    { 
+      DB:ntest (ntest_s."id")  a DB:ntest ;
+      DB:id ntest_s."id" as DB:dba-ntest-id ;
+      DB:dt ntest_s."dt" as DB:dba-ntest-dt .
+
+    }
+ }
+
+;
+
+RDF_VIEW_SYNC_TO_PHYSICAL ('http://localhost/DB#', 1, 'urn:localhost:DB');
+
+select * from RDF_QUAD where G = __i2id ('urn:localhost:DB');
+echo both $if $equ $rowcnt 6 "PASSED" "*** FAILED";
+echo both ": " $rowcnt " rows in urn:localhost:DB\n";
+
+select * from RDF_QUAD where G = __i2id ('urn:localhost:DB') and __tag (O) in (182, 225, 226);
+echo both $if $equ $rowcnt 0 "PASSED" "*** FAILED";
+echo both ": " $rowcnt " rows with strings in O in urn:localhost:DB\n";
