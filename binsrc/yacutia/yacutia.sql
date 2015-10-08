@@ -5746,6 +5746,7 @@ create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
   {
     if (ids is not null and not position (VS_ID, ids))
       goto skipit;
+
     http (sprintf ('-- Crawling descriptor for %s\n', VS_DESCR), ses);
     http (
       'INSERT SOFT WS.WS.VFS_SITE (\n\tVS_DESCR,\n\tVS_HOST,\n\tVS_URL,\n\tVS_INX,\n\tVS_OWN,\n\tVS_ROOT,\n\tVS_NEWER,\n' ||
@@ -5821,7 +5822,7 @@ create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
     http ('\t', ses);
     http (DB.DBA.SYS_SQL_VAL_PRINT (VS_HEADERS),ses); http ('\n', ses);
     http (');\n', ses);
-    for select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = VS_HOST and VM_ROOT = VS_ROOT order by VM_SEQ do
+    for (select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = VS_HOST and VM_ROOT = VS_ROOT order by VM_SEQ) do
     {
       http ('\n', ses);
       http ('insert soft WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE) values (', ses);
@@ -5829,14 +5830,14 @@ create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
       http (DB.DBA.SYS_SQL_VAL_PRINT (VM_ROOT),ses); http (',', ses);
       if (coalesce (VM_RDF_MAP_TYPE, 0) = 0)
       {
-        http ('(select MC_ID from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = ', ses);
-        http (DB.DBA.SYS_SQL_VAL_PRINT ((select MC_HOOK from DB.DBA.RDF_META_CARTRIDGES where MC_ID = VM_RDF_MAP)),ses);
+        http ('(select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_PID = ', ses);
+        http (DB.DBA.SYS_SQL_VAL_PRINT (VM_RDF_MAP), ses);
         http (')', ses);
       }
-      else
+      else if ((coalesce (VM_RDF_MAP_TYPE, 0) = 1) and not isnull (VAD_CHECK_VERSION ('cartridges')))
       {
-        http ('(select MC_ID from SYS_RDF_MAPPERS where RM_HOOK = ', ses);
-        http (DB.DBA.SYS_SQL_VAL_PRINT ((select RM_HOOK from SYS_RDF_MAPPERS where RM_PID = VM_RDF_MAP)),ses);
+        http ('(select MC_ID from DB.DBA.RDF_META_CARTRIDGES where MC_ID = ', ses);
+        http (DB.DBA.SYS_SQL_VAL_PRINT (VM_RDF_MAP), ses);
         http (')', ses);
       }
       http (');\n', ses);
