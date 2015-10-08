@@ -1674,6 +1674,15 @@ dbs_cpt_recov_write_extents (dbe_storage_t * dbs)
 	  em_save_dp (it->it_extent_map);
 	  dbs_recov_write_page_set (dbs, it->it_extent_map->em_buf);
 	}
+      if (it->it_col_extent_maps)
+	{
+	  DO_HT (ptrlong, col_id, extent_map_t *, em, it->it_col_extent_maps)
+	    {
+	      em_save_dp (em);
+	      dbs_recov_write_page_set (dbs, em->em_buf);
+	    }
+	  END_DO_HT;
+	}
     }
   END_DO_SET();
   em_save_dp (dbs->dbs_extent_map);

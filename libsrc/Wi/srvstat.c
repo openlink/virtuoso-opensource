@@ -170,6 +170,7 @@ long  tc_read_wait_decoy;
 long  tc_read_wait_while_ra_finding_buf;
 long  tc_pg_write_compact;
 long dbf_user_1, dbf_user_2;
+extern int dbs_stop_cp;
 
 
 extern long read_block_usec;
@@ -1899,6 +1900,7 @@ stat_desc_t dbf_descs [] =
     {"mp_local_rc_sz", (long *)&mp_local_rc_sz, SD_INT32},
     {"dbf_user_1", &dbf_user_1},
     {"dbf_user_2", &dbf_user_2},
+    {"dbs_stop_cp", &dbs_stop_cp, SD_INT32},
 #ifdef CACHE_MALLOC
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
