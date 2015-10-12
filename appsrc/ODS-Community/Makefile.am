@@ -45,23 +45,23 @@ clean-local:
 
 EXTRA_DIST = \
 	make_vad.sh \
-	sql/*.sql \
+	$(srcdir)/sql/*.sql \
 	sql/install.bat \
 	sql/uninstall.bat \
 	vad_version \
-	www-root/*.vsp \
-	www-root/*.vspx \
-	www-root/public/*.html \
-	www-root/public/css/*.css \
-	www-root/public/images/*.gif \
-	www-root/public/images/*.jpg \
-	www-root/public/images/*.png \
-	www-root/public/images/lightblue/*.css \
-	www-root/public/images/lightblue/*.gif \
-	www-root/public/images/lightblue/*.jpg \
-	www-root/public/images/lightblue/*.png \
-	www-root/public/images/lightblue/*.jfif \
-	www-root/public/js/*.js \
-	www-root/templates/openlink/*.css \
-	www-root/templates/openlink/*.vspx \
-	www-root/widgets/*.xsl
+	$(srcdir)/www-root/*.vsp \
+	$(srcdir)/www-root/*.vspx \
+	$(srcdir)/www-root/public/*.html \
+	$(srcdir)/www-root/public/css/*.css \
+	$(srcdir)/www-root/public/images/*.gif \
+	$(srcdir)/www-root/public/images/*.jpg \
+	$(srcdir)/www-root/public/images/*.png \
+	$(srcdir)/www-root/public/images/lightblue/*.css \
+	$(srcdir)/www-root/public/images/lightblue/*.gif \
+	$(srcdir)/www-root/public/images/lightblue/*.jpg \
+	$(srcdir)/www-root/public/images/lightblue/*.png \
+	$(srcdir)/www-root/public/images/lightblue/*.jfif \
+	$(srcdir)/www-root/public/js/*.js \
+	$(srcdir)/www-root/templates/openlink/*.css \
+	$(srcdir)/www-root/templates/openlink/*.vspx \
+	$(srcdir)/www-root/widgets/*.xsl

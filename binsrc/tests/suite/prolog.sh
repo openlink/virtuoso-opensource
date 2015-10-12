@@ -40,4 +40,4 @@ BANNER "STARTED TESTSUITE"
 #
 rm -f audit.txt core debug.txt
 
-. release.sh
+. $VIRTUOSO_TEST/release.sh

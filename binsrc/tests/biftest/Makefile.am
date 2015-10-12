@@ -119,10 +119,11 @@ TESTS_ENVIRONMENT= \
 	MAKE=$(MAKE) \
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) \
-	TOP="$(TOP)"
+	TOP="$(TOP)" \
+	srcdir="$(srcdir)"
 
-check-local:
-	env $(TESTS_ENVIRONMENT) $(SHELL) ./thook.sh
+check-local: thook.sh
+	env $(TESTS_ENVIRONMENT) $(SHELL) $(srcdir)/thook.sh
 
 
 # ----------------------------------------------------------------------
@@ -139,7 +140,7 @@ sql_code_javavm.c: javavm_xml.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 		-v init_name=_javavm \
 		-v pass_bootstrap_cli=1 \
 		-v pl_stats=$(PLSTATS) \
-		$(srcdir)/javavm_xml.sql 
+		$(srcdir)/javavm_xml.sql
 
 sql_code_clr.c: import_clr.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 	@$(GEN) $(GAWK) \
@@ -148,7 +149,7 @@ sql_code_clr.c: import_clr.sql $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 		-v init_name=_clr \
 		-v pass_bootstrap_cli=1 \
 		-v pl_stats=$(PLSTATS) \
-		import_clr.sql
+		$(srcdir)/import_clr.sql
 
 sql_code_xslt.c: javavm_type.xsl $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 	@$(GEN) $(GAWK) \
@@ -157,7 +158,7 @@ sql_code_xslt.c: javavm_type.xsl $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 		-v init_name=_xslt \
 		-v pass_bootstrap_cli=1 \
 		-v pl_stats=$(PLSTATS) \
-		javavm_type.xsl
+		$(srcdir)/javavm_type.xsl
 
 
 # ----------------------------------------------------------------------
@@ -166,25 +167,25 @@ sql_code_xslt.c: javavm_type.xsl $(top_srcdir)/libsrc/Wi/sql_to_c.awk
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
-	*.xsl \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.xsl \
 	bif_sample.c \
 	bif_sample.dep \
 	bif_sample.dsp \
 	bif_sample.mak \
 	bif_sample_win32.c \
 	bif_server.c \
-	java/*.java \
-	java/*.class \
+	$(srcdir)/java/*.java \
+	$(srcdir)/java/*.class \
 	javavm.c \
 	java_code.c \
 	java_skel.c \
 	java_to_c.awk \
 	lang_sample.c \
 	lang_sample.dsp \
-	tests/*.aspx \
-	tests/*.java \
-	tests/*.sql \
+	$(srcdir)/tests/*.aspx \
+	$(srcdir)/tests/*.java \
+	$(srcdir)/tests/*.sql \
 	tests/tjavavm.sh \
 	thook.sh \
 	virtuoso-sample.ini \

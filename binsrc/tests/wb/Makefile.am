@@ -26,5 +26,5 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	inputs/XqW3cUseCases/*.dtd \
-	inputs/XqW3cUseCases/*.xml
+	$(srcdir)/inputs/XqW3cUseCases/*.dtd \
+	$(srcdir)/inputs/XqW3cUseCases/*.xml

@@ -25,77 +25,77 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.class \
-	*.htm \
-	*.java \
-	jdk1.1/*.htm \
-	jdk1.1/JDBCDemo/*.class \
-	jdk1.1/JDBCDemo/*.html \
-	jdk1.1/JDBCDemo/*.java \
+	$(srcdir)/*.class \
+	$(srcdir)/*.htm \
+	$(srcdir)/*.java \
+	$(srcdir)/jdk1.1/*.htm \
+	$(srcdir)/jdk1.1/JDBCDemo/*.class \
+	$(srcdir)/jdk1.1/JDBCDemo/*.html \
+	$(srcdir)/jdk1.1/JDBCDemo/*.java \
 	jdk1.1/JDBCDemo/JDBCDemo.bat \
 	jdk1.1/JDBCDemo/JDBCDemo.sh \
-	jdk1.2/*.htm \
-	jdk1.2/JDBCDemo/*.class \
-	jdk1.2/JDBCDemo/*.html \
-	jdk1.2/JDBCDemo/*.java \
+	$(srcdir)/jdk1.2/*.htm \
+	$(srcdir)/jdk1.2/JDBCDemo/*.class \
+	$(srcdir)/jdk1.2/JDBCDemo/*.html \
+	$(srcdir)/jdk1.2/JDBCDemo/*.java \
 	jdk1.2/JDBCDemo/JDBCDemo.bat \
 	jdk1.2/JDBCDemo/JDBCDemo.sh \
-	jdk1.2/JDBCDemo/*.jpg \
-	jdk1.2/ScrollDemo2/*.class \
-	jdk1.2/ScrollDemo2/*.gif \
-	jdk1.2/ScrollDemo2/*.htm \
-	jdk1.2/ScrollDemo2/*.html \
-	jdk1.2/ScrollDemo2/*.java \
+	$(srcdir)/jdk1.2/JDBCDemo/*.jpg \
+	$(srcdir)/jdk1.2/ScrollDemo2/*.class \
+	$(srcdir)/jdk1.2/ScrollDemo2/*.gif \
+	$(srcdir)/jdk1.2/ScrollDemo2/*.htm \
+	$(srcdir)/jdk1.2/ScrollDemo2/*.html \
+	$(srcdir)/jdk1.2/ScrollDemo2/*.java \
 	jdk1.2/ScrollDemo2/ScrollDemo2.bat \
 	jdk1.2/ScrollDemo2/ScrollDemo2.sh \
-	jdk1.3/*.htm \
-	jdk1.3/JDBCDemo/*.class \
-	jdk1.3/JDBCDemo/*.gif \
-	jdk1.3/JDBCDemo/*.html \
-	jdk1.3/JDBCDemo/*.java \
+	$(srcdir)/jdk1.3/*.htm \
+	$(srcdir)/jdk1.3/JDBCDemo/*.class \
+	$(srcdir)/jdk1.3/JDBCDemo/*.gif \
+	$(srcdir)/jdk1.3/JDBCDemo/*.html \
+	$(srcdir)/jdk1.3/JDBCDemo/*.java \
 	jdk1.3/JDBCDemo/JDBCDemo.bat \
 	jdk1.3/JDBCDemo/JDBCDemo.sh \
-	jdk1.3/ScrollDemo2/*.class \
-	jdk1.3/ScrollDemo2/*.gif \
-	jdk1.3/ScrollDemo2/*.html \
-	jdk1.3/ScrollDemo2/*.java \
+	$(srcdir)/jdk1.3/ScrollDemo2/*.class \
+	$(srcdir)/jdk1.3/ScrollDemo2/*.gif \
+	$(srcdir)/jdk1.3/ScrollDemo2/*.html \
+	$(srcdir)/jdk1.3/ScrollDemo2/*.java \
 	jdk1.3/ScrollDemo2/ScrollDemo2.bat \
 	jdk1.3/ScrollDemo2/ScrollDemo2.sh \
 	jdk1.4/CachedRowSet/CachedRowSet.bat \
 	jdk1.4/CachedRowSet/CachedRowSet.sh \
-	jdk1.4/CachedRowSet/*.class \
-	jdk1.4/CachedRowSet/*.gif \
-	jdk1.4/CachedRowSet/*.html \
-	jdk1.4/CachedRowSet/*.java \
-	jdk1.4/*.htm \
-	jdk1.4/JDBCDemo/*.class \
-	jdk1.4/JDBCDemo/*.gif \
-	jdk1.4/JDBCDemo/*.html \
-	jdk1.4/JDBCDemo/*.java \
+	$(srcdir)/jdk1.4/CachedRowSet/*.class \
+	$(srcdir)/jdk1.4/CachedRowSet/*.gif \
+	$(srcdir)/jdk1.4/CachedRowSet/*.html \
+	$(srcdir)/jdk1.4/CachedRowSet/*.java \
+	$(srcdir)/jdk1.4/*.htm \
+	$(srcdir)/jdk1.4/JDBCDemo/*.class \
+	$(srcdir)/jdk1.4/JDBCDemo/*.gif \
+	$(srcdir)/jdk1.4/JDBCDemo/*.html \
+	$(srcdir)/jdk1.4/JDBCDemo/*.java \
 	jdk1.4/JDBCDemo/JDBCDemo.bat \
 	jdk1.4/JDBCDemo/JDBCDemo.sh \
-	jdk1.4/ScrollDemo2/*.class \
-	jdk1.4/ScrollDemo2/*.gif \
-	jdk1.4/ScrollDemo2/*.html \
-	jdk1.4/ScrollDemo2/*.java \
+	$(srcdir)/jdk1.4/ScrollDemo2/*.class \
+	$(srcdir)/jdk1.4/ScrollDemo2/*.gif \
+	$(srcdir)/jdk1.4/ScrollDemo2/*.html \
+	$(srcdir)/jdk1.4/ScrollDemo2/*.java \
 	jdk1.4/ScrollDemo2/ScrollDemo2.bat \
 	jdk1.4/ScrollDemo2/ScrollDemo2.sh \
 	jdk1.5/CachedRowSet/CachedRowSet.bat \
 	jdk1.5/CachedRowSet/CachedRowSet.sh \
-	jdk1.5/CachedRowSet/*.class \
-	jdk1.5/CachedRowSet/*.gif \
-	jdk1.5/CachedRowSet/*.html \
-	jdk1.5/CachedRowSet/*.java \
-	jdk1.5/*.htm \
-	jdk1.5/JDBCDemo/*.class \
-	jdk1.5/JDBCDemo/*.gif \
-	jdk1.5/JDBCDemo/*.html \
-	jdk1.5/JDBCDemo/*.java \
+	$(srcdir)/jdk1.5/CachedRowSet/*.class \
+	$(srcdir)/jdk1.5/CachedRowSet/*.gif \
+	$(srcdir)/jdk1.5/CachedRowSet/*.html \
+	$(srcdir)/jdk1.5/CachedRowSet/*.java \
+	$(srcdir)/jdk1.5/*.htm \
+	$(srcdir)/jdk1.5/JDBCDemo/*.class \
+	$(srcdir)/jdk1.5/JDBCDemo/*.gif \
+	$(srcdir)/jdk1.5/JDBCDemo/*.html \
+	$(srcdir)/jdk1.5/JDBCDemo/*.java \
 	jdk1.5/JDBCDemo/JDBCDemo.bat \
 	jdk1.5/JDBCDemo/JDBCDemo.sh \
-	jdk1.5/ScrollDemo2/*.class \
-	jdk1.5/ScrollDemo2/*.gif \
-	jdk1.5/ScrollDemo2/*.html \
-	jdk1.5/ScrollDemo2/*.java \
+	$(srcdir)/jdk1.5/ScrollDemo2/*.class \
+	$(srcdir)/jdk1.5/ScrollDemo2/*.gif \
+	$(srcdir)/jdk1.5/ScrollDemo2/*.html \
+	$(srcdir)/jdk1.5/ScrollDemo2/*.java \
 	jdk1.5/ScrollDemo2/ScrollDemo2.bat \
 	jdk1.5/ScrollDemo2/ScrollDemo2.sh

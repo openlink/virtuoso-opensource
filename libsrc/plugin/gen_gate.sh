@@ -24,7 +24,7 @@
 list=$1
 
 [ -z "$list" ] && list="default.h"
-outname=`echo "$list" | sed 's/.h//g'`
+outname=`basename "$list" .h`
 [ -d tmp ] || mkdir tmp
 rm -f tmp/*
 importh="import_$outname.h"

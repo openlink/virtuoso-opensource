@@ -26,7 +26,7 @@
 
 LOGFILE=tlubm.output
 export LOGFILE
-. $HOME/binsrc/tests/suite/test_fn.sh
+. $top_srcdir/binsrc/tests/suite/test_fn.sh
 
 
 BANNER "STARTED LUBM tests"
@@ -36,13 +36,19 @@ rm -f $DBFILE
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 if [ ! -d lubm_8000 ]
 then
- gunzip -c lubm-data.tar.gz | tar xf -
+ gunzip -c ${srcdir}/lubm-data.tar.gz | tar xf -
 fi
 
 SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
 BANNER "LUBM LOAD"
+
+curdir=`pwd`
+cd "${srcdir}" || {
+	LOG "***ABORTED: cannot change to source directory (${srcdir})"
+	exit 1
+}
 
 RUN $ISQL $DSN PROMPT=OFF   ERRORS=STDOUT < lubm-load.sql
 if test $STATUS -ne 0
@@ -91,6 +97,8 @@ then
     LOG "***ABORTED: lubm-phys.sql"
     exit 3
 fi
+
+cd "${curdir}"
 
 SHUTDOWN_SERVER
 CHECK_LOG

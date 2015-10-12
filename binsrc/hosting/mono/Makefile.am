@@ -135,8 +135,8 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
-	*.sql \
-	*.xsl \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.xsl \
 	clr.def \
 	dotnet.cpp \
 	virtclr.cs \

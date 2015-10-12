@@ -25,7 +25,7 @@ endif
 
 hosting_php_la_SOURCES = \
 	hosting_php.c \
-	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+	$(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 hosting_php_la_CFLAGS  = @VIRT_AM_CFLAGS@ 
 hosting_php_la_CFLAGS  += -I$(top_srcdir)/libsrc 

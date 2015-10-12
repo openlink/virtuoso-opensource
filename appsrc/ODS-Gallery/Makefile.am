@@ -45,15 +45,15 @@ clean-local:
 
 EXTRA_DIST = \
 	make_vad.sh \
-	sql/*.sql \
-	sql/procedures/*.sql \
+	$(srcdir)/sql/*.sql \
+	$(srcdir)/sql/procedures/*.sql \
 	vad_version \
-	www-root/*.vsp \
-	www-root/*.vspx \
-	www-root/css/*.css \
-	www-root/i/*.gif \
-	www-root/i/*.jpg \
-	www-root/i/*.png \
-	www-root/js/*.js \
-	www-root/portal/*.vsp \
-	xslt/*.xsl
+	$(srcdir)/www-root/*.vsp \
+	$(srcdir)/www-root/*.vspx \
+	$(srcdir)/www-root/css/*.css \
+	$(srcdir)/www-root/i/*.gif \
+	$(srcdir)/www-root/i/*.jpg \
+	$(srcdir)/www-root/i/*.png \
+	$(srcdir)/www-root/js/*.js \
+	$(srcdir)/www-root/portal/*.vsp \
+	$(srcdir)/xslt/*.xsl

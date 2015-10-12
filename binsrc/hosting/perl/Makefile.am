@@ -39,7 +39,7 @@ hosting_perl_la_LDFLAGS += -export-symbols hosting_perl.exp
 hosting_perl_la_LDFLAGS += $(PERL_LDFLAGS)
 
 virt_handler.c: virt_handler.pm pl_to_c.awk
-	$(AWK) -f pl_to_c.awk virt_handler.pm > virt_handler.c
+	$(AWK) -f $(srcdir)/pl_to_c.awk $< > virt_handler.c
 
 
 # ----------------------------------------------------------------------

@@ -657,7 +657,8 @@ CCDEBUG=""
 CCLIBS=""
 
 AC_CHECKING([default compiler values])
-if eval "${CC-cc} $CFLAGS $AM_LDFLAGS -o binsrc/config/ccdefs binsrc/config/ccdefs.c" ; then
+mkdir -p binsrc/config
+if eval "${CC-cc} $CFLAGS $AM_LDFLAGS -o binsrc/config/ccdefs ${srcdir}/binsrc/config/ccdefs.c" ; then
     eval `binsrc/config/ccdefs`
 fi
 
@@ -735,7 +736,7 @@ if test "$with_xml" = "yes"; then
     BUILD_OPTS="$BUILD_OPTS xml"
     AC_DEFINE(BIF_XML, 1, [XML support])
     libxml_file=$LIBDIR/libxml.la
-    ccincl="$ccincl -I$TOP/libsrc/Xml.new"
+    ccincl="$ccincl "'-I$(top_srcdir)/libsrc/Xml.new'
 fi
 AC_SUBST(libxml_file)
 
@@ -2949,7 +2950,7 @@ AC_CONFIG_FILES([
 ])
 
 AC_CONFIG_COMMANDS([default], [
-	chmod 755 bin/makever
+	chmod 755 ${srcdir}/bin/makever
 ])
 
 AC_OUTPUT

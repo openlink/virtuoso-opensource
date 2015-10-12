@@ -109,8 +109,8 @@ libvirtuoso_iodbc_t_la_LIBADD = \
 virtuoso_t_SOURCES = $(virtuoso_iodbc_t_SOURCES)
 virtuoso_t_CFLAGS = $(virtuoso_iodbc_t_CFLAGS)
 virtuoso_t_LDADD = \
-        $(top_srcdir)/libsrc/Wi/libwi.la \
-        $(top_srcdir)/libsrc/Wi/libwic.la \
+        $(top_builddir)/libsrc/Wi/libwi.la \
+        $(top_builddir)/libsrc/Wi/libwic.la \
 	$(server_libs) \
 	@LIBS@
 
@@ -119,8 +119,8 @@ libvirtuoso_t_la_CFLAGS  = $(libvirtuoso_iodbc_t_la_CFLAGS)
 libvirtuoso_t_la_LDFLAGS = $(libvirtuoso_iodbc_t_la_LDFLAGS)
 
 libvirtuoso_t_la_LIBADD = \
-        $(top_srcdir)/libsrc/Wi/libwi.la \
-        $(top_srcdir)/libsrc/Wi/libwic.la \
+        $(top_builddir)/libsrc/Wi/libwi.la \
+        $(top_builddir)/libsrc/Wi/libwic.la \
 	$(server_libs) \
 	@LIBS@
 
@@ -129,8 +129,8 @@ libvirtuoso_gc_t_la_CFLAGS  = $(libvirtuoso_iodbc_t_la_CFLAGS)
 libvirtuoso_gc_t_la_LDFLAGS = $(libvirtuoso_iodbc_t_la_LDFLAGS)
 
 libvirtuoso_gc_t_la_LIBADD = \
-        $(top_srcdir)/libsrc/Wi/libwi.la \
-        $(top_srcdir)/libsrc/Wi/libwic.la \
+        $(top_builddir)/libsrc/Wi/libwi.la \
+        $(top_builddir)/libsrc/Wi/libwic.la \
 	$(server_libs_gc) \
 	@LIBS@
 
@@ -139,8 +139,8 @@ libvirtuoso_iodbc_gc_t_la_CFLAGS  = $(libvirtuoso_iodbc_t_la_CFLAGS)
 libvirtuoso_iodbc_gc_t_la_LDFLAGS = $(libvirtuoso_iodbc_t_la_LDFLAGS)
 
 libvirtuoso_iodbc_gc_t_la_LIBADD = \
-        $(top_srcdir)/libsrc/Wi/libwi.la \
-        $(top_srcdir)/libsrc/Wi/libwic.la \
+        $(top_builddir)/libsrc/Wi/libwi.la \
+        $(top_builddir)/libsrc/Wi/libwic.la \
 	$(server_libs_gc) \
 	@LIBS@
 

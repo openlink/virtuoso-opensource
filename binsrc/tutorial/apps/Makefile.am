@@ -26,22 +26,22 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.css \
-	*.xml \
-	blog/*.sql \
-	blog/*.vspx \
-	blog/*.xml \
-	blog_bridge/*.sql \
-	blog_bridge/*.vspx \
-	blog_bridge/*.xml \
-	blog_query/*.sql \
-	blog_query/*.xml \
-	forums/*.xml \
-	ibuyspy/*.xml \
-	petshop/*.sql \
-	petshop/*.xml \
-	rss_feed/*.sql \
-	rss_feed/*.vsp \
-	rss_feed/*.vspx \
-	rss_feed/*.xml \
-	rss_feed/*.xsl
+	$(srcdir)/*.css \
+	$(srcdir)/*.xml \
+	$(srcdir)/blog/*.sql \
+	$(srcdir)/blog/*.vspx \
+	$(srcdir)/blog/*.xml \
+	$(srcdir)/blog_bridge/*.sql \
+	$(srcdir)/blog_bridge/*.vspx \
+	$(srcdir)/blog_bridge/*.xml \
+	$(srcdir)/blog_query/*.sql \
+	$(srcdir)/blog_query/*.xml \
+	$(srcdir)/forums/*.xml \
+	$(srcdir)/ibuyspy/*.xml \
+	$(srcdir)/petshop/*.sql \
+	$(srcdir)/petshop/*.xml \
+	$(srcdir)/rss_feed/*.sql \
+	$(srcdir)/rss_feed/*.vsp \
+	$(srcdir)/rss_feed/*.vspx \
+	$(srcdir)/rss_feed/*.xml \
+	$(srcdir)/rss_feed/*.xsl

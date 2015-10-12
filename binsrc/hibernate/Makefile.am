@@ -82,4 +82,4 @@ clean-local:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	virt_dialect.jar \
-	virtuoso_dialect/*.java
+	$(srcdir)/virtuoso_dialect/*.java

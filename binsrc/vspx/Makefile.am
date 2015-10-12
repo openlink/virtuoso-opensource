@@ -28,15 +28,15 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	browser/*.css \
-	browser/images/16x16/*.gif \
-	browser/*.js \
-	browser/*.sql \
-	browser/*.vsp \
-	examples/*.sql \
-	examples/*.vspx \
-	examples/*.xml \
-	*.sql \
+	$(srcdir)/browser/*.css \
+	$(srcdir)/browser/images/16x16/*.gif \
+	$(srcdir)/browser/*.js \
+	$(srcdir)/browser/*.sql \
+	$(srcdir)/browser/*.vsp \
+	$(srcdir)/examples/*.sql \
+	$(srcdir)/examples/*.vspx \
+	$(srcdir)/examples/*.xml \
+	$(srcdir)/*.sql \
 	suite/2003_07_09_04_47_46.000000__vspx_form_vspx \
 	suite/2003_07_09_04_47_53.000000__vspx_form_vspx \
 	suite/2003_07_09_04_48_10.000000__vspx_form_vspx \
@@ -77,10 +77,10 @@ EXTRA_DIST = \
 	suite/run_tests.list \
 	suite/run_tests.sh \
 	suite/vspx_suite.sh \
-	*.txt \
-	*.vsp \
-	*.vspx \
+	$(srcdir)/*.txt \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.vspx \
 	vspx4xsd.sh \
-	*.xml \
-	*.xsd \
-	*.xsl
+	$(srcdir)/*.xml \
+	$(srcdir)/*.xsd \
+	$(srcdir)/*.xsl

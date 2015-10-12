@@ -32,10 +32,12 @@ TESTS_ENVIRONMENT= \
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) \
 	SERVER=virtuoso-t \
-	TOP="$(TOP)"
+	TOP="$(TOP)" \
+	top_srcdir="$(abs_top_srcdir)" \
+	srcdir="$(abs_srcdir)"
 
 check-local:
-	env $(TESTS_ENVIRONMENT) $(SHELL) ./runtests.sh
+	env $(TESTS_ENVIRONMENT) $(SHELL) $(srcdir)/runtests.sh
 
 clean-local:
 	rm -f tpcd.db tpcd.log tpcd.pxa tpcd.trx tpcd.tdb
@@ -47,7 +49,7 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST= \
-	*.sql \
+	$(srcdir)/*.sql \
 	create.ora \
 	LOAD.sh \
 	res.sh \

@@ -41,8 +41,9 @@ export TOP
 
 VIRTUOSO_BUILD=$TOP
 VIRTDEV_HOME=${VIRTDEV_HOME-$VIRTUOSO_BUILD}
-VIRTUOSO_TEST=${VIRTUOSO_TEST-$VIRTDEV_HOME/binsrc/tests/suite}
-export VIRTDEV_HOME VIRTUOSO_TEST VIRTUOSO_BUILD
+VIRTUOSO_TEST=${VIRTUOSO_TEST-${top_srcdir}/binsrc/tests/suite}
+VIRTUOSO_BTEST=${VIRTUOSO_BTEST-$VIRTDEV_HOME/binsrc/tests/suite}
+export VIRTDEV_HOME VIRTUOSO_TEST VIRTUOSO_BTEST VIRTUOSO_BUILD
 
 SQLPATH=$VIRTUOSO_TEST
 export SQLPATH
@@ -151,7 +152,7 @@ case $SERVER in
 	  DBLOGFILE=virtuoso.trx
 	  DELETEMASK="virtuoso.lck $DBLOGFILE $DBFILE virtuoso.tdb virtuoso.ttr"
 	  SRVMSGLOGFILE="virtuoso.log"
-	  TESTCFGFILE=virtuoso-1111.ini
+	  TESTCFGFILE=$VIRTUOSO_TEST/virtuoso-1111.ini
 	  BACKUP_DUMP_OPTION=+backup-dump
 	  CRASH_DUMP_OPTION=+crash-dump
 	  FOREGROUND_OPTION=-f
@@ -166,7 +167,7 @@ case $SERVER in
 	  DBLOGFILE=wi.trx
 	  DELETEMASK="`ls wi.* witemp.* | grep -v wi.err`"
 	  SRVMSGLOGFILE="wi.err"
-	  TESTCFGFILE=witest.cfg
+	  TESTCFGFILE=$VIRTUOSO_TEST/witest.cfg
 	  BACKUP_DUMP_OPTION=-d
 	  CRASH_DUMP_OPTION=-D
 	  _2PCFILE=virtuoso.2pc
@@ -208,8 +209,8 @@ CURRENT_VIRTUOSO_CAPACITY="single"
 CURRENT_VIRTUOSO_TABLE_SCHEME="row"
 export CFGFILE DBFILE DBLOGFILE DELETEMASK SRVMSGLOGFILE BACKUP_DUMP_OPTION CRASH_DUMP_OPTION TESTCFGFILE SERVER CURRENT_VIRTUOSO_CAPACITY CURRENT_VIRTUOSO_TABLE_SCHEME VIRTUOSO_VDB TEST_DIR_MASK
 
-rm -rf $VIRTUOSO_TEST/PORTS
-mkdir $VIRTUOSO_TEST/PORTS
+rm -rf $VIRTUOSO_BTEST/PORTS
+mkdir $VIRTUOSO_BTEST/PORTS
 
 # do the prolog
 if [ -z "$test_to_run" ]
@@ -217,13 +218,13 @@ then
 #  Clean up the mess from the last run
     if [ "$APPENDMODE" = "0" ]
     then
-	rm -rf $VIRTUOSO_TEST/*.test $VIRTUOSO_TEST/*.ro $VIRTUOSO_TEST/*.co $VIRTUOSO_TEST/*.clro $VIRTUOSO_TEST/*.clco
+	rm -rf $VIRTUOSO_BTEST/*.test $VIRTUOSO_BTEST/*.ro $VIRTUOSO_BTEST/*.co $VIRTUOSO_BTEST/*.clro $VIRTUOSO_BTEST/*.clco
 	$VIRTUOSO_TEST/clean.sh
     fi
 
-    LOGFILE=$VIRTUOSO_TEST/testall.output
+    LOGFILE=$VIRTUOSO_BTEST/testall.output
     export LOGFILE
-    . prolog.sh
+    . $VIRTUOSO_TEST/prolog.sh
 else
     shift
 fi
@@ -266,4 +267,4 @@ do
 done
 
 # do the epilog
-. epilog.sh
+. $VIRTUOSO_TEST/epilog.sh

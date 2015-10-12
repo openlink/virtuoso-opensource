@@ -26,9 +26,9 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	http/*.gif \
-	http/*.vsp \
-	*.isql \
-	*.sql \
+	$(srcdir)/http/*.gif \
+	$(srcdir)/http/*.vsp \
+	$(srcdir)/*.isql \
+	$(srcdir)/*.sql \
 	virtodp.sh \
 	virtuoso.ini

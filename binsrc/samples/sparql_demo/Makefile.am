@@ -47,13 +47,13 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.css \
-	*.js \
-	*.sql \
-	*.vsp \
-	images/*.gif \
-	images/*.jpg \
-	images/*.png \
+	$(srcdir)/*.css \
+	$(srcdir)/*.js \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.vsp \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.jpg \
+	$(srcdir)/images/*.png \
 	make_vad.sh \
-	syntax/*.js \
+	$(srcdir)/syntax/*.js \
 	vad_version

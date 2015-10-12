@@ -75,7 +75,7 @@ then
     fi
 fi
 
-if [ -f ../../../autogen.sh ]
+if [ -f ${top_srcdir}/autogen.sh ]
 then
     VOS=1
 fi
@@ -259,7 +259,7 @@ then
     fi
 else
     (cd $HOME/binsrc/bpel; make )
-    [ -f doc_dav.vad ] || (chmod +x mkdoc.sh ; ./mkdoc.sh)
+    [ -f doc_dav.vad ] || (chmod +x ${srcdir}/mkdoc.sh ; ${srcdir}/mkdoc.sh)
 fi
 
 
@@ -276,7 +276,7 @@ if [ $? -eq 127 ] ; then
     exit 1
 fi
 
-cat mkdemo.ini | sed -e "s/1112/$PORT/g" | sed -e "s/1113/$HTTPPORT/g" > virtuoso.ini
+cat ${srcdir}/mkdemo.ini | sed -e "s/1112/$PORT/g" | sed -e "s/1113/$HTTPPORT/g" > virtuoso.ini
 
 # MAKE the demo.ini
 

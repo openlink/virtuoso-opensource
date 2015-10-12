@@ -25,7 +25,7 @@ endif
 
 hslookup_la_SOURCES = \
 	hslookup.c \
-	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+	$(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 hslookup_la_CFLAGS  = @VIRT_AM_CFLAGS@
 hslookup_la_CFLAGS  += -I$(top_srcdir)/libsrc

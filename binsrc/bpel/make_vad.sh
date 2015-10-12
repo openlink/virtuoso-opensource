@@ -66,7 +66,7 @@ LN="ln -fs"
 RM="rm -f"
 fi
 VOS=0
-if [ -f ../../autogen.sh ]
+if [ -f ${top_srcdir}/autogen.sh ]
 then
     VOS=1
 fi
@@ -81,7 +81,7 @@ then
     fi
 fi
 
-. $HOME/binsrc/tests/suite/test_fn.sh
+. ${top_srcdir}/binsrc/tests/suite/test_fn.sh
 
 if [ -f /usr/xpg4/bin/rm ]
 then
@@ -103,7 +103,7 @@ version_init()
       fi
   else  
   rm -f version.tmp
-  for i in `find . -name 'Entries' | grep -v "vad/"`; do
+  for i in `find "${srcdir}" -name 'Entries' | grep -v "vad/"`; do
         cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
   done
   VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
@@ -173,7 +173,7 @@ directory_init() {
   mkdir vad/code
   mkdir vad/code/bpel4ws/
   mkdir vad/code/bpel4ws/1.0/
-  cp *.sql vad/code/bpel4ws/1.0/
+  cp ${srcdir}/*.sql vad/code/bpel4ws/1.0/
 
   mkdir vad/vsp
   mkdir vad/vsp/bpel4ws/
@@ -196,51 +196,51 @@ directory_init() {
   mkdir vad/vsp/bpeldemo/processXQuery
 
   # APPLICATION
-  cp *.vspx vad/vsp/bpel4ws/1.0/
-  cp *.vsp vad/vsp/bpel4ws/1.0/
-  cp *.xsd vad/vsp/bpel4ws/1.0/
-  cp *.xsl vad/vsp/bpel4ws/1.0/
-  cp *.gif vad/vsp/bpel4ws/1.0/
-  cp *.jpg vad/vsp/bpel4ws/1.0/
-  cp *.css vad/vsp/bpel4ws/1.0/
+  cp ${srcdir}/*.vspx vad/vsp/bpel4ws/1.0/
+  cp ${srcdir}/*.vsp vad/vsp/bpel4ws/1.0/
+  cp ${srcdir}/*.xsd vad/vsp/bpel4ws/1.0/
+  cp ${srcdir}/*.xsl vad/vsp/bpel4ws/1.0/
+  cp ${srcdir}/*.gif vad/vsp/bpel4ws/1.0/
+  cp ${srcdir}/*.jpg vad/vsp/bpel4ws/1.0/
+  cp ${srcdir}/*.css vad/vsp/bpel4ws/1.0/
 
   # HELP
-  cp help/* vad/vsp/bpel4ws/1.0/help/
+  cp ${srcdir}/help/* vad/vsp/bpel4ws/1.0/help/
 
   # Icons
-  cp i/* vad/vsp/bpel4ws/1.0/i/
+  cp ${srcdir}/i/* vad/vsp/bpel4ws/1.0/i/
 
   # SAMPLES
-  cp tests/echo/echo.* vad/vsp/bpeldemo/echo
-  cp tests/echo/bpel.xml vad/vsp/bpeldemo/echo
-  cp tests/echo/options.xml vad/vsp/bpeldemo/echo
+  cp ${srcdir}/tests/echo/echo.* vad/vsp/bpeldemo/echo
+  cp ${srcdir}/tests/echo/bpel.xml vad/vsp/bpeldemo/echo
+  cp ${srcdir}/tests/echo/options.xml vad/vsp/bpeldemo/echo
 
-  cp tests/fi/fi.* vad/vsp/bpeldemo/fi
-  cp tests/fi/fi_wsdl.vsp vad/vsp/bpeldemo/fi
-  cp tests/fi/service.vsp vad/vsp/bpeldemo/fi
-  cp tests/fi/options.xml vad/vsp/bpeldemo/fi
-  cp tests/fi/bpel.xml vad/vsp/bpeldemo/fi
+  cp ${srcdir}/tests/fi/fi.* vad/vsp/bpeldemo/fi
+  cp ${srcdir}/tests/fi/fi_wsdl.vsp vad/vsp/bpeldemo/fi
+  cp ${srcdir}/tests/fi/service.vsp vad/vsp/bpeldemo/fi
+  cp ${srcdir}/tests/fi/options.xml vad/vsp/bpeldemo/fi
+  cp ${srcdir}/tests/fi/bpel.xml vad/vsp/bpeldemo/fi
 
-  cp -f tests/LoanFlow/* vad/vsp/bpeldemo/LoanFlow 2>/dev/null
-  cp -f tests/interop/site/SecLoan/* vad/vsp/bpeldemo/SecLoan 2>/dev/null
-  cp -f tests/interop/site/RMLoan/* vad/vsp/bpeldemo/RMLoan 2>/dev/null
-  cp -f tests/interop/site/SecRMLoan/* vad/vsp/bpeldemo/SecRMLoan 2>/dev/null
-  cp -f tests/sqlexec/* vad/vsp/bpeldemo/sqlexec 2>/dev/null
-  cp tests/index.xml vad/vsp/bpeldemo
-  cp tests/index.vsp vad/vsp/bpeldemo
-  cp -f tests/interop/UseCases/* vad/vsp/bpeldemo/UseCases 2>/dev/null
-  cp tests/processXSLT/* vad/vsp/bpeldemo/processXSLT 2>/dev/null
-  cp tests/processXSQL/* vad/vsp/bpeldemo/processXSQL 2>/dev/null
-  cp tests/processXQuery/* vad/vsp/bpeldemo/processXQuery 2>/dev/null
+  cp -f ${srcdir}/tests/LoanFlow/* vad/vsp/bpeldemo/LoanFlow 2>/dev/null
+  cp -f ${srcdir}/tests/interop/site/SecLoan/* vad/vsp/bpeldemo/SecLoan 2>/dev/null
+  cp -f ${srcdir}/tests/interop/site/RMLoan/* vad/vsp/bpeldemo/RMLoan 2>/dev/null
+  cp -f ${srcdir}/tests/interop/site/SecRMLoan/* vad/vsp/bpeldemo/SecRMLoan 2>/dev/null
+  cp -f ${srcdir}/tests/sqlexec/* vad/vsp/bpeldemo/sqlexec 2>/dev/null
+  cp ${srcdir}/tests/index.xml vad/vsp/bpeldemo
+  cp ${srcdir}/tests/index.vsp vad/vsp/bpeldemo
+  cp -f ${srcdir}/tests/interop/UseCases/* vad/vsp/bpeldemo/UseCases 2>/dev/null
+  cp ${srcdir}/tests/processXSLT/* vad/vsp/bpeldemo/processXSLT 2>/dev/null
+  cp ${srcdir}/tests/processXSQL/* vad/vsp/bpeldemo/processXSQL 2>/dev/null
+  cp ${srcdir}/tests/processXQuery/* vad/vsp/bpeldemo/processXQuery 2>/dev/null
 
-  cp tests/fault1/java* vad/vsp/bpeldemo/java_exec
+  cp ${srcdir}/tests/fault1/java* vad/vsp/bpeldemo/java_exec
   cd vad/vsp/bpeldemo/java_exec
   mv java_exec_bpel.xml bpel.xml
   mv java_exec.xml options.xml
   mv java_exec_desc.xml java_exec.xml
   cd ../../../../
 
-  cp tests/fault1/clr* vad/vsp/bpeldemo/clr_exec
+  cp ${srcdir}/tests/fault1/clr* vad/vsp/bpeldemo/clr_exec
   cd vad/vsp/bpeldemo/clr_exec
   mv clr_exec_bpel.xml bpel.xml
   mv clr_exec.xml options.xml

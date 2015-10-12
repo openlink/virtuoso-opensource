@@ -48,16 +48,16 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
+	$(srcdir)/*.sql \
 	make_vad.sh \
 	vad_version \
-	vsp/*.sql \
-	vsp/*.vsp \
-	vsp/images/*.gif \
-	vsp/images/*.png \
-	vsp/statics/*.css \
-	vsp/statics/*.gif \
-	vsp/statics/*.js \
-	vsp/statics/*.png \
-	vsp/statics/*.svg \
-	vsp/style/*.css
+	$(srcdir)/vsp/*.sql \
+	$(srcdir)/vsp/*.vsp \
+	$(srcdir)/vsp/images/*.gif \
+	$(srcdir)/vsp/images/*.png \
+	$(srcdir)/vsp/statics/*.css \
+	$(srcdir)/vsp/statics/*.gif \
+	$(srcdir)/vsp/statics/*.js \
+	$(srcdir)/vsp/statics/*.png \
+	$(srcdir)/vsp/statics/*.svg \
+	$(srcdir)/vsp/style/*.css

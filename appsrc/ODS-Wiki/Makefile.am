@@ -55,27 +55,27 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
-	*.dox \
-	*.sql \
+	$(srcdir)/*.dox \
+	$(srcdir)/*.sql \
 	generate_drop_proc.sh \
-	http/*.css \
-	http/*.vsp \
-	http/*.vspx \
-	http/*.xml \
-	http/*.xsl \
-	http/*.xslt \
-	http/images/*.gif \
-	http/images/*.jpg \
-	http/images/*.png \
-	initial/Main/*.txt \
-	initial/Main/Attachments/*.sql \
-	initial/Wiki/*.txt \
-	js/*.js \
+	$(srcdir)/http/*.css \
+	$(srcdir)/http/*.vsp \
+	$(srcdir)/http/*.vspx \
+	$(srcdir)/http/*.xml \
+	$(srcdir)/http/*.xsl \
+	$(srcdir)/http/*.xslt \
+	$(srcdir)/http/images/*.gif \
+	$(srcdir)/http/images/*.jpg \
+	$(srcdir)/http/images/*.png \
+	$(srcdir)/initial/Main/*.txt \
+	$(srcdir)/initial/Main/Attachments/*.sql \
+	$(srcdir)/initial/Wiki/*.txt \
+	$(srcdir)/js/*.js \
 	make_vad.sh \
 	retry.sh \
 	setup.isql \
-	Skins/default/*.css \
-	Skins/default/*.png \
-	Skins/default/*.xslt \
-	Template/*.txt \
+	$(srcdir)/Skins/default/*.css \
+	$(srcdir)/Skins/default/*.png \
+	$(srcdir)/Skins/default/*.xslt \
+	$(srcdir)/Template/*.txt \
 	vad_version

@@ -41,6 +41,13 @@ export LANG LC_ALL
 
 
 # ----------------------------------------------------------------------
+#  Facilitate out of tree builds
+# ----------------------------------------------------------------------
+srcdir=`dirname "${0}"`
+curdir=`pwd`
+
+
+# ----------------------------------------------------------------------
 #  Color settings
 # ----------------------------------------------------------------------
 B=`tput bold 2>/dev/null`
@@ -82,6 +89,7 @@ RUN() {
     PROG=$1; shift
     ARGS=$*
 
+    cd "${srcdir}"
     echo "Running ${B}${PROG}${N} ..."
     $PROG $ARGS 2>> autogen.log
     if test $? -ne 0
@@ -93,6 +101,7 @@ RUN() {
 	echo "Bootstrap script aborting (see autogen.log for details) ..."
 	exit 1
     fi
+    cd "${curdir}"
 }
 
 
@@ -146,7 +155,7 @@ echo "configure, build and install Virtuoso on your system."
 echo
 echo "Certain build targets are only enabled in maintainer mode:"
 echo
-echo "    ./configure --enable-maintainer-mode ..."
+echo "    ${srcdir}/configure --enable-maintainer-mode ..."
 echo
 echo "Bootstrap script completed successfully."
 

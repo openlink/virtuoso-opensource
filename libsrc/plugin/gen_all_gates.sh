@@ -29,9 +29,14 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
+# ----------------------------------------------------------------------
+#  Facilitate out-of-tree call
+# ----------------------------------------------------------------------
+SCRIPTDIR="`dirname "${0}"`"
+
 #
 #  Main
 #
-./gen_gate.sh gate_virtuoso.h
-./gen_gate.sh plugin_lang25.h
-./gen_gate.sh plugin_msdtc.h
+"${SCRIPTDIR}/gen_gate.sh" "${SCRIPTDIR}/gate_virtuoso.h"
+"${SCRIPTDIR}/gen_gate.sh" "${SCRIPTDIR}/plugin_lang25.h"
+"${SCRIPTDIR}/gen_gate.sh" "${SCRIPTDIR}/plugin_msdtc.h"

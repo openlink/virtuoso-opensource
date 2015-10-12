@@ -42,25 +42,25 @@ clean-local:
 	-rm -rf vad
 
 EXTRA_DIST = \
-	install/*.htm \
+	$(srcdir)/install/*.htm \
 	install/odbc_mail.ini \
 	make_vad.sh \
-	sql/*.sql \
-	sql/eml/*.sql \
-	sql/res/*.sql \
-	sql/utl/*.sql \
+	$(srcdir)/sql/*.sql \
+	$(srcdir)/sql/eml/*.sql \
+	$(srcdir)/sql/res/*.sql \
+	$(srcdir)/sql/utl/*.sql \
 	vad_version \
-	www-root/*.vsp \
-	www-root/mail/i/*.gif \
-	www-root/mail/i/*.jpg \
-	www-root/mail/i/*.png \
-	www-root/mail/i/css/*.css \
-	www-root/mail/i/dav/*.gif \
-	www-root/mail/i/js/*.js \
-	www-root/mail/p/*.vsp \
-	www-root/mail/p/*.xml \
-	www-root/mail/p/*.xsl \
-	www-root/res/*.vsp \
-	xslt/*.xml \
-	xslt/*.xsl \
-	xslt/export/*.xsl
+	$(srcdir)/www-root/*.vsp \
+	$(srcdir)/www-root/mail/i/*.gif \
+	$(srcdir)/www-root/mail/i/*.jpg \
+	$(srcdir)/www-root/mail/i/*.png \
+	$(srcdir)/www-root/mail/i/css/*.css \
+	$(srcdir)/www-root/mail/i/dav/*.gif \
+	$(srcdir)/www-root/mail/i/js/*.js \
+	$(srcdir)/www-root/mail/p/*.vsp \
+	$(srcdir)/www-root/mail/p/*.xml \
+	$(srcdir)/www-root/mail/p/*.xsl \
+	$(srcdir)/www-root/res/*.vsp \
+	$(srcdir)/xslt/*.xml \
+	$(srcdir)/xslt/*.xsl \
+	$(srcdir)/xslt/export/*.xsl
