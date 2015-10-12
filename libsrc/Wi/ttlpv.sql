@@ -392,6 +392,8 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
   declare dp any;
  dp := app_env[1];
   declare is_text int;
+  if (isstring (g_iid))
+    g_iid := __i2id (g_iid);
   connection_set ('g_iid', g_iid);
   if (__rdf_obj_ft_rule_check (g_iid, p_uri))
     is_text := 1;

@@ -3783,8 +3783,10 @@ rdf_obj_ft_rule_check_if_configured (caddr_t * qst, state_slot_t ** args, int g_
   mutex_enter (rdf_obj_ft_rules_mtx);
   if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
     goto hit; /* see_below */
+  mutex_leave (rdf_obj_ft_rules_mtx);
   g_id = bif_iri_id_or_null_arg (qst, args, g_arg_idx, fname);
   p = bif_arg (qst, args, g_arg_idx + 1, fname);
+  mutex_enter (rdf_obj_ft_rules_mtx);
   p_dtp = DV_TYPE_OF (p);
   switch (p_dtp)
     {
