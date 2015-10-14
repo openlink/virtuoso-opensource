@@ -81,16 +81,22 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
     public void commit(Xid xid, boolean flag) throws XAException {
         XAResource xa = checkXA();
         xa.commit(xid, flag);
+        if (graph.resetBNodesDictAfterCommit)
+            graph.dropBNodesDict();
     }
 
     public void end(Xid xid, int i) throws XAException {
         XAResource xa = checkXA();
         xa.end(xid, i);
+        if (graph.resetBNodesDictAfterCommit)
+            graph.dropBNodesDict();
     }
 
     public void forget(Xid xid) throws XAException {
         XAResource xa = checkXA();
         xa.forget(xid);
+        if (graph.resetBNodesDictAfterCommit)
+            graph.dropBNodesDict();
     }
 
     public int prepare(Xid xid) throws XAException {
@@ -106,6 +112,8 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
     public void rollback(Xid xid) throws XAException {
         XAResource xa = checkXA();
         xa.rollback(xid);
+        if (graph.resetBNodesDictAfterCommit)
+            graph.dropBNodesDict();
     }
 
     public boolean setTransactionTimeout(int i) throws XAException {
@@ -154,6 +162,8 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
                 Connection c = graph.getConnection();
                 c.rollback();
                 c.setAutoCommit(true);
+                if (graph.resetBNodesDictAfterCommit)
+                    graph.dropBNodesDict();
             } catch (SQLException e) {
                 throw new JenaException("Transaction rollback failed: ", e);
             }
@@ -169,6 +179,8 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
                 Connection c = graph.getConnection();
                 c.commit();
                 c.setAutoCommit(true);
+                if (graph.resetBNodesDictAfterCommit)
+                    graph.dropBNodesDict();
             } catch (SQLException e) {
                 throw new JenaException("Transaction commit failed: ", e);
             }

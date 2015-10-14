@@ -133,14 +133,69 @@ public class VirtModel extends ModelCom {
         ((VirtGraph) this.graph).setSparqlPrefix(val);
     }
 
+    /**
+     * Get the insertBNodeAsURI state for connection
+     */
     public boolean getInsertBNodeAsVirtuosoIRI() {
         return ((VirtGraph) this.graph).getInsertBNodeAsVirtuosoIRI();
     }
 
 
+    /**
+     * Set the insertBNodeAsURI state for connection(default false) 
+     * 
+     * @param v
+     *        true - insert BNode as Virtuoso IRI
+     *        false - insert BNode as Virtuoso Native BNode
+     */
     public void setInsertBNodeAsVirtuosoIRI(boolean v) {
         ((VirtGraph) this.graph).setInsertBNodeAsVirtuosoIRI(v);
     }
+
+
+    /**
+     * Get the resetBNodesDictAfterCall state for connection
+     */
+    public boolean getResetBNodesDictAfterCall() {
+        return ((VirtGraph) this.graph).getResetBNodesDictAfterCall();
+    }
+
+    /**
+     * Set the resetBNodesDictAfterCall (reset server side BNodes Dictionary,
+     * that is used for map between Jena Bnodes and Virtuoso BNodes, after each
+     * add call). The default state for connection is false 
+     * 
+     * @param v
+     *        true  - reset BNodes Dictionary after each add(add batch) call
+     *        false - not reset BNode Dictionary after each add(add batch) call
+     */
+    public void setResetBNodesDictAfterCall(boolean v) {
+        ((VirtGraph) this.graph).setResetBNodesDictAfterCall(v);
+    }
+
+
+    /**
+     * Get the resetBNodesDictAfterCommit state for connection
+     */
+    public boolean getResetBNodesDictAfterCommit() {
+        return ((VirtGraph) this.graph).getResetBNodesDictAfterCommit();
+    }
+
+    /**
+     * Set the resetBNodesDictAfterCommit (reset server side BNodes Dictionary,
+     * that is used for map between Jena Bnodes and Virtuoso BNodes, 
+     * after commit/rollback).
+     * The default state for connection is true 
+     * 
+     * @param v
+     *        true  - reset BNodes Dictionary after each commit/rollack
+     *        false - not reset BNode Dictionary after each commit/rollback
+     */
+    public void setResetBNodesDictAfterCommit(boolean v) {
+        ((VirtGraph) this.graph).setResetBNodesDictAfterCommit(v);
+    }
+
+
 
 
     @Override
