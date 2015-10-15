@@ -1240,7 +1240,7 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 	  declare pname varchar;
 	  pname := sprintf ('DB.DBA.RDB2RDF_FILL__%s', replace (replace (tb, '"', '`'), '.', '~'));
 	  commit work;
-	  aq_request (aq, pname, vector ());
+	  aq_request (aq, pname, vector (2));
 	}
       commit work;
       aq_wait_all (aq);
