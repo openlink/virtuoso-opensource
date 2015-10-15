@@ -1248,10 +1248,10 @@ rdb2rdf_codegen (rdb2rdf_ctx_t *rrc, caddr_t table_name, int opcode, dk_session_
   switch (opcode)
     {
     case RDB2RDF_CODEGEN_INITIAL:
-      ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL__"); ssg_puts (table_name_for_proc); ssg_puts ("\" ()\n{\n");
+      ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL__"); ssg_puts (table_name_for_proc); ssg_puts ("\" (in log_mode int := 2)\n{\n");
       ssg_puts ("  declare old_mode integer;\n");
       ssg_puts ("  old_mode := log_enable (null, 1);\n");
-      ssg_puts ("  log_enable (2, 1);\n");
+      ssg_puts ("  log_enable (log_mode, 1);\n");
       ssg_puts ("  sparql\n");
       ssg_puts ("  define output:valmode \"LONG\"\n");
       ssg_puts ("  define input:storage virtrdf:SyncToQuads\n");
