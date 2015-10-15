@@ -216,7 +216,7 @@ namespace OpenLink.Data.Virtuoso
 		internal const int DEFAULT_PORT = 1111;
 		internal const int DEFAULT_ENCRYPTED_PORT = 2111;
 
-		internal const int SELECT_PREFETCH_QUOTA = 20;
+		internal const int SELECT_PREFETCH_QUOTA = 100;
 
 		// The Gregorian Reformation date
 		internal const int GREG_YEAR = 1582;
