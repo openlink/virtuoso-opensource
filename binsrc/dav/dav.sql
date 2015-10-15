@@ -1961,6 +1961,7 @@ create procedure WS.WS.PUT (
   o_gid := gid;
   if ((res_id_ is not null or _col is not null) and length (client_etag))
     {
+    server_etag := client_etag;
       if (res_id_ is not null)
       {
 	if (isinteger(res_id_))
@@ -1968,11 +1969,15 @@ create procedure WS.WS.PUT (
 	select RES_COL, RES_NAME, RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS into id_, res_name_, mod_time, o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
 		server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
 	}
-	else
-		server_etag := client_etag;
-      }
-      else
+    }
+    else
+    {
+      if (isinteger(_col))
+      {
 	select COL_ID, COL_NAME, COL_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col;
+        server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
+      }
+    }
       if (client_etag <> server_etag)
 	{
 	  http_status_set (412);
