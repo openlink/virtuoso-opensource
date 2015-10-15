@@ -3235,13 +3235,7 @@ create procedure DAV_DELETE_INT (
   id_meta := DAV_SEARCH_ID (path_meta, 'R');
   if (what = 'R')
   {
-    declare type, graph varchar;
-
-    type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
-    if (is_rdf_type (type))
-    {
-      DB.DBA.LDP_DELETE (path);
-    }
+    DB.DBA.LDP_DELETE (path);
     delete from WS.WS.SYS_DAV_RES where RES_ID = id;
 
     -- delete *,meta
