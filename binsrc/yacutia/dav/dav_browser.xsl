@@ -110,6 +110,7 @@
           <v:variable name="dir_tags" type="any" default="null" />
           <v:variable name="dir_columns" type="any" default="null" />
           <v:variable name="returnName" persist="0" type="varchar" default="''" />
+          <v:variable name="returnType" persist="0" type="varchar" default="''" />
           <v:variable name="search_filter" persist="0" type="varchar" default="''" />
           <v:variable name="search_simple" persist="0" type="any" default="null" />
           <v:variable name="search_advanced" persist="0" type="any" default="null" />
@@ -601,7 +602,7 @@
                 retValue := vector ('new', 'upload', 'create', 'link', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'tag', 'properties', 'share');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('upload', 'create', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'tag', 'properties', 'share');
+                retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'tag', 'properties', 'share');
 
               else if (detClass = 'HostFS')
                 retValue := vector ('new', 'upload', 'create', 'link', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'properties', 'share');
@@ -1486,12 +1487,14 @@
               }
               self.dir_right := WEBDAV.DBA.permission(concat(WEBDAV.DBA.path_show (self.dir_path), '/'));
               self.returnName := get_keyword ('retname', self.vc_page.vc_event.ve_params, self.returnName);
+              self.returnType := get_keyword ('browse_type', self.vc_page.vc_event.ve_params, self.returnType);
             ]]>
           </v:before-data-bind>
 
           <?vsp
             http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo));
             http (sprintf ('<input type="hidden" name="retname" id="retname" value="%s" />', self.returnName));
+            http (sprintf ('<input type="hidden" name="browse_type" id="browse_type" value="%s" />', self.returnType));
             if ((self.mode = 'webdav') and (self.command in (10, 14)) and (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap')))
               http (sprintf ('<input type="hidden" name="a" id="a" value="%s" />', self.dav_action));
           ?>
@@ -1565,6 +1568,8 @@
               }
               self.toolbarShow (case when (self.mode <> 'webdav') then writePermission else 'W' end, 'new', 'New Folder', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'new\');"', 'new_fldr_32.png', 'grey_new_fldr_32.png', 0);
 
+              if (self.returnName = '')
+              {
               http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (writePermission, 'copy', 'Copy', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'copy\');"', 'copy_32.png', 'grey_copy_32.png', 1);
@@ -1575,6 +1580,7 @@
 
               self.toolbarShow (writePermission, 'properties', 'Edit Properties', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'properties\');"', 'prop_32.png', 'grey_prop_32.png', 1);
               self.toolbarShow (writePermission, 'share', 'Share', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'share\');"', 'share_32.png', 'grey_share_32.png', 1);
+              }
               if (self.mode = 'briefcase')
               {
               self.toolbarShow (writePermission, 'tag', 'Tag', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'tags\');"', 'tag_32.png', 'grey_tag_32.png', 1);
@@ -1590,6 +1596,8 @@
               http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
               self.toolbarShow (writePermission, 'bookmarklet', 'Bookmarklet', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'bookmarklet\');"', 'bmklet_32.png', '', 0);
               }
+              if (self.returnName = '')
+              {
               if (WEBDAV.DBA.DAV_REQUIRE_VERSION ('1.0'))
               {
                 http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
@@ -1611,6 +1619,7 @@
               </div>
             </div>
             <?vsp
+              }
               }
             ?>
           </div>
@@ -4811,7 +4820,14 @@
                     self.sortChange (get_keyword ('sortColumn', self.vc_page.vc_event.ve_params, ''));
                     control.ds_parameters := null;
                     control.add_parameter(self.dir_path);
+                    if ((self.returnName <> '') and (self.returnType in ('col')))
+                    {
+                      control.add_parameter(4);
+                    }
+                    else
+                    {
                     control.add_parameter(self.command_mode);
+                    }
                     if (self.command_mode = 1)
                     {
                       control.add_parameter (self.search_filter);
@@ -5022,7 +5038,7 @@
                                     declare id, click any;
 
                                     id := case when (rowset[1] = 'R') then sprintf ('id="%V"', path) else '' end;
-                                    if ((self.returnName <> '') and (rowset[1] = 'R'))
+                                    if ((self.returnName <> '') and (self.returnType in ('res', 'both')) and (rowset[1] = 'R'))
                                     {
                                       click := sprintf ('onclick="javascript: $(\'item_name\').value = \'%s\'; return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
                                     }
@@ -5245,7 +5261,16 @@
             <v:template type="simple" name="Brouse_Footer" enabled="-- case when (self.returnName <> '') then 1 else 0 end">
               <div style="margin-bottom: 0.5em;">
                 <b> Resource Name </b>
-                <v:text type="simple" name="item_name" xhtml_id="item_name" value="--''"  />
+                <v:text type="simple" name="item_name" xhtml_id="item_name" value="--''">
+                  <v:after-data-bind>
+                    <![CDATA[
+                      if (self.returnType in ('col', 'both'))
+                      {
+                        control.ufl_value := WEBDAV.DBA.utf2wide(WEBDAV.DBA.real_path (self.dir_path));
+                      }
+                    ]]>
+                  </v:after-data-bind>
+                </v:text>
                 <input type="button" name="b_return" value="Select" onClick="javascript:  WEBDAV.selectRow ('F1')" />
                 <v:button name="b_cancel" action="simple" value="Cancel" xhtml_onClick="javascript: if (opener != null) opener.focus(); window.close()"/>
               </div>

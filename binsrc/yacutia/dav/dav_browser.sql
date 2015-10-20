@@ -703,15 +703,15 @@ create procedure WEBDAV.DBA.dc_predicateMetas (inout pred_metas any)
   pred_metas := vector (
     'RES_NAME',                 vector (1, 'File Name',                      null,        null,            'varchar',  vector ()),
     'RES_FULL_PATH',            vector (0, 'RES_FULL_PATH',                  null,        null,            'varchar',  vector ()),
-    'RES_TYPE',                 vector (1, 'FileType',                       null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="image/select.gif" onclick="javascript: windowShow(\'mimes_select.vspx?params=-FIELD-:s1;\')" />')),
+    'RES_TYPE',                 vector (1, 'FileType',                       null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="dav/image/select.gif" onclick="javascript: windowShow(\'/ods/mimes_select.vspx?params=-FIELD-:s1;\')" />')),
     'RES_OWNER_ID',             vector (0, 'RES_OWNER_ID',                   null,        null,            'integer',  vector ()),
-    'RES_OWNER_NAME',           vector (1, 'Owner Name',                     null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="image/select.gif" onclick="javascript: windowShow(\'users_select.vspx?mode=u&params=-FIELD-:s1;\')" />')),
+    'RES_OWNER_NAME',           vector (1, 'Owner Name',                     null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="dav/image/select.gif" onclick="javascript: windowShow(\'/ods/users_select.vspx?mode=u&params=-FIELD-:s1;\')" />')),
     'RES_GROUP_ID',             vector (0, 'RES_GROUP_ID',                   null,        null,            'integer',  vector ()),
-    'RES_GROUP_NAME',           vector (1, 'Group Name',                     null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="image/select.gif" onclick="javascript: windowShow(\'users_select.vspx?mode=g&params=-FIELD-:s1;\')" />')),
+    'RES_GROUP_NAME',           vector (1, 'Group Name',                     null,        null,            'varchar',  vector ('button', '<img id="-FIELD-_select" border="0" src="dav/image/select.gif" onclick="javascript: windowShow(\'/ods/users_select.vspx?mode=g&params=-FIELD-:s1;\')" />')),
     'RES_COL_FULL_PATH',        vector (0, 'RES_COL_FULL_PATH',              null,        null,            'varchar',  vector ()),
     'RES_COL_NAME',             vector (0, 'RES_COL_NAME',                   null,        null,            'varchar',  vector ()),
-    'RES_CR_TIME',              vector (1, 'Creation Time',                  null,        null,            'datetime', vector ('size', '10', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="image/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
-    'RES_MOD_TIME',             vector (1, 'Modification Time',              null,        null,            'datetime', vector ('size', '10', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="image/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'RES_CR_TIME',              vector (1, 'Creation Time',                  null,        null,            'datetime', vector ('size', '10', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="dav/image/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
+    'RES_MOD_TIME',             vector (1, 'Modification Time',              null,        null,            'datetime', vector ('size', '10', 'onclick', 'datePopup(\'-FIELD-\')', 'button', '<img id="-FIELD-_select" border="0" src="dav/image/pick_calendar.gif" onclick="javascript: datePopup(\'-FIELD-\');" />')),
     'RES_PERMS',                vector (0, 'RES_PERMS',                      null,        null,            'varchar',  vector ()),
     'RES_CONTENT',              vector (1, 'File Content',                   null,        null,            'text',     vector ()),
     'PROP_NAME',                vector (0, 'PROP_NAME',                      null,        null,            'varchar',  vector ()),
@@ -1422,7 +1422,7 @@ create procedure WEBDAV.DBA.hiddens_check (
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.proc(
+create procedure WEBDAV.DBA.proc (
   in path varchar,
   in dir_mode integer := 0,
   in dir_params any := null,
@@ -1430,9 +1430,8 @@ create procedure WEBDAV.DBA.proc(
   in dir_account any := null,
   in dir_password any := null) returns any
 {
-  -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, ')');
-  declare i, pos integer;
-  declare detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
+  -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, dir_mode, dir_params, ')');
+  declare dirListTmp, detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
   declare vspx_user, user_name, group_name varchar;
   declare user_id, group_id integer;
   declare c2 any;
@@ -1474,6 +1473,20 @@ create procedure WEBDAV.DBA.proc(
       dirFilter := WEBDAV.DBA.dc_filter (dir_params);
     }
     dirList := WEBDAV.DBA.DAV_DIR_FILTER(path, 1, dirFilter);
+    dirFilter := '%';
+  }
+  else if (dir_mode = 4)
+  {
+    path := WEBDAV.DBA.real_path (path);
+    dirListTmp := WEBDAV.DBA.DAV_DIR_LIST (path, 0);
+    foreach (any item in dirListTmp) do
+    {
+      if (item[1] = 'C')
+      {
+        dirList := vector_concat (dirList, vector (item));
+      }
+    }
+    dir_mode := 0;
     dirFilter := '%';
   }
   else if (dir_mode = 10)
