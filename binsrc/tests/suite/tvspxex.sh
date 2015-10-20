@@ -1373,7 +1373,7 @@ end_file
 
 cat > vspx_examples_000046_sql_exec <<end_file
 SET TRIGGERS OFF;
-insert replacing DB.DBA.VSPX_SESSION values('vspx', '4cd9774ebffce1cb0ad4680ee3c441be', 'dba', NULL, now());
+insert replacing DB.DBA.VSPX_SESSION values('vspx', '4cd9774ebffce1cb0ad4680ee3c441be', 'dba', NULL, now(), '127.0.0.1');
 ECHO BOTH \$IF \$EQU \$STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": VSPX session registration : STATE=" \$STATE " MESSAGE=" \$MESSAGE "\n";
 update DB.DBA.VSPX_SESSION set VS_STATE = (select top 1 VS_STATE from DB.DBA.VSPX_SESSION where VS_STATE is not NULL) where VS_STATE is NULL;
@@ -1892,7 +1892,7 @@ end_file
 cat > blogtests_000003_sql_exec <<end_file
 SET TRIGGERS OFF;
 delete from VSPX_SESSION;
-insert replacing DB.DBA.VSPX_SESSION values('blog', 'c5744fd5311ed088900f7078c1a4aaf1', 'user', serialize (vector('blogid','103','nuid',103,'uid','user','vspx_user','user')), now());
+insert replacing DB.DBA.VSPX_SESSION values('blog', 'c5744fd5311ed088900f7078c1a4aaf1', 'user', serialize (vector('blogid','103','nuid',103,'uid','user','vspx_user','user')), now(), '127.0.0.1');
 ECHO BOTH \$IF \$EQU \$STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": VSPX session registration : STATE=" \$STATE " MESSAGE=" \$MESSAGE "\n";
 
