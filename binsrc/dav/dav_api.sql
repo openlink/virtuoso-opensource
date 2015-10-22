@@ -2806,39 +2806,6 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     }
     -- dbg_obj_princ ('fine, DAV_RES_UPLOAD_STRSES_INT returns ', rc, ' for ', path);
 
-
-  declare c_id, depth integer;
-  declare rdf_graph, rdf_params any;
-  declare _col_p_id, _inherit any;
-
-  -- delete RDF data from separate (file) graph (if exists)
-  RDF_SINK_DELETE (path);
-
-  -- get parent collection id
-   c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
-  -- is rdf_sink folder?
-  rdf_graph := null;
-  depth := 0;
-  {
-     whenever not found goto rdfg_found;
-look_again:
-      select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
-      rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', c_id);
-      rdf_graph := get_keyword ('graph', rdf_params);
-      if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
-	goto rdfg_found;
-      c_id := _col_p_id;
-      depth := depth + 1;
-      rdf_graph := null;
-      goto look_again;
-  }
-rdfg_found:;
-  if (not DB.DBA.is_empty_or_null (rdf_graph))
-  {
-    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK', rc, 'DB.DBA.RDF_SINK_FUNC', vector (path, rc, c_id, rdf_graph, type, ouid, ogid));
-    DB.DBA.DAV_QUEUE_INIT ();
-  }
-
   return rc;
 
 unhappy_upload:
@@ -2896,9 +2863,10 @@ create procedure RDF_SINK_FUNC (
       host := WS.WS.DAV_HOST ();
       rdf_graph_resource_id := WS.WS.GETID ('R');
       insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
-      values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+        values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+
       DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
-      'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'application/rdf+xml'), null, null, 0, 0, 1);
+        'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'application/rdf+xml'), null, null, 0, 0, 1);
     }
   }
 
@@ -2918,7 +2886,7 @@ create procedure RDF_SINK_UPLOAD (
   in rdf_metaCartridges varchar,
   in rdf_private integer := 1)
 {
-  -- dbg_obj_print ('RDF_SINK_UPLOAD', type);
+  -- dbg_obj_princ ('RDF_SINK_UPLOAD (', path, type, ')');
   declare rdf_iri, rdf_graph2, rdf_base2 varchar;
   declare content any;
 
@@ -2939,7 +2907,7 @@ create procedure RDF_SINK_UPLOAD (
         file_delete (tmp_file, 1);
         return 0;
       };
-      rdf_graph2 := WS.WS.DAV_IRI (path);
+      rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
       string_to_file (tmp_file, _content, -2);
       lst := unzip_list (tmp_file);
       foreach (any x in lst) do
@@ -2974,7 +2942,7 @@ create procedure RDF_SINK_UPLOAD (
     }
   -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
   rdf_iri := WS.WS.DAV_IRI (path);
-  rdf_graph2 := WS.WS.DAV_IRI (path);
+  rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
   if (is_empty_or_null (rdf_base))
   {
     rdf_base2 := WS.WS.DAV_HOST () || path;
@@ -3120,57 +3088,108 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
 }
 ;
 
-create procedure RDF_SINK_DELETE (
-  in path any)
+create procedure RDF_SINK_GRAPH_SEARCH (
+  in _path varchar,
+  inout _col_id integer)
 {
-  declare c_id, _col_p_id, _inherit, depth integer;
-  declare rdf_params, rdf_graph any;
+  -- dbg_obj_princ ('RDF_SINK_GRAPH_SEARCH (', _path, ')');
+  declare _col_parent, _depth integer;
+  declare _inherit, _graph varchar;
+  declare _params any;
 
-  c_id := DB.DBA.DAV_SEARCH_ID (subseq (path, 0, strrchr (path, '/') + 1), 'C');
-  if (not isinteger (c_id) or (c_id < 0))
-    return;
-
-  rdf_graph := null;
-  depth := 0;
+  declare exit handler for not found
   {
-     whenever not found goto rdfg_found;
-look_again:
-      select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
-      rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', c_id);
-      rdf_graph := get_keyword ('graph', rdf_params);
-      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
-      if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
-	goto rdfg_found;
+    return null;
+  };
 
-      c_id := _col_p_id;
-      depth := depth + 1;
-      rdf_graph := null;
-      goto look_again;
+ _depth := 0;
+
+_again:;
+  _params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', _col_id);
+  _graph := get_keyword ('graph', _params);
+  if (length (_graph) and (_depth = 0))
+  {
+    return _graph;
   }
-  rdfg_found:;
+  select COL_PARENT, COL_INHERIT into _col_parent, _inherit from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
+  if (length (_graph) and ((_inherit = 'R') or (_depth = 1 and _inherit = 'M') or (_depth = 0)))
+  {
+    return _graph;
+  }
+  _col_id := _col_parent;
+  _depth := _depth + 1;
 
-  if (DB.DBA.is_empty_or_null (rdf_graph))
-    return;
+  goto _again;
 
-  RDF_SINK_CLEAR (path, rdf_graph);
+  return null;
+}
+;
+
+create procedure RDF_SINK_INSERT (
+  in _path varchar,
+  in _res_id integer,
+  in _col_id integer,
+  in _res_type varchar,
+  in _res_owner integer,
+  in _res_group integer)
+{
+  -- dbg_obj_princ ('RDF_SINK_INSERT (', _path, ')');
+  declare _graph varchar;
+
+  _graph := RDF_SINK_GRAPH_SEARCH (_path, _col_id);
+  if (length (_graph))
+  {
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_INSERT', _res_id, 'DB.DBA.RDF_SINK_FUNC', vector (_path, _res_id, _col_id, _graph, _res_type, _res_owner, _res_group));
+    DB.DBA.DAV_QUEUE_INIT ();
+  }
+}
+;
+
+create procedure RDF_SINK_DELETE (
+  in _path varchar,
+  in _res_id integer,
+  in _col_id integer)
+{
+  -- dbg_obj_princ ('RDF_SINK_DELETE (', _path, ')');
+  declare _graph varchar;
+
+  _graph := RDF_SINK_GRAPH_SEARCH (_path, _col_id);
+  if (length (_graph))
+  {
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_DELETE', _res_id, 'DB.DBA.RDF_SINK_CLEAR', vector (_path, _graph));
+    DB.DBA.DAV_QUEUE_INIT ();
+  }
 }
 ;
 
 create procedure RDF_SINK_CLEAR (
+  in queue_id integer,
   in path varchar,
   in rdf_graph varchar)
 {
+  -- dbg_obj_princ ('RDF_SINK_CLEAR (', path, rdf_graph, ')');
   declare rdf_group, rdf_graph2 varchar;
+  declare g_iid, g2_iid any;
 
   rdf_group := 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs';
   if (path like '%.gz')
+  {
     path := regexp_replace (path, '\.gz\x24', '');
-
-  rdf_graph2 := WS.WS.DAV_IRI (path);
-  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-  SPARQL clear graph ?:rdf_graph2;
+  }
+  rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
+  g_iid := __i2idn (rdf_graph);
+  g2_iid := __i2idn (rdf_graph2);
+  for (select a.S as _s, a.P as _p, a.O as _o from DB.DBA.RDF_QUAD a where a.G = g2_iid) do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = g_iid and S = _s and P = _p and O = _o;
+	}
+  delete from DB.DBA.RDF_QUAD where G = g2_iid;
   if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = rdf_group))
+  {
     DB.DBA.RDF_GRAPH_GROUP_DEL (rdf_group, rdf_graph2);
+  }
+
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
 }
 ;
 
@@ -3235,8 +3254,8 @@ create procedure DAV_DELETE_INT (
   id_meta := DAV_SEARCH_ID (path_meta, 'R');
   if (what = 'R')
   {
-    DB.DBA.LDP_DELETE (path);
     delete from WS.WS.SYS_DAV_RES where RES_ID = id;
+    DB.DBA.LDP_DELETE (path);
 
     -- delete *,meta
     if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_meta)))
@@ -3244,8 +3263,6 @@ create procedure DAV_DELETE_INT (
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
       DB.DBA.LDP_DELETE (path_meta);
     }
-
-    RDF_SINK_DELETE (path);
   }
   else if (what = 'C')
   {
@@ -5096,6 +5113,36 @@ create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
 }
 ;
 
+-- LDI triggers
+--
+create trigger SYS_DAV_RES_LDI_AI after insert on WS.WS.SYS_DAV_RES order 110 referencing new as N
+{
+  -- insert RDF data
+  RDF_SINK_INSERT (N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP);
+}
+;
+
+create trigger SYS_DAV_RES_LDI_AU after update on WS.WS.SYS_DAV_RES order 110 referencing new as N, old as O
+{
+  declare c_id, _parent_co_id, depth integer;
+  declare _inherit, rdf_graph varchar;
+  declare rdf_params any;
+
+  -- delete RDF data from separate (file) graph (if exists)
+  RDF_SINK_DELETE (O.RES_FULL_PATH, O.RES_ID, O.RES_COL);
+
+  -- insert RDF data
+  RDF_SINK_INSERT (N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP);
+}
+;
+
+create trigger SYS_DAV_RES_LDI_AD after delete on WS.WS.SYS_DAV_RES order 110 referencing old as O
+{
+  -- delete RDF data from separate (file) graph (if exists)
+  RDF_SINK_DELETE (O.RES_FULL_PATH, O.RES_ID, O.RES_COL);
+}
+;
+
 -- Web Access Control
 --
 create trigger SYS_DAV_COL_WAC_U after update on WS.WS.SYS_DAV_COL order 100 referencing new as N, old as O
@@ -5360,9 +5407,10 @@ create procedure WS.WS.WAC_DELETE (
 ;
 
 create procedure WS.WS.WAC_GRAPH (
-  in path varchar)
+  in path varchar,
+  in suffix varchar := '')
 {
-  return rtrim (WS.WS.DAV_IRI (path), '/') || '/';
+  return rtrim (WS.WS.DAV_IRI (path), '/') || '/' || suffix;
 }
 ;
 
