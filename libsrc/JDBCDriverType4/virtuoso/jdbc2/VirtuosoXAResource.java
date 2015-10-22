@@ -396,7 +396,7 @@ public class VirtuosoXAResource implements XAResource
                         VirtuosoFuture.tp_transaction,
                         args,
                         connection.timeout);
-                openlink.util.Vector res = future.nextResult(false);
+                openlink.util.Vector res = future.nextResult();
                 Object err = (res == null ? null : res.firstElement());
                 if (err instanceof openlink.util.Vector) {
                     throw new XAException();

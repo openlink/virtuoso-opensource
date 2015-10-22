@@ -350,7 +350,7 @@ public class VirtuosoStatement implements Statement
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
-	     future.nextResult(false);
+	     future.nextResult();
 	     // Remove the future reference
 	     connection.removeFuture(future);
 	     future = null;

@@ -141,13 +141,13 @@ class VirtuosoFuture
     * @return Object	A Vector object or a base class.
     * @exception virtuoso.jdbc2.VirtuosoException An internal error occurred.
     */
-   protected openlink.util.Vector nextResult(boolean sparql_executed) throws VirtuosoException
+   protected openlink.util.Vector nextResult() throws VirtuosoException
    {
       try
       {
          // Try to read an answer
         while(results.isEmpty())
-          connection.read_request(sparql_executed);
+          connection.read_request();
 
          // Get the next result of the queue
          //mutex.getSem();

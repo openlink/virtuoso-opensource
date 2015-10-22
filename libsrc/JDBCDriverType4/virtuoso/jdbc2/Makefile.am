@@ -66,6 +66,7 @@ jdbc4_1_defs = -DJDK_VER=17 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.1"'
 # Sources
 ###########################################
 infiles = \
+	DateObject.java \
 	Driver.java \
 	VirtuosoAsciiInputStream.java \
 	VirtuosoBlob.java \
