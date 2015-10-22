@@ -627,6 +627,8 @@ create procedure b3s_label_get (inout data any, in langs any)
    if (not isstring (label))
      label := cast (label as varchar);
    --label := regexp_replace (label, '<[^>]+>', '', 1, null);
+  if (label is null)
+    label := ''; 
   if (0 and sys_stat ('cl_run_local_only'))
     {
       label := xpath_eval ('string(.)', xtree_doc (label, 2));
