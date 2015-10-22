@@ -43,11 +43,11 @@ function destinationChange(obj, changes) {
       }
     }
     if (actions.exec) {
-		  var a = actions.exec;
-		  for ( var i = 0; i < a.length; i++) {
-			  a[i](obj);
-		  }
-	  }
+      var a = actions.exec;
+      for ( var i = 0; i < a.length; i++) {
+        a[i](obj);
+      }
+    }
   }
   if (!changes)
     return;
@@ -1096,8 +1096,8 @@ WEBDAV.prefixDialog = function ()
   prefixDiv.id = 'prefixDiv';
   prefixDiv.innerHTML = content;
   prefixDialog = new OAT.Dialog('Search prefix (http://prefix.cc)', prefixDiv, {width: 400, buttons: 0, resize: 0, modal: 1});
-	prefixDialog.cancel = prefixDialog.hide;
-	prefixDialog.search = function () {
+  prefixDialog.cancel = prefixDialog.hide;
+  prefixDialog.search = function () {
     var x = function (txt) {
       if (txt != "")
       {
@@ -1281,8 +1281,18 @@ WEBDAV.selectRow = function (formName) {
     return;
 
   var returnName = $v('retname');
-  if (returnName)
-    opener[returnName].value = $v('item_name');
+  if (returnName) {
+    var returnValue = $v('item_name');
+    if ($v('browse_type') === 'res') {
+      var pos;
+      returnValue = returnValue.replace ('\\', '/');
+      pos = returnValue.lastIndexOf ('/');
+      if (pos !== -1) {
+        returnValue = returnValue.substr (pos+1, returnValue.length);
+      }
+    }
+    opener[returnName].value = returnValue;
+  }
 
   opener.focus ();
   close ();

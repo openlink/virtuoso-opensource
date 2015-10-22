@@ -2616,7 +2616,7 @@ login bind method (url and cookie)
     {
       vars := coalesce ((select deserialize (blob_to_string(VS_STATE)) from VSPX_SESSION where VS_SID = self.sid), NULL);
       connection_vars_set (vars);
-      update VSPX_SESSION set VS_EXPIRY = now () where VS_SID = self.sid and VS_REALM = control.vl_realm;
+      update VSPX_SESSION set VS_EXPIRY = now () where VS_SID = self.sid and VS_REALM = control.vl_realm and VS_IP = http_client_ip ();
       if (row_count () = 0)
         goto re_auth;
       control.vl_authenticated := 1;
@@ -2646,7 +2646,7 @@ re_auth:
   if (<xsl:value-of select="@user-password-check" /> (usr, pass))
     {
        sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
-       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY) values (control.vl_realm, sid, usr, null, now());
+       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY, VS_IP) values (control.vl_realm, sid, usr, null, now(), http_client_ip ());
        control.vl_authenticated := 1;
        self.vc_authenticated := 1;
        self.sid := sid;
@@ -2714,8 +2714,8 @@ re_auth:
     <xsl:if test="@mode = 'url' and .//v:text[@name='password_plain']">
     if (length (self.nonce))
       {
-        insert into VSPX_SESSION (VS_REALM, VS_SID, VS_EXPIRY)
-          values (control.vl_realm, self.nonce, dateadd ('minute', -110, now ()));
+        insert into VSPX_SESSION (VS_REALM, VS_SID, VS_EXPIRY, VS_IP)
+          values (control.vl_realm, self.nonce, dateadd ('minute', -110, now ()), http_client_ip ());
       }
     </xsl:if>
 authenticated:;
@@ -2789,8 +2789,8 @@ re_auth:
      {
        declare nonce , sid varchar;
        nonce := sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
-       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-       values (control.vl_realm, sid, null, null, now ());
+       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY, VS_IP)
+       values (control.vl_realm, sid, null, null, now (), http_client_ip ());
        control.vl_authenticated := 0;
        self.vc_authenticated := 0;
        self.sid := sid;
