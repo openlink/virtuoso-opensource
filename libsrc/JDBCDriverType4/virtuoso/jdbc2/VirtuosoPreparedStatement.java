@@ -366,7 +366,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
-	     future.nextResult(false);
+	     future.nextResult();
 	     // Remove the future reference
 	     connection.removeFuture(future);
 	     future = null;
@@ -886,8 +886,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	  else
 	    {
 	    objparams.setElementAt(x,parameterIndex - 1);
-	}
-   }
+	    }
+        }
    }
 
    protected void setString(int parameterIndex, VirtuosoExplicitString x) throws VirtuosoException
