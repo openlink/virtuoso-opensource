@@ -519,7 +519,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
   else if ((SPART_VARR_IS_BLANK & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_BLANK & mixed_field_restr))
     builtin_name = "isBLANK";
   else if ((SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_REF & mixed_field_restr))
-    builtin_name = ((ssg->ssg_sd_flags & (SSG_SD_BI | SSG_SD_VIRTSPECIFIC)) ? "isREF" : "!isLITERAL");
+    builtin_name = ((ssg->ssg_sd_flags & SSG_SD_VIRTSPECIFIC) ? "isREF" : "!isLITERAL");
   else if ((SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_NOT_NULL & mixed_field_restr))
     builtin_name = "BOUND";
   if (NULL != builtin_name)
