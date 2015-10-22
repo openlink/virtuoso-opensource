@@ -2616,7 +2616,7 @@ login bind method (url and cookie)
     {
       vars := coalesce ((select deserialize (blob_to_string(VS_STATE)) from VSPX_SESSION where VS_SID = self.sid), NULL);
       connection_vars_set (vars);
-      update VSPX_SESSION set VS_EXPIRY = now () where VS_SID = self.sid and VS_REALM = control.vl_realm and VS_IP = http_client_ip ();
+      update VSPX_SESSION set VS_EXPIRY = now () where VS_SID = self.sid and VS_REALM = control.vl_realm and VS_IP = http_client_ip () and datediff ('minute', VS_EXPIRY, now()) &lt; 30;
       if (row_count () = 0)
         goto re_auth;
       control.vl_authenticated := 1;
