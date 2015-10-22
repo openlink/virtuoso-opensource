@@ -3186,6 +3186,7 @@ ts_initial_itc (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
       || enable_qp < 2
       || !ITC_COL_SPLITTABLE (itc)
       || itc->itc_n_sets * ts->ts_cost_after * compiler_unit_msecs * 1000 < 2 * qp_thread_min_usec
+      || srv_have_global_lock (THREAD_CURRENT_THREAD)
       || itc->itc_is_vacuum)
     return itc_reset (itc);
   if (!qi->qi_is_branch && !qi->qi_root_id)
