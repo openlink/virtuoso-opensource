@@ -1295,12 +1295,26 @@ create procedure b3s_get_entity_graph (in entity_uri varchar, in sponge_request 
 	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
                     where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
       if (num_containing_graphs > 1)
+      {
 	return null;
+      }
       else
-	 return (select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where 
+      {
+	entity_graph := (select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where 
           S = iri_to_id (entity_uri) and 
 	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
                     where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
+	-- Assume client is attempting to view an empty graph
+	if (entity_graph is not null)
+	{
+	  ;
+	}
+	else
+	{
+	  entity_graph := entity_uri;
+	}
+	return entity_graph;
+      }
     }
   }
 
@@ -1311,7 +1325,9 @@ create procedure b3s_get_entity_graph (in entity_uri varchar, in sponge_request 
 	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
                     where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
   if (entity_graph is not null)
+  {
     return entity_graph;
+  }
 
   -- Assume the original containing graph has been cleared. Deduce it.
 
@@ -1370,6 +1386,7 @@ create procedure b3s_get_entity_graph (in entity_uri varchar, in sponge_request 
 create procedure b3s_get_user_graph_permissions (
   in graph varchar,
   in pageUrl varchar,
+  in sponge_request int,
   in val_vad_present int,
   inout val_serviceId varchar,
   inout val_auth_method int,
