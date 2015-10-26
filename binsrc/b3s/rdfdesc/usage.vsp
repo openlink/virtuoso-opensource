@@ -193,12 +193,12 @@
 <!-- proptable -->
     <div id="TAB_ROW">
       <div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
-	  <a  title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *subject* of one or more *RDF* based relations' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *entity* of one or more *EAV* based relations' end  ?>"
-	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Subject of Relations In Document</a>
+	  <a  title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *subject* of one or more *RDF* based sentences' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *entity* of one or more *EAV* based sentences' end  ?>"
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Subject of Sentences In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
-	  <a title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *object* of one or more *RDF* based relations' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *value* of one or more *EAV* based relations' end ?>"
-	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Object of Relations In Document</a>
+	  <a title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *object* of one or more *RDF* based sentences' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *value* of one or more *EAV* based sentences' end ?>"
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Object of Sentences In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
         <a title="A list of reconciled identifiers resulting from interpretation of equivalence by name semantics defined by the Web Ontology (OWL)."
