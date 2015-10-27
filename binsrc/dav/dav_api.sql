@@ -2382,22 +2382,28 @@ DAV_COL_CREATE_INT (
   if (ouid is null)
     DAV_OWNER_ID (uid, gid, ouid, ogid);
 
-  declare exit handler for sqlstate '*' { rc := -3; };
   {
-    -- dbg_obj_princ ('about to insert ', rc, name, pid, ouid, ogid, permissions, now(), now ());
-    insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT,
-                                 COL_OWNER, COL_GROUP, COL_PERMS,
-                                 COL_CR_TIME, COL_MOD_TIME)
-                values (rc, name, pid, ouid, ogid, permissions, now(), now ());
-    if (not row_count())
+    declare exit handler for sqlstate '*' {
       rc := -3;
-      if (DB.DBA.LDP_ENABLED (pid))
-	{
-	  declare uri any;
-	  uri := WS.WS.DAV_IRI (path);
-	  TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
-	}
+    };
+    -- dbg_obj_princ ('about to insert ', rc, name, pid, ouid, ogid, permissions, now(), now ());
+    insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_OWNER, COL_GROUP, COL_PERMS, COL_CR_TIME, COL_MOD_TIME)
+      values (rc, name, pid, ouid, ogid, permissions, now(), now ());
+
+    if (not row_count())
+      {
+        rc := -3;
+      }
+
+    if (DB.DBA.LDP_ENABLED (pid))
+      {
+        declare uri any;
+        uri := WS.WS.DAV_IRI (path);
+        TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
+        DB.DBA.LDP_CREATE (path);
+      }
   }
+
   return rc;
 }
 ;
