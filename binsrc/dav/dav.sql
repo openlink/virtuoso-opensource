@@ -1984,6 +1984,10 @@ create procedure WS.WS.PUT (
 	  return;
 	}
     }
+  if ((res_id_ is not null) and isinteger (res_id_) and (length (client_etag) = 0))
+    {
+      select RES_OWNER, RES_GROUP, RES_PERMS into o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
+    }
   if (registry_get ('LDP_strict_put') = '1' and _method = 'PUT'
       and (res_id_ is not null or _col is not null) and content_type = 'text/turtle' and length (client_etag) = 0)
     {
