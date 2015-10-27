@@ -2192,7 +2192,7 @@ again:
     content,
     mime_type,
     'select RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS ' ||
-    '  from DB.DBA.SYS_RDF_MAPPERS                           ' ||
+    '  from DB.DBA.SYS_RDF_MAPPERS,                          ' ||
     '       WS.WS.VFS_SITE_RDF_MAP                           ' ||
     ' where VM_RDF_MAP = RM_PID                              ' ||
     '   and VM_HOST = ?                                      ' ||
