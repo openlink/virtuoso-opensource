@@ -12520,6 +12520,16 @@ bif_ddl_change (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+caddr_t
+bif_table_exists (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *tb = bif_string_arg (qst, args, 0, "table_exists");
+  dbe_table_t * tb_def = sch_name_to_table (wi_inst.wi_schema, tb);
+  if (NULL != tb_def)
+    return box_num (1);
+  return box_num (0);
+}
+
 #if 0
 caddr_t
 bif_ddl_table_renamed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16650,6 +16660,7 @@ sql_bif_init (void)
   bif_define ("replay", bif_replay);
   bif_define ("txn_killall", bif_txn_killall);
 
+  bif_define ("table_exists", bif_table_exists);
   bif_define ("__ddl_changed", bif_ddl_change);
   /*bif_define ("__ddl_table_renamed", bif_ddl_table_renamed);*/
   bif_define ("__ddl_index_def", bif_ddl_index_def);
