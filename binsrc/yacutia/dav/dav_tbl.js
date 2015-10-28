@@ -759,39 +759,38 @@ TBL.createCell76 = function (td, prefix, fldName, No, fldOptions) {
   if (val && (val != '')) {
     var fldParams;
     for (var i = 0; i < TBL.imapActions.length; i += 2) {
-      if ((TBL.imapActions[i] == val) && (TBL.imapActions[i+1][0] == 1))
+      if ((TBL.imapActions[i] == val) && (TBL.imapActions[i+1][0] == 1)) {
         fldParams = TBL.imapActions[i+1];
+      }
     }
     if (!fldParams || !fldParams[2])
       return;
 
+    var fld;
     if (fldParams[2] == 'input') {
-      var fld = OAT.Dom.create("input");
-      fld.type = 'text';
+      fld = OAT.Dom.create("input");
+      fld.type = fldParams[3];
     }
-    else if (fldParams[2] == 'select')
-    {
-      var fld = OAT.Dom.create("select");
-      if (fldParams[3] == 'folder') {
-        fld.xType = 'folder';
-        for (var i = 0; i < TBL.imapFolders.length; i++) {
-          OAT.Dom.option(TBL.imapFolders[i][1], TBL.imapFolders[i][0], fld);
-        }
+    else if ((fldParams[2] == 'select') && (fldParams[3] == 'folder')) {
+      fld = OAT.Dom.create("select");
+      for (var i = 0; i < TBL.imapFolders.length; i++) {
+        OAT.Dom.option(TBL.imapFolders[i][1], TBL.imapFolders[i][0], fld);
       }
-      else if (fldParams[3] == 'priority') {
-        OAT.Dom.option('Normal', '3', fld);
-        OAT.Dom.option('Lowest', '5', fld);
-        OAT.Dom.option('Low', '4', fld);
-        OAT.Dom.option('High', '2', fld);
-        OAT.Dom.option('Highest', '1', fld);
-      }
+    }
+    else if ((fldParams[2] == 'select') && (fldParams[3] == 'priority')) {
+      fld = OAT.Dom.create("select");
+      OAT.Dom.option('Normal', '3', fld);
+      OAT.Dom.option('Lowest', '5', fld);
+      OAT.Dom.option('Low', '4', fld);
+      OAT.Dom.option('High', '2', fld);
+      OAT.Dom.option('Highest', '1', fld);
     }
     fld.id = fldName;
     fld.name = fld.id;
     fld.style.width = '93%';
-    if (fldOptions.value)
+    if (fldOptions.value) {
       fld.value = fldOptions.value;
-
+    }
     td.appendChild(fld);
     return fld;
   }

@@ -4551,7 +4551,6 @@
                       <tfoot>
                         <tr align="right" >
                           <td colspan="3">
-                            <vm:ds-navigation data-set="dsf"/>
                           </td>
                         </tr>
                       </tfoot>
@@ -4559,6 +4558,58 @@
                   </v:template>
 
                 </v:data-set>
+
+                <div class="boxHeader" style="background-color: #B0CDE4; padding: 3px;">
+                  <b>Run selected filter(s) on</b>&amp;nbsp;
+                  <v:select-list name="imap_folderSelect" xhtml_id="imap_folderSelect">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        declare N integer;
+                        declare _owner varchar;
+                        declare _folders, x, y any;
+
+                        _owner := DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C'));
+                        _folders := MAIL.WA.external_account_folders (_owner, DB.DBA.IMAP__mea_id (_owner));
+                        x := vector ();
+                        y := vector ();
+                        for (N := 0; N < length (_folders); N := N + 1)
+                        {
+                          x := vector_concat (x, vector (cast (_folders[N][0] as varchar)));
+                          y := vector_concat (y, vector (_folders[N][1]));
+                        }
+                        control.vsl_item_values := x;
+                        control.vsl_items := y;
+                      ]]>
+                    </v:after-data-bind>
+                  </v:select-list>
+                  <v:button action="simple" value="Run" name="filterRun">
+                    <v:on-post>
+                      <![CDATA[
+                        declare N, _folder_id, _filter_ids integer;
+                        declare _owner varchar;
+                        declare _items any;
+
+                        _owner := DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C'));
+                        _folder_id := cast (self.imap_folderSelect.ufl_value as integer);
+
+                        _filter_ids := vector ();
+                        _items := self.getItems (self.vc_page.vc_event.ve_params);
+                        for (N := 0; N < length (_items); N := N + 2)
+                        {
+                          _filter_ids := vector_concat (_filter_ids, vector (cast (_items[N] as integer)));
+                        }
+                        MAIL.WA.queue_add (_owner, 'filter', _folder_id, 'MAIL.WA.filters_run', vector (_owner, _folder_id, _filter_ids), 2, 1);
+                        MAIL.WA.queue_init ();
+
+                        self.dav_action := '';
+                        self.command_pop (null);
+                        self.command_push (100, 0);
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </div>
+
               </div>
 
             </v:template>
@@ -4588,22 +4639,22 @@
                     <v:text name="imap_filterName" format="%s" value="--xpath_eval ('string (/filter/name)', self.imap_filter);" xhtml_class="field-text" />
                   </td>
                 </tr>
-          	    <tr>
-          	      <th>
-          	        <v:label for="imap_filterActive" value="--'Apply filter when'" />
-          	      </th>
-          	      <td>
+                <tr>
+                  <th>
+                    <v:label for="imap_filterActive" value="--'Apply filter when'" />
+                  </th>
+                  <td>
                     <v:select-list name="imap_filterActive" xhtml_id="imap_filterActive" value="--xpath_eval ('string (/filter/active)', self.imap_filter);">
                       <v:item name="Never" value="0" />
                       <v:item name="Checking Mail" value="2" />
                       <v:item name="Manually Run" value="3" />
                       <v:item name="Checking Mail or Manually Run" value="1" />
                     </v:select-list>
-          	      </td>
-          	    </tr>
-          	    <tr>
-          	      <th valign="top">Apply filter actions when</th>
-          	      <td>
+                  </td>
+                </tr>
+                <tr>
+                  <th valign="top">Apply filter actions when</th>
+                  <td>
                     <label>
                       <v:radio-button name="imap_filterMode_0" xhtml_id="imap_filterMode_0" group-name="imap_filterMode" value="0">
                         <v:after-data-bind>
@@ -4612,9 +4663,9 @@
                           ]]>
                         </v:after-data-bind>
                       </v:radio-button>
-              			  all criteria are matched
-              	    </label>
-              	    <br />
+                      all criteria are matched
+                    </label>
+                    <br />
                     <label>
                       <v:radio-button name="imap_filterMode_1" xhtml_id="imap_filterMode_1" group-name="imap_filterMode" value="1">
                         <v:after-data-bind>
@@ -4623,33 +4674,33 @@
                           ]]>
                         </v:after-data-bind>
                       </v:radio-button>
-              			  any of criteria is matched
-              	    </label>
-          	      </td>
-          	    </tr>
-          	    <tr>
+                      any of criteria is matched
+                    </label>
+                  </td>
+                </tr>
+                <tr>
                   <th colspan="2" style="background-color: #EAEAEE; text-align: center;">Criteria</th>
-          	    </tr>
-          	    <tr>
-          	      <td colspan="2" style="background-color: #FFF;">
-          		      <table style="width: 100%;" cellspacing="0">
-          		        <tr>
-          		          <td width="100%">
-                		      <table id="search_tbl" class="WEBDAV_formList">
-                		        <thead>
-                		          <tr>
-                		            <th width="30%">Field</th>
-                		            <th width="20%">Condition</th>
-                		            <th>Value</th>
-                		            <th width="80px">Action</th>
-                		          </tr>
-                		        </thead>
-                		        <tbody id="search_tbody">
-                		          <tr id="search_tr_no">
-                		            <td colspan="4">No Criteria</td>
-                		          </tr>
+                </tr>
+                <tr>
+                  <td colspan="2" style="background-color: #FFF;">
+                    <table style="width: 100%;" cellspacing="0">
+                      <tr>
+                        <td width="100%">
+                          <table id="search_tbl" class="WEBDAV_formList">
+                            <thead>
+                              <tr>
+                                <th width="30%">Field</th>
+                                <th width="20%">Condition</th>
+                                <th>Value</th>
+                                <th width="80px">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody id="search_tbody">
+                              <tr id="search_tr_no">
+                                <td colspan="4">No Criteria</td>
+                              </tr>
                               <![CDATA[
-                  	    		    <script type="text/javascript">
+                                <script type="text/javascript">
                                 <?vsp
                                   declare L, N integer;
                                   declare entry, f1, f2, f3, f4 any;
@@ -4663,46 +4714,46 @@
                                     f3 := cast (xpath_eval ('@criteria', entry) as varchar);
                                     f4 := cast (xpath_eval ('.', entry) as varchar);
 
-                  					        http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("search", null, {fld_1: {mode: 70, value: "%s", valueExt: "%s"}, fld_2: {mode: 71, value: "%s", tdCssText: "vertical-align: top;"}, fld_3: {mode: 72, value: "%s", tdCssText: "vertical-align: top;"}});});', f1, f2, f3, f4));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("search", null, {fld_1: {mode: 70, value: "%s", valueExt: "%s"}, fld_2: {mode: 71, value: "%s", tdCssText: "vertical-align: top;"}, fld_3: {mode: 72, value: "%s", tdCssText: "vertical-align: top;"}});});', f1, f2, f3, f4));
                                   }
                                 ?>
-                  	    		    </script>
+                                </script>
                               ]]>
-                		        </tbody>
-                		      </table>
-                	      </td>
-                	      <td nowrap="nowrap" valign="top">
-              	          <span class="button pointer">
-              	            <xsl:attribute name="onclick">javascript: TBL.createRow('search', null, {fld_1: {mode: 70}, fld_2: {mode: 71, tdCssText: 'vertical-align: top;'}, fld_3: {mode: 72, tdCssText: 'vertical-align: top;'}});</xsl:attribute>
+                            </tbody>
+                          </table>
+                        </td>
+                        <td nowrap="nowrap" valign="top">
+                          <span class="button pointer">
+                            <xsl:attribute name="onclick">javascript: TBL.createRow('search', null, {fld_1: {mode: 70}, fld_2: {mode: 71, tdCssText: 'vertical-align: top;'}, fld_3: {mode: 72, tdCssText: 'vertical-align: top;'}});</xsl:attribute>
                             <img src="<?V self.image_src ('dav/image/add_16.png') ?>" border="0" class="button" alt="Add Security" title="Add Security" /> Add
-              	          </span>
-                	      </td>
-               	      </tr>
-               	    </table>
-               	  </td>
-          	    </tr>
-          	    <tr>
+                          </span>
+                        </td>
+                       </tr>
+                     </table>
+                   </td>
+                </tr>
+                <tr>
                   <th colspan="2" style="background-color: #EAEAEE; text-align: center;">Commands</th>
-          	    </tr>
-          	    <tr>
-          	      <td colspan="2" style="background-color: #FFF;">
-          		      <table style="width: 100%;" cellspacing="0">
-          		        <tr>
-          		          <td width="100%">
-                		      <table id="action_tbl" class="WEBDAV_formList">
-                		        <thead>
-                		          <tr>
-                		            <th width="50%">Command</th>
-                		            <th>Value</th>
-                		            <th width="80px">Action</th>
-                		          </tr>
-                		        </thead>
-                		        <tbody id="action_tbody">
-                		          <tr id="action_tr_no">
-                		            <td colspan="3">No Commands</td>
-                		          </tr>
+                </tr>
+                <tr>
+                  <td colspan="2" style="background-color: #FFF;">
+                    <table style="width: 100%;" cellspacing="0">
+                      <tr>
+                        <td width="100%">
+                          <table id="action_tbl" class="WEBDAV_formList">
+                            <thead>
+                              <tr>
+                                <th width="50%">Command</th>
+                                <th>Value</th>
+                                <th width="80px">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody id="action_tbody">
+                              <tr id="action_tr_no">
+                                <td colspan="3">No Commands</td>
+                              </tr>
                               <![CDATA[
-                  	    		    <script type="text/javascript">
+                                <script type="text/javascript">
                                 <?vsp
                                   declare L, N integer;
                                   declare entry, f1, f2 any;
@@ -4714,24 +4765,24 @@
                                     f1 := cast (xpath_eval ('@action', entry) as varchar);
                                     f2 := cast (xpath_eval ('.', entry) as varchar);
 
-                  					        http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("action", null, {fld_1: {mode: 75, value: "%s"}, fld_2: {mode:76, value: "%s"}});});', f1, f2));
+                                    http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("action", null, {fld_1: {mode: 75, value: "%s"}, fld_2: {mode:76, value: "%s"}});});', f1, f2));
                                   }
                                 ?>
-                  	    		    </script>
+                                </script>
                               ]]>
-                		        </tbody>
-                		      </table>
-                	      </td>
-                	      <td nowrap="nowrap" valign="top">
-              	          <span class="button pointer">
-              	            <xsl:attribute name="onclick">javascript: TBL.createRow('action', null, {fld_1: {mode: 75}, fld_2: {mode: 76}});</xsl:attribute>
+                            </tbody>
+                          </table>
+                        </td>
+                        <td nowrap="nowrap" valign="top">
+                          <span class="button pointer">
+                            <xsl:attribute name="onclick">javascript: TBL.createRow('action', null, {fld_1: {mode: 75}, fld_2: {mode: 76}});</xsl:attribute>
                             <img src="<?V self.image_src ('dav/image/add_16.png') ?>" border="0" class="button" alt="Add Security" title="Add Security" /> Add
-              	          </span>
-                	      </td>
-               	      </tr>
-               	    </table>
-               	  </td>
-          	    </tr>
+                          </span>
+                        </td>
+                       </tr>
+                     </table>
+                   </td>
+                </tr>
               </table>
 
               <div class="WEBDAV_formFooter">
@@ -5783,7 +5834,7 @@
                     }
 
                     http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf ('Location: view.vsp?sid=%s&realm=%s&file=%U&mode=download\r\n', self.sid , self.realm, path));
+                    http_header (sprintf ('Location: view.vsp?sid=%s&realm=%U&file=%U&mode=download\r\n', self.sid , self.realm, path));
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
@@ -6132,6 +6183,9 @@
           </td>
         </tr>
         <tr>
+          <th id="dav_IMAP_authenticated" style="text-align: center; font-size: 1.2em; background-color: #EAEAEE; color: red;" colspan="2">Not Authenticated</th>
+        </tr>
+        <tr>
           <th>
             <vm:label for="dav_IMAP_folder" value="Folder Path" />
           </th>
@@ -6146,7 +6200,14 @@
                   fld.input.className = 'field-short';
                   fld.input.comboList = fld;
                   fld.list.style.width = '250px';
+
+                  fld.throbler = OAT.Dom.create("img", {display: "none"});
+                  fld.throbler.src = OAT.AJAX.imagePath+"Ajax_throbber.gif";
+                  fld.div.appendChild(fld.throbler);
+                  OAT.Dom.hide(fld.img);
+
                   $("td_dav_IMAP_folder").appendChild(fld.div);
+
                   WEBDAV.loadIMAPFolders();
                 }
                 OAT.Loader.load(["ajax", "json", "drag", "combolist"], dav_IMAP_folderInit);
