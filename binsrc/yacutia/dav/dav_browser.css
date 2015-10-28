@@ -167,6 +167,17 @@ div.boxHeader {
   vertical-align: middle;
 }
 
+div.boxFooter {
+  left:0;
+  right:0;
+  bottom: 0;
+  position: absolute;
+  background-color: #B0CDE4;
+  padding: 2px;
+  border: 1px solid #7f94a5;
+  vertical-align: middle;
+}
+
 input.nolink {
   text-align: left;
   margin: 0px;
@@ -219,6 +230,7 @@ img.toolbar {
   width: 100%;
   min-height: 350px;
   overflow: auto;
+  position: relative;
 }
 
 span.button, a.button {
@@ -230,8 +242,9 @@ span.button, a.button {
   color: #FFFFFF;
   font-size: 0.8em;
   font-weight: bold;
-  padding: 3px 4px 1px;
+  padding: 4px 4px 1px;
   text-decoration:none;
+  vertical-align: middle;
 }
 
 img.button {

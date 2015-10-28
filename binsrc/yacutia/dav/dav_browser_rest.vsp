@@ -458,12 +458,14 @@
   }
   else if (action = 'imapFilter')
   {
+    declare owner varchar;
     declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
 
     MAIL.WA.dc_predicateMetas (predicateMetas);
     MAIL.WA.dc_compareMetas (compareMetas);
-    MAIL.WA.dc_actionMetas (actionMetas);
-    folders := MAIL.WA.folder_list (get_keyword ('owner', params));
+    MAIL.WA.dc_actionMetas (actionMetas, 1);
+    owner := get_keyword ('owner', params);
+    folders := MAIL.WA.external_account_folders (owner, DB.DBA.IMAP__mea_id (owner));
     headers := MAIL.WA.dc_headersList ();
     triplets := MAIL.WA.dc_tripletList ();
 
