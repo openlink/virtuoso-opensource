@@ -767,15 +767,19 @@ TBL.createCell76 = function (td, prefix, fldName, No, fldOptions) {
       return;
 
     var fld;
+    var fldButton;
     if (fldParams[2] == 'input') {
       fld = OAT.Dom.create("input");
       fld.type = fldParams[3];
     }
     else if ((fldParams[2] == 'select') && (fldParams[3] == 'folder')) {
-      fld = OAT.Dom.create("select");
-      for (var i = 0; i < TBL.imapFolders.length; i++) {
-        OAT.Dom.option(TBL.imapFolders[i][1], TBL.imapFolders[i][0], fld);
-      }
+      OAT.Loader.load(["drag", "dav"], function(){OAT.WebDav.init(davOptions);});
+      fld = OAT.Dom.create("input");
+      fld.type = 'text';
+      fldButton = OAT.Dom.create('img');
+      fldButton.src = '/ods/images/select.gif';
+      fldButton.className = "pointer";
+      fldButton.onclick = function(name){return function(){ WEBDAV.davFolderSelect (name);};}(fldName);
     }
     else if ((fldParams[2] == 'select') && (fldParams[3] == 'priority')) {
       fld = OAT.Dom.create("select");
@@ -792,6 +796,9 @@ TBL.createCell76 = function (td, prefix, fldName, No, fldOptions) {
       fld.value = fldOptions.value;
     }
     td.appendChild(fld);
+    if (fldButton) {
+      td.appendChild(fldButton);
+    }
     return fld;
   }
 }
