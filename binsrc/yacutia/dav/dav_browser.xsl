@@ -4548,18 +4548,12 @@
 
                   <v:template name="dsf_footer" type="simple" name-to-remove="table" set-to-remove="top">
                     <table>
-                      <tfoot>
-                        <tr align="right" >
-                          <td colspan="3">
-                          </td>
-                        </tr>
-                      </tfoot>
                     </table>
                   </v:template>
 
                 </v:data-set>
 
-                <div class="boxHeader" style="background-color: #B0CDE4; padding: 3px;">
+                <div class="boxFooter">
                   <b>Run selected filter(s) on</b>&amp;nbsp;
                   <v:select-list name="imap_folderSelect" xhtml_id="imap_folderSelect">
                     <v:after-data-bind>
