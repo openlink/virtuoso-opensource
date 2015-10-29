@@ -62,7 +62,12 @@ public class VirtuosoRdfBox implements RdfBox
     public VirtuosoRdfBox (VirtuosoConnection connection, Object box, boolean is_complete, boolean id_only, short type, short lang, long ro_id)
     {
 	this.connection = connection;
-	this.rb_box = box;
+
+        if (box instanceof DateObject)
+          this.rb_box = ((DateObject)box).getValue(true);
+        else
+	  this.rb_box = box;
+
 	this.rb_type = type;
 	this.rb_lang = lang;
 	this.rb_is_complete = is_complete;
@@ -76,8 +81,13 @@ public class VirtuosoRdfBox implements RdfBox
     {
 	long ro_id;
 	this.connection = (VirtuosoConnection) connection;
-	this.rb_box = box;
-	ro_id = rdfMakeObj (box, type, lang);
+
+        if (box instanceof DateObject)
+          this.rb_box = ((DateObject)box).getValue(true);
+        else
+	  this.rb_box = box;
+
+	ro_id = rdfMakeObj (this.rb_box, type, lang);
 	this.rb_type = getTypeKey (type);
 	this.rb_lang = getLangKey (lang);
 	this.rb_is_complete = false;
