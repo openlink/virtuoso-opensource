@@ -3082,6 +3082,7 @@ ttl_try_to_cache_new_prefix (caddr_t *qst, dk_session_t *ses, ttl_env_t *env, pt
   id_hash_iterator_t *ns2pref_hit = env->te_used_prefixes;
   id_hash_t *ns2pref = ns2pref_hit->hit_hash;
   caddr_t *prefx_ptr;
+  caddr_t prefix, ns;
   ptrlong ns_counter_val;
   if ('\0' == ti->ns[0])
     return 0;
@@ -3122,10 +3123,18 @@ ttl_try_to_cache_new_prefix (caddr_t *qst, dk_session_t *ses, ttl_env_t *env, pt
         }
       ti->prefix = box_sprintf (20, "ns%d", ns2pref->ht_count);
     }
-  id_hash_set (ns2pref, (caddr_t)(&ti->ns), (caddr_t)(&(ti->prefix)));
-  ti->prefix = box_copy (ti->prefix);
+  if (ns2pref->ht_mp)
+    {
+      prefix = mp_full_box_copy_tree ((mem_pool_t *)(ns2pref->ht_mp), ti->prefix);
+      ns = mp_full_box_copy_tree ((mem_pool_t *)(ns2pref->ht_mp), ti->ns);
+    }
+  else
+    {
+      prefix = box_copy (ti->prefix);
+      ns = box_copy (ti->ns);
+    }
+  id_hash_set (ns2pref, (caddr_t)(&ns), (caddr_t)(&prefix));
   ns_counter_ptr[0] = ns_counter_val + 1;
-  ti->ns = box_copy (ti->ns);
   return 1;
 }
 

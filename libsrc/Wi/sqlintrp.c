@@ -601,12 +601,16 @@ ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec, &vec_defaults);
       if (err || qi->qi_set == qi->qi_n_sets - 1 || proc->qr_proc_vectored)
 	{
 	  /* for vectored call of non vectored proc filling proc table temp, do not drop the fill itc until there is termination from eerror of having done the last set */
-      hash_area_t *ha = (hash_area_t *)cli->cli_result_ts;
-      caddr_t *result_qst = (caddr_t *)cli->cli_result_qi;
-      it_cursor_t *ins_itc = (it_cursor_t *) result_qst[ha->ha_insert_itc->ssl_index];
-      if (ins_itc)
-	itc_free (ins_itc);
-      result_qst [ha->ha_insert_itc->ssl_index] = NULL;
+	  hash_area_t *ha = (hash_area_t *) cli->cli_result_ts;
+	  caddr_t *result_qst = (caddr_t *) cli->cli_result_qi;
+	  if (result_qst)
+	    {
+	      it_cursor_t *ins_itc = (it_cursor_t *) result_qst[ha->ha_insert_itc->ssl_index];
+	      if (ins_itc)
+		itc_free (ins_itc);
+	      result_qst[ha->ha_insert_itc->ssl_index] = NULL;
+	    }
+	  else log_error ("result_qst is null");
 	}
       PROC_RESTORE_SAVED;
     }

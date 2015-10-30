@@ -1685,6 +1685,8 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
   BOX_DONE (tmp_ssl, tmp_ssl_buf);
   dk_free_box ((caddr_t)save);
   dk_set_free (ks.ks_out_slots);
+  dk_free_box (ks.ks_out_map);
+  itc_free (itc);
   ITC_IN_KNOWN_MAP (insert_itc, last_dp);
   page_wait_access (insert_itc, last_dp, NULL, &insert_itc->itc_hash_buf, PA_WRITE, RWG_WAIT_ANY);
   ITC_LEAVE_MAPS (insert_itc);
