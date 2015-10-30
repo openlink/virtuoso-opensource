@@ -2015,7 +2015,7 @@ create procedure WS.WS.PUT (
       is_container := 0;
       link := http_request_header (lines, 'Link', null, null);
       arr := split_and_decode (link, 0, '\0\0;=');
-      if (length (arr) = 4 and arr[0] = '<http://www.w3.org/ns/ldp#BasicContainer>')
+      if ((length (arr) = 4 and arr[0] = '<http://www.w3.org/ns/ldp#BasicContainer>') or _col is not null)
 	{
 	  is_container := 1;
 	  if (length (ses) = 0)
