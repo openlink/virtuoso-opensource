@@ -1082,13 +1082,20 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 		    _name), ses);
 	    }
 	  sql_val := __rdf_sqlval_of_obj (_val, 1);
-	  if (isentity (sql_val))
-	    is_xml_lit := 1;
-	  if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
-	    sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
-	  if (is_xml_lit) http ('<![CDATA[', ses);
-	  http_value (__rdf_strsqlval (sql_val), 0, ses);
-	  if (is_xml_lit) http (']]>', ses);
+	  if (__tag of rdf_box = __tag (_val) and __tag of datetime = rdf_box_data_tag (_val))
+	    {
+	      __rdf_long_to_ttl (_val, ses);
+	    }
+	  else
+	    {
+	      if (isentity (sql_val))
+		is_xml_lit := 1;
+	      if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
+		sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
+	      if (is_xml_lit) http ('<![CDATA[', ses);
+	      http_value (__rdf_strsqlval (sql_val), 0, ses);
+	      if (is_xml_lit) http (']]>', ses);
+	    }
           http ('</literal></binding>', ses);
         }
 end_of_binding: ;
@@ -1494,7 +1501,10 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
         }
       else
         http ('"type": "literal", "value": "', ses);
-      http_escape (dat, 14, ses, 1, 1);
+      if (__tag of datetime = rdf_box_data_tag (val))
+	__rdf_long_to_ttl (val, ses);
+      else
+	http_escape (dat, 14, ses, 1, 1);
     }
   else if (__tag of varchar = __tag (val))
     {

@@ -5966,6 +5966,13 @@ create procedure DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (inout _env any, in val a
   t := __tag (val);
   if (t = __tag of rdf_box)
     {
+      if (__tag of datetime = rdf_box_data_tag (val))
+	{
+	  http ('"', _env);
+	  __rdf_long_to_ttl (val, _env);
+	  http ('"', _env);
+	  return;
+	}
       val := rdf_box_data (val);
       t := __tag (val);
     }
