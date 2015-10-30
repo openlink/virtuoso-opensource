@@ -21,7 +21,7 @@
 
 package testsuite;
 import java.sql.*;
-import virtuoso.jdbc4.*;
+import virtuoso.jdbc3.*;
 
 public class TestDateTime
 {
