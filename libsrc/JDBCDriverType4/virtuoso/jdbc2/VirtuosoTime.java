@@ -74,24 +74,29 @@ public class VirtuosoTime extends java.sql.Time
         if (with_timezone)
         {
             StringBuffer s = new StringBuffer();
-            s.append(timezone>0?'+':'-');
+            if (timezone == 0) {
+              timeZoneString = "Z";
+              formatter.setTimeZone(TimeZone.getTimeZone("GMT-00:00"));
+            } else {
+              s.append(timezone>0?'+':'-');
 
-            int tz = Math.abs(timezone);
-            int tzh = tz/60;
-            int tzm = tz%60;
+              int tz = Math.abs(timezone);
+              int tzh = tz/60;
+              int tzm = tz%60;
 
-            if (tzh < 10)
+              if (tzh < 10)
                 s.append('0');
 
-            s.append(tzh);
-            s.append(':');
+              s.append(tzh);
+              s.append(':');
 
-            if (tzm < 10)
+              if (tzm < 10)
                 s.append('0');
 
-            s.append(tzm);
-            timeZoneString = s.toString();
-            formatter.setTimeZone(TimeZone.getTimeZone("GMT"+timeZoneString));
+              s.append(tzm);
+              timeZoneString = s.toString();
+              formatter.setTimeZone(TimeZone.getTimeZone("GMT"+timeZoneString));
+            }
         }
         sb.append(formatter.format(this));
 
