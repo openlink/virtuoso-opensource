@@ -87,6 +87,8 @@ setp_node_t *
 sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
 			state_slot_t ** ssl_out, long nrows, dk_set_t * code, ptrlong * dist_pos)
 {
+  state_slot_t * cnst = NULL;
+
   state_slot_t * set_no;
   int inx;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
@@ -95,18 +97,30 @@ sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
       DO_BOX (ptrlong, pos, inx, dist_pos)
 	{
 	  state_slot_t * ssl = ssl_out[pos];
+	  if (SSL_CONSTANT == ssl->ssl_type)
+	    {
+	      cnst = ssl;
+	      continue;
+	    }
 	  setp->setp_keys = NCONC (setp->setp_keys, CONS (ssl, NULL));
 	}
       END_DO_BOX;
     }
   else
     {
-  DO_BOX (state_slot_t *, ssl, inx, ssl_out)
-  {
-    setp->setp_keys = NCONC (setp->setp_keys, CONS (ssl, NULL));
-  }
-  END_DO_BOX;
+      DO_BOX (state_slot_t *, ssl, inx, ssl_out)
+	{
+	  if (SSL_CONSTANT == ssl->ssl_type)
+	    {
+	      cnst = ssl;
+	      continue;
+	    }
+	  setp->setp_keys = NCONC (setp->setp_keys, CONS (ssl, NULL));
+	}
+      END_DO_BOX;
     }
+  if (!setp->setp_keys && cnst)
+    setp->setp_keys = CONS (cnst, NULL);
   setp->setp_set_no_in_key = sqlg_is_multistate_gb (sc->sc_so);
   if (setp->setp_set_no_in_key)
     {
