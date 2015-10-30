@@ -31,6 +31,8 @@ import virtuoso.sql.RdfBox;
 
 public class VirtuosoRdfBox implements RdfBox
 {
+    static final String gYear = "http://www.w3.org/2001/XMLSchema#gYear";
+
     // rdf_box_t
     public short	rb_type;
     public short 	rb_lang;
@@ -251,7 +253,22 @@ public class VirtuosoRdfBox implements RdfBox
 
     public String toString ()
     {
-    	return (this.rb_box == null)?"NULL":this.rb_box.toString ();
+        String retVal = "NULL";
+        if (this.rb_box != null) {
+          String o_type = getType();
+
+          if (o_type!=null && o_type.equals(gYear)) {
+            if (rb_box instanceof VirtuosoDate) 
+              retVal = ((VirtuosoDate) rb_box).toXSD_String().substring(0,4);
+            else if (rb_box instanceof VirtuosoTimestamp)
+              retVal = ((VirtuosoTimestamp) rb_box).toXSD_String().substring(0,4);
+            else
+    	      retVal = this.rb_box.toString ();
+          } else {
+    	    retVal = this.rb_box.toString ();
+          }
+        }
+        return retVal;
     }
 }
 
