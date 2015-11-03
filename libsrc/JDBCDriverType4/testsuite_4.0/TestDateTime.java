@@ -94,7 +94,8 @@ public class TestDateTime
       url = args[0];
 
     Test_SQL(url);
-    Test_SPARQL(url);
+    Test_SPARQL_1(url);
+    Test_SPARQL_2(url);
 
     getTotal();
   }
@@ -155,9 +156,11 @@ public class TestDateTime
 
       } catch (Exception e) {
         log("***FAILED Test " + e);
+        e.printStackTrace();
         ok = false;
       }
       endTest("1", ok);
+
 
       startTest("2"); ok = true;
       try
@@ -189,6 +192,7 @@ public class TestDateTime
 
       } catch (Exception e) {
         log("***FAILED Test " + e);
+        e.printStackTrace();
         ok = false;
       }
       endTest("2", ok);
@@ -223,9 +227,9 @@ public class TestDateTime
   }
 
 
-  public static void Test_SPARQL(String url)
+  public static void Test_SPARQL_1(String url)
   {
-    log("\n  TEST SPARQL");
+    log("\n  TEST SPARQL_1");
 
 
     Connection c = null;
@@ -322,6 +326,7 @@ public class TestDateTime
 
       } catch (Exception e) {
         log("***FAILED Test " + e);
+        e.printStackTrace();
         ok = false;
       }
       endTest("1", ok);
@@ -342,5 +347,188 @@ public class TestDateTime
     }
   }
 
+  public static void Test_SPARQL_2(String url)
+  {
+    log("\n  TEST SPARQL_2");
+
+
+    Connection c = null;
+    Statement stmt;
+    PreparedStatement ps;
+    ResultSet rs;
+
+
+    try
+    {
+      Class.forName("virtuoso.jdbc4.Driver");
+      System.out.println("---------------------");
+      System.out.print("Establish connection at " + url);
+      c = DriverManager.getConnection (url, "dba", "dba");
+      System.out.println("    PASSED");
+
+      boolean ok = true;
+      String query = null;
+
+      String s_y1 = "2005";
+      String s_y2 = "1954";
+
+      String s_gm1 = "--12"; // --MM
+      String s_gm2 = "--02"; // --MM
+
+      String s_gd1 = "---31"; // ---DD
+      String s_gd2 = "---01"; // ---DD
+
+      String s_gym1 = "2005-12"; // CCYY-MM
+      String s_gym2 = "2005-01"; // CCYY-MM
+
+      String s_gmd1 = "--12-31"; // --MM-DD
+      String s_gmd2 = "--01-01"; // --MM-DD
+
+      String s_dts1 = "1999-05-31T13:25:00-05:00";
+      String s_dts2 = "1999-05-31T13:24:00Z";
+      String s_dts3 = "1999-05-31T13:25:00.001-05:00";
+      String s_dts4 = "1999-05-31T13:24:00.002Z";
+
+
+      String t_y = "http://www.w3.org/2001/XMLSchema#gYear";
+      String t_gm = "http://www.w3.org/2001/XMLSchema#gMonth";
+      String t_gd = "http://www.w3.org/2001/XMLSchema#gDay";
+      String t_gym = "http://www.w3.org/2001/XMLSchema#gYearMonth";
+      String t_gmd = "http://www.w3.org/2001/XMLSchema#gMonthDay";
+      String t_dts = "http://www.w3.org/2001/XMLSchema#dateTimeStamp";
+
+//      String t_dtd = "http://www.w3.org/2001/XMLSchema#dateTimeDuration";
+
+
+      startTest("1"); ok = true;
+      try
+      {
+        Object o;
+
+        stmt = c.createStatement();
+
+        stmt.executeUpdate("sparql clear graph <ex_dt>");
+
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <y1> "+createRdfType(s_y1, t_y)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <y2> "+createRdfType(s_y2, t_y)+" }");
+
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gm1> "+createRdfType(s_gm1, t_gm)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gm2> "+createRdfType(s_gm2, t_gm)+" }");
+
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gd1> "+createRdfType(s_gd1, t_gd)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gd2> "+createRdfType(s_gd2, t_gd)+" }");
+
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gym1> "+createRdfType(s_gym1, t_gym)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gym2> "+createRdfType(s_gym2, t_gym)+" }");
+
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gmd1> "+createRdfType(s_gmd1, t_gmd)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <gmd2> "+createRdfType(s_gmd2, t_gmd)+" }");
+
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <dts1> "+createRdfType(s_dts1, t_dts)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <dts2> "+createRdfType(s_dts2, t_dts)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <dts3> "+createRdfType(s_dts3, t_dts)+" }");
+        stmt.executeUpdate("sparql insert into graph <ex_dt> {<a> <dts4> "+createRdfType(s_dts4, t_dts)+" }");
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <y1> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_y1);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_y);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <y2> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_y2);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_y);
+
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gm1> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gm1);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gm);
+        assertEquals((((VirtuosoRdfBox)o).rb_box).getClass(), String.class);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gm2> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gm2);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gm);
+
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gd1> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gd1);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gd);
+        assertEquals((((VirtuosoRdfBox)o).rb_box).getClass(), String.class);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gd2> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gd2);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gd);
+
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gym1> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gym1);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gym);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gym2> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gym2);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gym);
+
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gmd1> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gmd1);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gmd);
+        assertEquals((((VirtuosoRdfBox)o).rb_box).getClass(), String.class);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <gmd2> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_gmd2);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_gmd);
+
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <dts1> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_dts1);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_dts);
+        assertEquals((((VirtuosoRdfBox)o).rb_box).getClass(), String.class);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <dts2> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_dts2);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_dts);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <dts3> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_dts3);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_dts);
+
+        o = execSparqlSelect1(stmt, "sparql select ?o from <ex_dt> where {<a> <dts4> ?o}");
+        assertEquals(o.getClass(), VirtuosoRdfBox.class);
+        assertEquals(((VirtuosoRdfBox)o).toString(), s_dts4);
+        assertEquals(((VirtuosoRdfBox)o).getType(), t_dts);
+
+      } catch (Exception e) {
+        log("***FAILED Test " + e);
+        e.printStackTrace();
+        ok = false;
+      }
+      endTest("1", ok);
+
+
+
+      getTestTotal();
+
+    }catch (Exception e){
+      System.out.println("ERROR Test Failed.");
+      e.printStackTrace();
+    }
+    finally {
+      try {
+        c.close();
+      }
+      catch (Exception e) {}
+    }
+  }
 
 }
