@@ -3899,6 +3899,7 @@ srv_global_init (char *mode)
     pl_debug_all = 0;
 #endif
   wi_open (mode);
+  srv_client_defaults_init ();
   sql_bif_init ();
   bif_daq_init ();
   if (lite_mode)

@@ -4657,7 +4657,7 @@ wi_open (char *mode)
   mutex_option (log_write_mtx, "Log_write", log_write_entry_check, NULL);
   transit_list_mtx = mutex_allocate ();
   mutex_option (transit_list_mtx, "transit_list", NULL, NULL);
-  srv_client_defaults_init ();
+
   wi_inst.wi_bps = (buffer_pool_t **) dk_alloc_box (bp_n_bps * sizeof (caddr_t), DV_CUSTOM);
   if (wi_inst.wi_max_dirty > main_bufs)
     wi_inst.wi_max_dirty = main_bufs;

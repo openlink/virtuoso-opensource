@@ -376,7 +376,6 @@ int32 c_cli_encryption_on_password;
 extern long cli_encryption_on_password;
 
 extern caddr_t client_defaults;
-void srv_client_defaults_init ();
 extern void srv_plugins_init (void);
 
 /* externals for duplicated functions */
@@ -1679,8 +1678,6 @@ cfg_setup (void)
       if (!http_log)
 	log_error ("Can't open HTTP log file (%s)", http_log_file);
     }
-
-  srv_client_defaults_init ();
 
   /*
    *  VDB related parameters

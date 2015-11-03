@@ -561,6 +561,9 @@ con_set_defaults (cli_connection_t * con, caddr_t * login_res)
       con->con_defs.cdef_utf8_execs		= cdef_param (cdefs, "SQL_UTF8_EXECS", 0);
       con->con_defs.cdef_binary_timestamp	= cdef_param (cdefs, "SQL_BINARY_TIMESTAMP", 1);
       con->con_defs.cdef_timezoneless_datetimes	= cdef_param (cdefs, "SQL_TIMEZONELESS_DATETIMES", 0);
+
+      timezoneless_datetimes = con->con_defs.cdef_timezoneless_datetimes;
+
       dk_free_tree ((box_t) cdefs);
     }
 }

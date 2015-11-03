@@ -323,7 +323,7 @@ int32 cli_utf8_execs;
 int32 cli_binary_timestamp = 1;
 int32 cli_no_system_tables = 0;
 
-caddr_t client_defaults;
+caddr_t client_defaults = NULL;
 
 caddr_t
 srv_client_defaults (void)
@@ -347,7 +347,9 @@ srv_client_defaults_init (void)
   box_string ("SQL_UTF8_EXECS")			, box_num (cli_utf8_execs)			,
   box_string ("SQL_BINARY_TIMESTAMP")		, box_num (cli_binary_timestamp)		,
   box_string ("SQL_TIMEZONELESS_DATETIMES")	, box_num (timezoneless_datetimes)		);
-  dk_free_tree (old);
+  
+  if (old)
+    dk_free_tree (old);
 }
 
 
