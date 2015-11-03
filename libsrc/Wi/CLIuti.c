@@ -2235,42 +2235,8 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	numeric_to_string ((numeric_t) it, temp, sizeof (temp));
 	break;
 
-      case DV_DATETIME:	/* This is the new type, from 27-FEB-97 on */
-	{			/* See the comment before this function. */
-	  dt_to_string (it, temp, sizeof (temp));
-
-	  if (!sql_type && nth_col != -1)
-	    virtodbc__SQLDescribeCol ((SQLHSTMT) stmt, (SQLUSMALLINT) nth_col,
-		NULL, (SQLSMALLINT) 0, NULL, &sql_type, NULL, NULL, NULL);
-
-	  switch (sql_type)
-	    {
-	    case SQL_TYPE_DATE:
-	    case SQL_DATE:
-	      temp[10] = 0;
-	      break;
-
-	    case SQL_TYPE_TIME:
-	    case SQL_TIME:
-              {
-                char *tail = temp+11;
-                do { tail[-11] = tail[0]; tail++; } while (tail[0]);
-/*
-	      strncpy (temp, temp + 11, 8);
-	      temp[8] = 0;
-	      temp[2] = temp[5] = ':';
-*/
-/*	      sprintf (temp, "%02d:%02d:%02d",
-		  DT_HOUR (it), DT_MINUTE (it), DT_SECOND (it));
-*/
-	      break;
-               }
-
-	    default:		/* Including 0=unknown, and SQL_TIMESTAMP */
-	      /*temp[19] = 0;*/
-	      break;
-	    }
-	}
+      case DV_DATETIME:
+	dt_to_string (it, temp, sizeof (temp));
 	break;
 
       case DV_ARRAY_OF_LONG:
