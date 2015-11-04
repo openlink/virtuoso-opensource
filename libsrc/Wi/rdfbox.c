@@ -5490,6 +5490,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
             }
           else
             {
+	      t_prefix = prefix;
               if (flags & 0x1)
                 {
 		  if (ht->ht_mp)
@@ -5501,7 +5502,6 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
 		    }
 		  else
 		    {
-		      t_prefix = prefix;
 		      t_ns_iri = ns_iri;
 		      to_free = NULL; /* to be released when hash table is free */
 		    }
