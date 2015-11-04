@@ -4968,7 +4968,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
 create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, inout ses any)
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
-  declare subj_text, val, p_itemprop, nice_host, describe_path, about_path varchar;
+  declare val, p_itemprop, nice_host, describe_path, about_path varchar;
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
@@ -5019,7 +5019,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   rowvector_subj_sort (triples, 0, 1);
   prev_subj := prev_pred := null;
   obj_needs_br := 0;
-  http ('\n<table border=1><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr>', ses);
+  http ('\n<table border="1"><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr><tr><td>', ses);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare subj, pred, obj, split, o_split any;
@@ -5040,7 +5040,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       if (prev_subj is null or (subj <> prev_subj))
         {
           if (prev_subj is not null)
-            http ('\n</td></tr>', ses);
+            http ('\n</td></tr><tr><td>', ses);
           split := sparql_iri_split_rdfa_qname (subj, nsdict, 2);
           val := id_to_iri (subj);
           -- dbg_obj_princ ('Split of ', subj, ' is ', split);
@@ -5067,10 +5067,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
         }
       if (prev_pred is null or (pred <> prev_pred))
         {
-          if (prev_pred is not null)
-            http ('\n</td></tr>', ses);
-          http ('\n<tr>', ses);
-          http (subj_text, ses);
+--          if (prev_pred is not null)
+--            http ('\n</td></tr>', ses);
+--          http ('\n<tr>', ses);
           split := sparql_iri_split_rdfa_qname (pred, nsdict, 2);
           p_itemprop := replace (id_to_iri (pred), '"', '%22');
           -- dbg_obj_princ ('Split of ', pred, ' is ', split);
@@ -5078,7 +5077,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           else if (isstring (split[0]))	http (sprintf ('\n<td><a href="%s">%V:%V</a>'	, p_itemprop, split[0], split[2])	, ses);
           else				http (sprintf ('\n<td><a href="%s">%V%V</a>'	, p_itemprop, split[1], split[2])	, ses);
           if (describe_path is not null)
-            http (sprintf (' (<a href="%s%U">/describe</a>)</td>'	, describe_path, id_to_iri (pred)), ses);
+            http (sprintf (' (<a href="%s%U">/describe</a>)'	, describe_path, id_to_iri (pred)), ses);
           http (sprintf ('</td>\n<td itemscope itemid="%U">', val), ses);
           prev_pred := pred;
           obj_needs_br := 0;
