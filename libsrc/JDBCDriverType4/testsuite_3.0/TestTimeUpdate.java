@@ -98,8 +98,8 @@ public class TestTimeUpdate
 	 ps.setDate (1, new java.sql.Date(72, 6, 29));
 	 rs = ps.executeQuery();
 	 rs.next();
-	 System.out.print(" (recv as " + rs.getString(1) + ")");
-	 if (rs.getString(1).equals ("1972-07-29"))
+	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1).substring(0, 10) + "])");
+	 if (rs.getString(1).substring(0, 10).equals ("1972-07-29"))
 	   System.out.println("    PASSED");
 	 else
 	   System.out.println("    FAILED");
@@ -110,8 +110,8 @@ public class TestTimeUpdate
 	 ps.setTime (1, new java.sql.Time(15, 30, 45));
 	 rs = ps.executeQuery();
 	 rs.next();
-	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1) + "])");
-	 if (rs.getString(1).equals ("15:30:45"))
+	 System.out.print(" (recv as " + rs.getString(1) + " trim=[" + rs.getString(1).substring(0, 8) + "])");
+	 if (rs.getString(1).substring(0, 8).equals ("15:30:45"))
 	   System.out.println("    PASSED");
 	 else
 	   System.out.println("    FAILED");
