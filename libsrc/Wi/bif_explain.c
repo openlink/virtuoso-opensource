@@ -251,7 +251,7 @@ dv_iri_short_name (caddr_t x)
 static void
 ssl_print (state_slot_t * ssl)
 {
-  char str[3];
+  char str[10];
   if (!ssl)
     {
       stmt_printf ((" <none> "));
