@@ -138,6 +138,10 @@ public class VirtuosoConnection implements Connection
    // utf8_encoding for statements
    protected boolean utf8_execs = false;
 
+   // timezoneless datetimes setting
+   protected int timezoneless_datetimes = 0;
+  
+
    // set if the connection is managed through VirtuosoPooledConnection;
 #if JDK_VER >= 14
    protected VirtuosoPooledConnection pooled_connection = null;
@@ -709,6 +713,9 @@ public class VirtuosoConnection implements Connection
 			 //System.err.println ("version=[" + version + " ver=" + version.substring (6, 10));
 			 //if ((new Integer (version.substring (6, 10))).intValue() > 2143)
 			 //  utf8_execs = true;
+
+			 timezoneless_datetimes = (int) cdef_param (client_defaults, "SQL_TIMEZONELESS_DATETIMES", 0);
+			 //System.err.println ("timezoneless_datetimes = " + timezoneless_datetimes);
 
 			 break;
 		     case VirtuosoTypes.QA_ERROR:
