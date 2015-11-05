@@ -47,25 +47,25 @@ then
     sh $JDBCDIR/test2.sh "jdbc:virtuoso://localhost:$PORT/" > $CURRDIR/jdbc.out 2>&1
     cd $CURRDIR
 
-    passed=`grep "PASSED" jdbc.out`
-    passed_cnt=`grep "PASSED" jdbc.out | wc -l`
-    failed=`grep "FAILED" jdbc.out`
-    failed_cnt=`grep "FAILED" jdbc.out | wc -l`
+    passed=`egrep "PASSED\$" jdbc.out`
+    passed_cnt=`egrep "PASSED\$" jdbc.out | wc -l`
+    failed=`egrep "FAILED\$" jdbc.out`
+    failed_cnt=`egrep "FAILED\$" jdbc.out | wc -l`
 
     errors=0
     if [ $failed_cnt -gt 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: Some JDBC 2 Tests failed (check jdbc.out): $failed"
+	ECHO "*** FAILED: $failed_cnt JDBC 2 Tests failed (check jdbc.out): $failed"
     fi
     if [ $passed_cnt -eq 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: no JDBC 2 Tests passed ! Check jdbc.out"
+	ECHO "*** FAILED: no JDBC 2 Tests passed! (check jdbc.out)"
     fi
     if [ $errors -eq 0 ]
     then
-	ECHO "PASSED: JDBC 2 Test suite (check jdbc.out)"
+	ECHO "PASSED: JDBC 2 Test suite"
     fi
 
     SHUTDOWN_SERVER
@@ -85,25 +85,25 @@ then
     sh $JDBCDIR/test3.sh "jdbc:virtuoso://localhost:$PORT/" > $CURRDIR/jdbc3.out 2>&1
     cd $CURRDIR
 
-    passed=`grep "PASSED" jdbc3.out`
-    passed_cnt=`grep "PASSED" jdbc3.out | wc -l`
-    failed=`grep "FAILED" jdbc3.out`
-    failed_cnt=`grep "FAILED" jdbc3.out | wc -l`
+    passed=`egrep "PASSED\$" jdbc3.out`
+    passed_cnt=`egrep "PASSED\$" jdbc3.out | wc -l`
+    failed=`egrep "FAILED\$" jdbc3.out`
+    failed_cnt=`egrep "FAILED\$" jdbc3.out | wc -l`
 
     errors=0
     if [ $failed_cnt -gt 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: Some JDBC 3 Tests failed (check jdbc3.out): $failed"
+	ECHO "*** FAILED: $failed_cnt JDBC 3 Tests failed (check jdbc3.out): $failed"
     fi
     if [ $passed_cnt -eq 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: no JDBC 3 Tests passed ! Check jdbc3.out"
+	ECHO "*** FAILED: no JDBC 3 Tests passed! (check jdbc3.out)"
     fi
     if [ $errors -eq 0 ]
     then
-	ECHO "PASSED: JDBC 3 Test suite (check jdbc3.out)"
+	ECHO "PASSED: JDBC 3 Test suite"
     fi
 
     SHUTDOWN_SERVER
@@ -123,25 +123,25 @@ then
     sh $JDBCDIR/test4.sh "jdbc:virtuoso://localhost:$PORT/" > $CURRDIR/jdbc4.out 2>&1
     cd $CURRDIR
 
-    passed=`grep "PASSED" jdbc4.out`
-    passed_cnt=`grep "PASSED" jdbc4.out | wc -l`
-    failed=`grep "FAILED" jdbc4.out`
-    failed_cnt=`grep "FAILED" jdbc4.out | wc -l`
+    passed=`egrep "PASSED\$" jdbc4.out`
+    passed_cnt=`egrep "PASSED\$" jdbc4.out | wc -l`
+    failed=`egrep "FAILED\$" jdbc4.out`
+    failed_cnt=`egrep "FAILED\$" jdbc4.out | wc -l`
 
     errors=0
     if [ $failed_cnt -gt 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: Some JDBC 4 Tests failed (check jdbc4.out): $failed"
+	ECHO "*** FAILED: $failed_cnt JDBC 4 Tests failed (check jdbc4.out): $failed"
     fi
     if [ $passed_cnt -eq 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: no JDBC 4 Tests passed ! Check jdbc4.out"
+	ECHO "*** FAILED: no JDBC 4 Tests passed! (check jdbc4.out)"
     fi
     if [ $errors -eq 0 ]
     then
-	ECHO "PASSED: JDBC 4 Test suite (check jdbc4.out)"
+	ECHO "PASSED: JDBC 4 Test suite"
     fi
 
     SHUTDOWN_SERVER
@@ -161,25 +161,25 @@ then
     sh $JDBCDIR/test4_1.sh "jdbc:virtuoso://localhost:$PORT/" > $CURRDIR/jdbc4_1.out 2>&1
     cd $CURRDIR
 
-    passed=`grep "PASSED" jdbc4_1.out`
-    passed_cnt=`grep "PASSED" jdbc4_1.out | wc -l`
-    failed=`grep "FAILED" jdbc4_1.out`
-    failed_cnt=`grep "FAILED" jdbc4_1.out | wc -l`
+    passed=`egrep "PASSED\$" jdbc4_1.out`
+    passed_cnt=`egrep "PASSED\$" jdbc4_1.out | wc -l`
+    failed=`egrep "FAILED\$" jdbc4_1.out`
+    failed_cnt=`egrep "FAILED\$" jdbc4_1.out | wc -l`
 
     errors=0
     if [ $failed_cnt -gt 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: Some JDBC 4_1 Tests failed (check jdbc4_1.out): $failed"
+	ECHO "*** FAILED: $failed_cnt JDBC 4_1 Tests failed (check jdbc4_1.out): $failed"
     fi
     if [ $passed_cnt -eq 0 ]
     then
 	errors=1
-	ECHO "*** FAILED: no JDBC 4_1 Tests passed ! Check jdbc4_1.out"
+	ECHO "*** FAILED: no JDBC 4_1 Tests passed! (check jdbc4_1.out)"
     fi
     if [ $errors -eq 0 ]
     then
-	ECHO "PASSED: JDBC 4_1 Test suite (check jdbc4_1.out)"
+	ECHO "PASSED: JDBC 4_1 Test suite"
     fi
 
     SHUTDOWN_SERVER
