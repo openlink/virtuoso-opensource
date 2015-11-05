@@ -847,6 +847,9 @@ class VirtuosoInputStream extends BufferedInputStream
       int fraction = (((temp & 0xf) << 16) | (read() << 8) | read());
       int tz_bytes[] = new int[2], tz_interm;
 
+      int tzless = hour >> 7;
+      hour &= 0x1F;
+
       tz_bytes[0] = read();
       tz_bytes[1] = read();
       int tz = (((int)(tz_bytes[0] & 0x07)) << 8) | tz_bytes[1];
