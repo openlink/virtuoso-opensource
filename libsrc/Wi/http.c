@@ -463,9 +463,8 @@ ws_check_acl (ws_connection_t * ws, acl_hit_t ** hit)
 
 caddr_t *
 ws_read_post (dk_session_t * ses, int max,
-	      dk_session_t * str, dk_session_t * cont)
+	      dk_session_t * str, dk_session_t * cont, dk_set_t * parts)
 {
-  dk_set_t parts = NULL;
   char name[300];
   int inx = 0;
   int reading_name = 1;
@@ -486,8 +485,8 @@ ws_read_post (dk_session_t * ses, int max,
 	  if (reading_name)
 	    {
 	      name[inx] = 0; /*if only name of parameter is supplied */
-	      dk_set_push (&parts, box_dv_short_string (name));
-	      dk_set_push (&parts, box_dv_short_string(""));
+	      dk_set_push (parts, box_dv_short_string (name));
+	      dk_set_push (parts, box_dv_short_string(""));
 	      inx = 0;
 	    }
 	  break;
@@ -521,8 +520,8 @@ ws_read_post (dk_session_t * ses, int max,
 	  else if (ch == '&') /* only name appear */
 	    {
 	      name[inx] = 0;
-	      dk_set_push (&parts, box_dv_short_string (name));
-	      dk_set_push (&parts, box_dv_short_string(""));
+	      dk_set_push (parts, box_dv_short_string (name));
+	      dk_set_push (parts, box_dv_short_string(""));
 	      inx = 0;
 	    }
 	  else if (inx < (sizeof (name) - 1))
@@ -546,8 +545,8 @@ ws_read_post (dk_session_t * ses, int max,
 	{
 	  if (ch == '&')
 	    {
-	      dk_set_push (&parts, box_dv_short_string (name));
-	      WS_PARAM_PUSH (&parts, str);
+	      dk_set_push (parts, box_dv_short_string (name));
+	      WS_PARAM_PUSH (parts, str);
 	      strses_flush (str);
 	      inx = 0;
 	      reading_name = 1;
@@ -607,8 +606,8 @@ ws_read_post (dk_session_t * ses, int max,
 
   if (inx)
     {
-      dk_set_push (&parts, box_dv_short_string (name));
-      WS_PARAM_PUSH (&parts, str);
+      dk_set_push (parts, box_dv_short_string (name));
+      WS_PARAM_PUSH (parts, str);
       strses_flush (str);
     }
   else
@@ -630,12 +629,12 @@ ws_read_post (dk_session_t * ses, int max,
 	    }
 	  while (to_read > 0);
 	}
-      dk_set_push (&parts, box_dv_short_string ("content"));
-      WS_PARAM_PUSH (&parts, cont);
+      dk_set_push (parts, box_dv_short_string ("content"));
+      WS_PARAM_PUSH (parts, cont);
     }
 
 
-  return ((caddr_t*) list_to_array (dk_set_nreverse(parts)));
+  return ((caddr_t*) list_to_array (dk_set_nreverse(*parts)));
 }
 
 static caddr_t *
@@ -643,6 +642,7 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
 {
   dk_session_t * cont = NULL;
   caddr_t * volatile ret = NULL;
+  dk_set_t parts = NULL;
 
   if (!max)
     return ((caddr_t*) list_to_array (NULL));
@@ -650,7 +650,7 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
   cont = strses_allocate ();
   CATCH_READ_FAIL_S (ws->ws_session)
     {
-      ret = ws_read_post (ws->ws_session, max, str, cont);
+      ret = ws_read_post (ws->ws_session, max, str, cont, &parts);
     }
   FAILED
     {
@@ -660,6 +660,7 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
 	    strses_write_out (cont, ws->ws_req_log);
 	}
       dk_free_box ((box_t) cont);
+      dk_free_tree (list_to_array (dk_set_nreverse (parts)));
       THROW_READ_FAIL_S (ws->ws_session);
     }
   END_READ_FAIL_S (ws->ws_session);
@@ -1670,6 +1671,7 @@ ws_path_and_params (ws_connection_t * ws)
       dk_session_t tmp;
       scheduler_io_data_t sio;
       dk_session_t * cont = strses_allocate ();
+      dk_set_t parts = NULL;
       memset (&tmp, 0, sizeof (dk_session_t));
       memset (&sio, 0, sizeof (scheduler_io_data_t));
       tmp.dks_in_buffer = ws->ws_req_line + inx;
@@ -1678,7 +1680,11 @@ ws_path_and_params (ws_connection_t * ws)
       SESSION_SCH_DATA (&tmp) = &sio;
       CATCH_READ_FAIL(&tmp)
 	{
-	  ws->ws_params = ws_read_post (&tmp, tmp.dks_in_fill, ws->ws_strses, cont);
+	  ws->ws_params = ws_read_post (&tmp, tmp.dks_in_fill, ws->ws_strses, cont, &parts);
+	}
+      FAILED
+	{
+	  dk_free_tree (list_to_array (dk_set_nreverse (parts)));
 	}
       END_READ_FAIL(&tmp);
       dk_free_box ((box_t) cont);
