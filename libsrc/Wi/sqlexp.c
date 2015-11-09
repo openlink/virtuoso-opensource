@@ -2552,7 +2552,10 @@ code_to_cv_1 (sql_comp_t * sc, dk_set_t code, int trim_one_long_cv)
       END_CATCH;
       hash_table_free (lblhash);
       if (err)
-	sqlc_resignal_1 (sc->sc_cc, err);
+	{
+	  dk_free_box (cv);
+	  sqlc_resignal_1 (sc->sc_cc, err);
+	}
 
       return cv;
     }
