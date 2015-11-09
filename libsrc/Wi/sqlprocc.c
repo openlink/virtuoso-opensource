@@ -796,6 +796,7 @@ int
 sqlc_set_brk (query_t *qr, long line1, int what, caddr_t * inst)
 {
   int rc = 0;
+  int inside_handler = 0;
   if (!qr && !line1 && inst && *inst)
     {
       instruction_t * instr = (instruction_t *) (*inst);
@@ -812,6 +813,12 @@ sqlc_set_brk (query_t *qr, long line1, int what, caddr_t * inst)
     return 0;
   DO_INSTR (instr, 0, qr->qr_head_node->src_pre_code)
     {
+      if (instr->ins_type == INS_HANDLER)
+	inside_handler = 1;
+      if (instr->ins_type == INS_HANDLER_END)
+	inside_handler = 0;
+      if (inside_handler && line1 <= 0)
+	continue;
 	if (instr->ins_type == INS_BREAKPOINT)
 	  {
 	    if ((line1 > 0 && instr->_.breakpoint.line_no >= line1) || line1 <= 0)
