@@ -5613,6 +5613,10 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return sprintf ('{ts ''%s''}', datestring (v));
   else if (__tag (v) = __tag of nvarchar)
     return sprintf ('N\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
+  else if (isiri_id (v))
+    return sprintf ('__id2i (\'%s\')', __id2i (v));
+  else if (__tag of rdf_box = __tag (v))
+    return sprintf ('rdf_box (0, 257, 257, %d, 0)', rdf_box_ro_id (v));
   else if (__tag (v) = 255)
     return '<tag 255>';
   else
