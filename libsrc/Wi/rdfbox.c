@@ -4968,10 +4968,19 @@ bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else                         /* 01.2345678901 */
     session_buffered_write (ses, " ,\n        ", 11);
   if (obj_is_iri)
-    {                            /* 01 2345 678 90*/
-      session_buffered_write (ses, "{ \"@id\": \"", 10);
-      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-      session_buffered_write (ses, "\"}", 2);
+    {
+      if (!strcmp (pred_iri, uname_rdf_ns_uri_type)) /* Fix for 17108: values of @type should be printed without { "@id" : ... } enclosing */
+        {
+          session_buffered_write_char ('\"', ses);
+          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write_char ('\"', ses);
+        }
+      else
+        {                            /* 01 2345 678 90*/
+          session_buffered_write (ses, "{ \"@id\": \"", 10);
+          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write (ses, "\"}", 2);
+        }
     }
   else
     http_ld_json_write_literal_obj (ses, qi, obj, obj_dtp);
