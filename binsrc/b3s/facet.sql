@@ -823,8 +823,12 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list-count' = mode)
     {
-      http (sprintf ('select ?s%d as ?c1 count (*) as ?c2 ', this_s), pre);
-      http (sprintf (' group by ?s%d order by desc 2', this_s), post);
+      declare i int;
+      http (sprintf ('select ?s%d as ?c1 count (*) as ?c2 where { select distinct ', this_s), pre);
+      for (i := 1; i <= this_s; i := i + 1)
+        http (sprintf ('?s%d ', i), pre);
+      if (xpath_eval ('ancestor::query/text', tree)) http ('?g ', pre);
+      http (sprintf (' } group by ?s%d order by desc 2', this_s), post);
     }
 
   if ('entities-list' = mode)
@@ -1429,7 +1433,9 @@ fct_query (in tree any, in plain integer := 0)
 
   fct_text (xpath_eval ('//query', tree), 0, s, txt, pre, post, tree, plain);
 
-  http (' where {', pre);
+  if (xpath_eval ('//view[@type="list-count"]', tree) is null)
+    http (' where ', pre);
+  http (' {', pre);
   http (txt, pre);
   http (' }', pre);
   http (post, pre);
