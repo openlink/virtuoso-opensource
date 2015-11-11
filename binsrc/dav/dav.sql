@@ -3356,7 +3356,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 	http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, page, last, full_path)));
 	if (isstring (etag))
 	  http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
-	qr := sprintf ('define sql:select-option "order" define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index S") } }  } order by ?s ?p ?o limit %d offset %d',
+	qr := sprintf ('define sql:select-option "order" define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d',
 				  		n_per_page, n_per_page * (page - 1));
 execqr:						
 	connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
