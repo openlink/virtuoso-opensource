@@ -15228,6 +15228,8 @@ create index RDF_GRAPH_USER_USER_ID on DB.DBA.RDF_GRAPH_USER (RGU_USER_ID, RGU_G
 create procedure DB.DBA.RDF_GRAPH_CACHE_IID (in iid IRI_ID)
 {
   declare iri any;
+  if (#i0 = iid)
+    signal ('22023', 'Invalid attempt to cache #i0 as an IRI ID of some graph');
   iri := __uname (id_to_canonicalized_iri (iid));
   dict_put (__rdf_graph_iri2id_dict(), iri, iid);
   dict_put (__rdf_graph_id2iri_dict(), iid, iri);
@@ -15785,6 +15787,33 @@ create procedure DB.DBA.RDF_DEFAULT_USER_PERMS_DEL (in uname varchar, in set_pri
 }
 ;
 
+create procedure DB.DBA.RDF_VALIDATE_GRAPH_IRI (inout graph_iri any, in check_for_security_config integer)
+{
+  declare graph_iid IRI_ID;
+  if (__tag (graph_iri) = __tag of UNAME)
+    graph_iri := cast (graph_iri as varchar);
+  else if (__tag (graph_iri) = __tag of IRI_ID)
+    {
+      declare new_graph_iri varchar;
+      new_graph_iri := id_to_iri_nosignal (graph_iri);
+      if (new_graph_iri is null)
+        signal ('22023', sprintf ('Invalid graph IRI ID #i%d, no such IRI', iri_id_num (graph_iri)));
+      graph_iri := new_graph_iri;
+    }
+  graph_iid := iri_to_id_nosignal (graph_iri);
+  if (graph_iid is null)
+    signal ('22023', sprintf ('Invalid graph IRI <%.500s>, can not convert to IRI ID', graph_iri));
+  if (graph_iid >= min_bnode_iri_id())
+    signal ('22023', sprintf ('Invalid graph reference <%.500s>, should be an IRI, not a blank node label', graph_iri));
+  if (#i0 = graph_iid)
+    signal ('22023', sprintf ('Invalid graph reference <%.500s>, #i0 is not a valid graph IRI ID', graph_iri));
+  if (graph_iri = id_to_iri_nosignal (graph_iid))
+    return;
+  if (check_for_security_config)
+    signal ('22023', sprintf ('Graph IRI <%.500s> can not be used in configuring security, because it is <%.500> if converted to IRI ID and back to IRI string', graph_iri, id_to_iri_nosignal (graph_iid)));
+}
+;
+
 create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET_MEMONLY (in graph_iri varchar, in graph_iid IRI_ID, in uid integer, in perms integer)
 {
   graph_iri := cast (graph_iri as varchar);
@@ -15804,6 +15833,7 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_SET (in graph_iri varchar, in uname
   declare uid, graph_is_private, common_perms integer;
   declare special_iid IRI_ID;
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_GRAPH_USER_PERMS_SET (''%s'', ''%s'', %d);\n', graph_iri, uname, perms), -1);
+  DB.DBA.RDF_VALIDATE_GRAPH_IRI (graph_iri, 1);
   if (perms is null)
     {
       RDF_GRAPH_USER_PERMS_DEL (graph_iri, uname);
@@ -15883,6 +15913,7 @@ create procedure DB.DBA.RDF_GRAPH_USER_PERMS_DEL (in graph_iri varchar, in uname
   declare uid integer;
   declare special_iid IRI_ID;
   -- dbg_obj_princ ('gs_hist.sql'); string_to_file ('gs_hist.sql', sprintf ('-- DB.DBA.RDF_GRAPH_USER_PERMS_SET (''%s'', ''%s'', %d);\n', graph_iri, uname, perms), -1);
+  DB.DBA.RDF_VALIDATE_GRAPH_IRI (graph_iri, 1);
   graph_iid := iri_to_id (graph_iri);
   uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = uname);
   set isolation = 'serializable';
@@ -16128,12 +16159,15 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
               __tag of UNAME, __tag of IRI_ID ) );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
-            dict_remove (mem_dict, iri);
+            {
+              dict_remove (mem_dict, iri);
+              dict_remove (mem_dict_inv, iid);
+            }
         }
-      else if (iri_to_id (iri) <> iid)
+      else if (iri_to_id (iri) is null or (iri_to_id (iri) <> iid))
         {
           result ('ERROR', null, null, null, null,
-            sprintf ('Cached IRI_IDs of IRI <%.300s> is %s, actual is %s, mismatch',
+            sprintf ('Cached IRI_ID of IRI <%.300s> is %s, actual is %s, mismatch',
               cast (iri as varchar), cast (iid as varchar), cast (iri_to_id (iri) as varchar) ) );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
@@ -16145,8 +16179,20 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
                   dict_put (mem_dict_inv, iid, iri);
                 }
               else
-                dict_remove (mem_dict, iri);
+                {
+                  dict_remove (mem_dict, iri);
+                  dict_remove (mem_dict_inv, iid);
+                }
             }
+        }
+      else if (iid is not null and not (dict_contains_key (mem_dict_inv, iid)))
+        {
+          result ('ERROR', null, null, null, null,
+            sprintf ('Cached IRI_ID of IRI <%.300s> is %s, but the IRI corresponding to %s is missing in the id_to_iri cache',
+              cast (iri as varchar), cast (iid as varchar), cast (iid as varchar) ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            dict_put (mem_dict_inv, iid, iri);
         }
       if (0 = mod (mem_ctr, 100000))
         {
@@ -16171,9 +16217,12 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
               __tag of IRI_ID, __tag of UNAME ) );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
-            dict_remove (mem_dict_inv, iid);
+            {
+              dict_remove (mem_dict, iri);
+              dict_remove (mem_dict_inv, iid);
+            }
         }
-      else if (__uname (id_to_iri (iid)) <> iri)
+      else if (id_to_iri (iid) is null or __uname (id_to_iri (iid)) <> iri)
         {
           result ('ERROR', null, null, null, null,
             sprintf ('Cached IRI of IRI_ID %s is <%.300s>, actual is <%.300s>, mismatch',
@@ -16189,8 +16238,41 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
                   dict_put (mem_dict, iri, iid);
                 }
               else
-                dict_remove (mem_dict_inv, iid);
+                {
+                  dict_remove (mem_dict, iri);
+                  dict_remove (mem_dict_inv, iid);
+                }
             }
+        }
+      else if (iri_to_id (iri) is null or (iri_to_id (iri) <> iid))
+        {
+          result ('ERROR', null, null, null, null,
+            sprintf ('Cached IRI_ID of IRI <%.300s> is %s, actual is %s, mismatch',
+              cast (iri as varchar), cast (iid as varchar), cast (iri_to_id (iri) as varchar) ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            {
+              iid := iri_to_id_nosignal (iri);
+              if (iid is not null)
+                {
+                  dict_put (mem_dict, iri, iid);
+                  dict_put (mem_dict_inv, iid, iri);
+                }
+              else
+                {
+                  dict_remove (mem_dict, iri);
+                  dict_remove (mem_dict_inv, iid);
+                }
+            }
+        }
+      else if (iri is not null and not (dict_contains_key (mem_dict, iri)))
+        {
+          result ('ERROR', null, null, null, null,
+            sprintf ('Cached IRI of IRI_ID %s us <%.300s>, but the IRI_ID corresponding to that IRI is missing in the iri_to_id cache',
+              cast (iid as varchar), cast (iri as varchar), cast (iri as varchar) ) );
+          err_recoverable_count := err_recoverable_count + 1;
+          if (recovery)
+            dict_put (mem_dict, iri, iid);
         }
       if (0 = mod (mem_ctr, 100000))
         {
