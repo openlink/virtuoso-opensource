@@ -1388,8 +1388,8 @@ create procedure b3s_get_user_graph_permissions (
   in pageUrl varchar,
   in sponge_request int,
   in val_vad_present int,
-  inout val_serviceId varchar,
-  inout val_auth_method int,
+  in val_serviceId varchar,
+  in val_auth_method int,
   inout graph_perms_allow_sponge int,
   inout view_mode varchar
   )
