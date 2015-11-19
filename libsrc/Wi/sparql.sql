@@ -9017,14 +9017,16 @@ describe_physical_subjects:
   g_dict := dict_new ();
   for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
     {
-      declare subj, graph any;
+      declare subj any;
       subj := phys_subjects [s_ctr];
-      graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where O = subj and
+      for (select G as graph from DB.DBA.RDF_QUAD where O = subj and
         0 = position (G, sorted_bad_graphs) and
         __rgs_ack_cbk (G, uid, 1) and
-        (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
-      if (graph is not null)
-        dict_put (g_dict, graph, 0);
+        (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
+	{
+	  if (graph is not null)
+	    dict_put (g_dict, graph, 0);
+	}
     }
   sorted_good_graphs := dict_list_keys (g_dict, 1);
   if (0 = length (sorted_good_graphs))
@@ -9032,14 +9034,16 @@ describe_physical_subjects:
       g_dict := dict_new ();
       for (s_ctr := phys_s_count - 1; s_ctr >= 0; s_ctr := s_ctr - 1)
         {
-          declare subj, graph any;
+          declare subj any;
           subj := phys_subjects [s_ctr];
-          graph := coalesce ((select top 1 G as g1 from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and
+          for (select G as graph from DB.DBA.RDF_QUAD where S = subj and P = rdf_type_iid and
             0 = position (G, sorted_bad_graphs) and
             __rgs_ack_cbk (G, uid, 1) and
-            (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) );
-          if (graph is not null)
-            dict_put (g_dict, graph, 0);
+            (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
+	    {
+	      if (graph is not null)
+		dict_put (g_dict, graph, 0);
+	    }
         }
       sorted_good_graphs := dict_list_keys (g_dict, 1);
     }
