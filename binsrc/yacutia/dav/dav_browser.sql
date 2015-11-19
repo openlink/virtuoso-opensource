@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1841,14 +1841,12 @@ create procedure WEBDAV.DBA.user_initialize (
   declare uid, gid, cid integer;
   declare retCode any;
 
-  user_home := WEBDAV.DBA.dav_home_create(user_name);
-  if (isinteger (user_home))
+  cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
+  if (WEBDAV.DBA.DAV_ERROR (cid))
     signal ('BRF01', sprintf ('Home folder can not be created for user "%s".', user_name));
 
   WEBDAV.DBA.DAV_OWNER_ID (user_name, null, uid, gid);
-  cid := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
-  if (not WEBDAV.DBA.DAV_ERROR (cid))
-  {
+  user_home := DB.DBA.DAV_SEARCH_PATH (cid, 'C');
     if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_DET = 'CatFilter'))
     {
       new_folder := concat (user_home, 'Items/');
@@ -1879,7 +1877,6 @@ create procedure WEBDAV.DBA.user_initialize (
     -- create "Shared Resources" folder
     WEBDAV.DBA.acl_share_create (uid);
   }
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -1968,21 +1965,16 @@ create procedure WEBDAV.DBA.dav_url (
 create procedure WEBDAV.DBA.dav_home (
   in user_name varchar := null) returns varchar
 {
-  declare user_home any;
-  declare colID integer;
+  declare cid integer;
 
   if (isnull (user_name))
     user_name := WEBDAV.DBA.account ();
 
-  user_home := WEBDAV.DBA.dav_home_create (user_name);
-  if (isinteger (user_home))
+  cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
+  if (WEBDAV.DBA.DAV_ERROR (cid))
     return '/DAV/';
 
-  colID := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
-  if (isinteger (colID) and (colID > 0))
-    return user_home;
-
-  return '/DAV/';
+  return DB.DBA.DAV_SEARCH_PATH (cid, 'C');
 }
 ;
 
@@ -1993,59 +1985,25 @@ create procedure WEBDAV.DBA.dav_home2 (
   in user_role varchar := 'public')
 {
   declare user_name, user_home any;
-  declare colID integer;
+  declare cid integer;
 
-  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-  user_home := WEBDAV.DBA.dav_home_create (user_name);
-  if (isinteger (user_home))
+  user_name := WEBDAV.DBA.account_name (user_id);
+  cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
+  if (WEBDAV.DBA.DAV_ERROR (cid))
     return '/DAV/';
 
-  colID := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
-  if (isinteger (colID) and (colID > 0))
-  {
+  user_home := DB.DBA.DAV_SEARCH_PATH (cid, 'C');
     if (user_role <> 'public')
       return user_home;
+
     return user_home || 'Public/';
   }
-  return '/DAV/';
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.dav_home_create(
-  in user_name varchar) returns any
-{
-  declare user_id integer;
-  declare user_home varchar;
-  whenever not found goto _error;
-
-  if (is_empty_or_null(user_name))
-    goto _error;
-  user_home := DB.DBA.DAV_HOME_DIR(user_name);
-  if (isstring(user_home)) {
-    if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (user_home, 'C')))
-      return user_home;
-  }
-  user_home := '/DAV/home/';
-  DB.DBA.DAV_MAKE_DIR (user_home, http_dav_uid (), http_dav_uid () + 1, '110100100R');
-
-  user_home := user_home || user_name || '/';
-  user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = user_name);
-  DB.DBA.DAV_MAKE_DIR (user_home, user_id, null, '110100000R');
-  USER_SET_OPTION(user_name, 'HOME', user_home);
-
-  return user_home;
-
-_error:
-  return -18;
-}
 ;
 
 -----------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.dav_logical_home (
-  inout account_id integer) returns varchar
+  in account_id integer) returns varchar
 {
   declare home any;
 
@@ -2686,7 +2644,8 @@ create procedure WEBDAV.DBA.det_type_name (
     'CalDAV',     'CalDAV',
     'News3',      'Feed Subscriptions',
     'oMail',      'WebMail',
-    'IMAP',       'IMAP Mail Account');
+    'IMAP',       'IMAP Mail Account',
+    'FTP',        'FTP Client');
 
   return get_keyword (det_type, det_names, '');
 }
@@ -3765,7 +3724,6 @@ create procedure WEBDAV.DBA.DAV_DELETE (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  declare id any;
   declare owner, uname, gname, detType varchar;
 
   WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
@@ -3775,6 +3733,7 @@ create procedure WEBDAV.DBA.DAV_DELETE (
     if (detType = 'SyncML')
       WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (path, 'C')));
   }
+
   return DB.DBA.DAV_DELETE (path, silent, auth_name, auth_pwd);
 }
 ;
@@ -4853,7 +4812,9 @@ create procedure WEBDAV.DBA.aci_parents (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_load (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare id, what, retValue, graph any;
   declare S, st, msg, meta, rows any;
@@ -4864,7 +4825,7 @@ create procedure WEBDAV.DBA.aci_load (
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
   if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
   {
-    retValue := WEBDAV.DBA.DAV_PROP_GET (path, 'virt:aci_meta');
+    retValue := WEBDAV.DBA.DAV_PROP_GET (path, 'virt:aci_meta', auth_name=>auth_name, auth_pwd=>auth_pwd);
     if (WEBDAV.DBA.DAV_ERROR (retValue))
       retValue := vector ();
   }
@@ -4993,7 +4954,9 @@ create procedure WEBDAV.DBA.aci_load (
 --
 create procedure WEBDAV.DBA.aci_save (
   in path varchar,
-  inout aci any)
+  inout aci any,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare id, what, retValue, tmp any;
 
@@ -5001,18 +4964,18 @@ create procedure WEBDAV.DBA.aci_save (
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
   {
-    retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
+    retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta', aci, auth_name=>auth_name, auth_pwd=>auth_pwd);
   }
   else
   {
     tmp := WEBDAV.DBA.aci_n3 (aci);
     if (isnull (tmp))
     {
-      retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'virt:aci_meta_n3');
+      retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'virt:aci_meta_n3', auth_name=>auth_name, auth_pwd=>auth_pwd);
     }
     else
     {
-      retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta_n3', tmp);
+      retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta_n3', tmp, auth_name=>auth_name, auth_pwd=>auth_pwd);
     }
   }
   return retValue;
