@@ -320,33 +320,44 @@ er:
 }
 ;
 
-create function
-DAV_HOME_DIR_CREATE (in uid varchar) returns any
+create function DAV_HOME_DIR_CREATE (
+  in uid varchar) returns any
 {
-  declare rc integr;
+  declare rc, rc2 integer;
   declare path varchar;
   declare exit handler for sqlstate '*' { return -1; };
 
-  for (select U_ID, U_GROUP, U_DEF_PERMS, U_HOME from SYS_USERS where U_NAME = uid) do
+  for (select U_ID as _uid, U_GROUP as _gid, U_DEF_PERMS as _permissions, U_HOME from SYS_USERS where U_NAME = uid) do
   {
+    if (uid = 'nobody')
+    {
+      _uid := http_dav_uid ();
+      _gid := http_admin_gid ();
+      _permissions := '110100100R';
+    }
     path := '/DAV/home/';
     rc := DAV_MAKE_DIR (path, http_dav_uid (), http_admin_gid (), '110100100R');
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
 
     path := path || uid || '/';
-    rc := DAV_MAKE_DIR (path, U_ID, U_GROUP, U_DEF_PERMS);
+    rc := DAV_MAKE_DIR (path, _uid, _gid, _permissions);
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
 
     path := path || 'rdf_sink/';
-    rc := DAV_MAKE_DIR (path, U_ID, U_GROUP, U_DEF_PERMS);
-    if (isnull (DAV_HIDE_ERROR (rc)))
+    rc2 := DAV_MAKE_DIR (path, _uid, _gid, _permissions);
+    if (isnull (DAV_HIDE_ERROR (rc2)))
+    {
+      rc := rc2;
       goto _end;
-
-    rc := DB.DBA.DAV_DET_RDF_PARAMS_SET_INT ('rdfSink', rc, vector ('graph', 'urn:dav:' || replace (subseq (rtrim (path, '/'), 5), '/', ':'), 'sponger', 'on'));
-    if (isnull (DAV_HIDE_ERROR (rc)))
+    }
+    rc2 := DB.DBA.DAV_DET_RDF_PARAMS_SET_INT ('rdfSink', rc2, vector ('graph', 'urn:dav:' || replace (subseq (rtrim (path, '/'), 5), '/', ':'), 'sponger', 'on'));
+    if (isnull (DAV_HIDE_ERROR (rc2)))
+    {
+      rc := rc2;
       goto _end;
+    }
   }
 _end:;
   return rc;
@@ -7618,6 +7629,65 @@ create function DAV_HOME_DIR_UPDATE ()
 
 --!AFTER
 DAV_HOME_DIR_UPDATE ()
+;
+
+create function DAV_NOBODY_DIR_UPDATE ()
+{
+  declare changed integer;
+
+  if (isstring (registry_get ('DAV_NOBODY_DIR_UPDATE')))
+    return;
+
+  for (select COL_ID as cid, COL_OWNER as uid, COL_GROUP as gid from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like '/DAV/home/nobody/%') do
+  {
+    changed := 0;
+    if (uid = http_nobody_uid())
+    {
+      changed := 1;
+      uid := http_dav_uid();
+    }
+    if (gid = http_nogroup_gid())
+    {
+      changed := 1;
+      gid := http_admin_gid();
+    }
+    if (changed)
+    {
+      update WS.WS.SYS_DAV_COL
+         set COL_OWNER = uid,
+             COL_GROUP = gid
+       where COL_ID = cid;
+    }
+  }
+
+  for (select RES_ID as rid, RES_OWNER as uid, RES_GROUP as gid from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/home/nobody/%') do
+  {
+    changed := 0;
+    if (uid = http_nobody_uid())
+    {
+      changed := 1;
+      uid := http_dav_uid();
+    }
+    if (gid = http_nogroup_gid())
+    {
+      changed := 1;
+      gid := http_admin_gid();
+    }
+    if (changed)
+    {
+      update WS.WS.SYS_DAV_RES
+         set RES_OWNER = uid,
+             RES_GROUP = gid
+       where RES_ID = rid;
+    }
+  }
+
+  registry_set ('DAV_NOBODY_DIR_UPDATE', 'done');
+}
+;
+
+--!AFTER
+DAV_NOBODY_DIR_UPDATE ()
 ;
 
 -------------------------------------------------------------------------------
