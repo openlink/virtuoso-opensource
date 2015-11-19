@@ -77,7 +77,7 @@
               };
             ]]>
           </script>
-          <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then '/ods/tbl.js' else '/conductor/tbl.js' end ?>"><xsl:text> </xsl:text></script>
+          <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then '/ods/js/tbl.js' else '/conductor/tbl.js' end ?>"><xsl:text> </xsl:text></script>
           <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then 'dav/dav_tbl.js' else '/conductor/dav/dav_tbl.js' end ?>"><xsl:text> </xsl:text></script>
           <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then 'dav/dav_browser.js' else '/conductor/dav/dav_browser.js' end ?>"><xsl:text> </xsl:text></script>
           <script type="text/javascript">
@@ -88,8 +88,8 @@
           </script>
           <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then 'dav/dav_state.js' else '/conductor/dav/dav_state.js' end ?>"><xsl:text> </xsl:text></script>
           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework') and self.mode &lt;&gt; 'briefcase'">
-            <link rel="stylesheet" href="/ods/typeahead.css" type="text/css" />
-            <script type="text/javascript" src="/ods/typeahead.js"><xsl:text> </xsl:text></script>
+            <link rel="stylesheet" href="/ods/css/typeahead.css" type="text/css" />
+            <script type="text/javascript" src="/ods/js/typeahead.js"><xsl:text> </xsl:text></script>
           </vm:if>
 
           <v:variable name="command" persist="0" type="integer" default="0" />
