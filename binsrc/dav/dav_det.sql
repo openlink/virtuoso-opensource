@@ -43,7 +43,17 @@ create function DB.DBA.DAV_DET_WEBDAV_BASED ()
 create function DB.DBA.DAV_DET_IS_WEBDAV_BASED (
   in det varchar)
 {
-  return case when position (det, DB.DBA.DAV_DET_WEBDAV_BASED ()) then 1 else 0 end;
+  return case when (DB.DBA.is_empty_or_null (det) or position (det, DB.DBA.DAV_DET_WEBDAV_BASED ())) then 1 else 0 end;
+}
+;
+
+create function DB.DBA.DAV_DET_NAME (
+  in id any)
+{
+  if (isinteger (id))
+    return null;
+
+  return cast (id[0] as varchar);
 }
 ;
 
@@ -99,6 +109,22 @@ create function DB.DBA.DAV_DET_PATH_NAME (
     return path;
 
   return right (path, length (path)-strrchr (path, '/')-1);
+}
+;
+
+create function DB.DBA.DAV_DET_PATH_PARENT (
+  in path varchar,
+  in mode integer := 0) returns varchar
+{
+  declare pos integer;
+
+  path := trim (path, '/');
+  pos := strrchr (path, '/');
+  if (isnull (pos))
+    return case when mode then '/' else '' end;
+
+  path := left (path, pos);
+  return case when mode then '/' || path || '/' else path end;
 }
 ;
 
@@ -259,6 +285,105 @@ create function DB.DBA.DAV_DET_PROPPATCH (
 }
 ;
 
+-- Common copy/move proceure
+create function DB.DBA.DAV_DET_RES_UPLOAD_CM (
+  in mode varchar,
+  in det varchar,
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer,
+  in auth_uname varchar,
+  in auth_pwd varchar,
+  in extern integer,
+  in check_locks integer,
+  inout source_entry any,
+  inout source_path varchar,
+  inout target_path varchar)
+{
+  -- dbg_obj_princ ('DAV_DET_RES_UPLOAD_CM (', mode, detcol_id, path_parts, source_id, what, ')');
+  declare source_pid, source_content, source_type any;
+  declare target_pid, target_id any;
+  declare retValue, tmp any;
+
+  retValue := -20;
+  source_entry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
+  if (DB.DBA.DAV_HIDE_ERROR (source_entry) is null)
+  {
+    retValue := source_entry;
+    goto _exit;
+  }
+
+  if (mode = 'move')
+  {
+    permissions := source_entry[5];
+    uid := source_entry[7];
+    gid := source_entry[6];
+  }
+
+  -- source parent ID
+  source_path := source_entry[0];
+  source_pid := DB.DBA.DAV_SEARCH_ID (source_path, 'P');
+
+  -- targer parent ID
+  target_path := DB.DBA.DAV_DET_PATH (detcol_id, path_parts);
+  target_pid := DB.DBA.DAV_SEARCH_ID (target_path, 'P');
+  if (DB.DBA.DAV_DET_DAV_ID (source_pid) <> DB.DBA.DAV_DET_DAV_ID (target_pid))
+  {
+    if (what = 'R')
+    {
+      source_content := string_output ();
+      retValue := DB.DBA.DAV_RES_CONTENT_INT (source_id, source_content, source_type, 0, extern, auth_uname, auth_pwd);
+      if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
+        goto _exit;
+
+      retValue := call (cast (det as varchar) || '_DAV_RES_UPLOAD') (detcol_id, path_parts, source_content, source_type, permissions, uid, gid, auth_uid);
+      if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
+        goto _exit;
+
+      if (mode = 'move')
+      {
+        tmp := DB.DBA.DAV_DELETE_INT (source_path, 1, auth_uname, auth_pwd, extern, check_locks);
+        if (DB.DBA.DAV_HIDE_ERROR (tmp) is null)
+        {
+          retValue := tmp;
+          goto _exit;
+        }
+      }
+    }
+    else if ((what = 'C') and (cast (det as varchar) <> coalesce (DB.DBA.DAV_DET_NAME (source_id), '')))
+    {
+      target_id := call (cast (det as varchar) || '_DAV_COL_CREATE') (detcol_id, path_parts, permissions, uid, gid, auth_uid, extern);
+      if (DAV_HIDE_ERROR (target_id) is null)
+      {
+        rollback work;
+        retValue := target_id;
+        goto _exit;
+      }
+      DB.DBA.DAV_COPY_SUBTREE (source_id , target_id, source_path, target_path, 1, source_entry[7], source_entry[6], auth_uname, auth_pwd, extern, check_locks, auth_uid);
+      if (mode = 'move')
+      {
+        tmp := DB.DBA.DAV_DELETE_INT (source_path, 1, auth_uname, auth_pwd, extern, check_locks);
+        if (DB.DBA.DAV_HIDE_ERROR (tmp) is null)
+        {
+          rollback work;
+          retValue := tmp;
+          goto _exit;
+        }
+      }
+      retValue := target_id;
+    }
+  }
+_exit:;
+  return retValue;
+}
+;
+
 create function DB.DBA.DAV_DET_DAV_LIST (
   in det varchar,
   inout detcol_id integer,
@@ -308,6 +433,31 @@ create function DB.DBA.DAV_DET_DAV_LIST (
   return retValue;
 }
 ;
+
+--
+-- Activity related procs
+--
+create function DB.DBA.DAV_DET_PROPS_REMOVE (
+  in _det varchar,
+  in _id any,
+  in _what varchar)
+{
+  declare props any;
+
+  if (isarray (_id))
+    return;
+
+  props := DAV_HIDE_ERROR (DAV_PROP_LIST_INT (_id, _what, '%', 1), vector ());
+  foreach (any prop in props) do
+  {
+    if ((prop[0] like ('virt:' || _det || '%')) or (prop[0] = 'virt:DETCOL_ID'))
+    {
+      DB.DBA.DAV_PROP_REMOVE_RAW (_id, _what, prop[0], 1, http_dav_uid());
+    }
+  }
+}
+;
+
 
 --
 -- Activity related procs
@@ -798,7 +948,7 @@ create function DB.DBA.DAV_DET_RDF_DELETE (
   }
 
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
-  DB.DBA.RDF_SINK_CLEAR (path, rdf_graph);
+  DB.DBA.RDF_SINK_CLEAR (null, path, rdf_graph);
 }
 ;
 
