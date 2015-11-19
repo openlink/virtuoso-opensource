@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2686,7 +2686,8 @@ create procedure WEBDAV.DBA.det_type_name (
     'CalDAV',     'CalDAV',
     'News3',      'Feed Subscriptions',
     'oMail',      'WebMail',
-    'IMAP',       'IMAP Mail Account');
+    'IMAP',       'IMAP Mail Account',
+    'FTP',        'FTP Client');
 
   return get_keyword (det_type, det_names, '');
 }
@@ -3765,7 +3766,6 @@ create procedure WEBDAV.DBA.DAV_DELETE (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  declare id any;
   declare owner, uname, gname, detType varchar;
 
   WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
@@ -3775,6 +3775,7 @@ create procedure WEBDAV.DBA.DAV_DELETE (
     if (detType = 'SyncML')
       WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (path, 'C')));
   }
+
   return DB.DBA.DAV_DELETE (path, silent, auth_name, auth_pwd);
 }
 ;
@@ -4853,7 +4854,9 @@ create procedure WEBDAV.DBA.aci_parents (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_load (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare id, what, retValue, graph any;
   declare S, st, msg, meta, rows any;
@@ -4864,7 +4867,7 @@ create procedure WEBDAV.DBA.aci_load (
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
   if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
   {
-    retValue := WEBDAV.DBA.DAV_PROP_GET (path, 'virt:aci_meta');
+    retValue := WEBDAV.DBA.DAV_PROP_GET (path, 'virt:aci_meta', auth_name=>auth_name, auth_pwd=>auth_pwd);
     if (WEBDAV.DBA.DAV_ERROR (retValue))
       retValue := vector ();
   }
@@ -4993,7 +4996,9 @@ create procedure WEBDAV.DBA.aci_load (
 --
 create procedure WEBDAV.DBA.aci_save (
   in path varchar,
-  inout aci any)
+  inout aci any,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare id, what, retValue, tmp any;
 
@@ -5001,18 +5006,18 @@ create procedure WEBDAV.DBA.aci_save (
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
   {
-    retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta', aci);
+    retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta', aci, auth_name=>auth_name, auth_pwd=>auth_pwd);
   }
   else
   {
     tmp := WEBDAV.DBA.aci_n3 (aci);
     if (isnull (tmp))
     {
-      retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'virt:aci_meta_n3');
+      retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'virt:aci_meta_n3', auth_name=>auth_name, auth_pwd=>auth_pwd);
     }
     else
     {
-      retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta_n3', tmp);
+      retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta_n3', tmp, auth_name=>auth_name, auth_pwd=>auth_pwd);
     }
   }
   return retValue;

@@ -614,7 +614,7 @@
                 retValue := vector ('edit', 'view', 'delete', 'rename', 'tag', 'properties', 'share');
 
               else if (detClass in ('DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
-                retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'properties', 'share');
+                retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'properties', 'share');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('upload', 'view', 'delete', 'tag', 'properties', 'share');
@@ -4892,7 +4892,7 @@
                     control.add_parameter (WEBDAV.DBA.settings_hiddens (self.settings));
 
                     control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
-                    control.ds_sql := concat(control.ds_sql, ' order by c1');
+                    -- control.ds_sql := concat(control.ds_sql, ' order by c1');
 
                     if (self.dir_details = 0)
                     {
@@ -4903,11 +4903,11 @@
                       if (not is_empty_or_null(dir_grouping))
                         control.ds_sql := concat(control.ds_sql, ', ', dir_grouping[1]);
                       if (not is_empty_or_null(dir_order))
-                        control.ds_sql := concat(control.ds_sql, ', ', dir_order[1], ' ', self.dir_direction);
+                        control.ds_sql := concat(control.ds_sql, ' order by ', dir_order[1], ' ', self.dir_direction);
                     }
                     else
                     {
-                      control.ds_sql := control.ds_sql || ', c0';
+                      control.ds_sql := control.ds_sql || ' order by c0';
                     }
                     self.dir_tags := vector ();
                     if (self.dir_cloud = 1)
