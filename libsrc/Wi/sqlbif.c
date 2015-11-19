@@ -8715,7 +8715,7 @@ bif_get_keyword (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-get_keyword_int (caddr_t * arr, char * item1, const char * me)
+get_keyword_int_zero (caddr_t * arr, char * item1, const char * me, int * is_null)
 {
   int inx;
   dtp_t vectype = DV_TYPE_OF (arr);
@@ -8724,11 +8724,19 @@ get_keyword_int (caddr_t * arr, char * item1, const char * me)
   caddr_t * item = (caddr_t *) box_dv_short_string (item1);
   inx = find_index_to_vector ((caddr_t) item, (caddr_t)arr, len, vectype, 0, 2, me);
   dk_free_box ((box_t) item);
+  *is_null = 0;
   if (inx)
     return (gen_aref (arr, inx, vectype, me));
+  *is_null = 1;
   return NULL;
 }
 
+caddr_t
+get_keyword_int (caddr_t * arr, char * item1, const char * me)
+{
+  int dummy = 0;
+  return get_keyword_int_zero (arr, item1, me, &dummy);
+}
 
 /* same as the above but only for DV_ARRAY_OF_VECTOR with string keys */
 

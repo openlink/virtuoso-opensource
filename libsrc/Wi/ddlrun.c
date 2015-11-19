@@ -995,8 +995,11 @@ ddl_col_set_identity_start (char *table, char *check, caddr_t *col_options, char
       char q[MAX_NAME_LEN], o[MAX_NAME_LEN], n[MAX_NAME_LEN];
       int start = 1;
       caddr_t id_start;
+      int is_null = 0;
 
-      if (NULL != (id_start = col_options ? get_keyword_int (col_options, "identity_start", NULL) : NULL))
+      id_start = col_options ? get_keyword_int_zero (col_options, "identity_start", NULL, &is_null) : NULL;
+
+      if (col_options && !is_null)
 	{
 	  if (DV_TYPE_OF (id_start) == DV_LONG_INT)
 	    start = (int) unbox (id_start);
