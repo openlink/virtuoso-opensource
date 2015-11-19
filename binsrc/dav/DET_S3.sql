@@ -205,6 +205,7 @@ create function "S3_DAV_DELETE" (
     if (DAV_HIDE_ERROR (id_acl) is not null)
       DB.DBA.S3__deleteObject (detcol_id, id_acl, 'R');
   }
+  connection_set ('dav_store', 1);
   DB.DBA.DAV_DET_RDF_DELETE (DB.DBA.S3__detName (), detcol_id, id, what);
   retValue := DAV_DELETE_INT (path, 1, null, null, 0, 0);
 
@@ -559,40 +560,58 @@ create function "S3_DAV_RES_UPLOAD_COPY" (
   in permissions varchar,
   in uid integer,
   in gid integer,
-  in auth_uid integer) returns any
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   -- dbg_obj_princ ('S3_DAV_RES_UPLOAD_COPY (', detcol_id, path_parts, source_id, what, overwrite_flags, permissions, uid, gid, auth_uid, ')');
-  declare listID, oldName, newName varchar;
-  declare url, header, body any;
-  declare srcEntry, listItem any;
-  declare retValue, retHeader, result, save any;
+  declare source_path, target_path varchar;
+  declare source_entry any;
+  declare retValue, save any;
 
-  retValue := -20;
-  srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
-  if (DB.DBA.DAV_HIDE_ERROR (srcEntry) is null)
-    return;
-
-  declare exit handler for sqlstate '*'
-  {
-    connection_set ('dav_store', save);
-    resignal;
-  };
+  retValue := DB.DBA.DAV_DET_RES_UPLOAD_CM (
+    'copy',
+    DB.DBA.S3__detName (),
+    detcol_id,
+    path_parts,
+    source_id,
+    what,
+    overwrite_flags,
+    permissions,
+    uid,
+    gid,
+    auth_uid,
+    auth_uname,
+    auth_pwd,
+    extern,
+    check_locks,
+    source_entry,
+    source_path,
+    target_path
+  );
 
   save := connection_get ('dav_store');
-  if (save is null)
+  if ((DB.DBA.DAV_HIDE_ERROR (retValue) is null) and (retValue = -20))
   {
-    result := DB.DBA.S3__copyObject (detcol_id, path_parts, source_id, what);
-    if (DAV_HIDE_ERROR (result) is null)
+    declare exit handler for sqlstate '*'
     {
-      retValue := result;
-      goto _exit;
+      connection_set ('dav_store', save);
+      resignal;
+    };
+
+    if (save is null)
+    {
+      retValue := DB.DBA.S3__copyObject (detcol_id, path_parts, source_id, what);
+      if (DAV_HIDE_ERROR (retValue) is null)
+        goto _exit;
+
+      DB.DBA.S3__refresh (DB.DBA.DAV_DET_PATH_PARENT (target_path, 1));
     }
   }
-  connection_set ('dav_store', 1);
-
 _exit:;
   connection_set ('dav_store', save);
-
   return retValue;
 }
 ;
@@ -604,30 +623,54 @@ create function "S3_DAV_RES_UPLOAD_MOVE" (
   in source_id any,
   in what char(1),
   in overwrite_flags integer,
-  in auth_uid integer) returns any
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   -- dbg_obj_princ ('S3_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  declare listID, oldName, newName varchar;
-  declare url, header, body any;
-  declare srcEntry, listItem any;
-  declare retValue, retHeader, result, save any;
+  declare source_path, target_path, targetName varchar;
+  declare source_entry any;
+  declare retValue, result, save any;
+  declare permissions, uid, gid any;
 
-  retValue := -20;
-  srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
-  if (DB.DBA.DAV_HIDE_ERROR (srcEntry) is null)
-    return;
+  retValue := DB.DBA.DAV_DET_RES_UPLOAD_CM (
+    'move',
+    DB.DBA.S3__detName (),
+    detcol_id,
+    path_parts,
+    source_id,
+    what,
+    overwrite_flags,
+    permissions,
+    uid,
+    gid,
+    auth_uid,
+    auth_uname,
+    auth_pwd,
+    extern,
+    check_locks,
+    source_entry,
+    source_path,
+    target_path
+  );
 
-  oldName := srcEntry[10];
-  newName := case when what = 'C' then path_parts[length (path_parts)-2] else path_parts[length (path_parts)-1] end;
-  if (oldName <> newName)
+  save := connection_get ('dav_store');
+  if ((DB.DBA.DAV_HIDE_ERROR (retValue) is null) and (retValue = -20))
   {
+    if (source_path = target_path)
+    {
+      retValue := source_id;
+      goto _exit;
+    }
+
     declare exit handler for sqlstate '*'
     {
       connection_set ('dav_store', save);
       resignal;
     };
 
-    save := connection_get ('dav_store');
     if (save is null)
     {
       result := DB.DBA.S3__moveObject (detcol_id, path_parts, source_id, what);
@@ -636,21 +679,23 @@ create function "S3_DAV_RES_UPLOAD_MOVE" (
         retValue := result;
         goto _exit;
       }
-      listItem := result;
-      listID := get_keyword ('path', listItem);
     }
-    connection_set ('dav_store', 1);
-    if (what = 'C')
+    if (DB.DBA.DAV_DET_PATH_PARENT (source_path) = DB.DBA.DAV_DET_PATH_PARENT (target_path))
     {
-      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = DB.DBA.DAV_DET_DAV_ID (source_id);
-    } else {
-      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = DB.DBA.DAV_DET_DAV_ID (source_id);
+      targetName := case when what = 'C' then path_parts[length (path_parts)-2] else path_parts[length (path_parts)-1] end;
+      if (what = 'C')
+      {
+        update WS.WS.SYS_DAV_COL set COL_NAME = targetName, COL_MOD_TIME = now () where COL_ID = DB.DBA.DAV_DET_DAV_ID (source_id);
+      } else {
+        update WS.WS.SYS_DAV_RES set RES_NAME = targetName, RES_MOD_TIME = now () where RES_ID = DB.DBA.DAV_DET_DAV_ID (source_id);
+      }
     }
+    DB.DBA.S3__refresh (DB.DBA.DAV_DET_PATH_PARENT (source_path, 1));
+    DB.DBA.S3__refresh (DB.DBA.DAV_DET_PATH_PARENT (target_path, 1));
     retValue := source_id;
-
-  _exit:;
-    connection_set ('dav_store', save);
   }
+_exit:;
+  connection_set ('dav_store', save);
   return retValue;
 }
 ;
