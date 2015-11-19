@@ -1841,14 +1841,12 @@ create procedure WEBDAV.DBA.user_initialize (
   declare uid, gid, cid integer;
   declare retCode any;
 
-  user_home := WEBDAV.DBA.dav_home_create(user_name);
-  if (isinteger (user_home))
+  cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
+  if (WEBDAV.DBA.DAV_ERROR (cid))
     signal ('BRF01', sprintf ('Home folder can not be created for user "%s".', user_name));
 
   WEBDAV.DBA.DAV_OWNER_ID (user_name, null, uid, gid);
-  cid := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
-  if (not WEBDAV.DBA.DAV_ERROR (cid))
-  {
+  user_home := DB.DBA.DAV_SEARCH_PATH (cid, 'C');
     if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_DET = 'CatFilter'))
     {
       new_folder := concat (user_home, 'Items/');
@@ -1879,7 +1877,6 @@ create procedure WEBDAV.DBA.user_initialize (
     -- create "Shared Resources" folder
     WEBDAV.DBA.acl_share_create (uid);
   }
-}
 ;
 
 -------------------------------------------------------------------------------
@@ -1968,21 +1965,16 @@ create procedure WEBDAV.DBA.dav_url (
 create procedure WEBDAV.DBA.dav_home (
   in user_name varchar := null) returns varchar
 {
-  declare user_home any;
-  declare colID integer;
+  declare cid integer;
 
   if (isnull (user_name))
     user_name := WEBDAV.DBA.account ();
 
-  user_home := WEBDAV.DBA.dav_home_create (user_name);
-  if (isinteger (user_home))
+  cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
+  if (WEBDAV.DBA.DAV_ERROR (cid))
     return '/DAV/';
 
-  colID := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
-  if (isinteger (colID) and (colID > 0))
-    return user_home;
-
-  return '/DAV/';
+  return DB.DBA.DAV_SEARCH_PATH (cid, 'C');
 }
 ;
 
@@ -1993,59 +1985,25 @@ create procedure WEBDAV.DBA.dav_home2 (
   in user_role varchar := 'public')
 {
   declare user_name, user_home any;
-  declare colID integer;
+  declare cid integer;
 
-  user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
-  user_home := WEBDAV.DBA.dav_home_create (user_name);
-  if (isinteger (user_home))
+  user_name := WEBDAV.DBA.account_name (user_id);
+  cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
+  if (WEBDAV.DBA.DAV_ERROR (cid))
     return '/DAV/';
 
-  colID := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
-  if (isinteger (colID) and (colID > 0))
-  {
+  user_home := DB.DBA.DAV_SEARCH_PATH (cid, 'C');
     if (user_role <> 'public')
       return user_home;
+
     return user_home || 'Public/';
   }
-  return '/DAV/';
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.dav_home_create(
-  in user_name varchar) returns any
-{
-  declare user_id integer;
-  declare user_home varchar;
-  whenever not found goto _error;
-
-  if (is_empty_or_null(user_name))
-    goto _error;
-  user_home := DB.DBA.DAV_HOME_DIR(user_name);
-  if (isstring(user_home)) {
-    if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (user_home, 'C')))
-      return user_home;
-  }
-  user_home := '/DAV/home/';
-  DB.DBA.DAV_MAKE_DIR (user_home, http_dav_uid (), http_dav_uid () + 1, '110100100R');
-
-  user_home := user_home || user_name || '/';
-  user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = user_name);
-  DB.DBA.DAV_MAKE_DIR (user_home, user_id, null, '110100000R');
-  USER_SET_OPTION(user_name, 'HOME', user_home);
-
-  return user_home;
-
-_error:
-  return -18;
-}
 ;
 
 -----------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.dav_logical_home (
-  inout account_id integer) returns varchar
+  in account_id integer) returns varchar
 {
   declare home any;
 
