@@ -346,6 +346,10 @@ echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conduct
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vad_utils.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      for (select RES_FULL_PATH as X from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/conductor/%.xsl') do " >> $STICKER
+echo "      { " >> $STICKER
+echo "     		xslt_stale ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || X); " >> $STICKER
+echo "     	}; " >> $STICKER
 echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-uninstall\">" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER
