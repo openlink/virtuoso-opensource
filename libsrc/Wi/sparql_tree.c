@@ -2512,10 +2512,8 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
       else
         {
           dtp_t valtype = DV_TYPE_OF (value);
-#ifdef DEBUG
-              if (SPAR_LIT != SPART_TYPE (value))
-                GPF_T1("sparp_" "rvr_set_by_constant(): value is neither QNAME nor a literal");
-#endif
+          if (SPAR_LIT != SPART_TYPE (value))
+            GPF_T1("sparp_" "rvr_set_by_constant(): value is neither QNAME nor a literal");
           dest->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
           if (DV_ARRAY_OF_POINTER == valtype)
             {

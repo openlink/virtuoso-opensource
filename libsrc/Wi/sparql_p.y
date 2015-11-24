@@ -1461,7 +1461,7 @@ spar_inline_data_value
 	| spar_optsigned_numeric_literal
 	| spar_rdf_literal
 	| spar_boolean_literal
-	| spar_blank_node
+	| spar_blank_node	{ sparyyerror (sparp_arg, "The use of blank nodes in VALUES is not allowed by SPARQL 1.1 specification"); $$ = NULL; }
 	| UNBOUND_L		{ sparyyerror (sparp_arg, "UNBOUND in VALUES is deprecated, use UNDEF instead"); $$ = NULL; }
 	| UNDEF_L		{$$ = NULL; }
 	;
