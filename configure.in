@@ -145,6 +145,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Gg]][[Nn]][[Uu]])					# GNU
@@ -158,6 +159,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Dd]][[Ee]][[Bb]][[Ii]][[Aa]][[Nn]])			# Debian
@@ -176,6 +178,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
 	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
 	hostingdir=$libdir/$VIRTPKGDIR/hosting
+	clidir=$libdir/cli/$VIRTPKGDIR/
 	;;
 
   [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])			# Gentoo
@@ -194,6 +197,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
 	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
 	hostingdir=$libdir/$VIRTPKGDIR/hosting
+	clidir=$libdir/$VIRTPKGDIR/cli
 	;;
 
   [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])			# RedHat
@@ -211,6 +215,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Oo]][[Pp]][[Ee]][[Nn]][[Ss]][[Uu]][[Ss]][[Ee]])	# openSUSE
@@ -228,6 +233,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Ff]][[Rr]][[Ee]][[Ee]][[Bb]][[Ss]][[Dd]])		# FreeBSD
@@ -245,6 +251,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Oo]][[Pp]][[Tt]])					# /opt
@@ -258,6 +265,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir='${prefix}/database'
 	httprootdir='${prefix}/vsp'
 	hostingdir='${prefix}/hosting'
+	clidir='${prefix}/lib'
 	;;
 
  [[Oo]][[Pp]][[Ee]][[Nn]][[Ll]][[Ii]][[Nn]][[Kk]])	# OpenLink
@@ -271,6 +279,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir='${prefix}/database'
 	httprootdir='${prefix}/vsp'
 	hostingdir='${prefix}/hosting'
+	clidir='${prefix}/lib'
 	;;
 
   *)							# UNKNOWN
@@ -291,6 +300,7 @@ AC_SUBST(htmldocdir)
 AC_SUBST(httprootdir)
 AC_SUBST(pdfdocdir)
 AC_SUBST(vaddir)
+AC_SUBST(clidir)
 
 ##########################################################################
 ##									##

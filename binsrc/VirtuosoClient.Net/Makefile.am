@@ -21,10 +21,14 @@
 
 
 if HAVE_MCS
-TARGETS	= OpenLink.Data.Virtuoso.dll
+TARGET		= OpenLink.Data.Virtuoso.dll
 endif
 
+cli_SCRIPTS	= $(TARGET)
+CLEANFILES	= $(TARGET)
+
 MCS_FLAGS = -sdk:2 /optimize+ /d:MONO /d:ADONET2 /d:MONO1231
+
 SOURCES = \
 	$(srcdir)/ArrayOfLongPacked.cs \
 	$(srcdir)/AssemblyInfo.cs \
@@ -99,12 +103,6 @@ RESOURCES = \
 OpenLink.Data.Virtuoso.dll: $(SOURCES) Makefile.am
 	$(MCS) /unsafe /target:library /out:OpenLink.Data.Virtuoso.dll $(MCS_FLAGS) $(SOURCES) $(RESOURCES)
 
-
-if HAVE_MCS
-install-exec-local:
-	$(MKDIR_P) "$(DESTDIR)$(libdir)"
-	$(INSTALL) $(TARGETS) "$(DESTDIR)$(libdir)"
-endif
 
 # ----------------------------------------------------------------------
 #
