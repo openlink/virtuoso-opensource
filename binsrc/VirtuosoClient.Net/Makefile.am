@@ -24,7 +24,7 @@ if HAVE_MCS
 TARGETS	= OpenLink.Data.Virtuoso.dll
 endif
 
-FLAGS = -sdk:2 /optimize+ /d:MONO /d:ADONET2 /d:MONO1231
+MCS_FLAGS = -sdk:2 /optimize+ /d:MONO /d:ADONET2 /d:MONO1231
 SOURCES = \
 	$(srcdir)/ArrayOfLongPacked.cs \
 	$(srcdir)/AssemblyInfo.cs \
