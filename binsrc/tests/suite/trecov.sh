@@ -33,6 +33,10 @@ cp $VIRTUOSO_TEST/tst.nq .
 cp $VIRTUOSO_TEST/tst2.nq .
 
 BANNER "STARTED RECOVERY TEST (trecov.sh)"
+if [ "$CURRENT_VIRTUOSO_CAPACITY" != "single" ]
+then
+    exit 0
+fi
 
 rm -f $DBLOGFILE
 rm -f $DBFILE
