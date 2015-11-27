@@ -2496,7 +2496,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('		var query = query_obg.value; \n');
     http('		var format = query_obg.form.format;\n');
     http('		var ctr = 0;\n');
-    http('		var query_is_construct = (query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i));\n');
+    http('		var query_is_construct = (query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b\\s/i));\n');
     http('\n');
     http('		if (query_is_construct && last_format != 2) {\n');
     http('			for(ctr = format.options.length; ctr > 0; ctr--)\n');
