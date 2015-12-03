@@ -2079,6 +2079,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
                     }
                   else
                     {
+		      args = dk_set_nreverse (args);
                       t_set_push (&args, $1);
 		      $$ = sparp_make_builtin_call (sparp_arg, IN_L,
 		        (SPART **)t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );

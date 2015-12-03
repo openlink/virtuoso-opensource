@@ -3725,12 +3725,28 @@ ssg_safe_op_valmode_for_bif_IN (sparp_t *sparp, SPART **args, ssg_valmode_t arg1
     return arg1_native;
   if (IS_BOX_POINTER (arg1_native) && !(arg1_native->qmfIsBijection))
     return arg1_native; /* Let the expression work in native or results in compilation error but not produce wrong "true" after collision of listed and not listed native value into common converted value */
-  op_fmt = sparp_expn_native_valmode (sparp, args[1]);
-  for (argctr = BOX_ELEMENTS (args); argctr-- > 2; /* no step */)
+  op_fmt = SSG_VALMODE_AUTO;
+  for (argctr = BOX_ELEMENTS (args); argctr-- > 1; /* no step */)
     {
       SPART * argN = args[argctr];
-      ssg_valmode_t argN_native = sparp_expn_native_valmode (sparp, argN);
-      if (argN_native != op_fmt)
+      ssg_valmode_t argN_native;
+      if (IS_BOX_POINTER (arg1_native) /* && (arg1_native->qmfIsBijection) -- no need to check, see case above */)
+        {
+          switch (SPART_TYPE (argN))
+            {
+              case SPAR_QNAME: case SPAR_LIT:
+                continue;
+              case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+                if ((SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & argN->_.var.rvr.rvrRestrictions)
+                  continue;
+                if (((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & argN->_.var.rvr.rvrRestrictions) == (SPART_VARR_FIXED | SPART_VARR_NOT_NULL))
+                  continue;
+            }
+        }
+      argN_native = sparp_expn_native_valmode (sparp, argN);
+      if (SSG_VALMODE_AUTO == op_fmt)
+        op_fmt = argN_native;
+      else if (argN_native != op_fmt)
         {
           op_fmt = ssg_smallest_union_valmode (op_fmt, argN_native, &sqlval_is_ok_and_cheap);
           if ((SSG_VALMODE_LONG == op_fmt) && !sqlval_is_ok_and_cheap)
@@ -3739,6 +3755,8 @@ ssg_safe_op_valmode_for_bif_IN (sparp_t *sparp, SPART **args, ssg_valmode_t arg1
             sqlval_is_ok_and_cheap = 0x2;
         }
     }
+  if (SSG_VALMODE_AUTO == op_fmt)
+    op_fmt = arg1_native;
   if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == op_fmt)
     && ((SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_NUM == arg1_native) || (IS_BOX_POINTER (arg1_native) && arg1_native->qmfHasCheapSqlval)) )
     op_fmt = SSG_VALMODE_SQLVAL;
@@ -3764,11 +3782,12 @@ ssg_safe_op_valmode_for_bif_IN (sparp_t *sparp, SPART **args, ssg_valmode_t arg1
               if (SPART_VARR_LONG_EQ_SQL & rbits)
                 continue;
             }
-          return op_fmt;
+          goto cannot_replace_long_with_sqlval; /* see below */
         }
       END_DO_BOX_FAST;
       return SSG_VALMODE_SQLVAL;
    }
+cannot_replace_long_with_sqlval:
   return op_fmt;
 }
 
