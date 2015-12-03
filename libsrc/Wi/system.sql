@@ -1677,7 +1677,7 @@ create procedure __HTTP_XSLT (inout _XML any, inout DOC_URI varchar, inout XSLT_
 -- create triggers for consistency rules
 create procedure DB.DBA.ddl_fk_rules (in pktb varchar, in drop_tb varchar, in drop_col varchar)
 {
-  declare stmt, set_cl, whe_cl, updst, delst, thetb, pkcols, pkvars, trig_pref, skip_on_this varchar;
+  declare stmt, set_cl, whe_cl, updst, delst, thetb, pkcols, pkvars, trig_pref, skip_on_this, thefk varchar;
   declare is_upd, is_del integer;
 
   is_upd := 0;
@@ -1704,7 +1704,7 @@ create procedure DB.DBA.ddl_fk_rules (in pktb varchar, in drop_tb varchar, in dr
       skip_on_this := drop_tb;
       drop_tb := '';
     }
-  pkcols := ''; pkvars := ''; thetb := ''; set_cl := ''; whe_cl := ''; updst := '';
+  pkcols := ''; pkvars := ''; thetb := ''; set_cl := ''; whe_cl := ''; updst := ''; thefk := '';
   trig_pref := sprintf ('%s_%s_%s', DB.DBA.SYS_ALFANUM_NAME (name_part (pktb, 0)),
 				    DB.DBA.SYS_ALFANUM_NAME (name_part (pktb, 1)),
 				    DB.DBA.SYS_ALFANUM_NAME (name_part (pktb, 2)));
@@ -1738,15 +1738,15 @@ create procedure DB.DBA.ddl_fk_rules (in pktb varchar, in drop_tb varchar, in dr
     }
 
   -- create update statements
-  for select FK_TABLE, FKCOLUMN_NAME, PKCOLUMN_NAME, UPDATE_RULE  from DB.DBA.SYS_FOREIGN_KEYS
+  for select FK_TABLE, FK_NAME, FKCOLUMN_NAME, PKCOLUMN_NAME, UPDATE_RULE  from DB.DBA.SYS_FOREIGN_KEYS
     where 0 = casemode_strcmp (PK_TABLE, pktb) and UPDATE_RULE is not null and UPDATE_RULE > 0
 	and 0 <> casemode_strcmp (FK_TABLE, drop_tb)
 	and not (0 = casemode_strcmp (FK_TABLE, skip_on_this) and 0 = casemode_strcmp (FKCOLUMN_NAME, drop_col))
-	order by FK_TABLE do
+	order by FK_TABLE, FK_NAME do
       {
 
 	is_upd := 1;
-	if (FK_TABLE <> thetb and thetb <> '')
+	if ((FK_TABLE <> thetb and thetb <> '') or (FK_NAME <> thefk and thefk <> ''))
 	  {
 	    set_cl := substring (set_cl, 1, length (set_cl) - 2);
 	    whe_cl := concat (' WHERE ', whe_cl);
@@ -1759,6 +1759,7 @@ create procedure DB.DBA.ddl_fk_rules (in pktb varchar, in drop_tb varchar, in dr
 	if (FK_TABLE is not null)
 	  {
 	    thetb := FK_TABLE;
+	    thefk := FK_NAME;
 	    if (UPDATE_RULE = 1)
 	      set_cl := concat (set_cl, sprintf ('"%I" = N."%I", ' , FKCOLUMN_NAME, PKCOLUMN_NAME));
 	    else if (UPDATE_RULE = 2)
@@ -1795,16 +1796,16 @@ stmt := sprintf ('CREATE TRIGGER "%s_FK_UPDATE" AFTER UPDATE (%s)\n ON "%I"."%I"
       stmt := sprintf ('DROP TRIGGER "%I"."%I"."%s_FK_UPDATE"', name_part (pktb, 0), name_part (pktb, 1), trig_pref);
       DB.DBA.execstr (stmt);
     }
-delst := ''; thetb := '';
+delst := ''; thetb := ''; thefk := '';
   -- create delete statements
-  for select FK_TABLE, FKCOLUMN_NAME, PKCOLUMN_NAME from DB.DBA.SYS_FOREIGN_KEYS
+  for select FK_TABLE, FK_NAME, FKCOLUMN_NAME, PKCOLUMN_NAME from DB.DBA.SYS_FOREIGN_KEYS
     where 0 = casemode_strcmp (PK_TABLE, pktb) and DELETE_RULE = 1
 	and 0 <> casemode_strcmp (FK_TABLE, drop_tb)
 	and not (0 = casemode_strcmp (FK_TABLE, skip_on_this) and 0 = casemode_strcmp (FKCOLUMN_NAME, drop_col))
-	order by FK_TABLE do
+	order by FK_TABLE, FK_NAME do
       {
 	is_del := 1;
-	if (FK_TABLE <> thetb and thetb <> '')
+	if ((FK_TABLE <> thetb and thetb <> '') or (FK_NAME <> thefk and thefk <> ''))
 	  {
 	    whe_cl := concat (' WHERE ', whe_cl);
 	    whe_cl := substring (whe_cl, 1, length (whe_cl) - 5);
@@ -1815,6 +1816,7 @@ delst := ''; thetb := '';
 	if (FK_TABLE is not null)
 	  {
 	    thetb := FK_TABLE;
+	    thefk := FK_NAME;
 	    whe_cl := concat (whe_cl, sprintf ('"%I" = _VAR_%s and ' , FKCOLUMN_NAME, DB.DBA.SYS_ALFANUM_NAME (PKCOLUMN_NAME)));
 	  }
       }
@@ -1828,15 +1830,15 @@ delst := ''; thetb := '';
       whe_cl := '';
     }
   -- create update after delete statements
-  updst := '';  thetb := '';
-  for select FK_TABLE, FKCOLUMN_NAME, PKCOLUMN_NAME, DELETE_RULE  from DB.DBA.SYS_FOREIGN_KEYS
+  updst := '';  thetb := ''; thefk := '';
+  for select FK_TABLE, FK_NAME, FKCOLUMN_NAME, PKCOLUMN_NAME, DELETE_RULE  from DB.DBA.SYS_FOREIGN_KEYS
     where 0 = casemode_strcmp (PK_TABLE, pktb) and DELETE_RULE is not null and DELETE_RULE > 1
 	and 0 <> casemode_strcmp (FK_TABLE, drop_tb)
 	and not (0 = casemode_strcmp (FK_TABLE, skip_on_this) and 0 = casemode_strcmp (FKCOLUMN_NAME, drop_col))
-	order by FK_TABLE do
+	order by FK_TABLE, FK_NAME do
       {
 	is_del := 1;
-	if (FK_TABLE <> thetb and thetb <> '')
+	if ((FK_TABLE <> thetb and thetb <> '') or (FK_NAME <> thefk and thefk <> ''))
 	  {
 	    set_cl := substring (set_cl, 1, length (set_cl) - 2);
 	    whe_cl := concat (' WHERE ', whe_cl);
@@ -1849,6 +1851,7 @@ delst := ''; thetb := '';
 	if (FK_TABLE is not null)
 	  {
 	    thetb := FK_TABLE;
+	    thefk := FK_NAME;
 	    if (DELETE_RULE = 2)
 	      set_cl := concat (set_cl, sprintf ('"%I" = NULL, ' , FKCOLUMN_NAME));
 	    else if (DELETE_RULE = 3)
