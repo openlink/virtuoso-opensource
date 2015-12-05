@@ -6484,7 +6484,7 @@ sqlo_trans_placeable (sqlo_t * so, op_table_t * ot, df_elt_t * dfe, int * any_tr
 
 
 int enable_leaves = 1;
-int enable_joins_only = 0;
+int enable_joins_only = 1;
 int enable_jp = 1;
 int enable_initial_plan = 0;
 int enable_n_best_plans = 0;
