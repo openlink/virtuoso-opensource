@@ -1920,6 +1920,11 @@ itc_col_search (it_cursor_t * itc, buffer_desc_t * buf)
     itc->itc_range_fill = 0;
   else
     {
+      if (!itc->itc_ranges)
+	{
+	  itc->itc_range_fill = 0;
+	  itc_range (itc, 0, 0);
+	}
       itc->itc_range_fill = 1;
       itc->itc_ranges[0].r_first = itc->itc_col_row;
       itc->itc_ranges[0].r_end = COL_NO_ROW;
