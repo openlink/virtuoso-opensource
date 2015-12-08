@@ -1421,7 +1421,15 @@ cpt_neodisk_page (const void *key, void *value)
       if (cp_remap)
 	{
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em  (it_from_g->it_storage, cp_remap);
+	  else
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, cp_remap, EXT_REMAP);
+	  else
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, cp_remap);
+	  dp_set_backup_flag (cpt_dbs, cp_remap, 0);
 	}
       if (it_from_g->it_col_extent_maps)
 	em = dbs_dp_to_em  (it_from_g->it_storage, logical);
@@ -1444,8 +1452,16 @@ cpt_neodisk_page (const void *key, void *value)
 	  (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
       if (cp_remap)
 	{
+	  extent_map_t * em;
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em (it_from_g->it_storage, cp_remap);
+	  else
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, cp_remap, EXT_REMAP);
+	  else
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, cp_remap);
 	}
     }
   else
@@ -1468,12 +1484,18 @@ cpt_neodisk_page (const void *key, void *value)
 	{
 	  /* dirty after image will go to logical anyway.
 	   * May just as well write it to logical as to remap. */
-
+	  extent_map_t * em;
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
 	  /* remhash is allowed because the cpt remap might have been made in the sethash above */
-	  em_free_dp (it_from_g->it_extent_map, physical, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em  (it_from_g->it_storage, physical);
+	  else
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, physical, EXT_REMAP);
+	  else
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, physical);
 	  rdbg_printf (("[C Unremap L %ld R %ld ]", logical, physical));
-
 	  after_image->bd_physical_page = after_image->bd_page;
 	  TC (tc_cpt_unremap_dirty);
 	}
@@ -1571,6 +1593,27 @@ dbs_backup_check (dbe_storage_t * dbs, int flag)
     }
 #endif
 }
+
+#ifdef PAGE_DEBUG
+void
+dbs_em_check (dbe_storage_t * dbs)
+{
+  int n;
+  for (n = 0; n < dbs->dbs_n_pages; n += EXTENT_SZ)
+    {
+      extent_map_t *em;
+      extent_t *ext;
+      em = dbs_dp_to_em (dbs, n);
+      if (!em)
+	continue;
+      ext = EM_DP_TO_EXT (em, EXT_ROUND (n));
+      if (!ext)
+	{
+	  log_error ("Inconsistent extent map %s, dp=%d", em->em_name, n);
+	}
+    }
+}
+#endif
 
 void
 dbs_cache_check (dbe_storage_t * dbs, int mode)
@@ -2097,6 +2140,9 @@ dbs_checkpoint (char *log_name, int shutdown)
 	    log_info ("Exiting in mid checkpoint");
 	    call_exit (-1);
 	  }
+#ifdef PAGE_DEBUG
+      dbs_em_check (dbs);
+#endif
 	DO_SET (index_tree_t *, it, &dbs->dbs_trees)
 	  {
 	    mcp_itc->itc_thread = THREAD_CURRENT_THREAD;

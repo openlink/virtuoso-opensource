@@ -1500,6 +1500,28 @@ em_compact (extent_map_t * em, int free_em)
   em->em_last_blob_ext = NULL;
   DO_EXT (ext, em)
     {
+      if (free_em)
+	{
+	  dp_addr_t dp;
+	  for (dp = ext->ext_dp; dp < ext->ext_dp + EXTENT_SZ; dp += 32)
+	    {
+	      uint32* array;
+	      int inx, bit;
+	      dp_addr_t array_page;
+	      IN_DBS (em->em_dbs);
+	      dbs_locate_incbackup_bit (em->em_dbs, dp, &array, &array_page, &inx, &bit);
+	      array[inx] = 0;
+	      page_set_checksum_init (array);
+	      if (EXT_INDEX == EXT_TYPE (ext))
+		{
+		  /* when dropping a column extent map in a drop index, cpt remaps are possible, so if any, drop them. The remap pagge is dropped anyway as part of the em */
+		  dp_addr_t dp2;
+		  for (dp2 = dp; dp2 < dp + 32; dp2++)
+		    remhash (DP_ADDR2VOID (dp2), em->em_dbs->dbs_cpt_remap);
+		}
+	      LEAVE_DBS (em->em_dbs);
+	    }
+	}
       if (EXT_FREE == EXT_TYPE (ext))
 	{
 	  if (ext == (extent_t*)gethash (DP_ADDR2VOID (ext->ext_dp), em->em_dp_to_ext))
