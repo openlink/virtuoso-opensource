@@ -1,3 +1,121 @@
+December 09, 2015, V7.2.2:
+
+  * Virtuoso Engine
+    - Added support for reading bzip2 compressed files
+    - Added support for reading xz/lzma compressed files
+    - Added optimization for date/datetime/time escapes
+    - Fixed use vfork if working properly to reduce memory footprint on exec
+    - Fixed issue with SQL_TIMEZONELESS_DATETIMES
+    - Fixed issue with uninitialized data in TIME string
+    - Fixed issue with checkpoint recovery
+    - Fixed issue with freeing checkpoint remap col pages
+    - Fixed issue with row locks
+    - Fixed issue with sampling
+    - Fixed issue with outer-join plan
+    - Fixed xmlliteral should be serialized as UTF-8
+    - Fixed enable_joins_only=1 hint to cost based optimizer
+    - Fixed merge transaction log
+    - Fixed issues with extent map
+    - Fixed itc_ranges can be uninitialized when scanning updated/deleted pages
+    - Fixed issue with cascaded delete
+    - Fixed allow identity to start with 0
+    - Fixed memory leaks
+    - Updated testsuite
+    - Updated documentation
+
+  * SPARQL
+    - Added batch validation of JSO instances and new mode 3 for RDF_AUDIT_METADATA()
+    - Added new JSO loader with bif_jso_validate_and_pin_batch
+    - Added new pretty-printed HTML tabular output for SPARQL SELECT in /sparql page
+    - Added support for bulkloading .gz, .xz and .bz2 files
+    - Fixed recovery of DefaultQuadStorage etc in DB.DBA.RDF_AUDIT_METADATA()
+    - Fixed EWKT reader to be case-insensitive according to paragraph 7.2.1. of OGC 06-103r4
+    - Fixed issue when nil <p> <o> triple pattern is used
+    - Fixed handling of bad IRI_IDs in DB.DBA.RDF_GAPH_SECURITY_AUDIT()
+    - Fixed output of @type in JSON-LD
+    - Fixed nice microdata
+    - Fixed issues with gYear, gMonth etc in json/csv/sparql output formats
+    - Fixed issues with const in distinct
+    - Fixed issue with recovery for property paths with "*" on SERVICES
+    - Fixed check to prevent wide insert into O column
+    - Fixed issue in RDF_LONG_TO_TTL with typed RDF literals
+    - Fixed for vectorization-related error on SPARQL queries with RDF_GRAB
+    - Fixed handling of weird blank node labels like _:2
+    - Fixed issue with unique keys
+    - Fixed size of rdf lang cache
+    - Fixed codegen for IN operator when left hand is column and right hand contains constants
+    - Fixed crash when blank nodes are used in data rows of VALUES
+
+  * Jena & Sesame
+    - Update Jena provider to configure conversion of Jena BNodes to Virtuoso BNodes
+    - Fixed log_enable support
+    - Fixed issue with literals that have both Language and Datatype tags
+
+  * JDBC Driver
+    - Added missing server-side setting
+    - Added initial testsuite for handling date values in JDBC provider
+    - Fixed issues decoding RdfBox with Date object and timezoneless modes
+    - Fixed return SPARQL Time GMT0 with Z suffix  ("13:24:00.000Z" instead of "13:24:00.000-00:00")
+    - Fixed return SPARQL DateTime GMT0 with Z suffix  ("1999-05-31T13:24:00Z" instead of "1999-05-31T13:24:00-00:00")
+    - Fixed log_enable support
+    - Fixed Datasources to support both JNDI attribute names "charset" and "charSet"
+    - Fixed UTF8 to String conversion for return ? for bad character instead of throw Exception.
+    - Fixed JDBC testsuite
+
+  * .NET Adapter
+    - Fixed build rules for Virtuoso .NET Adapter
+    - Fixed ADO.NET prefetch size from 20 to 100
+    - Fixed Int32 overflow in VirtuosoDataReader.GetValues
+    - Fixed issue with implementation of Cancel
+    - Fixed NullPointer exception in ManagedCommand, when Connection is closed after exceptions
+
+  * Faceted Browser
+    - Added small query optimization
+    - Added support for auto sponge
+    - Added support for emitting microdata instead of rdfa
+    - Added missing grants
+    - Added iframe opt
+    - Fixed handling of nodeID, null graphs, foaf:depiction and iframe
+    - Fixed describe mode from LOD to CBD
+    - Fixed serialization issue
+    - Fixed namespace prefixes
+    - Fixed error on bad IRIs
+    - Fixed error on subseq when uri is wide string
+    - Fixed issue passing literal as reference parameter in fct
+    - Fixed show distinct count on list-count view
+    - Fixed issue with xtree over null
+    - Fixed labels
+
+  * Conductor
+    - Added export function for key storage
+    - Added filters to IMAP DET folders
+    - Added support for FTP DET
+    - Added support for move and copy commands on some DETs
+    - Added support for new RDF params in WebDAV browser
+    - Added support for pattern search and edit options to namespace prefixes
+    - Added support for setting file expiration for WebDAV/Briefcase
+    - Fixed iMAP DET filter page
+    - Fixed turtle editor text revision
+    - Fixes for site-copy robot
+
+  * DAV
+    - Added DETs move/copy commands
+    - Added IMAP DET filters to WebDAV browser
+    - Added last-modified for dav res
+    - Added optimizations using RDF params for DET folders
+    - Added scheduler procedure for expired items
+    - Added support for FTP DET
+    - Fixed issues creating/updating LDP containers
+    - Fixed bug updating existing file with only read permission on parent dir
+    - Fixed calculation of MD5 value for resource content
+    - Fixed issue with POST of SPARQL query with "Content-Type: application/sparql-query"
+    - Fixed issues with DAV permissions
+    - Fixed resource size value for some DAV operations
+    - Fixed resource update API call and sync with HTTP PUT
+    - Fixed setting DET RDF params
+    - Fixed timezone bug with S3 DET
+
+
 June 24, 2015, V7.2.1:
   * Virtuoso Engine
     - Added support for datetime without timezone
