@@ -2972,6 +2972,11 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #endif
 #else
   mutex_enter (run_executable_mtx);
+
+#if defined (HAVE_WORKING_VFORK)
+#define fork	vfork
+#endif
+
   child_pid = fork ();
   if (-1 == child_pid)
     {
