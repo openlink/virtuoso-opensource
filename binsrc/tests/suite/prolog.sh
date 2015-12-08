@@ -29,7 +29,7 @@
 # **********************************************************************************
 
 ECHO ""
-ECHO "THIS TAKES AT LEAST 350 MEGABYTES OF DISK SPACE AND SOME AMOUNT"
+ECHO "THIS TAKES AT LEAST 3 GIGABYTE OF DISK SPACE AND SOME AMOUNT"
 ECHO "OF TIME (could be hours). BE PATIENT."
 ECHO "use ./summary.sh to display current state of tests being run and test results."
 
