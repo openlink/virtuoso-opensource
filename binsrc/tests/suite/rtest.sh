@@ -305,8 +305,8 @@ fi
 
 
 
-#LOG + running sql script tbreakup.sql
-#RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbreakup.sql
+LOG + running sql script tbreakup.sql
+RUN $ISQL $LOCAL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbreakup.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rtest.sh: rtbreakup.sql"

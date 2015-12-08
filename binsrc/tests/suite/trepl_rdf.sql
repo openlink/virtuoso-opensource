@@ -68,12 +68,16 @@ ECHO BOTH "----- Reconnected to PUBLISHER " $U{ds1} ", will add RDF data by diff
 
 DB.DBA.TTLP ('<s_ttlp_0> <p_ttlp_0> <o_ttlp_0> , "plain_ttlp_0" , 100 , "qq_ttlp_0"^^<dt_ttlp_0> , "рус_ttlp_0"@ru , [ rdf:type <t_ttlp_0> ] .', 'http://ttlp_0/', 'http://ttlp_0/');
 DB.DBA.TTLP ('<s_ttlp_1> <p_ttlp_1> <o_ttlp_1> , "plain_ttlp_1" , 101 , "qq_ttlp_1"^^<dt_ttlp_1> , "рус_ttlp_1"@ru , [ rdf:type <t_ttlp_1> ] .', 'http://ttlp_1/', 'http://ttlp_1/');
-DB.DBA.TTLP_MT ('<s_ttlp_mt_0> <p_ttlp_mt_0> <o_ttlp_mt_0> , "plain_ttlp_mt_0" , 100 , "qq_ttlp_mt_0"^^<dt_ttlp_mt_0> , "рус_ttlp_mt_0"@ru , [ rdf:type <t_ttlp_mt_0> ] .', 'http://ttlp_mt_0/', 'http://ttlp_mt_0/');
-DB.DBA.TTLP_MT ('<s_ttlp_mt_1> <p_ttlp_mt_1> <o_ttlp_mt_1> , "plain_ttlp_mt_1" , 101 , "qq_ttlp_mt_1"^^<dt_ttlp_mt_1> , "рус_ttlp_mt_1"@ru , [ rdf:type <t_ttlp_mt_1> ] .', 'http://ttlp_mt_1/', 'http://ttlp_mt_1/');
+DB.DBA.TTLP_MT ('<s_ttlp_mt_0> <p_ttlp_mt_0> <o_ttlp_mt_0> , "plain_ttlp_mt_0" , 100 , "qq_ttlp_mt_0"^^<dt_ttlp_mt_0> , "рус_ttlp_mt_0"@ru , [ rdf:type <t_ttlp_mt_0> ] .', 'http://ttlp_mt_0/', 'http://ttlp_mt_0/', log_mode=>1);
+DB.DBA.TTLP_MT ('<s_ttlp_mt_1> <p_ttlp_mt_1> <o_ttlp_mt_1> , "plain_ttlp_mt_1" , 101 , "qq_ttlp_mt_1"^^<dt_ttlp_mt_1> , "рус_ttlp_mt_1"@ru , [ rdf:type <t_ttlp_mt_1> ] .', 'http://ttlp_mt_1/', 'http://ttlp_mt_1/', log_mode=>1);
 string_to_file ('ttlp_ff_0.ttl', '<s_ttlp_ff_0> <p_ttlp_ff_0> <o_ttlp_ff_0> , "plain_ttlp_ff_0" , 100 , "qq_ttlp_ff_0"^^<dt_ttlp_ff_0> , "рус_ttlp_ff_0"@ru , [ rdf:type <t_ttlp_ff_0> ] .', -2);
 string_to_file ('ttlp_ff_1.ttl', '<s_ttlp_ff_1> <p_ttlp_ff_1> <o_ttlp_ff_1> , "plain_ttlp_ff_1" , 101 , "qq_ttlp_ff_1"^^<dt_ttlp_ff_1> , "рус_ttlp_ff_1"@ru , [ rdf:type <t_ttlp_ff_1> ] .', -2);
-DB.DBA.TTLP_MT_LOCAL_FILE ('ttlp_ff_0.ttl', 'http://ttlp_ff_0/', 'http://ttlp_ff_0/');
-DB.DBA.TTLP_MT_LOCAL_FILE ('ttlp_ff_1.ttl', 'http://ttlp_ff_1/', 'http://ttlp_ff_1/');
+DB.DBA.TTLP (file_open ('ttlp_ff_0.ttl'), 'http://ttlp_ff_0/', 'http://ttlp_ff_0/');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": TTLP : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+DB.DBA.TTLP (file_open ('ttlp_ff_1.ttl'), 'http://ttlp_ff_1/', 'http://ttlp_ff_1/');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH ": TTLP : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 DB.DBA.RDF_LOAD_RDFXML ('<?xml version="1.0"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
@@ -119,9 +123,9 @@ DB.DBA.TTLP ('@prefix geo: <http://ww.w3.org/2003/01/geo/wgs84_pos#> . <s_geo_0>
 DB.DBA.TTLP ('@prefix geo: <http://ww.w3.org/2003/01/geo/wgs84_pos#> . <s_geo_1> geo:lat 45 ; geo:long 135 .', 'http://geo_1/', 'http://geo_1/');
 rdf_geo_fill_single ();
 
-sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+--sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) };
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
 
 ECHO BOTH $IF $EQU $LAST[1] 76 "PASSED" "***FAILED";
 ECHO BOTH ": "  $LAST[1] " triples on publisher after all inserts\n";
@@ -136,13 +140,15 @@ ECHO BOTH "----- Reconnected to SUBSCRIBER " $U{ds2}", will sync and check what 
 commit work;
 
 DB.DBA.RDF_REPL_SYNC ('trepl_rdf_1', 'dba', 'dba');
+status ('r');
 
-sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+--sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) };
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
 
 ECHO BOTH $IF $EQU $LAST[1] 76 "PASSED" "***FAILED";
 ECHO BOTH ": "  $LAST[1] " triples on subscriber after all inserts\n";
+checkpoint;
 
 -- PUBLISHER
 set DSN=$U{ds1};
@@ -156,9 +162,9 @@ sparql base <http://sparul_1/> delete from <http://sparul_1/> {
   ?bn rdf:type <t_sparul_1> . }
 from <http://sparul_1/> where { ?bn rdf:type <t_sparul_1> . };
 
-sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+--sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) };
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
 
 ECHO BOTH $IF $EQU $LAST[1] 62 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " triples on publisher after removals\n";
@@ -174,9 +180,9 @@ commit work;
 
 DB.DBA.RDF_REPL_SYNC ('trepl_rdf_1', 'dba', 'dba');
 
-sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+--sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) };
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
 
 ECHO BOTH $IF $EQU $LAST[1] 62 "PASSED" "***FAILED";
 ECHO BOTH ": " $LAST[1] " triples on subscriber after removals\n";
@@ -735,8 +741,8 @@ DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys', null, 'Rdb2Rdf.sql');
 DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys/user?id=5', null, 'Rdb2Rdf.sql');
 DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys/user?id=1001', null, 'Rdb2Rdf.sql');
 DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys/user?id=1002', null, 'Rdb2Rdf.sql');
-DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_USERS" ();
-DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_ROLE_GRANTS" ();
+DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_USERS" (1);
+DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_ROLE_GRANTS" (1);
 
 
 insert into ZYZ_USERS (U_ID, U_NAME) values (1001, 'u1001');
@@ -751,19 +757,19 @@ sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "Administra
 sparql describe ?s from <http://sys> where { ?s ?p ?o . ?o bif:contains "Administrator" };
 sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "nobody" } ;
 sparql describe ?s from <http://sys/user?id=5> where { ?s ?p ?o . ?o bif:contains "nobody" };
-update ZYZ_USERS set U_FULL_NAME = replace (U_FULL_NAME, 'Administrator', 'Adm') where U_FULL_NAME like '%Administrator%';
+--update ZYZ_USERS set U_FULL_NAME = replace (U_FULL_NAME, 'Administrator', 'Adm') where U_FULL_NAME like '%Administrator%';
 DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ();
 sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "Administrator" } ;
 sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "Adm" } ;
 
-update ZYZ_USERS set U_E_MAIL='u1001@qq' where U_ID=1001;
-update ZYZ_USERS set U_E_MAIL='u1002@qq' where U_ID=1002;
-update ZYZ_USERS set U_E_MAIL='u1011@qq' where U_ID=1011;
-update ZYZ_USERS set U_E_MAIL='u1012@qq' where U_ID=1012;
-update ZYZ_USERS set U_NAME='u1003_new' where U_ID=1003;
-update ZYZ_USERS set U_NAME='u1013_new' where U_ID=1013;
-delete from ZYZ_USERS where U_ID=1002;
-delete from ZYZ_USERS where U_ID=1012;
+--update ZYZ_USERS set U_E_MAIL='u1001@qq' where U_ID=1001;
+--update ZYZ_USERS set U_E_MAIL='u1002@qq' where U_ID=1002;
+--update ZYZ_USERS set U_E_MAIL='u1011@qq' where U_ID=1011;
+--update ZYZ_USERS set U_E_MAIL='u1012@qq' where U_ID=1012;
+--update ZYZ_USERS set U_NAME='u1003_new' where U_ID=1003;
+--update ZYZ_USERS set U_NAME='u1013_new' where U_ID=1013;
+--delete from ZYZ_USERS where U_ID=1002;
+--delete from ZYZ_USERS where U_ID=1012;
 
 select top 5 __ro2sq("mapg"), __ro2sq("maps"), __ro2sq("mapp"), __ro2sq("mapo")
 from (sparql define output:valmode "LONG" define input:storage virtrdf:sys select * where { graph ?mapg { ?maps ?mapp ?mapo }}) as map
@@ -799,7 +805,7 @@ sparql select ?s ?p ?o where { graph <http://sys_copy> { ?s ?p ?o } optional { g
 
 sparql select (count(1)) from <http://sys> where { ?s ?p ?o };
 
-ECHO BOTH $IF $EQU $LAST[1] 137 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $LAST[1] 169 "PASSED" "***FAILED";
 ECHO BOTH ": "  $LAST[1] " triples in http://sys on publisher after all rdb2rdf operations\n";
 
 sparql select (count(1)) from <http://sys/user?id=5> where { ?s ?p ?o };
@@ -820,7 +826,7 @@ DB.DBA.RDF_REPL_SYNC ('trepl_rdf_1', 'dba', 'dba');
 
 sparql select (count(1)) from <http://sys> where { ?s ?p ?o };
 
-ECHO BOTH $IF $EQU $LAST[1] 137 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $LAST[1] 169 "PASSED" "***FAILED";
 ECHO BOTH ": "  $LAST[1] " triples in http://sys on subscriber after all rdb2rdf operations\n";
 
 sparql select (count(1)) from <http://sys/user?id=5> where { ?s ?p ?o };

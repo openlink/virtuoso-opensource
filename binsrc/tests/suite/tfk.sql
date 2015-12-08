@@ -1469,19 +1469,19 @@ INSERT INTO A100(ID) VALUES(1);
 INSERT INTO A100(ID) VALUES(2);
 INSERT INTO B100(ID,ID1,ID2) VALUES(1,1,2);
 SELECT * FROM A100;
-ECHO BOTH $IF $ROWCNT $LAST[1] 2 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Table a100 contains " $LAST[1] " values after insert on a100\n";
+ECHO BOTH ": Table a100 contains " $ROWCNT " values after insert on a100\n";
 SELECT * FROM B100;
-ECHO BOTH $IF $ROWCNT $LAST[1] 1 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Table b100 contains " $LAST[1] " values after insert on a100\n";
+ECHO BOTH ": Table b100 contains " $ROWCNT " values after insert on a100\n";
 
 DELETE FROM A100;
 
 SELECT * FROM B100;
-ECHO BOTH $IF $ROWCNT $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": Table b100 contains " $LAST[1] " values after delete on a100\n";
+ECHO BOTH ": Table b100 contains " $ROWCNT " values after delete on a100\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: FK constraint triggers tests\n";
