@@ -1168,7 +1168,7 @@ create procedure "DB"."DBA"."VAD_INSTALL_WITH_DEPS" (
         isdav := 0;
         if (pack_path like '%_dav.vad')
             isdav := 1;
-        log_message ('Installing with dependences '||pfull||' version '||pver||'/'||pdate|| ' '||case when isdav then '(DAV)' else '' end);
+        log_message ('Installing with dependencies '||pfull||' version '||pver||'/'||pdate|| ' '||case when isdav then '(DAV)' else '' end);
         result ('00000', 'Installing: ' || pfull || ' ' || pver || ' (' || pack_path || ')');
         --exec('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector(pack_path, path_type, 1), 0, meta, result);
         if ("DB"."DBA"."VAD_INSTALL"(pack_path, path_type, 1) <> 'OK')
@@ -1179,7 +1179,7 @@ create procedure "DB"."DBA"."VAD_INSTALL_WITH_DEPS" (
         }
         else
         {
-            log_message ('Installation with dependences complete');
+            log_message ('Installation with dependencies complete');
             --result ('00000', 'Installation complete');
         }
     }
