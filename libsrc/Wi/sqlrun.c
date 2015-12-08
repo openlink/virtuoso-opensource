@@ -2843,15 +2843,12 @@ qi_dc_box_check (QI * qi)
 		      if (inx == ssl->ssl_index)
 			{
 			  ssl_found = 1;
-			  bing ();
 			  break;
 			}
 		    }
 		  END_DO_SET();
 		}
 	    }
-	  if (!dc_found || !ssl_found)
-	    bing ();
 	}
     }
   END_DO_HT;

@@ -319,6 +319,7 @@ typedef struct lock_trx_s
 #define IS_MT_BRANCH(lt)  ((lt)->lt_rc_w_id && (lt)->lt_rc_w_id != (lt)->lt_w_id)
 
 #define LT_MAIN_W_ID(lt) ((lt)->lt_rc_w_id ? (lt)->lt_rc_w_id : (lt)->lt_w_id)
+#define LT_MAIN_TRX_NO(lt) ((lt)->lt_main_trx_no ? (lt)->lt_main_trx_no : (lt)->lt_trx_no)
 
 #define LTN_HOST(ltn) ((uint32)((ltn) >> 32))
 #define LTN_NO(ltn) ((uint32)((ltn) & 0xffffffff))
@@ -915,8 +916,8 @@ lock_trx_t * itc_main_lt (it_cursor_t * itc, buffer_desc_t * buf);
 lock_trx_t * lt_main_lt (lock_trx_t * lt);
 int lt_has_delta (lock_trx_t * lt);
 int lt_set_is_branch (dk_set_t list, lock_trx_t * lt, lock_trx_t ** main_lt_ret);
-void  log_merge_commit (lock_trx_t * lt);
-void lt_free_merge (lock_trx_t * lt);
+void log_merge_commit (lock_trx_t * lt, dk_set_t merges);
+void lt_free_merge (dk_set_t merges);
 int lt_log_merge (lock_trx_t * lt, int in_txn);
 #define NO_LOCK_LT ((lock_trx_t*)-1L)
 

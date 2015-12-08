@@ -109,7 +109,7 @@ log_set_compatibility_check (int in_txn, char *strg)
 	    w_id = lt_w_counter++;
 	  cl_2pc = dk_alloc_box (2 + sizeof (int64), DV_STRING);
 	  cl_2pc[0] = LOG_2PC_COMMIT;
-	  trx_no = (((int64)local_cll.cll_this_host) <  32) + w_id;
+	  trx_no = (((int64)local_cll.cll_this_host) << 32) + w_id;
 	  INT64_SET_NA (cl_2pc + 1, trx_no);
 	}
       memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
@@ -340,16 +340,16 @@ log_fsync (dk_session_t * ses)
 }
 
 void 
-log_merge_commit (lock_trx_t * lt)
+log_merge_commit (lock_trx_t * lt, dk_set_t merges)
 {
-  DO_SET (log_merge_t *, lm, &lt->lt_log_merge)
+  DO_SET (log_merge_t *, lm, &merges)
     {
       strses_write_out (lm->lm_log, lt->lt_log);
       lt->lt_blob_log = dk_set_conc (lt->lt_blob_log, lm->lm_blob_log);
       lm->lm_blob_log = NULL;
     }
   END_DO_SET();
-  lt_free_merge (lt);
+  lt_free_merge (merges);
 }
 
 
@@ -2086,7 +2086,6 @@ lre_alloc ()
   LOG_REPL_OPTIONS (opts);
   memzero (executor, sizeof (lr_executor_t));
   executor->lre_mtx = mutex_allocate();
-  executor->lre_opts=opts;
   executor->lre_aqr_count=0;
   executor->lre_err=SQL_SUCCESS;
   executor->lre_stopped=0;
@@ -2446,15 +2445,8 @@ log_exec_batch_vec (lre_request_t *request, caddr_t* err_ret, client_connection_
 {
   data_col_t **dcs = request->lr_params_vec;
   query_t *qr=request->lr_qr;
-  stmt_options_t * opts=NULL;
+  LOG_REPL_OPTIONS (opts);
   cli->cli_no_triggers = 1;
-  switch (request->lr_op)
-    {
-      case LOG_DELETE:
-      case LOG_KEY_DELETE:
-	  opts=request->lr_lre->lre_opts;
-    }
-
   request->lr_params_vec = NULL;
   *err_ret = qr_exec (cli, qr, CALLER_LOCAL, NULL, NULL,
       NULL, (caddr_t*)dcs, opts, 0);
@@ -3721,7 +3713,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
 	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
 	  dbs->dbs_log_length = 0;
-          if (CPT_SHUTDOWN != shutdown)
+	  if (CPT_SHUTDOWN != shutdown || CL_RUN_CLUSTER == cl_run_local_only)
 	    {
 	      log_set_byte_order_check (1);
 	      log_time (log_time_header (wi_inst.wi_master->dbs_cfg_page_dt));

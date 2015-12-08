@@ -2655,6 +2655,7 @@ ts_thread (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int aq_state,
       aq->aq_ts = get_msec_real_time ();
       aq->aq_row_autocommit = qi->qi_client->cli_row_autocommit;
       aq->aq_non_txn_insert = qi->qi_non_txn_insert;
+      qi->qi_client->cli_trx->lt_has_branches = 1;
       qst_set (inst, ts->ts_aq, (caddr_t) aq);
     }
   if (!qis || BOX_ELEMENTS (qis) <= inx)
@@ -3931,6 +3932,21 @@ void
 ts_aq_result (table_source_t * ts, caddr_t * inst)
 {
   /* a ts completed itts branches.  Add up the results.  Can be in a fref or a scalar/exists subq. */
+  QNCAST (QI, qi, inst);
+  if (!IS_MT_BRANCH (qi->qi_trx))
+    {
+      dk_set_t merges;
+      lock_trx_t *lt = qi->qi_trx;
+      IN_TXN;
+      if ((merges = qi->qi_trx->lt_log_merge))
+	{
+	  qi->qi_trx->lt_log_merge = NULL;
+	  LEAVE_TXN;
+	  log_merge_commit (qi->qi_trx, merges);
+	}
+      else
+	LEAVE_TXN;
+    }
   if (prof_on || !ts->src_gen.src_query->qr_select_node)
     {
       qi_add_stats ((QI*)inst, qst_get (inst, ts->ts_aq_qis), ts->src_gen.src_query);
@@ -4020,6 +4036,7 @@ fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 		    aq_request (aq, aq_qr_func, list (4, box_copy ((caddr_t)branch), box_num ((ptrlong)ts->src_gen.src_query), box_num (qi->qi_trx->lt_rc_w_id ? qi->qi_trx->lt_rc_w_id : qi->qi_trx->lt_w_id), box_num ((ptrlong)qi->qi_client->cli_csl)));
 		  else
 		    {
+		      bing ();
 		      /*fnr_branch_done (fref, inst, branch) */ ;
 		    }
 		}

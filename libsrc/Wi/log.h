@@ -80,7 +80,6 @@
 typedef struct {
   dk_mutex_t *	lre_mtx;
   dk_hash_t *	lre_aqs; /** key_id_t => lre_queue_t */
-  stmt_options_t * lre_opts;
   int lre_aqr_count;   /** number of running requests */
   caddr_t lre_err;   /** the first reported error */
   int lre_stopped; /** after first error */
