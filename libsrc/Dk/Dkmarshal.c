@@ -852,9 +852,11 @@ scan_session_boxing (dk_session_t * session)
       return (box_t) box;
     }
 
-  if (session->dks_is_server && rpcreadtable[next_char] == box_read_error)
-    box_read_error (session, next_char);
-
+  if (session->dks_is_server && rpcreadtable[next_char] == (macro_char_func) box_read_error)
+    {
+      box_read_error (session, next_char);
+      return NULL;
+    }
   result = (*readtable[next_char]) (session, next_char);
 
   if (next_char == DV_LONG_INT || next_char == DV_SHORT_INT)
