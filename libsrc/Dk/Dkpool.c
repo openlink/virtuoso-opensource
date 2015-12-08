@@ -508,7 +508,7 @@ DBG_NAME (mp_box_dv_short_concat) (DBG_PARAMS mem_pool_t * mp, ccaddr_t str1, cc
   box = DBG_MP_ALLOC_BOX (mp, len1 + len2, DV_SHORT_STRING);
   memcpy (box, str1, len1);
   memcpy (box+len1, str2, len2);
-  return box;
+  return (box_t) box;
 }
 
 caddr_t
@@ -520,7 +520,7 @@ DBG_NAME (mp_box_dv_short_strconcat) (DBG_PARAMS mem_pool_t * mp, const char *st
   box = DBG_MP_ALLOC_BOX (mp, len1 + len2, DV_SHORT_STRING);
   memcpy (box, str1, len1);
   memcpy (box+len1, str2, len2);
-  return box;
+  return (box_t) box;
 }
 
 caddr_t DBG_NAME (mp_box_dv_uname_string) (DBG_PARAMS mem_pool_t * mp, const char *str)
@@ -1542,7 +1542,7 @@ mp_by_address (uint64 ptr)
       int fill = rc->rc_fill, inx2;
       for (inx2 = 0; inx2 < fill; inx2++)
 	{
-	  int64 start = (int64) (rc->rc_items[inx2]);
+	  int64 start = (int64) rc->rc_items[inx2];
 	  if (ptr >= start && ptr < start + mm_sizes[inx])
 	    {
 	      printf ("Address %x is %Ld bytes indes arc cached block start %p size %Ld\n", (void*)ptr, ptr - start, (void*)start, (long long)(mm_sizes[inx]));
@@ -1584,7 +1584,7 @@ mp_list_marks (int first, int n_print)
 			  if (n_printed >= first && n_printed < n_print + first)
 			    {
 			      int64 last_addr = ((long)inx << 32) + ((long)inx << 15) + (bit << 12);
-			      printf ("0x%p - 0x%p - %ld pages\n", last_addr, first_addr, (last_addr - first_addr) >> 12);
+			      printf ("0x%p - 0x%p = %ld pages\n", (void *) last_addr, (void *) first_addr, (last_addr - first_addr) >> 12);
 			    }
 			  n_printed++;
 			  first_addr = 0;

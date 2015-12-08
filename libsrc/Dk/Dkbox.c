@@ -277,7 +277,7 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
 #endif
 
   if (align_bytes >= box_min_mmap)
-    ptr = dk_alloc_mmap (align_bytes);
+    ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   else
   ptr = (unsigned char *) dk_try_alloc (align_bytes);
   if (!ptr)
