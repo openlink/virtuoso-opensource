@@ -20,6 +20,7 @@ December 09, 2015, V7.2.2:
     - Fixed issue with cascaded delete
     - Fixed allow identity to start with 0
     - Fixed memory leaks
+    - Updated debian packaging
     - Updated testsuite
     - Updated documentation
 

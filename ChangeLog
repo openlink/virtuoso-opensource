@@ -1,3 +1,21 @@
+2015-12-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.2
+
+	Fixed typo
+
+	Fixed build speed
+
+2015-12-09  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated changelog
+
+	Fixed packaging of Virtuoso .NET adapter on debian/ubuntu
+
+2015-12-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing files from distribution
+
 2015-12-08  VOS Maintainer  <vos.admin@openlinksw.com>
 
 	Show a more realistic disk space consumption by testsuite
