@@ -28,13 +28,13 @@ LIBMONO=
 endif
 
 if WITH_IODBC
-IODBC_EXTRA = virtuoso-iodbc-sample-t
+XIODBC_EXTRA = virtuoso-iodbc-sample-t
 endif
 
 if INTEG_JDK
 INTEG_JDK_PROGS = virtuoso-javavm-t
 if WITH_IODBC
-IODBC_JDK_EXTRA	= virtuoso-iodbc-javavm_t
+XIODBC_JDK_EXTRA	= virtuoso-iodbc-javavm_t
 endif
 endif
 

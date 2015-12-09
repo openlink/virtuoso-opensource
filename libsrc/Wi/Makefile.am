@@ -44,7 +44,7 @@ endif
 GEN=$(SHELL) ${top_srcdir}/bin/generate
 
 
-noinst_LTLIBRARIES = libwi.la libwic.la $(IODBC_LIBS)
+noinst_LTLIBRARIES = libwi.la libwic.la # $(IODBC_LIBS)
 noinst_HEADERS = \
 	2pc_client.h 2pc.h arith.h bif_text.h bif_xper.h blobio.h CLI.h \
 	crsr.h date.h datesupp.h eqlcomp.h hosting.h http_client.h http.h \
