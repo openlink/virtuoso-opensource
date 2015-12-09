@@ -32,11 +32,12 @@
     declare val_serviceId, val_uname varchar;
     declare val_isRealUser integer;
 
-    if (VAL.DBA.authentication_details_for_connection (sid=>sid, realm=>realm, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser))
-    {
-      if (val_isRealUser)
-        connection_set ('vspx_user', val_uname);
-    }
+      val_uname := (select U.U_NAME
+                      from DB.DBA.VSPX_SESSION S, DB.DBA.SYS_USERS U
+                     where S.VS_REALM = realm
+                       and S.VS_SID   = sid
+                       and S.VS_UID   = U.U_NAME);
+      connection_set ('vspx_user', val_uname);
   }
 
   action := get_keyword ('a', params, '');
@@ -295,6 +296,185 @@
   	    registry_set ('progress_action_' || progressID, 'stop');
       }
     }
+  }
+  else if (action = 'prefix')
+  {
+    declare prefix varchar;
+    declare head, content any;
+
+    prefix := get_keyword ('p', params);
+    returnData := DB.DBA.RDFData_std_pref (prefix, 1);
+    if (isnull (returnData))
+    {
+      commit work;
+      content := http_get (sprintf ('http://prefix.cc/%U.file.json', prefix), head);
+      if (head[0] like 'HTTP/1._ 20_ %')
+      {
+        returnData := get_keyword (prefix, DB.DBA.json2obj (content));
+      }
+    }
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
+  }
+  else if (action = 'prefixes')
+  {
+    declare _graph, _content, _ns, _dictionary, _triples any;
+    declare exit handler for sqlstate '37000' {
+      returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
+
+      goto _exit_3;
+    };
+
+    returnData := vector ();
+    _content := get_keyword ('content', params, '');
+    _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+    {
+      declare exit handler for sqlstate '37000' {goto _again; };
+
+      _dictionary := dict_new ();
+      DB.DBA.RDF_TTL_LOAD_DICT (_content, _graph, _graph, _dictionary);
+
+      goto _exit_3;
+    }
+  _again:;
+    _ns := string_output ();
+    for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
+    {
+      http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), _ns);
+    }
+    http (_content, _ns);
+    _dictionary := dict_new ();
+    DB.DBA.RDF_TTL_LOAD_DICT (_ns, _graph, _graph, _dictionary);
+
+    _triples := dict_list_keys (_dictionary, 1);
+    _ns := string_output ();
+    WS.WS.TTL_QUERY_PREFIXES (_triples, _ns);
+    -- returnData := vector ('prefixes', split_and_decode (string_output_string(_ns), 0, '\0\0\n'));
+    returnData := vector ('prefixes', string_output_string(_ns));
+
+  _exit_3:;
+    SPARQL clear graph ?:_graph;
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.params2json (returnData));
+  }
+  else if (action = 'verifyTurtle')
+  {
+    declare _graph, _content any;
+    declare exit handler for sqlstate '37000' {
+      returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
+
+      goto _exit_4;
+    };
+
+    returnData := vector ();
+    _content := get_keyword ('content', params, '');
+    _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+    DB.DBA.TTLP (_content, _graph, _graph, 255);
+
+  _exit_4:;
+    SPARQL clear graph ?:_graph;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.params2json (returnData));
+  }
+  else if (action = 'mimeTypeByExt')
+  {
+    declare fileName varchar;
+
+    fileName := get_keyword ('fileName', params, '');
+    returnData := http_mime_type (fileName);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (returnData);
+  }
+  else if (action = 'nameByMimeType')
+  {
+    declare fileName, mimeType varchar;
+
+    returnData := vector ();
+    fileName := get_keyword ('fileName', params, '');
+    if (not isnull (strrchr (fileName, '.')))
+    {
+      mimeType := get_keyword ('mimeType', params, '');
+      if (http_mime_type (fileName) <> mimeType)
+      {
+        declare name, ext varchar;
+
+        name := left (fileName, strrchr (fileName, '.'));
+        for (select T_EXT from WS.WS.SYS_DAV_RES_TYPES where T_TYPE = mimeType order by T_EXT) do
+        {
+          returnData := vector_concat (returnData, vector (name || '.' || T_EXT));
+        }
+      }
+    }
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json(returnData));
+  }
+  else if (action = 'imapFilter')
+  {
+    declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
+
+    MAIL.WA.dc_predicateMetas (predicateMetas);
+    MAIL.WA.dc_compareMetas (compareMetas);
+    MAIL.WA.dc_actionMetas (actionMetas);
+    folders := MAIL.WA.folder_list (get_keyword ('owner', params));
+    headers := MAIL.WA.dc_headersList ();
+    triplets := MAIL.WA.dc_tripletList ();
+
+    returnData := vector (predicateMetas, compareMetas, actionMetas, folders, headers, triplets);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
+  }
+  else if (action = 'qrcode')
+  {
+    declare href, qrcode varchar;
+
+    href := get_keyword ('href', params, '');
+    qrcode := WEBDAV.DBA.qrcode (href);
+    http ('<div style="padding: 1em;">');
+    http ('<table style="width: 100%;">');
+    http ('  <tr>');
+    http ('    <td style="text-align: center;">');
+    http ('      <img alt="QRcode image" src="data:image/jpg;base64,'); http (qrcode); http ('" />');
+    http ('    </td>');
+    http ('  </tr>');
+    http ('</table>');
+    http ('</div>');
+  }
+  else if (action = 'imapFilter')
+  {
+    declare owner varchar;
+    declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
+
+    MAIL.WA.dc_predicateMetas (predicateMetas);
+    MAIL.WA.dc_compareMetas (compareMetas);
+    MAIL.WA.dc_actionMetas (actionMetas, 1);
+    owner := get_keyword ('owner', params);
+    folders := MAIL.WA.external_account_folders (owner, DB.DBA.IMAP__mea_id (owner));
+    headers := MAIL.WA.dc_headersList ();
+    triplets := MAIL.WA.dc_tripletList ();
+
+    returnData := vector (predicateMetas, compareMetas, actionMetas, folders, headers, triplets);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
   }
   return;
 ?>

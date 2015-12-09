@@ -51,6 +51,7 @@ conductor/dav/dav_state.js
 conductor/dav/dav_tbl.js
 conductor/dav/folder.xsl
 conductor/dav/image/add_16.png
+conductor/dav/image/back_16.png
 conductor/dav/image/blue-icon-16.gif
 conductor/dav/image/bmklet_32.png
 conductor/dav/image/c.gif
@@ -299,6 +300,7 @@ conductor/images/icons/skipf_16.png
 conductor/images/icons/smarrblk.gif
 conductor/images/icons/stop_16.png
 conductor/images/icons/stop_32.png
+conductor/images/icons/add_32.png
 conductor/images/icons/table_16.png
 conductor/images/icons/tour_16.png
 conductor/images/icons/trash_16.png

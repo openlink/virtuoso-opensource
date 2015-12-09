@@ -31,6 +31,9 @@ import virtuoso.sql.RdfBox;
 
 public class VirtuosoRdfBox implements RdfBox
 {
+    static final String gYear = "http://www.w3.org/2001/XMLSchema#gYear";
+    static final String gYearMonth = "http://www.w3.org/2001/XMLSchema#gYearMonth";
+
     // rdf_box_t
     public short	rb_type;
     public short 	rb_lang;
@@ -62,7 +65,12 @@ public class VirtuosoRdfBox implements RdfBox
     public VirtuosoRdfBox (VirtuosoConnection connection, Object box, boolean is_complete, boolean id_only, short type, short lang, long ro_id)
     {
 	this.connection = connection;
-	this.rb_box = box;
+
+        if (box instanceof DateObject)
+          this.rb_box = ((DateObject)box).getValue(true);
+        else
+	  this.rb_box = box;
+
 	this.rb_type = type;
 	this.rb_lang = lang;
 	this.rb_is_complete = is_complete;
@@ -76,8 +84,13 @@ public class VirtuosoRdfBox implements RdfBox
     {
 	long ro_id;
 	this.connection = (VirtuosoConnection) connection;
-	this.rb_box = box;
-	ro_id = rdfMakeObj (box, type, lang);
+
+        if (box instanceof DateObject)
+          this.rb_box = ((DateObject)box).getValue(true);
+        else
+	  this.rb_box = box;
+
+	ro_id = rdfMakeObj (this.rb_box, type, lang);
 	this.rb_type = getTypeKey (type);
 	this.rb_lang = getLangKey (lang);
 	this.rb_is_complete = false;
@@ -241,7 +254,32 @@ public class VirtuosoRdfBox implements RdfBox
 
     public String toString ()
     {
-    	return (this.rb_box == null)?"NULL":this.rb_box.toString ();
+        String retVal = "NULL";
+        if (this.rb_box != null) {
+          String o_type = getType();
+
+          if (o_type!=null && o_type.equals(gYear)) 
+          {
+            if (rb_box instanceof VirtuosoDate) 
+              retVal = ((VirtuosoDate) rb_box).toXSD_String().substring(0,4);
+            else if (rb_box instanceof VirtuosoTimestamp)
+              retVal = ((VirtuosoTimestamp) rb_box).toXSD_String().substring(0,4);
+            else
+    	      retVal = this.rb_box.toString ();
+    	  } 
+    	  else if (o_type!=null && o_type.equals(gYearMonth)) 
+    	  {
+            if (rb_box instanceof VirtuosoDate) 
+              retVal = ((VirtuosoDate) rb_box).toXSD_String().substring(0,7);
+            else if (rb_box instanceof VirtuosoTimestamp)
+              retVal = ((VirtuosoTimestamp) rb_box).toXSD_String().substring(0,7);
+            else
+    	      retVal = this.rb_box.toString ();
+          } else {
+    	    retVal = this.rb_box.toString ();
+          }
+        }
+        return retVal;
     }
 }
 

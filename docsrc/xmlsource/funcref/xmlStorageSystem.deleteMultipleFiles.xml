@@ -77,7 +77,7 @@ in WebDAV to be deleted.</para></refsect2>
     <example id="ex_XMLStorageSystem.deleteMultipleFiles"><title>Using the XML Storage System to Delete Multiple Files</title>
       <para>Simple example of removing a file.</para>
       <screen>
-    SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://localhost:6666/xmlStorageSystem&#39;, operation=&gt;&#39;deleteMultipleFiles&#39;, 
+    SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://example.com/xmlStorageSystem&#39;, operation=&gt;&#39;deleteMultipleFiles&#39;,
 	 parameters=&gt;vector (&#39;email&#39;,&#39;user@example.domain&#39;, &#39;password&#39;, md5(&#39;xxx&#39;),
 	   &#39;relativepathList&#39;, vector (&#39;test.txt&#39;));
 

@@ -57,6 +57,8 @@ SQL> DB.DBA.RDF_RDF_REPL_GRAPH_DEL ('http://test.org');
   </refsect1>
   <refsect1 id="seealso_rdf_repl_graph_del"><title>See Also</title>
      <para><link linkend="fn_rdf_repl_start"><function>RDF_REPL_START()</function></link></para>  
+     <para><link linkend="fn_rdf_repl_stop"><function>RDF_REPL_STOP()</function></link></para>
+     <para><link linkend="fn_rdf_repl_sync"><function>RDF_REPL_SYNC()</function></link></para>
      <para><link linkend="fn_rdf_repl_graph_ins"><function>RDF_REPL_GRAPH_INS()</function></link></para>  
      <para><link linkend="fn_sub_schedule"><function>sub_schedule()</function></link></para>
      <para><link linkend="fn_repl_disconnect"><function>repl_disconnect()</function></link></para>

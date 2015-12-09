@@ -588,7 +588,7 @@ int sparscn_NUMBER_int (YYSTYPE *yylval, struct yyguts_t * yyg)
     }
   else
     {
-      numeric_t num = numeric_allocate ();
+      numeric_t num = t_numeric_allocate ();
       int rc = numeric_from_string (num, yytext);
       yylval->box = (caddr_t) num;
       if (NULL == yylval->box)
@@ -601,17 +601,15 @@ int sparscn_NUMBER_int (YYSTYPE *yylval, struct yyguts_t * yyg)
 
 int sparscn_NUMBER_decimal (YYSTYPE *yylval, struct yyguts_t * yyg)
 {
-  numeric_t num = numeric_allocate ();
+  numeric_t num = t_numeric_allocate ();
   int rc = numeric_from_string (num, yytext);
   if (NUMERIC_STS_SUCCESS == rc)
     {
       if (NULL == (caddr_t) num)
 	yylval->box = (caddr_t)t_list (2, t_box_num_nonull (0), t_box_string (yytext));
-      yylval->box = (caddr_t)t_list (2, t_box_copy ((caddr_t) num), t_box_string (yytext));
-      numeric_free (num);
+      yylval->box = (caddr_t)t_list (2, (caddr_t) num, t_box_string (yytext));
       return SPARQL_DECIMAL;
     }
-  numeric_free (num);
   yylval->box = (caddr_t)t_list (2, t_box_double (atof (yytext)), t_box_string (yytext));
   return SPARQL_DECIMAL;
 }

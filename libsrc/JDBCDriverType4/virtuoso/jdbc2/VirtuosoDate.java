@@ -69,7 +69,7 @@ public class VirtuosoDate extends java.sql.Date
         StringBuilder sb = new StringBuilder();
         DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd");
         String timeZoneString = null;
-/**
+
         if (with_timezone)
         {
             StringBuffer s = new StringBuffer();
@@ -92,12 +92,9 @@ public class VirtuosoDate extends java.sql.Date
             timeZoneString = s.toString();
             formatter.setTimeZone(TimeZone.getTimeZone("GMT"+timeZoneString));
         }
- **/
         sb.append(formatter.format(this));
-
-        if (timeZoneString!=null)
-            sb.append(timeZoneString);
         return sb.toString();
     }
+
 }
 

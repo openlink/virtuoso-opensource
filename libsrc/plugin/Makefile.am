@@ -21,6 +21,7 @@
 
 noinst_LTLIBRARIES = libplugin.la hosting_sample.la plugin_sample.la
 
+.NOTPARALLEL:
 
 ##########################################
 # base flags

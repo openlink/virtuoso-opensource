@@ -483,7 +483,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_arg_list
 %type <backstack> spar_macro_arg_list_opt
 %type <backstack> spar_macro_arg_list
-%type <tree> spar_numeric_literal
+%type <tree> spar_nonsigned_numeric_literal
+%type <tree> spar_optsigned_numeric_literal
 %type <tree> spar_integer_literal
 %type <tree> spar_optminus_integer_literal
 %type <tree> spar_rdf_literal
@@ -821,10 +822,8 @@ spar_dm_patitem_p	/* [Virt]	PatternItemP	 ::=  VAR1 | VAR2 | 'a' | IRIref	*/
 spar_dm_patitem_o	/* [Virt]	PatternItemO	 ::=  VAR1 | VAR2 | IRIref	*/
 			/*... | RDFLiteral | ( '-' | '+' )? NumericLiteral | BooleanLiteral | NIL	*/
 	: QD_VARNAME { $$ = spar_make_param_or_variable (sparp_arg, $1); }
-	| spar_numeric_literal
-	| _PLUS spar_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
-	| _MINUS spar_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
-	| NIL_L				{ $$ = (SPART *)t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
+	| spar_optsigned_numeric_literal
+	| NIL_L				{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil); }
 	| spar_rdf_literal
 	| spar_boolean_literal
 	| spar_iriref
@@ -1012,10 +1011,18 @@ spar_where_clause_opt
 
 spar_where_clause	/* [13*]	WhereClause	 ::=  'WHERE'? GroupGraphPattern	*/
 	: WHERE_L _LBRA	{
+		if (NULL != sparp_arg->sparp_env->spare_need_for_default_sparul_target) /* trick for bug 16901 */
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, sparp_arg->sparp_env->spare_need_for_default_sparul_target, 0);
+		if (NULL != sparp_arg->sparp_env->spare_src.ssrc_fallback_default_graph)
+		  spar_apply_fallback_default_graph (sparp_arg, 0);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_where_clause_tail { }
 	| _LBRA {
+		if (NULL != sparp_arg->sparp_env->spare_need_for_default_sparul_target) /* trick for bug 16901 */
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, sparp_arg->sparp_env->spare_need_for_default_sparul_target, 0);
+		if (NULL != sparp_arg->sparp_env->spare_src.ssrc_fallback_default_graph)
+		  spar_apply_fallback_default_graph (sparp_arg, 0);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_where_clause_tail { }
@@ -1264,7 +1271,7 @@ spar_bindvals
 
 spar_bindval
 	: spar_iriref
-	| spar_numeric_literal
+	| spar_optsigned_numeric_literal
 	| spar_rdf_literal
 	| spar_boolean_literal
 	| spar_blank_node
@@ -1451,10 +1458,10 @@ spar_inline_data_values_opt
 
 spar_inline_data_value
 	: spar_iriref
-	| spar_numeric_literal
+	| spar_optsigned_numeric_literal
 	| spar_rdf_literal
 	| spar_boolean_literal
-	| spar_blank_node
+	| spar_blank_node	{ sparyyerror (sparp_arg, "The use of blank nodes in VALUES is not allowed by SPARQL 1.1 specification"); $$ = NULL; }
 	| UNBOUND_L		{ sparyyerror (sparp_arg, "UNBOUND in VALUES is deprecated, use UNDEF instead"); $$ = NULL; }
 	| UNDEF_L		{$$ = NULL; }
 	;
@@ -1513,7 +1520,7 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' 'Silent'? VarOrIRIref S
 		  sinv_storage_uri );
 		sparp_arg->sparp_inner_permitted_syntax = -1;
 		sparp_arg->sparp_env->spare_storage_name = sinv_storage_uri;
-		sparp_arg->sparp_storage = sparp_find_storage_by_name (sinv_storage_uri);
+		sparp_arg->sparp_storage = sparp_find_storage_by_name (sparp_arg, sinv_storage_uri);
 		sparp_arg->sparp_storage_is_set = 1;
 		}
 	    spar_service_options_list_opt {
@@ -1926,7 +1933,10 @@ spar_retcols		/* ::=  ( Expn+ )	*/
 
 spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? Var ) ) ')'	*/
 	: spar_agg_name spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, $2)); }
-	| spar_agg_name _STAR _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, (ptrlong)1)); }
+        | spar_agg_name _STAR _RPAR     {
+                SPART *arg = ((uname_SPECIAL_cc_bif_c_COUNT == $1) ? SPAR_MAKE_INT_LITERAL (sparp_arg, 1) : (SPART *)((ptrlong)_STAR));
+                $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, arg)); }
+	| spar_agg_name DISTINCT_L _STAR _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, (ptrlong)_STAR)); }
         | spar_agg_name DISTINCT_L spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, $3)); }
 	| SAMPLE_L _LPAR spar_expn _RPAR	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_SPARQL11_DRAFT, "SAMPLE aggregate function call");
@@ -2013,12 +2023,10 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 			/*... | BooleanLiteral | BlankNode | NIL | Backquoted	*/
 	: spar_iriref
 	| spar_rdf_literal
-	| spar_numeric_literal
-	| _PLUS spar_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
-	| _MINUS spar_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
+	| spar_optsigned_numeric_literal
 	| spar_boolean_literal
 	| spar_blank_node
-	| NIL_L				{ $$ = (SPART *)t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
+	| NIL_L				{ $$ = spartlist (sparp_arg, 2, SPAR_QNAME, uname_rdf_ns_uri_nil); }
 	| spar_backquoted
 	;
 
@@ -2071,6 +2079,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
                     }
                   else
                     {
+		      args = dk_set_nreverse (args);
                       t_set_push (&args, $1);
 		      $$ = sparp_make_builtin_call (sparp_arg, IN_L,
 		        (SPART **)t_list_to_array (args) /* NOT t_revlist_to_array (args), note special first element pushed */ );
@@ -2110,15 +2119,17 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| _BANG spar_expn {		/* [51]*	UnaryExpn	 ::=   ('!'|'NOT'|'+'|'-')? PrimaryExpn */
 		SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
 	| _PLUS	spar_expn	%prec MATH_UPLUS	{
-		SPAR_BIN_OP ($$, BOP_PLUS,
-		  spartlist (sparp_arg, 5, SPAR_LIT, (SPART *) t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL, NULL), $2); }
+		SPAR_BIN_OP ($$, BOP_PLUS, SPAR_MAKE_INT_LITERAL (sparp_arg, 0), $2); }
 	| _MINUS spar_expn	%prec MATH_UMINUS	{
 		caddr_t *val_ptr = NULL;
-		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ($2)) {
-		    if (SPAR_LIT == $2->type)
-		      val_ptr = &($2->_.lit.val); }
-		else
-		  val_ptr = (caddr_t *)($2);
+		caddr_t orig_text = NULL;
+		caddr_t *orig_text_ptr = NULL;
+		if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF ($2)) && (SPAR_LIT == $2->type)) {
+		    val_ptr = &($2->_.lit.val);
+		    orig_text = $2->_.lit.original_text;
+		    if (NULL != orig_text)
+		      orig_text_ptr = &($2->_.lit.original_text);
+		    $2->_.lit.original_text = NULL; }
 		if (NULL != val_ptr) {
 		    dtp_t val_dtp = DV_TYPE_OF (val_ptr[0]);
 		    if (DV_LONG_INT == val_dtp)
@@ -2130,11 +2141,16 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		    else
 		      val_ptr = NULL; }
 		if (NULL == val_ptr)
-		SPAR_BIN_OP ($$, BOP_MINUS,
-		    spartlist (sparp_arg, 5, SPAR_LIT, (SPART *) t_box_num_nonull(0), uname_xmlschema_ns_uri_hash_integer, NULL, NULL),
-		  $2 );
+		  SPAR_BIN_OP ($$, BOP_MINUS, SPAR_MAKE_INT_LITERAL (sparp_arg, 0), $2);
 		else
-		  $$ = $2; }
+		  {
+		    $$ = $2;
+		    if (NULL != orig_text_ptr)
+		      {
+		        if ('-' == orig_text[0])
+		          orig_text_ptr[0] = t_box_dv_short_string (orig_text+1);
+		        else
+		          orig_text_ptr[0] = t_box_dv_short_strconcat ("-", orig_text); } } }
         | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  */
 			/*... BracketedExpn | BuiltInCall | IRIrefOrFunctionOrMacro	*/
 			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
@@ -2217,11 +2233,12 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		        $$ = spar_make_funcall (sparp_arg, is_agg, fname, args);
 		      } } }
 	| spar_rdf_literal		{ $$ = (SPART *)($1); }
-	| spar_numeric_literal		{ $$ = (SPART *)($1); }
+	| spar_nonsigned_numeric_literal		{ $$ = (SPART *)($1); }
 	| spar_boolean_literal		{ $$ = (SPART *)($1); }
 	| spar_blank_node  /* Excluded from final 1.1: { sparyyerror (sparp_arg, "Blank node labels can not be used in expressions, only in triple patterns"); } */
 	| spar_var
 	| spar_macro_call
+	| UNDEF_L { SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "UNDEF_L outside VALUES clause"); $$ = (SPART *)t_NEW_DB_NULL; }
 	;
 
 spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
@@ -2368,8 +2385,8 @@ spar_expn_or_ggp			/* [Virt]	ExpnOrGgp	 ::=  Expn | GroupGraphPattern	*/
 	    spar_gp _RBRA { $$ = spar_gp_finalize (sparp_arg, NULL); }
 	;
 
-spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
-	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
+spar_nonsigned_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
+	: SPARQL_INTEGER	{ $$ = SPAR_MAKE_INT_LITERAL (sparp_arg, unbox ($1)); }
 	| SPARQL_DECIMAL	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, ((caddr_t *)$1)[0], uname_xmlschema_ns_uri_hash_decimal, NULL, ((caddr_t *)$1)[1]); }
 	| SPARQL_DOUBLE		{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, ((caddr_t *)$1)[0], uname_xmlschema_ns_uri_hash_double, NULL, ((caddr_t *)$1)[1]); }
 	| INF_L			{ double myZERO = 0.0;
@@ -2380,13 +2397,23 @@ spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 				  $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL, "NAN"); }
 	;
 
+spar_optsigned_numeric_literal	/* [Virt]	SignedNumericLiteral	 ::=  ( '+' | '-' )? NumericLiteral	*/
+	: spar_nonsigned_numeric_literal
+	| _PLUS spar_nonsigned_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
+	| _MINUS spar_nonsigned_numeric_literal	%prec MATH_UMINUS	{
+		spar_change_sign (&($2->_.lit.val));
+		if (NULL != $2->_.lit.original_text)
+		  $2->_.lit.original_text = t_box_dv_short_strconcat ("-", $2->_.lit.original_text);
+		$$ = $2; }
+	;
+
 spar_integer_literal
-	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
+	: SPARQL_INTEGER	{ $$ = SPAR_MAKE_INT_LITERAL (sparp_arg, unbox ($1)); }
 	;
 
 spar_optminus_integer_literal
-	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
-	| MINUS_L SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_num (-unbox($2)), uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
+	: SPARQL_INTEGER	{ $$ = SPAR_MAKE_INT_LITERAL (sparp_arg, unbox ($1)); }
+	| MINUS_L SPARQL_INTEGER	{ $$ = SPAR_MAKE_INT_LITERAL (sparp_arg, -unbox($2)); }
 	;
 
 spar_rdf_literal	/* [60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?	*/
@@ -2396,8 +2423,8 @@ spar_rdf_literal	/* [60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?	
 	;
 
 spar_boolean_literal	/* [61]	BooleanLiteral	 ::=  'true' | 'false'	*/
-	: true_L		{ $$ = SPAR_MAKE_BOOL_LITERAL(sparp_arg, 1); }
-	| false_L		{ $$ = SPAR_MAKE_BOOL_LITERAL(sparp_arg, 0); }
+	: true_L		{ $$ = SPAR_MAKE_EBV_LITERAL(sparp_arg, 1); }
+	| false_L		{ $$ = SPAR_MAKE_EBV_LITERAL(sparp_arg, 0); }
 	;
 
 spar_iriref_or_default_list_or_star
@@ -2495,14 +2522,12 @@ spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra {
 		if (NULL != $2)
-		  $<tree>$ = $2;
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = $2;
 		else if (spar_ctor_uses_default_graph ($5))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}", 1); }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $7 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $5); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $5); }
 	;
 
 spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
@@ -2515,7 +2540,7 @@ spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
                 SPART *fake = spar_make_fake_action_solution (sparp_arg);
 		SPART *dflt_g = $3;
 		if ((NULL == dflt_g) && spar_ctor_uses_default_graph ($6))
-		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in INSERT DATA {...} without GRAPH {...}");
+		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in INSERT DATA {...} without GRAPH {...}", 0);
 		sparp_arg->sparp_in_precode_expn = 0;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, SPARUL_INSERT_DATA, NULL, fake );
 		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, dflt_g, $6); }
@@ -2528,14 +2553,12 @@ spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra {
 		if (NULL != $2)
-		  $<tree>$ = $2;
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = $2;
 		else if (spar_ctor_uses_default_graph ($5))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}", 1); }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $7 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $5); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $5); }
 	;
 
 spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
@@ -2548,7 +2571,7 @@ spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
                 SPART *fake = spar_make_fake_action_solution (sparp_arg);
 		SPART *dflt_g = $3;
 		if ((NULL == dflt_g) && spar_ctor_uses_default_graph ($6))
-		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in DELETE DATA {...} without GRAPH {...}");
+		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in DELETE DATA {...} without GRAPH {...}", 0);
 		sparp_arg->sparp_in_precode_expn = 0;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, SPARUL_DELETE_DATA, NULL, fake );
 		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, dflt_g, $6); }
@@ -2562,16 +2585,14 @@ spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra INSERT_L _LBRA spar_ctor_template_nolbra {
 		if (NULL != $2)
-		  $<tree>$ = $2;
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = $2;
 		else if (spar_ctor_uses_default_graph ($6))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}", 1);
 		else if (spar_ctor_uses_default_graph ($9))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}", 1); }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $11 );
-		spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>10, $6, $9); }
+		spar_compose_retvals_of_modify (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $6, $9); }
 	;
 
 spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' 'SILENT'? DropTarget	*/
@@ -2675,21 +2696,20 @@ spar_sparul11_deleteinsert	/* [DML]*	DeleteInsert11Action	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra spar_sparul11_insert_opt {
 		if (spar_ctor_uses_default_graph ($4))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}", 1);
 		else if ((NULL != $5) && spar_ctor_uses_default_graph ($5))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}", 1); }
 	    spar_action_solution {
 		if (NULL != $5)
 		  {
 		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $7 );
-		    spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>6, $4, $5); }
+		    spar_compose_retvals_of_modify (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $4, $5); }
 		else
 		  {
 		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $7 );
-		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $4); } }
+		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $4); } }
 	| DELETE_L WHERE_L _LBRA {
+		spar_apply_fallback_default_graph (sparp_arg, 1);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		sparp_arg->sparp_in_ctor_from_where = 1;
 		spar_gp_init (sparp_arg, WHERE_L); }
@@ -2699,8 +2719,8 @@ spar_sparul11_deleteinsert	/* [DML]*	DeleteInsert11Action	 ::=  */
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
 		SPART *wm = $8;
 		SPART *dflt_g = NULL;
-		if (spar_ctor_uses_default_graph (where_gp))
-		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in DELETE WHERE {...} without GRAPH {...}");
+		if (spar_ctor_uses_default_graph (where_gp))  /* To check for errors only, the default graph is set by spar_apply_fallback_default_graph (sparp_arg, 1) above (if set at all) */
+		  spar_default_sparul_target (sparp_arg, "triple in DELETE WHERE {...} without GRAPH {...}", 0);
 		wm->_.wm.where_gp = where_gp;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, wm);
 		spar_compose_retvals_of_delete_from_wm (sparp_arg, $$, dflt_g); }
@@ -2714,12 +2734,10 @@ spar_sparul11_insert	/* [DML]*	Insert11Action	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra {
 		if (spar_ctor_uses_default_graph ($4))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}", 1); }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $6 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>5, $4); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $4); }
 	;
 
 spar_sparul11_insert_opt
@@ -3216,7 +3234,7 @@ spar_qm_field_or_blank	/* [Virt]	QmFieldOrBlank	 ::=  QmField | ( '[' ']' )	*/
 
 spar_qm_field		/* [Virt]	QmField		 ::=  */
 	: spar_qm_iriref_const_expn { $$ = (SPART *)$1; }	/* see case below */
-	| spar_numeric_literal			/*... NumericLiteral	*/
+	| spar_optsigned_numeric_literal		/*... NumericLiteral	*/
 	| spar_rdf_literal			/*... | RdfLiteral	*/
 	| spar_qm_iriref_const_expn		/*... | ( QmIRIrefConst ( '(' ( QmSqlCol ( ',' QmSqlCol )* )? ')' )? )	*/
 	    _LPAR spar_qm_sqlcol_commalist_opt _RPAR {

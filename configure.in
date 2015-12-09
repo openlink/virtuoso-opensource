@@ -31,8 +31,8 @@ AC_REVISION($Id$)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[1])
-m4_define(vos_devel,	[-dev])
+m4_define(vos_patch,	[2])
+m4_define(vos_devel,	[])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
@@ -145,6 +145,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Gg]][[Nn]][[Uu]])					# GNU
@@ -158,6 +159,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Dd]][[Ee]][[Bb]][[Ii]][[Aa]][[Nn]])			# Debian
@@ -176,6 +178,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
 	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
 	hostingdir=$libdir/$VIRTPKGDIR/hosting
+	clidir=$libdir/cli/$VIRTPKGDIR/
 	;;
 
   [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])			# Gentoo
@@ -194,6 +197,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
 	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
 	hostingdir=$libdir/$VIRTPKGDIR/hosting
+	clidir=$libdir/$VIRTPKGDIR/cli
 	;;
 
   [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])			# RedHat
@@ -211,6 +215,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Oo]][[Pp]][[Ee]][[Nn]][[Ss]][[Uu]][[Ss]][[Ee]])	# openSUSE
@@ -228,6 +233,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Ff]][[Rr]][[Ee]][[Ee]][[Bb]][[Ss]][[Dd]])		# FreeBSD
@@ -245,6 +251,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir=$localstatedir/lib/virtuoso/db
 	httprootdir=$localstatedir/lib/virtuoso/vsp
 	hostingdir=$libdir/virtuoso/hosting
+	clidir=$libdir/virtuoso/cli
 	;;
 
   [[Oo]][[Pp]][[Tt]])					# /opt
@@ -258,6 +265,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir='${prefix}/database'
 	httprootdir='${prefix}/vsp'
 	hostingdir='${prefix}/hosting'
+	clidir='${prefix}/lib'
 	;;
 
  [[Oo]][[Pp]][[Ee]][[Nn]][[Ll]][[Ii]][[Nn]][[Kk]])	# OpenLink
@@ -271,6 +279,7 @@ case ${VIRTUOSO_LAYOUT} in
 	dbdir='${prefix}/database'
 	httprootdir='${prefix}/vsp'
 	hostingdir='${prefix}/hosting'
+	clidir='${prefix}/lib'
 	;;
 
   *)							# UNKNOWN
@@ -283,13 +292,15 @@ case ${VIRTUOSO_LAYOUT} in
 esac
 AC_MSG_RESULT([${virtuoso_layout}])
 
-AC_SUBST(vaddir)
-AC_SUBST(demodir)
 AC_SUBST(dbdir)
-AC_SUBST(htmldocdir)
-AC_SUBST(pdfdocdir)
-AC_SUBST(httprootdir)
+AC_SUBST(demodir)
+AC_SUBST(docdir)
 AC_SUBST(hostingdir)
+AC_SUBST(htmldocdir)
+AC_SUBST(httprootdir)
+AC_SUBST(pdfdocdir)
+AC_SUBST(vaddir)
+AC_SUBST(clidir)
 
 ##########################################################################
 ##									##
@@ -418,12 +429,14 @@ AC_PATH_PROG(RUBY, ruby, ruby)
 ##  Use the new LibTool GNU package					##
 ##									##
 ##########################################################################
-AC_PROG_LIBTOOL
+LT_INIT		dnl was AC_PROG_LIBTOOL
 
 #
 #  Use our own libtool so we can perform Universal builds
 #
 case $host in
+  *-darwin14*)
+	;;
   *-darwin*)
 	LIBTOOL='$(SHELL) $(top_srcdir)/bin/libtool.macosx'
 	;;
@@ -539,7 +552,7 @@ AC_FUNC_SETVBUF_REVERSED 	dnl this used to be AC_SETVBUF_REVERSED
 #AC_FUNC_STRCOLL
 #AC_FUNC_STRFTIME
 #AC_FUNC_UTIME_NULL
-#AC_FUNC_VFORK 			dnl this used to be AC_VFORK
+AC_FUNC_FORK
 #AC_FUNC_VPRINTF
 #AC_FUNC_WAIT3
 AC_FUNC_CHOWN
@@ -1227,6 +1240,15 @@ AM_CONDITIONAL(HAVE_MONO, test "x$have_mono" = "xyes")
 
 ##########################################################################
 #                                                                        #
+# Mono C# Compiler                                                       #
+#                                                                        #
+##########################################################################
+AC_CHECK_PROGS(MCS, mcs gmcs csc, notfound)
+AM_CONDITIONAL(HAVE_MCS, test "x$MCS" != "xnotfound")
+
+
+##########################################################################
+#                                                                        #
 # HSLookup								 #
 #                                                                        #
 ##########################################################################
@@ -1620,6 +1642,154 @@ AC_SUBST(ZLIB_INC)
 AC_SUBST(ZLIB_LIB)
 
 AM_CONDITIONAL(WITH_ZLIB, test "x$with_zlib" = "xinternal")
+
+
+##########################################################################
+##									##
+##  Check out system lzma library					##
+##									##
+##########################################################################
+AC_ARG_ENABLE(lzma, [dnl
+AC_HELP_STRING([--enable-lzma(=DIR)], [enable the lzma decompressor (default)])
+AC_HELP_STRING([--disable-lzma], [disable the lzma decompressor LZMA])dnl
+], [
+     case "${enableval}" in
+       yes)	with_lzma="yes" ;;
+       no)	with_lzma="no" ;;
+       /*)	with_lzma="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-lzma) ;;
+     esac
+  ],
+  [ with_lzma="yes" ]
+)
+
+if test "x$with_lzma" != "xno"
+then
+    AC_MSG_CHECKING([LZMA library usability])
+    old_CFLAGS="$CFLAGS"
+    save_LIBS="$LIBS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_lzma" in
+	yes)
+	   LZMA_CFLAGS=""
+	   LZMA_LDFLAGS="-llzma"
+	   ;;
+	*)
+	   LZMA_CFLAGS="-I$with_lzma/include"
+	   LZMA_LDFLAGS="-L$with_lzma/lib -llzma"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_lzma/lib"
+	   export LD_LIBRARY_PATH
+	   ;;
+    esac
+
+    CFLAGS="$CFLAGS $LZMA_CFLAGS"
+    LIBS="$LIBS $LZMA_LDFLAGS"
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <lzma.h>
+int
+main ()
+{
+  lzma_stream strm = LZMA_STREAM_INIT;
+  lzma_ret ret = lzma_stream_decoder(&strm, UINT64_MAX, LZMA_CONCATENATED); 
+
+  if (ret == LZMA_OK)
+    return 0;
+
+  return -1;
+}],
+[
+ AC_MSG_RESULT(good)
+ srvrlibs="$srvrlibs $LZMA_LDFLAGS"
+ INCL="$INCL $LZMA_CFLAGS"
+ AC_DEFINE(HAVE_LZMA, 1, [LZMA support])
+ BUILD_OPTS="$BUILD_OPTS lzma"
+],
+[
+ AC_MSG_RESULT([bad. Check config.log for details])
+ with_lzma="no"
+])
+    CFLAGS="$old_CFLAGS"
+    LIBS="$save_LIBS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+fi
+AC_SUBST(LZMA_CFLAGS)
+AC_SUBST(LZMA_LDFLAGS)
+
+
+##########################################################################
+##									##
+##  Check out system bz2 library					##
+##									##
+##########################################################################
+AC_ARG_ENABLE(bz2, [dnl
+AC_HELP_STRING([--enable-bz2(=DIR)], [enable the bz2 decompressor (default)])
+AC_HELP_STRING([--disable-bz2], [disable the bz2 decompressor ])dnl
+], [
+     case "${enableval}" in
+       yes)	with_bz2="yes" ;;
+       no)	with_bz2="no" ;;
+       /*)	with_bz2="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --disable-bz2) ;;
+     esac
+  ],
+  [ with_bz2="yes" ]
+)
+
+if test "x$with_bz2" != "xno"
+then
+    AC_MSG_CHECKING([BZ2 library usability])
+    old_CFLAGS="$CFLAGS"
+    save_LIBS="$LIBS"
+    old_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+    case "$with_bz2" in
+	yes)
+	   BZ2_CFLAGS=""
+	   BZ2_LDFLAGS="-lbz2"
+	   ;;
+	*)
+	   BZ2_CFLAGS="-I$with_bz2/include"
+	   BZ2_LDFLAGS="-L$with_bz2/lib -lbz2"
+	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_bz2/lib"
+	   export LD_LIBRARY_PATH
+	   ;;
+    esac
+
+    CFLAGS="$CFLAGS $BZ2_CFLAGS"
+    LIBS="$LIBS $BZ2_LDFLAGS"
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <bzlib.h>
+int
+main ()
+{
+  BZ2_bzDecompressInit(NULL, 0, 0);
+}],
+[
+ AC_MSG_RESULT(good)
+ srvrlibs="$srvrlibs $BZ2_LDFLAGS"
+ INCL="$INCL $BZ2_CFLAGS"
+ AC_DEFINE(HAVE_BZ2, 1, [BZ2 support])
+ BUILD_OPTS="$BUILD_OPTS bz2"
+],
+[
+ AC_MSG_RESULT([bad. Check config.log for details])
+ with_bz2="no"
+])
+    CFLAGS="$old_CFLAGS"
+    LIBS="$save_LIBS"
+    LD_LIBRARY_PATH="$old_LD_LIBRARY_PATH"
+    export LD_LIBRARY_PATH
+fi
+AC_SUBST(BZIP2_CFLAGS)
+AC_SUBST(BZIP2_LDFLAGS)
 
 dnl PUT OTHER EXTENSIONS HERE
 

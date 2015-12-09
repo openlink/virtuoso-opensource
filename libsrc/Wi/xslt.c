@@ -3877,6 +3877,69 @@ bif_dict_bitor_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *old_val_ptr;
   if (ht->ht_mutex)
     mutex_enter (ht->ht_mutex);
+  if ((0 < ht->ht_dict_max_entries) && ((ht->ht_inserts - ht->ht_deletes) > ht->ht_dict_max_entries))
+    goto skip_insertion;	/* see below */
+  if ((0 < ht->ht_dict_max_mem_in_use) && (ht->ht_dict_mem_in_use > ht->ht_dict_max_mem_in_use))
+    goto skip_insertion;	/* see below */
+  old_val_ptr = (caddr_t *) id_hash_get (ht, (caddr_t) (&key));
+  if (NULL != old_val_ptr)
+    {
+      boxint old_int;
+      if (DV_LONG_INT != DV_TYPE_OF (old_val_ptr[0]))
+	sqlr_new_error ("42000", "SR627", "dict_bitor_or_put() can not apply a bitwise OR to a noninteger value");
+      old_int = unbox (old_val_ptr[0]);
+      res = old_int | bits_to_set;
+      if (ht->ht_mp)
+	old_val_ptr[0] = mp_box_num ((mem_pool_t *) (ht->ht_mp), res);
+      else
+	{
+	  dk_free_tree (old_val_ptr[0]);
+	  old_val_ptr[0] = box_num (res);
+	}
+    }
+  else
+    {
+      caddr_t val;
+      if (ht->ht_mp)
+	{
+	  key = mp_full_box_copy_tree ((mem_pool_t *) (ht->ht_mp), key);
+	  val = mp_box_num ((mem_pool_t *) (ht->ht_mp), bits_to_set);
+	}
+      else
+	{
+	  key = box_copy_tree (key);
+	  val = box_num (bits_to_set);
+	}
+      res = bits_to_set;
+      if (ht->ht_mutex)
+	box_make_tree_mt_safe (key);
+      id_hash_set (ht, (caddr_t) (&key), (caddr_t) (&val));
+      if (0 < ht->ht_dict_max_mem_in_use)
+	ht->ht_dict_mem_in_use += raw_length (val) + raw_length (key) + 3 * sizeof (caddr_t);
+    }
+  id_hash_iterator (hit, ht);
+  ht->ht_dict_version++;
+  /* It's incorrect to write hit->hit_dict_version = ht->ht_dict_version because they may be out of sync before the id_hash_put */
+  hit->hit_dict_version++;
+
+skip_insertion:
+  if (ht->ht_mutex)
+    mutex_leave (ht->ht_mutex);
+  res = ht->ht_inserts - ht->ht_deletes;
+  return box_num (res);
+}
+
+caddr_t
+bif_dict_get_or_set_sequence_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_get_or_set_sequence_next", 0);
+  id_hash_t *ht = hit->hit_hash;
+  caddr_t key = bif_arg (qst, args, 1, "dict_get_or_set_sequence_next");
+  caddr_t sequence_name = bif_string_arg (qst, args, 2, "dict_get_or_set_sequence_next");
+  caddr_t res = 0;
+  caddr_t *old_val_ptr;
+  if (ht->ht_mutex)
+    mutex_enter (ht->ht_mutex);
   if ((0 < ht->ht_dict_max_entries) &&
       ((ht->ht_inserts - ht->ht_deletes) > ht->ht_dict_max_entries) )
     goto skip_insertion; /* see below */
@@ -3885,35 +3948,36 @@ bif_dict_bitor_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     goto skip_insertion; /* see below */
   old_val_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&key));
   if (NULL != old_val_ptr)
-    {
-      boxint old_int;
-      if (DV_LONG_INT != DV_TYPE_OF (old_val_ptr[0]))
-              sqlr_new_error ("42000", "SR627",
-                "dict_bitor_or_put() can not apply a bitwise OR to a noninteger value" );
-      old_int = unbox (old_val_ptr[0]);
-      dk_free_tree (old_val_ptr[0]);
-      res = old_int | bits_to_set;
-      old_val_ptr[0] = box_num (res);
-    }
+    res = box_copy_tree ((cbox_t)(old_val_ptr[0]));
   else
     {
-      caddr_t val = box_num (bits_to_set);
-      key = box_copy_tree (key);
-      res = bits_to_set;
+      boxint val = sequence_next (sequence_name, 0);
+      caddr_t boxed_val;
+      if (ht->ht_mp)
+        {
+          key = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), key);
+          boxed_val = mp_box_num ((mem_pool_t *)(ht->ht_mp), val);
+        }
+      else
+        {
+          key = box_copy_tree (key);
+          boxed_val = box_num (val);
+        }
+      res = box_num (val);
       if (ht->ht_mutex)
         box_make_tree_mt_safe (key);
-      id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&val));
+      id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&boxed_val));
       if (0 < ht->ht_dict_max_mem_in_use)
-        ht->ht_dict_mem_in_use += raw_length (val) + raw_length (key) + 3 * sizeof (caddr_t);
+        ht->ht_dict_mem_in_use += raw_length (boxed_val) + raw_length (key) + 3 * sizeof (caddr_t);
+      id_hash_iterator (hit, ht);
+      ht->ht_dict_version++;
+      hit->hit_dict_version++ /* It's incorrect to write hit->hit_dict_version = ht->ht_dict_version because they may be out of sync before the id_hash_put */;
+      res = box_num (val);
     }
-  id_hash_iterator (hit, ht);
-  ht->ht_dict_version++;
-  hit->hit_dict_version++ /* It's incorrect to write hit->hit_dict_version = ht->ht_dict_version because they may be out of sync before the id_hash_put */;
 skip_insertion:
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
-  res = ht->ht_inserts - ht->ht_deletes;
-  return box_num (res);
+  return res;
 }
 
 caddr_t
@@ -4397,6 +4461,19 @@ typedef struct dsort_itm_s {
   int di_pos;
 } dsort_itm_t;
 
+void
+check_gvector_args (int vect_elems, int block_elts, int key_ofs, const char *funname)
+{
+  if (block_elts <= 0)
+    sqlr_new_error ("22023", "SR488", "Second argument of %s() should be positive integer", funname);
+  if (block_elts > MAX_VECTOR_BSORT_BLOCK)
+    sqlr_new_error ("22023", "SR488", "Second argument of %s() is greater than maximum supported block length %d", funname, MAX_VECTOR_BSORT_BLOCK);
+  if (vect_elems % block_elts != 0)
+    sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of argument #2", funname);
+  if ((0 > key_ofs) || (key_ofs >= block_elts))
+    sqlr_new_error ("22023", "SR490", "In call of %s(), argument #3 should be nonnegative integer that is less than argument #2", funname);
+}
+
 caddr_t
 bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, char algo)
 {
@@ -4407,14 +4484,7 @@ bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
   int sort_asc = bif_long_range_arg (qst, args, 3, funname, 0, 1);
   int group_count;
   vector_sort_t specs;
-  if (block_elts <= 0)
-    sqlr_new_error ("22023", "SR488", "Second argument of %s() should be positive integer", funname);
-  if (block_elts > MAX_VECTOR_BSORT_BLOCK)
-    sqlr_new_error ("22023", "SR488", "Second argument of %s() is greater than maximum supported block length %d", funname, MAX_VECTOR_BSORT_BLOCK);
-  if (vect_elems % block_elts != 0)
-    sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of argument #2", funname);
-  if ((0 > key_ofs) || (key_ofs >= block_elts))
-    sqlr_new_error ("22023", "SR490", "In call of %s(), argument #3 should be nonnegative integer that is less than argument #2", funname);
+  check_gvector_args (vect_elems, block_elts, key_ofs, funname);
   group_count = vect_elems / block_elts;
   if (1 >= group_count)
     return box_num (group_count); /* No need to sort empty or single-element vector */
@@ -4542,6 +4612,40 @@ bif_gvector_digit_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_gvector_deduplicate_sorted (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *vect = (caddr_t *)bif_array_of_pointer_arg (qst, args, 0, "gvector_deduplicate_sorted");
+  int vect_elems = BOX_ELEMENTS (vect);
+  int block_elts = bif_long_range_arg (qst, args, 1, "gvector_deduplicate_sorted", 1, 1024);
+  int key_ofs = bif_long_range_arg (qst, args, 2, "gvector_deduplicate_sorted", 0, 1024);
+  int group_count, last_unique_idx;
+  int itm_idx;
+  caddr_t *res;
+  check_gvector_args (vect_elems, block_elts, key_ofs, "gvector_deduplicate_sorted");
+  group_count = vect_elems / block_elts;
+  if (1 >= group_count)
+    return box_num (group_count); /* No need to deduplicate empty or single-element vector */
+  last_unique_idx = 0;
+  for (itm_idx = 1; itm_idx < group_count; itm_idx++)
+    {
+      if (DVC_MATCH == cmp_boxes (vect[last_unique_idx * block_elts + key_ofs], vect[itm_idx * block_elts + key_ofs], NULL, NULL))
+        continue;
+      last_unique_idx++;
+      if (last_unique_idx == itm_idx)
+        continue;
+      memcpy (vect + last_unique_idx, vect + itm_idx, block_elts * sizeof (caddr_t));
+      memset (vect + itm_idx, 0, block_elts * sizeof (caddr_t));
+    }
+  if (last_unique_idx + 1 == group_count)
+    return box_num (group_count); /* No need to deduplicate empty or single-element vector */
+  res = dk_alloc_list ((last_unique_idx + 1) * block_elts);
+  memcpy (res, vect, (last_unique_idx + 1) * block_elts * sizeof (caddr_t));
+  QST_GET_ADDR (qst, args[0])[0] = (caddr_t)res;
+  dk_free_box /*not _tree*/ ((caddr_t)vect);
+  return box_num (last_unique_idx + 1);
+}
+
+caddr_t
 bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, char algo, int block_elts, int key_ofs, int sort_asc)
 {
   caddr_t *vect = (caddr_t *)bif_array_arg (qst, args, 0, funname);
@@ -4585,17 +4689,18 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
           dtp_t key_dtp;
           if (DV_ARRAY_OF_POINTER != DV_TYPE_OF(row))
             {
+	      dtp_t row_dtp = DV_TYPE_OF(row);
               dk_free ((void *)src, group_count * sizeof (dsort_itm_t));
               if (1 == block_elts)
                 sqlr_new_error ("22023", "SR572",
                   "Function %s needs vector of vectors, "
                   "found a value type %s (%d); index of bad item in array is %d",
-                  funname, dv_type_title (key_dtp), key_dtp, itm_ctr );
+                  funname, dv_type_title (row_dtp), row_dtp, itm_ctr );
               else
                 sqlr_new_error ("22023", "SR572",
                   "Function %s needs vector of blocks with vectors in key positions, "
                   "found a key type %s (%d) instead; index of bad item in array is %d = %d * %d + %d (block index * no of items per block + key offset)",
-                  funname, dv_type_title (key_dtp), key_dtp, itm_ctr*block_elts + key_ofs, itm_ctr, block_elts, key_ofs );
+                  funname, dv_type_title (row_dtp), row_dtp, itm_ctr*block_elts + key_ofs, itm_ctr, block_elts, key_ofs );
             }
           if (BOX_ELEMENTS(row) > key_item_inx)
             {
@@ -4833,16 +4938,17 @@ bif_rowvector_graph_partition (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       dtp_t key_dtp;
       if (DV_ARRAY_OF_POINTER != DV_TYPE_OF(row))
         {
+	  dtp_t row_dtp = DV_TYPE_OF(row);
           if (1 == block_elts)
             sqlr_new_error ("22023", "SR572",
               "Function %s needs vector of vectors, "
               "found a value type %s (%d); index of bad item in array is %d",
-              funname, dv_type_title (key_dtp), key_dtp, itm_ctr );
+              funname, dv_type_title (row_dtp), row_dtp, itm_ctr );
           else
             sqlr_new_error ("22023", "SR572",
               "Function %s needs vector of blocks with vectors in key positions, "
               "found a key type %s (%d) instead; index of bad item in array is %d = %d * %d + %d (block index * no of items per block + key offset)",
-              funname, dv_type_title (key_dtp), key_dtp, itm_ctr*block_elts + key_ofs, itm_ctr, block_elts, key_ofs );
+              funname, dv_type_title (row_dtp), row_dtp, itm_ctr*block_elts + key_ofs, itm_ctr, block_elts, key_ofs );
         }
       if (BOX_ELEMENTS(row) > key_item_inx)
         {
@@ -5170,6 +5276,7 @@ xslt_init (void)
   bif_define ("dict_inc_or_put", bif_dict_inc_or_put);
   bif_define ("dict_dec_or_remove", bif_dict_dec_or_remove);
   bif_define ("dict_bitor_or_put", bif_dict_bitor_or_put);
+  bif_define ("dict_get_or_set_sequence_next", bif_dict_get_or_set_sequence_next);
   bif_define ("dict_size", bif_dict_size);
   bif_define ("dict_list_keys", bif_dict_list_keys);
   bif_define ("dict_destructive_list_rnd_keys", bif_dict_destructive_list_rnd_keys);
@@ -5181,6 +5288,7 @@ xslt_init (void)
   bif_define ("dict_key_eq", bif_dict_key_eq);
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
+  bif_define ("gvector_deduplicate_sorted", bif_gvector_deduplicate_sorted);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);
   bif_define ("rowvector_subj_sort", bif_rowvector_subj_sort);
   bif_set_uses_index (bif_rowvector_subj_sort);

@@ -642,7 +642,7 @@ waitAll ()
    while [ "$clients" -gt "0" ]
      do
        sleep 1
-       clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
+       clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
 }

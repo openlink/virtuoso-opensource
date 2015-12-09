@@ -8227,8 +8227,11 @@ val_is_xpack_serialization:
    do { \
       if ((xn)->src_gen.src_sets) \
 	{ \
+	  caddr_t __v = (v); \
 	  data_col_t * dc = QST_BOX (data_col_t *, qst, (ssl)->ssl_index); \
-	  dc_append_box (dc, v); \
+	  dc_append_box (dc, __v); \
+	  if (DCT_BOXES & dc->dc_type) \
+	    dk_free_tree (__v); \
 	} \
       else \
 	qst_set ((qst), (ssl), (v)); \

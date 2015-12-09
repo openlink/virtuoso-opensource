@@ -277,7 +277,7 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
 #endif
 
   if (align_bytes >= box_min_mmap)
-    ptr = dk_alloc_mmap (align_bytes);
+    ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   else
   ptr = (unsigned char *) dk_try_alloc (align_bytes);
   if (!ptr)
@@ -1513,7 +1513,8 @@ rdf_box_audit_impl (rdf_box_t * rb)
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");
 #endif
-  if (rb->rb_type < RDF_BOX_MIN_TYPE) GPF_T1 ("rb type out pof range");
+  if ((rb->rb_type < RDF_BOX_MIN_TYPE) || (rb->rb_type > RDF_BOX_MAX_TYPE)) GPF_T1 ("rb type out of range");
+  if ((rb->rb_lang < RDF_BOX_DEFAULT_LANG) || (rb->rb_lang > RDF_BOX_MAX_LANG)) GPF_T1 ("rb lang out of range");
   if (rb->rb_is_complete)
     rb_dt_lang_check(rb);
 }
@@ -2509,7 +2510,7 @@ dk_box_initialize (void)
 #ifdef MALLOC_DEBUG
   dk_mem_hooks_2 (DV_NON_BOX, box_copy_non_box, NULL, 0, box_mp_copy_non_box);
 #endif
-  dk_mem_hooks (DV_RBUF,  box_non_copiable, rbuf_free_cb, 0);
+  dk_mem_hooks (DV_RBUF,  box_non_copiable, (box_destr_f)rbuf_free_cb, 0);
   uname_mutex = mutex_allocate ();
   if (NULL == uname_mutex)
     GPF_T;

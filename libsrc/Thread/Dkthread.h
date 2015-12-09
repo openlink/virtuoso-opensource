@@ -31,12 +31,30 @@
 
 #define _OPL_THREADS	1
 
+/*#define JMP_CKSUM*/
+
 typedef struct
   {
     jmp_buf buf;
+#ifdef JMP_CKSUM
+    uint32	j_cksum;
+#endif
   } jmp_buf_splice;
+
+
+#ifdef JMP_CKSUM
+#define longjmp_splice(b,f)	longjmp_brk ((b), f)
+uint32 j_cksum (jmp_buf j);
+int j_set_cksum (jmp_buf_splice * j, int rc);
+
+#define setjmp_splice(b)	j_set_cksum (b, setjmp ((b)->buf))
+
+void longjmp_brk (jmp_buf_splice * j, int rc);
+
+#else
 #define setjmp_splice(b)	setjmp ((b)->buf)
 #define longjmp_splice(b,f)	longjmp ((b)->buf, f)
+#endif
 
 #if defined (__APPLE__)
 #define thread_t opl_thread_t

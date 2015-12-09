@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 76;
+   protected static final int minor = 92;
 
    // Some variables
    private String host = "localhost";
@@ -108,13 +108,16 @@ public class Driver implements java.sql.Driver
 	     System.err.println ("RPC logfile=" + log_file);
 	     try
 	       {
-		 VirtuosoFuture.rpc_log = new java.io.PrintStream (
-		     new java.io.BufferedOutputStream (
-		       new java.io.FileOutputStream (log_file), 4096));
+	         VirtuosoFuture.rpc_log = new java.io.PrintWriter(
+	              new java.io.FileOutputStream(log_file), true);
+
+//		 VirtuosoFuture.rpc_log = new java.io.PrintStream (
+//		     new java.io.BufferedOutputStream (
+//		       new java.io.FileOutputStream (log_file), 4096));
 	       }
 	     catch (Exception e)
 	       {
-		 VirtuosoFuture.rpc_log = System.out;
+		 VirtuosoFuture.rpc_log = new java.io.PrintWriter(System.out, true);
 	       }
 	     //System.err.println ("rpc_log=" + VirtuosoFuture.rpc_log);
 	   }

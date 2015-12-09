@@ -49,11 +49,6 @@
   <refsect1 id="ret_xenc_delete_temp_keys"><title>Return Types</title>
       <para>The function returns number of temp keys removed.</para>
   </refsect1>
-  <refsect1 id="errors_xenc_delete_temp_keys">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_delete_temp_keys">
     <title>Examples</title>
     <example id="ex_xenc_delete_temp_keys"><title>Delete temporary keys</title>

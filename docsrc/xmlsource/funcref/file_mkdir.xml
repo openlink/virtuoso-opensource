@@ -91,10 +91,10 @@
 -->
   <refsect1 id="seealso_file_mkdir"><title>See Also</title>
     <para>
-      <link linkend="fn_file_delete">file_delete</link>
-      <link linkend="fn_file_unlink">file_unlink</link>
-      <link linkend="fn_file_mkpath">file_mkpath</link>
-      <link linkend="fn_file_stat">file_stat</link>
+      <link linkend="fn_file_delete"><function>file_delete()</function></link>
+      <link linkend="fn_file_unlink"><function>file_unlink()</function></link>
+      <link linkend="fn_file_mkpath"><function>file_mkpath()</function></link>
+      <link linkend="fn_file_stat"><function>file_stat()</function></link>
     </para>
   </refsect1>
 </refentry>

@@ -40,6 +40,23 @@ insert into sys_vt_index (vi_table, vi_index, vi_col, vi_id_col, vi_index_table,
 
 __ddl_changed ('DB.DBA.GEO');
 
+create procedure CL_GEO_INS (in id int, in g any)
+{
+  geo_insert ('DB.DBA.GEO_INX', g, id);
+}
+
+create procedure cl_geo_insert (in id int, inout g any)
+{
+  declare daq any;
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
+      geo_insert ('DB.DBA.GEO_INX', g, id);
+      return;
+    }
+  daq := daq (1);
+  daq_call (daq, 'DB.DBA.GEO', 'GEO', 'DB.DBA.CL_GEO_INS', vector (id, g), 1);
+  daq_results (daq);
+}
 
 create procedure rndf (in r1 float, in r2 float)
 {
@@ -57,11 +74,11 @@ create procedure gt1 (in n int, in srid int := 0, in delay int := 0)
     id := sequence_next ('geo');
     pt := st_setsrid (st_point (rndf (0, 3), rndf (0, 4)), srid);
       insert into geo (id, geo) values (id, pt);
-      geo_insert ('DB.DBA.GEO_INX', pt, id);
+      cl_geo_insert (id, pt);
     id := sequence_next ('geo');
     pt := st_setsrid (st_point (rndf (10, 23), rndf (20, 40)), srid);
       insert into geo (id, geo) values (id, pt);
-      geo_insert ('DB.DBA.GEO_INX', pt, id);
+      cl_geo_insert (id, pt);
     }
 }
 

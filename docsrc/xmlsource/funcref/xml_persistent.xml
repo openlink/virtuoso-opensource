@@ -44,41 +44,33 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_xml_persistent"><title>Description</title>
-    <para>
-This parses the argument, which is expected to be a well formed XML
-fragment and returns a parse tree as a special object with underlying disk structure, named
-&quot;persistent XML&quot; or &quot;XPER&quot;
-While the result of <link linkend="fn_xml_tree"><function>xml_tree()</function></link>
-is a memory-resident array of vectors, the XPER object consumes only a little
-amount of memory, and almost all data is disk-resident.
-    </para>
-    <para>
-This function is equivalent to <link linkend="fn_xper_doc">xper_doc</link>, and the only
+    <para>This parses the argument, which is expected to be a well formed XML fragment and returns a parse tree as a special
+    	object with underlying disk structure, named "persistent XML" or "XPER" While the result of
+    	<link linkend="fn_xml_tree"><function>xml_tree()</function></link> is a memory-resident array of vectors, the XPER
+    	object consumes only a little amount of memory, and almost all data is disk-resident.</para>
+    <para>This function is equivalent to <link linkend="fn_xper_doc"><function>xper_doc()</function></link>, and the only
 difference is in the order of arguments; xper_doc() has the same order of arguments as
-<link linkend="fn_xml_tree">xml_tree</link>.
+    <link linkend="fn_xml_tree"><function>xml_tree()</function></link>.
 	</para>
   </refsect1>
   <refsect1 id="params_xml_persistent"><title>Parameters</title>
     <refsect2><title>document </title>
-      <para>well formed XML or HTML document </para></refsect2>
+      <para>well formed XML or HTML documen</para></refsect2>
     <refsect2><title>parser_mode</title>
-      <para>0, 1 or 2; 0 - XML parser mode, 1 - HTML parser mode, 2 - 'dirty
-      HTML' mode (with quiet recovery after any syntax error)</para></refsect2>
+      <para>0, 1 or 2; 0 - XML parser mode, 1 - HTML parser mode, 2 - 'dirty HTML' mode (with quiet recovery after any syntax
+      	error)</para></refsect2>
     <refsect2><title>base_uri</title>
-      <para>in HTML parser mode change all absolute references to relative from
-      given base_uri (http://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;)</para></refsect2>
+      <para>in HTML parser mode change all absolute references to relative from given base_uri
+      	(http://&lt;host&gt;:&lt;port&gt;/&lt;path&gt;)</para></refsect2>
     <refsect2><title>content_encoding</title>
-      <para>string with content encoding type of &lt;document&gt;; valid are
-      'ASCII', 'ISO', 'UTF8', 'ISO8859-1', 'LATIN-1' etc., defaults are 'UTF-8'
-      for XML mode and 'LATIN-1' for HTML mode</para></refsect2>
+      <para>string with content encoding type of &lt;document&gt;; valid are 'ASCII', 'ISO', 'UTF8', 'ISO8859-1', 'LATIN-1'
+      	etc., defaults are 'UTF-8' for XML mode and 'LATIN-1' for HTML mode</para></refsect2>
     <refsect2><title>content_language</title>
-      <para>string with language tag of content of &lt;document&gt;; valid
-      names are listed in IETF RFC 1766, default is 'x-any' (it means 'mix of
-      words from various human languages)</para></refsect2>
+      <para>string with language tag of content of &lt;document&gt;; valid names are listed in IETF RFC 1766, default is
+      	'x-any' (it means 'mix of words from various human languages)</para></refsect2>
     <refsect2><title>dtd_validator_config</title>
-      <para>configuration string for the DTD validator, default is empty string
-      meaning that DTD validator should be fully disabled.
-See <link linkend="dtd_config">Configuration Options of the DTD Validator</link> for details.</para></refsect2>
+      <para>configuration string for the DTD validator, default is empty string meaning that DTD validator should be fully
+      	disabled. See <link linkend="dtd_config">Configuration Options of the DTD Validator</link> for details.</para></refsect2>
   </refsect1>
   <refsect1 id="ret_xml_persistent"><title>Return Types</title>
   <para>Parse tree as a structure of nested heterogeneous vectors.</para></refsect1>

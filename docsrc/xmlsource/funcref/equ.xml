@@ -117,9 +117,6 @@ lt(1234,NULL)    -&gt; 1 (Instead, it is "less" than NULL)
 </screen>
     </example>
   </refsect1>
-  <refsect1 id="seealso_equ"><title>See Also</title>
-  <para></para>
-  </refsect1>
 </refentry>
 
 

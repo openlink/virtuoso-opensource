@@ -323,7 +323,7 @@ int32 cli_utf8_execs;
 int32 cli_binary_timestamp = 1;
 int32 cli_no_system_tables = 0;
 
-caddr_t client_defaults;
+caddr_t client_defaults = NULL;
 
 caddr_t
 srv_client_defaults (void)
@@ -337,25 +337,19 @@ srv_client_defaults_init (void)
 {
   caddr_t old = client_defaults;
   client_defaults = (caddr_t)
-    list (16,
-	  box_string ("SQL_TXN_ISOLATION"),
-	  box_num (default_txn_isolation),
-	  box_string ("SQL_PREFETCH_ROWS"),
-	  box_num (cli_prefetch),
-	  box_string ("SQL_PREFETCH_BYTES"),
-	  box_num (cli_prefetch_bytes),
-	  box_string ("SQL_QUERY_TIMEOUT"),
-	  box_num (cli_query_timeout),
-	  box_string ("SQL_TXN_TIMEOUT"),
-	  box_num (cli_txn_timeout),
-	  box_string ("SQL_NO_CHAR_C_ESCAPE"),
-	  box_num (cli_not_c_char_escape ? 1 : 0),
-	  box_string ("SQL_UTF8_EXECS"),
-	  box_num (cli_utf8_execs),
-	  box_string ("SQL_BINARY_TIMESTAMP"),
-	  box_num (cli_binary_timestamp)
-	  );
-  dk_free_tree (old);
+    list (18,
+  box_string ("SQL_TXN_ISOLATION")		, box_num (default_txn_isolation)		,
+  box_string ("SQL_PREFETCH_ROWS")		, box_num (cli_prefetch)			,
+  box_string ("SQL_PREFETCH_BYTES")		, box_num (cli_prefetch_bytes)			,
+  box_string ("SQL_QUERY_TIMEOUT")		, box_num (cli_query_timeout)			,
+  box_string ("SQL_TXN_TIMEOUT")		, box_num (cli_txn_timeout)			,
+  box_string ("SQL_NO_CHAR_C_ESCAPE")		, box_num (cli_not_c_char_escape ? 1 : 0)	,
+  box_string ("SQL_UTF8_EXECS")			, box_num (cli_utf8_execs)			,
+  box_string ("SQL_BINARY_TIMESTAMP")		, box_num (cli_binary_timestamp)		,
+  box_string ("SQL_TIMEZONELESS_DATETIMES")	, box_num (timezoneless_datetimes)		);
+  
+  if (old)
+    dk_free_tree (old);
 }
 
 

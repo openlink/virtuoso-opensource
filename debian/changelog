@@ -1,8 +1,21 @@
+virtuoso-opensource (7.2.2) unstable; urgency=medium
+
+  * Fixed debian packaging of the Virtuoso .NET adapter
+ 
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Wed, 09 Dec 2015 21:00:00 +0100
+
+virtuoso-opensource (7.2) unstable; urgency=low
+
+  * Remove openjdk-6-jdk and virtjdbc4.jar from libvirtjdbc0 target
+
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Mon, 11 May 2015 15:44:00 +0100
+
 virtuoso-opensource (7.2) unstable; urgency=low
 
   * Bump version number 
 
  -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Mon, 02 Feb 2015 13:44:00 +0100
+
 virtuoso-opensource (7.1) unstable; urgency=low
 
   * Misc minor packaging fixes

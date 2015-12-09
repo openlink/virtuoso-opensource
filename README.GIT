@@ -111,6 +111,21 @@ If you have an older version than automake version 1.9 you can edit
 the configure.in script around line 47 using the examples provided for
 each version.
 
+Mac OS X 10.10
+--------------
+Apple removed a number of programs from their Xcode.app commandline
+installation including the autoconf, automake, libtool, gperf and
+some other tools needed to build Virtuoso from a newly checked out
+GIT tree. We suggest using the HomeBrew package manager from
+http://brew.sh/ to install these tools.
+
+RedHat Enterprise Linux 7
+-------------------------
+On RedHat 7, the gperf tool is no longer available from the default
+repos, but can be installed using the following command:
+
+  $ sudo yum --enablerepo=rhui-REGION-rhel-server-optional info gperf
+
 
 Diskspace Requirements
 ======================

@@ -720,28 +720,28 @@ class VirtuosoOutputStream extends BufferedOutputStream
 	{
 	  int day = yday;
 	  int sec = 0;
-	  sec = VirtuosoInputStream.time_to_sec (0, _hour, _minute, _second);
+	  sec = DateObject.time_to_sec (0, _hour, _minute, _second);
 	  sec -= 60 * tz;
 	  if (sec < 0)
 	    {
-	      day = day - (1 + ((-sec) / VirtuosoInputStream.SPERDAY));
+	      day = day - (1 + ((-sec) / DateObject.SPERDAY));
 
-	      sec = sec % VirtuosoInputStream.SPERDAY;
+	      sec = sec % DateObject.SPERDAY;
 
 	      if (sec == 0)
 		day++;
 
-	      sec = VirtuosoInputStream.SPERDAY + sec;
+	      sec = DateObject.SPERDAY + sec;
 	    }
 	  else
 	    {
-	      day = day + sec / VirtuosoInputStream.SPERDAY;
-	      sec = sec % VirtuosoInputStream.SPERDAY;
+	      day = day + sec / DateObject.SPERDAY;
+	      sec = sec % DateObject.SPERDAY;
 	    }
-	  int dummy_day = sec / VirtuosoInputStream.SPERDAY;
+	  int dummy_day = sec / DateObject.SPERDAY;
 
-	  _hour = (sec - (dummy_day * VirtuosoInputStream.SPERDAY)) / (60 * 60);
-	  _minute = (sec - (dummy_day * VirtuosoInputStream.SPERDAY) - (_hour * 60 * 60)) / 60;
+	  _hour = (sec - (dummy_day * DateObject.SPERDAY)) / (60 * 60);
+	  _minute = (sec - (dummy_day * DateObject.SPERDAY) - (_hour * 60 * 60)) / 60;
 	  _second = sec % 60;
 	  yday = day;
 	}

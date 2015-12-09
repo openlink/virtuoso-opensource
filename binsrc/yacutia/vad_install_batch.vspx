@@ -21,7 +21,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="vad_install_page"
   decor="yacutia_decor.vspx"
@@ -37,155 +36,168 @@
       <v:variable name="packs" persist="0" type="varchar" default="null" />
       <v:variable name="packs_arr" persist="0" type="varchar" default="null" />
       <v:variable name="pack_mode" persist="0" type="integer" default="1" param-name="mode" />
+      <v:variable name="pack_src_mode" persist="0" type="integer" default="1" param-name="dirmode" />
       <v:variable name="pack_src" persist="0" type="varchar" default="null" param-name="dir" />
       <v:variable name="pack_ready" persist="0" type="integer" default="0"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="Virtuoso Application Deployment"/>
     </vm:menu>
-    <vm:header caption="Install new package"/>
+    <vm:header caption="Install or Upgrade new Packages"/>
     <vm:pagebody>
       <v:on-init>
-          <![CDATA[
-	  if (self.packs is null and self.packs_param is not null)
-	    {
-	      declare arr  any;
-	      self.packs := deserialize (decode_base64 (self.packs_param));
-              arr := make_array (length (self.packs), 'any');
-	      for (declare i,l int, i:=0, l := length (self.packs); i < l; i := i + 1)
-	         {
-		    declare state, msg, pack_name, pack_vers, pack_fullname, pkg_date, pack_path varchar;
-		    declare exit handler for sqlstate '*', not found
-		    {
-		      if (strstr (__SQL_MESSAGE, 'requires Framework') is not null)
-		        goto next;
-		      self.pack_ready := 0;
-		      state := __SQL_STATE;
-		      msg := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
-		      self.vc_error_message := self.packs[i] || ':' || msg;
-		      self.vc_is_valid := 0;
-		      return;
-		    };
-		    pack_path := self.pack_src || self.packs[i];
-		    VAD.DBA.VAD_TEST_READ(pack_path, pack_name, pack_vers, pack_fullname, pkg_date, self.pack_mode);
-		    next:
-		    self.pack_ready := 1;
-		    arr[i] := vector (pack_name, pack_vers, pack_fullname, pkg_date);
-		 }
-	       self.packs_arr := arr;
-	    }
+        <![CDATA[
+          if (self.packs is null and self.packs_param is not null)
+            {
+              declare deps, allVads any;
+
+              allVads := vector ();
+
+              self.packs := deserialize (decode_base64 (self.packs_param));
+
+              for (declare i,l int, i:=0, l := length (self.packs); i < l; i := i + 1)
+                {
+                  declare exit handler for sqlstate '*', not found
+                  {
+                    self.pack_ready := 0;
+                    self.vc_error_message := self.packs[i] || ':' || __SQL_MESSAGE;
+                    self.vc_is_valid := 0;
+                    return;
+                  };
+
+                  -- Gather all dependencies for the vads to install
+                  deps := VAD.DBA.VAD_FLATTEN_DEPENDENCY_TREE (VAD.DBA.VAD_RESOLVE_DEPENDENCY_TREE (self.packs[i], self.pack_mode, self.pack_src, self.pack_src_mode));
+                  for (declare i int, i := 0; i < length (deps); i := i+1)
+                    {
+                      if (get_keyword (get_keyword ('name', deps[i]), allVads) is null)
+                        {
+                          allVads := vector_concat (allVads, vector (get_keyword ('name', deps[i]), deps[i]));
+                        }
+                    }
+                }
+
+              self.packs_arr := vector ();
+              for (declare i int, i := 0; i < length (allVads); i := i+2)
+                {
+                  self.packs_arr := vector_concat (self.packs_arr, vector (vector (
+                    get_keyword ('name', allVads[i+1]),
+                    get_keyword ('version', allVads[i+1]),
+                    get_keyword ('title', allVads[i+1]),
+                    get_keyword ('date', allVads[i+1]),
+                    get_keyword ('path', allVads[i+1]),
+                    get_keyword ('pathType', allVads[i+1]))
+                 ));
+                }
+              self.pack_ready := 1;
+            }
           ]]>
       </v:on-init>
       <v:template type="simple" name="list_tmpl" condition="self.pack_ready = 1">
-      <div>
-	<img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
-            Installing a VAD package will put the database in atomic mode, halting other client threads<br/>
-            for duration of the installation. If the installation encounters a fatal error such as running<br/>
-	    out of disk, you will get an error message and the server will exit. If this happens:<br/>
-	    <ul>
-	      <li>Virtuoso server will have to be restarted manually</li>
-	      <li>the Virtuoso Conductor will not be available until the server has restarted</li>
-	      <li>after server has restarted it will be in the state it was in before VAD installation was started</li>
-	    </ul>
-
+      <div class="clear">
+        <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+        Installing a VAD package will put the database in atomic mode, halting other client threads<br/>
+        for duration of the installation. If the installation encounters a fatal error such as running<br/>
+        out of disk, you will get an error message and the server will exit. If this happens:<br/>
+        <ul>
+          <li>Virtuoso server will have to be restarted manually</li>
+          <li>the Virtuoso Conductor will not be available until the server has restarted</li>
+          <li>after server has restarted it will be in the state it was in before VAD installation was started</li>
+        </ul>
       </div>
       </v:template>
 
       <v:form name="install_form" type="simple" method="POST">
-	<table class="listing">
-	  <v:template type="simple" condition= "self.pack_ready = 1">
+        <table class="listing">
+          <v:template type="simple" condition= "self.pack_ready = 1">
+            <tr>
+              <th width="33%">Application title</th>
+              <th width="33%">Version</th>
+              <th>Short name</th>
+            </tr>
+            <?vsp for (declare i,l int, i := 0, l := length (self.packs_arr); i < l; i := i + 1) { ?>
+            <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+              <td><?V self.packs_arr[i][2] ?></td>
+              <td><?V self.packs_arr[i][1] ?></td>
+              <td><?V self.packs_arr[i][0] ?></td>
+            </tr>
+            <?vsp } ?>
+          </v:template>
+          <tr>
+            <td colspan="3">
+              <v:template type="simple" condition="self.pack_ready = 1">
+              <v:button action="simple" value="Proceed">
+                <v:on-post>
+                  <![CDATA[
+                    declare res varchar;
 
-        <tr>
-          <th>Application title</th>
-          <th>Version</th>
-          <th>Short name</th>
-        </tr>
-	<?vsp for (declare i,l int, i := 0, l := length (self.packs_arr); i < l; i := i + 1) { ?>
-	<tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-	    <td><?V self.packs_arr[i][2] ?></td>
-	    <td><?V self.packs_arr[i][1] ?></td>
-	    <td><?V self.packs_arr[i][0] ?></td>
-        </tr>
-        <?vsp } ?>
-        </v:template>
+                    res := '';
+                    for (declare i,l int, i:=0, l := length (self.packs_arr); i < l; i := i + 1)
+                      {
+                        declare state, message, meta, result, pack_path, path_type any;
+                        declare pfull, pver, pdate, isdav any;
 
-        <tr>
-          <td colspan="2">
-            <v:template type="simple" condition="self.pack_ready = 1">
-            <v:button action="simple" value="Proceed">
-              <v:on-post>
-                <![CDATA[
-	      declare res varchar;
-              res := '';
-	      for (declare i,l int, i:=0, l := length (self.packs); i < l; i := i + 1)
-	         {
+                        pfull := self.packs_arr[i][2];
+                        pver  := self.packs_arr[i][1];
+                        pdate := self.packs_arr[i][3];
+                        pack_path := self.packs_arr[i][4];
+                        path_type := self.packs_arr[i][5];
 
-		  declare state, message, meta, result, pack_path any;
-		  declare pfull, pver, pdate, isdav any;
+                        isdav := 0;
+                        if (pack_path like '%_dav.vad')
+                          isdav := 1;
 
-		  isdav := 0;
-		  if (self.packs[i] like '%_dav.vad')
-		    isdav := 1;
+                        log_message ('Installing '||pfull||' version '||pver||'/'||pdate|| ' '||case when isdav then '(DAV)' else '' end);
+                        res := res || 'Installing: ' || pfull || ' ' || pver || ' (' || pack_path || ')\r\n';
+                        exec('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector(pack_path, path_type, 1), 0, meta, result);
+                        set_qualifier ('DB');
+                        declare l integer;
+                        l := length(result);
+                        if (aref(aref(result, 0), 0) <> '00000')
+                          {
+                            res := concat(res, sprintf('%s', aref(aref(result, 0), 1)));
+                          }
+                        else
+                          {
+                            res := res || 'Installation complete\n';
+                          }
+                        if (aref(aref(result, l - 2), 1) = 'FATAL')
+                          {
+                            http_rewrite ();
+                            http_header ('Content-Type: text/plain\r\n');
+                            foreach (any elm in result) do
+                              {
+                                declare stat, msg any;
+                                if (not isstring (elm[0]))
+                                  stat := '';
+                                else
+                                  stat := elm[0];
 
-		  pfull := self.packs_arr[i][2];
-		  pver  := self.packs_arr[i][1];
-		  pdate := self.packs_arr[i][3];
-
-		  pack_path := self.pack_src || self.packs[i];
-		  log_message ('Installing '||pfull||' version '||pver||'/'||pdate|| ' '||case when isdav then '(DAV)' else '' end);
-		  res := res || 'Installing: ' || pack_path || '\r\n';
-                  exec('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector(pack_path, self.pack_mode, 1), 0, meta, result);
-		  set_qualifier ('DB');
-                  declare l integer;
-                  l := length(result);
-		  if (aref(aref(result, 0), 0) <> '00000')
-                  {
-                    res := concat(res, sprintf('%s', aref(aref(result, 0), 1)));
-                  }
-                  else
-                  {
-                    res := res || 'Installation complete\n';
-                  }
-
-                  if (aref(aref(result, l - 2), 1) = 'FATAL')
-		  {
-		    http_rewrite ();
-		    http_header ('Content-Type: text/plain\r\n');
-		    foreach (any elm in result) do
-		    {
-		      declare stat, msg any;
-		      if (not isstring (elm[0]))
-		        stat := '';
-	              else
-                        stat := elm[0];
-
-		      if (not isstring (elm[1]))
-		        msg := '';
-	              else
-                        msg := elm[1];
-		      http (sprintf ('%5s', stat) || ' ' || msg || '\r\n');
-		    }
-		    http_flush();
-                    raw_exit(1);
-		    }
-		  }
-
-                  self.vc_redirect (sprintf('vad_status.vspx?res=%U', res));
-		  return;
-                ]]>
-              </v:on-post>
-            </v:button>
-            </v:template>
-            <v:button action="simple" value="Cancel">
-              <v:on-post>
-                <![CDATA[
-		  self.vc_redirect ('vad.vspx');
-                ]]>
-              </v:on-post>
-            </v:button>
-          </td>
-        </tr>
-      </table>
+                                if (not isstring (elm[1]))
+                                  msg := '';
+                                else
+                                  msg := elm[1];
+                                http (sprintf ('%5s', stat) || ' ' || msg || '\r\n');
+                              }
+                            http_flush();
+                            raw_exit(1);
+                          }
+                      }
+                      self.vc_redirect (sprintf('vad_status.vspx?res=%U', res));
+                      return;
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </v:template>
+              <v:button action="simple" value="Cancel">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect ('vad.vspx');
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
       </v:form>
     </vm:pagebody>
   </vm:pagewrapper>

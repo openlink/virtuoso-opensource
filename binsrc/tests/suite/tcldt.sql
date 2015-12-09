@@ -148,6 +148,10 @@ echo both $if $equ $last[2] 119 "PASSED" "***FAILED";
 echo both ": scalar subq with multivalue range\n";
 
 
+select a.row_no, (select top 1 b.row_no from t1 b where b.fi2 between a.row_no - 2 and a.row_no + 2 order by b.fi2 + 1) from t1 a where row_no < 300     order by row_no;
+echo both $if $equ $last[2] 119 "PASSED" "***FAILED";
+echo both ": scalar subq with multivalue range sorted\n";
+
 
 select a.row_no, (select b.row_no from t1 b, t1 d  where b.fi2 between a.row_no - 2 and a.row_no + 2 and d.fi2 > b.row_no) from t1 a  ;
 

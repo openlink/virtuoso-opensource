@@ -524,7 +524,7 @@ LoadItems ()
       MakeAlphaString (14, 24, i_name[fill]);
       i_price[fill] = ((float) RandomNumber (100L, 10000L)) / 100.0;
       idatasiz = MakeAlphaString (26, 50, i_data[fill]);
-      if (orig[i_id_1])
+      if (orig[i_id_1 - 1])
 	{
 	  pos = RandomNumber (0L, idatasiz - 8);
 	  i_data[fill][pos] = 'o';
@@ -716,7 +716,7 @@ Stock (long w_id_from, long w_id_to)
     {
       do
 	{
-	  pos = RandomNumber (0L, MAXITEMS);
+	  pos = RandomNumber (0L, MAXITEMS - 1);
 	}
       while (orig[pos]);
       orig[pos] = 1;

@@ -1726,6 +1726,7 @@ sql_option
 	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
 	| NO_L IDENTITY { $$ = t_CONS (OPT_NO_IDENTITY, t_CONS (1, NULL)); }
 	| NO_L TRIGGER { $$ = t_CONS (OPT_NO_TRIGGER, t_CONS (1, NULL)); }
+	| TRIGGER { $$ = t_CONS (OPT_TRIGGER, t_CONS (1, NULL)); }
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
 	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
 | INDEX ORDER { $$ = t_cons ((void*)OPT_INDEX_ORDER, t_cons ((void*)1, NULL)); }
@@ -2672,6 +2673,7 @@ function_call
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ($1 == SQL_FN_TIMESTAMPADD ? "timestampadd" : "timestampdiff"),
 		      t_listst (3, t_box_num($3), $5, $7));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| EXTRACT '(' NAME FROM scalar_exp ')'
 		{
@@ -2680,13 +2682,17 @@ function_call
 		      t_listst (2, t_box_string ($3), $5));
 		}
 	| BEGIN_FN_X identifier '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X LEFT '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("left"), t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("left"), t_list_to_array ($4));
+		$$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X RIGHT '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("right"), t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("right"), t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X LOGX '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("log"), t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("log"), t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X identifier '(' scalar_exp IN_L scalar_exp ')' ENDX
 		{
 		  if (stricmp ($2, "POSITION"))
@@ -2695,7 +2701,8 @@ function_call
 		      t_listst (2, $4, $6));
 		}
 	| BEGIN_CALL_X function_name  '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_CALL_X function_name ENDX
 		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array (NULL)); }
 	| BEGIN_FN_X USER '(' opt_scalar_exp_commalist ')' ENDX
@@ -2703,12 +2710,14 @@ function_call
 			t_sqlp_box_id_upcase ("get_user"), t_list_to_array ($4)); }
 	| BEGIN_FN_X CHARACTER '(' opt_scalar_exp_commalist ')' ENDX
 		{ $$ = t_listst (3, CALL_STMT,
-			t_sqlp_box_id_upcase ("chr"), t_list_to_array ($4)); }
+			t_sqlp_box_id_upcase ("chr"), t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X TIMESTAMP_FUNC '(' SQL_TSI ',' scalar_exp ',' scalar_exp ')' ENDX
 		{
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ($2 == SQL_FN_TIMESTAMPADD ? "timestampadd" : "timestampdiff"),
 		      t_listst (3, t_box_num($4), $6, $8));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| BEGIN_FN_X CONVERT '(' scalar_exp ',' NAME ')' ENDX
 		{
@@ -2718,21 +2727,23 @@ function_call
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ("_cvt"),
 		      t_listst (2, t_list (2, QUOTE, data_type), $4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| BEGIN_FN_X EXTRACT '(' NAME FROM scalar_exp ')' ENDX
 		{
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ("__extract"),
 		      t_listst (2, t_box_string ($4), $6));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| CALL '(' scalar_exp ')' '(' opt_arg_commalist ')'
 		{ $$ = t_listst (3, CALL_STMT, t_list (1, $3),
 			t_list_to_array ($6)); }
-	| CURRENT_DATE
+	| CURRENT_DATE opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdate"), t_list (0));
 		}
-	| CURRENT_TIME
+	| CURRENT_TIME opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (0));
 		}
@@ -2740,7 +2751,7 @@ function_call
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (1, $3));
 		}
-	| CURRENT_TIMESTAMP
+	| CURRENT_TIMESTAMP opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdatetime"), t_list (0));
 		}
@@ -2754,6 +2765,11 @@ function_call
 		  caddr_t bit_index = t_box_num (0);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__grouping"), t_list (3, $3, bit, bit_index));
 		}
+	;
+
+opt_lpar_rpar
+	: /* empty */
+	| '(' ')'
 	;
 
 /* the call return statement {?=call x [()]} */
@@ -2784,6 +2800,7 @@ obe_literal
 		{ $$ = t_listst (3, CALL_STMT,
 			t_sqlp_box_id_upcase (obe_keyword_to_bif_fun_name ($2)),
 			t_list (1, $3));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| BEGIN_U_X STRING ENDX
 		{ $$ = (ST*) t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("get_keyword"),

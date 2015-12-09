@@ -36,7 +36,7 @@ package. This document presents the primary concepts of the language and
 ends with a reference section.</para>
 </abstract>
 	<!-- ======================================== -->
-	<sect1 id="GENERALPRINCIPLES">
+	<sect1 id="generalprinciples">
 		<title>General Principles</title>
 		<para>
 A stored procedure is a named piece of Virtuoso/PL code stored in the
@@ -146,7 +146,7 @@ are error conditions produced by SQL statements (e.g. deadlock) or
 		</itemizedlist>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="SCOPEOFDECLARATION">
+	<sect1 id="scopeofdeclaration">
 		<title>Scope of Declarations</title>
 		<para>A declaration can appear anywhere inside a compound statement. It affects
 all statements in the compound statement following the declaration
@@ -296,7 +296,7 @@ displaying the contents using [] notation again
   </tip>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="RESULTSETS">
+	<sect1 id="resultsets">
 		<title>Handling Result Sets</title>
 		<para>A single Virtuoso procedure may produce multiple result sets, each
 with different result columns. A normal procedure produces one empty
@@ -323,7 +323,7 @@ the application already knows what columns and their types are to be returned.</
 </tip>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="ARRAYS">
+	<sect1 id="arrays">
 		<title>Result Sets and Array Parameters</title>
 		<para>
 A procedure may be called with array parameters,
@@ -344,7 +344,7 @@ result set of the next procedure invocation.
 
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="EXCEPTIONS">
+	<sect1 id="exceptions">
 		<title>Exception Semantics</title>
 		<para>
 Exceptions are of two types: Not Found and SQLSTATE. A not found
@@ -377,7 +377,7 @@ exception handling.
 </para>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="PLREF">
+	<sect1 id="plref">
 		<title>Virtuoso/PL Syntax</title>
 		<!-- ~ # ==== ~ ==== # ~ -->
 		<sect2 id="createprocstmt">
@@ -1030,7 +1030,7 @@ of triggers or for debugging triggers.
 </para>
 			<tip>
 				<title>See Also:</title>
-				<para><link linkend="SETstmt">SET statement.</link></para>
+				<para><link linkend="setstmt">SET statement.</link></para>
 			</tip>
 		</sect2>
 		
@@ -1220,7 +1220,7 @@ CREATE PROCEDURE a_add_v
   </sect2>
   
 	</sect1>
-<sect1 id="EXECSQLPROCSELECT">
+<sect1 id="execsqlprocselect">
 		<title>Execute Stored Procedures via SELECT statement</title>
 <para>Stored SQL Procedures can be executed via SELECT statement:</para>
 <programlisting>
@@ -1245,7 +1245,7 @@ My simple test with Virtuoso
 1 Rows. -- 0 msec.
 ]]></programlisting>
 </sect1>
-<sect1 id="EXECSQLPROCFORK">
+<sect1 id="execsqlprocfork">
 		<title>Execute Stored Procedures In Background</title>
 <para>You can start procedure in background using the [name of the procedure][params]&amp; syntax.
 This feature forks another ISQL process and leaves the other on background so there will be
@@ -1265,14 +1265,14 @@ Type HELP; for help and EXIT; to exit.
 
 Done. -- 10 msec.
 ]]></programlisting>
-<para>See <link linkend="ASYNCEXECMULTITHREAD">Asynchronous Execution and Multithreading in Virtuoso/PL</link> for background jobs execution details.</para>
+<para>See <link linkend="asyncexecmultithread">Asynchronous Execution and Multithreading in Virtuoso/PL</link> for background jobs execution details.</para>
 </sect1>
 
 	&createassembly;
 	&createexthostproc;
 
 	<!-- ======================================== -->
-	<sect1 id="ASYNCEXECMULTITHREAD">
+	<sect1 id="asyncexecmultithread">
           <title>Asynchronous Execution and Multithreading in Virtuoso/PL</title>
           <para>
 Many application tasks benefit from parallel execution. This is specially true of I/O intensive workloads
@@ -1403,7 +1403,7 @@ create procedure taq_all (in x int, in thrs int := 1)
                 </sect2>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="PERFTIPS">
+	<sect1 id="perftips">
 		<title>Performance Tips</title>
 		<sect2 id="remember">
 			<title>Remember the following:</title>
@@ -1427,7 +1427,7 @@ want to have descending order using an index, specify DESC on ALL key parts.
 		</sect2>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="PROCEDURES_TRANSACTIONS">
+	<sect1 id="procedures_transactions">
 		<title>Procedures and Transactions</title>
 		<para>
 A procedure call executed by a client is just like any other SQL
@@ -1458,7 +1458,7 @@ Procedures can commit or rollback transactions using commit work and rollback wo
 
 	<!-- ======================================== -->
 	<!-- ======================================== -->
-	<sect1 id="TRIGGERS">
+	<sect1 id="triggers">
 		<title>Triggers</title>
 
   <para>A trigger is a procedure body associated with a table and an event.
@@ -1936,7 +1936,7 @@ it's text no matter what the current default is.
 
 </sect1>
 
-<sect1 id="PLSCROLLCRSRS">
+<sect1 id="plscrollcrsrs">
 <title>Virtuoso/PL Scrollable Cursors</title>
 
 <para>

@@ -32,6 +32,7 @@ import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.FETCHSIZE;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.ROUNDROBIN;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.RULESET;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
+import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
 
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
@@ -57,13 +58,15 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 
 	private boolean useLazyAdd;
 
-	private int fetchSize = 200;
+	private int fetchSize = 100;
 
 	private boolean roundRobin;
 
 	private String ruleSet;
 
 	private int batchSize = 5000;
+
+	private boolean insertBNodeAsVirtuosoIRI = false;
 
 	public VirtuosoRepositoryConfig() {
 		super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -154,6 +157,15 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 	}
 
 
+	public void setInsertBNodeAsVirtuosoIRI(boolean v) {
+		this.insertBNodeAsVirtuosoIRI = v;
+	}
+
+	public boolean getInsertBNodeAsVirtuosoIRI() {
+		return this.insertBNodeAsVirtuosoIRI;
+	}
+
+	
 	@Override
 	public void validate()
 		throws RepositoryConfigException
@@ -196,6 +208,8 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 		graph.add(implNode, FETCHSIZE, vf.createLiteral(Integer.toString(fetchSize,10)));
 
 		graph.add(implNode, BATCHSIZE, vf.createLiteral(Integer.toString(batchSize,10)));
+
+		graph.add(implNode, INSERTBNodeAsVirtuosoIRI, vf.createLiteral(new Boolean(insertBNodeAsVirtuosoIRI).toString()));
 
 		return implNode;
 	}
@@ -243,6 +257,11 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 			if (batchsize != null) {
 				setBatchSize(Integer.parseInt(batchsize.getLabel()));
 			}
+			Literal bnodeAsUri = GraphUtil.getOptionalObjectLiteral(graph, implNode, INSERTBNodeAsVirtuosoIRI);
+			if (roundrobin != null) {
+				setInsertBNodeAsVirtuosoIRI(Boolean.parseBoolean(bnodeAsUri.getLabel()));
+			}
+
 		}
 		catch (GraphUtilException e) {
 			throw new RepositoryConfigException(e.getMessage(), e);

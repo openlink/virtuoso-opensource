@@ -148,6 +148,7 @@ fun_ref_free (fun_ref_node_t * fref)
   clb_free (&fref->clb);
   dk_set_free (fref->fnr_select_nodes);
   dk_set_free (fref->fnr_prev_hash_fillers);
+  dk_set_free (fref->fnr_cl_merge_temps);
 }
 
 
@@ -295,7 +296,7 @@ sqlc_add_table_ref (sql_comp_t * sc, ST * tree, dk_set_t * res)
       break;
     case TABLE_DOTTED:
       {
-	dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tree->_.table.name);
+	dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tree->_.table.name);
 	t_NEW_VARZ (comp_table_t, ct);
 	if (!tb)
 	  sqlc_new_error (sc->sc_cc, "42S02", "SQ069", "No table %s", tree->_.table.name);
@@ -307,7 +308,7 @@ sqlc_add_table_ref (sql_comp_t * sc, ST * tree, dk_set_t * res)
 	ct->ct_u_id = (oid_t) unbox (tree->_.table.u_id);
 	ct->ct_g_id = (oid_t) unbox (tree->_.table.g_id);
 	ct->ct_derived = (ST *)
-	  t_box_copy_tree (sch_view_def (sc->sc_cc->cc_schema, tb->tb_name));
+	  t_box_copy_tree (sch_view_def (wi_inst.wi_schema, tb->tb_name));
 	if (ct->ct_derived)
 	  {
 	    if (!sec_tb_check (tb, ct->ct_u_id, ct->ct_u_id, GR_SELECT))
@@ -587,6 +588,7 @@ yy_new_error (const char *s, const char *state, const char *native)
   int is_semi;
   int this_lineno = global_scs->scs_scn3c.lineno;
   char buf_for_next [2000];
+  scn3_include_fragment_t *outer;
   if (global_scs->scs_scn3c.inside_error_reporter)
     goto jmp; /* see below */
   nlen = scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
@@ -604,6 +606,12 @@ yy_new_error (const char *s, const char *state, const char *native)
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
 
 jmp:
+  outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+  if (outer->_.sif_skipped_part)
+    {
+      dk_free_box (outer->_.sif_skipped_part);
+      outer->_.sif_skipped_part = NULL;
+    }
   longjmp_splice (&(global_scs->parse_reset), 1);
 }
 #endif
@@ -865,18 +873,18 @@ sqlc_check_mpu_name (caddr_t name, mpu_name_type_t type)
   char err_str[300];
 
   err_str[0] = 0;
-  if (NULL != (udt = sch_name_to_type (top_sc->sc_cc->cc_schema, name)) &&
+  if (NULL != (udt = sch_name_to_type (wi_inst.wi_schema, name)) &&
       (type != MPU_UDT || udt->scl_defined))
     {
       snprintf (err_str, sizeof (err_str),
 	  "An user defined type with name %.200s already exists", udt->scl_name);
     }
-  else if (NULL != (module_qr = sch_module_def (top_sc->sc_cc->cc_schema, name)))
+  else if (NULL != (module_qr = sch_module_def (wi_inst.wi_schema, name)))
     {
       snprintf (err_str, sizeof (err_str),
 	  "A SQL module with name %.200s already exists", module_qr->qr_proc_name);
     }
-  else if (NULL != (proc_qr = sch_proc_def (top_sc->sc_cc->cc_schema, name)) &&
+  else if (NULL != (proc_qr = sch_proc_def (wi_inst.wi_schema, name)) &&
       type != MPU_PROC)
     {
       snprintf (err_str, sizeof (err_str),
@@ -909,10 +917,10 @@ sqlc_table_has_subtables (sql_comp_t * sc, ST * tree)
 	  return 0;
     }
 
-  super = sch_name_to_table (sc->sc_cc->cc_schema, tb_name);
+  super = sch_name_to_table (wi_inst.wi_schema, tb_name);
   if (!super)
     return 0;
-  id_casemode_hash_iterator (&hit, sc->sc_cc->cc_schema->sc_name_to_object[sc_to_table]);
+  id_casemode_hash_iterator (&hit, wi_inst.wi_schema->sc_name_to_object[sc_to_table]);
   while (id_casemode_hit_next (&hit, (caddr_t *) & tbptr))
     {
       dbe_table_t *the_table = *tbptr;
@@ -1709,8 +1717,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     {
 /* Procedure's calls published for replication keep old account name*/
       query_t *old_place = qr->qr_module ?
-	  sch_module_def (sc.sc_cc->cc_schema, qr->qr_proc_name) :
-	      sch_proc_def (sc.sc_cc->cc_schema, qr->qr_proc_name);
+	  sch_module_def (wi_inst.wi_schema, qr->qr_proc_name) :
+	      sch_proc_def (wi_inst.wi_schema, qr->qr_proc_name);
       user_t * p_user = cli->cli_user;
 
       /* Only DBA can create procedures with owner different than creator */
@@ -1727,7 +1735,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      qr = NULL;
 	    }
 	}
-      if (qr && !QR_IS_MODULE (qr) && sch_module_def (sc.sc_cc->cc_schema, qr->qr_proc_name))
+      if (qr && !QR_IS_MODULE (qr) && sch_module_def (wi_inst.wi_schema, qr->qr_proc_name))
 	{
 	  if (err)
 	    *err = srv_make_new_error ("37000", "SQ133",
@@ -1748,10 +1756,10 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    }
 
 	  if (QR_IS_MODULE (qr))
-	    sch_set_module_def (sc.sc_cc->cc_schema, qr->qr_proc_name, qr);
+	    sch_set_module_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
 	  else if (!qr->qr_trig_table)
 	    {
-	      sch_set_proc_def (sc.sc_cc->cc_schema, qr->qr_proc_name, qr);
+	      sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
 	      if (DO_LOG_INT(LOG_DDL))
 		{
 		  LOG_GET;
@@ -2202,6 +2210,7 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
     lisp_throw (CATCH_LISP_ERROR, 1);
   }
   END_CATCH;
+  sc.sc_cc->cc_query->qr_super = super_sc->sc_cc->cc_query;
   sc_free (&sc);
   dk_set_push (&super_sc->sc_cc->cc_query->qr_subq_queries, subq_comp->sqc_query);
   return subq_comp;

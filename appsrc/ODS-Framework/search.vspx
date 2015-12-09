@@ -1579,7 +1579,7 @@ if (self.on_type = 'discussion' or self.on_type = 'nntpf')
       http ('</description>');
 
       http ('<pubDate>');
-      http_value (soap_print_box (now (), '', 1));
+      http_value (soap_print_box (curdatetime_tz (), '', 1));
       http ('</pubDate>');
 
       http ('<managingEditor>');

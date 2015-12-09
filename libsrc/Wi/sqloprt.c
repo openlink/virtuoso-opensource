@@ -86,7 +86,7 @@ dbg_print_st (caddr_t * box, FILE * f)
       dk_free_box (n);
       return;
     }
-  if (ST_P (st, COL_DOTTED))
+  if (ST_COLUMN (st, COL_DOTTED))
     sqlo_print (("%s.%s ", st->_.col_ref.prefix, st->_.col_ref.name));
   else if (ST_P (st, CALL_STMT))
     {
@@ -507,8 +507,9 @@ sqlo_next_print (dk_set_t * arr)
   DO_BOX (dk_set_t, dfes, inx, arr)
     {
       df_elt_t * dfe = (df_elt_t*)dfes->data;
-      sqlo_print ((" score %9.2g %s ", dfe->dfe_unit, DFE_TABLE == dfe->dfe_type && dfe->_.table.is_leaf ? "leaf" : ""));
-    DO_SET (df_elt_t *, elt, &dfes) sqlo_print ((" %s ", elt->_.table.ot->ot_new_prefix));
+      sqlo_print ((" score %9.2g %s ", dfe->dfe_unit, dfe_is_leaf(dfe) ? "leaf" : ""));
+      DO_SET (df_elt_t *, elt, &dfes) 
+        sqlo_print ((" %s ", elt->_.table.ot->ot_new_prefix));
       END_DO_SET();
     }
   END_DO_BOX;

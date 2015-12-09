@@ -166,7 +166,7 @@
 						</th>
 						<td>
 							<input type="text" id="fetchSize"
-								name="Buffer fetch size" size="4" value="200" />
+								name="Buffer fetch size" size="4" value="100" />
 						</td>
 						<td></td>
 					</tr>
@@ -180,6 +180,21 @@
 						</td>
 						<td></td>
 					</tr>
+					<tr>
+						<td>
+						        Insert BNode as Virtuoso IRI
+						</td>
+						<td>
+							<input type="radio" id="insertBNodeAsVirtuosoIRI"
+								name="Insert BNode as Virtuoso IRI" size="48" value="true" />
+							<xsl:value-of select="$true.label" />
+							<input type="radio" id="insertBNodeAsURI"
+								name="Insert BNode as Virtuoso IRI" size="48" value="false" checked="true" />
+							<xsl:value-of select="$false.label" />
+						</td>
+						<td></td>
+					</tr>
+
 					<tr>
 						<td></td>
 						<td>

@@ -473,3 +473,58 @@ isp_schema_1 (void * thr)
 {
   return (wi_inst.wi_schema);
 }
+
+
+void
+dp_info (dbe_storage_t * dbs, dp_addr_t dp)
+{
+  extent_map_t * em;
+  extent_t * ext;
+  dp_addr_t cp_remap  = (dp_addr_t)gethash (DP_ADDR2VOID (dp), dbs->dbs_cpt_remap);
+  int is_bp = dp_backup_flag (dbs, dp);
+  printf ("page %ld %s: ", dp, is_bp ? "in backup set" : "");
+  if (!cp_remap)
+    {
+      DO_HT (uptrlong, log, uptrlong, phys, dbs->dbs_cpt_remap)
+	{
+	  if (dp == phys)
+	    {
+	      printf (" %ld is cpt remap page of logical %ld\n", dp, log);
+	      break;
+	    }
+	}
+      END_DO_HT;
+    }
+  em = (extent_map_t *)gethash (EXT_ROUND (dp), dbs->dbs_dp_to_extent_map);
+  if (em)
+    {
+      int is_free  = dbs_is_free_page (dbs, dp);
+      printf ("%s: ", is_free ? "free" : "allocated");
+      ext = (extent_t*)gethash (EXT_ROUND (dp), em->em_dp_to_ext);
+      if (ext)
+	printf ("extent map %s %p, extent %p\n", em->em_name, em, ext);
+      else
+	printf ("extent map %s %p, no extent, inconsistent with dbs dp to extent map\n", em->em_name, em);
+    }
+  else
+    printf ("no extent map\n" );
+  DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
+    {
+      buffer_desc_t * buf;
+      dp_addr_t remap;
+      int nth = dp % it_n_maps;
+      mutex_enter (&it->it_maps[nth].itm_mtx);
+      buf = (buffer_desc_t*)gethash (DP_ADDR2VOID(dp), &it->it_maps[nth].itm_dp_to_buf);
+      remap = (uptrlong)gethash (DP_ADDR2VOID(dp), &it->it_maps[nth].itm_remap);
+      mutex_leave (&it->it_maps[nth].itm_mtx);
+      if (buf || remap)
+	{
+	  printf ("buffer %p remap %ld\n", buf, remap);
+	  goto found;
+	}
+    }
+  END_DO_SET();
+  printf (" no buffer or remap\n");
+ found: ;
+}
+

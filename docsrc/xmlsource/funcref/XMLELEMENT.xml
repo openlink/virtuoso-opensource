@@ -91,7 +91,6 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="XMLELEMENT"><title>Examples</title>
     <example id="ex_XMLELEMENT"><title>XMLELEMENT() with a single argument</title>

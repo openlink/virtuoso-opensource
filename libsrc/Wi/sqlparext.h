@@ -346,6 +346,7 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_PART_GBY ((ptrlong)945)
 #define OPT_NO_PART_GBY ((ptrlong)946)
 #define OPT_NO_LOCK ((ptrlong)956)
+#define OPT_TRIGGER ((ptrlong)957)
 
 #define OPT_EST_TIME ((ptrlong)950)
 #define OPT_EST_SIZE ((ptrlong)951)

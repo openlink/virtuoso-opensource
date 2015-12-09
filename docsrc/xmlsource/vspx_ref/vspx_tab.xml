@@ -132,7 +132,7 @@ If unspecified, there will be no such control and the program logic is responsib
 				
 				<html>
 				<body>
-				<v:page name="tab_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+				<v:page name="tab_demo" xmlns:v="http://example.com/vspx/">
 				    <v:tab name="tab" initial-active="template1" style="list" is-input="0" >
 					<v:template name="template1" type="simple">
 					This is a first template <br />

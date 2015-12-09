@@ -70,8 +70,7 @@
   -->
   <refsect1 id="examples_unimport_jar">
     <title>Examples</title>
-    <example id="ex_unimport_jar"><title></title>
-      <para></para>
+    <example id="ex_unimport_jar"><title>Simple Use</title>
       <screen><![CDATA[
 SQL> import_jar (null, vector ('java.lang.System'));
 

@@ -823,8 +823,12 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list-count' = mode)
     {
-      http (sprintf ('select ?s%d as ?c1 count (*) as ?c2 ', this_s), pre);
-      http (sprintf (' group by ?s%d order by desc 2', this_s), post);
+      declare i int;
+      http (sprintf ('select ?s%d as ?c1 count (*) as ?c2 where { select distinct ', this_s), pre);
+      for (i := 1; i <= this_s; i := i + 1)
+        http (sprintf ('?s%d ', i), pre);
+      if (xpath_eval ('ancestor::query/text', tree)) http ('?g ', pre);
+      http (sprintf (' } group by ?s%d order by desc 2', this_s), post);
     }
 
   if ('entities-list' = mode)
@@ -1325,7 +1329,9 @@ fct_text (in tree any,
       txs_qr := fti_make_search_string_inner (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), txs_arr);
       if (length (txs_arr) > wlimit)
 	signal ('22023', 'The request is too large');
+      http (' quad map virtrdf:DefaultQuadMap { graph ?g { ', txt);
       http (sprintf (' ?s%d %s ?o%d . ?o%d bif:contains  ''%s'' %s .', this_s, prop, this_s, this_s, txs_qr, sc_opt), txt);
+      http (' } } ', txt);
     }
 
   if ('property' = n)
@@ -1427,11 +1433,11 @@ fct_query (in tree any, in plain integer := 0)
 
   fct_text (xpath_eval ('//query', tree), 0, s, txt, pre, post, tree, plain);
 
-  http (' where {', pre);
-  if (add_graph) http (' quad map virtrdf:DefaultQuadMap { graph ?g { ', pre);
+  if (xpath_eval ('//view[@type="list-count"]', tree) is null)
+    http (' where ', pre);
+  http (' {', pre);
   http (txt, pre);
   http (' }', pre);
-  if (add_graph) http (' } } ', pre);
   http (post, pre);
 
   return string_output_string (pre);
@@ -1573,6 +1579,8 @@ fct_exec (in tree any,
 
   declare v_pos integer;
   v_pos := fct_view_pos(tree);
+  if (sqls <> 'S1TAT' and n_rows = 0)
+    connection_set ('noresult', 1);
 
   res := xmlelement ("facets", xmlelement ("sparql", query),
                                xmlelement ("time", msec_time () - start_time),

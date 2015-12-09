@@ -55,7 +55,7 @@ contain private and public keys.
   </refsect1>
   <refsect1 id="examples_xenc_key_DSA_create">
     <title>Example</title>
-    <example id="ex_xenc_key_DSA_create"><title></title>
+    <example id="ex_xenc_key_DSA_create"><title>Simple Use</title>
       <screen><![CDATA[
 	  xenc_key_DSA_create ('myDSAkey');]]>
 </screen>
@@ -63,14 +63,14 @@ contain private and public keys.
   </refsect1>
   <refsect1 id="seealso_xenc_key_DSA_create">
     <title>See Also</title>
-    <para><link linkend="fn_xenc_key_3DES_create"><function>xenc_key_3DES_create</function></link></para>
-    <para><link linkend="fn_xenc_key_3DES_rand_create"><function>xenc_key_3des_rand_create</function></link></para>
-    <para><link linkend="fn_xenc_key_AES_create"><function>xenc_key_aes_create</function></link></para>
-    <para><link linkend="fn_xenc_key_3DES_read"><function>xenc_key_3DES_read</function></link></para>
-    <para><link linkend="fn_xenc_key_DSA_read"><function>xenc_key_DSA_read</function></link></para>
-    <para><link linkend="fn_xenc_key_RSA_read"><function>xenc_key_RSA_read</function></link></para>
-    <para><link linkend="fn_xenc_key_create_cert"><function>xenc_key_create_cert</function></link></para>
-    <para><link linkend="fn_xenc_key_serialize"><function>xenc_key_serialize</function></link></para>
-    <para><link linkend="fn_xenc_key_remove"><function>xenc_key_remove</function></link></para>
+    <para><link linkend="fn_xenc_key_3DES_create"><function>xenc_key_3DES_create()</function></link></para>
+    <para><link linkend="fn_xenc_key_3DES_rand_create"><function>xenc_key_3des_rand_create()</function></link></para>
+    <para><link linkend="fn_xenc_key_AES_create"><function>xenc_key_aes_create()</function></link></para>
+    <para><link linkend="fn_xenc_key_3DES_read"><function>xenc_key_3DES_read()</function></link></para>
+    <para><link linkend="fn_xenc_key_DSA_read"><function>xenc_key_DSA_read()</function></link></para>
+    <para><link linkend="fn_xenc_key_RSA_read"><function>xenc_key_RSA_read()</function></link></para>
+    <para><link linkend="fn_xenc_key_create_cert"><function>xenc_key_create_cert()</function></link></para>
+    <para><link linkend="fn_xenc_key_serialize"><function>xenc_key_serialize()</function></link></para>
+    <para><link linkend="fn_xenc_key_remove"><function>xenc_key_remove()</function></link></para>
   </refsect1>
 </refentry>

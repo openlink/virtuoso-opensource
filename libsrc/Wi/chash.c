@@ -775,9 +775,12 @@ setp_non_agg_dep (setp_node_t * setp, caddr_t * inst, int nth_col, int set, char
 int
 cha_is_null (setp_node_t * setp, caddr_t * inst, int nth_col, int row_no)
 {
-  data_col_t *dc = QST_BOX (data_col_t *, inst, setp->setp_ha->ha_slots[nth_col]->ssl_index);
+  state_slot_t *ssl = setp->setp_ha->ha_slots[nth_col];
+  data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
   if (!dc->dc_any_null)
     return 0;
+  if (SSL_REF == ssl->ssl_type)
+    row_no = sslr_set_no (inst, ssl, row_no);
   return dc_is_null (dc, row_no);
 }
 
@@ -1939,6 +1942,7 @@ cha_clear_1 (chash_t * cha)
     cha->cha_init_data = cha->cha_current_data;
   cha_clear_fill (cha->cha_current);
   cha_clear_fill (cha->cha_current_data);
+  cha->cha_exception_fill = 0;
 }
 
 
@@ -2381,7 +2385,10 @@ cha_ent_merge (setp_node_t * setp, chash_t * cha, int64 * tar, int64 * ent)
   {
     int op = go->go_op;
     if (GB_IS_NULL (ha, ent, inx))
-      continue;
+	{
+	  inx++;
+	  continue;
+	}
     switch (AGG_C (cha->cha_sqt[inx].sqt_dtp, op))
       {
       case AGG_C (DV_LONG_INT, AMMSC_COUNT):
@@ -5137,7 +5144,20 @@ ce_hash_dc (col_pos_t * fetch_cpo, db_buf_t ce, db_buf_t ce_first, int n_values,
     {
       dtp_t ce_dtp = CE_INTLIKE (flags) ? ((CE_IS_IRI & flags) ? DV_IRI_ID : DV_LONG_INT) : DV_ANY;
       if (ce_dtp != DV_ANY && ce_dtp != dtp_canonical[dcdtp])
-	return;			/*incompatible dc */
+	{
+	  if (itc->itc_n_matches)
+	    {
+	      int end = fetch_cpo->cpo_ce_row_no + n_values;
+	      for (;;)
+		{
+		  if (++itc->itc_match_in == itc->itc_n_matches)
+		    return;
+		  if (itc->itc_matches[itc->itc_match_in] >= end)
+		    return;
+		}
+	    }
+	  return; /*incompatible dc */
+	}
       if (DV_ANY == fetch_cpo->cpo_cl->cl_sqt.sqt_col_dtp && DV_ANY == ce_dtp)
 	{
 	  fetch_cpo->cpo_value_cb = ce_result_typed;

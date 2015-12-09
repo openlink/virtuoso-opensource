@@ -48,7 +48,7 @@
   </refsect1>
   <refsect1 id="examples_isbinary">
     <title>Examples</title>
-    <example id="ex_isbinary"><title></title>
+    <example id="ex_isbinary"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>select isbinary(0x1213);
 		-&gt; 1 (Yes it is a VARBINARY)

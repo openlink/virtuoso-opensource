@@ -428,7 +428,7 @@ will be marked deleted instead of being physically removed.
 <example id="ex_uddi_genfind"><title>Generic Find</title>
 <para>Finds all registry entries for names beginning with 'M':</para>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -445,7 +445,7 @@ select http_get ('http://localhost:6666/SOAP', null, 'POST',
 <para>Find by name with sort options by name and date, both ascending:</para>
 
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -465,7 +465,7 @@ select http_get ('http://localhost:6666/SOAP', null, 'POST',
 <example id="ex_uddi_findbyname2"><title>Find By Name 2</title>
 <para>Find by name, sorted by name descending and date ascending:</para>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -486,7 +486,7 @@ select http_get ('http://localhost:6666/SOAP', null, 'POST',
 <para>Find by exact name match, case-sensitive, and sorted by name and
 date ascending:</para>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -507,7 +507,7 @@ select http_get ('http://localhost:6666/SOAP', null, 'POST',
 
 <example id="ex_uddi_findbyidbay"><title>Find By <parameter>identifierBag</parameter> Element 'DUNS':</title>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -531,7 +531,7 @@ select http_get ('http://localhost:6666/SOAP', null, 'POST',
 
 <example id="ex_uddi_findbytmodel"><title>Find by <parameter>tModel</parameter></title>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -554,7 +554,7 @@ select http_get ('http://localhost:6666/SOAP', null, 'POST',
 
 <example id="ex_uddi_findbydiscovery"><title>Find by discovery URL</title>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -579,7 +579,7 @@ http://uddi.microsoft.com/discovery?businessKey=D94B25A4-BD6D-4426-AEAC-1087DCC2
 
 <example id="ex_uddi_getauth"><title>Get authentication token</title>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;
@@ -595,7 +595,7 @@ select http_get ('http://localhost:6666/SOAP', null, 'POST',
 
 <example id="ex_uddi_discardauth"><title>Discard Authentication Token</title>
 <programlisting>
-select http_get ('http://localhost:6666/SOAP', null, 'POST',
+select http_get ('http://example.com/SOAP', null, 'POST',
   'Content-Type: text/xml\r\nSOAPAction: ""',
   '&lt;?xml version="1.0" encoding="UTF-8"?&gt;
 &lt;Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/"&gt;

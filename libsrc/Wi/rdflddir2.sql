@@ -58,9 +58,13 @@ ld_dir (in path varchar, in mask varchar, in graph varchar)
 
 	  if (not (exists (select 1 from DB.DBA.LOAD_LIST where LL_FILE = path || '/' || ls[inx] for update)))
 	    {
-	      declare gfile, cgfile, ngraph varchar;
-	      gfile := path || '/' || replace (ls[inx], '.gz', '') || '.graph';
-	      cgfile := path || '/' || regexp_replace (replace (ls[inx], '.gz', ''), '\\-[0-9]+\\.n', '.n') || '.graph';
+	      declare base_name, gfile, cgfile, ngraph varchar;
+
+	      base_name := regexp_replace (ls[inx], '\.(bz2|gz|xz)\x24', '');
+
+	      gfile  := path || '/' || base_name || '.graph';
+	      cgfile := path || '/' || regexp_replace (base_name, '\\-[0-9]+\\.n', '.n') || '.graph';
+
 	      if (file_stat (gfile) <> 0)
 		ngraph := trim (file_to_string (gfile), ' \r\n');
               else if (file_stat (cgfile) <> 0)
@@ -69,6 +73,7 @@ ld_dir (in path varchar, in mask varchar, in graph varchar)
 		ngraph := trim (file_to_string (path || '/' || 'global.graph'), ' \r\n');
 	      else
 	        ngraph := graph;
+
               if (ngraph is not null)
                 {
 		  insert into DB.DBA.LOAD_LIST (ll_file, ll_graph) values (path || '/' || ls[inx], ngraph);
@@ -124,20 +129,24 @@ ld_add (in _fname varchar, in _graph varchar)
     {
       insert into DB.DBA.LOAD_LIST (LL_FILE, LL_GRAPH) values (_fname, _graph);
     }
+
   commit work;
 }
 ;
 
 create procedure ld_ttlp_flags (in fname varchar, in opt varchar)
 {
-  if (fname like '%/btc-20%' or fname like '%.nq%' or fname like '%.n4%')
-{
+  if (fname like '%/btc-20%' or fname like '%.nq' or fname like '%.n4')
+    {
       if (lower (opt) = 'with_delete')
 	return 255 + 512 + 2048;
-    return 255 + 512;
+
+      return 255 + 512;
     }
-   if (fname like '%.trig' or fname like '%.trig.gz')
-     return 255 + 256;
+
+  if (fname like '%.trig')
+    return 255 + 256;
+
   return 255;
 }
 ;
@@ -146,6 +155,7 @@ create procedure ld_is_rdfxml (in f any)
 {
   if (f like '%.xml' or f like '%.owl' or f like '%.rdf' or f like '%.rdfs')
     return 1;
+
   return 0;
 }
 ;
@@ -153,9 +163,8 @@ create procedure ld_is_rdfxml (in f any)
 create procedure
 ld_file (in f varchar, in graph varchar)
 {
-  declare gzip_name, base varchar;
-  base := graph;
-  if (base = 'with_delete') base := '';
+  declare base_name, base varchar;
+  base := '';
   declare exit handler for sqlstate '*' {
     rollback work;
     update DB.DBA.LOAD_LIST
@@ -173,28 +182,44 @@ ld_file (in f varchar, in graph varchar)
   connection_set ('ld_file', f);
   if (graph like 'sql:%')
     {
-  declare str varchar;
+      declare str varchar;
       exec (str := subseq (graph, 4), null, null, vector (f), vector ('max_rows', 0, 'use_cache', 1));
       log_stats (str);
       return;
     }
+ 
 
-  if (f like '%.grdf' or f like '%.grdf.gz')
+  base_name := regexp_replace (f, '\.(bz2|gz|xz)\x24', '');
+
+  if (base_name like '%.grdf')
     {
       load_grdf (f);
     }
   else if (f like '%.gz')
     {
-      gzip_name := regexp_replace (f, '\.gz\x24', '');
-      if (ld_is_rdfxml (gzip_name))
-	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), graph, graph);
+      if (ld_is_rdfxml (base_name))
+	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), base, graph);
       else
-	TTLP_V (gz_file_open (f), base, graph, ld_ttlp_flags (gzip_name, graph));
+	TTLP_V (gz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+    }
+  else if (f like '%.bz2')
+    {
+      if (ld_is_rdfxml (base_name))
+	DB.DBA.RDF_LOAD_RDFXML_V (bz2_file_open (f), base, graph);
+      else
+	TTLP_V (bz2_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+    }
+  else if (f like '%.xz')
+    {
+      if (ld_is_rdfxml (base_name))
+	DB.DBA.RDF_LOAD_RDFXML_V (xz_file_open (f), base, graph);
+      else
+	TTLP_V (xz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
   else
     {
       if (ld_is_rdfxml (f))
-	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), graph, graph);
+	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), base, graph);
       else
 	TTLP_V (file_open (f), base, graph, ld_ttlp_flags (f, graph));
     }
@@ -383,6 +408,10 @@ create procedure load_grdf (in f varchar)
 
   if (f like '%.gz')
     ses := gz_file_open (f);
+  else if (f like '%.bz2')
+    ses := bz2_file_open(f);
+  else if (f like '%.xz')
+    ses := xz_file_open(f);
   else
     ses := file_open (f);
   inx := 0;

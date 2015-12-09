@@ -228,7 +228,7 @@ itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
 
       TC (tc_pl_split);
     }
-  else if (!itc->itc_non_txn_insert)
+  else if (!itc->itc_non_txn_insert && itc->itc_ltrx)
     lt_add_pl (itc->itc_ltrx, extend_pl, 1);
 
   /* must add after PL_IS_PAGE is set. If row level, extend_pl
@@ -386,6 +386,9 @@ pl_clk_lt_refs (page_lock_t * pl, row_lock_t * rl)
 }
 
 
+void lt_add_pl_simple (lock_trx_t * lt, page_lock_t * pl);
+
+
 void
 itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl, int no_escalation)
 {
@@ -421,6 +424,7 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       if (IS_MT_BRANCH (itc->itc_ltrx) && itc->itc_lock_lt == itc->itc_ltrx)
 	{
 	  /* page lock owned by closing main lt.  Must now put a row for the closing branch, to rb later.  So must go to row locks because will be 2 owners */
+	  lt_add_pl_simple (itc->itc_lock_lt, itc->itc_pl);
 	  page_lock_to_row_locks (buf);
 	  no_escalation = 1;
 	}
@@ -655,6 +659,31 @@ lt_pl_add_main_lt (lock_trx_t * lt, int * has_txn, int flags)
   if (!in_txn)
     *has_txn = 1;
   return main_lt;
+}
+
+
+void
+lt_add_pl_simple (lock_trx_t * lt, page_lock_t * pl)
+{
+  /* add the lt to the owners of pl.  Done when a pl could be added from a branch to the main lt but the main lt went out before adding an rl or rl + clk.  In this case the branch must reference the pl */
+  IN_LT_LOCKS (lt);
+  sethash ((void*)pl, &lt->lt_lock, (void*)1);
+  LEAVE_LT_LOCKS (lt);
+
+  if (pl->pl_is_owner_list)
+    {
+      dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
+    }
+  else if (!pl->pl_owner)
+    pl->pl_owner = lt;
+  else
+    {
+      lock_trx_t *prev = pl->pl_owner;
+      pl->pl_is_owner_list = 1;
+      pl->pl_owner = NULL;
+      dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) prev);
+      dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
+    }
 }
 
 
@@ -1240,6 +1269,16 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
   rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
   if (!PL_IS_PAGE (pl))
     buf_sort ((buffer_desc_t **)rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
+  if (itc->itc_insert_key->key_is_primary)
+    {
+      int inx, n_del = 0;
+      DO_BOX (row_delta_t *, rd, inx, rds)
+	if (RD_DELETE == rd->rd_op)
+	  n_del++;
+      END_DO_BOX;
+      if (n_del)
+	itc->itc_insert_key->key_table->tb_count_delta -= n_del;
+    }
   page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_RELEASE_PL);
   rd_list_free (rds);
 }
@@ -1718,9 +1757,9 @@ lt_transact (lock_trx_t * lt, int op)
       char user[16];
       char peer[32];
       dks_client_ip (lt->lt_client, from, user, peer, sizeof (from), sizeof (user), sizeof (peer));
-      log_info ("LTRS_1 %s %s %s %s transact %p %li", user, from, peer,
+      log_info ("LTRS_1 %s %s %s %s transact %p %d " BOXINT_FMT, user, from, peer,
 	  op == SQL_COMMIT ? "Commit" : "Rollback", lt,
-          lt->lt_client ? lt->lt_client->cli_autocommit : 0);
+          lt->lt_client ? (int)lt->lt_client->cli_autocommit : 0, lt->lt_w_id);
     }
   lt->lt_status = LT_CLOSING;
 #ifdef PAGE_TRACE

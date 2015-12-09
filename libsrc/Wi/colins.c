@@ -2349,7 +2349,10 @@ cr_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, col_data_ref_t * cr)
     }
 done:
   if (nth_range < itc->itc_range_fill)
-    GPF_T1 ("Too few rows in seg for insert");
+    {
+      log_error ("Broken index %s", itc->itc_insert_key->key_name ? itc->itc_insert_key->key_name : "temp key");
+      GPF_T1 ("Too few rows in seg for insert");
+    }
   itc->itc_set = itc_set_save;
 }
 
@@ -4510,6 +4513,8 @@ itc_col_ins_dups (it_cursor_t * itc, buffer_desc_t * buf, insert_node_t * ins)
 	      if (!itc_is_own_del_clk (itc, itc->itc_ranges[inx].r_first, &clk, &point, &next))
 		continue;
 	      clk->clk_change &= ~CLK_DELETE_AT_COMMIT;
+	      if (ins->ins_mode == INS_SOFT && (ins->ins_key_only || cl_run_local_only == CL_RUN_CLUSTER || itc->itc_insert_key->key_is_primary))
+		log_insert (itc->itc_ltrx, itc->itc_vec_rds[itc->itc_param_order[inx]], itc->itc_ins_flags);
 	      if (itc->itc_insert_key->key_n_significant * 2 == itc->itc_insert_key->key_n_parts)
 		continue;
 	    }

@@ -1,3 +1,213 @@
+December 09, 2015, V7.2.2:
+
+  * Virtuoso Engine
+    - Added support for reading bzip2 compressed files
+    - Added support for reading xz/lzma compressed files
+    - Added optimization for date/datetime/time escapes
+    - Fixed use vfork if working properly to reduce memory footprint on exec
+    - Fixed issue with SQL_TIMEZONELESS_DATETIMES
+    - Fixed issue with uninitialized data in TIME string
+    - Fixed issue with checkpoint recovery
+    - Fixed issue with freeing checkpoint remap col pages
+    - Fixed issue with row locks
+    - Fixed issue with sampling
+    - Fixed issue with outer-join plan
+    - Fixed xmlliteral should be serialized as UTF-8
+    - Fixed enable_joins_only=1 hint to cost based optimizer
+    - Fixed merge transaction log
+    - Fixed issues with extent map
+    - Fixed itc_ranges can be uninitialized when scanning updated/deleted pages
+    - Fixed issue with cascaded delete
+    - Fixed allow identity to start with 0
+    - Fixed memory leaks
+    - Updated debian packaging
+    - Updated testsuite
+    - Updated documentation
+
+  * SPARQL
+    - Added batch validation of JSO instances and new mode 3 for RDF_AUDIT_METADATA()
+    - Added new JSO loader with bif_jso_validate_and_pin_batch
+    - Added new pretty-printed HTML tabular output for SPARQL SELECT in /sparql page
+    - Added support for bulkloading .gz, .xz and .bz2 files
+    - Fixed recovery of DefaultQuadStorage etc in DB.DBA.RDF_AUDIT_METADATA()
+    - Fixed EWKT reader to be case-insensitive according to paragraph 7.2.1. of OGC 06-103r4
+    - Fixed issue when nil <p> <o> triple pattern is used
+    - Fixed handling of bad IRI_IDs in DB.DBA.RDF_GAPH_SECURITY_AUDIT()
+    - Fixed output of @type in JSON-LD
+    - Fixed nice microdata
+    - Fixed issues with gYear, gMonth etc in json/csv/sparql output formats
+    - Fixed issues with const in distinct
+    - Fixed issue with recovery for property paths with "*" on SERVICES
+    - Fixed check to prevent wide insert into O column
+    - Fixed issue in RDF_LONG_TO_TTL with typed RDF literals
+    - Fixed for vectorization-related error on SPARQL queries with RDF_GRAB
+    - Fixed handling of weird blank node labels like _:2
+    - Fixed issue with unique keys
+    - Fixed size of rdf lang cache
+    - Fixed codegen for IN operator when left hand is column and right hand contains constants
+    - Fixed crash when blank nodes are used in data rows of VALUES
+
+  * Jena & Sesame
+    - Update Jena provider to configure conversion of Jena BNodes to Virtuoso BNodes
+    - Fixed log_enable support
+    - Fixed issue with literals that have both Language and Datatype tags
+
+  * JDBC Driver
+    - Added missing server-side setting
+    - Added initial testsuite for handling date values in JDBC provider
+    - Fixed issues decoding RdfBox with Date object and timezoneless modes
+    - Fixed return SPARQL Time GMT0 with Z suffix  ("13:24:00.000Z" instead of "13:24:00.000-00:00")
+    - Fixed return SPARQL DateTime GMT0 with Z suffix  ("1999-05-31T13:24:00Z" instead of "1999-05-31T13:24:00-00:00")
+    - Fixed log_enable support
+    - Fixed Datasources to support both JNDI attribute names "charset" and "charSet"
+    - Fixed UTF8 to String conversion for return ? for bad character instead of throw Exception.
+    - Fixed JDBC testsuite
+
+  * .NET Adapter
+    - Fixed build rules for Virtuoso .NET Adapter
+    - Fixed ADO.NET prefetch size from 20 to 100
+    - Fixed Int32 overflow in VirtuosoDataReader.GetValues
+    - Fixed issue with implementation of Cancel
+    - Fixed NullPointer exception in ManagedCommand, when Connection is closed after exceptions
+
+  * Faceted Browser
+    - Added small query optimization
+    - Added support for auto sponge
+    - Added support for emitting microdata instead of rdfa
+    - Added missing grants
+    - Added iframe opt
+    - Fixed handling of nodeID, null graphs, foaf:depiction and iframe
+    - Fixed describe mode from LOD to CBD
+    - Fixed serialization issue
+    - Fixed namespace prefixes
+    - Fixed error on bad IRIs
+    - Fixed error on subseq when uri is wide string
+    - Fixed issue passing literal as reference parameter in fct
+    - Fixed show distinct count on list-count view
+    - Fixed issue with xtree over null
+    - Fixed labels
+
+  * Conductor
+    - Added export function for key storage
+    - Added filters to IMAP DET folders
+    - Added support for FTP DET
+    - Added support for move and copy commands on some DETs
+    - Added support for new RDF params in WebDAV browser
+    - Added support for pattern search and edit options to namespace prefixes
+    - Added support for setting file expiration for WebDAV/Briefcase
+    - Fixed iMAP DET filter page
+    - Fixed turtle editor text revision
+    - Fixes for site-copy robot
+
+  * DAV
+    - Added DETs move/copy commands
+    - Added IMAP DET filters to WebDAV browser
+    - Added last-modified for dav res
+    - Added optimizations using RDF params for DET folders
+    - Added scheduler procedure for expired items
+    - Added support for FTP DET
+    - Fixed issues creating/updating LDP containers
+    - Fixed bug updating existing file with only read permission on parent dir
+    - Fixed calculation of MD5 value for resource content
+    - Fixed issue with POST of SPARQL query with "Content-Type: application/sparql-query"
+    - Fixed issues with DAV permissions
+    - Fixed resource size value for some DAV operations
+    - Fixed resource update API call and sync with HTTP PUT
+    - Fixed setting DET RDF params
+    - Fixed timezone bug with S3 DET
+
+
+June 24, 2015, V7.2.1:
+  * Virtuoso Engine
+    - Added support for datetime without timezone
+    - Added new implementation of xsd:boolean logic
+    - Added new text index functions and aggregates
+    - Added better handling of HTTP status codes on SPARQL graph protocol endpoint
+    - Added new cache for compiled regular expressions
+    - Added support for expression in TOP/SKIP
+    - Fixed cost based optimizer
+    - Fixed codegen for ((A is NULL) or (A=B)) and similar in LEFT OUTER JOIN
+    - Fixed issue with conditional expression
+    - Fixed issue with SSL handshake in non-blocking mode
+    - Fixed issue with anytime and group by
+    - Fixed issue with multistate order by
+    - Fixed issues with stability
+    - Fixed CORS headers
+    - Fixed memory leaks
+    - Updated documentation
+
+  * SPARQL
+    - Added support for SPARQL GROUPING SETS
+    - Added support for SPARQL 1.1 EBV (Efficient Boolean Value)
+    - Added support for define input:with-fallback-graph_uri 
+    - Added support for define input:target-fallback-graph-uri
+    - Fixed SPARQL queries with sub-selects
+    - Fixed SPARQL abs() should not convert result to integer
+    - Fixed UNDEF is now a valid generic subexpression in SPARQL
+    - Fixed SQL codegen for SPARQL SELECT ... count(*) ...
+    - Fixed SPARQL issue with UNION with multiple BINDS
+    - Fixed handling of '*' in COUNT(*) and COUNT(DISTINCT *)
+    - Fixed handling of "plain box" constants
+    - Fixed handling of optional minus sign on SPARQL values
+    - Fixed sparul target for ignore default graph from context but set from USING
+    - Fixed issue inserting triple with XML type
+    - Fixed issue with bad filter reduced to NULL
+    - Fixed return \uNNNN\uNNNN instead of \UNNNNNNNN in JSON strings
+    - Fixed issue with xsd:dayTimeDuration in codegen
+    - Fixed issue multiple OPTIONALs for a variable or nullable subq + optional
+
+  * Jena & Sesame
+    - Added support for using rdf_insert_triple_c() to insert BNode data
+    - Added support for returning xsd:boolean as true/false rather than 1/0
+    - Added support for maxQueryTimeout in Sesame2 provider
+    - Fixed storing blank nodes as URIs
+    - Fixed issue with insert data via Jena provider in XA transaction
+    - Fixed issue closing XA connection
+    - Fixed issue with DELETE query
+    - Fixed issue with blank nodes in DELETE constructor
+    - Fixed issues with Date/Time/DateTime literals
+    - Fixed corrupted literals with datatypes using Jena provider
+    - Removed deprecated class reference
+
+  * JDBC Driver
+    - Added new methods setLogFileName and getLogFileName
+    - Added new attribute "logFileName" to VirtuosoDataSources for logging support
+    - Fixed issues logging JDBC XA operations and JDBC RPC calls
+    - Fixed JDBC driver did not use SQL_TXN_ISOLATION setting from init handshake
+    - Fixed throw exception when reading polygon geometry by JDBC
+    - Fixed issues with Date, Time and DateTime
+    - Fixed hang on PreparedStatement when using setFetchSize() method
+
+  * Faceted Browser
+    - Added support for emitting microdata instead of rdfa
+    - Added query optimizations
+    - Added footer icons to /describe page
+    - Fixed support for graph permission checks
+    - Fixed user switch
+    - Fixed serialization issue
+    - Fixed html content detection
+    - Fixed labels
+    - Fixed bad font on Chrome
+
+  * Conductor and DAV
+    - Added support for VAD dependency tree
+    - Added support for default vdirs when creating new listeners
+    - Added support for private RDF graphs
+    - Added support for LDP in DAV API
+    - Added option to create shared folder if not exists
+    - Added option to enable/disable DET graphs binding
+    - Added option to set content length threshold for async spongeing
+    - Added folder option related to .TTL redirection
+    - Added functions to edit turtle files
+    - Added popup dialog to search for unknown prefixes
+    - Added registry option to add missing prefixes for .TTL files
+    - Fixed DETs to work with new private graphs
+    - Fixed conflict using graph for share and LDP in WAC delete queries
+    - Fixed hrefs for resource paths in DAV browser
+    - Fixed issue deleting files from DAV
+    - Fixed issues with subfolders of DETs type ResFilter and CatFilter
+    - Fixed labels
+
 February 17, 2015, V7.2.0:
   * Virtuoso Engine
     - Added new threadsafe / reentrant SQL parser
@@ -63,7 +273,7 @@ February 17, 2015, V7.2.0:
     - Fixed issue with sparql ... with delete on certain datatypes
     - Fixed issue with varbinary in rdf views
     - Fixed printing optimized-away data rows of VALUES in sparql_explain() dump
-    - Fixed propagation of limits if SPART_VARR_EXTARNAL/GLOBAL variables present
+    - Fixed propagation of limits if SPART_VARR_EXTERNAL/GLOBAL variables present
     - Fixed regression for SPARQL 1.1 VALUES bindings
     - Fixed sort accented letters from "ORDER BY" in alphabetical order
     - Fixed startup speed with many graph group members
@@ -150,12 +360,12 @@ February 17, 2014, V7.1.0:
     - Added support for <(type,type,...)type::sql:function> trick
       in order to eliminate conversion of types on function call
     - Optimization in calculation of gcb steps to make number of
-      chained blocks close to square root of lenght of the shape
+      chained blocks close to square root of length of the shape
     - Fixed geo box support for large polygons
     - Fixed mp_box_copy() of long shapes
     - Fixed range checks for coordinates
     - Fixed calculation of lat/long ratio for proximity checks
-    - Fixed bboxes in geo_deserialize
+    - Fixed boxes in geo_deserialize
     - Fixed check for NAN and INF in float valued geo inx
     - Fixed check for NULL arguments
     - Minor fixes to other geo BIFs
@@ -166,7 +376,7 @@ February 17, 2014, V7.1.0:
     - Added initial support for sparql valid()
     - Added new codegen for initial fill of RDB2RDF
     - Added new settings CreateGraphKeywords, QueryGraphKeywords
-    - Added new SPARQL triple/group/subqery options
+    - Added new SPARQL triple/group/subquery options
     - Added missing function rdf_vec_ins_triples
     - Added support for application/x-nice-microdata SPARQL format
     - Added support for buildin inverse functions
@@ -183,12 +393,12 @@ February 17, 2014, V7.1.0:
 
   * Jena & Sesame
     - Improved speed of batch delete
-    - Removed unnesessary check that graph exists after remove
-    - Removed unnesessary commits 
+    - Removed unnecessary check that graph exists after remove
+    - Removed unnecessary commits 
     - Replaced n.getLiteralValue().toString() with n.getLiteralLexicalForm()
 
   * JDBC Driver
-    - Added staticstics for Connection Pool
+    - Added statistics for Connection Pool
     - Fixed speed of finalize
 
   * Conductor and DAV

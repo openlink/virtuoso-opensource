@@ -32,9 +32,9 @@ else
 endif
 
 if WITH_IODBC
-    IODBC_LIBS=libvirtuoso-iodbc-t.la
-    IODBC_PROGS=virtuoso-iodbc-t
-    VIRTUOSO_BIN=virtuoso-iodbc-t
+    XIODBC_LIBS=libvirtuoso-iodbc-t.la
+    XIODBC_PROGS=virtuoso-iodbc-t
+    VIRTUOSO_BIN=virtuoso-t
 else
     VIRTUOSO_BIN=virtuoso-t
 endif

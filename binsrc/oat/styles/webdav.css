@@ -120,14 +120,14 @@
 
 #dav_right_content {
 	position: relative;
-	width: 522px;
+	width: 535px;
 	height: 100%;
 }
 
 #dav_bottom {
 	text-align: right;
 	margin-top: 3px;
-	margin-right: 5px;
+	margin-right: 2px;
 }
 
 #dav_permissions {

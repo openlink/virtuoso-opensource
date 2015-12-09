@@ -21,7 +21,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="robot_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
@@ -86,127 +85,106 @@
         ?>
       </h1>
     </vm:rawheader>
-    <vm:pagebody onload="admin_utils_onload_hndlr()">
-      <script type="text/javascript" src="admin_utils.js">
+    <vm:pagebody>
+      <script type="text/javascript">
+        <![CDATA[
+          function toggleMeta (btn, div_id)
+          {
+            var div = document.getElementById (div_id);
+            if (btn.checked == true)
+              div.style.display = 'block';
+            else
+              div.style.display = 'none';
+          }
+        ]]>
       </script>
-      <script type="text/javascript"><![CDATA[
-	function toggleMeta (btn, div_id)
-	{
-	  var div = document.getElementById (div_id);
-	  if (btn.checked == true)
-	    div.style.display = 'block';
-	  else
-            div.style.display = 'none';
-	}
-	]]></script>
       <v:before-data-bind>
-        <v:script>
-          <![CDATA[
-            declare _idx, store_prefix varchar;
-            declare _n_own, ename integer;
-            self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
-            if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'copy')
-            {
-	      declare _host, _root, _tmp any;
-              _n_own := 0;
-	      _host := get_keyword ('EDIT', self.vc_page.vc_event.ve_params);
-	      _root := get_keyword ('root', self.vc_page.vc_event.ve_params);
-              select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
-                VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
-		VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE, 
-		VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
-		VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY, VS_HEADERS
-                into self._descr, self._host, self._url, _idx, self._root,
-                self._newd, self._del, self._flow, self._dflow, self._auth,
-		self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store, 
-		self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
-		self._accept_rdf, self._bot, self._thr, self._delay, self._head
-                from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+        <![CDATA[
+          declare _idx varchar;
+          declare _n_own, ename integer;
 
-              if (self._other is null) 
-	        self._other := 0;	      
-              else if (self._other = 'checked')
-	        self._other := 1;
-              self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
-	      self._store_type := get_keyword ('store-type', self._udata, 'none');
-	      store_prefix := case when self._store_type = 'dav' then '/DAV/' else '' end;
-	      ename := concat(self._descr, '(', _host, ' in ', store_prefix ,_root, ')');
-	      self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
-              --update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
-	      if (self._store_type = 'dav')
-		self._root := concat('/DAV/', self._root);
-              self._newd := subseq(datestring(self._newd), 0, 19);
-              self._old_url := self._url;
-	      self.target_url := 'http://';
-	      if (self._udata is null)
-	        self._udata := vector ();
-              _tmp := get_keyword ('follow-property', self._udata);                  		
-	      self._rdf_flw := '';
-	      self._html_meta := get_keyword ('follow-meta', self._udata, 0);
-	      self._rdf_graph := get_keyword ('rdf-graph', self._udata, '');
-	      self._use_tidy := get_keyword ('use-tidy', self._udata, 'Y');
-	      self._auth_ldp := get_keyword ('auth-ldp', self._udata, '');
-	      self._ldpr_creation_method := get_keyword ('ldpr-creation-method', self._udata, '');
-	      self._folder_tree := get_keyword ('folder-tree', self._udata, '');
-	      foreach (any x in _tmp) do
-	        {
-		  self._rdf_flw := self._rdf_flw || x || '\r\n';
-	        }	
-              self._rdf_flw := rtrim (self._rdf_flw, '\r\n');		
-	      if (length (self._auth))
-	        {
-		  declare auth any;
-		  auth := split_and_decode (self._auth, 0, '\0\0:');
-		  if (length (auth) = 2)
-		    {
-		      self.target_uid := auth[0];
-		      self.target_pwd := auth[1];
-		    }
-		}
-	      if (length (self._auth_ldp))
-	        {
-		  declare auth any;
-		  auth := split_and_decode (self._auth_ldp, 0, '\0\0:');
-		  if (length (auth) = 2)
-		    {
-		      self.target_ldp_uid := auth[0];
-		      self.target_ldp_pwd := auth[1];
-		    }
-		}
-              self.target_url := concat(self.target_url, self._host, self._url);
-              self._get_rdf := coalesce ((select top 1 1 from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = _host and VM_ROOT = _root), 0); 
-            }
-            else if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'create')
+          self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
+          if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'copy')
+          {
+            declare _host, _root, _tmp any;
+            _n_own := 0;
+            _host := get_keyword ('EDIT', self.vc_page.vc_event.ve_params);
+            _root := get_keyword ('root', self.vc_page.vc_event.ve_params);
+
+            select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
+                   VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
+                   VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE,
+                   VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
+                   VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY, VS_HEADERS
+              into self._descr, self._host, self._url, _idx, self._root,
+                   self._newd, self._del, self._flow, self._dflow, self._auth,
+                   self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store,
+                   self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
+                   self._accept_rdf, self._bot, self._thr, self._delay, self._head
+              from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+
+            if (self._other is null)
+              self._other := 0;
+            else if (self._other = 'checked')
+              self._other := 1;
+            self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
+            ename := concat(self._descr, '(', _host,' in /DAV/',_root,')');
+            self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
+            --update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
+            self._root := concat('/DAV/', self._root);
+            self._newd := subseq (datestring(coalesce (self._newd, now ())), 0, 19);
+            self._old_url := self._url;
+            self.target_url := 'http://';
+            if (self._udata is null)
+              self._udata := vector ();
+
+            _tmp := get_keyword ('follow-property', self._udata);
+            self._rdf_flw := '';
+            self._html_meta := get_keyword ('follow-meta', self._udata, 0);
+            self._rdf_graph := get_keyword ('rdf-graph', self._udata, '');
+            foreach (any x in _tmp) do
             {
-              self._newd := '1900-01-01 00-00-00';
-              self._del := '';
-              self._opage := '';
-              self._img := '';
-              self._dav := '';
-              self._own := 'dav';
-              self._descr := '';
-              self._host := '';
-              self._url := '';
-              self._root := '';
-              self._flow := '';
-              self._dflow := '';
-              self._redir := '1';
-	      self.target_url := '';
-	      self.target_uid := '';
-	      self.target_pwd := '';
-	      self._udata := vector ();
-              self._depth := 'unlimited';
-	      self._delay := 0;
-	      self._head := '';
-	      self._store_type := 'none';
-              self._store := 0;
-	      self.target_ldp_uid := '';
-	      self.target_ldp_pwd := '';
-	      self._ldpr_creation_method := '';
-	      self._folder_tree := '';
+              self._rdf_flw := self._rdf_flw || x || '\r\n';
             }
-          ]]>
-        </v:script>
+            self._rdf_flw := rtrim (self._rdf_flw, '\r\n');
+            if (length (self._auth))
+            {
+              declare auth any;
+              auth := split_and_decode (self._auth, 0, '\0\0:');
+              if (length (auth) = 2)
+              {
+                self.target_uid := auth[0];
+                self.target_pwd := auth[1];
+              }
+            }
+            self.target_url := concat(self.target_url, self._host, self._url);
+            self._get_rdf := coalesce ((select top 1 1 from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = _host and VM_ROOT = _root), 0);
+          }
+          else if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'create')
+          {
+            self._newd := '1900-01-01 00-00-00';
+            self._del := '';
+            self._opage := '';
+            self._img := '';
+            self._dav := '';
+            self._own := 'dav';
+            self._descr := '';
+            self._host := '';
+            self._url := '';
+            self._root := '';
+            self._flow := '';
+            self._dflow := '';
+            self._store := '';
+            self._redir := '1';
+            self.target_url := '';
+            self.target_uid := '';
+            self.target_pwd := '';
+            self._udata := vector ();
+            self._depth := 'unlimited';
+            self._delay := 0;
+            self._head := '';
+          }
+        ]]>
       </v:before-data-bind>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
@@ -223,822 +201,761 @@
                       <col/>
                     </colgroup>
                     <tr>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-			  <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-			  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center" nowrap="1">
+                        <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">
                     <tr>
                       <td valign="top">
-      <v:form name="robot_form" type="simple" method="POST" action="">
-        <table border="0" cellspacing="0" cellpadding="3" class="ctl_grp">
-            <input type="hidden" name="name" value="<?V get_keyword ('name', self.vc_page.vc_event.ve_params) ?>"/>
-            <tr>
-              <td>Target description</td>
-              <td>
-                <v:text name="descr" value="--self._descr"  xhtml_size="70"/>
-              </td>
-            </tr>
-            <tr>
-	      <td>Target URL <!--br/>
-		<em>(http://httpuser:password@host:port/start_path)</em-->
-	      </td>
-              <td>
-                <v:text name="tar_url" value="--self.target_url" xhtml_size="70"/>
-              </td>
-            </tr>
-            <tr>
-	      <td>Login name on target</td>
-              <td>
-                <v:text name="tar_uid" value="--self.target_uid" xhtml_size="20"/>
-              </td>
-            </tr>
-            <tr>
-	      <td>Login password on target</td>
-              <td>
-                <v:text name="tar_pwd" value="--self.target_pwd" type='password' xhtml_size="20"/>
-              </td>
-            </tr>
-            <tr>
-              <td>
-               Target storage 
-              </td>
-	      <td width="1px">
-		<v:radio-button name="rb_store_type_none" value="none" group-name="choice_store_type" xhtml_id="choice_store_type_none"
-		  xhtml_onclick="rb_store_type_click_hndlr (this);"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		    control.ufl_selected := case when (self._store_type = 'none') then 1 else 0 end;
-		    control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_store_type_none">Do not store crawled documents</label>
-	      </td>
-            </tr>
-            <tr>
-              <td/>
-	      <td>
-		<v:radio-button name="rb_store_type_dav" value="dav" group-name="choice_store_type" xhtml_id="choice_store_type_dav" 
-		  xhtml_onclick="rb_store_type_click_hndlr (this);"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		    control.ufl_selected := case when (self._store_type = 'dav') then 1 else 0 end;
-		    control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_store_type_dav">Local WebDAV collection  <em>(/DAV/...)</em></label>
-	      </td>
-            </tr>
-	    <tr>
-	      <td/>
-	      <td>
-		<v:radio-button name="rb_store_type_ldp" value="ldp" group-name="choice_store_type" xhtml_id="choice_store_type_ldp"
-		  xhtml_onclick="rb_store_type_click_hndlr (this);"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		      control.ufl_selected := case when (self._store_type = 'ldp') then 1 else 0 end;
-		      control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_store_type_ldp">LDP container  <em>(http://...)</em></label>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td/>
-	      <td>
-		<v:radio-button name="rb_store_type_custom" value="custom" group-name="choice_store_type" xhtml_id="choice_store_type_custom"
-		  xhtml_onclick="--case when self.mode='edit' then '' else 'rb_store_type_click_hndlr (this);' end"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		      control.ufl_selected := case when (self._store_type = 'custom') then 1 else 0 end;
-		      control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_store_type_custom">Custom</label>
-	      </td>
-	    </tr>
-            <tr>
-              <td>
-                Target storage: DAV path / LDPC URL
-              </td>
-              <td>
-                <v:text name="root" xhtml_id="root" value="--self._root" xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"  xhtml_size="50"/>
-                <?vsp
-                  if (self.mode <> 'edit')
-                  {
-                ?>
-		<div id="div_dav_browser">
-		<vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="root"/>
-		</div>
-                <?vsp
-                  }
-                ?>
-              </td>
-            </tr>
-            <tr>
-	      <td>Login name on target LDP server</td>
-              <td>
-                <v:text name="tar_ldp_uid" value="--self.target_ldp_uid" xhtml_size="20" xhtml_id="tar_ldp_uid" />
-              </td>
-            </tr>
-            <tr>
-	      <td>Login password on target LDP server</td>
-              <td>
-                <v:text name="tar_ldp_pwd" value="--self.target_ldp_pwd" type='password' xhtml_size="20" xhtml_id="tar_ldp_pwd" />
-              </td>
-            </tr>
-            <tr>
-              <td>
-              Create LDP resources using 
-              </td>
-	      <td width="1px">
-		<v:radio-button name="rb_ldpr_create_w_put" value="put" group-name="choice_ldpr_creation_method" xhtml_id="choice_ldpr_create_w_put"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		    control.ufl_selected := case when (self._ldpr_creation_method = 'put') then 1 else 0 end;
-		    control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_ldpr_create_w_post">PUT</label>
-		<v:radio-button name="rb_ldpr_create_w_post" value="post" group-name="choice_ldpr_creation_method" xhtml_id="choice_ldpr_create_w_post"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		    control.ufl_selected := case when (self._ldpr_creation_method = 'post') then 1 else 0 end;
-		    control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_ldpr_create_w_post">POST</label>
-	      </td>
-	    </tr>
-            <tr>
-              <td>
-              Source folder tree 
-              </td>
-	      <td width="1px">
-		<v:radio-button name="rb_folder_tree_recreate" value="recreate" group-name="choice_folder_tree" xhtml_id="choice_folder_tree_recreate"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		    control.ufl_selected := case when (self._folder_tree = 'recreate') then 1 else 0 end;
-		    control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_ldpr_create_w_post">Recreate on target</label>
-		<v:radio-button name="rb_folder_tree_collapse" value="collapse" group-name="choice_folder_tree" xhtml_id="choice_folder_tree_collapse"
-		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
-		>
-		  <v:before-data-bind>
-		    <![CDATA[
-		    control.ufl_selected := case when (self._folder_tree = 'collapse') then 1 else 0 end;
-		    control.vc_data_bound := 1;
-		    ]]>
-		  </v:before-data-bind>
-		</v:radio-button>
-		<label for="choice_ldpr_create_w_post">Use only target LDPC</label>
-	      </td>
-	    </tr>
-            <tr>
-              <td>Store Function</td>
-              <td>
-                <v:text name="store_fn" value="--self._store_fn" xhtml_id="store_fn" xhtml_size="50"/>
-                <v:browse-button name="br_store" xhtml_id="br_store" value="Browse..."
-                        selector="vdir_browser.vspx"
-                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
-                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
-                  <v:field name="store_fn" />
-                </v:browse-button>
-              </td>
-            </tr>
-            <tr>
-              <td>Extract Function</td>
-              <td>
-                <v:text name="ext_fn" value="--self._ext_fn" xhtml_size="50"/>
-                <v:browse-button name="br_ext" value="Browse..."
-                        selector="vdir_browser.vspx"
-                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
-                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
-                  <v:field name="ext_fn" />
-                </v:browse-button>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-                <?vsp
-                  if (self.mode <> 'edit')
-                  {
-                ?>
-                  <v:check-box name="opage" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
-                <?vsp
-                  } else {
-                ?>
-                  <v:check-box name="opage1" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage" xhtml_disabled="yes"/>
-                <?vsp
-                  }
-                ?>
-                <label for="opage">Single page download</label>
-              </td>
-            </tr>
-            <tr>
-              <td>Local resources owner</td>
-              <td>
-               <v:data-list name="own" sql="select U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME">
-                 <v:before-data-bind>
-                      <![CDATA[
-                        control.ufl_value := self._own;
-                      ]]>
-                  </v:before-data-bind>
-                </v:data-list>
-              </td>
-            </tr>
-            <tr>
-              <td>Download only newer than</td>
-              <td>
-                <v:text name="newd" value="--self._newd" />
-              </td>
-            </tr>
-            <tr>
-              <td>Follow links matching<EM><br/>(delimited with ;)</EM></td>
-              <td>
-                <v:text name="flow" value="--self._flow"  xhtml_size="70"/>
-              </td>
-            </tr>
-            <tr>
-              <td>Do not follow links matching<EM><br/>(delimited with ;)</EM></td>
-              <td>
-                <v:text name="dflow" value="--self._dflow"  xhtml_size="70"/>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-                <v:check-box name="bot" value="1" initial-checked="--case when self._bot then 1 else 0 end" xhtml_id="bot"/>
-                <label for="bot">Use robots.txt</label>
-              </td>
-            </tr>
-            <tr>
-		<td>Custom HTTP headers</td>
-              <td>
-                <v:text name="head" value="--coalesce (self._head, '')"  xhtml_size="70"/>
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <label for="redir">Number of HTTP redirects to follow</label>
-	    </td>
-              <td>
-                <v:text name="redir" value="--self._redir" xhtml_id="redir" xhtml_size="5"/>
-              </td>
-            </tr>
-            <tr>
-		<td>XPath expression for links extraction</td>
-              <td>
-                <v:text name="xp_exp" value="--coalesce (self._xp_exp, '')"  xhtml_size="70"/>
-              </td>
-            </tr>
-            <tr>
-              <td>Crawling depth limit</td>
-              <td>
-                <v:text name="depth" value="--coalesce (self._depth, '')"  />
-              </td>
-            </tr>
-            <tr>
-              <td>Update Interval (minutes)</td>
-              <td>
-                <v:text name="intv" value="--self._intv"  />
-              </td>
-            </tr>
-            <tr>
-              <td>Number of threads</td>
-              <td>
-                <v:text name="thr" value="--self._thr"  />
-              </td>
-            </tr>
-            <tr>
-              <td>Crawl delay (sec)</td>
-              <td>
-                <v:text name="delay" value="--sprintf ('%.2f', self._delay)"  />
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-                <v:check-box name="semweb" value="1" initial-checked="--case when self._store_fn = 'WS.WS.SITEMAP_RDF_STORE' and self._ext_fn = 'WS.WS.SITEMAP_XML_PARSE' then 1 else 0 end" xhtml_id="semweb"/>
-                <label for="semweb">Semantic Web Crawling</label>
-              </td>
-            </tr>
-            <tr>
-		<td><small>If</small> Graph IRI <small>is unassigned use this Data Source URL:</small></td>
-              <td>
-                <v:text name="rdf_graph" value="--self._rdf_graph"  xhtml_size="70"/>
-              </td>
-            </tr>
-            <tr>
-		<td/>
-              <td>
-                <v:check-box name="other" value="1" initial-checked="--self._other" xhtml_id="other"/>
-                <label for="other">Follow URLs outside of the target host</label>
-              </td>
-            </tr>
-            <tr>
-		<td/>
-              <td>
-                <v:check-box name="html_meta" xhtml_id="html_meta" value="1" initial-checked="--self._html_meta" />
-		<label for="html_meta">Follow HTML meta link</label>
-              </td>
-            </tr>
-            <tr>
-		<td>Follow RDF properties<EM><br/>(one IRI per row)</EM></td>
-              <td>
-                <v:textarea name="rdf_flw" value="--self._rdf_flw"  xhtml_rows="3" xhtml_cols="70"/>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-                <v:check-box name="img" value="1" initial-checked="--case when self._img = 'checked' then 1 else 0 end" xhtml_id="img"/>
-                <label for="img">Download images</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-                <v:check-box name="dav" value="1" initial-checked="--case when self._dav = 'checked' then 1 else 0 end" xhtml_id="dav"/>
-                <label for="dav">Use WebDAV methods</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-                <v:check-box name="del" value="1" initial-checked="--case when self._del = 'checked' then 1 else 0 end" xhtml_id="del"/>
-                <label for="del">Delete if remove on remote detected</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-		<v:check-box name="convhtml" value="1" initial-checked="--case when self._convhtml then 1 else 0 end" xhtml_id="convhtml"
-		  />
-		<label for="convhtml">Convert Links</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-		<v:check-box name="use_tidy" value="Y" initial-checked="--case when self._use_tidy = 'Y' then 1 else 0 end" xhtml_id="use_tidy"
-		  />
-		<label for="use_tidy">Use HTML Tidy</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-		<v:check-box name="ask_rdf" value="1" initial-checked="--case when self._ask_rdf then 1 else 0 end" xhtml_id="ask_rdf"
-		  />
-		<label for="ask_rdf">Run Sponger *</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-		<v:check-box name="accept_rdf" value="1" initial-checked="--case when self._accept_rdf then 1 else 0 end" xhtml_id="accept_rdf"
-		  />
-		<label for="accept_rdf">Accept RDF</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
-		<v:check-box name="get_rdf" value="1" initial-checked="--case when self._get_rdf then 1 else 0 end" xhtml_id="get_rdf"
-		  xhtml_onchange='javascript: toggleMeta (this, "meta_opts");'/>
-		<label for="get_rdf">Show Sponger extractor cartridges *</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-	      <td colspan="2">
-		  <div  id="meta_opts" style="display: <?V case when self._get_rdf = 0 then 'none' else 'block' end ?>;">
-		      <table class="listing">
-			  <tr class="listing_header_row">
-			      <th><input type="checkbox" name="select_all" value="Select All"
-				      onclick="selectAllCheckboxes_mask(this.form, this, 'mapper')"/>
-			      RDF Cartridge</th>
-			  </tr>
-			  <?vsp
-			  declare ix int;
-			  declare _root_col varchar;
-			  ix := 0;
-                          if (left(self._root, 5) = '/DAV/')
-			    _root_col := right(self._root, length(self._root) - 5);
-                          else
-			    _root_col := self._root;
-			  for select RM_DESCRIPTION, RM_PID, VM_ID from (select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = _root_col) x 
-			  	right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID)  
-			  	order by RM_ID do {
-			   ?>
-			   <tr class="<?V case when mod(ix, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
-			       <td>
-				   <?vsp if (VM_ID is null) { ?>
-				   <input type="checkbox" name="mapper" value="<?V RM_PID ?>" />
-				   <?vsp } else { ?>
-				   <input type="checkbox" name="mapper" value="<?V RM_PID ?>" checked="1" />
-				   <?vsp } ?>
-			       <?V RM_DESCRIPTION ?></td>
-			   </tr>
-			   <?vsp ix := ix + 1; } ?>
-		      </table>
-		  <!--v:check-box name="meta_foaf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_foaf" />
-		  <label for="meta_foaf">FOAF</label>&nbsp;
+                        <v:form name="robot_form" type="simple" method="POST" action="">
+                          <table border="0" cellspacing="0" cellpadding="3" class="ctl_grp">
+                            <input type="hidden" name="name" value="<?V get_keyword ('name', self.vc_page.vc_event.ve_params) ?>"/>
+                            <tr>
+                              <td>Target description</td>
+                              <td>
+                                <v:text name="descr" value="--self._descr"  xhtml_size="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Target URL <!--br/>
+                                <em>(http://httpuser:password@host:port/start_path)</em-->
+                              </td>
+                              <td>
+                                <v:text name="tar_url" value="--self.target_url" xhtml_size="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Login name on target</td>
+                              <td>
+                                <v:text name="tar_uid" value="--self.target_uid" xhtml_size="20"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Login password on target</td>
+                              <td>
+                                <v:text name="tar_pwd" value="--self.target_pwd" type='password' xhtml_size="20"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                Copy to local DAV collection
+                              </td>
+                              <td>
+                                <v:text name="root" value="--self._root" xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"  xhtml_size="70"/>
+                                <?vsp
+                                  if (self.mode <> 'edit')
+                                  {
+                                ?>
+                                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="root"/>
+                                <?vsp
+                                  }
+                                ?>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <?vsp
+                                  if (self.mode <> 'edit')
+                                  {
+                                ?>
+                                  <v:check-box name="opage" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage"/>
+                                <?vsp
+                                  } else {
+                                ?>
+                                  <v:check-box name="opage1" value="1" initial-checked="--case when self._opage = 'checked' then 1 else 0 end" xhtml_id="opage" xhtml_disabled="yes"/>
+                                <?vsp
+                                  }
+                                ?>
+                                <label for="opage">Single page download</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Local resources owner</td>
+                              <td>
+                               <v:data-list name="own" sql="select U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME">
+                                 <v:before-data-bind>
+                                   <![CDATA[
+                                     control.ufl_value := self._own;
+                                   ]]>
+                                  </v:before-data-bind>
+                                </v:data-list>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Download only newer than</td>
+                              <td>
+                                <v:text name="newd" value="--self._newd" />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Follow links matching<EM><br/>(delimited with ;)</EM></td>
+                              <td>
+                                <v:text name="flow" value="--self._flow"  xhtml_size="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Do not follow links matching<EM><br/>(delimited with ;)</EM></td>
+                              <td>
+                                <v:text name="dflow" value="--self._dflow"  xhtml_size="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="bot" value="1" initial-checked="--case when self._bot then 1 else 0 end" xhtml_id="bot"/>
+                                <label for="bot">Use robots.txt</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Custom HTTP headers</td>
+                              <td>
+                                <v:text name="head" value="--coalesce (self._head, '')"  xhtml_size="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>
+                                <label for="redir">Number of HTTP redirects to follow</label>
+                              </td>
+                              <td>
+                                <v:text name="redir" value="--self._redir" xhtml_id="redir" xhtml_size="5"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>XPath expression for links extraction</td>
+                              <td>
+                                <v:text name="xp_exp" value="--coalesce (self._xp_exp, '')"  xhtml_size="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Crawling depth limit</td>
+                              <td>
+                                <v:text name="depth" value="--coalesce (self._depth, '')"  />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Update Interval (minutes)</td>
+                              <td>
+                                <v:text name="intv" value="--self._intv"  />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Number of threads</td>
+                              <td>
+                                <v:text name="thr" value="--self._thr"  />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Crawl delay (sec)</td>
+                              <td>
+                                <v:text name="delay" value="--sprintf ('%.2f', self._delay)"  />
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Store Function</td>
+                              <td>
+                                <v:text name="store_fn" value="--self._store_fn" xhtml_size="50"/>
+                                <v:browse-button name="br_store" value="Browse..."
+                                        selector="vdir_browser.vspx"
+                                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+                                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
+                                  <v:field name="store_fn" />
+                                </v:browse-button>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Extract Function</td>
+                              <td>
+                                <v:text name="ext_fn" value="--self._ext_fn" xhtml_size="50"/>
+                                <v:browse-button name="br_ext" value="Browse..."
+                                        selector="vdir_browser.vspx"
+                                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+                                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
+                                  <v:field name="ext_fn" />
+                                </v:browse-button>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="semweb" value="1" initial-checked="--case when self._store_fn = 'WS.WS.SITEMAP_RDF_STORE' and self._ext_fn = 'WS.WS.SITEMAP_XML_PARSE' then 1 else 0 end" xhtml_id="semweb"/>
+                                <label for="semweb">Semantic Web Crawling</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>If <b>Graph IRI</b> is unassigned use this Data Source URL</td>
+                              <td>
+                                <v:text name="rdf_graph" value="--self._rdf_graph"  xhtml_size="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="other" value="1" initial-checked="--self._other" xhtml_id="other"/>
+                                <label for="other">Follow URLs outside of the target host</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="html_meta" xhtml_id="html_meta" value="1" initial-checked="--self._html_meta" />
+                                <label for="html_meta">Follow HTML meta link</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td>Follow RDF properties<EM><br/>(one IRI per row)</EM></td>
+                              <td>
+                                <v:textarea name="rdf_flw" value="--self._rdf_flw"  xhtml_rows="3" xhtml_cols="70"/>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="img" value="1" initial-checked="--case when self._img = 'checked' then 1 else 0 end" xhtml_id="img"/>
+                                <label for="img">Download images</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="dav" value="1" initial-checked="--case when self._dav = 'checked' then 1 else 0 end" xhtml_id="dav"/>
+                                <label for="dav">Use WebDAV methods</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="del" value="1" initial-checked="--case when self._del = 'checked' then 1 else 0 end" xhtml_id="del"/>
+                                <label for="del">Delete if remove on remote detected</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="store" value="1" initial-checked="--case when self._store then 1 else 0 end" xhtml_id="store"/>
+                                <label for="store">Store documents locally</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="convhtml" value="1" initial-checked="--case when self._convhtml then 1 else 0 end" xhtml_id="convhtml" />
+                                <label for="convhtml">Convert Links</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="ask_rdf" value="1" initial-checked="--case when self._ask_rdf then 1 else 0 end" xhtml_id="ask_rdf" />
+                                <label for="ask_rdf">Run Sponger</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="accept_rdf" value="1" initial-checked="--case when self._accept_rdf then 1 else 0 end" xhtml_id="accept_rdf"/>
+                                <label for="accept_rdf">Accept RDF</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td>
+                                <v:check-box name="get_rdf" value="1" initial-checked="--case when self._get_rdf then 1 else 0 end" xhtml_id="get_rdf" xhtml_onchange='javascript: toggleMeta (this, "meta_opts");'/>
+                                <label for="get_rdf">Store metadata *</label>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td/>
+                              <td colspan="2">
+                                <div  id="meta_opts" style="display: <?V case when self._get_rdf = 0 then 'none' else 'block' end ?>;">
+                                  <ul id="fg_tabs" class="tabs">
+                                    <li id="fg_tab_0"><b>Cartridges</b></li>
+                                    <?vsp
+                                      if (not isnull (VAD_CHECK_VERSION ('cartridges')))
+                                      {
+                                    ?>
+                                    <li id="fg_tab_1"><b>Meta Cartridges</b></li>
+                                    <?vsp
+                                      }
+                                    ?>
+                                  </ul>
+                                  <div style="background-color: #fff; min-height: 150px; min-width: 650px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                                    <div id="fg_content">
+                                    </div>
+                                    <div id="fg_page_0" class="tabContent" style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
+                                      <table class="listing">
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'mapper')"/>
+                                            RDF Cartridge
+                                          </th>
+                                        </tr>
+                                        <?vsp
+                                          declare ix int;
+                                          declare _root_col varchar;
 
+                                          _root_col := case when (left(self._root, 5) = '/DAV/') then right(self._root, length(self._root) - 5) else self._root end;
+                                          ix := 0;
+                                          for ( select RM_PID, RM_DESCRIPTION, ucase (cast (RM_DESCRIPTION as varchar (128))) as RM_SORT, VM_ID
+                                                  from (select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = _root_col and coalesce (VM_RDF_MAP_TYPE, 0) = 0) x
+                                                         right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID)
+                                                 where RM_ENABLED = 1
+                                                 order by RM_SORT option (loop) ) do
+                                          {
+                                        ?>
+                                        <tr class="<?V case when mod(ix, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
+                                          <td>
+                                            <?vsp
+                                              if (VM_ID is null)
+                                              {
+                                            ?>
+                                            <input type="checkbox" name="mapper" value="<?V RM_PID ?>" />
+                                            <?vsp
+                                              }
+                                              else
+                                              {
+                                            ?>
+                                            <input type="checkbox" name="mapper" value="<?V RM_PID ?>" checked="1" />
+                                            <?vsp
+                                              }
+                                            ?>
+                                            <?V RM_DESCRIPTION ?>
+                                          </td>
+                                        </tr>
+                                        <?vsp
+                                            ix := ix + 1;
+                                          }
+                                        ?>
+                                      </table>
+                                    </div>
+                                    <?vsp
+                                      if (not isnull (VAD_CHECK_VERSION ('cartridges')))
+                                      {
+                                    ?>
+                                    <div id="fg_page_1" class="tabContent" style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
+                                      <table class="listing">
+                                        <tr class="listing_header_row">
+                                          <th>
+                                            <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'metaMapper')"/>
+                                             Meta Cartridge
+                                          </th>
+                                        </tr>
+                                        <?vsp
+                                          declare _root_col varchar;
+                                          declare st, msg, meta, rows any;
 
-		  <v:check-box name="meta_rdf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rdf" />
-		  <label for="meta_rdf">RDF</label>&nbsp;
+                                          st := '00000';
+                                          _root_col := case when (left(self._root, 5) = '/DAV/') then right(self._root, length(self._root) - 5) else self._root end;
 
-		  <v:check-box name="meta_rss" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rss" />
-		  <label for="meta_rss">RSS/RDF</label>&nbsp;
+                                          exec (' select MC_ID, MC_DESC, ucase (cast (MC_DESC as varchar (128))) as MC_SORT, VM_ID ' ||
+                                                '   from (select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = ? and VM_ROOT = ? and coalesce (VM_RDF_MAP_TYPE, 0) = 1) x ' ||
+                                                '          right outer join DB.DBA.RDF_META_CARTRIDGES on (VM_RDF_MAP = MC_ID) ' ||
+                                                '  where MC_ENABLED = 1 ' ||
+                                                '  order by MC_SORT option (loop) ',
+                                                st, msg, vector (self._host, _root_col), 0, meta, rows);
 
-		  <?vsp if (__proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))  { ?>
-		  <v:check-box name="meta_grddl" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_grddl" />
-		  <label for="meta_grddl">GRDDL</label>&nbsp;
-		  <?vsp } ?>
-		  -->
+                                          if ('00000' = st)
+                                          {
+                                            declare N integer;
 
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td align="center" colspan="2">
-                <v:button action="simple" value="Cancel" name="robot_button1" format="%s">
-                  <v:on-post>
-                    <![CDATA[
-                      http_request_status ('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
-                      return;
-                    ]]>
-                  </v:on-post>
-                </v:button>
-                <input type="reset" name="Submit2" value="Reset"/>
-                <v:button action="simple" value="--(case self.mode when 'edit' then 'Update' else 'Create' end)" name="robot_button">
-                  <v:on-post>
-                    <v:script>
-                      <![CDATA[
-                        declare item, idx, len, _idx, tar_url, sav_host, desc_save, store_prefix varchar;
-                        declare ret_arr, opts, tmp any;
-                        declare pos integer;
-			declare choice_store_type varchar;
-                        tar_url := trim (get_keyword ('tar_url', params, ''));
-			desc_save := self._descr;
-                        if (length(tar_url) <= 0)
-                        {
-                          self.vc_error_message := 'Incorrect target URL';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
-                        ret_arr := WS.WS.PARSE_URI(tar_url);
-                        pos := 0;
-                        pos := strchr(aref(ret_arr, 1), '@');
-                        if (pos is null)
-                          pos := 0;
-			self._auth := left(aref(ret_arr, 1), pos);
-			sav_host := self._host;
-			self._host := right(aref(ret_arr, 1), length(aref(ret_arr, 1)) - pos);
+                                            for (N := 0; N < length (rows); N := N + 1)
+                                            {
+                                        ?>
+                                        <tr class="<?V case when mod (N, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
+                                          <td>
+                                            <?vsp
+                                              if (rows[N][3] is null)
+                                              {
+                                            ?>
+                                            <input type="checkbox" name="metaMapper" value="<?V rows[N][0] ?>" />
+                                            <?vsp
+                                              }
+                                              else
+                                              {
+                                            ?>
+                                            <input type="checkbox" name="metaMapper" value="<?V rows[N][0] ?>" checked="1" />
+                                            <?vsp
+                                              }
+                                            ?>
+                                            <?V rows[N][1] ?>
+                                          </td>
+                                        </tr>
+                                        <?vsp
+                                            }
+                                          }
+                                        ?>
+                                      </table>
+                                    </div>
+                                    <?vsp
+                                      }
+                                    ?>
+                                    <script>
+                                      <![CDATA[
+                                        function createFGTabs() {
+                                          var fgTab = new OAT.Tab("fg_content");
+                                          fgTab.add("fg_tab_0", "fg_page_0");
+                                          fgTab.add("fg_tab_1", "fg_page_1");
+                                          fgTab.go(0);
+                                        }
+                                        OAT.Loader.load(["tab"], function(){createFGTabs();});
+                                      ]]>
+                                    </script>
+                                  </div>
+                                  <!--v:check-box name="meta_foaf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_foaf" />
+                                  <label for="meta_foaf">FOAF</label>&nbsp;
+                                  <v:check-box name="meta_rdf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rdf" />
+                                  <label for="meta_rdf">RDF</label>&nbsp;
+                                  <v:check-box name="meta_rss" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rss" />
+                                  <label for="meta_rss">RSS/RDF</label>&nbsp;
+                                  <?vsp
+                                    if (__proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))
+                                    {
+                                  ?>
+                                  <v:check-box name="meta_grddl" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_grddl" />
+                                  <label for="meta_grddl">GRDDL</label>&nbsp;
+                                  <?vsp
+                                    }
+                                  ?>
+                                  -->
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td align="center" colspan="2">
+                                <v:button action="simple" value="Cancel" name="robot_button1" format="%s">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      http_request_status ('HTTP/1.1 302 Found');
+                                      http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                      return;
+                                    ]]>
+                                  </v:on-post>
+                                </v:button>
+                                <input type="reset" name="Submit2" value="Reset"/>
+                                <v:button action="simple" value="--(case self.mode when 'edit' then 'Update' else 'Create' end)" name="robot_button">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      declare item, idx, len, _idx, tar_url, sav_host, desc_save varchar;
+                                      declare ret_arr, opts, tmp any;
+                                      declare pos integer;
+                                      tar_url := trim (get_keyword ('tar_url', params, ''));
+                                      desc_save := self._descr;
+                                      if (length(tar_url) <= 0)
+                                      {
+                                        self.vc_error_message := 'Incorrect target URL';
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
+                                      ret_arr := WS.WS.PARSE_URI(tar_url);
+                                      pos := 0;
+                                      pos := strchr(aref(ret_arr, 1), '@');
+                                      if (pos is null)
+                                        pos := 0;
 
-			self._auth := '';
-			if (length (self.tar_uid.ufl_value) and length (self.tar_pwd.ufl_value))
-			  {
-			    self._auth := concat (self.tar_uid.ufl_value,':',self.tar_pwd.ufl_value);
-			  }
+                                      self._auth := left(aref(ret_arr, 1), pos);
+                                      sav_host := self._host;
+                                      self._host := right(aref(ret_arr, 1), length(aref(ret_arr, 1)) - pos);
 
-			self._auth_ldp := '';
-			if (length (self.tar_ldp_uid.ufl_value) and length (self.tar_ldp_pwd.ufl_value))
-			  {
-			    self._auth_ldp := concat (self.tar_ldp_uid.ufl_value,':',self.tar_ldp_pwd.ufl_value);
-			  }
+                                      self._auth := '';
+                                      if (length (self.tar_uid.ufl_value) and length (self.tar_pwd.ufl_value))
+                                      {
+                                        self._auth := concat (self.tar_uid.ufl_value,':',self.tar_pwd.ufl_value);
+                                      }
 
-			if (self._host[0] = ascii ('@'))
-			  self._host := substring (self._host, 2, length (self._host));
+                                      if (self._host[0] = ascii ('@'))
+                                        self._host := substring (self._host, 2, length (self._host));
 
-			if (self.mode = 'edit' and sav_host <> self._host)
-			  {
-			    self._host := sav_host;
-                            self.vc_error_message := sprintf ('Host name can not be edited, it must be "%s".', sav_host);
-                            self.vc_is_valid := 0;
-                            return;
-			  }
+                                      if (self.mode = 'edit' and sav_host <> self._host)
+                                      {
+                                        self._host := sav_host;
+                                        self.vc_error_message := sprintf ('Host name can not be edited, it must be "%s".', sav_host);
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
 
+                                      self._descr := trim (get_keyword ('descr', params));
+                                      self._url := aref(ret_arr, 2);
+                                      if (aref(ret_arr, 4) is not null and length(aref(ret_arr, 4)) > 0)
+                                      {
+                                        self._url := concat(self._url, '?', aref(ret_arr, 4));
+                                        self._url := trim(self._url);
+                                      }
+                                      self._root := trim (get_keyword ('root', params));
+                                      if (self.mode <> 'edit' and right(self._root, 1) <> '/')
+                                        self._root := concat(self._root, '/');
+                                      if (left(self._root, 5) = '/DAV/')
+                                        self._root := right(self._root, length(self._root) - 5);
+                                      self._newd := get_keyword ('newd', params);
+                                      self._flow := get_keyword ('flow', params);
+                                      self._dflow := get_keyword ('dflow', params);
+                                      self._store_fn := get_keyword ('store_fn', params);
+                                      self._ext_fn := get_keyword ('ext_fn', params);
+                                      self._intv := atoi (get_keyword ('intv', params, '0'));
+                                      self._other := atoi (get_keyword ('other', params, '0'));
 
-                        self._descr := trim (get_keyword ('descr', params));
-                        self._url := aref(ret_arr, 2);
-                        if (aref(ret_arr, 4) is not null and length(aref(ret_arr, 4)) > 0)
-                        {
-                          self._url := concat(self._url, '?', aref(ret_arr, 4));
-                          self._url := trim(self._url);
-                        }
-                        self._root := trim (get_keyword ('root', params));
-                        self._newd := get_keyword ('newd', params);
-                        self._flow := get_keyword ('flow', params);
-                        self._dflow := get_keyword ('dflow', params);
-                        self._store_fn := get_keyword ('store_fn', params);
-                        self._ext_fn := get_keyword ('ext_fn', params);
-			self._intv := atoi (get_keyword ('intv', params, '0'));
-                        self._other := atoi (get_keyword ('other', params, '0'));
+                                      self._xp_exp := get_keyword ('xp_exp', params, '');
+                                      self._head := get_keyword ('head', params, '');
+                                      self._depth := get_keyword ('depth', params, '');
 
-			self._xp_exp := get_keyword ('xp_exp', params, '');
-			self._head := get_keyword ('head', params, '');
-			self._depth := get_keyword ('depth', params, '');
+                                      if (self._depth = '' or self._depth = 'unlimited') self._depth := null;
+                                      if (self._xp_exp = '') self._xp_exp := null;
+                                      if (self._head = '') self._head := null;
 
-			if (self._depth = '' or self._depth = 'unlimited') self._depth := null;
-			if (self._xp_exp = '') self._xp_exp := null;
-			if (self._head = '') self._head := null;
+                                      if (self._xp_exp is not null)
+                                      {
+                                        declare exit handler for sqlstate '*'
+                                        {
+                                          self.vc_is_valid := 0;
+                                          self.vc_error_message := 'Invalid XPath expression for URL extraction';
+                                          return 0;
+                                        };
+                                        xpath_eval (self._xp_exp, xtree_doc ('<dummy/>'));
+                                      }
 
-			if (self._xp_exp is not null)
-			  {
-			    declare exit handler for sqlstate '*' {
-                               self.vc_is_valid := 0;
-			       self.vc_error_message := 'Invalid XPath expression for URL extraction';
-			       return 0;
-			    };
-			    xpath_eval (self._xp_exp, xtree_doc ('<dummy/>'));
-			  }
+                                      self._del := get_keyword ('del', params);
+                                      if (self.mode = 'edit')
+                                        self._opage := self._opage;
+                                      else
+                                        self._opage := get_keyword ('opage', params);
 
-                        self._del := get_keyword ('del', params);
-                        if (self.mode = 'edit')
-                          self._opage := self._opage;
-                        else
-                          self._opage := get_keyword ('opage', params);
-                        _idx := null;
-                        self._img := get_keyword ('img', params);
-                        self._dav := get_keyword ('dav', params);
-                        self._own := get_keyword ('own', params);
-                        self._redir := get_keyword ('redir', params);
-			-- self._store := get_keyword ('store', params, '0');
-			self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
-			self._ask_rdf := atoi (get_keyword ('ask_rdf', params, '0'));
-			self._accept_rdf := atoi (get_keyword ('accept_rdf', params, '0'));
-			self._convhtml := atoi (get_keyword ('convhtml', params, '0'));
-			self._bot := atoi (get_keyword ('bot', params, '0'));
-			self._thr := atoi (get_keyword ('thr', params, '1'));
-			self._delay := atof (get_keyword ('delay', params, '0'));
-			-- choice_store_type is disabled in edit mode, so won't be included in the params
-			self._store_type := get_keyword ('choice_store_type', params, self._store_type); 
-			self._store := case when self._store_type = 'none' then 0 else 1 end;
-			self._ldpr_creation_method := get_keyword ('choice_ldpr_creation_method', params, self._ldpr_creation_method); 
-			self._folder_tree := get_keyword ('choice_folder_tree', params, self._folder_tree); 
+                                      _idx := null;
+                                      self._img := get_keyword ('img', params);
+                                      self._dav := get_keyword ('dav', params);
+                                      self._own := get_keyword ('own', params);
+                                      self._redir := get_keyword ('redir', params);
+                                      self._store := get_keyword ('store', params, '0');
+                                      self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
+                                      self._ask_rdf := atoi (get_keyword ('ask_rdf', params, '0'));
+                                      self._accept_rdf := atoi (get_keyword ('accept_rdf', params, '0'));
+                                      self._convhtml := atoi (get_keyword ('convhtml', params, '0'));
+                                      self._bot := atoi (get_keyword ('bot', params, '0'));
+                                      self._thr := atoi (get_keyword ('thr', params, '1'));
+                                      self._delay := atof (get_keyword ('delay', params, '0'));
 
-			if (get_keyword ('semweb', params) = '1' and 0 = length (self._store_fn) and 0 = length (self._ext_fn))
-			  {
-			    self._store_fn := 'WS.WS.SITEMAP_RDF_STORE'; 
-                            self._ext_fn := 'WS.WS.SITEMAP_XML_PARSE';   
-			    self._ask_rdf := 1;
-			    self._accept_rdf := 1;
-			  }
-			if (get_keyword ('semweb', params) <> '1' and self._store_fn = 'WS.WS.SITEMAP_RDF_STORE' and self._ext_fn = 'WS.WS.SITEMAP_XML_PARSE')
-                          {
-			    self._store_fn := ''; 
-                            self._ext_fn := '';   
-			  }
-			declare farr any;  
-		        self._rdf_flw := get_keyword ('rdf_flw', params, '');	  
-		        self._html_meta := atoi (get_keyword ('html_meta', params, '0'));	  
-		        self._rdf_graph := get_keyword ('rdf_graph', params, '');	  
-		        self._use_tidy := get_keyword ('use_tidy', params, 'N');
-			tmp := split_and_decode (self._rdf_flw, 0, '\0\0\n');
-			farr := vector ();
-			foreach (any x in tmp) do
-			  {
-			    x := trim (rtrim (x, '\r\n'));
-			    if (length (x))
-			      farr := vector_concat (farr, vector (x)); 
-			  }
+                                      if (get_keyword ('semweb', params) = '1' and 0 = length (self._store_fn) and 0 = length (self._ext_fn))
+                                      {
+                                        self._store_fn := 'WS.WS.SITEMAP_RDF_STORE';
+                                                          self._ext_fn := 'WS.WS.SITEMAP_XML_PARSE';
+                                        self._ask_rdf := 1;
+                                        self._accept_rdf := 1;
+                                      }
+                                      if (get_keyword ('semweb', params) <> '1' and self._store_fn = 'WS.WS.SITEMAP_RDF_STORE' and self._ext_fn = 'WS.WS.SITEMAP_XML_PARSE')
+                                      {
+                                        self._store_fn := '';
+                                        self._ext_fn := '';
+                                      }
+                                      declare farr any;
+                                      self._rdf_flw := get_keyword ('rdf_flw', params, '');
+                                      self._html_meta := atoi (get_keyword ('html_meta', params, '0'));
+                                      self._rdf_graph := get_keyword ('rdf_graph', params, '');
+                                      tmp := split_and_decode (self._rdf_flw, 0, '\0\0\n');
+                                      farr := vector ();
+                                      foreach (any x in tmp) do
+                                      {
+                                        x := trim (rtrim (x, '\r\n'));
+                                        if (length (x))
+                                          farr := vector_concat (farr, vector (x));
+                                      }
+                                      opts := vector ();
+                                      -- 'meta_foaf', atoi (get_keyword ('meta_foaf', params, '0')),
+                                      -- 'meta_rdf', atoi (get_keyword ('meta_rdf', params, '0')),
+                                      -- 'meta_rss',   atoi (get_keyword ('meta_rss', params, '0')),
+                                      -- 'meta_grddl', atoi (get_keyword ('meta_grddl', params, '0'))
+                                      if (length (farr))
+                                        opts := vector_concat (opts, vector ('follow-property', farr));
 
-			opts := vector ();
-			-- 'meta_foaf', atoi (get_keyword ('meta_foaf', params, '0')),
-			-- 'meta_rdf', atoi (get_keyword ('meta_rdf', params, '0')),
-			-- 'meta_rss',   atoi (get_keyword ('meta_rss', params, '0')),
-			-- 'meta_grddl', atoi (get_keyword ('meta_grddl', params, '0'))
-                        if (length (farr))
-		          opts := vector_concat (opts, vector ('follow-property', farr));	
-			opts := vector_concat (opts, vector ('follow-meta', self._html_meta));	
-			if (length (self._rdf_graph))
-			  opts := vector_concat (opts, vector ('rdf-graph', self._rdf_graph));
-                        if (self._ask_rdf)
-			  opts := vector_concat (opts, vector ('meta_rdf', 1));
-			opts := vector_concat (opts, vector ('use-tidy', self._use_tidy));
-			opts := vector_concat (opts, vector ('store-type', self._store_type));
-			if (length (self._auth_ldp))
-			  opts := vector_concat (opts, vector ('auth-ldp', self._auth_ldp));
-			if (length (self._ldpr_creation_method))
-			  opts := vector_concat (opts, vector ('ldpr-creation-method', self._ldpr_creation_method));
-			if (length (self._folder_tree))
-			  opts := vector_concat (opts, vector ('folder-tree', self._folder_tree));
+                                      opts := vector_concat (opts, vector ('follow-meta', self._html_meta));
+                                      if (length (self._rdf_graph))
+                                         opts := vector_concat (opts, vector ('rdf-graph', self._rdf_graph));
 
-			self._udata := opts;
+                                      if (self._ask_rdf)
+                                        opts := vector_concat (opts, vector ('meta_rdf', 1));
 
-                        if (self.mode <> 'edit' and self._opage = '1') self._opage := 'checked';
-                        if (self._del = '1') self._del := 'checked';
-                        if (self._img = '1') self._img := 'checked';
-                        if (self._dav = '1') self._dav := 'checked';
-                        if (WS.WS.isempty(self._host) or WS.WS.isempty(self._root) or WS.WS.isempty(self._url))
-                        {
-                          self.vc_error_message := 'Host, Target collection and Start path must be specified';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
-                        if (self.mode <> 'edit' and right(self._root, 1) <> '/')
-                          self._root := concat(self._root, '/');
-                        if (self._store_type = 'dav')
-			{
-			  if (left(self._root, 5) = '/DAV/')
-			    self._root := right(self._root, length(self._root) - 5);
-			  if (aref(self._root, 0) = ascii('/') or strstr(self._root , '..') is not null and self.mode <> 'edit')
-			  {
-			    self.vc_error_message := 'The local collection/resource destination MUST be a relative path under WebDAV root collection/resource and cannot contain a ''..''.';
-			    self.vc_is_valid := 0;
-			    return;
-			  }
-			}
-                        else if (self._store_type = 'ldp')
-			{
-			  declare rLdpUrl any;
-			  rLdpUrl := WS.WS.PARSE_URI(self._root);
-			  if (rLdpUrl[0] not in ('http', 'https') or length (rLdpUrl[1]) = 0 or length (rLdpUrl[2]) = 0)
-			  {
-			    self.vc_error_message := 'The target LDP container for storing crawled resources must be a valid URL.';
-			    self.vc_is_valid := 0;
-			    return;
-			  }
-			}
-                        if (aref(self._url, 0) <> ascii('/'))
-                          self._url := concat('/', self._url);
-                        if (self._opage = 'checked')
-                        {
-                          declare u_arr any;
-                          declare target_page varchar;
-                          if (self._url not like '%/')
-                          {
-                            u_arr := WS.WS.HREF_TO_ARRAY(self._url, '');
-                            target_page := u_arr[length (u_arr) - 1];
-                          }
-                          else
-                            target_page := 'index.html';
-                          -- we'll guess is the root is a collection or not
-                          if (self._root[length(self._root) - 1] = ascii('/'))
-                            self._root := concat(self._root, target_page);
-                        }
-                        if (exists(select 1 from WS.WS.VFS_SITE where VS_ROOT = self._root and VS_HOST = self._host) and self.mode <> 'edit')
-                        {
-                          self.vc_error_message := 'Target resource/collection already specified. Please do specify another target collection or resource';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
-                        if (self.mode = 'edit')
-                        {
-                          update WS.WS.VFS_SITE
-                            set
-                              VS_DESCR = self._descr,
-                              VS_INX = _idx,
-                              VS_OWN = (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-                              VS_NEWER = stringdate(self._newd),
-                              VS_DEL = self._del,
-                              VS_FOLLOW = self._flow,
-                              VS_NFOLLOW = self._dflow,
-                              VS_SRC = self._img,
-                              VS_OPAGE = self._opage,
-                              VS_METHOD = self._dav,
-                              VS_OPTIONS = self._auth,
-                              VS_URL = self._url,
-                              VS_REDIRECT = self._redir,
-			      VS_STORE = self._store,
-			      VS_DLOAD_META = self._ask_rdf,
-			      VS_UDATA = serialize (self._udata),
-			      VS_STORE_FN = self._store_fn,
-			      VS_EXTRACT_FN = self._ext_fn,
-			      VS_OTHER = case when self._other = 1 then 'checked' else NULL end,
-			      VS_CONVERT_HTML = self._convhtml,
-			      VS_DEPTH = self._depth,
-			      VS_XPATH = self._xp_exp,
-			      VS_ACCEPT_RDF = self._accept_rdf,
-			      VS_THREADS = self._thr,
-			      VS_BOT = self._bot,
-			      VS_DELAY = self._delay,
-			      VS_HEADERS = self._head
-                            where
-                              VS_HOST = self._host and
-                              VS_ROOT = self._root;
-                          if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._url))
-                            update WS.WS.VFS_QUEUE set VQ_URL = self._url where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._old_url;
-                          insert soft WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
-                        }
-                        else
-                        {
-                          declare hinf any;
-                          hinf := WS.WS.PARSE_URI(self._host);
-                          if (lower(hinf[0]) = 'http' and hinf[1] <> '')
-                            self._host := hinf[1];
-			  insert into WS.WS.VFS_SITE
-			    (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
-                            VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
-			    VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS, 
-			    VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
-			    VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
-			    VS_THREADS, VS_BOT, VS_DELAY, VS_HEADERS)
-			    values
-			    (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-			    self._root, stringdate(self._newd), self._del, self._flow, self._dflow, 
-			    self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
-			    self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata), 
-			    self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
-			    self._thr, self._bot, self._delay, self._head);
+                                      self._udata := opts;
 
-			    insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) 
-			    values (self._host, self._url, now(), 'waiting', self._root);
-                        }
+                                      if (self.mode <> 'edit' and self._opage = '1')
+                                        self._opage := 'checked';
+                                      if (self._del = '1')
+                                        self._del := 'checked';
+                                      if (self._img = '1')
+                                        self._img := 'checked';
+                                      if (self._dav = '1')
+                                        self._dav := 'checked';
+                                      if (WS.WS.isempty(self._host) or WS.WS.isempty(self._root) or WS.WS.isempty(self._url))
+                                      {
+                                        self.vc_error_message := 'Host, Target collection and Start path must be specified';
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
+                                      if (aref(self._url, 0) <> ascii('/'))
+                                        self._url := concat('/', self._url);
 
-			declare _mp, _idx, p_id, _seq, ename, ename_old any;
-			_seq := _idx := 0;
-			delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
-			if (self._get_rdf)
-			  {
-			    while (_mp := adm_next_keyword ('mapper', control.vc_page.vc_event.ve_params, _idx))
-			      {
-				_seq := _seq + 1;
-				p_id := atoi (_mp);
-				insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ)
-				    values (self._host,self._root,p_id,_seq);
-			       }
-		  	  }
-			store_prefix := case when self._store_type = 'dav' then '/DAV/' else '' end;
-			ename := concat(self._descr, '(', self._host, ' in ', store_prefix, self._root, ')');
-			if (desc_save <> '')
-			  {
-			    ename_old := concat(desc_save, '(', self._host, ' in ', store_prefix, self._root, ')');
-                            if (ename_old <> ename)
-			      delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;   
-			  }  
-                        if (self._intv = 0)
-			  delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
-			else 
-			  {
-			    insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL) 
-			       values (ename, now (), self._intv, 
-			          concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)')
-				 ); 
-		          }	  
-			commit work;
+                                      if (aref(self._root, 0) = ascii('/') or strstr(self._root , '..') is not null and self.mode <> 'edit')
+                                      {
+                                        self.vc_error_message := 'The local collection/resource destination MUST be a relative path under WebDAV root collection/resource and cannot contain a ''..''.';
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
+                                      if (self._opage = 'checked')
+                                      {
+                                        declare u_arr any;
+                                        declare target_page varchar;
+                                        if (self._url not like '%/')
+                                        {
+                                          u_arr := WS.WS.HREF_TO_ARRAY(self._url, '');
+                                          target_page := u_arr[length (u_arr) - 1];
+                                        }
+                                        else
+                                          target_page := 'index.html';
 
-                        http_request_status ('HTTP/1.1 302 Found');
-                        http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
-                      ]]>
-                    </v:script>
-                  </v:on-post>
-                </v:button>
-              </td>
-	    </tr>
-	    <tr>
-	      <td colspan="2">
-		<span>* The target resource URL will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>
-	      </td>
-	    </tr>
-          </table>
-        </v:form>
+                                        -- we'll guess is the root is a collection or not
+                                        if (self._root[length(self._root) - 1] = ascii('/'))
+                                          self._root := concat(self._root, target_page);
+                                      }
+                                      if (exists(select 1 from WS.WS.VFS_SITE where VS_ROOT = self._root and VS_HOST = self._host) and self.mode <> 'edit')
+                                      {
+                                        self.vc_error_message := 'Target resource/collection already specified. Please do specify another target collection or resource';
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
+                                      if (self.mode = 'edit')
+                                      {
+                                        update WS.WS.VFS_SITE
+                                           set VS_DESCR = self._descr,
+                                               VS_INX = _idx,
+                                               VS_OWN = (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+                                               VS_NEWER = stringdate(self._newd),
+                                               VS_DEL = self._del,
+                                               VS_FOLLOW = self._flow,
+                                               VS_NFOLLOW = self._dflow,
+                                               VS_SRC = self._img,
+                                               VS_OPAGE = self._opage,
+                                               VS_METHOD = self._dav,
+                                               VS_OPTIONS = self._auth,
+                                               VS_URL = self._url,
+                                               VS_REDIRECT = self._redir,
+                                               VS_STORE = self._store,
+                                               VS_DLOAD_META = self._ask_rdf,
+                                               VS_UDATA = serialize (self._udata),
+                                               VS_STORE_FN = self._store_fn,
+                                               VS_EXTRACT_FN = self._ext_fn,
+                                               VS_OTHER = case when self._other = 1 then 'checked' else NULL end,
+                                               VS_CONVERT_HTML = self._convhtml,
+                                               VS_DEPTH = self._depth,
+                                               VS_XPATH = self._xp_exp,
+                                               VS_ACCEPT_RDF = self._accept_rdf,
+                                               VS_THREADS = self._thr,
+                                               VS_BOT = self._bot,
+                                               VS_DELAY = self._delay,
+                                               VS_HEADERS = self._head
+                                         where VS_HOST = self._host
+                                           and VS_ROOT = self._root;
+
+                                        if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._url))
+                                          update WS.WS.VFS_QUEUE set VQ_URL = self._url where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._old_url;
+
+                                        insert soft WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
+                                      }
+                                      else
+                                      {
+                                        declare hinf any;
+
+                                        hinf := WS.WS.PARSE_URI(self._host);
+                                        if (lower(hinf[0]) = 'http' and hinf[1] <> '')
+                                          self._host := hinf[1];
+
+                                        insert into WS.WS.VFS_SITE
+                                           (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
+                                            VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
+                                            VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS,
+                                            VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
+                                            VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
+                                            VS_THREADS, VS_BOT, VS_DELAY, VS_HEADERS)
+                                          values
+                                            (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+                                            self._root, stringdate(self._newd), self._del, self._flow, self._dflow,
+                                            self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
+                                            self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata),
+                                            self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
+                                            self._thr, self._bot, self._delay, self._head);
+
+                                          insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
+                                            values (self._host, self._url, now(), 'waiting', self._root);
+                                        }
+
+                                        declare _mp, _idx, p_id, _seq, ename, ename_old any;
+
+                                        _seq := _idx := 0;
+                                        delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
+                                        if (self._get_rdf)
+                                        {
+                                          while (_mp := adm_next_keyword ('mapper', control.vc_page.vc_event.ve_params, _idx))
+                                          {
+                                            _seq := _seq + 1;
+                                            p_id := atoi (_mp);
+                                            insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
+                                              values (self._host, self._root, p_id, 0, _seq);
+                                          }
+                                          while (_mp := adm_next_keyword ('metaMapper', control.vc_page.vc_event.ve_params, _idx))
+                                          {
+                                            _seq := _seq + 1;
+                                            p_id := atoi (_mp);
+                                            insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
+                                              values (self._host, self._root, p_id, 1, _seq);
+                                          }
+                                        }
+
+                                        ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
+                                        if (desc_save <> '')
+                                        {
+                                          ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
+                                          if (ename_old <> ename)
+                                            delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;
+                                        }
+                                        if (self._intv = 0)
+                                        {
+                                          delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
+                                        }
+                                        else
+                                        {
+                                          insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+                                             values (ename, now (), self._intv, concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)'));
+                                        }
+                                      commit work;
+
+                                      http_request_status ('HTTP/1.1 302 Found');
+                                      http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                                    ]]>
+                                  </v:on-post>
+                                </v:button>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td colspan="2">
+                                <span>* The "Target URL" will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:form>
                       </td>
                     </tr>
                   </table>

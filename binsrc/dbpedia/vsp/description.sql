@@ -40,9 +40,9 @@ create procedure dbp_ldd_set_ns_decl ()
   declare arr any;
   declare i, l int;
   arr := vector (
-    registry_get('dbp_domain') || '/resource/', 'dbpedia',
-    registry_get('dbp_domain') || '/resource/' || registry_get('dbp_category') || ':', 'category',
-    'http://dbpedia.org/property/', 'p',
+    registry_get('dbp_domain') || '/resource/', 'dbr',
+    registry_get('dbp_domain') || '/resource/' || registry_get('dbp_category') || ':', 'dbc',
+    'http://dbpedia.org/property/', 'dbp',
     'http://dbpedia.openlinksw.com/wikicompany/', 'wikicompany',
     'http://dbpedia.org/class/yago/', 'yago',
     'http://www.w3.org/2003/01/geo/wgs84_pos#', 'geo',
@@ -54,9 +54,10 @@ create procedure dbp_ldd_set_ns_decl ()
     'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf',
     'http://www.w3.org/2001/XMLSchema#', 'xsd',
     'http://purl.org/dc/elements/1.1/', 'dc',
-    'http://purl.org/dc/terms/', 'dcterms',
+    'http://purl.org/dc/terms/', 'dct',
     'http://dbpedia.org/units/', 'units',
     'http://umbel.org/umbel/sc/', 'umbel-sc',
+    'http://umbel.org/umbel/rc/', 'umbel-rc',
     'http://umbel.org/umbel/ac/', 'umbel-ac',
     'http://www.georss.org/georss/', 'georss',
     'http://sw.opencyc.org/2008/06/10/concept/en/', 'opencyc',
@@ -64,11 +65,17 @@ create procedure dbp_ldd_set_ns_decl ()
     'http://mpii.de/yago/resource/', 'yago-res',
     'http://rdf.freebase.com/ns/', 'freebase',
     'http://www.w3.org/2007/05/powder-s#', 'wdrs',
-    'http://dbpedia.org/ontology/', 'dbpedia-owl');
+    'http://www.wikidata.org/entity/', 'wikidata',
+    'http://www.ontologydesignpatterns.org/ont/dul/DUL.owl', 'dul',
+    'http://dbpedia.org/ontology/', 'dbo');
    l := length (arr);
    for (i := 0; i < l; i := i + 2)
       {
+	declare pre any;
 	XML_REMOVE_NS_BY_PREFIX (arr[i+1], 2);
+	pre := (select NS_PREFIX from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_URL = arr[i]);
+	if (pre is not null)
+	  XML_REMOVE_NS_BY_PREFIX (pre, 2);
 	XML_SET_NS_DECL (arr[i+1], arr[i], 2);
       }
 }
@@ -274,7 +281,7 @@ create procedure dbp_ldd_subject (in _S any, in _G varchar, in lines any := null
       langs := replace (langs, 'en-uk', 'en');
     }
   best_str := '';
-  exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'en\')) ?tp where { graph <%S> { <%S> dbpprop:comment_live ?l } }', 
+  exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'en\')) ?tp where { graph <%S> { <%S> dbp:comment_live ?l } }', 
 	langs, _G, _S), null, null, vector (), 0, meta, data);
   if (length (data) and data[0][0] is not null and data[0][0] <> 0)
     best_str := data[0][0];
@@ -485,7 +492,7 @@ create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag 
     }
 
 
-  if (nspref is not null and nspref not in ('dbpprop', 'owl'))
+  if (nspref is not null and nspref not in ('dbp', 'owl'))
     nss := sprintf (' xmlns:%s="%s"', nspref, nss);
   else  
     nss := '';

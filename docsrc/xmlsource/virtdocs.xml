@@ -117,6 +117,16 @@
 <!ENTITY cov_report				SYSTEM "funcref/cov_report.xml">
 <!ENTITY createXML				SYSTEM "funcref/createXML.xml">
 <!ENTITY curdate				SYSTEM "funcref/curdate.xml">
+<!ENTITY forget_timezone				SYSTEM	"funcref/forget_timezone.xml">
+<!ENTITY is_timezoneless				SYSTEM	"funcref/is_timezoneless.xml">
+<!ENTITY adjust_timezone				SYSTEM	"funcref/adjust_timezone.xml">
+<!ENTITY rdf_now_impl				    SYSTEM	"funcref/rdf_now_impl.xml">
+<!ENTITY current_timestamp		  SYSTEM	"funcref/current_timestamp.xml">
+<!ENTITY curdatetime		        SYSTEM	"funcref/curdatetime.xml">
+<!ENTITY curdatetimeoffset		  SYSTEM	"funcref/curdatetimeoffset.xml">
+<!ENTITY curutcdatetime		      SYSTEM	"funcref/curutcdatetime.xml">
+<!ENTITY sysutcdatetime		      SYSTEM	"funcref/sysutcdatetime.xml">
+
 <!ENTITY current_charset			SYSTEM "funcref/current_charset.xml">
 <!ENTITY dateadd				SYSTEM "funcref/dateadd.xml">
 <!ENTITY datediff				SYSTEM "funcref/datediff.xml">
@@ -170,6 +180,7 @@
 <!ENTITY explain				SYSTEM "funcref/explain.xml">
 <!ENTITY file_delete				SYSTEM "funcref/file_delete.xml">
 <!ENTITY file_open				SYSTEM	"funcref/file_open.xml">
+<!ENTITY ft_set_file			SYSTEM	"funcref/ft_set_file.xml">
 <!ENTITY file_stat				SYSTEM "funcref/file_stat.xml">
 <!ENTITY file_to_string				SYSTEM "funcref/file_to_string.xml">
 <!ENTITY file_to_string_output			SYSTEM "funcref/file_to_string_output.xml">
@@ -180,6 +191,7 @@
 <!ENTITY file_dirlist				SYSTEM "funcref/file_dirlist.xml">
 
 <!ENTITY csv_load_file				SYSTEM	"funcref/csv_load_file.xml">
+<!ENTITY attach_from_csv				SYSTEM	"funcref/attach_from_csv.xml">
 <!ENTITY csv_load				SYSTEM	"funcref/csv_load.xml">
 <!ENTITY csv_parse				SYSTEM	"funcref/csv_parse.xml">
 <!ENTITY csv_cols_def				SYSTEM	"funcref/csv_cols_def.xml">
@@ -284,10 +296,13 @@
 <!ENTITY log10					SYSTEM "funcref/log10.xml">
 <!ENTITY log_enable				SYSTEM "funcref/log_enable.xml">
 <!ENTITY log_text				SYSTEM "funcref/log_text.xml">
+<!ENTITY read_log	  		                SYSTEM	"funcref/read_log.xml">
 <!ENTITY lower					SYSTEM "funcref/lower.xml">
 <!ENTITY ltrim					SYSTEM "funcref/ltrim.xml">
 <!ENTITY __dbf_set				SYSTEM	"funcref/dbf_set.xml">
 <!ENTITY make_array				SYSTEM "funcref/make_array.xml">
+<!ENTITY stat_import			              SYSTEM	"funcref/stat_import.xml">
+<!ENTITY stat_export			              SYSTEM	"funcref/stat_export.xml">
 <!ENTITY make_string				SYSTEM "funcref/make_string.xml">
 <!-- ENTITY make_vector				SYSTEM "funcref/make_vector.xml" -->
 <!ENTITY md5					SYSTEM "funcref/md5.xml">
@@ -324,6 +339,7 @@
 <!ENTITY pldbg_stats_load			SYSTEM "funcref/pldbg_stats_load.xml">
 <!ENTITY position				SYSTEM "funcref/position.xml">
 <!ENTITY pop3_get				SYSTEM "funcref/pop3_get.xml">
+<!ENTITY imap_get				SYSTEM	"funcref/imap_get.xml">
 <!ENTITY power					SYSTEM "funcref/power.xml">
 <!ENTITY prof_enable				SYSTEM "funcref/prof_enable.xml">
 <!ENTITY prof_sample				SYSTEM "funcref/prof_sample.xml">
@@ -331,6 +347,9 @@
 <!ENTITY quote_dotted				SYSTEM "funcref/quote_dotted.xml">
 <!ENTITY randomize				SYSTEM "funcref/randomize.xml">
 <!ENTITY rclose					SYSTEM "funcref/rclose.xml">
+<!ENTITY rdf_load_stop                          SYSTEM  "funcref/rdf_load_stop.xml">
+<!ENTITY rdf_loader_run                         SYSTEM  "funcref/rdf_loader_run.xml">
+<!ENTITY ld_dir_all                             SYSTEM  "funcref/ld_dir_all.xml">
 <!ENTITY rdf_audit_metadata     		SYSTEM "funcref/rdf_audit_metadata.xml">
 <!ENTITY rdf_graph_security_audit               SYSTEM  "funcref/rdf_graph_security_audit.xml">
 <!ENTITY rdf_default_user_perms_set             SYSTEM  "funcref/rdf_default_user_perms_set.xml">
@@ -449,6 +468,8 @@
 <!ENTITY REPL_ADD_SNAPSHOT_CR  	 		SYSTEM "funcref/REPL_ADD_SNAPSHOT_CR.xml">
 
 <!ENTITY rdf_repl_start  	     SYSTEM	"funcref/rdf_repl_start.xml">
+<!ENTITY rdf_repl_stop  	     SYSTEM	"funcref/rdf_repl_stop.xml">
+<!ENTITY rdf_repl_sync  	     SYSTEM	"funcref/rdf_repl_sync.xml">
 <!ENTITY rdf_repl_graph_ins  	 SYSTEM	"funcref/rdf_repl_graph_ins.xml">
 <!ENTITY rdf_repl_graph_del  	 SYSTEM	"funcref/rdf_repl_graph_del.xml">
 
@@ -611,6 +632,7 @@
 <!ENTITY user_grant_role			SYSTEM "funcref/user_grant_role.xml">
 <!ENTITY user_revoke_role			SYSTEM "funcref/user_revoke_role.xml">
 <!ENTITY user_role_create			SYSTEM "funcref/user_role_create.xml">
+<!ENTITY user_key_store				    SYSTEM	"funcref/user_key_store.xml">
 <!ENTITY user_role_drop				SYSTEM "funcref/user_role_drop.xml">
 <!ENTITY user_set_qualifier			SYSTEM "funcref/user_set_qualifier.xml">
 <!ENTITY user_set_option			SYSTEM "funcref/user_set_option.xml">
@@ -707,7 +729,7 @@
 <!ENTITY xml_validate_dtd			SYSTEM "funcref/xml_validate_dtd.xml">
 <!ENTITY xml_validate_schema			SYSTEM "funcref/xml_validate_schema.xml">
 <!ENTITY xml_set_ns_decl			SYSTEM	"funcref/xml_set_ns_decl.xml">
-<!ENTITY xml_remove_ns_by_prefix	        SYSTEM	"funcref/xml_remove_ns_by_prefix">
+<!ENTITY xml_remove_ns_by_prefix	        SYSTEM	"funcref/xml_remove_ns_by_prefix.xml">
 <!ENTITY xml_view_dtd				SYSTEM "funcref/xml_view_dtd.xml">
 <!ENTITY xml_view_schema			SYSTEM "funcref/xml_view_schema.xml">
 <!ENTITY xmlStorageSystem.registerUser 		SYSTEM "funcref/xmlStorageSystem.registerUser.xml">
@@ -738,6 +760,40 @@
 <!ENTITY xtree_doc				SYSTEM "funcref/xtree_doc.xml">
 <!ENTITY year					SYSTEM "funcref/year.xml">
 <!-- ENTITY yearname				SYSTEM "funcref/yearname.xml" -->
+
+<!ENTITY GeometryType                           SYSTEM  "funcref/GeometryType.xml">
+<!ENTITY http_st_dxf_entity                     SYSTEM  "funcref/http_st_dxf_entity.xml">
+<!ENTITY ST_Affine                              SYSTEM  "funcref/ST_Affine.xml">
+<!ENTITY http_st_ewkt                           SYSTEM  "funcref/http_st_ewkt.xml">
+<!ENTITY st_ewkt_read                           SYSTEM  "funcref/st_ewkt_read.xml">
+<!ENTITY postgis_proj_version                   SYSTEM  "funcref/postgis_proj_version.xml">
+<!ENTITY st_dist_from_point_to_line_segment     SYSTEM  "funcref/dist_from_point_to_line_segment.xml">
+<!ENTITY earth_radius                           SYSTEM  "funcref/earth_radius.xml">
+<!ENTITY ST_ExteriorRing                        SYSTEM  "funcref/ST_ExteriorRing.xml">
+<!ENTITY ST_GeometryN                           SYSTEM  "funcref/ST_GeometryN.xml">
+<!ENTITY st_get_bounding_box_n                  SYSTEM  "funcref/st_get_bounding_box_n.xml">
+<!ENTITY st_get_bounding_box                    SYSTEM  "funcref/st_get_bounding_box.xml">
+<!ENTITY haversine_deg_km                       SYSTEM  "funcref/haversine_deg_km.xml">
+<!ENTITY ST_InteriorRingN                       SYSTEM  "funcref/ST_InteriorRingN.xml">
+<!ENTITY st_linestring                          SYSTEM  "funcref/st_linestring.xml">
+<!ENTITY st_may_intersect                       SYSTEM  "funcref/st_may_intersect.xml">
+<!ENTITY ST_MMax                                SYSTEM  "funcref/ST_MMax.xml">
+<!ENTITY ST_MMin                                SYSTEM  "funcref/ST_MMin.xml">
+<!ENTITY ST_M                                   SYSTEM  "funcref/ST_M.xml">
+<!ENTITY ST_NumGeometries                       SYSTEM  "funcref/ST_NumGeometries.xml">
+<!ENTITY ST_NumInteriorRings                    SYSTEM  "funcref/ST_NumInteriorRings.xml">
+<!ENTITY st_transform_by_custom_projection      SYSTEM  "funcref/st_transform_by_custom_projection.xml">
+<!ENTITY ST_Transform                           SYSTEM  "funcref/ST_Transform.xml">
+<!ENTITY ST_Translate                           SYSTEM  "funcref/ST_Translate.xml">
+<!ENTITY ST_TransScale                          SYSTEM  "funcref/ST_TransScale.xml">
+<!ENTITY ST_XMax                                SYSTEM  "funcref/ST_XMax.xml">
+<!ENTITY ST_XMin                                SYSTEM  "funcref/ST_XMin.xml">
+<!ENTITY ST_YMax                                SYSTEM  "funcref/ST_YMax.xml">
+<!ENTITY ST_YMin                                SYSTEM  "funcref/ST_YMin.xml">
+<!ENTITY ST_ZMax                                SYSTEM  "funcref/ST_ZMax.xml">
+<!ENTITY ST_Zmflag                              SYSTEM  "funcref/ST_Zmflag.xml">
+<!ENTITY ST_ZMin                                SYSTEM  "funcref/ST_ZMin.xml">
+<!ENTITY ST_Z                                   SYSTEM  "funcref/ST_Z.xml">
 
 <!-- To create a fresh list of all refentries for XPATH function,
 cd xmlref and redirect to a file the result of
@@ -883,8 +939,8 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY st_x                        SYSTEM  "funcref/st_x.xml">
 <!ENTITY st_y                        SYSTEM  "funcref/st_y.xml">
 <!ENTITY st_distance                 SYSTEM  "funcref/st_distance.xml">
-<!ENTITY st_srid                     SYSTEM  "funcref/st_srid.xml">
-<!ENTITY st_setsrid                  SYSTEM  "funcref/st_setsrid.xml">
+<!ENTITY ST_SRID                     SYSTEM  "funcref/ST_SRID.xml">
+<!ENTITY ST_SetSRID                  SYSTEM  "funcref/ST_SetSRID.xml">
 <!ENTITY st_astext                   SYSTEM  "funcref/st_astext.xml">
 <!ENTITY st_geomfromtext             SYSTEM  "funcref/st_geomfromtext.xml">
 <!ENTITY st_intersects               SYSTEM  "funcref/st_intersects.xml">
@@ -1074,7 +1130,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 		<authorgroup><author><email>virtuoso.docs@openlinksw.com</email>
 		<firstname>OpenLink Software Documentation Team</firstname></author></authorgroup>
 		<copyright>
-			<year>1999 - 2014</year>
+			<year>1999 - 2015</year>
 			<holder>OpenLink Software</holder>
 		</copyright>
 		<keywordset>

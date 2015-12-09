@@ -813,7 +813,10 @@ itc_fetch_col_vec (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, i
       } 	while (itc->itc_to_reset > RWG_WAIT_ANY);
       ITC_LEAVE_MAPS (itc);
       if (PF_OF_DELETED == cr->cr_pages[cr_inx].cp_buf)
-	GPF_T1 ("ref to deld col page");
+	{
+	  log_error ("Broken index %s", key->key_name ? key->key_name : "temp key");
+	  GPF_T1 ("ref to deld col page");
+	}
       cr->cr_pages[cr_inx].cp_string = cr->cr_pages[cr_inx].cp_buf->bd_buffer;
       cr->cr_pages[cr_inx].cp_map = cr->cr_pages[cr_inx].cp_buf->bd_content_map;
       cr->cr_pages[cr_inx].cp_ceic = NULL;
@@ -1757,6 +1760,7 @@ int
 cr_n_rows (col_data_ref_t * cr)
 {
   int p, r, rows = 0, n_ces = 0;
+  index_tree_t * it = cr->cr_n_pages > 0 ? cr->cr_pages[0].cp_buf->bd_tree : NULL;
   for (p = 0; p < cr->cr_n_pages; p++)
     {
       page_map_t *pm = cr->cr_pages[p].cp_map;
@@ -1776,6 +1780,7 @@ cr_n_rows (col_data_ref_t * cr)
 	    return rows;
 	}
     }
+  log_error ("Broken index %s", it->it_key->key_name ? it->it_key->key_name : "temp key");
   GPF_T1 ("less ces in seg than indicated in leaf col ref");
   return 0;
 }
@@ -1915,6 +1920,11 @@ itc_col_search (it_cursor_t * itc, buffer_desc_t * buf)
     itc->itc_range_fill = 0;
   else
     {
+      if (!itc->itc_ranges)
+	{
+	  itc->itc_range_fill = 0;
+	  itc_range (itc, 0, 0);
+	}
       itc->itc_range_fill = 1;
       itc->itc_ranges[0].r_first = itc->itc_col_row;
       itc->itc_ranges[0].r_end = COL_NO_ROW;
@@ -2651,7 +2661,6 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       cpo.cpo_range = &rng;
     }
   cpo.cpo_itc = itc;
-  cpo.cpo_value_cb = ce_filter;
   itc->itc_match_in = 0;
   if (!is_singles)
     itc->itc_n_matches = 0;
@@ -2659,7 +2668,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
     {
       int row = 0;
       sp = itc->itc_sp_stat[nth_sp].spst_sp;
-      itc->itc_is_last_col_spec = nth_sp == itc->itc_n_row_specs - 1;
+      itc->itc_is_last_col_spec = nth_sp == itc->itc_n_row_specs - 1 && !sp->sp_is_reverse;
+      cpo.cpo_value_cb = ce_filter;
       if (!itc->itc_n_matches)
 	target = cpo.cpo_range->r_first;
       else
@@ -2881,7 +2891,6 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   }
   if (itc->itc_n_results == itc->itc_batch_size)
     stop_in_mid_seg = 1;
-  cpo.cpo_value_cb = ce_result;
   if (ISO_REPEATABLE == itc->itc_isolation || (ISO_COMMITTED == itc->itc_isolation && PL_EXCLUSIVE == itc->itc_lock_mode)
       || (ISO_SERIALIZABLE == itc->itc_isolation && itc->itc_row_specs))
     {
@@ -2893,6 +2902,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
     {
       v_out_map_t *om = &itc->itc_ks->ks_v_out_map[col_inx];
       col_data_ref_t *cr = itc->itc_col_refs[om->om_cl.cl_nth - n_keys];
+      cpo.cpo_value_cb = ce_result;
       if (!cr->cr_is_valid)
 	itc_fetch_col (itc, buf, &om->om_cl, 0, COL_NO_ROW);
       cpo.cpo_clk_inx = 0;
@@ -2955,7 +2965,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	}
       prev_dc = cpo.cpo_dc;
     }
-  if (itc->itc_ks->ks_is_vec_plh)
+  if (PA_READ_ONLY != itc->itc_dive_mode && itc->itc_ks->ks_is_vec_plh)
     itc_col_placeholders (itc, buf, n_used);
   itc->itc_is_on_row = 1;
   if (itc->itc_ks->ks_is_deleting && REPL_NO_LOG != itc->itc_ltrx->lt_replicate

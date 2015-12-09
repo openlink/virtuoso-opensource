@@ -47,6 +47,7 @@
 
 #undef DBG_PRINTF
 #define NO_DBG_PRINTF
+#include "datesupp.h"
 #include "libutil.h"
 #include "wi.h"
 #include "sqlver.h"
@@ -1663,6 +1664,8 @@ bp_make_buffer_list (int n)
 	  if (c_use_o_direct)
 	    GPF_T1 ("An exe compiled with malloc_bufs defd is not compatible with the use O_DIRECT setting");
 	  buf->bd_buffer = malloc (BUF_ALLOC_SZ);
+	      if (!buf->bd_buffer)
+		GPF_T1 ("Cannot allocate memory for Database buffers, try to decrease NumberOfBuffers INI setting");
 	  BUF_SET_END_MARK (buf);
 	      BUF_SET_CK(buf);
 	}
@@ -3857,6 +3860,7 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
     fd = dbs->dbs_fd;
   memset (&db, 0, sizeof (db));
   strcpy_ck (db.db_ver, DBMS_SRV_VER_ONLY);
+  db_version_string = DBMS_SRV_VER_ONLY;
   if (!rdf_no_string_inline)
     strcpy_ck (db.db_generic, "3100");
   else
@@ -3885,7 +3889,9 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
     dbs_init_id (dbs->dbs_id);
   memcpy (db.db_id, dbs->dbs_id, sizeof (db.db_id));
   memcpy (db.db_cpt_dt, dbs->dbs_cfg_page_dt, DT_LENGTH);
-
+  if (-1 == timezoneless_datetimes)
+    timezoneless_datetimes = DT_TZL_BY_DEFAULT;
+  db.db_timezoneless_datetimes = timezoneless_datetimes;
   LSEEK (fd, 0, SEEK_SET);
   memcpy (zero, &db, sizeof (db));
   rc = write (fd, zero, PAGE_SZ);
@@ -4314,6 +4320,15 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
       log_error ("Please use a newer server.");
       call_exit (-1);
     }
+  if (cfg_page->db_timezoneless_datetimes != timezoneless_datetimes)
+    {
+      if (-1 != timezoneless_datetimes)
+        {
+          log_error ("The database you are opening has TimezonelessDatetimes set to %d whereas the value in configuration file is %d." , cfg_page->db_timezoneless_datetimes, timezoneless_datetimes);
+          log_error ("The value from configuration file is ignored.");
+        }
+      timezoneless_datetimes = cfg_page->db_timezoneless_datetimes;
+    }
   if (cfg_page->db_byte_order != DB_ORDER_UNKNOWN && cfg_page->db_byte_order != DB_SYS_BYTE_ORDER)
     {
 #ifdef BYTE_ORDER_REV_SUPPORT
@@ -4642,7 +4657,7 @@ wi_open (char *mode)
   mutex_option (log_write_mtx, "Log_write", log_write_entry_check, NULL);
   transit_list_mtx = mutex_allocate ();
   mutex_option (transit_list_mtx, "transit_list", NULL, NULL);
-  srv_client_defaults_init ();
+
   wi_inst.wi_bps = (buffer_pool_t **) dk_alloc_box (bp_n_bps * sizeof (caddr_t), DV_CUSTOM);
   if (wi_inst.wi_max_dirty > main_bufs)
     wi_inst.wi_max_dirty = main_bufs;

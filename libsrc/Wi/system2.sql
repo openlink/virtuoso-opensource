@@ -1333,7 +1333,11 @@ in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_
       http ('<row>\n', ss);
       for (i := 0; i < length (c); i := i + 1)
         {
-	  http (sprintf ('    <col dtp="%d">%V</col>\n', __tag (c[i]), cast (c[i] as varchar)), ss);
+	  declare tag int;
+	  tag := __tag (c[i]);
+	  if (tag = 246)
+	    tag := __tag (rdf_box_data (c[i]));
+	  http (sprintf ('    <col dtp="%d">%V</col>\n', tag, cast (c[i] as varchar)), ss);
         }
       http ('</row>\n', ss);
     }
@@ -1346,11 +1350,13 @@ in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_
 
 
 create procedure
-qt_check (in file varchar, out message varchar, in add_test int := 0) returns int
+qt_check (in file varchar, out message varchar, in record_new integer := 0) returns int
 {
   declare xt, qr, xp_test, expl, da any;
   declare stat, msg, meta, data, r, check_order, cnt any;
   declare daseq, darnd, plan_diff int;
+  declare refs, idx any;
+
   plan_diff := 0;
   declare exit handler for sqlstate '*' {
     message := message || ' : ' || __SQL_MESSAGE;
@@ -1384,14 +1390,26 @@ qt_check (in file varchar, out message varchar, in add_test int := 0) returns in
     gvector_sort (data, 1, 0, 1);
   if (cnt <> length (data))
       message := message || ' : result count differs';
-  foreach (any c in data) do
+  refs := xpath_eval ('/test/result/row', xt, 0);
+  idx := 0;
+  foreach (any rr in refs) do
     {
-      declare i int;
-      for (i := 0; i < length (c); i := i + 1)
+      declare vals, c any;
+      declare dtps any;
+      declare i, l1, l2 int;
+      vals := xpath_eval ('./col/text()', rr, 0);
+      dtps := xpath_eval ('./col/@dtp', rr, 0);
+      c := data[idx];
+      l1 := length (c);
+      l2 := length (vals);
+      if (l1 <> l2)
+	message := message || sprintf (' : results at row %d have different number of columns', idx);
+      l1 := __min (l1, l2);	
+      for (i := 0; i < l1; i := i + 1)
         {
 	  declare t any;
-	  t := cast (xpath_eval (sprintf ('string (/test/result/row[%d]/col[%d][@dtp=%d])', r + 1, i + 1, __tag(c[i])), xt) as varchar);
-	  if (__tag(c[i]) in (191, 190))
+	  t := cast (vals[i] as varchar);
+	  if (__tag(c[i]) in (191, 190, 219))
 	    {
 	      declare delta float;
 	      t := cast (t as double precision);
@@ -1405,20 +1423,24 @@ qt_check (in file varchar, out message varchar, in add_test int := 0) returns in
 		  return 0;
 		}
 	    }
-	  else if (t <>  cast (c[i] as varchar))
+	  else if (t <>  cast (c[i] as varchar) or cast (dtps[i] as int) <> __tag(c[i]))
 	    {
-	      message := message || sprintf (' : value at #%d %s <> %s', i, t,  cast (c[i] as varchar));
+	      message := message || sprintf (' : value at %d #%d %s <> %s', idx + 1, i, t,  cast (c[i] as varchar));
 	      return 0;
 	    }
 	}
-      r := r + 1;
+      idx := idx + 1;
+    }
+  if (plan_diff <> 0 and record_new = 1)
+    {
+      qt_record (file || '.new', qr, comment => message, check_order => check_order);
     }
   return 1;
 }
 ;
 
 create procedure
-qt_check_dir (in dir varchar, in file_mask varchar := '%')
+qt_check_dir (in dir varchar, in file_mask varchar := '%', in record_new integer := 0)
 {
   declare ls, inx, f, msg, stat, file, report any;
   ls := sys_dirlist (dir, 1);
@@ -1427,7 +1449,7 @@ qt_check_dir (in dir varchar, in file_mask varchar := '%')
     {
       if (ls[inx] like '%.xml' and ls[inx] like file_mask)
 	{
-	  f := qt_check (dir || '/' || ls[inx], msg);
+	  f := qt_check (dir || '/' || ls[inx], msg, record_new);
 	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end,ls[inx], msg);
 	}
     }
@@ -1496,6 +1518,125 @@ qt_xpath_gen (in xt any, in s any := null, in ck int := 0)
 
 
 
+create procedure
+qt_diff_dir (in dir varchar, in dir2 any, in file_mask varchar := '%')
+{
+  declare ls, inx, f, msg, stat, file, report varchar;
+  ls := sys_dirlist (dir, 1);
+  result_names (stat, file, report);
+  for (inx := 0; inx < length (ls); inx := inx + 1)
+    {
+      if (ls[inx] like '%.xml' and ls[inx] like file_mask)
+	{
+	  f := qt_diff (dir || '/' || ls[inx], dir2 || '/' || ls[inx], msg);
+	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end, ls[inx], msg);
+	}
+    }
+}
+;
+
+create procedure
+qt_make_array (inout arr any)
+{
+  declare i, idx, l int;
+  idx := 0;
+  foreach (any r in arr) do
+    {
+      declare vals any;
+      declare dtps any;
+      vals := xpath_eval ('./col/text()', r, 0);
+      dtps := xpath_eval ('./col/@dtp', r, 0);
+      for (i := 0; i < length (vals); i := i + 1)
+        {
+	  declare dtp int;
+	  dtp := cast (dtps[i] as int);
+	  if (dtp = 246)
+	    dtp := 182;
+	  if (dtp = 219)
+	    vals[i] := _cvt (vector (dtp, 40, 15), cast (vals[i] as varchar));
+	  else
+	    vals[i] := _cvt (vector (dtp, 0), cast (vals[i] as varchar));
+	}
+      arr[idx] := vals;
+      idx := idx + 1;
+    }
+  gvector_sort (arr, 1, 0, 1);
+}
+;
+
+create procedure 
+qt_diff (in file varchar, in target varchar, out message varchar) returns int
+{
+  declare xt, xt2, qr, xp_test, expl, da any;
+  declare stat, msg, meta, data, r, check_order, cnt, cnt2 any;
+  declare daseq, darnd, plan_diff, rcnt int;
+  declare refs, refs2, idx any;
+
+  plan_diff := 0;
+  declare exit handler for sqlstate '*' {
+    message := message || ' : ' || __SQL_MESSAGE;
+    return 0;
+  };
+
+  xt := qt_source (file);
+  xt2 := qt_source (target);
+  message := ''; --xpath_eval ('/test/comment/text()', xt);
+  cnt := atoi (charset_recode (xpath_eval ('/test/result/@cnt', xt), '_WIDE_', 'UTF-8'));
+  cnt2 := atoi (charset_recode (xpath_eval ('/test/result/@cnt', xt2), '_WIDE_', 'UTF-8'));
+  r := 0;
+  if (cnt <> cnt2)
+      message := message || ' : result count differs';
+  refs := xpath_eval ('/test/result/row', xt, 0);
+  refs2 := xpath_eval ('/test/result/row', xt2, 0);
+  qt_make_array (refs);
+  qt_make_array (refs2);
+  rcnt := __min (length (refs), length (refs2));
+  for (idx := 0; idx < rcnt; idx := idx + 1)
+    {
+      declare v1, v2 any;
+      declare i, l1, l2 int;
+      v1 := refs[idx];
+      v2 := refs2[idx];
+      l1 := length (v1);
+      l2 := length (v2);
+      if (l1 <> l2)
+	message := message || sprintf (' : results at row %d have different number of columns', idx);
+      l1 := __min (l1, l2);	
+      for (i := 0; i < l1; i := i + 1)
+        {
+	  declare t1, t2, dtp1, dtp2 any;
+	  t1 := v1[i];
+	  t2 := v2[i];
+	  dtp1 := __tag (t1);
+	  dtp2 := __tag (t2);
+	  if (dtp1 in (191, 190, 219) and dtp2 in (191, 190, 219))
+	    dtp1 := dtp2 := __max (dtp1, dtp1);
+	  if (dtp1 = dtp2 and dtp1 in (191, 190, 219))
+	    {
+	      declare delta float;
+	      t1 := cast (t1 as double precision);
+	      t2 := cast (t2 as double precision);
+	      delta := 1 - (t1 / t2);
+	      if (delta < 0)
+		delta := -1 * delta;
+	      if (delta > 1e-6)	
+		{
+		  message := message || sprintf (' : value at #%d %s <> %s', i, 
+		  	cast (t1 as varchar),  cast (t2 as varchar));
+		  return 0;
+		}
+	    }
+	  else if (t1 <>  t2 or dtp1 <> dtp2)
+	    {
+	      message := message || sprintf (' : value at %d #%d [%s] <> [%s] dtp%d dtp%d', idx + 1, i, 
+	      cast (t1 as varchar), cast (t2 as varchar), dtp1, dtp2);
+	      return 0;
+	    }
+	}
+    }
+  return 1;
+}
+;
 --
 -- Validate functions
 --

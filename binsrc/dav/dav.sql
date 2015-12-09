@@ -115,7 +115,7 @@ not_found: ;
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
 		ldp_head,
 		'Access-Control-Allow-Methods: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n',
-		'Access-Control-Allow-Headers: accept, slug, link, origin, content-type\r\n',
+		'Access-Control-Allow-Headers: authorization, accept, slug, link, origin, content-type\r\n',
 		'Accept-Patch: */*\r\n',
 		'Accept-Post: */*\r\n',
 		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
@@ -1327,143 +1327,10 @@ create procedure WS.WS.PROPPATCH_INT (
     }
     else if ((pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/') and (prop_name = 'virtdet'))
                 {
-      declare j, m integer;
-      declare det varchar;
-      declare det_props, det_params any;
-      declare dpa, dpn, dpv any;
-
-      det := trim (cast (xpath_eval ('[xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/"] ./V:name/text()', pa) as varchar));
-
-      -- verify for DET properties
-      --
-      if      (det = 'DynamicResource' or det = 'DR')
-      {
-        det := 'DynRes';
-                }
-      else if (det = 'LinkedDataImport' or det = 'LDI')
-                {
-        det := 'rdfSink';
-                }
-      if ((det <> 'rdfSink') and (__proc_exists ('DB.DBA.' || det || '_DAV_AUTHENTICATE_HTTP') is null))
-                {
-        DB.DBA.DAV_SET_HTTP_STATUS (400);
-        return;
-                }
-      det_params := vector ();
-      det_props := xpath_eval ('[xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/"] ./V:params/*', pa, 0);
-      m := length (det_props);
-      for (j := 0; j < m; j := j + 1)
-      {
-        dpa := det_props[j];
-        dpn := cast (xpath_eval ('local-name(.)', dpa) as varchar);
-        dpv := trim (cast (xpath_eval ('text()', dpa) as varchar));
-        det_params := vector_concat (det_params, vector (dpn, dpv));
-      }
-
-      if (det in ('Box', 'Dropbox', 'SkyDrive', 'GDrive'))
-      {
-        declare expire_in integer;
-        declare expire_time datetime;
-        declare service_id, service_name, service_sid varchar;
-        declare qry, st, msg, meta, rows any;
-
-        -- check if OAuth connection exist
-        service_id := get_keyword ('det_serviceId', det_params);
-        if      (det = 'SkyDrive')
-          service_name := 'windowslive';
-        else if (det = 'GDrive')
-          service_name := 'google';
-        else if (det = 'Box')
-          service_name := 'boxnet';
-        else
-          service_name := lcase (det);
-
-        qry := ' select TOP 1 CS_SID                        \n' ||
-               '  from OAUTH.DBA.CLI_SESSIONS,              \n' ||
-               '       DB.DBA.WA_USER_OL_ACCOUNTS           \n' ||
-               ' where CS_SID = WUO_OAUTH_SID               \n' ||
-               '   and CS_SERVICE = ?                       \n' ||
-               '   and ((? is null) or (CS_SERVICE_ID = ?)) \n' ||
-               '   and position (\'dav\', CS_SCOPE) > 0     \n' ||
-               '   and WUO_U_ID = ?                         \n' ||
-               '   and WUO_TYPE = \'P\'';
-        st := '00000';
-        exec (qry, st, msg, vector (service_name, service_id, service_id, auth_uid), 0, meta, rows);
-        if (('00000' <> st) or (length (rows) = 0))
-        {
-          DB.DBA.DAV_SET_HTTP_STATUS (400);
+      rc_prop := DB.DBA.DAV_DET_PROPPATCH (id, path, pa, auth_uid, auth_pwd);
+      if (rc_prop = 1)
           return;
             }
-        service_sid := rows[0][0];
-        st := '00000';
-        qry := 'select * from OAUTH.DBA.CLI_SESSIONS where CS_SID = ?';
-        exec (qry, st, msg, vector (service_sid), 0, meta, rows);
-        if (('00000' <> st) or (length (rows) = 0))
-            {
-          DB.DBA.DAV_SET_HTTP_STATUS (400);
-          return;
-            }
-        det_params := vector_concat (det_params, vector ('Authentication', 'Yes'));
-        -- Box, SkyDrive and GDrive - OAuth 2.0 params
-        if (det in ('Box', 'SkyDrive', 'GDrive'))
-        {
-          expire_time := rows[0][0];
-          if (isnull (expire_time) or (expire_time < now ()))
-            expire_time := now ();
-
-          expire_in := datediff ('second', now (), expire_time);
-          det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
-          det_params := vector_concat (det_params, vector ('refresh_token', rows[0][2]));
-          det_params := vector_concat (det_params, vector ('expire_in', expire_in));
-          det_params := vector_concat (det_params, vector ('access_timestamp', datestring (now ())));
-        }
-        -- Dropbox  - OAuth 1.0 params
-        else if (det in ('Dropbox'))
-        {
-          det_params := vector_concat (det_params, vector ('sid', service_sid));
-          det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
-        }
-      }
-
-      -- verify input DET params
-      rc_prop := null;
-      if (__proc_exists ('DB.DBA.' || det || '_VERIFY') is not null)
-      {
-        -- set DET type parameters
-        rc_prop := call ('DB.DBA.' || det || '_VERIFY') (path, det_params);
-      }
-      else if (__proc_exists ('WEBDAV.DBA.' || det || '_VERIFY') is not null)
-      {
-        rc_prop := call ('WEBDAV.DBA.' || det || '_VERIFY') (path, det_params);
-       }
-      if (not isnull (rc_prop))
-      {
-        rc_prop := -17;
-        goto _skip;
-     }
-
-      -- set DET type
-      if (det <> 'rdfSink')
-        rc_prop := DB.DBA.DAV_PROP_SET_INT (path, ':virtdet', det, null, null, 0, 0, 0, http_dav_uid ());
-
-      if (not WEBDAV.DBA.DAV_ERROR (rc))
-    {
-        if (__proc_exists ('DB.DBA.' || det || '_CONFIGURE') is not null)
-        {
-          -- set DET type parameters
-          rc_prop := call ('DB.DBA.' || det || '_CONFIGURE') (id, det_params);
-        }
-        else if (__proc_exists ('WEBDAV.DBA.' || det || '_CONFIGURE') is not null)
-        {
-          rc_prop := call ('WEBDAV.DBA.' || det || '_CONFIGURE') (id, det_params);
-        }
-        if (DAV_HIDE_ERROR (rc_prop) is null)
-        {
-          rc_prop := -17;
-          goto _skip;
-        }
-      }
-    }
     else
     {
       rc_prop := DAV_PROP_SET_INT (path, pn, serialize (pv[1]), null, null, 0, 0, 1, auth_uid);
@@ -1926,6 +1793,7 @@ create procedure WS.WS.PUT (
   declare client_etag, server_etag, res_name_, rc_type varchar;
   declare res_id_, id_ integer;
   declare mod_time datetime;
+  declare o_perms, o_uid, o_gid any;
 
   whenever sqlstate '*' goto error_ret;
 
@@ -2056,6 +1924,12 @@ create procedure WS.WS.PUT (
        --dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
     if (_col is not null) -- SPARQL query on container
       rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    else if (res_id_ is not null)
+    {
+      rc := DAV_AUTHENTICATE_HTTP (res_id_, 'R', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+      if (rc >= 0)
+        rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    }
     else
     rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
     --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, auth_name, auth_pwd, uid, gid, _perms);
@@ -2082,25 +1956,37 @@ create procedure WS.WS.PUT (
       content_type := 'text/html';
     }
   client_etag := trim(WS.WS.FINDPARAM (lines, 'If-Match:'), '" \r\n');
+  o_perms := _perms;
+  o_uid := uid;
+  o_gid := gid;
   if ((res_id_ is not null or _col is not null) and length (client_etag))
     {
+    server_etag := client_etag;
       if (res_id_ is not null)
       {
 	if (isinteger(res_id_))
  	{
-	select RES_COL, RES_NAME, RES_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
+	select RES_COL, RES_NAME, RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS into id_, res_name_, mod_time, o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
 		server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
 	}
-	else
-		server_etag := client_etag;
-      }
-      else
+    }
+    else
+    {
+      if (isinteger(_col))
+      {
 	select COL_ID, COL_NAME, COL_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col;
+        server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
+      }
+    }
       if (client_etag <> server_etag)
 	{
 	  http_status_set (412);
 	  return;
 	}
+    }
+  if ((res_id_ is not null) and isinteger (res_id_) and (length (client_etag) = 0))
+    {
+      select RES_OWNER, RES_GROUP, RES_PERMS into o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
     }
   if (registry_get ('LDP_strict_put') = '1' and _method = 'PUT'
       and (res_id_ is not null or _col is not null) and content_type = 'text/turtle' and length (client_etag) = 0)
@@ -2129,7 +2015,7 @@ create procedure WS.WS.PUT (
       is_container := 0;
       link := http_request_header (lines, 'Link', null, null);
       arr := split_and_decode (link, 0, '\0\0;=');
-      if (length (arr) = 4 and arr[0] = '<http://www.w3.org/ns/ldp#BasicContainer>')
+      if ((length (arr) = 4 and arr[0] = '<http://www.w3.org/ns/ldp#BasicContainer>') or _col is not null)
 	{
 	  is_container := 1;
 	  if (length (ses) = 0)
@@ -2165,7 +2051,7 @@ create procedure WS.WS.PUT (
     }
 
   rc := -28;
-  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, uid, gid, 0, 1);
+  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, o_perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, o_uid, o_gid, 0, 1);
   --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
   if (_atomPub and (_method = 'PUT') and not is_empty_or_null (_name) and (_name <> _oldName))
   {
@@ -2179,19 +2065,13 @@ create procedure WS.WS.PUT (
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-	declare _col_parent, _etag varchar;
-	_col_parent :=  DB.DBA.DAV_SEARCH_PATH (_col_parent_id, 'C');
+
+  	declare _etag varchar;
+
 	_etag := WS.WS.ETAG_BY_ID (rc, rc_type);
 	if (_etag is not null)
 	  http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', _etag));
-	if (LDP_ENABLED (_col_parent_id))
-	{
-		declare par_graph, cur_graph any;
-		par_graph := (WS.WS.DAV_IRI (_col_parent));
-		cur_graph := (WS.WS.DAV_IRI (full_path));
-		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', par_graph, cur_graph), par_graph, par_graph);
-		--SPARQL INSERT IN GRAPH ?:par_graph { ?:par_graph <http://www.w3.org/ns/ldp#contains> ?:cur_graph . };
-	}
+
     if (_atomPub)
     {
       WS.WS.DAV_ATOM_ENTRY (rc, 'R');
@@ -2666,7 +2546,7 @@ again:
     {
       tgt_type := 'C';
       tgt_id := _col_id;
-      if (get_keyword ('a', params) in ('new', 'create', 'upload', 'link', 'update'))
+      if (get_keyword ('a', params) in ('new', 'create', 'upload', 'link', 'update', 'imap'))
         tgt_perms := '_1_';
     }
     else
@@ -2972,19 +2852,29 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-  if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+    if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
     {
-      declare sp_opt any;
+      declare sp_opt, sp_col_opt any;
 
-      http_rewrite ();
-      http_status_set (303);
-      if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
-        sp_opt := '&sponger:get=add';
-      else
-        sp_opt := '';
-      http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s\r\n',
-      WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt));
-      return;
+      sp_col_opt := DB.DBA.TTL_REDIRECT_PARAMS (_col);
+      if (not isnull (sp_col_opt))
+      {
+        sp_col_opt := '&' || trim (sp_col_opt, '&');
+        http_rewrite ();
+        http_status_set (303);
+        if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
+        {
+          sp_opt := '&sponger:get=add';
+        }
+        else
+        {
+          sp_opt := '';
+        }
+        http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s%s\r\n',
+          WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt, sp_col_opt));
+
+        return;
+      }
     }
 
     _sse_cont_type := cont_type;
@@ -3070,6 +2960,8 @@ again:
           hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
           if (strcasestr (hdr_str, 'Content-Type:') is null)
             hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
+	  if (modt is not null and strcasestr (hdr_str, 'Last-Modified:') is null)
+	    hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', soap_print_box (modt, '', 1));
 
           hdr_path := DAV_CONCAT_PATH ('/', full_path);
           if (hdr_path not like '%,meta')
@@ -3327,7 +3219,7 @@ create procedure WS.WS.LDP_HDRS (in is_col int := 0, in add_rel int := 0, in pag
 {
   declare h, nid any;
   h := 'MS-Author-Via: DAV, SPARQL\r\n' ||
-      'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
+      'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,MKCOL,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
       'Accept-Patch: application/sparql-update\r\n' ||
       'Accept-Post: text/turtle,text/n3,text/nt\r\n' ||
       'Vary: Accept,Origin,If-Modified-Since,If-None-Match\r\n';
@@ -3464,7 +3356,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 	http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, page, last, full_path)));
 	if (isstring (etag))
 	  http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
-	qr := sprintf ('define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o optional { graph ?g { ?o a ?t } }  } order by ?s ?p ?o limit %d offset %d',
+	qr := sprintf ('define sql:select-option "order" define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d',
 				  		n_per_page, n_per_page * (page - 1));
 execqr:						
 	connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
@@ -3724,13 +3616,19 @@ _exit:;
       org_path := replace (path, ',meta', '');
       subj := iri_to_id (WS.WS.DAV_LINK (org_path));
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
-      sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-      sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      if (nsubj <> subj)
+	{
+	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	}
       org_path := org_path || '/';
       subj := iri_to_id (WS.WS.DAV_LINK (org_path));
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
-      sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-      sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      if (nsubj <> subj)
+	{
+	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	}
     }
   ses := ns;
   log_enable (3);
@@ -5849,7 +5747,7 @@ create function WS.WS.DAV_DIR_LIST (
     params := vector_concat (params, vector ('dir', full_path));
 
     action := get_keyword ('a', params, '');
-    if (action in ('new', 'upload', 'create', 'link', 'update', 'edit'))
+    if (action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap'))
       params := vector_concat (params, vector ('a', action));
 
     if (not isnull (auth_uname))
@@ -6268,8 +6166,8 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS (
   st := DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (rc);
   if (length (st))
     http_request_status (st);
-  }
-    ;
+}
+;
 
 create procedure DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (
   in rc integer)
@@ -6478,5 +6376,69 @@ create procedure LDP_ENABLED (in _col_id any)
     }
   nf:
   return 0;
+}
+;
+
+create procedure DB.DBA.LDP_CREATE (
+  in path any)
+{
+  -- dbg_obj_princ ('LDP_CREATE (', path, ')');
+  declare id_parent any;
+  declare path_parent, graph, graph_parent varchar;
+
+  id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
+	if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_parent)) and DB.DBA.LDP_ENABLED (id_parent))
+	{
+  	path_parent := DB.DBA.DAV_SEARCH_PATH (id_parent, 'C');
+		graph_parent := WS.WS.DAV_IRI (path_parent);
+		graph := WS.WS.DAV_IRI (path);
+		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph), graph_parent, graph_parent);
+	}
+}
+;
+
+create procedure DB.DBA.LDP_DELETE (
+  in path any)
+{
+  -- dbg_obj_princ ('LDP_DELETE (', path, ')');
+  declare graph varchar;
+
+  graph := WS.WS.DAV_IRI (path);
+  SPARQL clear graph ?:graph;
+  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE 
+    a.P = __i2idn ('http://www.w3.org/ns/ldp#contains') and a.O = __i2idn (graph) do
+    {
+      delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
+    }
+}
+;
+
+create procedure DB.DBA.TTL_REDIRECT_PARAMS (
+  in _col_id any)
+{
+  declare _p_id, _tmp any;
+  whenever not found goto _not_found;
+
+  while (_col_id > 0 or isvector (_col_id))
+  {
+    _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirect', 0);
+    if (DAV_HIDE_ERROR (_tmp) is not null)
+    {
+      if (_tmp <> 'yes')
+  	    return null;
+
+      _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirectParams', 0);
+      if (DAV_HIDE_ERROR (_tmp) is not null)
+  	    return _tmp;
+
+      return '';
+	  }
+
+    _p_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_col_id, 'C'), 'P');
+    _col_id := _p_id;
+  }
+_not_found:
+
+  return '';
 }
 ;

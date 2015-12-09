@@ -463,9 +463,8 @@ ws_check_acl (ws_connection_t * ws, acl_hit_t ** hit)
 
 caddr_t *
 ws_read_post (dk_session_t * ses, int max,
-	      dk_session_t * str, dk_session_t * cont)
+	      dk_session_t * str, dk_session_t * cont, dk_set_t * parts)
 {
-  dk_set_t parts = NULL;
   char name[300];
   int inx = 0;
   int reading_name = 1;
@@ -486,8 +485,8 @@ ws_read_post (dk_session_t * ses, int max,
 	  if (reading_name)
 	    {
 	      name[inx] = 0; /*if only name of parameter is supplied */
-	      dk_set_push (&parts, box_dv_short_string (name));
-	      dk_set_push (&parts, box_dv_short_string(""));
+	      dk_set_push (parts, box_dv_short_string (name));
+	      dk_set_push (parts, box_dv_short_string(""));
 	      inx = 0;
 	    }
 	  break;
@@ -521,8 +520,8 @@ ws_read_post (dk_session_t * ses, int max,
 	  else if (ch == '&') /* only name appear */
 	    {
 	      name[inx] = 0;
-	      dk_set_push (&parts, box_dv_short_string (name));
-	      dk_set_push (&parts, box_dv_short_string(""));
+	      dk_set_push (parts, box_dv_short_string (name));
+	      dk_set_push (parts, box_dv_short_string(""));
 	      inx = 0;
 	    }
 	  else if (inx < (sizeof (name) - 1))
@@ -546,8 +545,8 @@ ws_read_post (dk_session_t * ses, int max,
 	{
 	  if (ch == '&')
 	    {
-	      dk_set_push (&parts, box_dv_short_string (name));
-	      WS_PARAM_PUSH (&parts, str);
+	      dk_set_push (parts, box_dv_short_string (name));
+	      WS_PARAM_PUSH (parts, str);
 	      strses_flush (str);
 	      inx = 0;
 	      reading_name = 1;
@@ -607,8 +606,8 @@ ws_read_post (dk_session_t * ses, int max,
 
   if (inx)
     {
-      dk_set_push (&parts, box_dv_short_string (name));
-      WS_PARAM_PUSH (&parts, str);
+      dk_set_push (parts, box_dv_short_string (name));
+      WS_PARAM_PUSH (parts, str);
       strses_flush (str);
     }
   else
@@ -630,12 +629,12 @@ ws_read_post (dk_session_t * ses, int max,
 	    }
 	  while (to_read > 0);
 	}
-      dk_set_push (&parts, box_dv_short_string ("content"));
-      WS_PARAM_PUSH (&parts, cont);
+      dk_set_push (parts, box_dv_short_string ("content"));
+      WS_PARAM_PUSH (parts, cont);
     }
 
 
-  return ((caddr_t*) list_to_array (dk_set_nreverse(parts)));
+  return ((caddr_t*) list_to_array (dk_set_nreverse(*parts)));
 }
 
 static caddr_t *
@@ -643,6 +642,7 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
 {
   dk_session_t * cont = NULL;
   caddr_t * volatile ret = NULL;
+  dk_set_t parts = NULL;
 
   if (!max)
     return ((caddr_t*) list_to_array (NULL));
@@ -650,7 +650,7 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
   cont = strses_allocate ();
   CATCH_READ_FAIL_S (ws->ws_session)
     {
-      ret = ws_read_post (ws->ws_session, max, str, cont);
+      ret = ws_read_post (ws->ws_session, max, str, cont, &parts);
     }
   FAILED
     {
@@ -660,6 +660,7 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
 	    strses_write_out (cont, ws->ws_req_log);
 	}
       dk_free_box ((box_t) cont);
+      dk_free_tree (list_to_array (dk_set_nreverse (parts)));
       THROW_READ_FAIL_S (ws->ws_session);
     }
   END_READ_FAIL_S (ws->ws_session);
@@ -915,6 +916,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
 {
   char * new_log = NULL;
   char tmp[4096];
+  int tmp_len = sizeof (tmp) - sizeof (ws->ws_proto) - 1;
   char format[100];
   char buf[DKSES_OUT_BUFFER_LENGTH];
   char *volatile ptr;
@@ -1038,11 +1040,11 @@ next_fragment:
 	      day = tm->tm_mday;
 	      year = tm->tm_year + 1900;
 	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
-		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100);
+		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
 	    }
 	  break;
       case 'r':
-	  strcpy_ck (tmp, ws->ws_req_line && ws->ws_method != WM_ERROR ? ws->ws_req_line : "GET unspecified");
+	  snprintf (tmp, sizeof (tmp), "%.*s", tmp_len, ws->ws_req_line && ws->ws_method != WM_ERROR ? ws->ws_req_line : "GET unspecified");
 	  strcat_ck (tmp, ws->ws_proto);
 	  tmp [sizeof (tmp) - 1] = 0;
 	  break;
@@ -1128,7 +1130,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 
   snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
       ws->ws_client_ip, u_id, (tm->tm_mday), monday [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       (ws->ws_req_line
 #ifdef WM_ERROR
        && ws->ws_method != WM_ERROR
@@ -1669,6 +1671,7 @@ ws_path_and_params (ws_connection_t * ws)
       dk_session_t tmp;
       scheduler_io_data_t sio;
       dk_session_t * cont = strses_allocate ();
+      dk_set_t parts = NULL;
       memset (&tmp, 0, sizeof (dk_session_t));
       memset (&sio, 0, sizeof (scheduler_io_data_t));
       tmp.dks_in_buffer = ws->ws_req_line + inx;
@@ -1677,7 +1680,11 @@ ws_path_and_params (ws_connection_t * ws)
       SESSION_SCH_DATA (&tmp) = &sio;
       CATCH_READ_FAIL(&tmp)
 	{
-	  ws->ws_params = ws_read_post (&tmp, tmp.dks_in_fill, ws->ws_strses, cont);
+	  ws->ws_params = ws_read_post (&tmp, tmp.dks_in_fill, ws->ws_strses, cont, &parts);
+	}
+      FAILED
+	{
+	  dk_free_tree (list_to_array (dk_set_nreverse (parts)));
 	}
       END_READ_FAIL(&tmp);
       dk_free_box ((box_t) cont);
@@ -2158,27 +2165,31 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 {
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
+  char * ret_origin = NULL;
   int rc = 0;
-  if (origin && ws->ws_status_code < 500 && ws->ws_map && ws->ws_map->hm_cors)
+  if (origin && ws->ws_map && ws->ws_map->hm_cors)
     {
       caddr_t * orgs = ws_split_cors (origin), * place = NULL;
       int inx;
       if (ws->ws_map->hm_cors == (id_hash_t *) WS_CORS_STAR)
-	rc = 1;
+	{
+	  if (orgs != WS_CORS_STAR && BOX_ELEMENTS_0 (orgs) > 0)
+	    ret_origin = orgs[0];
+	  rc = 1;
+	}
       else if (orgs != WS_CORS_STAR)
 	{
 	  DO_BOX (caddr_t, org, inx, orgs)
 	    {
 	      if (NULL != (place = (caddr_t *) id_hash_get_key (ws->ws_map->hm_cors, (caddr_t) & org)))
 		{
+		  ret_origin = org;
 		  rc = 1;
 		  break;
 		}
 	    }
 	  END_DO_BOX;
 	}
-      if (orgs != WS_CORS_STAR)
-	dk_free_tree (orgs);
       if (rc)
 	{
 	  char ach[2000] = {0}; 
@@ -2201,9 +2212,16 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	      ach[strlen (ach) - 1] = 0;
 	      strcat_ck (ach, "\r\n");
 	    }
+	  if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Headers:")))
+	    {
+	      strcat_ck (ach, "Access-Control-Allow-Headers: Accept, Authorization, Slug, Link, Origin, Content-type");
+	      strcat_ck (ach, "\r\n");
+	    }
 	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
-	      place ? *place : "*", place ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+	      ret_origin ? ret_origin : "*", ret_origin ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
 	}
+      if (orgs != WS_CORS_STAR)
+	dk_free_tree (orgs);
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
@@ -2419,7 +2437,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  char dt [DT_LENGTH];
 	  char last_modify[100];
 
-	  dt_now (dt);
+	  dt_now_tz (dt);
 	  dt_to_rfc1123_string (dt, last_modify, sizeof (last_modify));
 	  SES_PRINT (ws->ws_session, "Date: ");
 	  SES_PRINT (ws->ws_session, last_modify);
@@ -2928,7 +2946,7 @@ ws_file (ws_connection_t * ws)
   int n_ranges = 0;
 
   box_date = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-  dt_now (box_date);
+  dt_now_tz (box_date);
   dt_to_rfc1123_string (box_date, date_now, sizeof (date_now));
   dk_free_box (box_date);
 
@@ -3593,7 +3611,6 @@ ws_mem_record (ws_connection_t * ws)
 {
   char * h = ws_header_field (ws->ws_lines, "X-Recording:", NULL);
   static FILE *fp;
-  char * endpos;
   if (!h) return;
   while (isspace (*h)) h ++;
   mutex_enter (ws_http_log_mtx);
@@ -4456,6 +4473,21 @@ ws_switch_to_keep_alive (ws_connection_t * ws)
   mutex_leave (ws_queue_mtx);
 }
 
+int32 ws_write_timeout = 0;
+
+void 
+ws_set_write_timeout (ws_connection_t * ws)
+{
+  int block = 0;
+  dk_session_t * client = ws->ws_session;
+  if (!ws_write_timeout)
+    return;
+  client->dks_session->ses_fduplex = 1;
+  client->dks_session->ses_w_status = SST_OK;
+  client->dks_session->ses_status = SST_OK;
+  client->dks_write_block_timeout.to_sec = ws_write_timeout;
+  session_set_control (client->dks_session, SC_BLOCKING, (void*)&block, sizeof (int));
+}
 
 void
 ws_serve_connection (ws_connection_t * ws)
@@ -4497,6 +4529,7 @@ ws_serve_connection (ws_connection_t * ws)
 #endif
 
  next_input:
+  ws_set_write_timeout (ws);
   ws->ws_cli->cli_http_ses = ws->ws_session;
   ws_read_req (ws);
   try_pipeline = ws_can_try_pipeline (ws);
@@ -4701,6 +4734,7 @@ ws_init_func (ws_connection_t * ws)
 	  /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
 	  ws_inet_session_init (ses, ws);
 #endif
+	  ws_set_write_timeout (ws);
 	  http_trace (("connect from queue accept ws %p ses %p\n", ws, ws->ws_session));
 	  tws_connections ++;
 	  SESSION_SCH_DATA (ses)->sio_default_read_ready_action = (io_action_func) ws_ready;
@@ -9800,6 +9834,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   char * me = "https_renegotiate";
   query_instance_t *qi = (query_instance_t *)qst;
   ws_connection_t *ws = qi->qi_client->cli_ws;
+  int ctr = 0;
 #ifdef _SSL
   SSL *ssl = NULL;
 #endif
@@ -9815,6 +9850,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       static int s_server_auth_session_id_context;
       int https_client_verify = BOX_ELEMENTS (args) > 0 ? bif_long_arg (qst, args, 0, me) : HTTPS_VERIFY_OPTIONAL_NO_CA;
       int https_client_verify_depth = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, me) : 15;
+      char err_buf [1024];
       s_server_auth_session_id_context ++;
 
       if (https_client_verify < 0 || https_client_verify > HTTPS_VERIFY_OPTIONAL_NO_CA)
@@ -9832,15 +9868,35 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
       SSL_set_app_data (ssl, ap);
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      i = 0;
       IO_SECT (qst);
       i = SSL_renegotiate (ssl);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_renegotiate failed");
-      i = SSL_do_handshake (ssl);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (i <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..001", "SSL_renegotiate failed %s", err_buf);
+	}
+	i = SSL_do_handshake (ssl);
+      if (i <= 0) 
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
+	}
       ssl->state = SSL_ST_ACCEPT;
-      i = SSL_do_handshake (ssl);
+      while (SSL_renegotiate_pending (ssl) && ctr < 1000)
+	{
+	  timeout_t to = { 0, 1000 };
+	  i = SSL_do_handshake (ssl);
+	  if (i <= 0)
+	    tcpses_is_read_ready (ws->ws_session->dks_session, &to);
+	  ctr ++;
+	}
       END_IO_SECT (err_ret);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (i <= 0) 
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..003", "SSL_do_handshake failed %s", err_buf);
+	}
       if (SSL_get_peer_certificate (ssl))
 	return box_num (1);
     }
@@ -10776,7 +10832,7 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s\" %.3s %ld\n",
       host_name, user, (tm->tm_mday), monday [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       command, resp, len);
 
   dk_free_box (host_name);

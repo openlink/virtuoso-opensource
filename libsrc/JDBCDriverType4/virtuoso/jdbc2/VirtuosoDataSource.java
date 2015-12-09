@@ -34,6 +34,7 @@ import javax.naming.*;
 
 public class VirtuosoDataSource implements DataSource, Referenceable, Serializable {
 
+    protected String logFileName = null;
     protected String dataSourceName = "VirtuosoDataSourceName";
     protected String description;
     protected String serverName = "localhost";
@@ -45,6 +46,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     protected String charSet;
     protected int loginTimeout = 0;
     protected String pwdclear;
+    protected int log_enable = -1;
 
 #ifdef SSL
     protected String certificate;
@@ -67,6 +69,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     protected transient java.io.PrintWriter logWriter;
 
 
+    final static String n_logFileName = "logFileName";
     final static String n_dataSourceName = "dataSourceName";
     final static String n_description = "description";
     final static String n_serverName = "serverName";
@@ -75,9 +78,11 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_user = "user";
     final static String n_password = "password";
 
+    final static String n_charset = "charset";
     final static String n_charSet = "charSet";
     final static String n_loginTimeout = "loginTimeout";
     final static String n_pwdclear = "pwdclear";
+    final static String n_log_enable = "log_enable";
 
 #ifdef SSL
     final static String n_certificate = "certificate";
@@ -105,6 +110,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
 //==================== interface Referenceable
   protected void  addProperties(Reference ref) {
+    if (logFileName != null)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_logFileName, logFileName));
     if (dataSourceName != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_dataSourceName, dataSourceName));
     if (description != null)
@@ -125,10 +132,13 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
       ref.add(new StringRefAddr(VirtuosoDataSource.n_loginTimeout, String.valueOf(loginTimeout)));
 
     if (charSet != null)
-      ref.add(new StringRefAddr(VirtuosoDataSource.n_charSet, charSet));
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_charset, charSet));
 
     if (pwdclear != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_pwdclear, pwdclear));
+
+    if (log_enable != 1)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_log_enable, String.valueOf(log_enable)));
 
 #ifdef SSL
     if (certificate != null)
@@ -204,6 +214,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     if (charSet != null)   prop.setProperty("charset", charSet);
     if (pwdclear != null)   prop.setProperty("pwdclear", pwdclear);
 
+    if (log_enable != -1)  prop.setProperty("log_enable", String.valueOf(log_enable));
+
 #ifdef SSL
     if (certificate!=null)      prop.setProperty("certificate", certificate);
     if (certificatepass!=null)  prop.setProperty("certificatepass", certificatepass);
@@ -277,7 +289,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
   public void setLogWriter(PrintWriter out) throws SQLException
   {
-    logWriter = out;
+    VirtuosoFuture.rpc_log = logWriter = out;
   }
 
   public void setLoginTimeout(int seconds) throws SQLException
@@ -293,8 +305,36 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
  //////// properties
 
   /**
+   * Get the log FileName.
+   * The default value is null
+   *
+   * @return   log Filename
+   *
+  **/
+  public String getLogFileName() {
+    return logFileName;
+  }
+  /**
+   * Set the log Filename. The default value is null
+   *
+   * @param parm  Filename to be set
+   *
+  **/
+  public void setLogFileName(String parm) {
+    logFileName = parm;
+
+    if (logFileName!=null) {
+      try {
+         setLogWriter(new java.io.PrintWriter(new java.io.FileOutputStream(logFileName), true));
+      } catch (Exception e) {}
+    }
+
+  }
+
+
+  /**
    * Get the datasource name for this instance if set.
-   * The default value is "OPLDataSourceName"
+   * The default value is "VirtuosoDataSourceName"
    *
    * @return   DataSource name
    *
@@ -303,7 +343,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return dataSourceName;
   }
   /**
-   * Set the DataSource name. The default value is "OPLDataSourceName"
+   * Set the DataSource name. The default value is "VirtuosoDataSourceName"
    *
    * @param parm  DataSource name to be set
    *
@@ -399,6 +439,18 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return this.pwdclear;
   }
 
+
+  public void setLog_Enable(int bits) throws SQLException
+  {
+    if (bits<-1 || bits>3)
+      throw new SQLException("The log_enable options must be between -1 and 3");
+    log_enable = bits;
+  }
+
+  public int getLog_Enable() throws SQLException
+  {
+    return log_enable;
+  }
 
 #ifdef SSL
   public void setCertificate (String value)

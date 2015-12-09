@@ -1131,6 +1131,67 @@ create procedure "VAD"."DBA"."VAD_TEST_READ" (
 }
 ;
 
+create procedure "DB"."DBA"."VAD_INSTALL_WITH_DEPS" (
+  in fname varchar,
+  in is_dav integer := 0,
+  in vadDir varchar := null,
+  in vadDirType int := 0,
+  in no_exit integer := 0) returns varchar
+{
+    declare deps, allVads, packs_arr any;
+    declare SQL_STATE, SQL_MESSAGE varchar;
+    SQL_STATE := '00000';
+    SQL_MESSAGE := '';
+    result_names (SQL_STATE, SQL_MESSAGE);
+    declare exit handler for sqlstate '*'
+    {
+      SQL_STATE := __SQL_STATE;
+      SQL_MESSAGE := __SQL_MESSAGE;
+      if ('' <> SQL_MESSAGE);
+      {
+        log_message (sprintf ('VAD_INSTALL_WITH_DEPS: %s (%s)', SQL_MESSAGE, SQL_STATE));
+        result (SQL_STATE, SQL_MESSAGE);
+      }
+      goto failure;
+    };
+
+    deps := "VAD"."DBA"."VAD_FLATTEN_DEPENDENCY_TREE" ("VAD"."DBA"."VAD_RESOLVE_DEPENDENCY_TREE" (fname, is_dav, vadDir, vadDirType));
+    for (declare i,l int, i:=0, l := length (deps); i < l; i := i + 1)
+    {
+        declare state, message, meta, result, pack_path, path_type any;
+        declare pfull, pver, pdate, isdav any;
+        pfull := deps[i][3];
+        pver  := deps[i][5];
+        pdate := deps[i][7];
+        pack_path := deps[i][9];
+        path_type := deps[i][11];
+        isdav := 0;
+        if (pack_path like '%_dav.vad')
+            isdav := 1;
+        log_message ('Installing with dependencies '||pfull||' version '||pver||'/'||pdate|| ' '||case when isdav then '(DAV)' else '' end);
+        result ('00000', 'Installing: ' || pfull || ' ' || pver || ' (' || pack_path || ')');
+        --exec('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector(pack_path, path_type, 1), 0, meta, result);
+        if ("DB"."DBA"."VAD_INSTALL"(pack_path, path_type, 1) <> 'OK')
+        {
+            --log_message (sprintf('%s', aref(aref(result, 0), 1)));
+            --result ('', sprintf('%s', aref(aref(result, 0), 1)));
+            return 'ERROR';
+        }
+        else
+        {
+            log_message ('Installation with dependencies complete');
+            --result ('00000', 'Installation complete');
+        }
+    }
+    --result ('', '');
+    return 'OK';
+
+failure:;
+  result ('', '');
+  return 'ERROR';
+}
+;
+
 create procedure "DB"."DBA"."VAD_INSTALL" (
   in fname varchar,
   in is_dav integer := 0,
@@ -1153,6 +1214,8 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
       registry_set ('VAD_wet_run', '0');
       registry_set ('VAD_errcount', '1');
       connection_set ('vad_pkg_fullname', 'unknown');
+      connection_set ('app_endpoint_uri', 'unknown');
+      connection_set ('app_usage_uri', 'unknown');
       result ('42VAD', concat ('Could not open ',
       case when is_dav = 0 then 'filesystem' else 'DAV' end, 
       ' resource ', fname, ' Reason: File not found'));
@@ -1175,6 +1238,8 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   registry_set ('VAD_wet_run', '0');
   registry_set ('VAD_is_run', '1');
   connection_set ('vad_pkg_fullname', null);
+  connection_set ('app_endpoint_uri', null);
+  connection_set ('app_usage_uri', null);
 
   {
     declare exit handler for sqlstate '*'
@@ -1190,9 +1255,19 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     };
 
     "VAD"."DBA"."VAD_READ" (parr, fname, is_dav);
+
     if ('0' = registry_get ('VAD_errcount'))
     {
       "VAD"."DBA"."VAD_ATOMIC" (0);
+
+      declare app_endpoint_uri, app_usage_uri varchar;
+      app_endpoint_uri := connection_get ('app_endpoint_uri');
+      app_usage_uri := connection_get ('app_usage_uri');
+
+      if (app_endpoint_uri is not null)
+	    result ('00000', sprintf ('Application is accessible via the endpoint at: %s', app_endpoint_uri));
+      if (app_usage_uri is not null)
+      	result ('00000', sprintf ('Post-installation guide is available from: %s', app_usage_uri));
 
       result ('00000', 'No errors detected');
       result ('00000', sprintf ('Installation of "%s" is complete.', coalesce (connection_get ('vad_pkg_fullname'), fname)));
@@ -1397,6 +1472,16 @@ create procedure "VAD"."DBA"."VAD_READ" (
       "VAD"."DBA"."VAD_CHECK_STICKER_DETAILS" (parr, doc, pkg_name, pkg_vers, pkg_fullname, pkg_date, 0);
 
       connection_set ('vad_pkg_fullname', pkg_fullname);
+
+      items := xpath_eval ('/sticker/caption/name/prop[@name=\'AppEndpointURI\']', doc, 0);
+      n := length (items);
+      if (n <> 0)
+        connection_set ('app_endpoint_uri', cast (xpath_eval ('@value', aref (items, 0)) as varchar));
+
+      items := xpath_eval ('/sticker/caption/name/prop[@name=\'AppUsageURI\']', doc, 0);
+      n := length (items);
+      if (n <> 0)
+        connection_set ('app_usage_uri', cast (xpath_eval ('@value', aref (items, 0)) as varchar));
 
       items := xpath_eval ('/sticker/procedures/sql[@purpose=\'pre-install\']', doc, 0);
       n := length (items);
@@ -2352,7 +2437,7 @@ create procedure "VAD"."DBA"."VAD_AUTO_UPGRADE" ()
 	   if (VAD.DBA.VER_LT (ver, pver) and isdav = pisdav)
 	     {
 	       log_message ('Installing '||pfull||' version '||pver|| ' '||case when isdav then '(DAV)' else '' end);
-	       vad_install (vaddir||f);
+	       vad_install_with_deps (vaddir||f);
 	     }
 	 }
     }

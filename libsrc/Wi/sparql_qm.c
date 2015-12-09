@@ -463,7 +463,7 @@ spar_qm_collist_crc (SPART **cols, const char *prefix, int ignore_order)
         total_crc += agg * (5 + ctr);
     }
   END_DO_BOX_FAST;
-  return t_box_sprintf (50, "%.20s%x", prefix, total_crc);
+  return t_box_sprintf (50, "%.20s%Lx", prefix, (long long)total_crc);
 }
 
 void

@@ -25,6 +25,7 @@
  *
  */
 
+#include "date.h"
 #include "datesupp.h"
 #include "sqlnode.h"
 #include "sqlfn.h"
@@ -513,8 +514,13 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collatio
   n1 = box_length (box1);
   n2 = box_length (box2);
 
-  if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) || (dtp2 == DV_DATETIME && dtp1 == DV_BIN))
+  if ((DV_DATETIME == dtp1) || (DV_DATETIME == dtp2))
+    {
+      if ((dtp1 == DV_BIN) || (dtp2 == DV_BIN))
     dtp1 = dtp2 = DV_DATETIME;
+      if ((DV_DATETIME == dtp1) && (DV_DATETIME == dtp2))
+	return dt_compare (box1, box2, 1);
+    }
 
   switch (dtp1)
     {
@@ -726,8 +732,13 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t *
       n1 = box_length (box1);
       n2 = box_length (box2);
 
-      if ((dtp1 == DV_DATETIME && dtp2 == DV_BIN) || (dtp2 == DV_DATETIME && dtp1 == DV_BIN))
+      if ((DV_DATETIME == dtp1) || (DV_DATETIME == dtp2))
+	{
+	  if ((dtp1 == DV_BIN) || (dtp2 == DV_BIN))
 	dtp1 = dtp2 = DV_DATETIME;
+	  if ((DV_DATETIME == dtp1) && (DV_DATETIME == dtp2))
+	    return dt_compare (box1, box2, 0);
+	}
 
       switch (dtp1)
 	{
@@ -1168,7 +1179,13 @@ dvc_num_double (numeric_t num1, double d2)
   numeric_to_double (num1, &d1);
   if (d1 == d2)
     {
-      if (num1->n_len + num1->n_scale < 15)
+      if (d2 > MIN_INT_DOUBLE && d2 < MAX_INT_DOUBLE)
+	{
+	  NUMERIC_VAR (num2);
+	  numeric_from_double (num2, d2);
+	  return numeric_compare_dvc ((numeric_t) num1, (numeric_t) num2);
+	}
+      if (num1->n_len + num1->n_scale <= 15)
 	return DVC_MATCH;
       if (0 < d2)
 	return DVC_GREATER;
@@ -1392,11 +1409,12 @@ artm_date_to_date (double *target, data_col_t * dc, int *sets, int first_set, in
   int inx, fill = 0;
   if (sets)
     {
+      db_buf_t tgt = ((db_buf_t) target);
       for (inx = 0; inx < n; inx++)
 	{
-	  db_buf_t tgt = ((db_buf_t) target) + fill;
 	  db_buf_t src = ((db_buf_t) dc->dc_values) + DT_LENGTH * sets[inx];
 	  memcpy_dt (tgt, src);
+	  tgt += DT_LENGTH;
 	}
     }
   else

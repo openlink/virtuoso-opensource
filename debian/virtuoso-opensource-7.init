@@ -30,7 +30,7 @@
 # Should-Stop:
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
-# Short-Description: Virtuoso OpenSource Edition
+# Short-Description: Virtuoso Open Source Edition
 # Description:       This file should be used to start/stop the virtuoso-t
 #                    daemon for the default installed database.
 ### END INIT INFO
@@ -40,7 +40,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/virtuoso-t
 NAME=virtuoso-opensource-7
 SHORTNAME=virtuoso
-DESC="Virtuoso OpenSource Edition 7.2"
+DESC="Virtuoso Open Source Edition 7.2"
 DBPATH=/var/lib/virtuoso-opensource-7/db
 LOGDIR=/var/log/virtuoso-opensource-7  # Log directory to use
 

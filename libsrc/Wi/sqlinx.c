@@ -426,7 +426,7 @@ sqlo_ip_trailing_text (df_elt_t * tb_dfe, index_choice_t * ic)
     return 0;
   dfe_text_cost (tb_dfe, &text_cost, &text_card, 0);
   ic->ic_unit += text_cost;
-  ic->ic_arity /= MAX (1, text_card);
+  ic->ic_arity *= MAX (1e-9, text_card);
   ic->ic_text_pred = text_pred;
   return 1;
 }
@@ -1061,6 +1061,24 @@ sqlg_in_iter_add_after_test (sqlo_t * so, dk_set_t prev_in_iters, key_source_t *
   END_DO_SET();
 }
 
+int 
+ts_check_unq (table_source_t * ts, int flg)
+{
+  /* check eq spec for each part of the key */
+  dbe_key_t * key = ts->ts_order_ks->ks_key;
+  int ctr = 0;
+  search_spec_t * sp;
+  if (!flg)
+    return 0;
+  for (sp = ts->ts_order_ks->ks_spec.ksp_spec_array; sp; sp = sp->sp_next)
+    {
+      if (CMP_EQ != sp->sp_min_op)
+	return 0;
+      ctr++;
+    }
+  return ctr == key->key_n_significant;
+}
+
 data_source_t *
 sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t ** jt, int last)
 {
@@ -1124,7 +1142,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
   ts->ts_is_outer = tb_dfe->_.table.ot->ot_is_outer;
   order_ks = ts->ts_order_ks;
   if (order_ks && order_ks->ks_spec.ksp_spec_array)
-    ts->ts_is_unique = ic->ic_is_unique;
+    ts->ts_is_unique = ts_check_unq (ts, ic->ic_is_unique);
 
   if (order_ks)
   sqlg_in_iter_add_after_test (so, prev_in_iters, order_ks);

@@ -249,6 +249,8 @@ typedef struct cl_fref_red_node_s
   char			clf_no_order;
   struct clo_comp_s **		clf_order;
   struct setp_node_s *		clf_setp;
+  state_slot_t *	clf_top;
+  state_slot_t *	clf_skip;
   int			clf_set_no;
   int			clf_nth_in_set;
   dk_set_t		clf_out_slots;
@@ -1384,6 +1386,10 @@ typedef struct setp_node_s
     state_slot_t *	setp_last;
     int			setp_ties;
     state_slot_t **	setp_dependent_box;
+    state_slot_t **	setp_org_slots; /* if shadows on keys and deps, this is the unshadowed keys+deps */
+    state_slot_t *	setp_top_id;
+    state_slot_t *	setp_top_clo;
+    state_slot_t *	setp_top_ser;
     state_slot_t *	setp_sorted;
     state_slot_t *	setp_flushing_mem_sort;
     struct fun_ref_node_s *	setp_ordered_gb_fref;
@@ -1424,7 +1430,8 @@ typedef struct setp_node_s
     char	setp_cl_partition;
 } setp_node_t;
 
-#define SETP_DISTINCT_MAX_KEYS 100
+extern int32 setp_distinct_max_keys;
+#define SETP_DISTINCT_MAX_KEYS setp_distinct_max_keys
 #define SETP_DISTINCT_NO_OP 2
 #define IS_SETP(qn) IS_QN (qn, setp_node_input)
 
@@ -1523,7 +1530,6 @@ typedef struct comp_context_s
     dk_set_t		cc_state_slots;
     id_hash_t *		cc_slots;
     query_t *		cc_query;
-    dbe_schema_t *	cc_schema;
     caddr_t		cc_error;
     struct comp_context_s *cc_super_cc;
     dk_hash_t * 	cc_keep_ssl;
@@ -1533,9 +1539,6 @@ typedef struct comp_context_s
   memset (&cc, 0, sizeof (cc)); \
   cc.cc_query = qr; \
   cc.cc_instance_fill = QI_FIRST_FREE; \
-  cc.cc_schema = wi_inst.wi_schema; \
-  if (cli->cli_new_schema) \
-    cc.cc_schema = cli->cli_new_schema; \
   cc.cc_super_cc = &cc;
 
 
@@ -2097,3 +2100,4 @@ extern int enable_vec;
 
 
 #endif /* _SQLNODE_H */
+void qr_print (query_t * qr);

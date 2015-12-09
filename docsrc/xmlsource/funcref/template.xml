@@ -67,10 +67,6 @@
  -  
 -->
 
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!--
-  $Id$
--->
 <refentry id="fn_">
   <refmeta>
     <refentrytitle></refentrytitle>
@@ -119,9 +115,5 @@
 ]]>
 </screen>
     </example>
-  </refsect1>
-  <refsect1 id="seealso_">
-    <title>See Also</title>
-    <para><link linkend="fn"><function></function></link></para>
   </refsect1>
 </refentry>

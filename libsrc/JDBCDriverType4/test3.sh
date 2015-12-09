@@ -53,3 +53,5 @@ $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.SPRgetColu
 $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestMoreRes $1
 #GK: not for now : no params passing
 # $JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestDataSource $1
+
+$JAVA -classpath $CLASSPATH:virtjdbc3ssl.jar:testsuite3.jar testsuite.TestDateTime $1

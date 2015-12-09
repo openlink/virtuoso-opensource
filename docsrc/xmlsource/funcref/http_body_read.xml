@@ -35,7 +35,7 @@
     <funcsynopsis id="fsyn_http_body_read">
       <funcprototype id="fproto_http_body_read">
         <funcdef>string <function>http_body_read</function></funcdef>
-	<paramdef />
+	<paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

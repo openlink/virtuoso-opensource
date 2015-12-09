@@ -326,14 +326,14 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
 	  sch_split_name (cli_qual (sqlc_client ()),
 	      sc->sc_super->sc_cc->cc_query->qr_proc_name,
               rq, ro, rn);
-	  full_name = sch_full_proc_name_1 (sc->sc_cc->cc_schema, fun_name,
+	  full_name = sch_full_proc_name_1 (wi_inst.wi_schema, fun_name,
 	      cli_qual (sqlc_client ()), CLI_OWNER (sqlc_client ()), rn);
 	}
       else
-	full_name = sch_full_proc_name (sc->sc_cc->cc_schema, fun_name,
+	full_name = sch_full_proc_name (wi_inst.wi_schema, fun_name,
 	    cli_qual (sqlc_client ()), CLI_OWNER (sqlc_client ()));
       if (full_name)
-	proc = sch_proc_def (sc->sc_cc->cc_schema, full_name);
+	proc = sch_proc_def (wi_inst.wi_schema, full_name);
     }
 
   if (!fun_udt_name &&
@@ -468,7 +468,7 @@ sqlg_unplace_ssl (sqlo_t * so, ST * tree)
   int inx;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
-  if (ST_P(tree, COL_DOTTED))
+  if (ST_COLUMN(tree, COL_DOTTED))
     return;
   dfe = sqlo_df_elt (so, tree);
   if (dfe && dfe->dfe_ssl)
@@ -546,22 +546,28 @@ sqlc_simple_case (sql_comp_t * sc, ST * tree, dk_set_t * code)
 	  if (inx != n_exps - 2 || n_exps == 3)
 	    sqlc_new_error (sc->sc_cc, "37000", "SQ080", "ELSE must be last clause in CASE.");
 	  SET_PRIVATE_ELTS (sc, dfe, inx + 1);
+	  sqlg_cond_start (sc);
 	  GENERATE_CONTROL_EXP (sc, dfe, inx + 1, code);
 	  val = scalar_exp_generate (sc, then, code);
+	  sqlg_cond_end (sc);
 	  cv_artm (code, (ao_func_t)box_identity, res, val, NULL);
 	  was_else = 1;
 	  RESTORE_PRIVATE_ELTS (sc, dfe);
 	  break;
 	}
       SET_PRIVATE_ELTS (sc, dfe, inx);
+      sqlg_cond_start (sc);
       GENERATE_CONTROL_EXP (sc, dfe, inx, code);
       cres = scalar_exp_generate (sc, cond, code);
+      sqlg_cond_end (sc);
       cv_compare (code, BOP_EQ, sel, cres, ok, next, next);
       cv_label (code, ok);
       RESTORE_PRIVATE_ELTS (sc, dfe);
       SET_PRIVATE_ELTS (sc, dfe, inx + 1);
+      sqlg_cond_start (sc);
       GENERATE_CONTROL_EXP (sc, dfe, inx + 1, code);
       val = scalar_exp_generate (sc, then, code);
+      sqlg_cond_end (sc);
       cv_artm (code, (ao_func_t)box_identity, res, val, NULL);
       cv_jump (code, end);
       cv_label (code, next);
@@ -611,21 +617,27 @@ sqlc_searched_case (sql_comp_t * sc, ST * tree, dk_set_t * code)
 	  if (inx != n_exps - 2 || n_exps == 3)
 	    sqlc_new_error (sc->sc_cc, "37000", "SQ081", "ELSE must be last clause in CASE.");
 	  SET_PRIVATE_ELTS (sc, dfe, inx + 1);
+	  sqlg_cond_start (sc);
 	  GENERATE_CONTROL_EXP (sc, dfe, inx + 1, code);
 	  val = scalar_exp_generate (sc, then, code);
+	  sqlg_cond_end (sc);
 	  cv_artm (code, (ao_func_t)box_identity, res, val, NULL);
 	  was_else = 1;
 	  RESTORE_PRIVATE_ELTS (sc, dfe);
 	  break;
 	}
       SET_PRIVATE_ELTS (sc,dfe,inx);
+      sqlg_cond_start (sc);
       GENERATE_CONTROL_EXP (sc, dfe, inx, code);
+      sqlg_cond_end (sc);
       pred_gen_1 (sc, cond, code, ok, next, next);
       cv_label (code, ok);
       RESTORE_PRIVATE_ELTS (sc, dfe);
       SET_PRIVATE_ELTS (sc,dfe,inx + 1);
+      sqlg_cond_start (sc);
       GENERATE_CONTROL_EXP (sc, dfe, inx + 1, code);
       val = scalar_exp_generate (sc, then, code);
+      sqlg_cond_end (sc);
       cv_artm (code, (ao_func_t)box_identity, res, val, NULL);
       cv_jump (code, end);
       cv_label (code, next);
@@ -663,6 +675,8 @@ sqlc_coalesce_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
       state_slot_t *cres;
       DEF_PRIVATE_ELTS;
 
+      if (1 == inx)
+	sqlg_cond_start (sc);
       SET_PRIVATE_ELTS (sc, dfe, inx);
       GENERATE_CONTROL_EXP (sc, dfe, inx, code);
       cres = scalar_exp_generate (sc, cond, code);
@@ -676,7 +690,33 @@ sqlc_coalesce_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
     }
   cv_artm (code, (ao_func_t)box_identity, res, nullc, NULL);
   cv_label (code, end);
+  if (n_exps > 1)
+    sqlg_cond_end (sc);
   return res;
+}
+
+
+void
+sqlg_cond_start (sql_comp_t * sc)
+{
+  /* Assignments in code between this and the matching sqlg_cond_end call are not guaranteed to be defined after the sqlg_cond_end */
+  t_set_push (&sc->sc_cond_defd_dfes, sc->sc_re_emitted_dfes);
+  sc->sc_re_emitted_dfes = NULL;
+  sc->sc_re_emit_code = 1;
+}
+
+
+void
+sqlg_cond_end (sql_comp_t * sc)
+{
+  DO_SET (df_elt_t *, dfe, &sc->sc_re_emitted_dfes)
+    {
+      dfe->dfe_ssl = NULL;
+    }
+  END_DO_SET();
+  sc->sc_re_emitted_dfes = (dk_set_t)t_set_pop (&sc->sc_cond_defd_dfes);
+  if (!sc->sc_cond_defd_dfes)
+    sc->sc_re_emit_code = 0;
 }
 
 
@@ -702,10 +742,12 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
   if (sc->sc_so)
     {
       dfe = sqlo_df (sc->sc_so, tree);
-      if (dfe->dfe_ssl && (!is_re_emit || !dk_set_member (sc->sc_re_emitted_dfes, (void*)dfe)))
+      if (st_is_call (tree, "__ro2lo", 1))
+  bing ();
+
+      if (dfe->dfe_ssl)
 	return (dfe->dfe_ssl);
     }
-  sc->sc_re_emit_code = 0;
   if (SYMBOLP (tree))
     {
       state_slot_t * ssl;
@@ -725,7 +767,7 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
     {
       seg_return (ssl_new_constant (sc->sc_cc, (caddr_t) tree->_.op.arg_1));
     }
-  if (ST_P (tree, COL_DOTTED) ||
+  if (ST_COLUMN (tree, COL_DOTTED) ||
       ST_P (tree, FUN_REF))
     {
       state_slot_t * ssl;
@@ -1373,7 +1415,7 @@ cv_call_set_type (sql_comp_t * sc, instruction_t * ins, query_t *qr_found)
     }
   else
     {
-      query_t *qr = qr_found ? qr_found : sch_proc_def (sc->sc_cc->cc_schema, ins->_.call.proc);
+      query_t *qr = qr_found ? qr_found : sch_proc_def (wi_inst.wi_schema, ins->_.call.proc);
       if (!qr || IS_REMOTE_ROUTINE_QR (qr) || !qr->qr_proc_ret_type)
 	goto generic_box;
       else
@@ -2510,7 +2552,10 @@ code_to_cv_1 (sql_comp_t * sc, dk_set_t code, int trim_one_long_cv)
       END_CATCH;
       hash_table_free (lblhash);
       if (err)
-	sqlc_resignal_1 (sc->sc_cc, err);
+	{
+	  dk_free_box (cv);
+	  sqlc_resignal_1 (sc->sc_cc, err);
+	}
 
       return cv;
     }

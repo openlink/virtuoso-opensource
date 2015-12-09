@@ -25,6 +25,7 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
+
 import virtuoso.sql.*;
 import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.shared.*;
@@ -34,44 +35,39 @@ import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.sparql.core.*;
 
 
-public class VirtResSetQIter implements ClosableIterator<Quad>
-{
-    protected Quad 		v_row;
-    protected TripleMatch 	v_in;
-    protected boolean 		v_finished = false;
-    protected boolean 		v_prefetched = false;
-    protected VirtGraph         v_graph = null;
-    protected Iterator<Node>    v_gList = null;
-    protected Node              v_curGraph = null;
+public class VirtResSetQIter implements ClosableIterator<Quad> {
+    protected Quad v_row;
+    protected TripleMatch v_in;
+    protected boolean v_finished = false;
+    protected boolean v_prefetched = false;
+    protected VirtGraph v_graph = null;
+    protected Iterator<Node> v_gList = null;
+    protected Node v_curGraph = null;
     protected ExtendedIterator<Triple> v_curTriples = null;
 
-    public VirtResSetQIter()
-    {
+    public VirtResSetQIter() {
         v_finished = true;
     }
 
-    public VirtResSetQIter(VirtGraph graph, Iterator<Node> graphList, TripleMatch in)
-    {
-	v_in = in;
-	v_graph = graph;
-	v_gList = graphList;
-	if (v_gList.hasNext()) {
-	  v_curGraph = v_gList.next();
-	  v_curTriples = v_graph.graphBaseFind(v_curGraph.toString(), v_in);
-	}
+    public VirtResSetQIter(VirtGraph graph, Iterator<Node> graphList, TripleMatch in) {
+        v_in = in;
+        v_graph = graph;
+        v_gList = graphList;
+        if (v_gList.hasNext()) {
+            v_curGraph = v_gList.next();
+            v_curTriples = v_graph.graphBaseFind(v_curGraph.toString(), v_in);
+        }
     }
 
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         if (!v_finished && !v_prefetched) moveForward();
         return !v_finished;
     }
 
 
-    public Quad next()
-    {
+    public Quad next() {
         if (!v_finished && !v_prefetched)
-	    moveForward();
+            moveForward();
 
         v_prefetched = false;
 
@@ -81,85 +77,67 @@ public class VirtResSetQIter implements ClosableIterator<Quad>
         return getRow();
     }
 
-    public void remove()
-    {
-        if (v_row != null && v_graph != null)
-          {
+    public void remove() {
+        if (v_row != null && v_graph != null) {
             v_graph.performDelete(v_row.getGraph().toString(), v_row.getSubject(), v_row.getPredicate(), v_row.getObject());
             v_row = null;
-          }
+        }
     }
 
-    protected void moveForward()
-    {
-	try
-	{
-	    if (!v_finished && v_curTriples!=null) {
-	      if (v_curTriples.hasNext()) {
-	        extractRow();
-	        v_prefetched = true;
-	      } 
-	      else if (v_gList.hasNext()) {
-	        while(true) {
-	          v_curTriples.close();
-	          v_curGraph = v_gList.next();
-	          v_curTriples = v_graph.graphBaseFind(v_curGraph.toString(), v_in);
-	          if (v_curTriples.hasNext()) {
-	            extractRow();
-	            v_prefetched = true;
-	            break;
-	          }
-	        }
-	      }
-	      else {
-	        close();
-	      }
-	    }
-	    else
-		close();
-	}
-	catch (Exception e)
-	{
-	    throw new JenaException(e);
-	}
+    protected void moveForward() {
+        try {
+            if (!v_finished && v_curTriples != null) {
+                if (v_curTriples.hasNext()) {
+                    extractRow();
+                    v_prefetched = true;
+                } else if (v_gList.hasNext()) {
+                    while (true) {
+                        v_curTriples.close();
+                        v_curGraph = v_gList.next();
+                        v_curTriples = v_graph.graphBaseFind(v_curGraph.toString(), v_in);
+                        if (v_curTriples.hasNext()) {
+                            extractRow();
+                            v_prefetched = true;
+                            break;
+                        }
+                    }
+                } else {
+                    close();
+                }
+            } else
+                close();
+        } catch (Exception e) {
+            throw new JenaException(e);
+        }
     }
 
 
-    protected void extractRow() throws Exception
-    {
-       Triple t = v_curTriples.next();
-       v_row = new Quad(v_curGraph, t.getSubject(), t.getPredicate(), t.getObject());
+    protected void extractRow() throws Exception {
+        Triple t = v_curTriples.next();
+        v_row = new Quad(v_curGraph, t.getSubject(), t.getPredicate(), t.getObject());
     }
 
-    protected Quad getRow()
-    {
+    protected Quad getRow() {
         return v_row;
     }
 
-    public void close()
-    {
-	if (!v_finished)
-	{
-	    if (v_curTriples != null)
-	    {
-		try
-		{
-		    v_curTriples.close();
-		    v_curTriples = null;
-		}
-		catch (Exception e)
-		{
-		    throw new JenaException(e);
-		}
-	    }
-	}
-	v_finished = true;
+    public void close() {
+        if (!v_finished) {
+            if (v_curTriples != null) {
+                try {
+                    v_curTriples.close();
+                    v_curTriples = null;
+                } catch (Exception e) {
+                    throw new JenaException(e);
+                }
+            }
+        }
+        v_finished = true;
     }
 
 
-    protected void finalize() throws SQLException
-    {
-	if (!v_finished && v_curTriples != null) close();
+    protected void finalize() throws SQLException {
+        if (!v_finished && v_curTriples != null) close();
     }
 
 }

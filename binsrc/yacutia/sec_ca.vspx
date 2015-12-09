@@ -30,6 +30,8 @@
   <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
+      <v:variable name="ca_mode" type="varchar" default="'browse'" />
+      <v:variable name="ca_certs" type="any" default="null" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
@@ -65,6 +67,7 @@
                     </table>
                     <!-- end of top security layout -->
                     <br />
+                    <vm:if test="self.ca_mode = 'browse'">
             	      <v:button action="simple" value="Delete" name="delete_select">
                 		  <v:on-post>
                 			  <![CDATA[
@@ -79,12 +82,70 @@
                               delete from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 and C_ID = params[N+1];
                             }
                           }
-			    x509_ca_certs_remove ();
-			    X509_CA_CERTIFICATES_INIT ();
+             					      self.vc_data_bind (e);
+                  			  ]]>
+          		          </v:on-post>
+  	                  </v:button>
+              	      <v:button action="simple" value="Import" name="import_select">
+                  		  <v:on-post>
+                  			  <![CDATA[
+                            self.ca_mode := 'import';
+
+                            self.vc_data_bind (e);
+                  			  ]]>
+          		          </v:on-post>
+  	                  </v:button>
+              	      <v:button action="simple" value="Export" name="export_select">
+                  		  <v:on-post>
+                  			  <![CDATA[
+                  			    declare N integer;
+                            declare params any;
+
+                            params := self.vc_event.ve_params;
+                            self.ca_certs := vector ();
+                            for (N := 0; N < length (params); N := N + 4)
+                            {
+                              if (params[N] like '%cb_select%')
+                              {
+                                self.ca_certs := vector_concat (self.ca_certs, vector(params[N+1]));
+                              }
+                            }
+                            self.ca_mode := 'export';
+
            					      self.vc_data_bind (e);
                 			  ]]>
         		          </v:on-post>
 	                  </v:button>
+              	      <v:button action="simple" value="Import" name="import_select">
+                  		  <v:on-post>
+                  			  <![CDATA[
+                            self.ca_mode := 'import';
+
+                            self.vc_data_bind (e);
+                  			  ]]>
+          		          </v:on-post>
+  	                  </v:button>
+              	      <v:button action="simple" value="Export" name="export_select">
+                  		  <v:on-post>
+                  			  <![CDATA[
+                  			    declare N integer;
+                            declare params any;
+
+                            params := self.vc_event.ve_params;
+                            self.ca_certs := vector ();
+                            for (N := 0; N < length (params); N := N + 4)
+                            {
+                              if (params[N] like '%cb_select%')
+                              {
+                                self.ca_certs := vector_concat (self.ca_certs, vector(params[N+1]));
+                              }
+                            }
+                            self.ca_mode := 'export';
+
+                            self.vc_data_bind (e);
+                  			  ]]>
+          		          </v:on-post>
+  	                  </v:button>
                     <br /><br />
                     <table class="listing">
                       <tr class="listing_header_row">
@@ -121,6 +182,104 @@
                         </v:template>
                       </v:data-set>
                     </table>
+                    </vm:if>
+                    <vm:if test="self.ca_mode = 'import'">
+                      <h3>Import certificates</h3>
+                      <table>
+                        <tr>
+                          <th>CA Roots File:</th>
+                          <td>
+                            <input type="file" name="ca_file" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <th></th>
+                          <td>
+                            <v:button action="simple" name="import" value="Import">
+                              <v:on-post>
+                                <![CDATA[
+                                  declare ca_content varchar;
+
+                                  ca_content := get_keyword ('ca_file', self.vc_event.ve_params, '');
+                                  X509_CERTIFICATES_ADD (ca_content);
+                                  self.ca_mode := 'browse';
+
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button action="simple" name="cancel" value="Cancel">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.ca_mode := 'browse';
+
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                    </vm:if>
+                    <vm:if test="self.ca_mode = 'export'">
+                      <h3>Export certificates</h3>
+                      <table>
+                        <tr>
+                          <th>CA Roots File:</th>
+                          <td>
+                            <input type="text" name="ca_export_file" />
+                          </td>
+                        </tr>
+                        <tr>
+                          <th></th>
+                          <td>
+                            <v:button action="simple" name="export" value="Export">
+                              <v:on-post>
+                                <![CDATA[
+                                  declare N integer;
+                                  declare params, content any;
+
+                                  params := e.ve_params;
+
+                                  http_rewrite ();
+                                  http_request_status ('HTTP/1.1 200 OK');
+                                  http_header (sprintf ('Content-Type: application/x-download\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword ('ca_export_file', params)));
+
+                                  content := '';
+                                  for (N := 0; N < length (self.ca_certs); N := N + 1)
+                                  {
+                                    for (select C_NAME, C_DATA from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 and C_ID = self.ca_certs[N]) do
+                                    {
+                                      content := concat (content, C_NAME);
+                                      content := concat (content, '\n');
+                                      content := concat (content, repeat ('=', length (C_NAME)));
+                                      content := concat (content, '\n');
+                                      content := concat (content, C_DATA);
+                                      content := concat (content, '\n');
+                                    }
+                                  }
+                                  http (content);
+                                  http_flush ();
+
+                                  self.ca_mode := 'browse';
+
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button action="simple" name="cancel2" value="Cancel">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.ca_mode := 'browse';
+
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                    </vm:if>
                   </td>
                 </tr>
               </table>
@@ -128,20 +287,6 @@
           </tr>
         </table>
         <!-- end of bottom security layout -->
-        CA Roots File: <input type="file" name="ca_file" />
-        <br />
-        <v:button action="simple" name="import" value="Import">
-          <v:on-post>
-            <![CDATA[
-              declare ca_content varchar;
-
-              ca_content := get_keyword ('ca_file', self.vc_event.ve_params, '');
-              X509_CERTIFICATES_ADD (ca_content);
-
-              self.ds1.vc_data_bind (e);
-            ]]>
-          </v:on-post>
-        </v:button>
       </v:form>
     </vm:pagebody>
   </vm:pagewrapper>

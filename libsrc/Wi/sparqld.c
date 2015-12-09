@@ -488,20 +488,26 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
     }
   if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_FIXED & mixed_field_restr))
     {
+      dtp_t val_dtp = DV_TYPE_OF (eq->e_rvr.rvrFixedValue);
       ssg_newline (0);
       ssg_puts (" FILTER (");
       ssg_sdprin_varname (ssg, eq->e_varnames[0]);
       ssg_puts (" = ");
-      ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrFixedValue));
-      if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype))
+      if ((NULL != eq->e_rvr.rvrFixedOrigText) && ((DV_DOUBLE_FLOAT == val_dtp) || (DV_SINGLE_FLOAT == val_dtp) || (DV_NUMERIC == val_dtp)))
+        ssg_puts (eq->e_rvr.rvrFixedOrigText);
+      else
         {
-          ssg_puts ("^^");
-          ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrDatatype));
-        }
-      if (NULL != eq->e_rvr.rvrLanguage)
-        {
-          ssg_puts ("@");
-          ssg_puts (eq->e_rvr.rvrLanguage);
+          ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrFixedValue));
+          if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype))
+            {
+              ssg_puts ("^^");
+              ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrDatatype));
+            }
+          if (NULL != eq->e_rvr.rvrLanguage)
+            {
+              ssg_puts ("@");
+              ssg_puts (eq->e_rvr.rvrLanguage);
+            }
         }
       ssg_puts (")");
       goto end_builtin_checks;
@@ -513,7 +519,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
   else if ((SPART_VARR_IS_BLANK & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_BLANK & mixed_field_restr))
     builtin_name = "isBLANK";
   else if ((SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_REF & mixed_field_restr))
-    builtin_name = ((ssg->ssg_sd_flags & (SSG_SD_BI | SSG_SD_VIRTSPECIFIC)) ? "isREF" : "!isLITERAL");
+    builtin_name = ((ssg->ssg_sd_flags & SSG_SD_VIRTSPECIFIC) ? "isREF" : "!isLITERAL");
   else if ((SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_NOT_NULL & mixed_field_restr))
     builtin_name = "BOUND";
   if (NULL != builtin_name)
@@ -764,11 +770,27 @@ static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX
                 colon[0] = ':';
               }
           }
+        if (!strcmp (fname, "SQLVAL::_STAR"))
+          {
+            ssg_puts (" *");
+            return;
+          }
         ssg_sdprin_qname (ssg, (SPART *)(fname));
 fname_printed:
         ssg_putchar ('(');
         ssg->ssg_indent++;
+        if (tree->_.funcall.agg_mode)
+          {
+            if (DISTINCT_L == tree->_.funcall.agg_mode)
+              ssg_puts (" DISTINCT");
+            if ((1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) && ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0]))
+              {
+                ssg_puts (" *");
+                goto args_printed; /* see below */
+              }
+          }
         ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');
+args_printed:
         ssg_putchar (')');
         ssg->ssg_indent--;
         return;

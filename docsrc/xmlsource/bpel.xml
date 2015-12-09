@@ -1105,7 +1105,7 @@ The Virtuoso BPEL implementation supports WS Security and WS Reliable Messaging.
 		  The benefit of using WSA consists in transparently handled
 		  message correlation via "MessageID" and "RelatesTo" headers. Thus no
 		  explicit message correlation needs to be specified when the partner is WSA capable
-		  (see <ulink url="/tutorial/services/bp_s_1/bp_s_1.vsp">LoanFlow</ulink>
+		  (see <ulink url="http://demo.openlinksw.com/tutorial/bpeldemo/LoanFlow/LoanFlow.vsp">LoanFlow</ulink>
 		  demo in tutorials to see how this works).
 		  Also when the reply is asynchronous the return path can  be handled via
 		  the "ReplyTo" WSA headers.
@@ -2230,7 +2230,7 @@ partner">
     SQL&gt;select xpath_eval ('/echoResponse/echoString/text()',
 	xml_tree_doc (
 		DB.DBA.soap_client (
-		url=>sprintf ('http://localhost:%s/BPELGUI/bpel.vsp?script=file://echo/echo.bpel',server_http_port()),
+		url=>sprintf ('http://example.com:%s/BPELGUI/bpel.vsp?script=file://echo/echo.bpel',server_http_port()),
 		operation=>'echo',
 		soap_action=>'echo',
 		parameters=> vector ('par', xtree_doc ('<echoString>hello world</echoString>')))
@@ -2270,7 +2270,7 @@ partner">
   <tip>
   <title>See Also: Reference Material in the Tutorial:</title>
    <para>
-       <ulink url="/tutorial/services/bp_s_1/bp_s_1.vsp">BP-S-1 Loan Flow demo</ulink>
+       <ulink url="http://demo.openlinksw.com/tutorial/bpeldemo/LoanFlow/LoanFlow.vsp">BP-S-1 Loan Flow demo</ulink>
    </para>
   </tip>
   <tip>
@@ -2279,7 +2279,7 @@ partner">
       BPEL4WS VAD package must be installed in order to view these tutorials.
    </para>
    <para>
-       <ulink url="/BPELDemo/">BPELDemo</ulink>
+       <ulink url="http://demo.openlinksw.com/tutorial/bpeldemo/">BPELDemo</ulink>
    </para>
   </tip>
   </sect2>

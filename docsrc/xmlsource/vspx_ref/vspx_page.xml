@@ -138,7 +138,7 @@ The attribute &quot;persist&quot; means to save its value to session table for i
 			    </para>
     <screen><![CDATA[
 				
-			    <v:page name="page01" xmlns:v="http://www.openlinksw.com/vspx/">
+			    <v:page name="page01" xmlns:v="http://example.com/vspx/">
 			    <html>
 			    <body>
 			    <p>

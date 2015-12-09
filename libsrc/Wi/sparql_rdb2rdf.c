@@ -395,7 +395,7 @@ void
 rdb2rdf_set_rvr_by_const_or_qmv (rdb2rdf_ctx_t *rrc, rdf_val_range_t *rvr, ccaddr_t fld_const, qm_value_t *fld_qmv)
 {
   if (NULL != fld_const)
-    sparp_rvr_set_by_constant (NULL, rvr, NULL, (SPART *)fld_const);
+    sparp_rvr_set_by_constant (NULL, rvr, NULL, (SPART *)fld_const, NULL);
   else
     {
       rdf_val_range_t *qmv_or_fmt_rvr = NULL;
@@ -652,14 +652,17 @@ void
 rdb2rdf_print_fld_expn (rdb2rdf_optree_t *rro, int cast_to_obj, int alias_no, quad_map_t *qm, qm_value_t *fld_qmv, const char *prefix, spar_sqlgen_t *ssg)
 {
   qm_format_t *fmt = fld_qmv->qmvFormat;
+  int wrap_to_obj_of_long = cast_to_obj && !(fmt->qmfValRange.rvrRestrictions & SPART_VARR_LONG_EQ_SQL);
 /*  if (fmt->qmfValRange.rvrRestrictions & SPART_VARR_IS_REF)
     ssg_puts ("__i2id (");
-  else */ if (cast_to_obj && !(fmt->qmfValRange.rvrRestrictions & SPART_VARR_LONG_EQ_SQL))
+  else */
+  if (wrap_to_obj_of_long)
     ssg_puts ("DB.DBA.RDF_OBJ_OF_LONG (");
   ssg_print_tmpl (ssg, fmt, fmt->qmfLongOfShortTmpl, prefix, fld_qmv, NULL, NULL_ASNAME);
 /*  if (fmt->qmfValRange.rvrRestrictions & SPART_VARR_IS_REF)
     ssg_putchar (')');
-  else */ if (cast_to_obj && !(fmt->qmfValRange.rvrRestrictions & SPART_VARR_LONG_EQ_SQL))
+  else */
+  if (wrap_to_obj_of_long)
     ssg_putchar (')');
 }
 
@@ -1195,7 +1198,7 @@ rdb2rdf_print_body_begin (spar_sqlgen_t *ssg, int inserts_are_possible)
   if (inserts_are_possible)
     ssg_puts ("  declare old_g_iid, ro_id_dict any;\n");
   ssg_puts ("  declare exit handler for sqlstate '*' {\n");
-  ssg_puts ("      dbg_obj_princ ('RDB2RDF trigger fail: ', __SQL_STATE, ': ', __SQL_MESSAGE);\n");
+  ssg_puts ("      -- dbg_obj_princ ('RDB2RDF trigger fail: ', __SQL_STATE, ': ', __SQL_MESSAGE);\n");
   if (inserts_are_possible)
     ssg_puts ("      if (dict_size (ro_id_dict)) DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g_iid, ro_id_dict);\n");
   ssg_puts ("      resignal;\n };\n");
@@ -1245,10 +1248,10 @@ rdb2rdf_codegen (rdb2rdf_ctx_t *rrc, caddr_t table_name, int opcode, dk_session_
   switch (opcode)
     {
     case RDB2RDF_CODEGEN_INITIAL:
-      ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL__"); ssg_puts (table_name_for_proc); ssg_puts ("\" ()\n{\n");
+      ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL__"); ssg_puts (table_name_for_proc); ssg_puts ("\" (in log_mode int := 2)\n{\n");
       ssg_puts ("  declare old_mode integer;\n");
       ssg_puts ("  old_mode := log_enable (null, 1);\n");
-      ssg_puts ("  log_enable (2, 1);\n");
+      ssg_puts ("  log_enable (log_mode, 1);\n");
       ssg_puts ("  sparql\n");
       ssg_puts ("  define output:valmode \"LONG\"\n");
       ssg_puts ("  define input:storage virtrdf:SyncToQuads\n");
@@ -1374,13 +1377,11 @@ caddr_t
 bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t *graph_xlat, int rule_id_seed, int only_list_tables)
 {
   caddr_t storage_name = uname_virtrdf_ns_uri_SyncToQuads;
-  quad_storage_t *storage = sparp_find_storage_by_name (storage_name);
+  icc_lock_t *lock = icc_lock_from_hashtable (jso__quad_storage.jsocd_rwlock_id);
   caddr_t result = NULL;
   dk_session_t *ses1 = NULL;
   dk_session_t *ses2 = NULL;
-
-  if (NULL == storage)
-    sqlr_new_error ("22023", "SR639", "Quad storage <%.500s> does not exist or unusable", storage_name);
+  rwlock_rdlock (lock->iccl_rwlock);
   MP_START ();
   QR_RESET_CTX
     {
@@ -1388,7 +1389,10 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t 
       int qm_ctr;
       rdb2rdf_ctx_t rrc;
       rdb2rdf_optree_t *prev_top_rro = NULL;
-      memset (&rrc, 0, sizeof (rdb2rdf_ctx_t));
+      quad_storage_t *storage = sparp_find_storage_by_name (NULL, storage_name);
+      if (NULL == storage)
+        sqlr_new_error ("22023", "SR639", "Quad storage <%.500s> does not exist or unusable", storage_name);
+          memset (&rrc, 0, sizeof (rdb2rdf_ctx_t));
       rrc.rrc_rule_id_seed = rule_id_seed;
       if (NULL != graph_xlat)
         {
@@ -1482,6 +1486,7 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t 
       caddr_t err = thr_get_error_code (self);
       thr_set_error_code (self, NULL);
       POP_QR_RESET;
+      rwlock_unlock (lock->iccl_rwlock);
       MP_DONE ();
       dk_free_box ((caddr_t)ses1);
       dk_free_box ((caddr_t)ses2);
@@ -1489,6 +1494,7 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t 
       sqlr_resignal (err);
     }
   END_QR_RESET
+  rwlock_unlock (lock->iccl_rwlock);
   MP_DONE ();
   return result;
 }

@@ -82,11 +82,11 @@
   <refsect1 id="seealso_http_acl_get">
     <title>See Also</title>
     <para>
-      <link linkend="fn_http"><function>http</function></link>,
-      <link linkend="fn_http_value"><function>http_value</function></link>,
-      <link linkend="fn_http_url"><function>http_url</function></link>,
-      <link linkend="fn_string_output"><function>string_output</function></link>,
-      <link linkend="fn_http_rewrite"><function>http_rewrite</function></link>,
+      <link linkend="fn_http"><function>http()</function></link>,
+      <link linkend="fn_http_value"><function>http_value()</function></link>,
+      <link linkend="fn_http_url"><function>http_url()</function></link>,
+      <link linkend="fn_string_output"><function>string_output()</function></link>,
+      <link linkend="fn_http_rewrite"><function>http_rewrite()</function></link>,
       <link linkend="wsaclgenpurpacl">General ACLs</link>.
     </para>
   </refsect1>

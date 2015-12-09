@@ -320,37 +320,44 @@ er:
 }
 ;
 
-create function
-DAV_HOME_DIR_CREATE (in uid varchar) returns any
+create function DAV_HOME_DIR_CREATE (
+  in uid varchar) returns any
 {
-  declare rc integr;
+  declare rc, rc2 integer;
   declare path varchar;
   declare exit handler for sqlstate '*' { return -1; };
 
-  for (select U_ID, U_GROUP, U_DEF_PERMS, U_HOME from SYS_USERS where U_NAME = uid) do
+  for (select U_ID as _uid, U_GROUP as _gid, U_DEF_PERMS as _permissions, U_HOME from SYS_USERS where U_NAME = uid) do
   {
+    if (uid = 'nobody')
+    {
+      _uid := http_dav_uid ();
+      _gid := http_admin_gid ();
+      _permissions := '110100100R';
+    }
     path := '/DAV/home/';
     rc := DAV_MAKE_DIR (path, http_dav_uid (), http_admin_gid (), '110100100R');
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
 
     path := path || uid || '/';
-    rc := DAV_MAKE_DIR (path, U_ID, U_GROUP, U_DEF_PERMS);
+    rc := DAV_MAKE_DIR (path, _uid, _gid, _permissions);
     if (isnull (DAV_HIDE_ERROR (rc)))
       goto _end;
 
     path := path || 'rdf_sink/';
-    rc := DAV_MAKE_DIR (path, U_ID, U_GROUP, U_DEF_PERMS);
-    if (isnull (DAV_HIDE_ERROR (rc)))
+    rc2 := DAV_MAKE_DIR (path, _uid, _gid, _permissions);
+    if (isnull (DAV_HIDE_ERROR (rc2)))
+    {
+      rc := rc2;
       goto _end;
-
-    rc := DAV_PROP_SET_INT (path, 'virt:rdfSink-graph', 'urn:dav:' || replace (subseq (rtrim (path, '/'), 5), '/', ':'), null, null, 0, 0);
-    if (isnull (DAV_HIDE_ERROR (rc)))
+    }
+    rc2 := DB.DBA.DAV_DET_RDF_PARAMS_SET_INT ('rdfSink', rc2, vector ('graph', 'urn:dav:' || replace (subseq (rtrim (path, '/'), 5), '/', ':'), 'sponger', 'on'));
+    if (isnull (DAV_HIDE_ERROR (rc2)))
+    {
+      rc := rc2;
       goto _end;
-
-    rc := DAV_PROP_SET_INT (path, 'virt:rdfSink-sponger', 'on', null, null, 0, 0);
-    if (isnull (DAV_HIDE_ERROR (rc)))
-      goto _end;
+    }
   }
 _end:;
   return rc;
@@ -661,7 +668,7 @@ DAV_DIR_FILTER_INT (in path varchar := '/DAV/', in rec_depth integer := 0, in co
     {
       return did;
     }
-  if ('R' = st or det is null)
+  if (('R' = st) or (det is null) or DB.DBA.DAV_DET_IS_WEBDAV_BASED (det))
     {
       if (auth_uid is null)
         uid := DAV_AUTHENTICATE (did, st, '1__', auth_uname, auth_pwd, uid);
@@ -728,7 +735,7 @@ else 1 end';
 
       for select SUBCOL_FULL_PATH, SUBCOL_ID, SUBCOL_DET
         from DB.DBA.DAV_PLAIN_SUBCOLS
-        where SUBCOL_DET is not null and (not (SUBCOL_DET like '%Filter')) and recursive = rec_depth and (root_id = did) and (root_path = path_string) and subcol_auth_uid = null and subcol_auth_pwd = null
+        where SUBCOL_DET is not null and (not (SUBCOL_DET like '%Filter')) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (SUBCOL_DET) and recursive = rec_depth and (root_id = did) and (root_path = path_string) and subcol_auth_uid = null and subcol_auth_pwd = null
       do
           {
               vectorbld_concat_acc (res, call (SUBCOL_DET || '_DAV_DIR_FILTER') (SUBCOL_ID, vector (''), SUBCOL_FULL_PATH, compilation, rec_depth, auth_uid));
@@ -875,14 +882,18 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
       if ((id <> -1) and (connection_get ('dav_store') is null))
       {
-        declare det, detcol_id any;
+        declare det, detcol_id, detcol_path any;
 
         detcol_id := cast (DAV_PROP_GET_INT (id, what, 'virt:DETCOL_ID', 0) as integer);
         if (DAV_HIDE_ERROR (detcol_id) is not null)
         {
-          det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = detcol_id), '') as varchar);
-          if ((det <> '') and __proc_exists ('DB.DBA.' || det || '_DAV_MAKE_ID'))
-            return call (cast (det as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
+          detcol_path := DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C');
+          if (path like detcol_path || '%')
+          {
+            det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = detcol_id), '') as varchar);
+            if ((det <> '') and __proc_exists ('DB.DBA.' || det || '_DAV_MAKE_ID'))
+              return call (cast (det as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
+          }
         }
       }
     }
@@ -1691,6 +1702,7 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   {
     if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
     {
+
       return a_uid;
     }
     if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
@@ -1739,6 +1751,8 @@ create procedure DAV_GET_UID_BY_WEBID (out a_uid int, out a_gid int)
     return 0;
 
   cert := client_attr ('client_certificate');
+  if (cert = 0)
+    return 0;
   a_uid := null;
   a_gid := null;
   st := '00000';
@@ -2384,22 +2398,28 @@ DAV_COL_CREATE_INT (
   if (ouid is null)
     DAV_OWNER_ID (uid, gid, ouid, ogid);
 
-  declare exit handler for sqlstate '*' { rc := -3; };
   {
-    -- dbg_obj_princ ('about to insert ', rc, name, pid, ouid, ogid, permissions, now(), now ());
-    insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT,
-                                 COL_OWNER, COL_GROUP, COL_PERMS,
-                                 COL_CR_TIME, COL_MOD_TIME)
-                values (rc, name, pid, ouid, ogid, permissions, now(), now ());
-    if (not row_count())
+    declare exit handler for sqlstate '*' {
       rc := -3;
-      if (LDP_ENABLED (pid))
-	{
-	  declare uri any;
-	  uri := WS.WS.DAV_IRI (path);
-	  TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
-	}
+    };
+    -- dbg_obj_princ ('about to insert ', rc, name, pid, ouid, ogid, permissions, now(), now ());
+    insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_OWNER, COL_GROUP, COL_PERMS, COL_CR_TIME, COL_MOD_TIME)
+      values (rc, name, pid, ouid, ogid, permissions, now(), now ());
+
+    if (not row_count())
+      {
+        rc := -3;
+      }
+
+    if (DB.DBA.LDP_ENABLED (pid))
+      {
+        declare uri any;
+        uri := WS.WS.DAV_IRI (path);
+        TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
+        DB.DBA.LDP_CREATE (path);
+      }
   }
+
   return rc;
 }
 ;
@@ -2423,7 +2443,7 @@ create procedure DB.DBA.IS_REDIRECT_REF (inout path any)
 }
 ;
 
-create procedure is_rdf_type(in type varchar) returns integer	
+create procedure is_rdf_type(in type varchar) returns integer
 {
 	if (
 		strstr (type, 'text/n3') is not null or
@@ -2522,6 +2542,12 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   old_log_mode := log_enable (bit_or (new_log_mode, 4), 1);
   rc := DAV_RES_UPLOAD_STRSES_INT_INNER (path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks);
   log_enable (bit_or (old_log_mode, 4), 1);
+  if (DAV_HIDE_ERROR (rc) is not null)
+  {
+    -- create LDP triple if needed
+    DB.DBA.LDP_CREATE (path);
+  }
+
   return rc;
 }
 ;
@@ -2661,6 +2687,14 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
               -- dbg_obj_princ ('failed auth, DAV_RES_UPLOAD_STRSES_INT returns ', auth_uid);
               return auth_uid;
             }
+          pid := DAV_SEARCH_ID (path, 'P');
+          -- dbg_obj_princ ('will authenticate collection id', pid);
+          auth_uid := DAV_AUTHENTICATE (pid, 'C', '1__', auth_uname, auth_pwd);
+          if (auth_uid < 0)
+            {
+              -- dbg_obj_princ ('failed auth on parent, DAV_RES_UPLOAD_STRSES_INT returns ', auth_uid);
+              return auth_uid;
+            }
         }
       else
         auth_uid := ouid;
@@ -2771,7 +2805,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
 		 RES_MOD_TIME = mod_time,
 		 RES_TYPE = type,
 		 RES_CONTENT = content,
-		 ROWGUID = _rowguid
+		 ROWGUID = _rowguid,
+		 RES_SIZE = null
 	   where current of res_cr;
 	}
       else -- when it is cluster do it by PK for now
@@ -2784,45 +2819,14 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
 		 RES_MOD_TIME = mod_time,
 		 RES_TYPE = type,
 		 RES_CONTENT = content,
-		 ROWGUID = _rowguid
+		 ROWGUID = _rowguid,
+		 RES_SIZE = null
 	  where RES_ID = id;
 	}
       if (_is_xper_res)
         update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where current of res_cr;
     }
     -- dbg_obj_princ ('fine, DAV_RES_UPLOAD_STRSES_INT returns ', rc, ' for ', path);
-
-
-  declare c_id, depth integer;
-  declare rdf_graph any;
-  declare _col_p_id, _inherit any;
-
-  -- delete RDF data from separate (file) graph (if exists)
-  RDF_SINK_DELETE (path);
-
-  -- get parent collection id
-   c_id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = rc);
-  -- is rdf_sink folder?
-  rdf_graph := null;
-  depth := 0;
-  {
-     whenever not found goto rdfg_found;
-look_again:
-      select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
-      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
-      if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
-	goto rdfg_found;
-      c_id := _col_p_id;
-      depth := depth + 1;
-      rdf_graph := null;
-      goto look_again;
-  }
-rdfg_found:;
-  if (not DB.DBA.is_empty_or_null (rdf_graph))
-  {
-    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK', rc, 'DB.DBA.RDF_SINK_FUNC', vector (path, rc, c_id, rdf_graph, type, ouid, ogid));
-    DB.DBA.DAV_QUEUE_INIT ();
-  }
 
   return rc;
 
@@ -2854,19 +2858,21 @@ create procedure RDF_SINK_FUNC (
   in ogid int)
 {
   -- dbg_obj_print ('RDF_SINK_FUNC', path);
-  declare rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges any;
+  declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges any;
   declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host, content any;
   declare exit handler for sqlstate '*'
   {
     goto _bad_content;
   };
 
-  -- get sponger parameter?
+  -- get sponger parameters?
   content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
-  rdf_base := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-base'), '');
-  rdf_sponger := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-sponger'), 'on');
-  rdf_cartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-cartridges'), '');
-  rdf_metaCartridges := coalesce((select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-metaCartridges'), '');
+  rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', c_id);
+  rdf_base := get_keyword ('base', rdf_params, '');
+  rdf_sponger := get_keyword ('sponger', rdf_params, 'on');
+  rdf_cartridges := get_keyword ('cartridges', rdf_params, '');
+  rdf_metaCartridges := get_keyword ('metaCartridges', rdf_params, '');
+
   -- upload into first (rdf_sink) graph
   if (RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
   {
@@ -2879,9 +2885,10 @@ create procedure RDF_SINK_FUNC (
       host := WS.WS.DAV_HOST ();
       rdf_graph_resource_id := WS.WS.GETID ('R');
       insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
-      values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+        values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
+
       DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
-      'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'application/rdf+xml'), null, null, 0, 0, 1);
+        'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'application/rdf+xml'), null, null, 0, 0, 1);
     }
   }
 
@@ -2901,7 +2908,7 @@ create procedure RDF_SINK_UPLOAD (
   in rdf_metaCartridges varchar,
   in rdf_private integer := 1)
 {
-  -- dbg_obj_print ('RDF_SINK_UPLOAD', type);
+  -- dbg_obj_princ ('RDF_SINK_UPLOAD (', path, type, ')');
   declare rdf_iri, rdf_graph2, rdf_base2 varchar;
   declare content any;
 
@@ -2922,7 +2929,7 @@ create procedure RDF_SINK_UPLOAD (
         file_delete (tmp_file, 1);
         return 0;
       };
-      rdf_graph2 := WS.WS.DAV_IRI (path);
+      rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
       string_to_file (tmp_file, _content, -2);
       lst := unzip_list (tmp_file);
       foreach (any x in lst) do
@@ -2957,7 +2964,7 @@ create procedure RDF_SINK_UPLOAD (
     }
   -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
   rdf_iri := WS.WS.DAV_IRI (path);
-  rdf_graph2 := WS.WS.DAV_IRI (path);
+  rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
   if (is_empty_or_null (rdf_base))
   {
     rdf_base2 := WS.WS.DAV_HOST () || path;
@@ -3059,95 +3066,152 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
   declare xrc, val_match any;
   declare st, msg, meta, rows, opts any;
 
+  if (DB.DBA.is_empty_or_null (rdf_cartridges))
+    return 1;
+
   st := '00000';
   exec (S, st, msg, vector (), vector ('use_cache', 1), meta, rows);
   if ('00000' <> st)
     return 0;
 
-    cartridges := split_and_decode (rdf_cartridges, 0, '\0\0,');
+  cartridges := split_and_decode (rdf_cartridges, 0, '\0\0,');
   ps := null;
   aq := null;
   foreach (any row in rows) do
-    {
+  {
     cname := cast (row[0] as varchar);
-	    if (position (cname, cartridges))
-            goto _try;
+    if (position (cname, cartridges))
+      goto _try;
 
-        goto _try_next;
+    goto _try_next;
 
-    _try:
+  _try:
     val_match := case when (row[2] = 'MIME') then type else rdf_graph end;
     if (isstring (val_match) and regexp_match (row[1], val_match) is not null)
-      {
-	pname := row[3];
-	if (__proc_exists (pname) is null)
-          goto _try_next;
+    {
+      pname := row[3];
+      if (__proc_exists (pname) is null)
+        goto _try_next;
 
-        declare exit handler for sqlstate '*'
-        {
-          goto _try_next;
-        };
-	opts := vector_concat (vector (), row[5]);
-	xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], opts);
-	-- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
-	-- when no selection we stop processing when a given cartridge indicate to stop
-	if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
-          return 1;
-	      }
-    _try_next:;
+      declare exit handler for sqlstate '*'
+      {
+        goto _try_next;
+      };
+      opts := vector_concat (vector (), row[5]);
+      xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], opts);
+      -- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
+      -- when no selection we stop processing when a given cartridge indicate to stop
+      if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
+        return 1;
     }
+  _try_next:;
+  }
   return 1;
 }
 ;
 
-create procedure RDF_SINK_DELETE (
-  in path any)
+create procedure RDF_SINK_GRAPH_SEARCH (
+  in _path varchar,
+  inout _col_id integer)
 {
-  declare c_id, _col_p_id, _inherit, depth integer;
-  declare rdf_graph, rdf_graph2 any;
+  -- dbg_obj_princ ('RDF_SINK_GRAPH_SEARCH (', _path, ')');
+  declare _col_parent, _depth integer;
+  declare _inherit, _graph varchar;
+  declare _params any;
 
-  c_id := DB.DBA.DAV_SEARCH_ID (subseq (path, 0, strrchr (path, '/') + 1), 'C');
-  if (not isinteger (c_id) or (c_id < 0))
-    return;
-
-  rdf_graph := null;
-  depth := 0;
+  declare exit handler for not found
   {
-     whenever not found goto rdfg_found;
-look_again:
-      select COL_PARENT, COL_INHERIT into _col_p_id, _inherit from WS.WS.SYS_DAV_COL where COL_ID = c_id;
-      rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = c_id and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
-      if ((_inherit = 'R' or (depth = 1 and _inherit = 'M') or depth = 0) and length (rdf_graph))
-	goto rdfg_found;
-      c_id := _col_p_id;
-      depth := depth + 1;
-      rdf_graph := null;
-      goto look_again;
+    return null;
+  };
+
+ _depth := 0;
+
+_again:;
+  _params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', _col_id);
+  _graph := get_keyword ('graph', _params);
+  if (length (_graph) and (_depth = 0))
+  {
+    return _graph;
   }
-  rdfg_found:;
+  select COL_PARENT, COL_INHERIT into _col_parent, _inherit from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
+  if (length (_graph) and ((_inherit = 'R') or (_depth = 1 and _inherit = 'M') or (_depth = 0)))
+  {
+    return _graph;
+  }
+  _col_id := _col_parent;
+  _depth := _depth + 1;
 
-  if (DB.DBA.is_empty_or_null (rdf_graph))
-    return;
+  goto _again;
 
-  RDF_SINK_CLEAR (path, rdf_graph);
+  return null;
+}
+;
+
+create procedure RDF_SINK_INSERT (
+  in _path varchar,
+  in _res_id integer,
+  in _col_id integer,
+  in _res_type varchar,
+  in _res_owner integer,
+  in _res_group integer)
+{
+  -- dbg_obj_princ ('RDF_SINK_INSERT (', _path, ')');
+  declare _graph varchar;
+
+  _graph := RDF_SINK_GRAPH_SEARCH (_path, _col_id);
+  if (length (_graph))
+  {
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_INSERT', _res_id, 'DB.DBA.RDF_SINK_FUNC', vector (_path, _res_id, _col_id, _graph, _res_type, _res_owner, _res_group));
+    DB.DBA.DAV_QUEUE_INIT ();
+  }
+}
+;
+
+create procedure RDF_SINK_DELETE (
+  in _path varchar,
+  in _res_id integer,
+  in _col_id integer)
+{
+  -- dbg_obj_princ ('RDF_SINK_DELETE (', _path, ')');
+  declare _graph varchar;
+
+  _graph := RDF_SINK_GRAPH_SEARCH (_path, _col_id);
+  if (length (_graph))
+  {
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_DELETE', _res_id, 'DB.DBA.RDF_SINK_CLEAR', vector (_path, _graph));
+    DB.DBA.DAV_QUEUE_INIT ();
+  }
 }
 ;
 
 create procedure RDF_SINK_CLEAR (
+  in queue_id integer,
   in path varchar,
   in rdf_graph varchar)
 {
+  -- dbg_obj_princ ('RDF_SINK_CLEAR (', path, rdf_graph, ')');
   declare rdf_group, rdf_graph2 varchar;
+  declare g_iid, g2_iid any;
 
   rdf_group := 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs';
   if (path like '%.gz')
+  {
     path := regexp_replace (path, '\.gz\x24', '');
-
-  rdf_graph2 := WS.WS.DAV_IRI (path);
-  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-  SPARQL clear graph ?:rdf_graph2;
+  }
+  rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
+  g_iid := __i2idn (rdf_graph);
+  g2_iid := __i2idn (rdf_graph2);
+  for (select a.S as _s, a.P as _p, a.O as _o from DB.DBA.RDF_QUAD a where a.G = g2_iid) do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = g_iid and S = _s and P = _p and O = _o;
+	}
+  delete from DB.DBA.RDF_QUAD where G = g2_iid;
   if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = rdf_group))
+  {
     DB.DBA.RDF_GRAPH_GROUP_DEL (rdf_group, rdf_graph2);
+  }
+
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
 }
 ;
 
@@ -3172,10 +3236,10 @@ create procedure DAV_DELETE_INT (
   in check_locks any := 1
 )
 {
-  declare id, rc integer;
+  declare id, id_meta, rc integer;
   declare what char;
   declare auth_uid integer;
-  declare par any;
+  declare par, path_meta any;
   whenever sqlstate 'HT508' goto disabled_owner;
   whenever sqlstate 'HT509' goto disabled_home;
 
@@ -3197,6 +3261,7 @@ create procedure DAV_DELETE_INT (
   else
     auth_uid := http_nobody_uid ();
 
+
   if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, what, check_locks))))
     return rc;
 
@@ -3208,21 +3273,19 @@ create procedure DAV_DELETE_INT (
     return call (cast (det as varchar) || '_DAV_DELETE') (detcol_id, unreached_path, what, silent, auth_uid);
   }
 
+  path_meta := rtrim (path, '/') || ',meta';
+  id_meta := DAV_SEARCH_ID (path_meta, 'R');
   if (what = 'R')
   {
-    declare type, graph varchar;
-
-    type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
-    if (is_rdf_type(type))
-    {
-      graph := WS.WS.DAV_IRI (path);
-      SPARQL clear graph ?:graph;
-      SPARQL delete { graph ?g { ?s <http://www.w3.org/ns/ldp#contains> ?o } } 
-      where { graph ?g { ?s <http://www.w3.org/ns/ldp#contains> ?o . filter (?o = iri(?:graph)) }};
-    }
-
     delete from WS.WS.SYS_DAV_RES where RES_ID = id;
-    RDF_SINK_DELETE (path);
+    DB.DBA.LDP_DELETE (path);
+
+    -- delete *,meta
+    if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_meta)))
+    {
+      delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
+      DB.DBA.LDP_DELETE (path_meta);
+    }
   }
   else if (what = 'C')
   {
@@ -3231,7 +3294,7 @@ create procedure DAV_DELETE_INT (
     declare det, proc, graph varchar;
 
     det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
-    if (det in ('', 'IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+    if ((det = '') or DB.DBA.DAV_DET_IS_SPECIAL (det))
     {
       if (det = 'IMAP')
       {
@@ -3246,6 +3309,10 @@ create procedure DAV_DELETE_INT (
             rollback work;
             return rrc;
           }
+        }
+        if (__proc_exists ('DB.DBA.IMAP__ownerErase') is not null)
+        {
+          DB.DBA.IMAP__ownerErase (id);
         }
         connection_set ('dav_store', null);
       }
@@ -3286,6 +3353,14 @@ create procedure DAV_DELETE_INT (
       }
     }
     delete from WS.WS.SYS_DAV_COL where COL_ID = id;
+    DB.DBA.LDP_DELETE (path);
+
+    -- delete *,meta
+    if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_meta)))
+    {
+      delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
+      DB.DBA.LDP_DELETE (path_meta);
+    }
   }
   else if (not silent)
   {
@@ -3296,6 +3371,7 @@ create procedure DAV_DELETE_INT (
 
 disabled_owner:
   return -42;
+
 disabled_home:
   return -43;
 }
@@ -3341,34 +3417,34 @@ create function DAV_TAG_SET (in id any, in st char (1), in uid integer, in tags 
 
 
 --!AWK PUBLIC
-create procedure
-DAV_COPY (in path varchar,
-          in destination varchar,
-          in overwrite integer := 0,
-          in permissions varchar := '110100000RR',
-          in uid varchar := 'dav',
-          in gid varchar := 'administrators',
-          in auth_uname varchar,
-          in auth_pwd varchar)
+create procedure DAV_COPY (
+  in path varchar,
+  in destination varchar,
+  in overwrite integer := 0,
+  in permissions varchar := '110100000RR',
+  in uid varchar := 'dav',
+  in gid varchar := 'administrators',
+  in auth_uname varchar,
+  in auth_pwd varchar)
 {
   return DAV_COPY_INT (path, destination, overwrite, permissions, uid, gid, auth_uname, auth_pwd, 1);
 }
 ;
 
 
-create procedure
-DAV_COPY_INT (in path varchar,
-          in destination varchar,
-          in overwrite integer := 0,
-          in permissions varchar := '110100000RR',
-          in uid varchar := 'dav',
-          in gid varchar := 'administrators',
-          in auth_uname varchar,
-          in auth_pwd varchar,
-          in extern integer := 1,
-          in check_locks any := 1,
-          in ouid integer := null,
-          in ogid integer := null )
+create procedure DAV_COPY_INT (
+  in path varchar,
+  in destination varchar,
+  in overwrite integer := 0,
+  in permissions varchar := '110100000RR',
+  in uid varchar := 'dav',
+  in gid varchar := 'administrators',
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1,
+  in ouid integer := null,
+  in ogid integer := null )
 {
   declare id, d_id, dp_id, rc integer;
   declare auth_uid integer;
@@ -3387,9 +3463,9 @@ DAV_COPY_INT (in path varchar,
   sar := split_and_decode (path, 0, '\0\0/');
   dar := split_and_decode (destination, 0, '\0\0/');
 
-
   if (aref (sar, 0) <> '')
     return -1;
+
   if (aref (sar, length (sar) - 1) = '')
     st := 'C';
   else
@@ -3397,6 +3473,7 @@ DAV_COPY_INT (in path varchar,
 
   if (aref (dar, 0) <> '')
     return -2;
+
   if (aref (dar, length (dar) - 1) = '')
     {
       if (st = 'R')
@@ -3405,10 +3482,9 @@ DAV_COPY_INT (in path varchar,
           dar := split_and_decode (destination, 0, '\0\0/');
         }
     }
-  else
+  else if (st = 'C')
     {
-      if (st = 'C')
-        return -4;
+      return -4;
     }
   id := DAV_SEARCH_ID (sar, st);
   if (DAV_HIDE_ERROR (id) is null)
@@ -3428,7 +3504,7 @@ DAV_COPY_INT (in path varchar,
   if (d_id is not null and not overwrite)
     return -3;
 
-  if (d_id is not null and id = d_id)
+  if (d_id is not null and (id = d_id))
     return -2;
 
   -- get the ID's before authentication. This is to let proper 'auth_uid := ouid' if not extern.
@@ -3449,7 +3525,9 @@ DAV_COPY_INT (in path varchar,
         return auth_uid;
     }
   else
-    auth_uid := ouid;
+    {
+      auth_uid := ouid;
+    }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
   if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
@@ -3464,13 +3542,11 @@ DAV_COPY_INT (in path varchar,
   if (('C' = st) and destination between path and DAV_COL_PATH_BOUNDARY (path))
     return -30;
 
-  declare auto_version varchar;
-  if (st = 'R')
-    auto_version := DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(d_id, 'R', 'DAV:auto-version', 0));
-  else
-    auto_version := NULL;
   if (check_locks)
     {
+      declare auto_version varchar;
+
+      auto_version := case when (st = 'R') then DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(d_id, 'R', 'DAV:auto-version', 0)) else null end;
       if (auto_version <> 'DAV:locked-checkout')
         {
           if (0 <> (rc := DAV_IS_LOCKED (id , st, check_locks)))
@@ -3497,99 +3573,110 @@ DAV_COPY_INT (in path varchar,
     }
 
   if (isarray (dp_id))
+  {
     dp_det := dp_id[0];
+  }
   else
-    dp_det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=dp_id), NULL);
+  {
+    dp_det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = dp_id), null);
+  }
   if (dp_det is not null)
     {
       declare detcol_id integer;
       declare detcol_path, unreached_path any;
+
       DAV_SEARCH_ID_OR_DET (dar, st, dp_det, detcol_id, detcol_path, unreached_path);
-      return call (cast (dp_det as varchar) || '_DAV_RES_UPLOAD_COPY') (detcol_id, unreached_path, id, st, overwrite, permissions, ouid, ogid, auth_uid);
+      return call (cast (dp_det as varchar) || '_DAV_RES_UPLOAD_COPY') (detcol_id, unreached_path, id, st, overwrite, permissions, ouid, ogid, auth_uid, auth_uname, auth_pwd, extern, check_locks);
     }
   -- dbg_obj_princ ('DAV_COPY_INT will copy ', st, id, ' to ', d_id, ' in ', dp_id);
   if (st = 'R')
     {
       declare newid integer;
+
       if (d_id is not null) -- do update
         {
           if (isarray (id))
             {
               declare rt varchar;
               declare rcnt any;
+
               rcnt := string_output ();
               rc := call (cast (id[0] as varchar) || '_DAV_RES_CONTENT') (id, rcnt, rt, 1);
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
-              update WS.WS.SYS_DAV_RES set RES_CONTENT = rcnt, RES_TYPE = rt, RES_OWNER = ouid,
-                                           RES_GROUP = ogid, RES_PERMS = permissions, RES_MOD_TIME = now ()
-                                       where RES_ID = d_id;
+
+              update WS.WS.SYS_DAV_RES
+                 set RES_CONTENT = rcnt,
+                     RES_TYPE = rt,
+                     RES_OWNER = ouid,
+                     RES_GROUP = ogid,
+                     RES_PERMS = permissions,
+                     RES_MOD_TIME = now ()
+               where RES_ID = d_id;
+
+              DB.DBA.DAV_DET_PROPS_REMOVE (id[0], d_id, 'R');
             }
           else
-            for select RES_TYPE as rt, RES_CONTENT as rcnt from WS.WS.SYS_DAV_RES where RES_ID = id do
+            for select RES_TYPE as rt, RES_CONTENT as rcnt, RES_SIZE as rsize from WS.WS.SYS_DAV_RES where RES_ID = id do
               {
-                update WS.WS.SYS_DAV_RES set RES_CONTENT = rcnt, RES_TYPE = rt, RES_OWNER = ouid,
-                                           RES_GROUP = ogid, RES_PERMS = permissions, RES_MOD_TIME = now ()
-                                       where RES_ID = d_id;
+                update WS.WS.SYS_DAV_RES
+                   set RES_CONTENT = rcnt,
+                       RES_TYPE = rt, RES_OWNER = ouid,
+                       RES_GROUP = ogid,
+                       RES_PERMS = permissions,
+                       RES_MOD_TIME = now (),
+                       RES_SIZE = rsize
+                 where RES_ID = d_id;
               }
           newid := d_id;
         }
       else -- do insert
         {
           declare rname varchar;
+
           rname := aref (dar, length (dar)-1);
           if (rname = '')
             return -2;
-          newid := WS.WS.GETID ('R');
           if (isarray (id))
             {
               declare rt varchar;
               declare rcnt any;
+
               rcnt := string_output ();
               rc := call (cast (id[0] as varchar) || '_DAV_RES_CONTENT') (id, rcnt, rt, 1);
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
-              insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_FULL_PATH,
-                     RES_OWNER, RES_GROUP, RES_PERMS,
-                     RES_CR_TIME, RES_MOD_TIME,
-                     RES_TYPE, RES_CONTENT)
-                     values (newid, rname, dp_id, destination, ouid, ogid, permissions, now(), now (), rt, rcnt);
+
+              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0);
             }
           else
-            for select RES_TYPE as rt, RES_CONTENT as rcnt, RES_NAME as mname from WS.WS.SYS_DAV_RES
-             where RES_ID = id do
-               {
-                 insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_FULL_PATH,
-                     RES_OWNER, RES_GROUP, RES_PERMS,
-                     RES_CR_TIME, RES_MOD_TIME,
-                     RES_TYPE, RES_CONTENT)
-                     values (newid, rname, dp_id, destination, ouid, ogid, permissions, now(), now (), rt, rcnt);
-               }
+            {
+              for (select RES_TYPE as rt, RES_CONTENT as rcnt, RES_NAME as mname from WS.WS.SYS_DAV_RES where RES_ID = id) do
+                {
+                  newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0);
+                }
+            }
         }
-      prop_list := DAV_HIDE_ERROR (DAV_PROP_LIST_INT (id, 'R', '%', 0, auth_uname, auth_pwd), vector ());
-      foreach (any prop in prop_list) do {
-        DAV_PROP_SET_INT (destination, prop[0], prop[1], null, null, 0, 0, 0, auth_uid);
-        }
-      tag_list := DAV_HIDE_ERROR (DAV_TAG_LIST (id, st, NULL), vector ());
-      foreach (any tagpair in tag_list) do {
-        DAV_TAG_SET (newid, 'R', tagpair[0], tagpair[1]);
-        }
+      DB.DBA.DAV_COPY_PROPS (0, id, 'R', destination, auth_uname, auth_pwd, extern, auth_uid);
+      DB.DBA.DAV_COPY_TAGS (id, 'R', newid);
     }
   else if (st = 'C')
     {
-      declare cname varchar;
       declare newid integer;
-      cname := aref (dar, length (dar)-1);
-      if (cname <> '')
+
+      if (dar[length (dar)-1] <> '')
         return -2;
-      cname := aref (dar, length (dar)-2);
-      if (cname = '')
+
+      if (dar[length (dar)-2] = '')
         return -2;
+
       if (isarray (id) and (id[0] like '%CatFilter'))
         return -39;
+
       if (d_id is not null) -- do delete first
         {
           declare rrc integer;
+
           rrc := DAV_DELETE_INT (destination, 0, auth_uname, auth_pwd, 0);
           if (rrc <> 1)
             {
@@ -3603,11 +3690,8 @@ DAV_COPY_INT (in path varchar,
           rollback work;
           return newid;
         }
-      prop_list := DAV_HIDE_ERROR (DAV_PROP_LIST_INT (id, 'C', '%', 0, auth_uname, auth_pwd), vector ());
-      foreach (any prop in prop_list) do {
-        DAV_PROP_SET_INT (destination, prop[0], prop[1], null, null, 0, 0, 0, auth_uid);
-        }
-      DAV_COPY_SUBTREE (id , newid, sar, destination, 1, ouid, ogid, auth_uname, auth_pwd, auth_uid);
+      DB.DBA.DAV_COPY_PROPS (0, id, 'C', destination, auth_uname, auth_pwd, extern, auth_uid);
+      DB.DBA.DAV_COPY_SUBTREE (id , newid, sar, destination, 1, ouid, ogid, auth_uname, auth_pwd, extern, check_locks, auth_uid);
     }
   return 1;
 
@@ -3622,13 +3706,23 @@ disabled_home:
 
 
 -- copy all infinite with given col_id_src and col_id_dst
-create function DAV_COPY_SUBTREE (in src any, in dst any, in sar any,
-  in dar any, in overwrite integer,
-  in ouid integer := null, in ogid integer := null,
-  in auth_uname varchar, in auth_pwd varchar, in auth_uid integer ) returns any
+create procedure DAV_COPY_SUBTREE (
+  in src any,
+  in dst any,
+  in sar any,
+  in dar any,
+  in overwrite integer,
+  in ouid integer := null,
+  in ogid integer := null,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1,
+  in auth_uid integer ) returns any
 {
-  declare dirlist, ret, rc any;
   -- dbg_obj_princ ('DAV_COPY_SUBTREE (', src, dst, sar, dar, overwrite, auth_uname, auth_pwd, auth_uid, ')');
+  declare dirlist, ret, rc any;
+
   vectorbld_init (ret);
   dirlist := DAV_DIR_LIST_INT (DAV_CONCAT_PATH ('/', sar), 0, '%', NULL, NULL, auth_uid);
   foreach (any res in dirlist) do
@@ -3636,12 +3730,16 @@ create function DAV_COPY_SUBTREE (in src any, in dst any, in sar any,
       if ('R' = res[1])
         {
           declare target_path varchar;
+
           target_path := DAV_CONCAT_PATH (dar, res[10]);
-          rc := DAV_AUTHENTICATE (res[4], 'R', '1__', auth_uname, auth_pwd, auth_uid);
---          if (rc >= 0)
---            rc := DAV_COPY_INT (res[0], target_path, overwrite, res[5], res[7], res[6], auth_uname, auth_pwd, 0, 1, res[7], res[6]);
-          if (rc >= 0)
-            rc := DAV_COPY_INT (res[0], target_path, overwrite, res[5], res[7], res[6], auth_uname, auth_pwd, 0, 1, ouid, ogid );
+          if (extern)
+          {
+            rc := DAV_AUTHENTICATE (res[4], 'R', '1__', auth_uname, auth_pwd, auth_uid);
+            if (rc < 0)
+              goto _r_error;
+          }
+          rc := DAV_COPY_INT (res[0], target_path, overwrite, res[5], res[7], res[6], auth_uname, auth_pwd, extern, check_locks, ouid, ogid );
+        _r_error:;
           vectorbld_acc (ret, vector (res[0], target_path, rc));
         }
     }
@@ -3650,32 +3748,31 @@ create function DAV_COPY_SUBTREE (in src any, in dst any, in sar any,
       if ('C' = res[1])
         {
           declare target_path varchar;
+          declare new_tgt_id integer;
+
           target_path := DAV_CONCAT_PATH (dar, res[10]) || '/';
-          rc := DAV_AUTHENTICATE (res[4], 'C', '1__', auth_uname, auth_pwd, auth_uid);
-          if (rc >= 0)
+          if (isarray (res[4]) and (res[4][0] like '%CatFilter'))
             {
-              declare new_tgt_id integer;
-              if (isarray (res[4]) and (res[4][0] like '%CatFilter'))
-                {
-                  vectorbld_acc (ret, vector (res[0], target_path, -39));
-                  goto item_done; /* see below */
-                }
---              new_tgt_id := DAV_COL_CREATE_INT (target_path, res[5], res[7], res[6], auth_uname, auth_pwd, 0, 0, 0, res[7], res[6]);
-              new_tgt_id := DAV_COL_CREATE_INT (target_path, res[5], res[7], res[6], auth_uname, auth_pwd, 0, 0, 0, ouid, ogid );
-              vectorbld_acc (ret, vector (res[0], target_path, new_tgt_id));
-              if (DAV_HIDE_ERROR (new_tgt_id) is not null)
-                {
-                  declare prop_list any;
-                  prop_list := DAV_HIDE_ERROR (DAV_PROP_LIST_INT (res[4], 'C', '%', 0, auth_uname, auth_pwd), vector ());
-                  foreach (any prop in prop_list) do
-                    {
-                      DAV_PROP_SET_RAW (new_tgt_id, 'C', prop[0], prop[1], 0, auth_uid);
-                    }
-                }
-              rc := DAV_COPY_SUBTREE (res[4], new_tgt_id, res[0], target_path, overwrite, ouid, ogid, auth_uname, auth_pwd, auth_uid);
-              vectorbld_concat_acc (ret, rc);
-item_done:;
+              vectorbld_acc (ret, vector (res[0], target_path, -39));
             }
+          else
+          {
+            if (extern)
+            {
+              rc := DAV_AUTHENTICATE (res[4], 'C', '1__', auth_uname, auth_pwd, auth_uid);
+              if (rc < 0)
+                goto _c_error;
+            }
+            new_tgt_id := DAV_COL_CREATE_INT (target_path, res[5], res[7], res[6], auth_uname, auth_pwd, 0, extern, check_locks, ouid, ogid);
+            vectorbld_acc (ret, vector (res[0], target_path, new_tgt_id));
+            if (DAV_HIDE_ERROR (new_tgt_id) is not null)
+              {
+                DB.DBA.DAV_COPY_PROPS (0, res[4], res[1], new_tgt_id, auth_uname, auth_pwd, extern, auth_uid);
+              }
+            rc := DAV_COPY_SUBTREE (res[4], new_tgt_id, res[0], target_path, overwrite, ouid, ogid, auth_uname, auth_pwd, extern, check_locks, auth_uid);
+            vectorbld_concat_acc (ret, rc);
+          }
+        _c_error:;
         }
     }
   vectorbld_final (ret);
@@ -3685,27 +3782,28 @@ item_done:;
 
 
 --!AWK PUBLIC
-create procedure
-DAV_MOVE (in path varchar,
-          in destination varchar,
-          in overwrite integer := 0,
-          in auth_uname varchar,
-          in auth_pwd varchar)
+create procedure DAV_MOVE (
+  in path varchar,
+  in destination varchar,
+  in overwrite integer := 0,
+  in auth_uname varchar,
+  in auth_pwd varchar)
 {
   return DAV_MOVE_INT (path, destination, overwrite, auth_uname, auth_pwd, 1);
 }
 ;
 
 
-create procedure
-DAV_MOVE_INT (in path varchar,
-          in destination varchar,
-          in overwrite integer := 0,
-          in auth_uname varchar,
-          in auth_pwd varchar,
-          in extern integer := 1,
-          in check_locks any := 1 )
+create procedure DAV_MOVE_INT (
+  in path varchar,
+  in destination varchar,
+  in overwrite integer := 0,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1 )
 {
+  -- dbg_obj_princ ('DAV_MOVE_INT (', path, destination, overwrite, auth_uname, auth_pwd, extern, check_locks, ')');
   declare id, d_id, dp_id, rc integer;
   declare auth_uid integer;
   declare st, dp_det char;
@@ -3713,13 +3811,13 @@ DAV_MOVE_INT (in path varchar,
   whenever sqlstate 'HT507' goto insufficient_storage;
   whenever sqlstate 'HT508' goto disabled_owner;
   whenever sqlstate 'HT509' goto disabled_home;
-  -- dbg_obj_princ ('DAV_MOVE_INT (', path, destination, overwrite, auth_uname, auth_pwd, extern, check_locks, ')');
 
   sar := split_and_decode (path, 0, '\0\0/');
   dar := split_and_decode (destination, 0, '\0\0/');
 
   if (aref (sar, 0) <> '')
     return -1;
+
   if (aref (sar, length (sar) - 1) = '')
     st := 'C';
   else
@@ -3727,6 +3825,7 @@ DAV_MOVE_INT (in path varchar,
 
   if (aref (dar, 0) <> '')
     return -2;
+
   if (aref (dar, length (dar) - 1) = '')
     {
       if (st = 'R')
@@ -3776,7 +3875,9 @@ DAV_MOVE_INT (in path varchar,
         return auth_uid;
     }
   else
-    auth_uid := http_nobody_uid ();
+    {
+      auth_uid := http_nobody_uid ();
+    }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
   if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
@@ -3790,6 +3891,7 @@ DAV_MOVE_INT (in path varchar,
     }
   if (('C' = st) and destination between path and DAV_COL_PATH_BOUNDARY (path))
     return -30;
+
   if (check_locks)
     {
       if (0 <> (rc := DAV_IS_LOCKED (id , st, check_locks)))
@@ -3803,15 +3905,20 @@ DAV_MOVE_INT (in path varchar,
     }
 
   if (isarray (dp_id))
+  {
     dp_det := dp_id[0];
+  }
   else
+  {
     dp_det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=dp_id), NULL);
+  }
   if (dp_det is not null)
     {
       declare detcol_id integer;
       declare detcol_path, unreached_path any;
+
       DAV_SEARCH_ID_OR_DET (dar, st, dp_det, detcol_id, detcol_path, unreached_path);
-      return call (cast (dp_det as varchar) || '_DAV_RES_UPLOAD_MOVE') (detcol_id, unreached_path, id, st, overwrite, auth_uid);
+      return call (cast (dp_det as varchar) || '_DAV_RES_UPLOAD_MOVE') (detcol_id, unreached_path, id, st, overwrite, auth_uid, auth_uname, auth_pwd, extern, check_locks);
     }
   -- dbg_obj_princ ('DAV_MOVE_INT will move ', st, id, ' to ', d_id, ' in ', dp_id);
   if (st = 'R') -- XXX: in all cases we do not change the content type : it represents the content.
@@ -3825,6 +3932,7 @@ DAV_MOVE_INT (in path varchar,
               declare rt varchar;
               declare rcnt any;
               declare dirsingle any;
+
               dirsingle := call (cast (id[0] as varchar) || '_DAV_DIR_SINGLE') (id, 'R', path, auth_uid);
               if (isinteger (dirsingle))
                 {
@@ -3835,9 +3943,16 @@ DAV_MOVE_INT (in path varchar,
               rc := call (cast (id[0] as varchar) || '_DAV_RES_CONTENT') (id, rcnt, rt, 1);
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
-              update WS.WS.SYS_DAV_RES set RES_CONTENT = rcnt, RES_TYPE = rt, RES_OWNER = dirsingle[7],
-                                           RES_GROUP = dirsingle[6], RES_PERMS = dirsingle[5], RES_MOD_TIME = now ()
-                                       where RES_ID = d_id;
+
+              update WS.WS.SYS_DAV_RES
+                 set RES_CONTENT = rcnt,
+                     RES_TYPE = rt,
+                     RES_OWNER = dirsingle[7],
+                     RES_GROUP = dirsingle[6],
+                     RES_PERMS = dirsingle[5],
+                     RES_MOD_TIME = now ()
+               where RES_ID = d_id;
+
               rc := DAV_DELETE_INT (path, 1, null, null, 0);
               if (rc < 0)
                 return rc;
@@ -3846,29 +3961,34 @@ DAV_MOVE_INT (in path varchar,
             {
               declare pid integer;
               declare rname, rtype varchar;
+
               select RES_COL, RES_NAME, RES_TYPE into pid, rname, rtype from WS.WS.SYS_DAV_RES where RES_ID = d_id;
               delete from WS.WS.SYS_DAV_TAG where DT_RES_ID = d_id;
               delete from WS.WS.SYS_DAV_RES where RES_ID = d_id;
-              update WS.WS.SYS_DAV_RES set RES_COL = dp_id, RES_NAME = rname,
-                 RES_MOD_TIME = now () where RES_ID = id;
-              delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE='R' and LOCK_PARENT_ID=id;
-              update WS.WS.SYS_DAV_LOCK set LOCK_PARENT_ID = id where LOCK_PARENT_TYPE='R' and LOCK_PARENT_ID=d_id;
+              update WS.WS.SYS_DAV_RES set RES_COL = dp_id, RES_NAME = rname, RES_MOD_TIME = now () where RES_ID = id;
+              if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
+                {
+                  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
+                }
+              update WS.WS.SYS_DAV_LOCK set LOCK_PARENT_ID = id where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = d_id;
               -- dbg_obj_princ ('DAV_MOVE_INT completed deleted destination and update source to set new RES_NAME = ', rname, ' and RES_COL = ', dp_id);
             }
         }
       else -- do update of source
         {
           declare rname varchar;
+
           rname := aref (dar, length (dar)-1);
           if (rname = '')
             return -3;
+
           if (isarray (id))
             {
               declare rt varchar;
               declare rcnt any;
               declare newid integer;
               declare dirsingle any;
-              newid := WS.WS.GETID ('R');
+
               dirsingle := call (cast (id[0] as varchar) || '_DAV_DIR_SINGLE') (id, 'R', path, auth_uid);
               if (isinteger (dirsingle))
                 {
@@ -3879,38 +3999,43 @@ DAV_MOVE_INT (in path varchar,
               rc := call (cast (id[0] as varchar) || '_DAV_RES_CONTENT') (id, rcnt, rt, 1);
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
-              insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_FULL_PATH,
-                     RES_OWNER, RES_GROUP, RES_PERMS,
-                     RES_CR_TIME, RES_MOD_TIME,
-                     RES_TYPE, RES_CONTENT)
-                     values (newid, rname, dp_id, destination, dirsingle[7], dirsingle[6], dirsingle[5], now(), now (), rt, rcnt);
+
+              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, dirsingle[5], dirsingle[7], dirsingle[6], extern=>0);
               rc := DAV_DELETE_INT (path, 1, null, null, 0);
               if (rc < 0)
                 return rc;
+
+              if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
+                {
+                  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
+                }
             }
           else
-              update WS.WS.SYS_DAV_RES set RES_COL = dp_id, RES_NAME = rname,
-                                           RES_MOD_TIME = now () where RES_ID = id;
+            {
+              update WS.WS.SYS_DAV_RES set RES_COL = dp_id, RES_NAME = rname, RES_MOD_TIME = now () where RES_ID = id;
+              if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
+                delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
+            }
+
           -- dbg_obj_princ ('DAV_MOVE_INT completed update source to set new RES_NAME = ', rname, ' and RES_COL = ', dp_id);
-          delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE='R' and LOCK_PARENT_ID=id;
         }
-      prop_list := DAV_HIDE_ERROR (DAV_PROP_LIST_INT (id, st, '%', 0, auth_uname, auth_pwd), vector ());
-      foreach (any prop in prop_list) do
-        {
-          -- Versioning properties must be skipped handled
-          if (prop[0] not in ('DAV:checked-in', 'DAV:checked-out', 'DAV:version-history'))
-             DAV_PROP_SET_INT (destination, prop[0], prop[1], null, null, 0, 0, 0, auth_uid);
-        }
+      DB.DBA.DAV_COPY_PROPS (1, id, st, destination, auth_uname, auth_pwd, extern, auth_uid);
     }
   else if (st = 'C')
     {
       declare rname varchar;
+
       rname := aref (dar, length (dar)-1);
       if (rname <> '')
         return -3;
+
       rname := aref (dar, length (dar)-2);
       if (rname = '')
         return -3;
+
+      if (not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
+        return -20;
+
       if (d_id is not null) -- do delete first
         {
           declare rrc integer;
@@ -3921,16 +4046,37 @@ DAV_MOVE_INT (in path varchar,
               return rrc;
             }
         }
-      if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = id))
+
+      if (isarray (id))
         {
-          rollback work;
-          return -2;
+          declare dirsingle any;
+
+          dirsingle := call (cast (id[0] as varchar) || '_DAV_DIR_SINGLE') (id, 'C', path, auth_uid);
+          if (isinteger (dirsingle))
+            {
+              signal ('.....', sprintf ('DAV_DIR_SINGLE failed during DAV_MOVE'));
+              return -100;
+            }
+          d_id := DAV_COL_CREATE_INT (destination, dirsingle[5], dirsingle[7], dirsingle[6], auth_uname, auth_pwd, 0, 0, 0);
+          if (DAV_HIDE_ERROR (d_id) is null)
+            {
+              rollback work;
+              return d_id;
+            }
+          DB.DBA.DAV_COPY_PROPS (0, id, 'C', destination, auth_uname, auth_pwd, extern, auth_uid);
+          DB.DBA.DAV_COPY_SUBTREE (id , d_id, sar, destination, 1, dirsingle[7], dirsingle[6], auth_uname, auth_pwd, extern, check_locks, auth_uid);
         }
-      update WS.WS.SYS_DAV_COL set COL_NAME = rname, COL_PARENT = dp_id, COL_MOD_TIME = now ()
-                 where COL_ID = id;
-      delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE='C' and LOCK_PARENT_ID=id;
-      if (d_id is not null)
-        update WS.WS.SYS_DAV_LOCK set LOCK_PARENT_ID = id where LOCK_PARENT_TYPE='C' and LOCK_PARENT_ID=d_id;
+      else
+        {
+          update WS.WS.SYS_DAV_COL set COL_NAME = rname, COL_PARENT = dp_id, COL_MOD_TIME = now () where COL_ID = id;
+        }
+
+      rc := DAV_DELETE_INT (path, 1, null, null, 0);
+      if (rc < 0)
+        return rc;
+
+      delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
+      update WS.WS.SYS_DAV_LOCK set LOCK_PARENT_ID = id where LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = d_id;
     }
   return 1;
 
@@ -3943,6 +4089,63 @@ disabled_home:
 }
 ;
 
+create procedure DAV_COPY_PROPS (
+  in mode integer,
+  in src any,
+  in what char(1),
+  in dst any,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in auth_uid integer := null)
+{
+  -- dbg_obj_princ ('DAV_COPY_PROPS (', mode, src, what, dst, ')');
+  declare det varchar;
+  declare props any;
+
+  if (isstring (dst))
+  {
+    dst := DB.DBA.DAV_SEARCH_ID (dst, what);
+  }
+  det := case when (isarray (src)) then src[0] else '' end;
+  props := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_LIST_INT (src, what, '%', extern, auth_uname, auth_pwd), vector ());
+  foreach (any prop in props) do
+    {
+      if (mode and (prop[0] in ('DAV:checked-in', 'DAV:checked-out', 'DAV:version-history')))
+        goto _skip;
+
+      if ((det <> '') and ((prop[0] like ('virt:' || det || '%')) or (prop[0] = 'virt:DETCOL_ID')))
+        goto _skip;
+
+      DB.DBA.DAV_PROP_SET_RAW (dst, what, prop[0], prop[1], 0, auth_uid);
+
+    _skip:;
+    }
+}
+;
+
+create procedure DAV_COPY_TAGS (
+  in src any,
+  in what char(1),
+  in dst any)
+{
+  -- dbg_obj_princ ('DAV_COPY_TAGS (', src, what, dst, ')');
+  declare tags any;
+
+  if (isarray (src))
+    return;
+
+  if (isstring (dst))
+  {
+    dst := DB.DBA.DAV_SEARCH_ID (dst, what);
+  }
+  tags := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_TAG_LIST (src, what, null), vector ());
+  foreach (any tag in tags) do
+    {
+      DB.DBA.DAV_TAG_SET (dst, what, tag[0], tag[1]);
+    }
+}
+;
 
 create function
 DAV_GET_OWNER (in id any, in st char(1)) returns integer
@@ -5060,6 +5263,36 @@ create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
 }
 ;
 
+-- LDI triggers
+--
+create trigger SYS_DAV_RES_LDI_AI after insert on WS.WS.SYS_DAV_RES order 110 referencing new as N
+{
+  -- insert RDF data
+  RDF_SINK_INSERT (N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP);
+}
+;
+
+create trigger SYS_DAV_RES_LDI_AU after update on WS.WS.SYS_DAV_RES order 110 referencing new as N, old as O
+{
+  declare c_id, _parent_co_id, depth integer;
+  declare _inherit, rdf_graph varchar;
+  declare rdf_params any;
+
+  -- delete RDF data from separate (file) graph (if exists)
+  RDF_SINK_DELETE (O.RES_FULL_PATH, O.RES_ID, O.RES_COL);
+
+  -- insert RDF data
+  RDF_SINK_INSERT (N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP);
+}
+;
+
+create trigger SYS_DAV_RES_LDI_AD after delete on WS.WS.SYS_DAV_RES order 110 referencing old as O
+{
+  -- delete RDF data from separate (file) graph (if exists)
+  RDF_SINK_DELETE (O.RES_FULL_PATH, O.RES_ID, O.RES_COL);
+}
+;
+
 -- Web Access Control
 --
 create trigger SYS_DAV_COL_WAC_U after update on WS.WS.SYS_DAV_COL order 100 referencing new as N, old as O
@@ -5296,15 +5529,38 @@ create procedure WS.WS.WAC_DELETE (
     connection_set ('dav_acl_sync', null);
   }
   set_user_id ('dba');
-
-  delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (graph);
+  for (select a.G as GG, a.S as SS
+         from DB.DBA.RDF_QUAD a
+        where	a.G = __i2idn (graph)
+          and	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+          and	a.O = __i2idn ('http://www.w3.org/ns/auth/acl#Authorization')) do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = GG and (S = SS or O = SS);
+	}
+  for (select a.G as GG, a.S as SS
+         from DB.DBA.RDF_QUAD a
+        where	a.G = __i2idn (graph)
+          and a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+          and a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Filter')) do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = GG and (S = SS or O = SS);
+	}
+  for (select a.G as GG, a.S as SS
+         from DB.DBA.RDF_QUAD a
+        where	a.G = __i2idn (graph)
+          and a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type')
+          and a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Criteria')) do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = GG and (S = SS or O = SS);
+	}
 }
 ;
 
 create procedure WS.WS.WAC_GRAPH (
-  in path varchar)
+  in path varchar,
+  in suffix varchar := '')
 {
-  return rtrim (WS.WS.DAV_IRI (path), '/') || '/';
+  return rtrim (WS.WS.DAV_IRI (path), '/') || '/' || suffix;
 }
 ;
 
@@ -7375,6 +7631,65 @@ create function DAV_HOME_DIR_UPDATE ()
 DAV_HOME_DIR_UPDATE ()
 ;
 
+create function DAV_NOBODY_DIR_UPDATE ()
+{
+  declare changed integer;
+
+  if (isstring (registry_get ('DAV_NOBODY_DIR_UPDATE')))
+    return;
+
+  for (select COL_ID as cid, COL_OWNER as uid, COL_GROUP as gid from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like '/DAV/home/nobody/%') do
+  {
+    changed := 0;
+    if (uid = http_nobody_uid())
+    {
+      changed := 1;
+      uid := http_dav_uid();
+    }
+    if (gid = http_nogroup_gid())
+    {
+      changed := 1;
+      gid := http_admin_gid();
+    }
+    if (changed)
+    {
+      update WS.WS.SYS_DAV_COL
+         set COL_OWNER = uid,
+             COL_GROUP = gid
+       where COL_ID = cid;
+    }
+  }
+
+  for (select RES_ID as rid, RES_OWNER as uid, RES_GROUP as gid from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/home/nobody/%') do
+  {
+    changed := 0;
+    if (uid = http_nobody_uid())
+    {
+      changed := 1;
+      uid := http_dav_uid();
+    }
+    if (gid = http_nogroup_gid())
+    {
+      changed := 1;
+      gid := http_admin_gid();
+    }
+    if (changed)
+    {
+      update WS.WS.SYS_DAV_RES
+         set RES_OWNER = uid,
+             RES_GROUP = gid
+       where RES_ID = rid;
+    }
+  }
+
+  registry_set ('DAV_NOBODY_DIR_UPDATE', 'done');
+}
+;
+
+--!AFTER
+DAV_NOBODY_DIR_UPDATE ()
+;
+
 -------------------------------------------------------------------------------
 --
 -- DAV QUEUE API
@@ -7598,13 +7913,34 @@ _exit:;
 -- DAV SCHEDULER
 --
 -------------------------------------------------------------------------------
+create function DB.DBA.DAV_EXPIRE_SCHEDULER (
+  in queue_id integer)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_EXPIRE_SCHEDULER (', queue_id, ')');
+  declare _now, _today datetime;
+
+  _now := curdatetime ();
+  _today := cast (stringdate (sprintf ('%d.%d.%d', year (_now), month (_now), dayofmonth (_now))) as date);
+  for (select PROP_TYPE, PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:expireDate' and cast (PROP_VALUE as date) <= _today) do
+  {
+    DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, PROP_TYPE), 1, null, null, 0);
+  }
+
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+}
+;
+
 create procedure DB.DBA.DAV_SCHEDULER ()
 {
   -- dbg_obj_princ ('DB.DBA.DAV_SCHEDULER');
   declare DETs any;
 
   set_user_id ('dba');
-  DETs := vector ('IMAP', 'S3', 'Box', 'Dropbox', 'GDrive', 'SkyDrive', 'WebDAV', 'RACKSPACE');
+
+  -- Added expire date task
+  DB.DBA.DAV_QUEUE_ADD ('EXPIRED', 0, 'DB.DBA.DAV_EXPIRE_SCHEDULER', vector ());
+
+  DETs := DB.DBA.DAV_DET_SPECIAL ();
   foreach (any det in DETs) do
   {
     if (__proc_exists ('DB.DBA.' || det || '_DAV_SCHEDULER'))
@@ -7642,7 +7978,7 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
   }
 
   old_mode := log_enable (3, 1);
-  for (select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph') do
+  for (select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-rdf') do
   {
     path := DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, 'C');
     for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do

@@ -61,6 +61,7 @@ grant execute on DB.DBA.RL_I2ID_NP to "SPARQL_SELECT";
 grant execute on DB.DBA.VT_BATCH_REAL_PROCESS_1_DB_DBA_RDF_OBJ to "SPARQL_SPONGE";
 grant execute on DB.DBA.fct_build_info to "SPARQL_SELECT";
 grant execute on b3s_get_entity_graph to SPARQL_SELECT;
+grant execute on b3s_get_user_graph_permissions to SPARQL_SELECT;
 grant execute on FCT.DBA.get_describe_request_params to SPARQL_SELECT;
 grant execute on FCT.DBA.build_page_url_on_current_host to SPARQL_SELECT;
 grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_GET to SPARQL_SELECT;

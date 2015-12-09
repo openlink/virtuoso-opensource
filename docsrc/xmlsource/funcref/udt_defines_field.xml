@@ -67,8 +67,7 @@
   -->
   <refsect1 id="examples_udt_defines_field">
     <title>Examples</title>
-    <example id="ex_udt_defines_field"><title></title>
-      <para></para>
+    <example id="ex_udt_defines_field"><title>Simple Use</title>
       <screen><![CDATA[
 select udt_defines_field (new SER_UDT(), 'A');
 ]]></screen>

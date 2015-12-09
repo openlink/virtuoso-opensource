@@ -381,8 +381,8 @@ sqlg_ks_vec (sqlo_t * so, df_elt_t * tb_dfe, key_source_t * ks)
 int enable_cl_fref_union = 1;
 int enable_row_ranges = 1;
 
-#define SP_IS_LOWER(sp) (CMP_GT == sp->sp_min_op || CMP_GTE == sp->sp_min_op)
-#define SP_IS_UPPER(sp) (CMP_LT == sp->sp_max_op || CMP_LTE == sp->sp_max_op)
+#define SP_IS_LOWER(sp) ((CMP_GT == sp->sp_min_op || CMP_GTE == sp->sp_min_op) && CMP_NONE == sp->sp_max_op)
+#define SP_IS_UPPER(sp) ((CMP_LT == sp->sp_max_op || CMP_LTE == sp->sp_max_op) && CMP_NONE == sp->sp_min_op)
 
 void
 sqlg_ks_row_ranges (key_source_t * ks)
@@ -1143,7 +1143,7 @@ sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   ts->ts_is_outer = tb_dfe->_.table.ot->ot_is_outer;
   order_ks = ts->ts_order_ks;
   if (order_ks && order_ks->ks_spec.ksp_spec_array)
-    ts->ts_is_unique = tb_dfe->_.table.is_unique;
+    ts->ts_is_unique = ts_check_unq (ts, tb_dfe->_.table.is_unique);
   /* if the order key has no spec then this can't be a full match of the key.  The situation is a contradiction, can happen if there is a unique pred but the wrong key.  Aberration of score function is possible cause.*/
 
   if (order_ks)
@@ -2015,6 +2015,59 @@ box_position_no_tag (caddr_t * box, caddr_t elt)
 }
 
 
+void
+sqlg_mark_not_gen (df_elt_t * dfe)
+{
+  /* a trans dt has the reverse dir sharing col and possibly col pred dfes with the fwd direction.  These must be marked placed and not gen to get the reverse with right placing */
+  if (!IS_BOX_POINTER (dfe))
+    return;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
+    {
+      int inx;
+      df_elt_t ** dfe_arr = (df_elt_t **) dfe;
+      DO_BOX (df_elt_t *, elt, inx, dfe_arr)
+	{
+	  sqlg_mark_not_gen (elt);
+	}
+      END_DO_BOX;
+      return;
+    }
+  switch (dfe->dfe_type)
+    {
+    case DFE_VALUE_SUBQ:
+    case DFE_EXISTS:
+    case DFE_DT:
+      {
+	df_elt_t * sub;
+	if (dfe->_.sub.generated_dfe)
+	  {
+	    sqlg_mark_not_gen (dfe->_.sub.generated_dfe);
+	    return;
+	  }
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.after_join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.vdb_join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.invariant_test);
+	for (sub = dfe->_.sub.first; sub; sub = sub->dfe_next)
+	  sqlg_mark_not_gen (sub);
+	break;
+      }
+    case DFE_TABLE:
+      {
+	DO_SET (df_elt_t *, col, &dfe->_.table.out_cols)
+	  col->dfe_is_placed = DFE_PLACED;
+	END_DO_SET();
+	DO_SET (df_elt_t *, col, &dfe->_.table.all_preds)
+	  col->dfe_is_placed = DFE_PLACED;
+	END_DO_SET();
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.after_join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.vdb_join_test);
+	break;
+      }
+    }
+}
+
+
 state_slot_t *
 tn_nth_col (sql_comp_t *sc, trans_node_t * tn, int inx)
 {
@@ -2140,7 +2193,6 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
       tn->tn_path_ctr = cc_new_instance_slot (sc->sc_cc);
       tn->tn_keep_path = 1;
     }
-  tn->tn_after_join_test = sqlg_pred_body (so, dt_dfe->_.sub.after_join_test);
   if (trans->_.trans.min)
     tn->tn_min_depth = scalar_exp_generate (sc, trans->_.trans.min, pre_code);
   if (trans->_.trans.max)
@@ -2158,6 +2210,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   if (tl->tl_complement)
     {
       tl->tl_complement->dfe_super = dt_dfe;
+      sqlg_mark_not_gen (tl->tl_complement);
       tn->tn_complement = (trans_node_t*)sqlg_make_trans_dt (so, tl->tl_complement, target_names, pre_code);
       tn->tn_complement->tn_is_primary = 0;
       tn->tn_complement->tn_complement = tn;
@@ -2559,14 +2612,20 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	  if (inx != n_terms - 1)
 	    {
 	      jmp_label_t temp_fail = sqlc_new_label (sc);
+	      if (inx == 2)
+		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, temp_fail, temp_fail);
 	      cv_label (code, temp_fail);
 	    }
 	  else
 	    {
+	      if (inx == 2)
+		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
 	    }
 	}
+      if (inx > 1)
+	sqlg_cond_end (sc);
       return;
     }
   if (BOP_AND == op)
@@ -2576,22 +2635,27 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	  if (inx < n_terms - 1)
 	    {
 	      jmp_label_t temp_succ = sqlc_new_label (sc);
+	      if (2 == inx)
+		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, temp_succ, fail, unk);
 	      cv_label (code, temp_succ);
 	    }
 	  else
-	    sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
+	    {
+	      if (2 == inx)
+		sqlg_cond_start (sc);
+	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
+	    }
 	}
+      if (inx > 1)
+	sqlg_cond_end (sc);
       return;
     }
   else
     {
       for (inx = 1; inx < n_terms; inx++)
 	{
-	  char save = sc->sc_re_emit_code;
-	  sc->sc_re_emit_code = !sc->sc_is_first_cond;
 	  sqlg_dfe_code (so, body[inx], code, succ, fail, unk);
-	  sc->sc_re_emit_code = save;
 	}
       sc->sc_is_first_cond = 0;
     }
@@ -2714,16 +2778,8 @@ code_vec_t
 sqlg_pred_body (sqlo_t * so, df_elt_t **  body)
 {
   code_vec_t cv;
-  dk_set_t save = so->so_sc->sc_re_emitted_dfes;
-  so->so_sc->sc_re_emitted_dfes = NULL;
   so->so_sc->sc_is_first_cond = 1;
   cv = sqlg_pred_body_1 (so, body, NULL);
-  DO_SET (df_elt_t *, dfe, &so->so_sc->sc_re_emitted_dfes)
-    {
-      dfe->dfe_ssl = NULL;
-    }
-  END_DO_SET();
-  so->so_sc->sc_re_emitted_dfes = save;
   return cv;
 }
 
@@ -4072,7 +4128,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	    }
 	  aggregate = sqlg_dfe_ssl (so, sqlo_df (so, fref));
 		  if (AMMSC_USER != fref->_.fn_ref.fn_code)
-	  sqlg_find_aggregate_sqt (sc->sc_cc->cc_schema, &(arg->ssl_sqt), fref, &(aggregate->ssl_sqt));
+		sqlg_find_aggregate_sqt (wi_inst.wi_schema, &(arg->ssl_sqt), fref, &(aggregate->ssl_sqt));
 		  else
 		    aggregate->ssl_sqt.sqt_dtp = DV_ARRAY_OF_POINTER;
 	  if (!dk_set_member (out_slots, aggregate))
@@ -4984,7 +5040,7 @@ data_source_t *
 sqlg_add_breakup_node (sql_comp_t * sc, data_source_t ** head, state_slot_t *** ssl_ret, int n_per_set, dk_set_t * code)
 {
   state_slot_t ** ssl_out = *ssl_ret;
-  int inx;
+  int inx, alen = box_length (ssl_out) / sizeof (caddr_t);
   SQL_NODE_INIT (breakup_node_t, brk, breakup_node_input, breakup_node_free);
   brk->brk_all_output = ssl_out;
   DO_BOX (state_slot_t *, ssl, inx, ssl_out)
@@ -5012,7 +5068,12 @@ sqlg_add_breakup_node (sql_comp_t * sc, data_source_t ** head, state_slot_t *** 
   brk->brk_output = dk_alloc_box (sizeof (caddr_t) * n_per_set, DV_BIN);
   brk->brk_current_slot = cc_new_instance_slot  (sc->sc_cc);
   for (inx = 0; inx < n_per_set; inx++)
-    brk->brk_output[inx] = brk->brk_all_output[inx];
+    {
+      state_slot_t *ssl = brk->brk_all_output[inx];
+      state_slot_t *v = ssl_new_inst_variable (sc->sc_cc, ssl->ssl_name, ssl->ssl_sqt.sqt_dtp);
+      v->ssl_sqt.sqt_non_null = ssl->ssl_sqt.sqt_non_null;
+      brk->brk_output[inx] = v;
+    }
   sql_node_append (head, (data_source_t *) brk);
   *ssl_ret = (state_slot_t**) box_copy ((caddr_t) brk->brk_output);
   return (data_source_t*)brk;
@@ -5777,6 +5838,8 @@ dfe_unit_col_loci (df_elt_t * dfe)
 		    }
 		  END_DO_BOX;
 		}
+	      if (dfe->dfe_tree && dfe->dfe_tree != dfe->_.sub.ot->ot_dt)
+		dfe->_.sub.ot->ot_dt = dfe->dfe_tree;
 	      if (dfe->_.sub.hash_filler_of)
 		t_set_push (&dfe->dfe_sqlo->so_hash_fillers, (void*) dfe);
 	      dfe_list_col_loci (dfe->_.sub.first);
@@ -5888,7 +5951,6 @@ sqlg_top_1 (sqlo_t * so, df_elt_t * dfe, state_slot_t ***sel_out_ret)
   comp_context_t * outer_cc = so->so_sc->sc_cc;
   comp_context_t inner_cc;
   memset (&inner_cc, 0, sizeof (inner_cc));
-  inner_cc.cc_schema = outer_cc->cc_schema;
   inner_cc.cc_super_cc = outer_cc->cc_super_cc;
   inner_cc.cc_query = outer_cc->cc_query;
   so->so_sc->sc_cc = &inner_cc;
@@ -5931,5 +5993,3 @@ qr_print_ssl (query_t * qr, ssl_index_t i)
       printf ("%p\n", ssl);
   END_DO_SET ();
 }
-
-

@@ -69,7 +69,6 @@ In case of non-function-specific errors, i.e. only common
   <refsect1 id="examples_bit_not">
     <title>Examples</title>
     <example id="ex_bit_not"><title>Using bitwise-NOT</title>
-      <para></para>
       <screen><![CDATA[
 select bit_not (18);
 -19
@@ -82,9 +81,9 @@ select bit_not (-18);
   </refsect1>
   <refsect1 id="seealso_bit_not">
     <title>See Also</title>
-    <para><link linkend="fn_bit_and"><function>bit_and</function></link></para>
-    <para><link linkend="fn_bit_or"><function>bit_or</function></link></para>
-    <para><link linkend="fn_bit_shift"><function>bit_shift</function></link></para>
-    <para><link linkend="fn_bit_xor"><function>bit_xor</function></link></para>
+    <para><link linkend="fn_bit_and"><function>bit_and()</function></link></para>
+    <para><link linkend="fn_bit_or"><function>bit_or()</function></link></para>
+    <para><link linkend="fn_bit_shift"><function>bit_shift()</function></link></para>
+    <para><link linkend="fn_bit_xor"><function>bit_xor()</function></link></para>
   </refsect1>
 </refentry>

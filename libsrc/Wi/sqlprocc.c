@@ -796,6 +796,7 @@ int
 sqlc_set_brk (query_t *qr, long line1, int what, caddr_t * inst)
 {
   int rc = 0;
+  int inside_handler = 0;
   if (!qr && !line1 && inst && *inst)
     {
       instruction_t * instr = (instruction_t *) (*inst);
@@ -812,6 +813,12 @@ sqlc_set_brk (query_t *qr, long line1, int what, caddr_t * inst)
     return 0;
   DO_INSTR (instr, 0, qr->qr_head_node->src_pre_code)
     {
+      if (instr->ins_type == INS_HANDLER)
+	inside_handler = 1;
+      if (instr->ins_type == INS_HANDLER_END)
+	inside_handler = 0;
+      if (inside_handler && line1 <= 0)
+	continue;
 	if (instr->ins_type == INS_BREAKPOINT)
 	  {
 	    if ((line1 > 0 && instr->_.breakpoint.line_no >= line1) || line1 <= 0)
@@ -1388,7 +1395,7 @@ sqlc_module_decl (sql_comp_t * sc, ST * tree)
   sc->sc_cc->cc_query->qr_proc_name = box_string (tree->_.module.name);
   sc->sc_cc->cc_query->qr_module = (query_t *) 1;
 
-  if (sch_module_def (sc->sc_cc->cc_schema, tree->_.module.name))
+  if (sch_module_def (wi_inst.wi_schema, tree->_.module.name))
     {
       err = srv_make_new_error ("37000", "SQ140",
 	  "Module declaration tries to overwrite a module"
@@ -1415,7 +1422,7 @@ sqlc_module_decl (sql_comp_t * sc, ST * tree)
 	qr->qr_proc_owner = sc->sc_client->cli_user->usr_id;
 #if 0
       /* no longer needed as top condition for module must handle such situation */
-      if (sch_proc_def (sc->sc_cc->cc_schema, qr->qr_proc_name))
+      if (sch_proc_def (wi_inst.wi_schema, qr->qr_proc_name))
 	{
 	    err = srv_make_new_error ("37000", "SQ140",
 		"Module procedure declaration tries to overwrite a procedure"
@@ -1433,7 +1440,7 @@ sqlc_module_decl (sql_comp_t * sc, ST * tree)
 	}
 #endif
 
-      sch_set_proc_def (sc->sc_cc->cc_schema, qr->qr_proc_name, qr);
+      sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
       t_set_push (&qr_set, qr);
     }
   END_DO_BOX;
@@ -1442,7 +1449,7 @@ sqlc_module_decl (sql_comp_t * sc, ST * tree)
 error:
   DO_SET (query_t *, qr, &qr_set)
     {
-      sch_set_proc_def (sc->sc_cc->cc_schema, qr->qr_proc_name, NULL);
+      sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, NULL);
     }
   END_DO_SET();
   sqlc_resignal_1 (sc->sc_cc, err);
@@ -1592,7 +1599,7 @@ sqlc_trigger_decl (sql_comp_t * sc, ST * tree)
   int has_similar, o_sc_trig_decl = 0;
   query_t *qr = sc->sc_cc->cc_query;
   user_t * usr = sc->sc_client->cli_user;
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
       tree->_.trigger.table);
   if (!tb)
     sqlc_new_error (sc->sc_cc, "42S02", "SQ090", "Bad table %s in trigger %s definition",
@@ -1604,7 +1611,7 @@ sqlc_trigger_decl (sql_comp_t * sc, ST * tree)
   qr->qr_trig_time = (char) tree->_.trigger.time;
 
   sqlc_qr_trig_event (sc, qr, tree);
-  if (sch_view_def (sc->sc_cc->cc_schema, tb->tb_name))
+  if (sch_view_def (wi_inst.wi_schema, tb->tb_name))
     {
       if (((char) tree->_.trigger.time) != TRIG_INSTEAD &&
        !tb_is_trig_at (tb, qr->qr_trig_event, TRIG_INSTEAD, NULL))

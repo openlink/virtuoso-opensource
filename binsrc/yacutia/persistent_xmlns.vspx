@@ -27,34 +27,105 @@
         fast-render="1"
         xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
-  <vm:pagetitle>Persistent XML namespaces</vm:pagetitle>
+  <vm:pagetitle>Persistent Namespaces &amp; Prefixes</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
+      <v:variable name="c_mode" type="varchar" default="'C/browse'"/>
+
+      <v:variable name="f_how" type="varchar" default="4"/>
+      <v:variable name="f_value" type="varchar" default="''"/>
+      <v:variable name="f_filter" type="varchar" default="''"/>
+
+      <v:variable name="c_pref" type="varchar" default="''"/>
+      <v:variable name="c_uri" type="varchar" default="''"/>
     </vm:variables>
     <vm:menu>
-      <vm:menuitem value="Persistent XML Namespaces"/>
+      <vm:menuitem value="Persistent Namespaces &amp; Prefixes"/>
     </vm:menu>
-    <vm:header caption="Persistent XML Namespaces">
+    <vm:header caption="Persistent Namespaces &amp; Prefixes">
     </vm:header>
     <vm:pagebody>
+      <div class="clear"></div>
       <v:form name="frm1" method="POST" type="simple">
+        <vm:if test="self.c_mode = 'C/browse'">
+          <div style="padding-bottom: 1em; width: 100%;">
+            <div style="float: left; display: inline;">
+              <v:button name="add1" value="Add" action="simple">
+                <v:on-post>
+                  <![CDATA[
+                    self.c_mode := 'C/add';
+
+                    self.c_pref := '';
+                    self.c_uri := '';
+
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+
+            <div style="float: right; display: inline;">
+              Show
+              <v:select-list name="how" xhtml_id="how" value="--self.f_how">
+                <v:item name="Starting with" value="1" />
+                <v:item name="Containing" value="2" />
+                <v:item name="Ending with" value="3" />
+                <v:item name="Exact match" value="4" />
+              </v:select-list>
+              <v:text name="value" xhtml_id="value" value="--self.f_value"/>
+              <v:button action="simple" value="Filter" xhtml_class="button">
+                <v:on-post>
+                  <![CDATA[
+                    self.f_how := self.how.ufl_value;
+                    self.f_value := self.value.ufl_value;
+
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Clear" xhtml_class="button">
+                <v:on-post>
+                  <![CDATA[
+                    self.f_how := '4';
+                    self.f_value := '';
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+          </div>
+          <br />
         <table class="listing">
           <tr class="listing_header_row">
             <th>Prefix</th>
             <th>URI</th>
             <th width="1%">Action</th>
           </tr>
-          <v:data-set name="ds1" sql="select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by NS_PREFIX" nrows="20" scrollable="1" edit="1">
+            <v:data-source name="dsrc1" expression-type="sql" nrows="20" initial-offset="0">
             <v:before-data-bind>
               <![CDATA[
-                declare to_del varchar;
+                  self.f_filter := case self.f_how
+                                     when '1' then self.f_value || '%'
+                                     when '2' then '%' || self.f_value || '%'
+                                     when '3' then '%' || self.f_value
+                                     else self.f_value
+                                   end;
+                  if (self.f_filter = '')
+                  {
+                    self.f_filter := '%';
+                  }
+                  self.f_filter := replace (self.f_filter, '%%', '%');
 
-                to_del := get_keyword ('del', self.vc_event.ve_params, null);
-                if (to_del is not null)
-                  DB.DBA.XML_REMOVE_NS_BY_PREFIX (to_del, 2);
+                  control.ds_sql := sprintf ('select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where (upper (NS_PREFIX) like upper(\'%s\')) order by NS_PREFIX', self.f_filter);
               ]]>
             </v:before-data-bind>
+              <v:after-data-bind>
+                control.ds_make_statistic ();
+              </v:after-data-bind>
+            </v:data-source>
+            <v:data-set name="ds1" data-source="self.dsrc1" scrollable="1">
             <v:template type="repeat" name="dst1">
+
               <v:template type="if-not-exists" name="dst2">
                 <tr>
                   <td align="center" colspan="3">No rows selected</td>
@@ -63,11 +134,41 @@
 
               <v:template type="browse" name="dst3">
                 <tr>
-                  <td><?V control.te_rowset[0] ?></td>
-                  <td><?V control.te_rowset[1] ?></td>
+                    <td>
+                      <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
+                          ]]>
+                        </v:before-render>
+                        <v:on-post>
+                          <![CDATA[
+                            self.c_pref := (control.vc_parent as vspx_row_template).te_rowset[0];
+                            self.c_uri := (control.vc_parent as vspx_row_template).te_rowset[1];
+
+                            self.c_mode := 'C/edit';
+                            self.vc_data_bind (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                    <td>
+                      <?V control.te_rowset[1] ?>
+                    </td>
                   <td nowrap="nowrap">
-                    <v:url name="u1" value='&lt;img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete" /&gt; Delete'
-                           format="%s" url="--sprintf ('persistent_xmlns.vspx?del=%U', (control.vc_parent as vspx_row_template).te_rowset[0])" render-only="1"/>
+                      <v:button name="delete" action="simple" style="url" value="''">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                          ]]>
+                        </v:before-render>
+                        <v:on-post>
+                          <![CDATA[
+                            DB.DBA.XML_REMOVE_NS_BY_PREFIX ((control.vc_parent as vspx_row_template).te_rowset[0], 2);
+                            self.vc_data_bind (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
                   </td>
                 </tr>
               </v:template>
@@ -82,33 +183,89 @@
             </v:template>
           </v:data-set>
         </table>
+        </vm:if>
+
+        <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
+          <div class="fm">
+            <fieldset>
+              <br />
+              <label for="pref">Prefix</label>
+              <v:text name="pref" xhtml_id="pref" value="--self.c_pref" xhtml_size="10" />
         <br />
-        Prefix: <v:text name="pref" value="" xhtml_size="10" />
+              <label for="uri">URI</label>
+              <v:text name="uri" xhtml_id="uri" value="--self.c_uri" xhtml_size="100" />
         <br />
-        URI: <v:text name="uri" value="" xhtml_size="100" />
         <br />
-        <v:button action="simple" name="add_bt" value="Add New">
+              <div style="margin-left: 180px; width: 100%">
+                <v:button name="cancel1" value="Cancel" action="simple">
           <v:on-post>
             <![CDATA[
-              self.pref.ufl_value := trim (self.pref.ufl_value);
-              if
-                (
-                  length (self.pref.ufl_value) = 0
-                  or
-                  length (self.uri.ufl_value) = 0
-                )
+                      self.c_mode := 'C/browse';
+                      self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+
+                <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                  <v:on-post>
+                    <![CDATA[
+                      declare pref, uri varchar;
+
+                      pref := trim (self.pref.ufl_value);
+                      uri := trim (self.uri.ufl_value);
+                      if ((length (pref) = 0) or (length (uri) = 0))
               {
                 self.vc_is_valid := 0;
                 self.vc_error_message := 'Prefix and Namespace URI must not be empty strings';
                 return;
               }
-              DB.DBA.XML_SET_NS_DECL (self.pref.ufl_value, self.uri.ufl_value, 2);
-              self.pref.ufl_value := '';
-              self.uri.ufl_value := '';
-              self.ds1.vc_data_bind (e);
+                      if (self.c_mode = 'C/add')
+                      {
+                        if (exists (select 1 from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = pref or NS_URL = uri))
+                        {
+                          self.vc_is_valid := 0;
+                          self.vc_error_message := 'Prefix or Namespace URI already exist';
+                          return;
+                        }
+                      }
+                      else if (self.c_mode = 'C/edit')
+                      {
+                        if ((self.c_pref = pref) and (self.c_uri = uri))
+                        {
+                          goto _exit;
+                        }
+                        else if (self.c_pref = pref)
+                        {
+                          if (exists (select 1 from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_URL = uri))
+                          {
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := 'Namespace URI already exist';
+                            return;
+                          }
+                        }
+                        else if (self.c_uri = uri)
+                        {
+                          if (exists (select 1 from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where NS_PREFIX = pref))
+                          {
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := 'Prefix already exist';
+                            return;
+                          }
+                        }
+                        DB.DBA.XML_REMOVE_NS_BY_PREFIX (self.c_pref, 2);
+                      }
+                      DB.DBA.XML_SET_NS_DECL (pref, uri, 2);
+                    _exit:;
+
+                      self.c_mode := 'C/browse';
+                      self.vc_data_bind (e);
             ]]>
           </v:on-post>
         </v:button>
+              </div>
+            </fieldset>
+          </div>
+        </vm:if>
       </v:form>
     </vm:pagebody>
   </vm:pagewrapper>

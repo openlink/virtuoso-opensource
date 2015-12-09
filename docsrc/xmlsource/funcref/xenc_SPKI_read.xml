@@ -52,19 +52,6 @@
       <para>The SPKI content</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_xenc_SPKI_read"><title>Return Types</title>
-    <para></para>
-  </refsect1>
-  <refsect1 id="errors_xenc_SPKI_read">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_SPKI_read">
     <title>Examples</title>
     <example id="ex_xenc_SPKI_read"><title>SPKI reading</title>

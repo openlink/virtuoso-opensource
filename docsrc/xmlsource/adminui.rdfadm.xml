@@ -23,7 +23,7 @@
 -->
 
 <sect2 id="rdfadm"><title>Conductor Linked Data Administration</title>
-  <para>From Conductor the Linked Data tab allows you to execute/save/load SPARQL queries, 
+  <para>From Conductor the "Linked Data" tab allows you to execute/save/load SPARQL queries,
 	to add/edit RDF Mapping, to perform statistics and manage graphs, 
 	to import schemas and define namespaces, to generated Linked Data Views and to upload to the Quad Store.
 	</para>

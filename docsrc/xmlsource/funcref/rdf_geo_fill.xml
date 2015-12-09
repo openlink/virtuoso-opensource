@@ -19,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <refentry id="fn_rdf_geo_fill">
   <refmeta>
@@ -63,14 +62,9 @@ terminates abnormally before an automatic checkpoint is made.</para>
       	(not counting the thread that searches for separate geo:lat and geo:long properties).</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_rdf_geo_fill"><title>Return Types</title>
-    <para></para>
-  </refsect1>
-
   <refsect1 id="examples_rdf_geo_fill">
     <title>Examples</title>
-    <example id="ex_rdf_geo_fill"><title></title>
-      <para></para>
+    <example id="ex_rdf_geo_fill"><title>Simple example</title>
 <programlisting><![CDATA[
 SQL> rdf_geo_fill ();
 
@@ -87,8 +81,8 @@ Done. -- 282 msec.
     <para><link linkend="fn_st_x"><function>st_x</function></link></para>
     <para><link linkend="fn_st_y"><function>st_y</function></link></para>
     <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
-    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
-    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_ST_SRID"><function>st_srid</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>st_setsrid</function></link></para>
     <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
     <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
     <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>

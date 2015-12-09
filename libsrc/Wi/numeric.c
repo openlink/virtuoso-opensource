@@ -2663,10 +2663,13 @@ numeric_print (FILE *fd, char *name, numeric_t n)
 {
   char res[NUMERIC_MAX_STRING_BYTES];
 
+  if (!fd)
+    fd = stderr;
+
   if (name)
     fprintf (fd, "%s: ", name);
 
-  numeric_to_string (n, res);
+  numeric_to_string (n, res, NUMERIC_MAX_STRING_BYTES);
   fprintf (fd, "%s\n", res);
 }
 
@@ -2682,7 +2685,7 @@ numeric_debug (FILE *fd, char *name, numeric_t n)
   if (name)
     fprintf (fd, "%s: ", name);
 
-  _numeric_to_string (n, res, 0, 0);
+  _numeric_to_string (n, res, NUMERIC_MAX_STRING_BYTES, 0, 0);
   fprintf (fd, "%s {%d.%d} %s\n", res, n->n_len, n->n_scale,
       num_is_invalid (n) ? "NaN" : "");
 }

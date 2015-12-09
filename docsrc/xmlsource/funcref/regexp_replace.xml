@@ -55,7 +55,7 @@ the number of extra spaces may not be the same everywhere in the text. </para>
 </refsect1>
   <refsect1 id="params_regexp_replace"><title>Parameters</title>
     <refsect2><title>source_string</title>
-      <para></para></refsect2>
+      <para>Source string.</para></refsect2>
     <refsect2><title>pattern</title>
       <para>The regular expression to match.</para></refsect2>
     <refsect2><title>replace_string</title>

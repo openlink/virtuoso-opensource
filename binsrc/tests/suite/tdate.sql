@@ -37,7 +37,7 @@ echo BOTH "STARTED: Date tests (tdate.sql)\n";
 --  Create the test table
 --
 drop table tdate;
-create table tdate (id integer not null primary key, val date);
+create table tdate (id integer not null primary key, val datetime);
 create index tdateix1 on tdate (val);
 
 --

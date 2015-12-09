@@ -111,8 +111,8 @@ create xml view "cat" as
     </example>
   </refsect1>
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xml_load_schema_decl">xml_load_schema_decl()</link></para>
-    <para><link linkend="fn_xml_create_tables_from_mapping_schema_decl">xml_load_schema_decl()</link></para>
-    <para><link linkend="fn_xml_view_schema">xml_view_schema</link></para>
+    <para><link linkend="fn_xml_load_schema_decl"><function>xml_load_schema_decl()</function></link></para>
+    <para><link linkend="fn_xml_create_tables_from_mapping_schema_decl"><function>xml_load_schema_decl()</function></link></para>
+    <para><link linkend="fn_xml_view_schema"><function>xml_view_schema()</function></link></para>
   </refsect1>
 </refentry>

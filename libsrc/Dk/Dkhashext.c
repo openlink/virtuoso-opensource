@@ -457,7 +457,7 @@ DBG_NAME (box_dv_dict_iterator) (DBG_PARAMS caddr_t ht_box)
   id_hash_t *ht = (id_hash_t *) ht_box;
   res->hit_hash = ht;
   res->hit_bucket = -1;
-  res->hit_chilum = (void *)(-1);
+  res->hit_chilum = (char *)(-1);
   if (NULL != ht)
     {
       if (NULL != ht->ht_mutex)
@@ -546,7 +546,7 @@ box_dict_hashtable_destr_hook (caddr_t dict)
 	}
     }
   if (ht->ht_mp)
-    mp_free (ht->ht_mp);
+    mp_free ((mem_pool_t*)ht->ht_mp);
   id_hash_clear ((id_hash_t *) (dict));
   ID_HASH_FREE_INTERNALS ((id_hash_t *) (dict));
   return 0;

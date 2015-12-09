@@ -100,7 +100,7 @@ smtp_connect (char * host1, caddr_t * err_ret, caddr_t sender, caddr_t recipient
   if (SER_SUCC != rc)
     {
       PrpcSessionFree (ses);
-      *err_ret = srv_make_new_error ("2E000", "SM002", "Cannot resolve host in smtp_send");
+      *err_ret = srv_make_new_error ("2E000", "SM002", "Cannot resolve host: %s in smtp_send", host1);
       return NULL;
     }
   rc = session_connect (ses->dks_session);

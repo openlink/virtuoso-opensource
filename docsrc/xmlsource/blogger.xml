@@ -69,21 +69,9 @@ blogging purposes:</para>
 </simplelist>
 
 <tip><title>See Also:</title>
-  <para>The <link linkend="bloggersystables">Blogger System Tables</link>
-  that are used to keep Weblog data.</para></tip>
-
-<tip><title>See Also: Reference Material on the Internet:</title>
-  <para>Blogger API:</para>
-  <para><ulink url="http://xmlrpc.free-conversant.com/docs/bloggerAPI">xmlrpc.free-conversant.com</ulink></para>
-  <para><ulink url="http://plant.blogger.com/api/index.html">plant.blogger.com</ulink></para>
-  <para>Movable Type API (extensions for blogger API):</para>
-  <para><ulink url="http://www.movabletype.org/docs/mtmanual_programmatic.html">www.movabletype.org</ulink></para>
-  <para>MetaWeblog API (extension of blogger API with RSS2 elements):</para>
-  <para><ulink url="http://www.xmlrpc.com/metaWeblogApi">www.xmlrpc.com</ulink></para>
-  <para>Other:</para>
-  <para><ulink url="http://www.soapware.org/xmlStorageSystem">xmlStorageSystem API (SOAP/XML-RPC based Internet file system)</ulink></para>
-  <para><ulink url="http://www.opml.org/spec">OPML (Outline Processor Markup Language)</ulink></para>
-  <para><ulink url="http://internetalchemy.org/ocs/directory.html">OCS (Open Content Syndication directory)</ulink></para>
+  <link linkend="bloggersystables">Blogger System Tables</link>
+  <para><ulink url="http://xmlrpc.free-conversant.com/docs/bloggerAPI">Blogger API</ulink></para>
+  <para><ulink url="http://www.xmlrpc.com/metaWeblogApi">MetaWeblog API</ulink></para>
 </tip>
 
 <sect2 id="blogvirtblogapp"><title>The Virtuoso Blogging Application</title>
@@ -259,10 +247,6 @@ as follows:</para>
   </body>
 </opml>
 ]]></programlisting>
-
-<tip><title>See Also:</title>
-  <para><ulink url="http://internetalchemy.org/">internetalchemy.org</ulink></para>
-  <para><ulink url="http://www.opml.org/">www.opml.org</ulink></para></tip>
 </sect3>
 
 <sect3 id="blogpersonalblog"><title>Personal Blog Sites</title>
@@ -320,8 +304,8 @@ All page components are represented with &lt;vm:* /&gt; this makes page more sim
 change it's appearance using custom VSPX components.
 </para>
 <programlisting><![CDATA[
-<v:page xmlns:vm="http://www.openlinksw.com/vspx/weblog/"
-  xmlns:v="http://www.openlinksw.com/vspx/"
+<v:page xmlns:vm="http://example.com/vspx/weblog/"
+  xmlns:v="http://example.com/vspx/"
   style="main.xsl" name="blog-home-page"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
   doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -637,8 +621,8 @@ consumption on the Internet or Intranet.</para>
 <?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   version="1.0"
-    xmlns:vb="http://www.openlinksw.com/weblog/"
-    xmlns:vtb="http://www.openlinksw.com/weblog/tb/" >
+    xmlns:vb="http://example.com/weblog/"
+    xmlns:vtb="http://example.com/weblog/tb/" >
   <xsl:output method="xml" doctype-public="-//W3C//DTD XHTML 1.0 Transitional//EN"
     doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"
 	indent="yes" encoding="UTF-8" omit-xml-declaration="yes" media-type="text/html"/>
@@ -803,7 +787,7 @@ consumption on the Internet or Intranet.</para>
         </xsl:when>
       </xsl:choose>
       <div id="powered">
-        <a href="http://www.openlinksw.com/virtuoso">
+        <a href="http://example.com/virtuoso/">
           <img src="/blog/blogs/images/PoweredByVirtuoso.gif" border="0" alt="powered by" />
         </a>
       </div>
@@ -1247,7 +1231,8 @@ for Weblog management and operation:</para>
 
   <tip><title>See Also:</title>
   <para><link linkend="httpvirtualdirs">Virtual Directory Administration UI</link></para>
-  <para><link linkend="fn_vhost_define">vhost_define()</link>, <link linkend="fn_vhost_remove">vhost_remove()</link></para>
+  <para><link linkend="fn_vhost_define">vhost_define()</link></para>
+  <para><link linkend="fn_vhost_remove">vhost_remove()</link></para>
   </tip>
 
 	<para>The new logical path now will support XML-RPC and will support blogger API requests.</para>
@@ -1542,7 +1527,7 @@ endg:
 
 <para>Create a new message.</para>
 <programlisting><![CDATA[
-SQL> select blogger.new_Post ('http://localhost:6666/RPC2',
+SQL> select blogger.new_Post ('http://example.com/RPC2',
     blogRequest ('0123456789', 'home', '', 'dav', 'dav'),'test');
 callret
 VARCHAR
@@ -1555,7 +1540,7 @@ _______________________________________________________________________________
 
 <para>Edit a message created with previous step:</para>
 <programlisting><![CDATA[
-SQL> select blogger.edit_Post ('http://localhost:6666/RPC2',
+SQL> select blogger.edit_Post ('http://example.com/RPC2',
     blogRequest ('0123456789', 'home', '6', 'dav', 'dav'), 'test edited');
 callret
 VARCHAR
@@ -1568,7 +1553,7 @@ _______________________________________________________________________________
 
 <para>Get the message, result will be in a blogPost UDT:</para>
 <programlisting><![CDATA[
-SQL>  dbg_obj_print (blogger.get_Post ('http://localhost:6666/RPC2',
+SQL>  dbg_obj_print (blogger.get_Post ('http://example.com/RPC2',
       blogRequest ('0123456789', 'home', '6', 'dav', 'dav')));
 
 Done. -- 120 msec.
@@ -1590,7 +1575,7 @@ Done. -- 120 msec.
 element of blogPost UDT.</para>
 
 <programlisting><![CDATA[
-SQL> dbg_obj_print (blogger.get_Recent_Posts ('http://localhost:6666/RPC2', blogRequest ('0123456789', 'home', '', 'dav', 'dav'), 10));
+SQL> dbg_obj_print (blogger.get_Recent_Posts ('http://example.com/RPC2', blogRequest ('0123456789', 'home', '', 'dav', 'dav'), 10));
 
 Done. -- 124 msec.
 
@@ -1606,7 +1591,7 @@ Done. -- 124 msec.
 ------------------------
 
 <programlisting><![CDATA[
-SQL> select blogger.delete_Post ('http://localhost:6666/RPC2',
+SQL> select blogger.delete_Post ('http://example.com/RPC2',
     blogRequest ('0123456789', 'home', '6', 'dav', 'dav'));
 callret
 VARCHAR
@@ -1647,7 +1632,7 @@ and to register a notification request.</para>
   <member><link linkend="fn_xmlStorageSystem.requestNotification"><function>xmlStorageSystem.requestNotification()</function></link></member>
  </simplelist>
 
-<sect3 id="xssreltodav">><title>Relation to the WebDAV Repository</title>
+<sect3 id="xssreltodav"><title>Relation to the WebDAV Repository</title>
 
  <para>The xmlStorageSystem stores uploaded files in the WebDAV repository.
  Upon user registration a "blog" sub-folder will be created in the user-account
@@ -1766,7 +1751,7 @@ SQL> INSERT INTO DB.DBA.SYS_ROUTING
 	1,	-- unique for job
 	1,	-- Upstreaming job
 	1,	-- Blogger API (2 for metaWeblog, 3 from mt)
-	'http://localhost:80/RPC2', -- target endpoint
+	'http://example.com/RPC2', -- target endpoint
 	'home',	-- target BlogID
 	'visitor', -- user
 	'secret',  -- secret
@@ -1933,8 +1918,13 @@ in blog home page.
 The sourceURI is URL for page of requester; targetURI is page on the target server.
 The pingback.ping method will retrieve sourceURI and will record the data as trackback
 it targetURI exists on same server and it's valid permaLink.  On success it returns a
-string 'Success' otherwise XML-RPC error code. See also external reference "http://www.hixie.ch/specs/pingback/pingback" .
+string 'Success' otherwise XML-RPC error code.
 </para>
+<tip><title>See Also:</title>
+  <para><ulink url="http://www.hixie.ch/specs/pingback/pingback">Pingback 1.0</ulink></para>
+</tip>
+
+
   </sect2>
 
   <sect2 id="xmlstoragesystem"><title>E-mail Notifications</title>
@@ -2080,12 +2070,11 @@ uses the array of URLs returned to set it's local list of channels.
 	    The following post will render a table containing a names of people
 	    which is organized in simple OPML file (located in the tutorial system)
 	    using XQuery.
-	    (See also the tutorial demo BLOG_QUERY)
 	</para>
 <programlisting><![CDATA[
 	    <div>
 		<sql:xquery  xmlns:sql="urn:schemas-openlink-com:xml-sql"
-		    sql:context="http://localhost:8890/tutorial/apps/blog_query/">
+		    sql:context="http://example.com/tutorial/apps/blog_query/">
 		    ]]>&lt;![CDATA[<![CDATA[
 		    <table border="1">
 			{ for $o in document ("opml.xml")//outline
@@ -2186,7 +2175,7 @@ create procedure DB.DBA.BLOG_RSS2WML_PP ()
 <programlisting><![CDATA[
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
-  xmlns:vb="http://www.openlinksw.com/weblog/">
+  xmlns:vb="http://example.com/weblog/">
   <xsl:output method="xml" indent="yes" doctype-public="-//WAPFORUM//DTD WML 1.1//EN" doctype-system="http://www.wapforum.org/DTD/wml_1.1.xml" media-type="text/xml"/>
   <xsl:param name="id" />
   <xsl:template match="/">

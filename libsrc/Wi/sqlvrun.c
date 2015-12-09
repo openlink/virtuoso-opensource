@@ -2419,7 +2419,6 @@ ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_buf_re
   QNCAST (query_instance_t, qi, inst);
   if (aq_state != TS_AQ_COORD_AQ_WAIT)
     {
-      if (itc->itc_buf_registered && itc->itc_map_pos >= itc->itc_buf_registered->bd_content_map->pm_count) GPF_T1 ("itc regd after end of pagfe in ts_thread ");
       itc->itc_ltrx = qi->qi_trx;
       if (1 == itc->itc_n_sets && !itc->itc_param_order)
 	{
@@ -2562,25 +2561,29 @@ aq_qr_func (caddr_t av, caddr_t * err_ret)
   }
   QR_RESET_CODE
   {
-      du_thread_t * prev_qi_thread = qi->qi_thread;
-      cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
+    du_thread_t *prev_qi_thread = qi->qi_thread;
+    cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
     if (RST_GB_ENOUGH == reset_code)
       {
+	qi->qi_client = NULL;
 	return (caddr_t) qi;
       }
     if (RST_ENOUGH == reset_code)
       {
+	qi->qi_client = NULL;
 	return (caddr_t) qi;
       }
     if (RST_ERROR == reset_code)
       {
 	*err_ret = thr_get_error_code (prev_qi_thread);
+	qi->qi_client = NULL;
 	return (caddr_t) qi;
       }
   }
   END_QR_RESET;
   cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
   qi_inc_branch_count (qi, 0, -1);	/* branch completed */
+  qi->qi_client = NULL;
   return (caddr_t) qi;
 }
 
@@ -2652,6 +2655,7 @@ ts_thread (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int aq_state,
       aq->aq_ts = get_msec_real_time ();
       aq->aq_row_autocommit = qi->qi_client->cli_row_autocommit;
       aq->aq_non_txn_insert = qi->qi_non_txn_insert;
+      qi->qi_client->cli_trx->lt_has_branches = 1;
       qst_set (inst, ts->ts_aq, (caddr_t) aq);
     }
   if (!qis || BOX_ELEMENTS (qis) <= inx)
@@ -2793,6 +2797,20 @@ typedef struct ts_split_state_s
 #define TSS_LAST 2
 #define TSS_AT_END 3
 
+#define ITC_MODE_VARS char dm_save; char lm_save; char iso_save
+
+#define ITC_SAMPLE_MODE(itc) {	\
+  lm_save = itc->itc_lock_mode; \
+  dm_save = itc->itc_dive_mode; \
+  iso_save = itc->itc_isolation; \
+  itc->itc_isolation = 0; \
+  itc->itc_dive_mode = PA_READ_ONLY; \
+  itc->itc_lock_mode = 0; }
+
+#define ITC_RESTORE_MODE(itc) { \
+  itc->itc_isolation = iso_save; \
+  itc->itc_dive_mode = dm_save; \
+  itc->itc_lock_mode = lm_save; }
 
 int
 itc_angle (it_cursor_t * itc, buffer_desc_t ** buf_ret, int angle, placeholder_t * prev, ts_split_state_t * tsp)
@@ -2802,22 +2820,31 @@ itc_angle (it_cursor_t * itc, buffer_desc_t ** buf_ret, int angle, placeholder_t
    * Retry until can read both the place and the previous.  If landed to the left of previous, return NULL */
   table_source_t *ts = tsp->tsp_ts;
   QNCAST (query_instance_t, qi, itc->itc_out_state);
-  int64 est;
+  int64 est, est2;
   float cost;
   int64 n_leaves;
   int rc;
+  ITC_MODE_VARS;
   if (itc->itc_insert_key->key_is_col && !itc->itc_is_col)
     itc_col_init (itc);		/* init the column inx data while the row specs are in place, else gonna miss cr's */
   ITC_SAVE_ROW_SPECS (itc);
   ITC_NO_ROW_SPECS (itc);
   itc->itc_random_search = RANDOM_SEARCH_ON;
+  ITC_SAMPLE_MODE (itc);
+  if (!itc->itc_key_spec.ksp_spec_array)
+    est = tsp->tsp_card_est = dbe_key_count (itc->itc_insert_key) / key_n_partitions (itc->itc_insert_key);
+  else if (tsp->tsp_ts && tsp->tsp_ts->ts_inx_cardinality)
+    est = tsp->tsp_card_est = tsp->tsp_ts->ts_inx_cardinality;
+  else
+    est = tsp->tsp_card_est = -1;
   *buf_ret = itc_reset (itc);
   itc->itc_random_search = RANDOM_SEARCH_OFF;
   itc_clear_stats (itc);
   itc->itc_st.mode = ITC_STAT_ANGLE;
-  est = itc_sample_1 (itc, buf_ret, &n_leaves, angle);
-  if (!tsp->tsp_card_est)
-    tsp->tsp_card_est = est;
+  est2 = itc_sample_1 (itc, buf_ret, &n_leaves, angle);
+  ITC_RESTORE_MODE (itc);
+  if (-1 == est)
+    est = tsp->tsp_card_est = est2;
   ITC_RESTORE_ROW_SPECS (itc);
   itc->itc_bp.bp_new_on_row = 1;
   itc->itc_bp.bp_just_landed = 1;
@@ -3160,6 +3187,7 @@ ts_initial_itc (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
       || enable_qp < 2
       || !ITC_COL_SPLITTABLE (itc)
       || itc->itc_n_sets * ts->ts_cost_after * compiler_unit_msecs * 1000 < 2 * qp_thread_min_usec
+      || srv_have_global_lock (THREAD_CURRENT_THREAD)
       || itc->itc_is_vacuum)
     return itc_reset (itc);
   if (!qi->qi_is_branch && !qi->qi_root_id)
@@ -3529,8 +3557,8 @@ vec_top_merge (setp_node_t * setp, fun_ref_node_t * fref, caddr_t * inst, caddr_
 {
   int nth;
   caddr_t **arr = (caddr_t **) qst_get (branch, setp->setp_sorted);
-  ptrlong top = unbox (qst_get (inst, setp->setp_top));
-  ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
+  ptrlong top = setp_top_get (inst, setp->setp_top, 0);
+  ptrlong skip = setp_top_get (inst, setp->setp_top_skip, 0);
   ptrlong fill;
   QNCAST (query_instance_t, qi, inst);
   setp_node_t tmp_setp;
@@ -3891,7 +3919,10 @@ qi_add_stats (QI * qi, QI ** qis, query_t * qr)
   DO_BOX (query_instance_t *, branch, inx, qis)
     {
       if (branch && qi != branch)
-	qi_branch_stats (qi, branch, qr);
+	{
+	  qi->qi_n_affected += branch->qi_n_affected;
+	  qi_branch_stats (qi, branch, qr);
+	}
     }
   END_DO_BOX;
 }
@@ -3901,7 +3932,22 @@ void
 ts_aq_result (table_source_t * ts, caddr_t * inst)
 {
   /* a ts completed itts branches.  Add up the results.  Can be in a fref or a scalar/exists subq. */
-  if (prof_on)
+  QNCAST (QI, qi, inst);
+  if (!IS_MT_BRANCH (qi->qi_trx))
+    {
+      dk_set_t merges;
+      lock_trx_t *lt = qi->qi_trx;
+      IN_TXN;
+      if ((merges = qi->qi_trx->lt_log_merge))
+	{
+	  qi->qi_trx->lt_log_merge = NULL;
+	  LEAVE_TXN;
+	  log_merge_commit (qi->qi_trx, merges);
+	}
+      else
+	LEAVE_TXN;
+    }
+  if (prof_on || !ts->src_gen.src_query->qr_select_node)
     {
       qi_add_stats ((QI*)inst, qst_get (inst, ts->ts_aq_qis), ts->src_gen.src_query);
     }
@@ -3990,6 +4036,7 @@ fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 		    aq_request (aq, aq_qr_func, list (4, box_copy ((caddr_t)branch), box_num ((ptrlong)ts->src_gen.src_query), box_num (qi->qi_trx->lt_rc_w_id ? qi->qi_trx->lt_rc_w_id : qi->qi_trx->lt_w_id), box_num ((ptrlong)qi->qi_client->cli_csl)));
 		  else
 		    {
+		      bing ();
 		      /*fnr_branch_done (fref, inst, branch) */ ;
 		    }
 		}

@@ -168,6 +168,21 @@ lt_allocate (void)
 }
 
 
+void
+lt_free_merge (dk_set_t merges)
+{
+  DO_SET (log_merge_t *, lm, &merges)
+    {
+      strses_flush (lm->lm_log);
+      resource_store (cl_strses_rc, (void*)lm->lm_log);
+      blob_log_set_free (lm->lm_blob_log);
+      dk_free ((caddr_t)lm, sizeof (log_merge_t));
+    }
+  END_DO_SET();
+  dk_set_free (merges);
+}
+
+
 long tc_lt_free;
 
 void
@@ -180,6 +195,8 @@ lt_free (lock_trx_t * lt)
     GPF_T1 ("Freeing txn that's in MTS");
 #endif
   LT_THREADS_REPORT (lt, "LT_FREE");
+  lt_free_merge (lt->lt_log_merge);
+  lt->lt_log_merge = NULL;
   lt_free_rb (lt, 0);
   dk_set_free (lt->lt_waits_for);
   dk_set_free (lt->lt_waiting_for_this);
@@ -216,6 +233,8 @@ lt_clear (lock_trx_t * lt)
 #endif
   if (lt->lt_client && lt->lt_client->cli_row_autocommit)
     lt->lt_client->cli_n_to_autocommit = 0;
+  lt_free_merge (lt->lt_log_merge);
+  lt->lt_log_merge = NULL;
   if (lt->lt_w_id)
     {
       ASSERT_IN_TXN;
@@ -651,9 +670,11 @@ lt_commit (lock_trx_t * lt, int free_trx)
       }
 #endif
 
-  if (lt->lt_log->dks_out_fill || lt->lt_log->dks_bytes_sent)
+  if (lt->lt_log->dks_out_fill || lt->lt_log->dks_bytes_sent || lt->lt_log_merge)
     {
   LEAVE_TXN;
+      log_merge_commit (lt, lt->lt_log_merge);
+      lt->lt_log_merge = NULL;
   mutex_enter (log_write_mtx);
   if (LTE_OK != log_commit (lt))
     {
@@ -733,9 +754,9 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   if (lt->lt_client->cli_icc_lock)
     {
       icc_lock_t *cli_lock = lt->lt_client->cli_icc_lock;
-      if (cli_lock->iccl_waits_for_commit)
+      if (cli_lock->iccl_flags & ICCL_SHEDULED_ON_COMMIT)
 	{
-	  cli_lock->iccl_waits_for_commit = 0;
+	  cli_lock->iccl_flags &= ~ICCL_SHEDULED_ON_COMMIT;
 	  lt->lt_client->cli_icc_lock = NULL;
 	  if (NULL != cli_lock->iccl_qi)
 	    cli_lock->iccl_qi->qi_icc_lock = NULL;

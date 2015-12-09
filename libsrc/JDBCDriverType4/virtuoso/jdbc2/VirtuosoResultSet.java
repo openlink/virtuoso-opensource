@@ -442,7 +442,7 @@ public class VirtuosoResultSet implements ResultSet
 	       VirtuosoException.MISCERROR);
          // Get the next row (if one exist else null)
 	 synchronized (statement) { statement.wait_result = true; }
-	 curr = statement.future.nextResult(statement.sparql_executed);
+	 curr = statement.future.nextResult();
 	 synchronized (statement) { statement.wait_result = false; }
 	 curr = (curr==null)?null:((openlink.util.Vector)curr).firstElement();
 	 //String xx;
@@ -472,6 +472,7 @@ public class VirtuosoResultSet implements ResultSet
                   //System.out.println("---> QA_ROW");
                   isLastRow = false;
                   result.removeElementAt(0);
+                  fixReturnedData(result);
                   // Get each row
                   if(currentRow == 0)
                      rows.insertElementAt(new VirtuosoRow(this,result),i++);
@@ -533,9 +534,10 @@ public class VirtuosoResultSet implements ResultSet
 #endif
                      if(obj!=null && obj instanceof openlink.util.Vector)
 		       {
+		         fixReturnedData((openlink.util.Vector)obj);
                          statement.objparams = (openlink.util.Vector)obj;
-			 statement.parameters = (openlink.util.Vector)
-			     statement.objparams.clone();
+			 statement.parameters = (openlink.util.Vector)statement.objparams.clone();
+
                          if (statement instanceof CallableStatement)
                            {
                              VirtuosoCallableStatement _statement = (VirtuosoCallableStatement)statement;
@@ -591,16 +593,13 @@ public class VirtuosoResultSet implements ResultSet
                   result.removeElementAt(result.size() - 1);
                   /*openlink.util.Vector bm = (openlink.util.Vector)result.lastElement(); result.removeElementAt(result.size()-1);
                      rows.setElementAt(new VirtuosoRow(this,result),((Number)((openlink.util.Vector)bm.elementAt(1)).elementAt(0)).intValue());*/
+                  fixReturnedData(result);
                   rows.setElementAt(new VirtuosoRow(this,result),currentRow - 1);
                   break;
                case VirtuosoTypes.QA_ERROR:
 		  if (VirtuosoFuture.rpc_log != null)
 		  {
-		      synchronized (VirtuosoFuture.rpc_log)
-		      {
 			  VirtuosoFuture.rpc_log.println ("---> QA_ERROR err=[" + (String)result.elementAt(2) + "] stat=[" + (String)result.elementAt(1) + "]");
-			  VirtuosoFuture.rpc_log.flush();
-		      }
 		  }
                   isLastResult = true;
                   isLastRow = true;
@@ -621,8 +620,15 @@ public class VirtuosoResultSet implements ResultSet
                   // Copy out parameters in the parameter vector
                   if (statement.objparams == null)
 		      statement.objparams = new openlink.util.Vector(result.size() - 2);
+
 		  for(int j = 0; j < statement.objparams.size() && (j+2) < result.size(); j++)
-		     statement.objparams.setElementAt(result.elementAt(j+2),j);
+		  {
+		     Object val = result.elementAt(j+2);
+		     if (val instanceof DateObject)
+		       statement.objparams.setElementAt(((DateObject)val).getValue(statement.sparql_executed),j);
+		     else
+		       statement.objparams.setElementAt(val,j);
+		  }
 
                   is_complete = true;
                   isLastResult = true;
@@ -669,6 +675,19 @@ public class VirtuosoResultSet implements ResultSet
    public void finalize() throws Throwable
    {
       close();
+   }
+
+   void fixReturnedData(openlink.util.Vector data)
+   {
+     if (data == null)
+       return;
+
+     for(int i=0; i < data.size(); i++)
+     {
+       Object val = data.elementAt(i);
+       if (val instanceof DateObject)
+         data.setElementAt(((DateObject)val).getValue(statement.sparql_executed), i);
+     }
    }
 
    // --------------------------- JDBC 1.0 ------------------------------

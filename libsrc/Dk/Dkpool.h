@@ -126,9 +126,11 @@ EXE_EXPORT (caddr_t, mp_alloc_box, (mem_pool_t * mp, size_t len, dtp_t dtp));
 EXE_EXPORT (caddr_t, mp_alloc_box_ni, (mem_pool_t * mp, int len, dtp_t dtp));
 EXE_EXPORT (caddr_t, mp_box_string, (mem_pool_t * mp, const char *str));
 EXE_EXPORT (caddr_t, mp_box_substr, (mem_pool_t * mp, ccaddr_t str, int n1, int n2));
-EXE_EXPORT (box_t, mp_box_dv_short_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_dv_short_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_dv_short_concat, (mem_pool_t * mp, ccaddr_t str1, ccaddr_t str2));
+EXE_EXPORT (caddr_t, mp_box_dv_short_strconcat, (mem_pool_t * mp, const char *str1, const char *str2));
 EXE_EXPORT (caddr_t, mp_box_dv_uname_string, (mem_pool_t * mp, const char *str));
-EXE_EXPORT (box_t, mp_box_dv_uname_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_dv_uname_nchars, (mem_pool_t * mp, const char *str, size_t len));
 EXE_EXPORT (caddr_t, mp_box_copy, (mem_pool_t * mp, caddr_t box));
 EXE_EXPORT (caddr_t, mp_box_copy_tree, (mem_pool_t * mp, caddr_t box));
 EXE_EXPORT (caddr_t, mp_full_box_copy_tree, (mem_pool_t * mp, caddr_t box));
@@ -144,9 +146,11 @@ extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, si
 extern caddr_t dbg_mp_alloc_box_ni (const char *file, int line, mem_pool_t * mp, int len, dtp_t dtp);
 extern caddr_t dbg_mp_box_string (const char *file, int line, mem_pool_t * mp, const char *str);
 extern caddr_t dbg_mp_box_substr (const char *file, int line, mem_pool_t * mp, ccaddr_t str, int n1, int n2);
-extern box_t dbg_mp_box_dv_short_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
+extern caddr_t dbg_mp_box_dv_short_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
+extern caddr_t dbg_mp_box_dv_short_concat (const char *file, int line, mem_pool_t * mp, ccaddr_t str1, ccaddr_t str2);
+extern caddr_t dbg_mp_box_dv_short_strconcat (const char *file, int line, mem_pool_t * mp, const char *str1, const char *str2);
 extern caddr_t dbg_mp_box_dv_uname_string (const char *file, int line, mem_pool_t * mp, const char *str);
-extern box_t dbg_mp_box_dv_uname_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
+extern caddr_t dbg_mp_box_dv_uname_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
 extern caddr_t dbg_mp_box_copy (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_full_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
@@ -161,6 +165,8 @@ extern caddr_t dbg_mp_box_float (const char *file, int line, mem_pool_t * mp, fl
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
 #define mp_box_dv_short_nchars(mp, str, len) dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, (mp), (str), (len))
+#define mp_box_dv_short_concat(mp, str1, str2) dbg_mp_box_dv_short_concat (__FILE__, __LINE__, (mp), (str1), (str2))
+#define mp_box_dv_short_strconcat(mp, str1, str2) dbg_mp_box_dv_short_strconcat (__FILE__, __LINE__, (mp), (str1), (str2))
 #define mp_box_dv_uname_string(mp, str) dbg_mp_box_dv_uname_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_dv_uname_nchars(mp, str, len) dbg_mp_box_dv_uname_nchars (__FILE__, __LINE__, (mp), (str), (len))
 #define mp_box_copy(mp, box) dbg_mp_box_copy (__FILE__, __LINE__, (mp), (box))
@@ -249,6 +255,8 @@ caddr_t *mp_list (mem_pool_t * mp, long n, ...);
 #define dbg_t_box_string(str)			dbg_mp_box_string (DBG_ARGS THR_TMP_POOL, (str))
 #define dbg_t_box_substr(str,n1,n2)		dbg_mp_box_substr (DBG_ARGS THR_TMP_POOL, (str), (n1), (n2))
 #define dbg_t_box_dv_short_nchars(str,len) 	dbg_mp_box_dv_short_nchars (DBG_ARGS THR_TMP_POOL, (str), (len))
+#define dbg_t_box_dv_short_concat(str1,str2) 	dbg_mp_box_dv_short_concat (DBG_ARGS THR_TMP_POOL, (str1), (str2))
+#define dbg_t_box_dv_short_strconcat(str1,str2)	dbg_mp_box_dv_short_strconcat (DBG_ARGS THR_TMP_POOL, (str1), (str2))
 #define dbg_t_box_dv_uname_string(str)		dbg_mp_box_dv_uname_string (DBG_ARGS THR_TMP_POOL, (str))
 #define dbg_t_box_dv_uname_nchars(str,len) 	dbg_mp_box_dv_uname_nchars (DBG_ARGS THR_TMP_POOL, (str), (len))
 #define dbg_t_box_copy(box)			dbg_mp_box_copy (DBG_ARGS THR_TMP_POOL, (box))
@@ -258,6 +266,8 @@ caddr_t *mp_list (mem_pool_t * mp, long n, ...);
 #define t_box_string(str)			mp_box_string (THR_TMP_POOL, (str))
 #define t_box_substr(str,n1,n2)			mp_box_substr (THR_TMP_POOL, (str), (n1), (n2))
 #define t_box_dv_short_nchars(str,len)		mp_box_dv_short_nchars (THR_TMP_POOL, (str), (len))
+#define t_box_dv_short_concat(str1,str2)	mp_box_dv_short_concat (THR_TMP_POOL, (str1), (str2))
+#define t_box_dv_short_strconcat(str1,str2)	mp_box_dv_short_strconcat (THR_TMP_POOL, (str1), (str2))
 #define t_box_dv_uname_string(str)		mp_box_dv_uname_string (THR_TMP_POOL, (str))
 #define t_box_dv_uname_nchars(str,len)		mp_box_dv_uname_nchars (THR_TMP_POOL, (str), (len))
 #define t_box_copy(box)				mp_box_copy (THR_TMP_POOL, (box))
@@ -392,11 +402,11 @@ extern box_tmp_copy_f box_tmp_copier[256];
     mem_block_t * f = mp->mp_first; \
     if (f && f->mb_fill + __len <= f->mb_size) \
       { \
-	(x) = (void *)(((char*)f) + f->mb_fill); \
+	*(void**)&(x) = (void *)(((char*)f) + f->mb_fill);	\
 	f->mb_fill += __len; \
       } \
     else \
-      (x) = (void *)mp_alloc_box (mp, len2, DV_NON_BOX); \
+      *(void**)&(x) = (void *)mp_alloc_box (mp, len2, DV_NON_BOX);	\
   }
 #endif
 

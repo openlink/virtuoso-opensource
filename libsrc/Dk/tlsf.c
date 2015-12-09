@@ -487,19 +487,6 @@ tlsf_large_alloc (tlsf_t * tlsf, size_t size)
 
 int no_place_limit = 0;
 
-#if defined(MALLOC_DEBUG) && defined(USE_TLSF)
-void *
-dbg_malloc(const char *file, u_int line, size_t size)
-{
-  return tlsf_malloc(DBG_ARGS size, THREAD_CURRENT_THREAD);
-}
-
-void 
-dbg_free (const char *file, u_int line, void *data)
-{
-  tlsf_free (data);
-}
-#endif
 
 void *
 tlsf_malloc(DBG_PARAMS size_t size, du_thread_t * thr)
@@ -584,7 +571,7 @@ void *malloc_ex(size_t size, void *mem_pool)
 	if (tlsf->tlsf_grow_quantum < tlsf->tlsf_total_mapped / 4)
 	  {
 	    int ign;
-	    tlsf->tlsf_grow_quantum = tlsf->tlsf_total_mapped / 4;
+	    tlsf->tlsf_grow_quantum = MIN ((1L << 30) - 4096, tlsf->tlsf_total_mapped / 4);
 	    area_size = mm_next_size (area_size, &ign);
 	  }
         area = get_new_area(tlsf, &area_size);        /* Call sbrk or mmap */
@@ -827,11 +814,27 @@ void dump_memory_region(unsigned char *mem_ptr, unsigned int size)
     PRINT_MSG("\n\n");
 }
 
+id_hash_t * mdbg_place_to_id;
+id_hash_t * mdbg_id_to_place;
+id_hash_t * mdbg_total;
+dk_mutex_t mdbg_place_mtx;
+uptrlong mdbg_place_ctr;
+#define MDBG_HASH_SIZE 4011
+
+
 void print_block(bhdr_t * b)
 {
+  mdbg_place_t * pl = NULL;
     if (!b)
         return;
-    PRINT_MSG(">> [%p] (", b);
+#ifdef MALLOC_DEBUG 
+    if (mdbg_id_to_place)
+      {
+	ptrlong i = b->bhdr_info >> 12;
+	pl = (mdbg_place_t*)id_hash_get (mdbg_id_to_place, (caddr_t) &i);
+      }
+#endif
+    PRINT_MSG("   [%p] (", b);
     if ((b->size & BLOCK_SIZE))
         PRINT_MSG("%lu bytes, ", (unsigned long) (b->size & BLOCK_SIZE));
     else
@@ -839,9 +842,14 @@ void print_block(bhdr_t * b)
     if ((b->size & BLOCK_STATE) == FREE_BLOCK)
         PRINT_MSG("free [%p, %p], ", b->ptr.free_ptr.prev, b->ptr.free_ptr.next);
     else
-        PRINT_MSG("used, ");
+      {
+	if (pl)
+	  PRINT_MSG(" %s:%d used, ", pl->mpl_file, pl->mpl_line);
+	else
+	  PRINT_MSG("used, ");
+      }
     if ((b->size & PREV_STATE) == PREV_FREE)
-        PRINT_MSG("prev. free [%p])\n", b->prev_hdr);
+      PRINT_MSG("prev. free [%p])\n", b->prev_hdr);
     else
         PRINT_MSG("prev used)\n");
 }
@@ -885,6 +893,8 @@ tlsf_print_all_blocks(tlsf_t * tlsf, void * ht1, int mode)
   id_hash_t * ht = (id_hash_t *)ht1;
   area_info_t *ai;
   bhdr_t *next;
+  if (!tlsf)
+    return;
   if (ht)
     {
       ht->ht_free_hook = ht_free_nop;
@@ -1239,6 +1249,7 @@ tlsf_cmp (const void * p1, const void * p2)
 void
 tlsf_summary (FILE * out)
 {
+  int64 mapped = 0, used = 0, max = 0;
   int fill = tlsf_ctr, inx;
   tlsf_t * tlsfs[MAX_TLSFS];
   memcpy (tlsfs, &dk_all_tlsfs[1], fill * sizeof (caddr_t));
@@ -1251,8 +1262,13 @@ tlsf_summary (FILE * out)
       tlsf_t * tlsf = tlsfs[inx];
       if (!tlsf)
 	continue;
+      mapped += tlsf->tlsf_total_mapped;
+      used += tlsf->used_size;
+      max += tlsf->max_size;
       fprintf (out, "%luK %s %lu used %lu max used %p id %d\n", tlsf->tlsf_total_mapped >> 10, tlsf->tlsf_comment ? tlsf->tlsf_comment : "-", tlsf->used_size >> 10, tlsf->max_size >> 10, tlsf, tlsf->tlsf_id);
     }
+  fprintf (out, "Total %lu %lu used %lu max\n", mapped >> 10, used >> 10, max >> 10);
+
 }
 
 void
@@ -1273,12 +1289,6 @@ tlsf_set_comment (tlsf_t * tlsf, char * name)
 #ifdef MALLOC_DEBUG
 tlsf_t * mdbg_tlsf;
 
-id_hash_t * mdbg_place_to_id;
-id_hash_t * mdbg_id_to_place;
-id_hash_t * mdbg_total;
-dk_mutex_t mdbg_place_mtx;
-uptrlong mdbg_place_ctr;
-#define MDBG_HASH_SIZE 4011
 
 
 uint32
@@ -1306,6 +1316,7 @@ tlsf_mdbg_init ()
 {
   dk_mutex_init (&mdbg_place_mtx, MUTEX_TYPE_SHORT);
   mdbg_tlsf = tlsf_new (1000000);
+  tlsf_fp = stderr;
   WITH_TLSF (mdbg_tlsf)
   {
     mdbg_place_to_id = id_hash_allocate (MDBG_HASH_SIZE, sizeof (mdbg_place_t), sizeof (uint32), mdbg_place_hash, mdbg_place_hash_cmp);
@@ -1439,7 +1450,7 @@ tlsf_print_sizes (id_hash_t * allocs, int mode)
     {
       mdbg_stat_t * mds = mds_arr[inx];
       mdbg_place_t * pl = (mdbg_place_t*)id_hash_get (mdbg_id_to_place, (caddr_t) (((boxint*)mds) - 1));
-      fprintf (out, "%s:%d %d uses %d alloc %d free %lu  + %Ld bytes %lu total\n", pl->mpl_file, pl->mpl_line, mds->mds_allocs - mds->mds_frees, mds->mds_allocs, mds->mds_frees, mds->mds_prev_bytes, (int64)(mds->mds_bytes - mds->mds_prev_bytes), mds->mds_bytes); 
+      fprintf (out, "%s:%d %d uses %d alloc %d free " BOXINT_FMT "  + %Ld bytes " BOXINT_FMT " total\n", pl->mpl_file, pl->mpl_line, mds->mds_allocs - mds->mds_frees, mds->mds_allocs, mds->mds_frees, mds->mds_prev_bytes, (int64)(mds->mds_bytes - mds->mds_prev_bytes), mds->mds_bytes); 
     }
   tlsf_free (mds_arr);
 }

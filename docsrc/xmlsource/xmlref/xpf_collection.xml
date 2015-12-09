@@ -148,14 +148,14 @@ connection_set ('HTTPAuthManager', 'DB.DBA.AUTHINFO');
 select xquery_eval ('
   <result> John's test cases: 
     { 
-      for \044a in collection ("http://localhost:8080/DAV/home/john/test-cases/", ., 1, 2) 
+      for \044a in collection ("http://example.com/DAV/home/john/test-cases/", ., 1, 2)
 	return <res> { document-uri (\044a) }</res> 
     }
    </result>', xtree_doc ('<a/>'));
 select xquery_eval ('
   <result> All test cases: 
     { 
-      for \044a in collection ("http://localhost:8080/DAV/home/", ., 1, 2) 
+      for \044a in collection ("http://example.com/DAV/home/", ., 1, 2)
         return <res> { document-uri (\044a) }</res> 
     } 
   </result>', xtree_doc ('<a/>'));

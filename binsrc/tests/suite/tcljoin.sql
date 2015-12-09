@@ -157,4 +157,10 @@ select top 10 a.row_no, b.row_no from t1 a left join t1 b on b.row_no = 111 wher
 
 select top 10 a.row_no, b.row_no from t1 a left join (select distinct row_no from t1 c) b on b.row_no = 111 where a.row_no between 10 and 1000;
 
+select b.row_no, VECTOR_AGG (a.row_no) from t1 a left outer join t1 b on (a.row_no = b.row_no + 90) where a.row_no = 50 group by b.row_no;
+echo both $if $equ $last[1] NULL "PASSED" "***FAILED";
+echo both ": null in gby\n";
 
+select b.string1, VECTOR_AGG (a.row_no) from t1 a left outer join t1 b on (a.row_no = b.row_no + 90) where a.row_no = 50 group by b.row_no;
+echo both $if $equ $last[1] NULL "PASSED" "***FAILED";
+echo both ": null in gby on string\n";

@@ -223,6 +223,7 @@ void dc_itc_append_row (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * 
 
 int dc_elt_size (data_col_t * dc);
 void dc_assign (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl_from, int row_FROM);
+void dc_assign_copy (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl_from, int row_FROM);
 db_buf_t dc_alloc (data_col_t * dc, int bytes);
 void dc_reset_alloc (data_col_t * dc);
 int qi_sets_identical (caddr_t * inst, state_slot_t * ssl);

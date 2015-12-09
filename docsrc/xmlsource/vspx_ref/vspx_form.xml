@@ -211,7 +211,7 @@ processing of the form continues.
     <screen><![CDATA[
 <html>
 <body>
-<v:page name="page01" xmlns:v="http://www.openlinksw.com/vspx/" >
+<v:page name="page01" xmlns:v="http://example.com/vspx/" >
   <v:form name="form01" type="simple" action="" method="POST">
     <v:label name="label01" value="--'Simple form'" />
     <v:text name="txt01" default="" />

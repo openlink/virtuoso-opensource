@@ -347,8 +347,8 @@ rc_resize (resource_t * rc, int new_sz)
   memcpy (new_time, rc->rc_item_time, sizeof (int32) * rc->rc_fill);
   free (rc->rc_items);
   free (rc->rc_item_time);
-  rc->rc_items = new_items;
-  rc->rc_item_time = new_time;
+  rc->rc_items = (void**)new_items;
+  rc->rc_item_time = (unsigned int*)new_time;
   rc->rc_size = new_sz;
 }
 

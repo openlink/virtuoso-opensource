@@ -195,6 +195,7 @@ OFF_T strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence);
 size_t strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte);
 
 int fileses_read (session_t * ses, char *buffer, int n_bytes);
+void fileses_close (session_t * ses);
 int tcpses_read (session_t * ses, char *buffer, int n_bytes);
 
 

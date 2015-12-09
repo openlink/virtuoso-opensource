@@ -58,6 +58,8 @@ void sqlg_vec_cast (sql_comp_t * sc, state_slot_ref_t ** refs, state_slot_t ** c
     state_slot_t ** ssl_ret, int fill, state_slot_t ** card_ssl, sql_type_t * target_sqt, int copy_always);
 int ssl_is_const_card (sql_comp_t * sc, state_slot_t * ssl, sql_type_t * sqt);
 void sqlg_ts_add_copy (sql_comp_t * sc, table_source_t * ts, state_slot_t ** ssls);
+caddr_t  box_concat (caddr_t b1, caddr_t b2);
+caddr_t ssl_cast_name (state_slot_t* ssl);
 
 
 
@@ -1593,6 +1595,8 @@ void
 sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
 {
   sqlg_vec_ref_ssl_list (sc, setp->setp_keys);
+  if (setp->setp_ha && HA_ORDER == setp->setp_ha->ha_op)
+    setp->setp_org_slots = (state_slot_t **)box_concat (setp->setp_keys_box, setp->setp_dependent_box);
   if (setp->setp_loc_ts)
     sqlg_vec_setp_loc (sc, setp);
   if (setp->setp_ha && HA_GROUP == setp->setp_ha->ha_op && !setp->setp_set_no_in_key)
@@ -1930,7 +1934,7 @@ sqlg_vec_del (sql_comp_t * sc, delete_node_t * del)
   data_source_t *qn = sc->sc_vec_qf ? sc->sc_vec_qf->qf_head_node : sc->sc_cc->cc_query->qr_head_node;
   int is_first = 1;
   table_source_t *last_no_test = NULL;
-  if (sch_view_def (sc->sc_cc->cc_schema, del->del_table->tb_name))
+  if (sch_view_def (wi_inst.wi_schema, del->del_table->tb_name))
     {
       del->del_is_view = 1;
       return;
@@ -2135,8 +2139,7 @@ sqlg_vec_upd_ins (sql_comp_t * sc, update_node_t * upd)
 	n_fixed = BOX_ELEMENTS (upd->upd_fixed_cl);
       DO_BOX_0 (state_slot_t *, ssl, inx, upd->upd_quick_values)
       {
-	dbe_column_t *col =
-	    sch_id_to_column (wi_inst.wi_schema,
+	dbe_column_t *col = sch_id_to_column (wi_inst.wi_schema,
 	    inx < n_fixed ? upd->upd_fixed_cl[inx]->cl_col_id : upd->upd_var_cl[inx - n_fixed]->cl_col_id);
 	state_slot_t *copy = gethash ((void *) col, copies);
 	if (copy)
@@ -2265,7 +2268,7 @@ sqlg_vec_upd (sql_comp_t * sc, update_node_t * upd)
   data_source_t *qn = sc->sc_vec_qf ? sc->sc_vec_qf->qf_head_node : sc->sc_cc->cc_query->qr_head_node;
   int is_first = 1;
   table_source_t *last_no_test = NULL;
-  if (sch_view_def (sc->sc_cc->cc_schema, upd->upd_table->tb_name))
+  if (sch_view_def (wi_inst.wi_schema, upd->upd_table->tb_name))
     {
       upd->upd_is_view = 1;
       return;
@@ -2635,10 +2638,19 @@ sqlg_hs_non_partitionable (sql_comp_t * sc, hash_source_t * hs)
 int
 sqlg_can_merge_hs (sql_comp_t * sc, hash_source_t * hs, table_source_t * ts, state_slot_t * ssl)
 {
+  data_source_t *next;
   if (!enable_hash_merge)
     return MRG_NONE;
   if (hs->hs_ha->ha_n_keys > 1)
     return MRG_NONE;
+  next = qn_next ((data_source_t *) ts);
+  if (next && IS_QN (next, rdf_inf_pre_input))
+    {
+      /* a rdf quad followed by iterator over super cannot get a merge because the after iterator decides the values, not the ts */
+      QNCAST (rdf_inf_pre_node_t, ri, next);
+      if (ri->ri_is_after)
+	return MRG_NONE;
+    }
   DO_SET (search_spec_t *, sp, &ts->ts_order_ks->ks_hash_spec)
   {
     hash_range_spec_t *hrng = (hash_range_spec_t *) sp->sp_min_ssl;
@@ -3277,7 +3289,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	    state_slot_t *sh;
 	    REF_SSL (res, tn->tn_input[inx]);
 	    ref = tn->tn_input[inx];
-	    sh = ssl_new_vec (sc->sc_cc, ref->ssl_name, ref->ssl_dtp);
+	      sh = ssl_new_vec (sc->sc_cc, ssl_cast_name (ref), ref->ssl_dtp); 
 	    sh->ssl_column = ssl_base_ssl (ref)->ssl_column;
 	    sh->ssl_sqt.sqt_non_null = ref->ssl_sqt.sqt_non_null;
 	    tn->tn_input_ref[inx] = sh;
@@ -3435,14 +3447,18 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 int
 sp_ssl_count (sql_comp_t * sc, search_spec_t * sp, unsigned char *n_eq, int *cast_changes_card)
 {
-  /* set n_eqs to be the count of leading eqs */
+  /* set n_eqs to be the count of sortable search params.  These are leading eqs and optionally one lower bound if one follows eqs. Should also sort to have increasing lower bound for eq prefix */
   int n = 0, all_eq = 1;
   for (sp = sp; sp; sp = sp->sp_next)
     {
       if (all_eq && sp->sp_min_op != CMP_EQ)
 	{
 	  if (n_eq)
-	    *n_eq = n;
+	    {
+	      *n_eq = n;
+	      if (sp->sp_min_ssl && SSL_CONSTANT != sp->sp_min_ssl->ssl_type && !sp->sp_min_ssl->ssl_qr_global)
+		(*n_eq)++;
+	    }
 	  all_eq = 0;
 	}
       if (sp->sp_min_ssl)
@@ -3721,27 +3737,45 @@ ssl_list_member (dk_set_t s, int inx)
 
 
 caddr_t
-sqlg_ts_sort_read_mask (table_source_t * ts)
+sqlg_ts_sort_read_mask (sql_comp_t * sc, table_source_t * ts)
 {
   int k_inx = 0, inx;
   key_source_t *ks = ts->ts_order_ks;
   setp_node_t *setp = ks->ks_from_setp;
-  int n_cols = BOX_ELEMENTS (setp->setp_keys_box) + BOX_ELEMENTS (setp->setp_dependent_box);
+  int n_keys = BOX_ELEMENTS (setp->setp_keys_box);
+  int n_cols = n_keys + BOX_ELEMENTS (setp->setp_dependent_box);
   caddr_t mask = dk_alloc_box_zero (n_cols, DV_BIN);
-  DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box)
+  DO_BOX (state_slot_t *, ssl, inx, setp->setp_org_slots)
   {
-    if (ssl_list_member (ks->ks_out_slots, ssl->ssl_index))
-      mask[k_inx] = 1;
+    state_slot_t *shadow = SSL_SHADOW (ssl);
+    if (ssl_list_member (ks->ks_out_slots, ssl->ssl_index)
+	|| ssl_list_member (ks->ks_out_slots,
+	    k_inx < n_keys ? setp->setp_keys_box[k_inx]->ssl_index : setp->setp_dependent_box[k_inx - n_keys]->ssl_index))
+      {
+	if (shadow)
+	  setp->setp_org_slots[inx] = shadow;
+	mask[k_inx] = 1;
+      }
     k_inx++;
   }
   END_DO_BOX;
-  DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
-  {
-    if (ssl_list_member (ks->ks_out_slots, ssl->ssl_index))
-      mask[k_inx] = 1;
-    k_inx++;
-  }
-  END_DO_BOX;
+  if (!setp->setp_org_slots)
+    {
+      DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box)
+      {
+	if (ssl_list_member (ks->ks_out_slots, ssl->ssl_index))
+	  mask[k_inx] = 1;
+	k_inx++;
+      }
+      END_DO_BOX;
+      DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
+      {
+	if (ssl_list_member (ks->ks_out_slots, ssl->ssl_index))
+	  mask[k_inx] = 1;
+	k_inx++;
+      }
+      END_DO_BOX;
+    }
   return mask;
 }
 
@@ -3780,7 +3814,7 @@ sqlg_ts_qp_copy (sql_comp_t * sc, table_source_t * ts)
 caddr_t
 box_concat (caddr_t b1, caddr_t b2)
 {
-  int l1 = box_length (b1), l2 = box_length (b2);
+  int l1 = b1 ? box_length (b1) : NULL, l2 = b2 ? box_length (b2) : 0;
   int l = l1 + l2;
   caddr_t b = dk_alloc_box (l, box_tag (b1));
   memcpy (b, b1, l1);
@@ -3788,10 +3822,12 @@ box_concat (caddr_t b1, caddr_t b2)
   return b;
 }
 
+
 void
 sqlg_ts_add_copy (sql_comp_t * sc, table_source_t * ts, state_slot_t ** ssls)
 {
-  state_slot_t **old = ts->ts_branch_ssls;
+  state_slot_t **old;
+  old = ts->ts_branch_ssls;
   if (!ssls)
     return;
   if (!old)
@@ -4050,7 +4086,7 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
   if (IS_QN (ts, sort_read_input))
     {
       ts->clb.clb_nth_set = cc_new_instance_slot (sc->sc_cc);
-      ts->ts_sort_read_mask = sqlg_ts_sort_read_mask (ts);
+      ts->ts_sort_read_mask = sqlg_ts_sort_read_mask (sc, ts);
     }
 }
 

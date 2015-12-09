@@ -1842,7 +1842,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       if (err_ret && *err_ret)
 	return;
       ITC_OWNS_PARAM (ins_itc, str);
-      if ((DV_STRING == (dtp_t)str[0] || DV_SHORT_STRING_SERIAL == (dtp_t)str[0]) && tb_is_rdf_quad (key->key_table))
+      if ((DV_STRING == (dtp_t)str[0] || DV_SHORT_STRING_SERIAL == (dtp_t)str[0] || IS_WIDE_STRING_DTP ((dtp_t)str[0])) && tb_is_rdf_quad (key->key_table))
 	{
 	  caddr_t err = srv_make_new_error ("42000",  "RDFST", "Inserting a string into O in RDF_QUAD.  RDF box is expected");
 	  if (err_ret)
@@ -2017,8 +2017,10 @@ convert_dt:
 	{
 	  caddr_t dt_box = box_copy (data);
 	        /*DT_SET_FRACTION (dt_box, 0);*/
-      SET_DT_TYPE_BY_DTP (dt_box, cl->cl_sqt.sqt_col_dtp);
-      ITC_SEARCH_PARAM (ins_itc, dt_box);
+	  if (DV_TIME == cl->cl_sqt.sqt_dtp)
+	    DT_SET_DAY (dt_box, DAY_ZERO);
+          SET_DT_TYPE_BY_DTP (dt_box, cl->cl_sqt.sqt_col_dtp);
+          ITC_SEARCH_PARAM (ins_itc, dt_box);
 	  ITC_OWNS_PARAM (ins_itc, dt_box);
 	}
       break;
@@ -2883,6 +2885,7 @@ it_key_col_ddl (index_tree_t *it, dbe_key_t * key, dbe_column_t * col, int is_dr
   dp_addr_t prev_dropped = 0;
   caddr_t err = NULL;
   caddr_t deflt = is_drop ? NULL : box_to_any (col->col_default, &err);
+  int crinx;
   ITC_INIT (itc, NULL, NULL);
   itc_from_it (itc, it);
   itc->itc_insert_key = key;
@@ -2948,6 +2951,12 @@ it_key_col_ddl (index_tree_t *it, dbe_key_t * key, dbe_column_t * col, int is_dr
 	    rd_list_free (rd_array);
 	    if (ceic.ceic_mp)
 	      mp_free (ceic.ceic_mp);
+	    DO_BOX (col_data_ref_t *, cr, crinx, itc->itc_col_refs)
+	      {
+		if (cr)
+		  cr->cr_pages[0].cp_ceic = NULL;
+	      }
+	    END_DO_BOX;
 	    buf = itc_set_by_placeholder (itc, pl);
 	    itc_unregister_inner ((it_cursor_t*)pl, buf, 0);
 	    plh_free (pl);

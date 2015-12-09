@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_rdf_repl_start">
       <funcprototype id="fproto_rdf_repl_start">
         <funcdef><function>RDF_REPL_START</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -52,7 +52,8 @@ SQL> DB.DBA.RDF_REPL_START();
     </example>
   </refsect1>
   <refsect1 id="seealso_rdf_repl_start"><title>See Also</title>
-
+     <para><link linkend="fn_rdf_repl_stop"><function>RDF_REPL_STOP()</function></link></para>
+     <para><link linkend="fn_rdf_repl_sync"><function>RDF_REPL_SYNC()</function></link></para>
      <para><link linkend="fn_rdf_repl_graph_ins"><function>RDF_REPL_GRAPH_INS()</function></link></para>  
      <para><link linkend="fn_rdf_repl_graph_del"><function>RDF_RDF_REPL_GRAPH_DEL()</function></link></para>            
      <para><link linkend="fn_sub_schedule"><function>sub_schedule()</function></link></para>

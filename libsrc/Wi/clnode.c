@@ -595,8 +595,7 @@ cl_select_save_env (table_source_t * ts, itc_cluster_t * itcl, caddr_t * inst, c
 	GPF_T1 ("vectored cl does not pass through here");
       else
 	{
-	  caddr_t new_array =
-	      mp_alloc_box_ni (itcl->itcl_pool, MAX ((ts->clb.clb_batch_size), (nth + 1)) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+	  caddr_t new_array = mp_alloc_box_ni (itcl->itcl_pool,  MIN (dc_max_batch_sz, nth * 2) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       memcpy (new_array, array, box_length (array));
       itcl->itcl_param_rows = (cl_op_t ***) (array = (caddr_t **) new_array);
     }

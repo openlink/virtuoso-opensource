@@ -111,6 +111,7 @@ extern char *http_proxy_address;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
+extern int32 ws_write_timeout;
 extern int32 log_proc_overwrite;
 extern char * backup_ignore_keys;
 
@@ -375,7 +376,6 @@ int32 c_cli_encryption_on_password;
 extern long cli_encryption_on_password;
 
 extern caddr_t client_defaults;
-void srv_client_defaults_init ();
 extern void srv_plugins_init (void);
 
 /* externals for duplicated functions */
@@ -475,6 +475,9 @@ extern int64 chash_space_avail;
 extern size_t c_max_large_vec;
 extern int32 mon_enable;
 
+
+extern int timezoneless_datetimes;
+long c_timezoneless_datetimes;
 
 /* for use in bif_servers */
 int
@@ -1286,6 +1289,13 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
     mon_enable = 1;
+  if (cfg_getlong (pconfig, section, "TimezonelessDatetimes", &c_timezoneless_datetimes) == -1)
+    c_timezoneless_datetimes = -1; /* temporary value to be reset on reading database config page or before writing it */
+  else if ((c_timezoneless_datetimes < 0) || (c_timezoneless_datetimes > 4))
+    {
+      log_error ("TimezonelessDatetimes should have value 0 (old behavior), 1 (by ISO), 2 (times are timezoneless unless TZ is specified), 3 (set local timezone by default), or 4 (set GMT by default), The value in [Parameters] section .ini file value is %d; wrong, ignored.", c_timezoneless_datetimes);
+      c_timezoneless_datetimes = -1;
+    }
 
   if (cfg_getstring (pconfig, section, "TransStepMode", &tmp_str) == 0)
     {
@@ -1494,6 +1504,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "HTTPClientCache", &http_enable_client_cache) == -1)
     http_enable_client_cache = 0;
+
+  if (cfg_getlong (pconfig, section, "WriteTimeout", &ws_write_timeout) == -1)
+    ws_write_timeout = 0;
   /*
    * FIXME: set meaningful default for c_http_proxy_connection_cache_timeout
    * if c_http_max_cached_proxy_connections is set to something whenever
@@ -1665,8 +1678,6 @@ cfg_setup (void)
       if (!http_log)
 	log_error ("Can't open HTTP log file (%s)", http_log_file);
     }
-
-  srv_client_defaults_init ();
 
   /*
    *  VDB related parameters
@@ -2048,6 +2059,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   iri_cache_size = c_iri_cache_size;
   lite_mode = c_lite_mode;
   rdf_obj_ft_rules_size = c_rdf_obj_ft_rules_size;
+  timezoneless_datetimes = c_timezoneless_datetimes;
   if (rdf_obj_ft_rules_size < 10)
     rdf_obj_ft_rules_size = lite_mode ? 10 : 100;
   it_n_maps = c_it_n_maps;

@@ -568,7 +568,20 @@ create function "PropFilter_DAV_SEARCH_PATH" (in id any, in what char(1)) return
 ;
 
 
-create function "PropFilter_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function "PropFilter_DAV_RES_UPLOAD_COPY" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   declare pfc_spath, pfc_name, pfc_value varchar;
   declare rc integer;
@@ -609,7 +622,17 @@ create function "PropFilter_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_part
 }
 ;
 
-create function "PropFilter_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in auth_uid integer) returns any
+create function "PropFilter_DAV_RES_UPLOAD_MOVE" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   declare pfc_spath, pfc_name, pfc_value varchar;
   declare rc integer;

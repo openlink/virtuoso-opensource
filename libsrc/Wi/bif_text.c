@@ -472,6 +472,178 @@ bif_vt_word_string_ends  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return 0;
 }
 
+#define REALLOC_ACC_IF_NEEDED(acc_addr,acc,acc_len,acc_used,inc) do { \
+    if ((1 + acc_used + inc) > acc_len) \
+      { \
+        int new_acc_len = (acc_len * 2) + inc + 14; \
+        boxint* new_acc = (boxint *)dk_alloc_box (new_acc_len * sizeof (boxint), DV_STRING); \
+        memcpy (new_acc, acc, (1 + acc_used) * sizeof (boxint)); \
+        dk_free_box ((caddr_t)acc); \
+        acc_addr[0] = acc = new_acc; \
+        acc_len = new_acc_len; \
+      } } while (0)
+
+caddr_t
+bif_vt_word_string_id_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint **acc_addr = ((boxint **) (QST_GET_ADDR (qst, args[0])));
+  boxint *acc = acc_addr[0];
+  caddr_t str = bif_arg (qst, args, 1, "vt_word_string_id_acc");
+  int acc_len, acc_used;
+  if (DV_STRING != DV_TYPE_OF (acc))
+    {
+      if (DV_DB_NULL != DV_TYPE_OF (acc))
+	sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_acc (wrong type)");
+      dk_free_tree ((caddr_t) acc);
+      acc_addr[0] = acc = (boxint *) dk_alloc_box_zero (15 * sizeof (boxint), DV_STRING);
+    }
+  acc_len = box_length (acc);
+  if ((acc_len % sizeof (boxint)) || (0 == acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_acc (wrong length)");
+  acc_len /= sizeof (boxint);
+  acc_used = (int) (acc[0]);
+  if ((acc_used < 0) || (acc_used >= acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_acc (wrong content)");
+  switch (DV_TYPE_OF (str))
+    {
+    case DV_LONG_INT:
+      REALLOC_ACC_IF_NEEDED (acc_addr, acc, acc_len, acc_used, 1);
+      acc[++acc_used] = unbox (str);
+      acc[0] = acc_used;
+      break;
+    case DV_STRING:
+      {
+	int l, hl;
+	int pos = 0;
+	int total = box_length (str) - 1;
+	while (pos < total)
+	  {
+	    db_buf_t id_place;
+	    boxint id;
+	    WP_LENGTH (str + pos, hl, l, str, total);
+            id_place = (db_buf_t)(str + pos + hl);
+            id = D_ID_NUM_REF(id_place);
+	    REALLOC_ACC_IF_NEEDED (acc_addr, acc, acc_len, acc_used, 1);
+	    acc[++acc_used] = id;
+	    acc[0] = acc_used;
+	    pos += l + hl;
+	  }
+	break;
+      }
+    default:
+      break;
+    }
+  return 0;
+}
+
+caddr_t
+bif_vt_word_string_id_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return dk_alloc_box_zero (15 * sizeof (boxint), DV_STRING);
+}
+
+caddr_t
+bif_vt_word_string_id_final_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int make_rdf_boxes)
+{
+  boxint *acc = (boxint *) bif_string_or_null_arg (qst, args, 0, "vt_word_string_id_final");
+  int acc_len, acc_used, unique_count, u_ctr;
+  uint32 *offsets;
+  caddr_t *res;
+  int shift, offsets_count, itm_ctr, twobyte, max_twobyte;
+  boxint prev_val, minv = BOXINT_MAX, maxv = BOXINT_MIN;
+  boxint *src, *swap, *tgt, *tgt_to_free;
+  if (NULL == acc)
+    return list (0);
+  src = acc + 1;
+  acc_len = box_length (acc);
+  if ((acc_len % sizeof (boxint)) || (0 == acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_final (wrong length)");
+  acc_len /= sizeof (boxint);
+  acc_used = (int) (acc[0]);
+  if ((acc_used < 0) || (acc_used >= acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_final (wrong content)");
+  if (0 == acc_used)
+    return list (0);
+  for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+    {
+      boxint key_val = src[itm_ctr];
+      if (key_val < minv)
+	minv = key_val;
+      if (key_val > maxv)
+	maxv = key_val;
+    }
+  if ((maxv - minv) < 0L)
+    {
+      sqlr_new_error ("22023", "SR573",
+	  "Function vt_word_string_id_final has failed to sort array: the difference between greatest and smallest keys does not fit 63 bit range, meaning wrong d_ids");
+    }
+  tgt_to_free = tgt = (boxint *) dk_alloc (acc_used * sizeof (boxint));
+  offsets_count = ((maxv >= 0x10000) ? 0x10000 : (maxv + 1));
+  offsets = (uint32 *) dk_alloc (offsets_count * sizeof (uint32));
+  for (shift = 0; shift < 8 * sizeof (boxint); shift += 16)
+    {
+      if (0 == (maxv >> shift))
+	break;
+      max_twobyte = (((maxv >> shift) >= 0x10000L) ? 0x10000 : (int) ((maxv >> shift) + 1));
+      memset (offsets, 0, max_twobyte * sizeof (uint32));
+      for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+	{
+	  (offsets[(src[itm_ctr] >> shift) & 0xffff])++;
+	}
+      if (acc_used == offsets[0])
+	continue;
+      for (twobyte = 1; twobyte < max_twobyte; twobyte++)
+	offsets[twobyte] += offsets[twobyte - 1];
+#ifndef NDEBUG
+      if (acc_used != offsets[max_twobyte - 1])
+	GPF_T1 ("Bad offsets in bif_vt_word_string_id_final()");
+#endif
+      for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+	{
+	  int ofs = --(offsets[(src[itm_ctr] >> shift) & 0xffff]);
+	  tgt[ofs] = src[itm_ctr];
+	}
+      swap = src;
+      src = tgt;
+      tgt = swap;
+    }
+  unique_count = 1;
+  for (itm_ctr = acc_used - 1; itm_ctr--; /* no step */ )
+    if (src[itm_ctr] != src[itm_ctr + 1])
+      unique_count++;
+  res = (caddr_t *) dk_alloc_box (unique_count * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  u_ctr = unique_count;
+  prev_val = minv - 1;
+  for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+    {
+      if (src[itm_ctr] == prev_val)
+	continue;
+      prev_val = src[itm_ctr];
+      res[--u_ctr] = (make_rdf_boxes ? (caddr_t) rbb_from_id (prev_val) : box_num (prev_val));
+    }
+#ifndef NDEBUG
+  if (0 != u_ctr)
+    GPF_T1 ("Bad u_ctr bif_vt_word_string_id_final()");
+#endif
+#ifndef NDEBUG
+  dk_check_tree (res);
+#endif
+  dk_free (tgt_to_free, acc_used * sizeof (boxint));
+  dk_free (offsets, offsets_count * sizeof (uint32));
+  return (caddr_t) res;
+}
+
+caddr_t
+bif_vt_word_string_id_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_vt_word_string_id_final_impl (qst, err_ret, args, 0);
+}
+
+caddr_t
+bif_vt_word_string_ro_id_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_vt_word_string_id_final_impl (qst, err_ret, args, 1);
+}
 
 caddr_t
 bif_wb_all_done  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3349,6 +3521,10 @@ bif_text_init (void)
 {
   stop_words_mtx = mutex_allocate ();
   vt_stop_words = id_hash_allocate (11, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  bif_define ("vt_word_string_id_init", bif_vt_word_string_id_init);
+  bif_define ("vt_word_string_id_acc", bif_vt_word_string_id_acc);
+  bif_define ("vt_word_string_id_final", bif_vt_word_string_id_final);
+  bif_define ("vt_word_string_ro_id_final", bif_vt_word_string_ro_id_final);
   bif_define ("vt_word_string_ends", bif_vt_word_string_ends);
   bif_define ("vt_word_string_details", bif_vt_word_string_details);
   bif_define_ex ("wb_all_done_bif", bif_wb_all_done, BMD_RET_TYPE, &bt_integer, BMD_DONE);

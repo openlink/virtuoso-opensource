@@ -507,7 +507,7 @@ dbe_storage_t * cpt_dbs;
 
 it_cursor_t *mcp_itc;
 
-long tc_cpt_unremap_dirty;
+extern long tc_cpt_unremap_dirty;
 
 
 
@@ -1007,6 +1007,7 @@ cpt_pl_restore (page_lock_t * pl, it_cursor_t * itc)
   rd_list_free (rds);
 }
 
+extern long tc_cpt_restore_uncommitted;
 
 void
 cpt_restore_uncommitted (it_cursor_t * itc)
@@ -1053,6 +1054,7 @@ cpt_restore_uncommitted (it_cursor_t * itc)
       uc_insert_t * next = cpt_uci_list->uci_next;
       cpt_reinsert_uci (cpt_uci_list, itc);
       n_uci++;
+      TC (tc_cpt_restore_uncommitted);
       cpt_trx_rc_ck ();
       dk_free ((caddr_t) cpt_uci_list, sizeof (uc_insert_t));
       cpt_uci_list = next;
@@ -1419,7 +1421,15 @@ cpt_neodisk_page (const void *key, void *value)
       if (cp_remap)
 	{
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em  (it_from_g->it_storage, cp_remap);
+	  else
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, cp_remap, EXT_REMAP);
+	  else
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, cp_remap);
+	  dp_set_backup_flag (cpt_dbs, cp_remap, 0);
 	}
       if (it_from_g->it_col_extent_maps)
 	em = dbs_dp_to_em  (it_from_g->it_storage, logical);
@@ -1442,8 +1452,16 @@ cpt_neodisk_page (const void *key, void *value)
 	  (dp_addr_t) (uptrlong) gethash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
       if (cp_remap)
 	{
+	  extent_map_t * em;
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
-	  em_free_dp (it_from_g->it_extent_map, cp_remap, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em (it_from_g->it_storage, cp_remap);
+	  else
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, cp_remap, EXT_REMAP);
+	  else
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, cp_remap);
 	}
     }
   else
@@ -1466,12 +1484,18 @@ cpt_neodisk_page (const void *key, void *value)
 	{
 	  /* dirty after image will go to logical anyway.
 	   * May just as well write it to logical as to remap. */
-
+	  extent_map_t * em;
 	  remhash (DP_ADDR2VOID (logical), cpt_dbs->dbs_cpt_remap);
 	  /* remhash is allowed because the cpt remap might have been made in the sethash above */
-	  em_free_dp (it_from_g->it_extent_map, physical, EXT_REMAP);
+	  if (it_from_g->it_col_extent_maps)
+	    em = dbs_dp_to_em  (it_from_g->it_storage, physical);
+	  else
+	    em = it_from_g->it_extent_map;
+	  if (em)
+	    em_free_dp (em, physical, EXT_REMAP);
+	  else
+	    log_error ("Column page %ld has a free cpt remap %ld or cpt remap maps to no extent", logical, physical);
 	  rdbg_printf (("[C Unremap L %ld R %ld ]", logical, physical));
-
 	  after_image->bd_physical_page = after_image->bd_page;
 	  TC (tc_cpt_unremap_dirty);
 	}
@@ -1570,6 +1594,27 @@ dbs_backup_check (dbe_storage_t * dbs, int flag)
 #endif
 }
 
+#ifdef PAGE_DEBUG
+void
+dbs_em_check (dbe_storage_t * dbs)
+{
+  int n;
+  for (n = 0; n < dbs->dbs_n_pages; n += EXTENT_SZ)
+    {
+      extent_map_t *em;
+      extent_t *ext;
+      em = dbs_dp_to_em (dbs, n);
+      if (!em)
+	continue;
+      ext = EM_DP_TO_EXT (em, EXT_ROUND (n));
+      if (!ext)
+	{
+	  log_error ("Inconsistent extent map %s, dp=%d", em->em_name, n);
+	}
+    }
+}
+#endif
+
 void
 dbs_cache_check (dbe_storage_t * dbs, int mode)
 {
@@ -1665,6 +1710,7 @@ dbs_cpt_recov_ems (dbe_storage_t * dbs, caddr_t * reg)
       caddr_t * ent = (caddr_t*) reg[inx];
       caddr_t name = ent[0];
       if (0 == strncmp (name, "__EM:", 5)
+	  || 0 == strncmp (name, "__EMC:", 6)
 	  || 0 == strcmp (name, "__sys_ext_map"))
 	{
 	  extent_map_t * em = dbs_read_extent_map (dbs, name, atoi (ent[1]));
@@ -2094,6 +2140,9 @@ dbs_checkpoint (char *log_name, int shutdown)
 	    log_info ("Exiting in mid checkpoint");
 	    call_exit (-1);
 	  }
+#ifdef PAGE_DEBUG
+      dbs_em_check (dbs);
+#endif
 	DO_SET (index_tree_t *, it, &dbs->dbs_trees)
 	  {
 	    mcp_itc->itc_thread = THREAD_CURRENT_THREAD;
@@ -2253,6 +2302,7 @@ srv_global_unlock (client_connection_t *cli, lock_trx_t *lt)
 
 
 int32 cl_retry_seed;
+int32 dbf_no_atomic;
 
 void
 srv_global_lock (query_instance_t * qi, int flag)
@@ -2260,7 +2310,7 @@ srv_global_lock (query_instance_t * qi, int flag)
   int retries = 0;
   lock_trx_t * lt = qi->qi_trx;
   /*GK: in roll forward this is a no-op */
-  if (in_log_replay)
+  if (in_log_replay || dbf_no_atomic)
     return;
   if (flag)
     {

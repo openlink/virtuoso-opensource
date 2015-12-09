@@ -1670,12 +1670,16 @@ create function WV.WIKI.DATEFORMAT (in dt datetime, in _type varchar:=NULL) retu
       _months := vector ('Jav', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
       return sprintf ('%02ld %s %ld', dayofmonth (dt), _months[month (dt)-1], year(dt));
     }
-  else if (_type = 'rfc1123')
-    return soap_print_box (dt, '', 1);
+  else if (_type = 'rfc1123') 
+    {
+      if (timezone (dt) is null)
+        dt := dt_set_tz (dt, 0);
+      return soap_print_box (dt, '', 1);
+    }
   else if (_type = 'iso8601')
     return soap_print_box (dt, '', 0);
   else if (_type = 'local')
-    return substring (datestring (dt_set_tz (dt, timezone (now ()))), 1, 19);
+    return substring (datestring (dt_set_tz (dt, timezone (curdatetime_tz ()))), 1, 19);
 }
 ;
 

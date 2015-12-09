@@ -169,6 +169,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
              vresultSet.isLastResult = false;
 	     vresultSet.getMoreResults(false);
+             vresultSet.stmt_n_rows_to_get = this.prefetch;
 	     result_opened = true;
 	   }
 	 catch(IOException e)
@@ -365,7 +366,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
-	     future.nextResult(false);
+	     future.nextResult();
 	     // Remove the future reference
 	     connection.removeFuture(future);
 	     future = null;
@@ -885,8 +886,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	  else
 	    {
 	    objparams.setElementAt(x,parameterIndex - 1);
-	}
-   }
+	    }
+        }
    }
 
    protected void setString(int parameterIndex, VirtuosoExplicitString x) throws VirtuosoException

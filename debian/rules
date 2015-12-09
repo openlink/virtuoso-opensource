@@ -13,12 +13,19 @@ DEB_AUTO_UPDATE_LIBTOOL = pre
 DEB_AUTOMAKE_ARGS += -Wno-portability
 
 JDK6PATH = $(shell dpkg -L openjdk-6-jdk | grep "/usr/lib/jvm/java-6-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
+ifeq ($(JDK6PATH),)
+JDK6PATH=no
+endif
 
 JDK7PATH = $(shell dpkg -L openjdk-7-jdk | grep "/usr/lib/jvm/java-7-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u)
+ifeq ($(JDK7PATH),)
+JDK7PATH=no
+endif
 
 DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
 		--program-transform-name='s/isql$$/isql-vt/;s/isqlw/isqlw-vt/' \
-		--with-readline --without-internal-zlib \
+		--with-readline \
+		--without-internal-zlib \
 		--enable-maintainer-mode \
 		--without-iodbc \
 		--enable-demo-vad \
@@ -60,17 +67,17 @@ pre-build::
 build/virtuoso-opensource-7::
 	cd debian; find . -name "*.?.xml" -exec docbook2x-man --solinks {} \;
 
-build/libvirtuoso5.5-cil::
-	$(MAKE) -C binsrc/VirtuosoClient.Net -f Makefile.mono
+build/libvirtmono0-cil::
+	$(MAKE) -C binsrc/VirtuosoClient.Net
 	chmod -x binsrc/VirtuosoClient.Net/OpenLink.Data.Virtuoso.dll
 
-cleanbuilddir/libvirtuoso5.5-cil::
-	$(MAKE) -C binsrc/VirtuosoClient.Net -f Makefile.mono clean
+cleanbuilddir/libvirtmono0-cil::
+	$(MAKE) -C binsrc/VirtuosoClient.Net clean
 
-binary-install/libvirtuoso5.5-cil::
+binary-install/libvirtmono0-cil::
 	dh_installcligac
 
-binary-predeb/libvirtuoso5.5-cil::
+binary-predeb/libvirtmono0-cil::
 	dh_makeclilibs
 	dh_clideps -d
 

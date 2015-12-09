@@ -28,21 +28,20 @@
   </refmeta>
   <refnamediv>
     <refname>XMLType.getClobVal</refname>
-    <refpurpose>This function returns the serialization of the current node 
-	like XPATH function 'serialize()', i.e. a text in XML syntax.</refpurpose>
+    <refpurpose>This function returns the serialization of the current node like XPATH function 'serialize()', i.e. a text in XML syntax.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_XMLType.getClobVal">
       <funcprototype id="fproto_XMLType.getClobVal">
         <funcdef><function>XMLType.getClobVal</function></funcdef>
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_XMLType.getClobVal">
     <title>Description</title>
-    <para>This function returns the serialization of the current node.  This is 
-	similar to the XPATH function 'serialize()', i.e. a text in XML syntax.
-</para>
+    <para>This function returns the serialization of the current node. This is similar to the XPATH function
+    	'serialize()', i.e. a text in XML syntax.</para>
   </refsect1>
   <refsect1 id="ret_XMLType.getClobVal"><title>Return Types</title>
     <para>The function returns wide string.</para>
@@ -50,8 +49,8 @@
   <refsect1 id="examples_XMLType.getClobVal">
     <title>Examples</title>
     <example id="ex_XMLType.getClobVal"><title>A table with an XMLType column</title>
-      <para>This populates a table with XML data and then selects string 
-	  representation of 'ename' element from the appropriate record.</para>
+      <para>This populates a table with XML data and then selects string representation of 'ename' element from
+      	the appropriate record.</para>
       <screen><![CDATA[
 create table TEST_XMLS  (I integer primary key, XMLVAL XMLType);
 insert into TEST_XMLS  values (1, XMLType('<emp><empno>221</empno><ename>John</ename></emp>'));

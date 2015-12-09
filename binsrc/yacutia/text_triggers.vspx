@@ -253,7 +253,7 @@
       </tr>
       <tr>
         <td nowrap="nowrap" valign="top">
-          Enable adding automaticaly missed prefixes for .TTL files
+          Enable adding automatically missed prefixes for .TTL files
         </td>
         <td colspan="2">
           <label>

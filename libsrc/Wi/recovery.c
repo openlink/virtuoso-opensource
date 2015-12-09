@@ -204,6 +204,9 @@ walk_db (lock_trx_t * lt, page_func_t func)
   memset (levels, 0, sizeof (levels));
 
   {
+    IN_TXN;
+    lt_threads_set_inner (lt, 1);
+    LEAVE_TXN;
     DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
       {
 	if (it != wi_inst.wi_master->dbs_cpt_tree && !backup_key_is_ignored (&ign, it->it_key))
@@ -228,13 +231,24 @@ walk_db (lock_trx_t * lt, page_func_t func)
 	      }
 	    ITC_FAILED
 	      {
+		if (!THREAD_CURRENT_THREAD->thr_reset_ctx) /* backup-dump */
+		  {
+		    log_error ("Broken index %s", it->it_key->key_name ? it->it_key->key_name : "temp key");
+		    goto next;
+		  }
 		itc_free (itc);
+		if (!srv_have_global_lock(THREAD_CURRENT_THREAD))
+		  LEAVE_CPT (lt);
 	      }
 	    END_FAIL (itc);
+next:
 	    itc_free (itc);
 	  }
       }
     END_DO_SET()
+    IN_TXN;
+    lt_threads_set_inner (lt, 0);
+    LEAVE_TXN;
   }
 }
 
@@ -1670,6 +1684,22 @@ bif_read_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return list_to_array (dk_set_nreverse (set));
 }
 
+static caddr_t
+bif_trx_w_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  return box_num (qi->qi_trx->lt_w_id); 
+}
+
+static caddr_t
+bif_decode_trx_w_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t trx_str = bif_strict_array_or_null_arg (qst, args, 0, "decode_trx_w_id");
+  caddr_t trx_id = log_cl_trx_id ((caddr_t*)trx_str);
+  long w_id = trx_id ? INT64_REF_NA (trx_id + 1) : 0;
+  return box_num (w_id);
+}
+
 void
 recovery_init (void)
 {
@@ -1679,6 +1709,8 @@ recovery_init (void)
   bif_define ("backup_close", bif_backup_close);
   bif_define ("backup_index", bif_log_index);
   bif_define ("read_log", bif_read_log);
+  bif_define ("trx_w_id", bif_trx_w_id);
+  bif_define ("decode_trx_w_id", bif_decode_trx_w_id);
 #if 0
   bif_define ("crash_recovery_log_check", bif_crash_recovery_log_check);
 #endif

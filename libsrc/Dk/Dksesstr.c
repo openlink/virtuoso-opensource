@@ -909,9 +909,9 @@ strses_serialize (caddr_t strses_box, dk_session_t * ses)
       long ver = cdef_param (ses->dks_caller_id_opts, "__SQL_CLIENT_VERSION", 0);
       if (ver && ver < 2724)
 	{
+report_read_error:
 	  if (ses->dks_session)
 	    {
-	    report_read_error:
 	      SESSTAT_CLR (ses->dks_session, SST_OK);
 	      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
 	      ses->dks_to_close = 1;

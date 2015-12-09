@@ -109,7 +109,7 @@ log_set_compatibility_check (int in_txn, char *strg)
 	    w_id = lt_w_counter++;
 	  cl_2pc = dk_alloc_box (2 + sizeof (int64), DV_STRING);
 	  cl_2pc[0] = LOG_2PC_COMMIT;
-	  trx_no = (((int64)local_cll.cll_this_host) <  32) + w_id;
+	  trx_no = (((int64)local_cll.cll_this_host) << 32) + w_id;
 	  INT64_SET_NA (cl_2pc + 1, trx_no);
 	}
       memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
@@ -339,8 +339,23 @@ log_fsync (dk_session_t * ses)
     fd_fsync (tcpses_get_fd (ses->dks_session));
 }
 
+void 
+log_merge_commit (lock_trx_t * lt, dk_set_t merges)
+{
+  DO_SET (log_merge_t *, lm, &merges)
+    {
+      strses_write_out (lm->lm_log, lt->lt_log);
+      lt->lt_blob_log = dk_set_conc (lt->lt_blob_log, lm->lm_blob_log);
+      lm->lm_blob_log = NULL;
+    }
+  END_DO_SET();
+  lt_free_merge (merges);
+}
+
 
 extern long dbf_log_no_disk;
+long tc_log_write_clocks;
+int log_commit_ctr;
 
 int
 log_commit (lock_trx_t * lt)
@@ -351,11 +366,13 @@ log_commit (lock_trx_t * lt)
   dk_session_t * volatile log_ses;
   long bytes = strses_length (lt->lt_log);
   caddr_t *cbox;
+  uint64 ts;
   if (lt->lt_replicate == REPL_NO_LOG
       || (LT_CL_PREPARED != lt->lt_status && !bytes) || cl_non_logged_write_mode)
     return LTE_OK;
   if (dbf_log_no_disk)
     return LTE_LOG_FAILED;
+  ts = rdtsc ();
   ASSERT_IN_MTX (log_write_mtx);
   prev_length = dbs->dbs_log_length;
   log_ses = dbs->dbs_log_session;
@@ -396,7 +413,16 @@ log_commit (lock_trx_t * lt)
       cbox[LOGH_CL_2PC] = id;
     }
   else
-    cbox[LOGH_CL_2PC] = 0;
+    {
+#ifndef NDEBUG
+      caddr_t id = dk_alloc_box (10, DV_STRING);
+      id[0] = LOG_2PC_COMMIT;
+      INT64_SET_NA (id + 1, lt->lt_w_id);
+      cbox[LOGH_CL_2PC] = id;
+#else
+      cbox[LOGH_CL_2PC] = 0;
+#endif
+    }
   if (!lt->lt_branch_of && lt->lt_client && lt->lt_client->cli_user)
     cbox[LOGH_USER] = box_string (lt->lt_client->cli_user->usr_name);
   else
@@ -434,8 +460,9 @@ log_commit (lock_trx_t * lt)
     }
   log_ses->dks_bytes_sent = 0;
 #if LOG_DEBUG_LEVEL>1
-   long start_log_pos=log_ses->dks_out_fill; /* strses_length (log_ses); */
+  long start_log_pos=log_ses->dks_out_fill; /* strses_length (log_ses); */
 #endif
+  log_commit_ctr++;
   CATCH_WRITE_FAIL (log_ses)
   {
     print_object ((caddr_t) cbox, log_ses, NULL, NULL);
@@ -458,7 +485,6 @@ log_commit (lock_trx_t * lt)
 #endif
     strses_write_out (lt->lt_log, log_ses);
     session_flush_1 (log_ses);
-    log_fsync (log_ses);
 #if LOG_DEBUG_LEVEL>1
   fprintf(stderr, "** log_commit from %ld to %ld\n", start_log_pos, log_ses->dks_bytes_sent);
 #endif
@@ -472,13 +498,15 @@ log_commit (lock_trx_t * lt)
   fprintf(stderr, "           blob added till %ld\n", end_log_pos);
 #endif
     }
-
+  log_fsync (log_ses);
   if (!lt->lt_backup)
     {
       dk_free_tree ((caddr_t) cbox);
     }
   else
     dk_free_tree ((caddr_t) cbox);
+
+  tc_log_write_clocks += rdtsc () - ts;
 
   if (!DKSESSTAT_ISSET (log_ses, SST_OK))
     {
@@ -938,12 +966,16 @@ lt_log_merge (lock_trx_t * lt, int in_txn)
 	LEAVE_TXN;
       return LTE_CANCEL;
     }
-  mutex_enter (main_lt->lt_log_mtx);
-  strses_write_out (lt->lt_log, main_lt->lt_log);
-  mutex_leave (main_lt->lt_log_mtx);
+  {
+    NEW_VARZ (log_merge_t, lm);
+    lm->lm_log = lt->lt_log;
+    lm->lm_blob_log = lt->lt_blob_log;
+    dk_set_push (&main_lt->lt_log_merge, (void*)lm);
+  }
   if (!in_txn)
     LEAVE_TXN;
-  strses_flush (lt->lt_log);
+  lt->lt_log = (dk_session_t *)resource_get (cl_strses_rc);
+  lt->lt_blob_log = NULL;
   return LTE_OK;
 }
 
@@ -2054,7 +2086,6 @@ lre_alloc ()
   LOG_REPL_OPTIONS (opts);
   memzero (executor, sizeof (lr_executor_t));
   executor->lre_mtx = mutex_allocate();
-  executor->lre_opts=opts;
   executor->lre_aqr_count=0;
   executor->lre_err=SQL_SUCCESS;
   executor->lre_stopped=0;
@@ -2215,12 +2246,15 @@ query_t *
 log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, int is_rfwd)
 {
   /* if is_rfwd this is roll forward and no cluster is not specified since the host may have multiple partitions (except for replicated tables)  if elastic cluster */
+  client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
   string_buffer sb;
   caddr_t err;
   char temp1[MAX_NAME_LEN], temp2[MAX_NAME_LEN], temp3[MAX_NAME_LEN];
   key_id_t old_key = key->key_migrate_to;
+  if (!cli)
+    cli = bootstrap_cli;
   if (key->key_partition && clm_replicated == key->key_partition->kpd_map)
     is_rfwd = 0;
   while (key->key_migrate_to)
@@ -2235,7 +2269,8 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 	    {
 	      int n_cols, k, need_comma = 0;
 	      caddr_t * names;
-	      sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO")),
+	char * mode = ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO"));
+	sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", mode, 
 		 ESC(key_table->tb_qualifier, 1), ESC(key_table->tb_owner, 2), ESC(key_table->tb_name_only,3));
 	      if (op == LOG_KEY_INSERT && !old_key)
 		{
@@ -2296,7 +2331,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
       default:
       GPF_T1 ("log_key_ins_del_qr: invalid operation");
     }
-  res = sql_compile (sb.sb_buf, bootstrap_cli, &err, SQLC_DEFAULT);
+  res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
       err_log_error (err);
@@ -2316,6 +2351,7 @@ id_hash_t * upd_replay_cache;
 query_t *
 log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
 {
+  client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
   string_buffer sb;
@@ -2324,6 +2360,8 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   query_t ** place;
   caddr_t h_key;
   char **names;
+  if (!cli)
+    cli = bootstrap_cli;
   while (key->key_migrate_to)
     key = sch_id_to_key (wi_inst.wi_schema, key->key_migrate_to);
   if (!upd_replay_cache)
@@ -2364,7 +2402,7 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   sb_printf (&sb, " option (no identity, no trigger)");
   dk_free (names, n_cols * sizeof(char*));
 
-  res = sql_compile (sb.sb_buf, bootstrap_cli, &err, SQLC_DEFAULT);
+  res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
       err_log_error (err);
@@ -2396,7 +2434,7 @@ get_vec_query (lre_request_t *request, dbe_key_t * key, int flag, caddr_t * err_
     }
   while (key->key_migrate_to)
     key = sch_id_to_key (wi_inst.wi_schema, key->key_migrate_to);
-  res = log_key_ins_del_qr (key, err_ret, op, flag, 1);
+  res = log_key_ins_del_qr (key, err_ret, op, op == LOG_KEY_INSERT && flag == LOG_INSERT_SOFT ? INS_SOFT : flag, 1);
   sethash ((void*)(ptrlong)op, lq->lrq_qrs, (void*)res);
   return res;
 }
@@ -2407,15 +2445,8 @@ log_exec_batch_vec (lre_request_t *request, caddr_t* err_ret, client_connection_
 {
   data_col_t **dcs = request->lr_params_vec;
   query_t *qr=request->lr_qr;
-  stmt_options_t * opts=NULL;
+  LOG_REPL_OPTIONS (opts);
   cli->cli_no_triggers = 1;
-  switch (request->lr_op)
-    {
-      case LOG_DELETE:
-      case LOG_KEY_DELETE:
-	  opts=request->lr_lre->lre_opts;
-    }
-
   request->lr_params_vec = NULL;
   *err_ret = qr_exec (cli, qr, CALLER_LOCAL, NULL, NULL,
       NULL, (caddr_t*)dcs, opts, 0);
@@ -2638,7 +2669,11 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
   caddr_t err = NULL;
   dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, unbox (row[0]));
   LOCAL_RD (rd);
-
+  if (!key)
+    {
+      dk_free_tree ((caddr_t)row);
+      return srv_make_new_error ("42000", "RFWNK", "No key " BOXINT_FMT, unbox (row[0]));
+    }
   rd.rd_allocated = RD_AUTO;
   rd.rd_values = &row[1];
   rd.rd_n_values = BOX_ELEMENTS (row) - 1;
@@ -3263,7 +3298,7 @@ log_replay_time (caddr_t * header)
       if (BOX_ELEMENTS (dta) == 2 && DV_DATETIME == DV_TYPE_OF (dta[0]))
 	{
 	  int64 w_id = unbox (dta[1]);
-	  if (DVC_LESS == dt_compare (wi_inst.wi_log_replay_dt, dta[0]))
+	  if (DVC_LESS == dt_compare (wi_inst.wi_log_replay_dt, dta[0], 1))
 	    memcpy (wi_inst.wi_log_replay_dt, dta[0], DT_LENGTH);
 	  if (QFID_HOST (w_id) == local_cll.cll_this_host
 	      &&  (!log_last_local_w_id || W_ID_GT ((int32)w_id, log_last_local_w_id)))
@@ -3457,10 +3492,11 @@ int dbf_first_to_replay = 0;
 int dbf_stop_rfwd;
 
 client_connection_t *
-log_set_immediate_client (client_connection_t * cli)
+log_set_immediate_client (client_connection_t * cli, client_connection_t * old_sqlc_cli)
 {
   dk_session_t * ses;
   client_connection_t * old;
+  sqlc_set_client (old_sqlc_cli);
   if ((ses = IMMEDIATE_CLIENT))
     {
       old = DKS_DB_DATA (ses);
@@ -3475,16 +3511,20 @@ log_set_immediate_client (client_connection_t * cli)
 }
 
 
+extern int enable_mt_ft_inx;
+
 client_connection_t * rfwd_cli;
 void
 log_replay_file (int fd)
 {
+  int  mt_ft_save = enable_mt_ft_inx;
   int rc, do_replay;
   volatile OFF_T log_rec_start = 0;
   client_connection_t *cli = client_connection_create ();
   dk_session_t *file_in = dk_session_allocate (SESCLASS_TCPIP);
   dk_session_t trx_ses;
-  client_connection_t * save_cli = log_set_immediate_client (cli);
+  client_connection_t * old_sqlc_cli = sqlc_client ();
+  client_connection_t * save_cli = log_set_immediate_client (cli, NULL);
   scheduler_io_data_t trx_sio;
   dk_session_t *str_in = &trx_ses;
   caddr_t trx_string;
@@ -3494,7 +3534,9 @@ log_replay_file (int fd)
   OFF_T total_size_bytes;
   OFF_T good_log_rec_start = 0;
   lr_executor_t* lr_executor=NULL;
-
+  /* if cluster rfwd, no mt text inx replay because logged per slice and aq does not preserve slice scope */
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    enable_mt_ft_inx = 0;
   cli->cli_user = sec_id_to_user (U_ID_DBA);
   total_size_bytes = LSEEK (fd, 0, SEEK_END);
   if (total_size_bytes == (OFF_T) -1)
@@ -3646,8 +3688,9 @@ log_error (" ** log_rec_start=" OFF_T_PRINTF_FMT, log_rec_start);
   if (cli->cli_trx)
     lt_done (cli->cli_trx);
   LEAVE_TXN;
-  log_set_immediate_client (save_cli);
+  log_set_immediate_client (save_cli, old_sqlc_cli);
   client_connection_free (cli);
+  enable_mt_ft_inx = mt_ft_save;
   log_info ("Roll forward complete");
   if (!lite_mode)
     dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED);
@@ -3670,7 +3713,7 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  LSEEK (tcpses_get_fd (dbs->dbs_log_session->dks_session), 0, SEEK_SET);
 	  FTRUNCATE (tcpses_get_fd (dbs->dbs_log_session->dks_session), (OFF_T) (0));
 	  dbs->dbs_log_length = 0;
-          if (CPT_SHUTDOWN != shutdown)
+	  if (CPT_SHUTDOWN != shutdown || CL_RUN_CLUSTER == cl_run_local_only)
 	    {
 	      log_set_byte_order_check (1);
 	      log_time (log_time_header (wi_inst.wi_master->dbs_cfg_page_dt));
@@ -3692,7 +3735,8 @@ log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 	  new_fd = fd_open (new_log, LOG_OPEN_FLAGS);
 	  if (new_fd < 0)
 	    {
-	      log_error ("Cannot change to log file %s", new_log);
+	      int errn = errno;
+	      log_error ("Cannot change to log file %s, error : %s", new_log,  virt_strerror (errn));
 	      call_exit (1);
 	    }
 	  fd_close (tcpses_get_fd (dbs->dbs_log_session->dks_session),

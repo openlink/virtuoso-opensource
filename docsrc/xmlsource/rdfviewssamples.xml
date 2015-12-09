@@ -66,7 +66,11 @@ SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind")
 SPARQL drop quad map virtrdf:NorthwindDemo
 ;
 ]]></programlisting>
-<note><para>The <emphasis>^{URIQADefaultHost}^</emphasis> macro is replaced with the value of <emphasis>DefaultHost</emphasis> parameter of <link linkend="ini_URIQA">[URIQA]</link> section of configuration file. The IRI is written as <emphasis>iri("http://^{URIQADefaultHost}^/Northwind")</emphasis>, not as <emphasis>&lt;http://^{URIQADefaultHost}^/Northwind&gt;</emphasis> because macro of this sort works only inside SPARQL string values.</para></note>
+<note><para>The <emphasis>^{URIQADefaultHost}^</emphasis> macro is replaced with the value of
+<emphasis>DefaultHost</emphasis> parameter of <link linkend="ini_URIQA">[URIQA]</link> section of
+configuration file. The IRI is written as <emphasis>iri("http://^{URIQADefaultHost}^/Northwind")</emphasis>,
+not as <emphasis>&lt;http://^{URIQADefaultHost}^/Northwind&gt;</emphasis> because macro of this sort works
+only inside SPARQL string values.</para></note>
 
 <para>Now it's safe to create IRI classes needed for the view. If
 these classes are used only in the view we define then it is safe to
@@ -111,7 +115,6 @@ create iri class northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VAD/de
 <programlisting><![CDATA[
 SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -860,7 +863,6 @@ drop quad map virtrdf:TPCH
 
 SPARQL
 prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 create iri class tpch:customer "http://^{URIQADefaultHost}^/tpch/customer/%U%d#this" (in custname varchar, in c_custkey integer not null) option (bijection, deref) .
@@ -875,7 +877,6 @@ create iri class tpch:supplier "http://^{URIQADefaultHost}^/tpch/supplier/%U%d#t
 
 SPARQL
 prefix tpch: <http://www.openlinksw.com/schemas/tpch#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -1248,7 +1249,6 @@ GRANT SELECT ON tpcd.DBA.region    TO "SPARQL";
 
 --SPARQL
 --prefix tpcd: <http://demo.openlinksw.com/schemas/tpcd#>
---prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 --prefix sioc: <http://rdfs.org/sioc/ns#>
 --prefix foaf: <http://xmlns.com/foaf/0.1/>
 --prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -1257,7 +1257,6 @@ GRANT SELECT ON tpcd.DBA.region    TO "SPARQL";
 
 SPARQL
 prefix tpcd: <http://demo.openlinksw.com/schemas/tpcd#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -1266,7 +1265,6 @@ drop silent quad map virtrdf:TpcdDemo .
 
 SPARQL
 prefix tpcd: <http://demo.openlinksw.com/schemas/tpcd#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -1282,7 +1280,6 @@ create iri class tpcd:supplier "http://^{URIQADefaultHost}^/tpcd/supplier/%d#thi
 
 SPARQL
 prefix tpcd: <http://demo.openlinksw.com/schemas/tpcd#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix wgs: <http://www.w3.org/2003/01/geo/wgs84_pos#>
@@ -1674,7 +1671,6 @@ DB.DBA.SPARQL_THALIA_RUN('drop quad map virtrdf:ThaliaDemo .
 
 
 DB.DBA.SPARQL_THALIA_RUN('
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -1725,8 +1721,7 @@ create iri class th:UmdDatetime "http://^{URIQADefaultHost}^/thalia/umd/datetime
 ')
 ;
 
-DB.DBA.SPARQL_THALIA_RUN('prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
-prefix sioc: <http://rdfs.org/sioc/ns#>
+DB.DBA.SPARQL_THALIA_RUN('prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix xsd: <http://www.w3.org/2001/XMLSchema#>
 prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -4929,10 +4924,10 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix syb: <http://localhost:8890/schemas/sybasepubs2/> .
+@prefix syb: <http://example.com/schemas/sybasepubs2/> .
 
 syb:titles a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "titles" ;
 	rdfs:comment "Sybase Pubs2 titles table" .
 
@@ -4987,7 +4982,7 @@ syb:pubdate a rdf:Property ;
 	rdfs:label "publish date" .
 
 syb:authors a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "authors" ;
 	rdfs:comment "Sybase Pubs2 authors table" .
 
@@ -5037,7 +5032,7 @@ syb:postalcode a rdf:Property ;
 	rdfs:label "postalcode" .
 
 syb:stores a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "stores" ;
 	rdfs:comment "Sybase Pubs2 stores table" .
 
@@ -5082,7 +5077,7 @@ syb:payterms a rdf:Property ;
 	rdfs:label "payment terms" .
 
 syb:au_pix a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "authors pictures" ;
 	rdfs:comment "Sybase Pubs2 au_pix table" .
 
@@ -5112,7 +5107,7 @@ syb:pixwidth_vert a rdf:Property ;
 	rdfs:label "picture vertical width" .
 
 syb:discounts a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "discounts" ;
 	rdfs:comment "Sybase Pubs2 discount table" .
 
@@ -5142,7 +5137,7 @@ syb:discount a rdf:Property ;
 	rdfs:label "min quantity" .
 
 syb:salesdetail a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "sales details" ;
 	rdfs:comment "Sybase Pubs2 sales detail table" .
 
@@ -5172,7 +5167,7 @@ syb:discount a rdf:Property ;
 	rdfs:label "discount" .
 
 syb:publishers a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "Publishers" ;
 	rdfs:comment "Sybase Pubs2 publishers table" .
 
@@ -5197,7 +5192,7 @@ syb:state a rdf:Property ;
 	rdfs:label "state" .
 
 syb:titleauthor a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "title author" ;
 	rdfs:comment "Sybase Pubs2 titleauthor table" .
 
@@ -5222,7 +5217,7 @@ syb:royaltyper a rdf:Property ;
 	rdfs:label "royalty per book" .
 
 syb:roysched a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "Royalty Schedule" ;
 	rdfs:comment "Sybase Pubs2 roysched table" .
 
@@ -5247,7 +5242,7 @@ syb:royalty a rdf:Property ;
 	rdfs:label "royalty" .
 
 syb:sales a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/sybasepubs2> ;
+	rdfs:isDefinedBy <http://example.com/schemas/sybasepubs2> ;
 	rdfs:label "Sales" ;
 	rdfs:comment "Sybase Pubs2 sales table" .
 
@@ -5265,7 +5260,7 @@ syb:date a rdf:Property ;
 	rdfs:domain syb:sales ;
 	rdfs:range xsd:dateTime ;
 	rdfs:label "date" .
-', '', 'http://localhost:8890/schemas/sybasepubs2', 0);
+', '', 'http://example.com/schemas/sybasepubs2', 0);
 
 ---------------------------------------------------------------
 
@@ -5273,43 +5268,43 @@ syb:date a rdf:Property ;
 
 SPARQL
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/titles_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/titles_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/titles/%s_%s#this"
     	(in title_id varchar not null, in title varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/authors_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/authors_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/authors/%s#this"
     	(in au_id varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/stores_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/stores_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/stores/%s#this"
     	(in stor_id varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/au_pix_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/au_pix_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/au_pix/%s#this"
     	(in au_id varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/discounts_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/discounts_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/discounts/%s#this"
     	(in discounttype varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/salesdetail_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/salesdetail_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/salesdetail/%s_%s_%s#this"
     	(in stor_id varchar not null, in ord_num varchar not null, in title_id varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/publishers_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/publishers_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/publishers/%s#this"
     	(in pub_id varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/titleauthor_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/titleauthor_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/titleauthor/%s_%s#this"
     	(in au_id varchar not null, in title_id varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/roysched_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/roysched_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/roysched/%s#this"
     	(in title_id varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/sybasepubs2/sales_iri>
+	create iri class <http://example.com/schemas/sybasepubs2/sales_iri>
 	"http://^{URIQADefaultHost}^/sybasepubs2/sales/%s_%s#this"
     	(in stor_id varchar not null, in ord_num varchar not null) .
 
@@ -5321,7 +5316,7 @@ SPARQL
 
 SPARQL
 
-prefix syb: <http://localhost:8890/schemas/sybasepubs2/>
+prefix syb: <http://example.com/schemas/sybasepubs2/>
 
 alter quad storage virtrdf:DefaultQuadStorage
   from pubs2.syb.au_pix as au_pix_tbl
@@ -5336,7 +5331,7 @@ alter quad storage virtrdf:DefaultQuadStorage
   from pubs2.syb.titles as titles_tbl
 {
   create virtrdf:sybasepubs2 as
-      graph <http://localhost:8890/sybasepubs2>
+      graph <http://example.com/sybasepubs2>
   {
 	syb:au_pix_iri (au_pix_tbl.au_id) a syb:au_pix as virtrdf:au_pix_id;
 	syb:au_id au_pix_tbl.au_id as virtrdf:au_pix_au_id;
@@ -5561,7 +5556,6 @@ GRANT SELECT ON "Demo"."demo"."Provinces" TO "SPARQL";
 
 SPARQL
 prefix tut_northwind: <http://demo.openlinksw.com/schemas/tutorial/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -5572,7 +5566,6 @@ drop quad map graph iri("http://^{URIQADefaultHost}^/tutorial/Northwind") .
 
 SPARQL
 prefix tut_northwind: <http://demo.openlinksw.com/schemas/tutorial/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -5810,7 +5803,6 @@ grant execute on DB.DBA.TUT_CATEGORYPHOTO_IRI_INVERSE to "SPARQL";
 
 SPARQL
 prefix tut_northwind: <http://demo.openlinksw.com/schemas/tutorial/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -5835,7 +5827,6 @@ create iri class tut_northwind:CategoryPhoto "http://^{URIQADefaultHost}^/DAV/VA
 
 SPARQL
 prefix tut_northwind: <http://demo.openlinksw.com/schemas/tutorial/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -5889,7 +5880,6 @@ create iri class tut_northwind:flag_iri using
 
 SPARQL
 prefix tut_northwind: <http://demo.openlinksw.com/schemas/tutorial/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -6542,7 +6532,6 @@ create iri class northwind:Fax "fax:%s" (in fax_number varchar) .
 
 SPARQL
 prefix northwind: <http://demo.openlinksw.com/schemas/northwind#>
-prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -7537,10 +7526,10 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix hr: <http://localhost:8890/schemas/oraclehr/> .
+@prefix hr: <http://example.com/schemas/oraclehr/> .
 
 hr:countries a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "COUNTRIES" ;
 	rdfs:comment "Oracle HR COUNTRIES table" .
 
@@ -7560,7 +7549,7 @@ hr:region_id a rdf:Property ;
 	rdfs:label "REGION ID" .
 
 hr:regions a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "REGIONS" ;
 	rdfs:comment "Oracle HR REGIONS table" .
 
@@ -7575,7 +7564,7 @@ hr:region_name a rdf:Property ;
 	rdfs:label "REGION NAME" .
 
 hr:departments a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "DEPARTMENTS" ;
 	rdfs:comment "Oracle HR DEPARTMENT table" .
 
@@ -7600,7 +7589,7 @@ hr:location_id a rdf:Property ;
 	rdfs:comment "LOCATION ID" .
 
 hr:employees a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "employees" ;
 	rdfs:comment "Oracle HR EMPLOYEES table" .
 
@@ -7660,7 +7649,7 @@ hr:department_id a rdf:Property ;
 	rdfs:label "DEPARTMENT ID" .
 
 hr:jobs a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "JOBS" ;
 	rdfs:comment "Oracle HR JOBS table" .
 
@@ -7686,7 +7675,7 @@ hr:max_salary a rdf:Property ;
 	rdfs:label "MAXSALARY" .
 
 hr:job_history a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "JOB HISTORY" ;
 	rdfs:comment "Oracle HR JOB HISTORY table" .
 
@@ -7716,7 +7705,7 @@ hr:department_id a rdf:Property ;
 	rdfs:label "DEPARTMENT ID" .
 
 hr:locations a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "LOCATIONS" ;
 	rdfs:comment "Oracle HR JOB LOCATIONS table" .
 
@@ -7749,7 +7738,7 @@ hr:country_id a rdf:Property ;
 	rdfs:domain hr:locations ;
 	rdfs:range hr:countries ;
 	rdfs:label "COUNTRY" .
-', '', 'http://localhost:8890/schemas/oraclehr', 0);
+', '', 'http://example.com/schemas/oraclehr', 0);
 
 ---------------------------------------------------------------
 
@@ -7759,7 +7748,7 @@ create function DB.DBA.JOB_HISTORY (in EMPLOYEE_ID integer, in
 START_DATE date) returns varchar
 {
   return sprintf_or_null
-('http://localhost:8890/oraclehr/job_history/%d_%s#this',
+('http://example.com/oraclehr/job_history/%d_%s#this',
   EMPLOYEE_ID, cast (START_DATE as varchar) );
 }
 ;
@@ -7767,7 +7756,7 @@ START_DATE date) returns varchar
 create function DB.DBA.JOB_HISTORY_INV_1 (in id varchar) returns integer
 {
   return sprintf_inverse (id,
-'http://localhost:8890/oraclehr/job_history/%d_%s#this',
+'http://example.com/oraclehr/job_history/%d_%s#this',
 2)[0];
 }
 ;
@@ -7776,7 +7765,7 @@ create function DB.DBA.JOB_HISTORY_INV_2 (in id varchar) returns date
 {
   declare exit handler for sqlstate '*' { return NULL; };
   return cast (sprintf_inverse (id,
-'http://localhost:8890/oraclehr/job_history/%d_%s#this',
+'http://example.com/oraclehr/job_history/%d_%s#this',
 2)[1] as date);
 }
 ;
@@ -7789,35 +7778,35 @@ GRANT EXECUTE ON DB.DBA.JOB_HISTORY_URI_INV_2 TO "SPARQL", "SPARQL_UPDATE";
 SPARQL
 
 
-	create iri class <http://localhost:8890/schemas/oraclehr/countries_iri>
+	create iri class <http://example.com/schemas/oraclehr/countries_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/countries/%s#this"
     	(in COUNTRY_ID varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/regions_iri>
+	create iri class <http://example.com/schemas/oraclehr/regions_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/regions/%d#this"
 	    (in REGION_ID integer not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/departments_iri>
+	create iri class <http://example.com/schemas/oraclehr/departments_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/departments/%d#this"
 	    (in DEPARTMENT_ID integer not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/employees_iri>
+	create iri class <http://example.com/schemas/oraclehr/employees_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/employees/%d#this"
 		(in EMPLOYEE_ID integer not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/jobs_iri>
+	create iri class <http://example.com/schemas/oraclehr/jobs_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/jobs/%s#this"
 	    (in JOB_ID varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/job_history_iri>
+	create iri class <http://example.com/schemas/oraclehr/job_history_iri>
 		using function DB.DBA.JOB_HISTORY (in EMPLOYEE_ID integer not null, in
 		START_DATE date not null) returns varchar not null,
 		function DB.DBA.JOB_HISTORY_INV_1 (in id varchar) returns integer,
 		function DB.DBA.JOB_HISTORY_INV_2 (in id varchar) returns date
 		option (bijection, returns
-		"http://localhost:8890/oraclehr/job_history/%d_%s#this") .
+		"http://example.com/oraclehr/job_history/%d_%s#this") .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/locations_iri>
+	create iri class <http://example.com/schemas/oraclehr/locations_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/locations/%d#this"
 	    (in LOCATION_ID integer not null) .
 ;
@@ -7828,7 +7817,7 @@ SPARQL
 
 SPARQL
 
-prefix hr: <http://localhost:8890/schemas/oraclehr/>
+prefix hr: <http://example.com/schemas/oraclehr/>
 
 alter quad storage virtrdf:DefaultQuadStorage
   FROM HR.orama.COUNTRIES as countries_tbl
@@ -7841,7 +7830,7 @@ alter quad storage virtrdf:DefaultQuadStorage
   FROM HR.orama.LOCATIONS as locations_tbl
 {
   create virtrdf:oraclehr as
-      graph <http://localhost:8890/oraclehr>
+      graph <http://example.com/oraclehr>
   {
         hr:countries_iri(countries_tbl.COUNTRY_ID) a hr:countries  as virtrdf:countires_country_id ;
         hr:country_name countries_tbl.COUNTRY_NAME  as virtrdf:countries_country_name ;
@@ -8027,10 +8016,10 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix hr: <http://localhost:8890/schemas/oraclehr/> .
+@prefix hr: <http://example.com/schemas/oraclehr/> .
 
 hr:countries a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "COUNTRIES" ;
 	rdfs:comment "Oracle HR COUNTRIES table" .
 
@@ -8050,7 +8039,7 @@ hr:region_id a rdf:Property ;
 	rdfs:label "REGION ID" .
 
 hr:regions a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "REGIONS" ;
 	rdfs:comment "Oracle HR REGIONS table" .
 
@@ -8065,7 +8054,7 @@ hr:region_name a rdf:Property ;
 	rdfs:label "REGION NAME" .
 
 hr:departments a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "DEPARTMENTS" ;
 	rdfs:comment "Oracle HR DEPARTMENT table" .
 
@@ -8090,7 +8079,7 @@ hr:location_id a rdf:Property ;
 	rdfs:comment "LOCATION ID" .
 
 hr:employees a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "employees" ;
 	rdfs:comment "Oracle HR EMPLOYEES table" .
 
@@ -8150,7 +8139,7 @@ hr:department_id a rdf:Property ;
 	rdfs:label "DEPARTMENT ID" .
 
 hr:jobs a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "JOBS" ;
 	rdfs:comment "Oracle HR JOBS table" .
 
@@ -8176,7 +8165,7 @@ hr:max_salary a rdf:Property ;
 	rdfs:label "MAXSALARY" .
 
 hr:job_history a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "JOB HISTORY" ;
 	rdfs:comment "Oracle HR JOB HISTORY table" .
 
@@ -8206,7 +8195,7 @@ hr:department_id a rdf:Property ;
 	rdfs:label "DEPARTMENT ID" .
 
 hr:locations a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/oraclehr> ;
+	rdfs:isDefinedBy <http://example.com/schemas/oraclehr> ;
 	rdfs:label "LOCATIONS" ;
 	rdfs:comment "Oracle HR JOB LOCATIONS table" .
 
@@ -8239,7 +8228,7 @@ hr:country_id a rdf:Property ;
 	rdfs:domain hr:locations ;
 	rdfs:range hr:countries ;
 	rdfs:label "COUNTRY" .
-', '', 'http://localhost:8890/schemas/oraclehr', 0);
+', '', 'http://example.com/schemas/oraclehr', 0);
 
 ---------------------------------------------------------------
 
@@ -8249,7 +8238,7 @@ create function DB.DBA.JOB_HISTORY (in EMPLOYEE_ID integer, in
 START_DATE date) returns varchar
 {
   return sprintf_or_null
-('http://localhost:8890/oraclehr/job_history/%d_%s#this',
+('http://example.com/oraclehr/job_history/%d_%s#this',
   EMPLOYEE_ID, cast (START_DATE as varchar) );
 }
 ;
@@ -8257,7 +8246,7 @@ START_DATE date) returns varchar
 create function DB.DBA.JOB_HISTORY_INV_1 (in id varchar) returns integer
 {
   return sprintf_inverse (id,
-'http://localhost:8890/oraclehr/job_history/%d_%s#this',
+'http://example.com/oraclehr/job_history/%d_%s#this',
 2)[0];
 }
 ;
@@ -8266,7 +8255,7 @@ create function DB.DBA.JOB_HISTORY_INV_2 (in id varchar) returns date
 {
   declare exit handler for sqlstate '*' { return NULL; };
   return cast (sprintf_inverse (id,
-'http://localhost:8890/oraclehr/job_history/%d_%s#this',
+'http://example.com/oraclehr/job_history/%d_%s#this',
 2)[1] as date);
 }
 ;
@@ -8279,35 +8268,35 @@ GRANT EXECUTE ON DB.DBA.JOB_HISTORY_URI_INV_2 TO "SPARQL", "SPARQL_UPDATE";
 SPARQL
 
 
-	create iri class <http://localhost:8890/schemas/oraclehr/countries_iri>
+	create iri class <http://example.com/schemas/oraclehr/countries_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/countries/%s#this"
     	(in COUNTRY_ID varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/regions_iri>
+	create iri class <http://example.com/schemas/oraclehr/regions_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/regions/%d#this"
 	    (in REGION_ID integer not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/departments_iri>
+	create iri class <http://example.com/schemas/oraclehr/departments_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/departments/%d#this"
 	    (in DEPARTMENT_ID integer not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/employees_iri>
+	create iri class <http://example.com/schemas/oraclehr/employees_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/employees/%d#this"
 		(in EMPLOYEE_ID integer not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/jobs_iri>
+	create iri class <http://example.com/schemas/oraclehr/jobs_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/jobs/%s#this"
 	    (in JOB_ID varchar not null) .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/job_history_iri>
+	create iri class <http://example.com/schemas/oraclehr/job_history_iri>
 		using function DB.DBA.JOB_HISTORY (in EMPLOYEE_ID integer not null, in
 		START_DATE date not null) returns varchar not null,
 		function DB.DBA.JOB_HISTORY_INV_1 (in id varchar) returns integer,
 		function DB.DBA.JOB_HISTORY_INV_2 (in id varchar) returns date
 		option (bijection, returns
-		"http://localhost:8890/oraclehr/job_history/%d_%s#this") .
+		"http://example.com/oraclehr/job_history/%d_%s#this") .
 
-	create iri class <http://localhost:8890/schemas/oraclehr/locations_iri>
+	create iri class <http://example.com/schemas/oraclehr/locations_iri>
 	"http://^{URIQADefaultHost}^/oraclehr/locations/%d#this"
 	    (in LOCATION_ID integer not null) .
 ;
@@ -8318,7 +8307,7 @@ SPARQL
 
 SPARQL
 
-prefix hr: <http://localhost:8890/schemas/oraclehr/>
+prefix hr: <http://example.com/schemas/oraclehr/>
 
 alter quad storage virtrdf:DefaultQuadStorage
   from HR.orama.COUNTRIES as countries_tbl
@@ -8331,7 +8320,7 @@ alter quad storage virtrdf:DefaultQuadStorage
   from HR.orama.LOCATIONS as locations_tbl
 {
   create virtrdf:oraclehr as
-      graph <http://localhost:8890/oraclehr>
+      graph <http://example.com/oraclehr>
   {
         hr:countries_iri(countries_tbl.COUNTRY_ID) a hr:countries  as virtrdf:countires_country_id ;
         hr:country_name countries_tbl.COUNTRY_NAME  as virtrdf:countries_country_name ;
@@ -8490,7 +8479,7 @@ DB.DBA.XML_SET_NS_DECL ('hr', 'http://^{URIQADefaultHost}^/schemas/oraclehr/', 2
     </sect2>
     <sect2 id="rdfviewsenterprdb">
       <title>DB2 using the demonstration 'Sample' database</title>
-<para><emphasis>Version defined using explicit host - localhost:8890</emphasis></para>
+<para><emphasis>Version defined using explicit host - example.com</emphasis></para>
 <programlisting><![CDATA[
 -- $Id$
 -- Setup script for Linked Data Views of portions of DB2 SAMPLE database included
@@ -8529,7 +8518,7 @@ create function DB.DBA.PROJ_ACT_IRI (
   _act_no := cast(act_no as varchar);
   _datetime := cast(ac_st_date as varchar);
   _date := left(_datetime, 10);
-  return sprintf('http://localhost:8890/db2sample/proj_act/%s_%s_%s#this',
+  return sprintf('http://example.com/db2sample/proj_act/%s_%s_%s#this',
     proj_no, _act_no, _date);
 };
 
@@ -8539,7 +8528,7 @@ DB.DBA.PROJ_ACT_IRI_INV_1 (in proj_act_iri varchar) returns varchar
   declare exit handler for sqlstate '*' { return NULL; };
   declare parts any;
   parts := sprintf_inverse (proj_act_iri,
-   'http://localhost:8890/db2sample/proj_act/%s_%s_%s#this', 1);
+   'http://example.com/db2sample/proj_act/%s_%s_%s#this', 1);
   if (parts is not null)
   {
     return parts[0];
@@ -8553,7 +8542,7 @@ DB.DBA.PROJ_ACT_IRI_INV_2 (in proj_act_iri varchar) returns integer
   declare exit handler for sqlstate '*' { return NULL; };
   declare parts any;
   parts := sprintf_inverse (proj_act_iri,
-   'http://localhost:8890/db2sample/proj_act/%s_%s_%s#this', 1);
+   'http://example.com/db2sample/proj_act/%s_%s_%s#this', 1);
   if (parts is not null)
   {
     return cast(parts[1] as integer);
@@ -8567,7 +8556,7 @@ DB.DBA.PROJ_ACT_IRI_INV_3 (in proj_act_iri varchar) returns date
   declare exit handler for sqlstate '*' { return NULL; };
   declare parts any;
   parts := sprintf_inverse (proj_act_iri,
-   'http://localhost:8890/db2sample/proj_act/%s_%s_%s#this', 1);
+   'http://example.com/db2sample/proj_act/%s_%s_%s#this', 1);
   if (parts is not null)
   {
     return cast(parts[2] as date);
@@ -8587,7 +8576,7 @@ create function DB.DBA.EMP_PROJ_ACT_IRI (
   _datetime := cast(emp_start_date as varchar);
   _date := left(_datetime, 10);
   return sprintf(
-      'http://localhost:8890/db2sample/emp_proj_act/%s_%s_%s_%s#this',
+      'http://example.com/db2sample/emp_proj_act/%s_%s_%s_%s#this',
     emp_no, proj_no, _act_no, _date);
 };
 
@@ -8597,7 +8586,7 @@ DB.DBA.EMP_PROJ_ACT_IRI_INV_1 (in emp_proj_act_iri varchar) returns varchar
   declare exit handler for sqlstate '*' { return NULL; };
   declare parts any;
   parts := sprintf_inverse (emp_proj_act_iri,
-   'http://localhost:8890/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
+   'http://example.com/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
   if (parts is not null)
   {
     return parts[0];
@@ -8611,7 +8600,7 @@ DB.DBA.EMP_PROJ_ACT_IRI_INV_2 (in emp_proj_act_iri varchar) returns varchar
   declare exit handler for sqlstate '*' { return NULL; };
   declare parts any;
   parts := sprintf_inverse (emp_proj_act_iri,
-   'http://localhost:8890/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
+   'http://example.com/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
   if (parts is not null)
   {
     return parts[1];
@@ -8625,7 +8614,7 @@ DB.DBA.EMP_PROJ_ACT_IRI_INV_3 (in emp_proj_act_iri varchar) returns integer
   declare exit handler for sqlstate '*' { return NULL; };
   declare parts any;
   parts := sprintf_inverse (emp_proj_act_iri,
-   'http://localhost:8890/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
+   'http://example.com/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
   if (parts is not null)
   {
     return cast(parts[2] as integer);
@@ -8639,7 +8628,7 @@ DB.DBA.EMP_PROJ_ACT_IRI_INV_4 (in emp_proj_act_iri varchar) returns date
   declare exit handler for sqlstate '*' { return NULL; };
   declare parts any;
   parts := sprintf_inverse (emp_proj_act_iri,
-   'http://localhost:8890/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
+   'http://example.com/db2sample/emp_proj_act/%s_%s_%s_%s#this', 1);
   if (parts is not null)
   {
     return cast(parts[3] as date);
@@ -8658,8 +8647,8 @@ grant execute on DB.DBA.EMP_PROJ_ACT_IRI_INV_2 to "SPARQL", "SPARQL_UPDATE";
 grant execute on DB.DBA.EMP_PROJ_ACT_IRI_INV_3 to "SPARQL", "SPARQL_UPDATE";
 grant execute on DB.DBA.EMP_PROJ_ACT_IRI_INV_4 to "SPARQL", "SPARQL_UPDATE";
 
-SPARQL drop graph <http://localhost:8890/schemas/db2sample> ;
-SPARQL drop graph <http://localhost:8890/db2sample> ;
+SPARQL drop graph <http://example.com/schemas/db2sample> ;
+SPARQL drop graph <http://example.com/db2sample> ;
 
 SPARQL drop quad map virtrdf:db2sample ;
 
@@ -8671,10 +8660,10 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix opl: <http://localhost:8890/schemas/db2sample/> .
+@prefix opl: <http://example.com/schemas/db2sample/> .
 
 opl:Act a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/db2sample> ;
+	rdfs:isDefinedBy <http://example.com/schemas/db2sample> ;
 	rdfs:label "Act" ;
 	rdfs:comment "Activity" .
 
@@ -8698,7 +8687,7 @@ opl:act_desc a rdf:Property ;
 
 #####
 opl:Department a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/db2sample> ;
+	rdfs:isDefinedBy <http://example.com/schemas/db2sample> ;
 	rdfs:label "Department" ;
 	rdfs:comment "Department" .
 
@@ -8744,7 +8733,7 @@ opl:dept_project_collection a rdf:Property ;
 
 #####
 opl:Employee a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/db2sample> ;
+	rdfs:isDefinedBy <http://example.com/schemas/db2sample> ;
 	rdfs:label "Employee" ;
 	rdfs:comment "Employee" .
 
@@ -8849,7 +8838,7 @@ opl:activity_collection a rdf:Property ;
 
 #####
 opl:EmpProjAct a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/db2sample> ;
+	rdfs:isDefinedBy <http://example.com/schemas/db2sample> ;
 	rdfs:label "EmpProjAct" ;
 	rdfs:comment "Employee project activity" .
 
@@ -8901,7 +8890,7 @@ opl:project_activity a rdf:Property ;
 
 #####
 opl:EmployeeResume a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/db2sample> ;
+	rdfs:isDefinedBy <http://example.com/schemas/db2sample> ;
 	rdfs:label "EmployeeResume" ;
 	rdfs:comment "Employee resume" .
 
@@ -8930,7 +8919,7 @@ opl:resume_of a rdf:Property ;
 
 #####
 opl:ProjAct a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/db2sample> ;
+	rdfs:isDefinedBy <http://example.com/schemas/db2sample> ;
 	rdfs:label "ProjAct" ;
 	rdfs:comment "Project activity" .
 
@@ -8981,7 +8970,7 @@ opl:employee_activity_collection a rdf:Property ;
 
 #####
 opl:Project a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/db2sample> ;
+	rdfs:isDefinedBy <http://example.com/schemas/db2sample> ;
 	rdfs:label "Project" ;
 	rdfs:comment "Project" .
 
@@ -9038,30 +9027,30 @@ opl:proj_activity_collection a rdf:Property ;
 	rdfs:range opl:ProjAct ;
 	rdfs:label "Project activities" .
 
-', '', 'http://localhost:8890/schemas/db2sample', 0);
+', '', 'http://example.com/schemas/db2sample', 0);
 
 --------------------------
 
 SPARQL
-prefix opl: <http://localhost:8890/schemas/db2sample/>
+prefix opl: <http://example.com/schemas/db2sample/>
 
 create iri class
-<http://localhost:8890/schemas/db2sample/act_iri>
-	"http://localhost:8890/db2sample/act/%d#this"
+<http://example.com/schemas/db2sample/act_iri>
+	"http://example.com/db2sample/act/%d#this"
 	(
 	 in act_no integer not null
 	) .
 
 create iri class
-<http://localhost:8890/schemas/db2sample/department_iri>
-	"http://localhost:8890/db2sample/department/%s#this"
+<http://example.com/schemas/db2sample/department_iri>
+	"http://example.com/db2sample/department/%s#this"
 	(
 	 in dept_no varchar not null
 	) .
 
 create iri class
-<http://localhost:8890/schemas/db2sample/employee_iri>
-	"http://localhost:8890/db2sample/employee/%s#this"
+<http://example.com/schemas/db2sample/employee_iri>
+	"http://example.com/db2sample/employee/%s#this"
 	(
 	 in emp_no varchar not null
 	) .
@@ -9082,13 +9071,13 @@ create iri class opl:emp_proj_act_iri using
 	function DB.DBA.EMP_PROJ_ACT_IRI_INV_4 (in emp_proj_act_iri varchar)
 		returns date
 	option (bijection, returns
-	  "http://localhost:8890/db2sample/emp_proj_act/%s_%s_%s_%s#this")
+	  "http://example.com/db2sample/emp_proj_act/%s_%s_%s_%s#this")
 	.
 
 
 create iri class
-<http://localhost:8890/schemas/db2sample/employee_resume_iri>
-	"http://localhost:8890/db2sample/employee_resume/%s_%s#this"
+<http://example.com/schemas/db2sample/employee_resume_iri>
+	"http://example.com/db2sample/employee_resume/%s_%s#this"
 	(
 	 in emp_no varchar not null,
 	 in resume_format varchar not null
@@ -9107,19 +9096,19 @@ create iri class opl:proj_act_iri using
 	function DB.DBA.PROJ_ACT_IRI_INV_3 (in proj_act_iri varchar)
 		returns date
 	option (bijection, returns
-		"http://localhost:8890/db2sample/proj_act/%s_%s_%s#this")
+		"http://example.com/db2sample/proj_act/%s_%s_%s#this")
 	.
 
 create iri class
-<http://localhost:8890/schemas/db2sample/project_iri>
-	"http://localhost:8890/db2sample/project/%s#this"
+<http://example.com/schemas/db2sample/project_iri>
+	"http://example.com/db2sample/project/%s#this"
 	(
 	 in proj_no varchar not null
 	) .
 ;
 
 SPARQL
-prefix opl: <http://localhost:8890/schemas/db2sample/>
+prefix opl: <http://example.com/schemas/db2sample/>
 
 alter quad storage virtrdf:DefaultQuadStorage
 from DB.db2sample.ACT as act_tbl
@@ -9131,7 +9120,7 @@ from DB.db2sample.PROJACT as proj_act_tbl
 from DB.db2sample.PROJECT as project_tbl
 {
 	create virtrdf:db2sample as
-		graph <http://localhost:8890/db2sample>
+		graph <http://example.com/db2sample>
 	{
 	opl:act_iri(act_tbl.ACTNO) a opl:Act
 		as virtrdf:act_id ;
@@ -9323,7 +9312,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http/localhost:8890%s',
+    '/about/html/http/example.com%s',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -9375,7 +9364,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     '(/[^#]*)',
     vector('path'),
     1,
-    '/about/html/http/localhost:8890%U',
+    '/about/html/http/example.com%U',
     vector('path'),
     null,
     '(text/html)|(\\*/\\*)',
@@ -9454,13 +9443,13 @@ create function DB.DBA.CUST_CALLS_IRI (in customer_num integer, in call_dtime da
 {
 	declare _call_dtime any;
 	_call_dtime := cast(call_dtime as varchar);
-	return sprintf('http://localhost:8890/informix/stores_demo/cust_calls/%d_%U#this', customer_num, _call_dtime);
+	return sprintf('http://example.com/informix/stores_demo/cust_calls/%d_%U#this', customer_num, _call_dtime);
 };
 
 create function DB.DBA.CUST_CALLS_IRI_INV_1 (in cust_calls_iri varchar) returns integer
 {
 	declare parts any;
-	parts := sprintf_inverse(cust_calls_iri, 'http://localhost:8890/informix/stores_demo/cust_calls/%d_%U#this', 1);
+	parts := sprintf_inverse(cust_calls_iri, 'http://example.com/informix/stores_demo/cust_calls/%d_%U#this', 1);
 	if(parts is not null)
 	{
 		return parts[0];
@@ -9471,7 +9460,7 @@ create function DB.DBA.CUST_CALLS_IRI_INV_1 (in cust_calls_iri varchar) returns 
 create function DB.DBA.CUST_CALLS_IRI_INV_2 (in cust_calls_iri varchar) returns datetime
 {
 	declare parts any;
-	parts := sprintf_inverse(cust_calls_iri, 'http://localhost:8890/informix/stores_demo/cust_calls/%d_%U#this', 1);
+	parts := sprintf_inverse(cust_calls_iri, 'http://example.com/informix/stores_demo/cust_calls/%d_%U#this', 1);
 	if(parts is not null)
 	{
 		return parts[1];
@@ -9493,16 +9482,16 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix items:   <http://localhost:8890/schemas/informix/stores_demo/items/> .
-@prefix catalog: <http://localhost:8890/schemas/informix/stores_demo/catalog/> .
-@prefix stock:   <http://localhost:8890/schemas/informix/stores_demo/stock/> .
-@prefix msgs:    <http://localhost:8890/schemas/informix/stores_demo/msgs/> .
-@prefix state:   <http://localhost:8890/schemas/informix/stores_demo/state/> .
-@prefix orders:  <http://localhost:8890/schemas/informix/stores_demo/orders/> .
-@prefix manuf:   <http://localhost:8890/schemas/informix/stores_demo/manufact/> .
-@prefix cust:    <http://localhost:8890/schemas/informix/stores_demo/customer/> .
-@prefix callt:   <http://localhost:8890/schemas/informix/stores_demo/call_type/> .
-@prefix custc:   <http://localhost:8890/schemas/informix/stores_demo/cust_calls/> .
+@prefix items:   <http://example.com/schemas/informix/stores_demo/items/> .
+@prefix catalog: <http://example.com/schemas/informix/stores_demo/catalog/> .
+@prefix stock:   <http://example.com/schemas/informix/stores_demo/stock/> .
+@prefix msgs:    <http://example.com/schemas/informix/stores_demo/msgs/> .
+@prefix state:   <http://example.com/schemas/informix/stores_demo/state/> .
+@prefix orders:  <http://example.com/schemas/informix/stores_demo/orders/> .
+@prefix manuf:   <http://example.com/schemas/informix/stores_demo/manufact/> .
+@prefix cust:    <http://example.com/schemas/informix/stores_demo/customer/> .
+@prefix callt:   <http://example.com/schemas/informix/stores_demo/call_type/> .
+@prefix custc:   <http://example.com/schemas/informix/stores_demo/cust_calls/> .
 
 
 
@@ -9840,7 +9829,7 @@ custc:call_code_fk a rdf:Property ;
 	rdfs:label "CALL CODE" .
 
 
-', '', 'http://localhost:8890/schemas/informix/stores_demo', 0);
+', '', 'http://example.com/schemas/informix/stores_demo', 0);
 
 
 
@@ -9851,51 +9840,51 @@ custc:call_code_fk a rdf:Property ;
 
 SPARQL
 
-prefix items:   <http://localhost:8890/schemas/informix/stores_demo/items/>
-prefix catalog: <http://localhost:8890/schemas/informix/stores_demo/catalog/>
-prefix stock:   <http://localhost:8890/schemas/informix/stores_demo/stock/>
-prefix msgs:    <http://localhost:8890/schemas/informix/stores_demo/msgs/>
-prefix state:   <http://localhost:8890/schemas/informix/stores_demo/state/>
-prefix orders:  <http://localhost:8890/schemas/informix/stores_demo/orders/>
-prefix manuf:   <http://localhost:8890/schemas/informix/stores_demo/manufact/>
-prefix cust:    <http://localhost:8890/schemas/informix/stores_demo/customer/>
-prefix callt:   <http://localhost:8890/schemas/informix/stores_demo/call_type/>
-prefix custc:   <http://localhost:8890/schemas/informix/stores_demo/cust_calls/>
+prefix items:   <http://example.com/schemas/informix/stores_demo/items/>
+prefix catalog: <http://example.com/schemas/informix/stores_demo/catalog/>
+prefix stock:   <http://example.com/schemas/informix/stores_demo/stock/>
+prefix msgs:    <http://example.com/schemas/informix/stores_demo/msgs/>
+prefix state:   <http://example.com/schemas/informix/stores_demo/state/>
+prefix orders:  <http://example.com/schemas/informix/stores_demo/orders/>
+prefix manuf:   <http://example.com/schemas/informix/stores_demo/manufact/>
+prefix cust:    <http://example.com/schemas/informix/stores_demo/customer/>
+prefix callt:   <http://example.com/schemas/informix/stores_demo/call_type/>
+prefix custc:   <http://example.com/schemas/informix/stores_demo/cust_calls/>
 
 create iri class items:items_iri
-	"http://localhost:8890/informix/stores_demo/items/%d_%d#this"
+	"http://example.com/informix/stores_demo/items/%d_%d#this"
 	(in item_num integer not null, in order_num integer not null) .
 
 create iri class catalog:catalog_iri
-	"http://localhost:8890/informix/stores_demo/catalog/%d#this"
+	"http://example.com/informix/stores_demo/catalog/%d#this"
     	(in catalog_num integer not null) .
 
 create iri class msgs:msgs_iri
-	"http://localhost:8890/informix/stores_demo/msgs/%U_%d_%U#this"
+	"http://example.com/informix/stores_demo/msgs/%U_%d_%U#this"
     	(in _lang varchar not null, in number integer not null, in message varchar not null) .
 
 create iri class state:state_iri
-	"http://localhost:8890/informix/stores_demo/state/%U#this"
+	"http://example.com/informix/stores_demo/state/%U#this"
     	(in code varchar not null) .
 
 create iri class orders:orders_iri
-	"http://localhost:8890/informix/stores_demo/orders/%d#this"
+	"http://example.com/informix/stores_demo/orders/%d#this"
     	(in order_num integer not null) .
 
 create iri class stock:stock_iri
-	"http://localhost:8890/informix/stores_demo/stock/%d_%U#this"
+	"http://example.com/informix/stores_demo/stock/%d_%U#this"
     	(in stock_num integer not null, in manu_code varchar not null) .
 
 create iri class cust:customer_iri
-	"http://localhost:8890/informix/stores_demo/customer/%d#this"
+	"http://example.com/informix/stores_demo/customer/%d#this"
     	(in customer_num integer not null) .
 
 create iri class callt:call_type_iri
-	"http://localhost:8890/informix/stores_demo/call_type/%U#this"
+	"http://example.com/informix/stores_demo/call_type/%U#this"
     	(in call_code varchar not null) .
 
 create iri class manuf:manufact_iri
-	"http://localhost:8890/informix/stores_demo/manufact/%U#this"
+	"http://example.com/informix/stores_demo/manufact/%U#this"
     	(in manu_code varchar not null) .
 
 create iri class custc:cust_calls_iri using
@@ -9914,16 +9903,16 @@ create iri class custc:cust_calls_iri using
 
 SPARQL
 
-prefix items:   <http://localhost:8890/schemas/informix/stores_demo/items/>
-prefix catalog: <http://localhost:8890/schemas/informix/stores_demo/catalog/>
-prefix stock:   <http://localhost:8890/schemas/informix/stores_demo/stock/>
-prefix msgs:    <http://localhost:8890/schemas/informix/stores_demo/msgs/>
-prefix state:   <http://localhost:8890/schemas/informix/stores_demo/state/>
-prefix orders:  <http://localhost:8890/schemas/informix/stores_demo/orders/>
-prefix manuf:   <http://localhost:8890/schemas/informix/stores_demo/manufact/>
-prefix cust:    <http://localhost:8890/schemas/informix/stores_demo/customer/>
-prefix callt:   <http://localhost:8890/schemas/informix/stores_demo/call_type/>
-prefix custc:   <http://localhost:8890/schemas/informix/stores_demo/cust_calls/>
+prefix items:   <http://example.com/schemas/informix/stores_demo/items/>
+prefix catalog: <http://example.com/schemas/informix/stores_demo/catalog/>
+prefix stock:   <http://example.com/schemas/informix/stores_demo/stock/>
+prefix msgs:    <http://example.com/schemas/informix/stores_demo/msgs/>
+prefix state:   <http://example.com/schemas/informix/stores_demo/state/>
+prefix orders:  <http://example.com/schemas/informix/stores_demo/orders/>
+prefix manuf:   <http://example.com/schemas/informix/stores_demo/manufact/>
+prefix cust:    <http://example.com/schemas/informix/stores_demo/customer/>
+prefix callt:   <http://example.com/schemas/informix/stores_demo/call_type/>
+prefix custc:   <http://example.com/schemas/informix/stores_demo/cust_calls/>
 
 alter quad storage virtrdf:DefaultQuadStorage
   from stores_demo_rdf.inf10_stores_demo_rdf.items      as items_tbl
@@ -9937,7 +9926,7 @@ alter quad storage virtrdf:DefaultQuadStorage
   from stores_demo_rdf.inf10_stores_demo_rdf.manufact   as manufact_tbl
   from stores_demo_rdf.inf10_stores_demo_rdf.cust_calls as cust_calls_tbl
 {
-  create virtrdf:informix_stores_demo as graph <http://localhost:8890/informix/stores_demo>
+  create virtrdf:informix_stores_demo as graph <http://example.com/informix/stores_demo>
   {
     items:items_iri (items_tbl.item_num, items_tbl.order_num) a items:Items as virtrdf:items_pk ;
     items:item_num    items_tbl.item_num       as virtrdf:items_item_num ;
@@ -10174,10 +10163,10 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix tut: <http://localhost:8890/schemas/ingrestut/> .
+@prefix tut: <http://example.com/schemas/ingrestut/> .
 
 tut:book_list a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/ingrestut> ;
+	rdfs:isDefinedBy <http://example.com/schemas/ingrestut> ;
 	rdfs:label "book_list" ;
 	rdfs:comment "Ingres Tutorial Database book_list table" .
 
@@ -10217,7 +10206,7 @@ tut:dist_no a rdf:Property ;
 	rdfs:label "Dist No" .
 
 tut:book_orders a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/ingrestut> ;
+	rdfs:isDefinedBy <http://example.com/schemas/ingrestut> ;
 	rdfs:label "Book Orders" ;
 	rdfs:comment "Ingres Tutorial Database book_orders table" .
 
@@ -10247,7 +10236,7 @@ tut:extension a rdf:Property ;
          rdfs:label "Extension" .
 
 tut:cust_info a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/ingrestut> ;
+	rdfs:isDefinedBy <http://example.com/schemas/ingrestut> ;
 	rdfs:label "Customer Information" ;
 	rdfs:comment "Ingres Tutorial Database cust_info table" .
 
@@ -10312,7 +10301,7 @@ tut:ship_to a rdf:Property ;
          rdfs:label "Ship To" .
 
 tut:cust_orders a rdfs:Class ;
-	rdfs:isDefinedBy <http://localhost:8890/schemas/ingrestut> ;
+	rdfs:isDefinedBy <http://example.com/schemas/ingrestut> ;
 	rdfs:label "Customer Orders" ;
 	rdfs:comment "Ingres Tutorial Database cust_orders table" .
 
@@ -10340,7 +10329,7 @@ tut:order_total a rdf:Property ;
 	rdfs:domain tut:cust_orders ;
 	rdfs:range xsd:money ;
          rdfs:label "Order Total" .
-', '', 'http://localhost:8890/schemas/ingrestut', 0);
+', '', 'http://example.com/schemas/ingrestut', 0);
 
 ---------------------------------------------------------------
 
@@ -10348,19 +10337,19 @@ tut:order_total a rdf:Property ;
 
 SPARQL
 
-	create iri class <http://localhost:8890/schemas/ingrestut/book_list_iri>
+	create iri class <http://example.com/schemas/ingrestut/book_list_iri>
 	"http://^{URIQADefaultHost}^/ingrestut/book_list/%d#this"
     	(in book_no integer not null) .
 
-	create iri class <http://localhost:8890/schemas/ingrestut/book_orders_iri>
+	create iri class <http://example.com/schemas/ingrestut/book_orders_iri>
 	"http://^{URIQADefaultHost}^/ingrestut/book_orders/%d_%d#this"
 	 (in order_no integer not null, in book_no integer not null ) .
 
-	create iri class <http://localhost:8890/schemas/ingrestut/cust_info_iri>
+	create iri class <http://example.com/schemas/ingrestut/cust_info_iri>
 	"http://^{URIQADefaultHost}^/ingrestut/cust_info/%d#this"
     	(in cust_no integer not null) .
 
-	create iri class <http://localhost:8890/schemas/ingrestut/cust_orders_iri>
+	create iri class <http://example.com/schemas/ingrestut/cust_orders_iri>
 	"http://^{URIQADefaultHost}^/ingrestut/cust_orders/%d#this"
     	(in order_no integer not null) .
 
@@ -10372,7 +10361,7 @@ SPARQL
 
 SPARQL
 
-prefix tut:	<http://localhost:8890/schemas/ingrestut/>
+prefix tut:	<http://example.com/schemas/ingrestut/>
 
 alter quad storage virtrdf:DefaultQuadStorage
   from TUT.ingiima.book_list as book_list_tbl
@@ -10381,7 +10370,7 @@ alter quad storage virtrdf:DefaultQuadStorage
   from TUT.ingiima.cust_orders as cust_orders_tbl
 {
   create virtrdf:ingrestut as
-      graph <http://localhost:8890/ingrestut>
+      graph <http://example.com/ingrestut>
   {
         tut:book_list_iri(book_list_tbl.book_no) a tut:book_list
                as virtrdf:book_list_book_no ;
@@ -10637,15 +10626,15 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix customer:     <http://localhost:8890/schemas/progress/isports/customer/> .
-@prefix order:        <http://localhost:8890/schemas/progress/isports/order/> .
-@prefix item:         <http://localhost:8890/schemas/progress/isports/item/> .
-@prefix orderline:    <http://localhost:8890/schemas/progress/isports/order_line/> .
-@prefix invoice:      <http://localhost:8890/schemas/progress/isports/invoice/> .
-@prefix localdefault: <http://localhost:8890/schemas/progress/isports/local_default/> .
-@prefix refcall:      <http://localhost:8890/schemas/progress/isports/ref_call/> .
-@prefix salesrep:     <http://localhost:8890/schemas/progress/isports/salesrep/> .
-@prefix state:        <http://localhost:8890/schemas/progress/isports/state/> .
+@prefix customer:     <http://example.com/schemas/progress/isports/customer/> .
+@prefix order:        <http://example.com/schemas/progress/isports/order/> .
+@prefix item:         <http://example.com/schemas/progress/isports/item/> .
+@prefix orderline:    <http://example.com/schemas/progress/isports/order_line/> .
+@prefix invoice:      <http://example.com/schemas/progress/isports/invoice/> .
+@prefix localdefault: <http://example.com/schemas/progress/isports/local_default/> .
+@prefix refcall:      <http://example.com/schemas/progress/isports/ref_call/> .
+@prefix salesrep:     <http://example.com/schemas/progress/isports/salesrep/> .
+@prefix state:        <http://example.com/schemas/progress/isports/state/> .
 
 
 
@@ -11116,7 +11105,7 @@ state:Region a rdf:Property ;
 	rdfs:range xsd:string ;
 	rdfs:label "Region" .
 
-', '', 'http://localhost:8890/schemas/progress/isports', 0);
+', '', 'http://example.com/schemas/progress/isports', 0);
 
 
 
@@ -11127,50 +11116,50 @@ state:Region a rdf:Property ;
 
 SPARQL
 
-prefix customer:     <http://localhost:8890/schemas/progress/isports/customer/>
-prefix order:        <http://localhost:8890/schemas/progress/isports/order/>
-prefix item:         <http://localhost:8890/schemas/progress/isports/item/>
-prefix orderline:    <http://localhost:8890/schemas/progress/isports/order_line/>
-prefix invoice:      <http://localhost:8890/schemas/progress/isports/invoice/>
-prefix localdefault: <http://localhost:8890/schemas/progress/isports/local_default/>
-prefix refcall:      <http://localhost:8890/schemas/progress/isports/ref_call/>
-prefix salesrep:     <http://localhost:8890/schemas/progress/isports/salesrep/>
-prefix state:        <http://localhost:8890/schemas/progress/isports/state/>
+prefix customer:     <http://example.com/schemas/progress/isports/customer/>
+prefix order:        <http://example.com/schemas/progress/isports/order/>
+prefix item:         <http://example.com/schemas/progress/isports/item/>
+prefix orderline:    <http://example.com/schemas/progress/isports/order_line/>
+prefix invoice:      <http://example.com/schemas/progress/isports/invoice/>
+prefix localdefault: <http://example.com/schemas/progress/isports/local_default/>
+prefix refcall:      <http://example.com/schemas/progress/isports/ref_call/>
+prefix salesrep:     <http://example.com/schemas/progress/isports/salesrep/>
+prefix state:        <http://example.com/schemas/progress/isports/state/>
 
 create iri class customer:customer_iri
-	"http://localhost:8890/progress/isports/customer/%d#this"
+	"http://example.com/progress/isports/customer/%d#this"
 	(in Cust_Num integer not null) .
 
 create iri class order:order_iri
-	"http://localhost:8890/progress/isports/order/%d#this"
+	"http://example.com/progress/isports/order/%d#this"
 	(in Order_Num integer not null) .
 
 create iri class item:item_iri
-	"http://localhost:8890/progress/isports/item/%d#this"
+	"http://example.com/progress/isports/item/%d#this"
 	(in Item_num integer not null) .
 
 create iri class orderline:order-line_iri
-	"http://localhost:8890/progress/isports/order-line/%d_%d#this"
+	"http://example.com/progress/isports/order-line/%d_%d#this"
 	(in Order_num integer not null, in Line_num integer not null) .
 
 create iri class invoice:invoice_iri
-	"http://localhost:8890/progress/isports/invoice/%d#this"
+	"http://example.com/progress/isports/invoice/%d#this"
 	(in Invoice_Num integer not null) .
 
 create iri class localdefault:local-default_iri
-	"http://localhost:8890/progress/isports/local-default/%U#this"
+	"http://example.com/progress/isports/local-default/%U#this"
 	(in Country varchar not null) .
 
 create iri class refcall:ref-call_iri
-	"http://localhost:8890/progress/isports/ref-call/%U#this"
+	"http://example.com/progress/isports/ref-call/%U#this"
 	(in Call_Num varchar not null) .
 
 create iri class salesrep:salesrep_iri
-	"http://localhost:8890/progress/isports/salesrep/%U#this"
+	"http://example.com/progress/isports/salesrep/%U#this"
 	(in Sales_Rep varchar not null) .
 
 create iri class state:state_iri
-	"http://localhost:8890/progress/isports/state/%U#this"
+	"http://example.com/progress/isports/state/%U#this"
 	(in State varchar not null) .
 
 ;
@@ -11185,15 +11174,15 @@ create iri class state:state_iri
 
 SPARQL
 
-prefix customer:     <http://localhost:8890/schemas/progress/isports/customer/>
-prefix order:        <http://localhost:8890/schemas/progress/isports/order/>
-prefix item:         <http://localhost:8890/schemas/progress/isports/item/>
-prefix orderline:    <http://localhost:8890/schemas/progress/isports/order_line/>
-prefix invoice:      <http://localhost:8890/schemas/progress/isports/invoice/>
-prefix localdefault: <http://localhost:8890/schemas/progress/isports/local_default/>
-prefix refcall:      <http://localhost:8890/schemas/progress/isports/ref_call/>
-prefix salesrep:     <http://localhost:8890/schemas/progress/isports/salesrep/>
-prefix state:        <http://localhost:8890/schemas/progress/isports/state/>
+prefix customer:     <http://example.com/schemas/progress/isports/customer/>
+prefix order:        <http://example.com/schemas/progress/isports/order/>
+prefix item:         <http://example.com/schemas/progress/isports/item/>
+prefix orderline:    <http://example.com/schemas/progress/isports/order_line/>
+prefix invoice:      <http://example.com/schemas/progress/isports/invoice/>
+prefix localdefault: <http://example.com/schemas/progress/isports/local_default/>
+prefix refcall:      <http://example.com/schemas/progress/isports/ref_call/>
+prefix salesrep:     <http://example.com/schemas/progress/isports/salesrep/>
+prefix state:        <http://example.com/schemas/progress/isports/state/>
 
 alter quad storage virtrdf:DefaultQuadStorage
   from isports_rdf.pro91_isports_rdf.VCustomer      as Customer_tbl
@@ -11207,7 +11196,7 @@ alter quad storage virtrdf:DefaultQuadStorage
   from isports_rdf.pro91_isports_rdf.VSalesrep      as Salesrep_tbl
   from isports_rdf.pro91_isports_rdf.VState         as State_tbl
 {
-  create virtrdf:progress_isports as graph <http://localhost:8890/progress/isports>
+  create virtrdf:progress_isports as graph <http://example.com/progress/isports>
   {
     customer:customer_iri (Customer_tbl.Cust_Num) a customer:Customer as virtrdf:customer_pk ;
     customer:Cust-Num     Customer_tbl.Cust_Num     as virtrdf:Customer_cust-num ;
@@ -11510,15 +11499,15 @@ ttlp (
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-@prefix customer:     <http://localhost:8890/schemas/progress/isports/customer/> .
-@prefix order:        <http://localhost:8890/schemas/progress/isports/order/> .
-@prefix item:         <http://localhost:8890/schemas/progress/isports/item/> .
-@prefix orderline:    <http://localhost:8890/schemas/progress/isports/order_line/> .
-@prefix invoice:      <http://localhost:8890/schemas/progress/isports/invoice/> .
-@prefix localdefault: <http://localhost:8890/schemas/progress/isports/local_default/> .
-@prefix refcall:      <http://localhost:8890/schemas/progress/isports/ref_call/> .
-@prefix salesrep:     <http://localhost:8890/schemas/progress/isports/salesrep/> .
-@prefix state:        <http://localhost:8890/schemas/progress/isports/state/> .
+@prefix customer:     <http://example.com/schemas/progress/isports/customer/> .
+@prefix order:        <http://example.com/schemas/progress/isports/order/> .
+@prefix item:         <http://example.com/schemas/progress/isports/item/> .
+@prefix orderline:    <http://example.com/schemas/progress/isports/order_line/> .
+@prefix invoice:      <http://example.com/schemas/progress/isports/invoice/> .
+@prefix localdefault: <http://example.com/schemas/progress/isports/local_default/> .
+@prefix refcall:      <http://example.com/schemas/progress/isports/ref_call/> .
+@prefix salesrep:     <http://example.com/schemas/progress/isports/salesrep/> .
+@prefix state:        <http://example.com/schemas/progress/isports/state/> .
 
 
 
@@ -11934,7 +11923,7 @@ state:Region a rdf:Property ;
 	rdfs:range xsd:string ;
 	rdfs:label "Region" .
 
-', '', 'http://localhost:8890/schemas/progress/isports', 0);
+', '', 'http://example.com/schemas/progress/isports', 0);
 
 
 
@@ -11945,50 +11934,50 @@ state:Region a rdf:Property ;
 
 SPARQL
 
-prefix customer:     <http://localhost:8890/schemas/progress/isports/customer/>
-prefix order:        <http://localhost:8890/schemas/progress/isports/order/>
-prefix item:         <http://localhost:8890/schemas/progress/isports/item/>
-prefix orderline:    <http://localhost:8890/schemas/progress/isports/order_line/>
-prefix invoice:      <http://localhost:8890/schemas/progress/isports/invoice/>
-prefix localdefault: <http://localhost:8890/schemas/progress/isports/local_default/>
-prefix refcall:      <http://localhost:8890/schemas/progress/isports/ref_call/>
-prefix salesrep:     <http://localhost:8890/schemas/progress/isports/salesrep/>
-prefix state:        <http://localhost:8890/schemas/progress/isports/state/>
+prefix customer:     <http://example.com/schemas/progress/isports/customer/>
+prefix order:        <http://example.com/schemas/progress/isports/order/>
+prefix item:         <http://example.com/schemas/progress/isports/item/>
+prefix orderline:    <http://example.com/schemas/progress/isports/order_line/>
+prefix invoice:      <http://example.com/schemas/progress/isports/invoice/>
+prefix localdefault: <http://example.com/schemas/progress/isports/local_default/>
+prefix refcall:      <http://example.com/schemas/progress/isports/ref_call/>
+prefix salesrep:     <http://example.com/schemas/progress/isports/salesrep/>
+prefix state:        <http://example.com/schemas/progress/isports/state/>
 
 create iri class customer:customer_iri
-	"http://localhost:8890/progress/isports/customer/%d#this"
+	"http://example.com/progress/isports/customer/%d#this"
 	(in Cust_Num integer not null) .
 
 create iri class order:order_iri
-	"http://localhost:8890/progress/isports/order/%d#this"
+	"http://example.com/progress/isports/order/%d#this"
 	(in Order_Num integer not null) .
 
 create iri class item:item_iri
-	"http://localhost:8890/progress/isports/item/%d#this"
+	"http://example.com/progress/isports/item/%d#this"
 	(in Item_num integer not null) .
 
 create iri class orderline:order-line_iri
-	"http://localhost:8890/progress/isports/order-line/%d_%d#this"
+	"http://example.com/progress/isports/order-line/%d_%d#this"
 	(in Order_num integer not null, in Line_num integer not null) .
 
 create iri class invoice:invoice_iri
-	"http://localhost:8890/progress/isports/invoice/%d#this"
+	"http://example.com/progress/isports/invoice/%d#this"
 	(in Invoice_Num integer not null) .
 
 create iri class localdefault:local-default_iri
-	"http://localhost:8890/progress/isports/local-default/%U#this"
+	"http://example.com/progress/isports/local-default/%U#this"
 	(in Country varchar not null) .
 
 create iri class refcall:ref-call_iri
-	"http://localhost:8890/progress/isports/ref-call/%U#this"
+	"http://example.com/progress/isports/ref-call/%U#this"
 	(in Call_Num varchar not null) .
 
 create iri class salesrep:salesrep_iri
-	"http://localhost:8890/progress/isports/salesrep/%U#this"
+	"http://example.com/progress/isports/salesrep/%U#this"
 	(in Sales_Rep varchar not null) .
 
 create iri class state:state_iri
-	"http://localhost:8890/progress/isports/state/%U#this"
+	"http://example.com/progress/isports/state/%U#this"
 	(in State varchar not null) .
 
 ;
@@ -12003,15 +11992,15 @@ create iri class state:state_iri
 
 SPARQL
 
-prefix customer:     <http://localhost:8890/schemas/progress/isports/customer/>
-prefix order:        <http://localhost:8890/schemas/progress/isports/order/>
-prefix item:         <http://localhost:8890/schemas/progress/isports/item/>
-prefix orderline:    <http://localhost:8890/schemas/progress/isports/order_line/>
-prefix invoice:      <http://localhost:8890/schemas/progress/isports/invoice/>
-prefix localdefault: <http://localhost:8890/schemas/progress/isports/local_default/>
-prefix refcall:      <http://localhost:8890/schemas/progress/isports/ref_call/>
-prefix salesrep:     <http://localhost:8890/schemas/progress/isports/salesrep/>
-prefix state:        <http://localhost:8890/schemas/progress/isports/state/>
+prefix customer:     <http://example.com/schemas/progress/isports/customer/>
+prefix order:        <http://example.com/schemas/progress/isports/order/>
+prefix item:         <http://example.com/schemas/progress/isports/item/>
+prefix orderline:    <http://example.com/schemas/progress/isports/order_line/>
+prefix invoice:      <http://example.com/schemas/progress/isports/invoice/>
+prefix localdefault: <http://example.com/schemas/progress/isports/local_default/>
+prefix refcall:      <http://example.com/schemas/progress/isports/ref_call/>
+prefix salesrep:     <http://example.com/schemas/progress/isports/salesrep/>
+prefix state:        <http://example.com/schemas/progress/isports/state/>
 
 alter quad storage virtrdf:DefaultQuadStorage
   from isports_rdf.prs10_isports_rdf.VCustomer      as Customer_tbl
@@ -12025,7 +12014,7 @@ alter quad storage virtrdf:DefaultQuadStorage
   from isports_rdf.prs10_isports_rdf.VSalesrep      as Salesrep_tbl
   from isports_rdf.prs10_isports_rdf.VState         as State_tbl
 {
-  create virtrdf:progress_isports as graph <http://localhost:8890/progress/isports>
+  create virtrdf:progress_isports as graph <http://example.com/progress/isports>
   {
     customer:customer_iri (Customer_tbl.Cust_Num) a customer:Customer as virtrdf:customer_pk ;
     customer:Cust-Num     Customer_tbl.Cust_Num     as virtrdf:Customer_cust-num ;

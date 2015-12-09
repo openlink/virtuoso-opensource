@@ -57,7 +57,6 @@
   </refsect1>
  <refsect1 id="examples__xml_ns_uname"><title>Examples</title>
     <example id="ex_xml_ns_uname_1"><title>Simple Example</title>
-      <para></para>
 <programlisting><![CDATA[
 SQL> SELECT __xml_ns_uname ('foaf', 'knows');
 __xml_ns_uname
@@ -71,9 +70,9 @@ http://xmlns.com/foaf/0.1/knows
     </example>
   </refsect1>
   <refsect1 id="seealso__xml_ns_uname"><title>See Also</title>
-    <para><link linkend="fn_xml_ns_iristr"><function>xml_ns_iristr</function></link></para>      
-    <para><link linkend="fn_xml_nsexpand_iristr"><function>xml_nsexpand_iristr</function></link></para>            
-    <para><link linkend="fn_xml_get_ns_prefix"><function>xml_get_ns_prefix</function></link></para>
-    <para><link linkend="fn_xml_get_ns_uri"><function>xml_get_ns_uri</function></link></para>
+    <para><link linkend="fn_xml_ns_iristr"><function>xml_ns_iristr()</function></link></para>
+    <para><link linkend="fn_xml_nsexpand_iristr"><function>xml_nsexpand_iristr()</function></link></para>
+    <para><link linkend="fn_xml_get_ns_prefix"><function>xml_get_ns_prefix()</function></link></para>
+    <para><link linkend="fn_xml_get_ns_uri"><function>xml_get_ns_uri()</function></link></para>
   </refsect1>
 </refentry>

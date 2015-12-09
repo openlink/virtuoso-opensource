@@ -88,10 +88,9 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="xte_nodebld_acc"><title>Examples</title>
-    <example id="ex_xte_nodebld_acc"><title></title>
+    <example id="ex_xte_nodebld_acc"><title>Simple Use</title>
       <screen>create procedure test_nodebld()
               {
                 declare acc any;

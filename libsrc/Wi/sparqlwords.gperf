@@ -66,6 +66,8 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "DETACH",		DETACH_L		, 0
 "DISTINCT",		DISTINCT_L		, 0
 "DROP",			DROP_L			, 0
+"EBV",			SPARQL_BIF		, SPAR_BIF_EBV
+"EBV_INT",		SPARQL_BIF		, SPAR_BIF_EBV_INT
 "ELSE",			ELSE_L			, 0
 "ENCODE_FOR_URI",	SPARQL_BIF		, SPAR_BIF_ENCODE_FOR_URI
 "END",			END_L			, 0

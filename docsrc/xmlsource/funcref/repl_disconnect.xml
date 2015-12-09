@@ -50,9 +50,6 @@ basis by calling repl_sync for each.
     <refsect2><title>publisher</title>
       <para>Publisher's name.  </para>
     </refsect2>
-    <refsect2><title></title>
-      <para></para>
-    </refsect2>
   </refsect1>
   <!-- 3019
     this function doen't return any value

@@ -737,7 +737,7 @@ xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, const char
     {
       blob_handle_t *bh = (blob_handle_t *) text;
       text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
-      if (bh->bh_ask_from_client)
+      if (bh->bh_ask_from_client || BH_FROM_CLUSTER (bh))
         {
           bcfi_reset (&bcfi, bh, qi->qi_client);
           iter = bcfi_read;
@@ -888,7 +888,7 @@ xml_make_tree_with_ns (query_instance_t * qi, caddr_t text, caddr_t *err_ret, co
     {
       blob_handle_t *bh = (blob_handle_t *) text;
       text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
-      if (bh->bh_ask_from_client)
+      if (bh->bh_ask_from_client || BH_FROM_CLUSTER (bh))
         {
           bcfi_reset (&bcfi, bh, qi->qi_client);
           iter = bcfi_read;
@@ -1485,7 +1485,7 @@ xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t 
   if ((DV_BLOB_HANDLE == dtp_of_text) || (DV_BLOB_WIDE_HANDLE == dtp_of_text))
     {
       blob_handle_t *bh = (blob_handle_t *) text;
-      if (bh->bh_ask_from_client)
+      if (bh->bh_ask_from_client || BH_FROM_CLUSTER (bh))
         {
           bcfi_reset (&(xrie->xrie_bcfi), bh, qi->qi_client);
           xrie->xrie_iter = bcfi_read;

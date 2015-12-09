@@ -61,7 +61,7 @@
   </refsect1>
   <refsect1 id="examples_rdf_load_rdfa">
     <title>Examples</title>
-    <example id="ex_rdf_load_rdfa"><title></title>
+    <example id="ex_rdf_load_rdfa"><title>Simple Use</title>
       <para>Load from local file:</para>
       <screen><![CDATA[
 SQL>sparql clear graph <http://virtuoso.openlinksw.com/example>;
@@ -94,11 +94,11 @@ _______________________________________________________________________________
   </refsect1>
   <refsect1 id="seealso_rdf_load_rdfa">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfa_mt"><function>DB.DBA.RDF_LOAD_RDFA_MT</function></link></para>
-    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_ttlp_nt"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfa_mt"><function>DB.DBA.RDF_LOAD_RDFA_MT()</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP()</function></link></para>
+    <para><link linkend="fn_ttlp_nt"><function>DB.DBA.TTLP_MT()</function></link></para>
   </refsect1>
 </refentry>

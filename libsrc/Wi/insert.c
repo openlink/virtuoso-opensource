@@ -1554,7 +1554,10 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm) && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty) && !buf_has_leaves (buf))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
-		    GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		{
+		  log_error ("Broken index %s", it->it_key->key_name ? it->it_key->key_name : "temp key");
+		  GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		}
 	      BD_SET_IS_WRITE (buf, 1);
 	      mutex_leave (&itm->itm_mtx);
 	      pg_check_map (buf);

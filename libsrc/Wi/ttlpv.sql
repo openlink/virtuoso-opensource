@@ -392,6 +392,8 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
   declare dp any;
  dp := app_env[1];
   declare is_text int;
+  if (isstring (g_iid))
+    g_iid := __i2id (g_iid);
   connection_set ('g_iid', g_iid);
   if (__rdf_obj_ft_rule_check (g_iid, p_uri))
     is_text := 1;
@@ -485,6 +487,8 @@ create procedure DB.DBA.TTLP_EV_NULL_IID (inout uri varchar, inout g_iid IRI_ID,
 ;
 
 
+--/1d1/tpch1000
+--!!!
 create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph varchar := null, in flags integer, in threads int, in log_mode int, in old_log_mode int)
 {
   declare ro_id_dict, app_env, g_iid any;
@@ -492,7 +496,7 @@ create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph va
   app_env := vector (async_queue (threads, 1), rl_local_dpipe_gs (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   if (bit_and (flags, 2048))
     dpipe_set_rdf_load (app_env[1], 6);
-  g_iid := iri_to_id (graph);
+  g_iid := case when length (graph) > 0 then iri_to_id (graph) else null end;
   rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_RL_GS_NEW_GRAPH',
@@ -544,6 +548,10 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
     }
   else
     threads := 0;
+  if (log_enable is not null)
+    {
+      old_log_mode := log_enable (log_enable, 1);
+    }
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
 
@@ -623,6 +631,13 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
   declare idn int;
   if (id is null)
     return id;
+  if (not isiri_id (id))
+    {
+      if (__tag (id) = __tag of UNAME)
+        return id;
+      if (__tag (id) = __tag of varchar and bit_and (__box_flags (id), 1))
+        return id;
+    }
   idn := iri_id_num (id);
   if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
     {
@@ -652,14 +667,16 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
 ;
 
 
-
 create procedure ID_TO_IRI_VEC_NS (in id any array)
 {
   vectored;
   declare name, pref varchar;
   declare idn int;
   if (not isiri_id (id))
-    return id;
+    return (case (__tag (id))
+      when __tag of UNAME then id
+      when __tag of varchar then case when bit_and (__box_flags (id), 1) then id else NULL end
+      else NULL end );
   idn := iri_id_num (id);
   if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
     {
@@ -752,7 +769,7 @@ create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
     else
       {
         dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
-	dpipe_set_rdf_load (dp, 1);
+	dpipe_set_rdf_load (dp, 2); -- multiple graphs flag as G is given
       }
   }
   dpipe_input (dp, s, p, null, o, g);
@@ -770,14 +787,22 @@ create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
 }
 ;
 
-create procedure rdf_o_cvt_c (in o any, in o_type any, in o_flags int, in is_local int) returns any array
+create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, in o any, in o_type any, in o_flags int, in is_local int) returns any array
 {
   vectored;
+  not vectored {
+    declare xlat_dict any;
+    xlat_dict := connection_get ('RDF_INSERT_TRIPLE_C_BNODES');
+  }
   declare is_text int;
   declare lid, tid int;
   is_text := bit_and (o_flags, 16);
   o_flags := bit_and (o_flags, 15);
   declare rb any array;
+  if (xlat_dict is not null and (__tag(s) in (__tag of varchar, __tag of UNAME)) and s like '[_]:%')
+    s := __bft ('nodeID://' || dict_get_or_set_sequence_next (xlat_dict, __bft (s,1), 'RDF_URL_IID_BLANK'), 1);
+  if (o_flags in (0,15) and xlat_dict is not null and ((__tag(o) = __tag of UNAME) or (__tag(o) = __tag of varchar)) and o like '[_]:%')
+    return __bft ('nodeID://' || dict_get_or_set_sequence_next (xlat_dict, __bft(o,1), 'RDF_URL_IID_BLANK'), 1);
   if (0 = o_flags)
   return __bft (o, 1);
   else if (1 = o_flags)
@@ -808,7 +833,29 @@ create procedure rdf_o_cvt_c (in o any, in o_type any, in o_flags int, in is_loc
       declare parsed any array;
       parsed := __xqf_str_parse_to_rdf_box (o, o_type, 1);
       if (parsed is not null)
+        {
+	  if (__tag of XML = __tag (parsed))
+	    {
+	      parsed := rdf_box (parsed, 300, 257, 0, 1);
+	      rdf_box_set_type (parsed, 257);
+	    }
+          if (__tag of rdf_box = __tag (parsed))
+            {
+              if (257 = rdf_box_type (parsed))
+                {
+                  tid := rdf_cache_id ('t', o_type);
+                  if (tid = 0)
+                    {
+                      if (is_local)
+                        tid := rdf_rl_type_id (o_type);
+                      else
+                        tid := rdf_type_id (o_type);
+                    }
+                  rdf_box_set_type (parsed, tid);
+                }
+            }
 	return parsed;
+        }
       else
 	{
 	  tid := rdf_cache_id ('t', o_type);
@@ -828,7 +875,7 @@ create procedure rdf_o_cvt_c (in o any, in o_type any, in o_flags int, in is_loc
   else if (4 = o_flags)
     {
       rb := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
-      rdf_set_type (rb, 257);
+      rdf_box_set_type (rb, 257);
       if (is_text and 246 = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return rb;
@@ -841,12 +888,14 @@ create procedure rdf_o_cvt_c (in o any, in o_type any, in o_flags int, in is_loc
   return cast (o as double precision);
   else if (8 = o_flags)
   return cast (o as decimal);
+  else if (15 = o_flags)
+    return __bft (o, 1);
   else
     signal ('xxxxx', 'Bad rdf object flags va,value');
 }
 ;
 
-create procedure rdf_insert_triple_c (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
+create procedure DB.DBA.RDF_INSERT_TRIPLE_C (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
 {
   vectored;
   not vectored {
@@ -855,7 +904,7 @@ create procedure rdf_insert_triple_c (in s any array, in p any array, in o any a
     if (log_enable (null, 1) in (2,3))
       set non_txn_insert = 1;
   }
- o := rdf_o_cvt_c (o, o_type, o_flags, is_local);
+  o := DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (s, o, o_type, o_flags, is_local);
   not vectored {
     declare dp any array;
     if (is_local)
@@ -863,9 +912,10 @@ create procedure rdf_insert_triple_c (in s any array, in p any array, in o any a
     else
       {
 	dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
-	dpipe_set_rdf_load (dp, 1);
+	dpipe_set_rdf_load (dp, 2);
       }
   }
+  --dbg_obj_princ ('After bnodes check, will call dpipe_input (dp, ', s, p, null, o, g, ')...');
   dpipe_input (dp, s, p, null, o, g);
   not vectored {
     if (log_enable (null, 1) in (2,3))
@@ -891,7 +941,7 @@ create procedure rdf_replace_graph_c (in s any array, in p any array, in o any a
     if (log_enable (null, 1) in (2,3))
       set non_txn_insert = 1;
   }
- o := rdf_o_cvt_c (o, o_type, o_flags, is_local);
+ o := DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (s, o, o_type, o_flags, is_local);
   not vectored {
     declare dp any array;
     if (is_local)
@@ -928,7 +978,7 @@ create procedure rdf_delete_triple_c (in s any array, in p any array, in o any a
     if (log_enable (null, 1) in (2,3))
       set non_txn_insert = 1;
   }
- o := rdf_O_cvt_c (o, o_type, o_flags, is_local);
+ o := DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (s, o, o_type, o_flags, is_local);
   not vectored {
     declare dp any array;
     if (is_local)

@@ -2593,6 +2593,8 @@ procedure "blogger.getUsersBlogs" (
 create procedure
 date_rfc1123 (in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;
@@ -5359,8 +5361,8 @@ create procedure BLOG_DELICIOUS_DEL (in url any, in uid any, in pwd any)
 ;
 
 create procedure
-BLOG_MESSAGE_OR_META_DATA (inout meta any, inout uid int,
-  inout content any, inout postid varchar, inout tms datetime)
+BLOG_MESSAGE_OR_META_DATA (in meta any, in uid int,
+  in content any, in postid varchar, in tms datetime)
 {
   if (meta is not null)
     {

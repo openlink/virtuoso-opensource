@@ -85,6 +85,7 @@ static char *to_file;
 static char *header_line;
 static char *result_label;
 static char *rec_file;
+static long rc_timeout;
 
 static int
 sock_read_line (int fd, char *buf, int max)
@@ -102,6 +103,8 @@ sock_read_line (int fd, char *buf, int max)
 #endif
 	  if (-1 == (rc = recv (fd, szStart, sizeof (buffer), 0)))
 	    {
+	      if (errno == EAGAIN && rc_timeout > 0)
+		return -2;
 #if defined (linux)
 	      /* http://www.ussg.iu.edu/hypermail/linux/kernel/0006.3/0193.html */
 	      if (errno == EPIPE)
@@ -379,6 +382,7 @@ make_connection (char *host, int port, int *s)
   struct hostent *phe = NULL;
   struct sockaddr_in sin;
   int con_rc = 0, errn = 0;
+  struct timeval timeout = {0,0};
 
 
   ta_enter (&url_times);
@@ -407,7 +411,7 @@ make_connection (char *host, int port, int *s)
       /* create socket */
       if (*s)
 	closesocket (*s);
-      *s = socket (PF_INET, SOCK_STREAM, 0);
+      *s = socket (AF_INET, SOCK_STREAM, 0);
       if (*s < 0)
 	{
 	  fprintf (stderr, "Cannot create socket\n");
@@ -435,6 +439,20 @@ make_connection (char *host, int port, int *s)
       fprintf (stderr, "Cannot connect, errno = %d\n", errn);
       perror ("");
       exit (1);
+    }
+  if (rc_timeout > 0)
+    {
+      timeout.tv_sec = rc_timeout;
+#ifdef SO_RCVTIMEO
+      con_rc = setsockopt (*s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof (timeout));
+      if (con_rc < 0)
+	perror ("error");
+#endif
+#ifdef SO_SNDTIMEO
+      con_rc = setsockopt (*s, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof (timeout));
+      if (con_rc < 0)
+	perror ("error");
+#endif
     }
 }
 
@@ -1054,7 +1072,7 @@ main (int argc, char *argv[])
       exit (1);
     }
 #endif
-  while ((c = getopt (argc, argv, "u:p:fhc:sSq:Pt:l:r:x:")) != EOF)
+  while ((c = getopt (argc, argv, "u:p:fhc:sSq:Pt:l:r:x:T:")) != EOF)
     {
       switch (c)
 	{
@@ -1099,6 +1117,10 @@ main (int argc, char *argv[])
 	case 't':
 	  store_to_file = TRUE;
 	  to_file = optarg;
+	  break;
+
+	case 'T':
+	  rc_timeout = atol (optarg);
 	  break;
 
 	case 'r':

@@ -34,13 +34,13 @@
     <funcsynopsis id="fsyn_username">
       <funcprototype id="fproto_username">
         <funcdef><function>username</function></funcdef> 
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc"><title>Description</title>
     <para>Returns the login name of the user of the connection.
-    Selecting <computeroutput>>user</computeroutput> is equivalent.</para>
+    Selecting <computeroutput>user</computeroutput> is equivalent.</para>
   </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <para>None</para>
@@ -70,9 +70,6 @@ dba
 1 Rows. -- 4 msec.
 </screen>
     </example>
-  </refsect1>
-  <refsect1 id="seealso"><title>See Also</title>
-    <para></para>
   </refsect1>
 </refentry>
 

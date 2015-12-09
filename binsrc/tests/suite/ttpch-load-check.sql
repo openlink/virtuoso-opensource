@@ -91,5 +91,6 @@ select count(*) from ORDERS;
 ECHOLN BOTH $IF $GTE $LAST[1] $* 1500000 $U{TPCH_SCALE} "PASSED" "***FAILED" ": ORDERS table is filled properly. Should be at least " $* 1500000 $U{TPCH_SCALE};
 
 
-
+select C_CUSTKEY from CUSTOMER_F where C_CUSTKEY = {fn CONVERT('7', SQL_INTEGER)};
+ECHOLN BOTH $IF $EQU $LAST[1] 7 "PASSED" "***FAILED" ": equality on a column via function call";
 

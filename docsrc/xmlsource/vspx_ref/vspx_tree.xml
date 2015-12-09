@@ -187,7 +187,7 @@ is a leaf.
 			  
 			  <html>
 			  <body>
-			  <v:page name="tree_page_01" xmlns:v="http://www.openlinksw.com/vspx/" >
+			  <v:page name="tree_page_01" xmlns:v="http://example.com/vspx/" >
 			  <v:tree name="tree1" show-root="0" multi-branch="1" orientation="vertical"
 				 root="root_node" start-path="." child-function="child_node" >
 			  <v:node-template name="node_tmpl">

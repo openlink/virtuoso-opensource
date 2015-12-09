@@ -69,6 +69,7 @@ typedef struct spar_query_env_s
   int			sparqre_key_gen;
   caddr_t		sparqre_compiled_text;
   caddr_t		sparqre_catched_error;
+  rwlock_t *		sparqre_metadata_rwlock;
   const char *		sparqre_dbg_query_text;	/*!< A source text as passed to the top-level sparql compilation. For debug purposes and for mem pool callback only. Can be NULL. */
   struct sparp_s *	sparqre_dbg_sparp;  /*!< A top-level instance of sparql compiler. For debug purposes and for mem pool callback only. Can be NULL; when non-NULL then the structure under pointer may be half-full. */
 } spar_query_env_t;
@@ -327,6 +328,7 @@ int ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * stat
 int ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
     it_cursor_t * itc, buffer_desc_t ** buf_ret, table_source_t * ts,
 		 int search_mode);
+void ks_cl_local_cast (key_source_t * ks, caddr_t * inst);
 int itc_il_search (it_cursor_t * itc, buffer_desc_t ** buf_ret, caddr_t * qst,
 	       inx_locality_t * il, placeholder_t * pl, int is_asc);
 
@@ -717,6 +719,7 @@ void end_node_free (end_node_t * en);
 void setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst);
 void setp_mem_sort_flush (setp_node_t * setp, caddr_t * qst);
 void setp_mem_sort (setp_node_t * setp, caddr_t * qst, int n_sets, int merge_set);
+int setp_top_get (caddr_t * inst, state_slot_t * ssl, int deflt);
 void setp_filled (setp_node_t * setp, caddr_t * qst);
 
 void union_node_input (union_node_t * setp, caddr_t * inst, caddr_t * state);
@@ -961,6 +964,7 @@ extern int32 cli_utf8_execs;
 extern int32 cli_no_system_tables;
 extern int32 cli_binary_timestamp;
 extern long cli_encryption_on_password;
+extern int timezoneless_datetimes;
 int current_of_node_scrollable (current_of_node_t * co, query_instance_t * qi, char * cr_name);
 void cli_set_scroll_current_ofs (client_connection_t * cli, caddr_t * current_ofs);
 void stmt_start_scroll (client_connection_t * cli, srv_stmt_t * stmt,
@@ -1154,6 +1158,7 @@ const char *dv_type_title (int type);
 void connection_set (client_connection_t *cli, caddr_t name, caddr_t val);
 void sprintf_escaped_table_name (char *out, char *name);
 void sprintf_escaped_str_literal (caddr_t str, char *out, dk_session_t *ses);
+extern caddr_t get_keyword_int_zero (caddr_t * arr, char * item, const char * me, int * is_null);
 extern caddr_t get_keyword_int (caddr_t * arr, char * item, const char * me);
 extern caddr_t get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt);
 extern char *find_repl_account_in_src_text (char **src_text_ptr);
@@ -1221,20 +1226,18 @@ void udt_can_write_to (sql_type_t *sqt, caddr_t data, caddr_t *err_ret);
 
 /* interconnection communication */
 
-#define ICCL_IS_LOCAL	0x01
-#define ICCL_WAIT 2
+#define ICCL_IS_LOCAL		0x01
+#define ICCL_WAIT		0x02
+#define ICCL_RDONLY		0x04
+#define ICCL_SHEDULED_ON_COMMIT	0x10
 
 typedef struct icc_lock_s
 {
   caddr_t		iccl_name;
   client_connection_t *	iccl_cli;
   query_instance_t *	iccl_qi;
-  int			iccl_waits_for_commit;
-  /* Semaphore is used here instead of mutex in order to bypass
-     assertion checking when MTX_DEBUG is on.  */
-  /* dk_mutex_t *	iccl_mutex; */
-  semaphore_t *		iccl_sem;
-
+  rwlock_t *		iccl_rwlock;
+  int			iccl_flags;
 } icc_lock_t;
 
 extern id_hash_t *icc_locks;
@@ -1399,6 +1402,7 @@ void ssi_free (ssa_iter_node_t * ssi);
 
 
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
+caddr_t box_concat (caddr_t b1, caddr_t b2);
 
 query_t * sch_ua_func_ua (caddr_t name);
 
@@ -1516,6 +1520,7 @@ void cl_fref_resume (fun_ref_node_t * fref, caddr_t * inst);
 void chash_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
 void memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
 void fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state);
+void fun_ref_reset_setps (fun_ref_node_t * fref, caddr_t * inst);
 void chash_merge (setp_node_t * setp, chash_t * cha, chash_t * delta, int n_to_go);
 dtp_t cha_dtp (dtp_t dtp, int is_key);
 caddr_t * chash_reader_current_branch (table_source_t * ts, caddr_t * inst, int is_next);

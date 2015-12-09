@@ -69,7 +69,7 @@ select
         \'http://\'||BLOG_GET_HOST ()|| \'/ods/\',
 	\'\',
 	U_E_MAIL,
-	date_rfc1123(now ()),
+	date_rfc1123(curutcdatetime ()),
 	\'Virtuoso Universal Server \' || sys_stat(\'st_dbms_ver\'),
 	U_E_MAIL,
         null, null, null, null, null, null,

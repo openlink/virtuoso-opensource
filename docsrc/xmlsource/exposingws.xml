@@ -198,12 +198,12 @@ you can either click the "Publish Selected" button, or before this to click the 
     <sect3 id="qstexpsvsmxtest"><title>Testing SOAP Services Using VSMX</title>
       <para>Virtual directory definitions have a <emphasis>Logical Path</emphasis> field, which is
 reference in URL to find the correct SOAP services. If you connect to Virtuoso on
-<emphasis>http://localhost:8890/</emphasis>, and defined your virtual directory with
+<emphasis>http://example.com/</emphasis>, and defined your virtual directory with
 the logical path of <emphasis>/mysoap</emphasis> then you will be able to test the following URLs:
       </para>
     <simplelist>
-      <member>http://localhost:8890/mysoap/services.wsdl</member>
-      <member>http://localhost:8890/mysoap/services.vsmx</member>
+        <member>http://example.com/mysoap/services.wsdl</member>
+        <member>http://example.com/mysoap/services.vsmx</member>
     </simplelist>
 
     <figure float="1"><title>Services.wsdl</title>

@@ -134,6 +134,8 @@ long  tc_release_pl_on_deleted_dp;
 long  tc_release_pl_on_absent_dp;
 long  tc_cpt_lt_start_wait;
 long  tc_cpt_rollback;
+long  tc_cpt_unremap_dirty;
+long  tc_cpt_restore_uncommitted;
 long  tc_wait_for_closing_lt;
 long  tc_pl_non_owner_wait_ref_deld;
 long  tc_pl_split;
@@ -168,6 +170,7 @@ long  tc_read_wait_decoy;
 long  tc_read_wait_while_ra_finding_buf;
 long  tc_pg_write_compact;
 long dbf_user_1, dbf_user_2;
+extern int dbs_stop_cp;
 
 
 extern long read_block_usec;
@@ -205,13 +208,21 @@ extern long tc_dc_alloc;
 extern long tc_dc_size;
 extern long tc_dc_extend;
 extern long tc_dc_extend_values;
+extern long tc_log_write_clocks;
 
 
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
 extern int sqlo_max_layouts;
+extern size_t sqlo_max_mp_size;
+extern int enable_initial_plan;
+extern int32 enable_dt_leaf;
 extern int32 sqlo_compiler_exceeds_run_factor;
+extern int sqlo_n_layout_steps;
+extern int sqlo_n_best_layouts;
+extern int sqlo_n_full_layouts;
 
+extern int enable_n_best_plans;
 extern int enable_mem_hash_join;
 #ifdef CACHE_MALLOC
 extern int enable_no_free;
@@ -235,6 +246,7 @@ extern int enable_conn_rc_fifo;
 extern int enable_cm_still_wanted;
 extern int enable_cancel_waiting;
 extern int enable_setp_partition;
+extern int32 setp_distinct_max_keys;
 extern int enable_stream_gb;
 extern int enable_min_card;
 extern int enable_hash_colocate;
@@ -248,7 +260,7 @@ extern long tc_dfg_max_empty_mores;
 extern int mp_local_rc_sz;
 extern int enable_distinct_sas;
 extern int enable_inline_sqs;
-extern enable_joins_only;
+extern int enable_joins_only;
 int32 ha_rehash_pct = 300;
 extern int c_use_aio;
 extern int32 sqlo_sample_dep_cols;
@@ -315,6 +327,8 @@ long vt_batch_size_limit = 1000000L;
 /* flags for simulated exceptions */
 long dbf_no_disk = 0;
 long dbf_log_no_disk;
+extern int32 dbf_log_always;
+extern int32 dbf_no_atomic;
 long dbf_2pc_prepare_wait; /* wait this many msec between prepare and commit */
 long dbf_2pc_wait; /* wait this many msec after each 2pc message or log write */
 long dbf_branch_transact_wait; /* wait this many msec onn cluster branch before doing rollback, prepare or commit */
@@ -464,6 +478,8 @@ long sparql_max_mem_in_use = 0;
 
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
+
+extern int timezoneless_datetimes;
 
 static long thr_cli_running;
 static long thr_cli_waiting;
@@ -1314,7 +1330,7 @@ status_report (const char * mode, query_instance_t * qi)
     {
       rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d\n",
 		  st_started_since_year, st_started_since_month, st_started_since_day,
-	  st_started_since_hour, st_started_since_minute, dt_local_tz / 60);
+	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
     }
   if (!gen_info)
     return;
@@ -1410,7 +1426,9 @@ extern long mp_sparql_cap;
 extern long srv_cpu_count;
 extern int32 col_seg_max_bytes;
 extern int32 col_seg_max_rows;
-extern int32 enable_qrc;
+extern int32 enable_qr_comment;
+extern int32 enable_rdf_trig;
+extern int32 enable_sslr_check;
 
 
 stat_desc_t stat_descs [] =
@@ -1542,11 +1560,14 @@ stat_desc_t stat_descs [] =
     {"tc_reentry_split", &tc_reentry_split , NULL},
     {"tc_kill_closing", &tc_kill_closing , NULL},
     {"tc_get_buf_failed", &tc_get_buf_failed , NULL},
+    {"tc_log_write_clocks", &tc_log_write_clocks, NULL},
 
     {"tc_release_pl_on_deleted_dp", &tc_release_pl_on_deleted_dp, NULL},
     {"tc_release_pl_on_absent_dp", &tc_release_pl_on_absent_dp, NULL},
     {"tc_cpt_lt_start_wait", &tc_cpt_lt_start_wait, NULL},
     {"tc_cpt_rollback", &tc_cpt_rollback, NULL},
+    {"tc_cpt_unremap_dirty", &tc_cpt_unremap_dirty, NULL},
+    {"tc_cpt_restore_uncommitted", &tc_cpt_restore_uncommitted, NULL},
     {"tc_wait_for_closing_lt", &tc_wait_for_closing_lt, NULL},
     {"tc_pl_non_owner_wait_ref_deld", &tc_pl_non_owner_wait_ref_deld, NULL},
     {"tc_pl_split", &tc_pl_split, NULL},
@@ -1758,6 +1779,8 @@ stat_desc_t dbf_descs [] =
     {"dbf_2pc_wait", &dbf_2pc_wait, NULL},
     {"dbf_branch_transact_wait", &dbf_branch_transact_wait, NULL},
     {"dbf_log_no_disk", &dbf_log_no_disk, NULL},
+    {"dbf_log_always", &dbf_log_always, SD_INT32},
+    {"dbf_no_atomic", &dbf_no_atomic, SD_INT32},
     {"txn_after_image_limit", &txn_after_image_limit, NULL},
     {"dbf_clop_enter_wait", &dbf_clop_enter_wait, NULL},
     {"dbf_cl_skip_wait_notify", &dbf_cl_skip_wait_notify, NULL},
@@ -1774,10 +1797,18 @@ stat_desc_t dbf_descs [] =
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
     {"enable_mem_hash_join", (long *)&    enable_mem_hash_join, SD_INT32},
     {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
+    {"sqlo_max_mp_size", &sqlo_max_mp_size},
+    {"enable_initial_plan", &enable_initial_plan, SD_INT32},
+    {"enable_dt_leaf", &enable_dt_leaf, SD_INT32},
+    {"sqlo_n_layout_steps", &sqlo_n_layout_steps, SD_INT32},
+    {"sqlo_n_best_layouts", &sqlo_n_best_layouts, SD_INT32},
+    {"sqlo_n_full_layouts", &sqlo_n_full_layouts, SD_INT32},
     {"sqlo_compiler_exceeds_run_factor", &sqlo_compiler_exceeds_run_factor, SD_INT32},
+    {"enable_n_best_plans", &enable_n_best_plans, SD_INT32},
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},
+    {"setp_distinct_max_keys", (long *)&setp_distinct_max_keys, SD_INT32},
     {"enable_iri_nic_n", (long *)&enable_iri_nic_n, SD_INT32},
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},
@@ -1817,6 +1848,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_col_ins_dbg_log", (long *)&dbf_col_ins_dbg_log, SD_INT32},
     {"dbf_col_del_leaf", (long *)&dbf_col_del_leaf, SD_INT32},
     {"enable_pogs_check", (long *)&enable_pogs_check, SD_INT32},
+    {"enable_sslr_check", (long *)&enable_sslr_check, SD_INT32},
     {"chash_space_avail", (long *)&chash_space_avail},
     {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},
@@ -1859,6 +1891,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_max_itc_samples", (long *)&dbf_max_itc_samples, SD_INT32},
     {"enable_mt_ft_inx", (long *)&enable_mt_ft_inx, SD_INT32},
     {"disable_rdf_init", (long *)&disable_rdf_init, SD_INT32},
+    {"enable_rdf_trig", (long *)&enable_rdf_trig, SD_INT32},
     {"enable_pg_card", (long *)&enable_pg_card, SD_INT32},
     {"enable_ce_ins_check",  (long *)&enable_ce_ins_check, SD_INT32},
     {"dbf_ignore_uneven_col", (long *)&dbf_ignore_uneven_col, SD_INT32},
@@ -1867,6 +1900,7 @@ stat_desc_t dbf_descs [] =
     {"mp_local_rc_sz", (long *)&mp_local_rc_sz, SD_INT32},
     {"dbf_user_1", &dbf_user_1},
     {"dbf_user_2", &dbf_user_2},
+    {"dbs_stop_cp", &dbs_stop_cp, SD_INT32},
 #ifdef CACHE_MALLOC
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
@@ -1874,7 +1908,8 @@ stat_desc_t dbf_descs [] =
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
-    {"enable_qrc", &enable_qrc, SD_INT32},
+    {"enable_qr_comment", &enable_qr_comment, SD_INT32},
+    {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
     {NULL, NULL, NULL}
   };
 
@@ -2009,7 +2044,7 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba ((query_instance_t*)qst, "__dbf_set");
   place = (stat_desc_t**)id_hash_get (sd_hash, (caddr_t)&name);
   if (!place)
-    sqlr_new_error ("42000", "SR...", "sys_stat_set, parameter does not exist");
+    sqlr_new_error ("42000", "SR...", "__dbf_set, parameter does not exist");
 
 
   sd = *place;
@@ -4553,10 +4588,15 @@ sc_data_to_ext (query_instance_t * qi, caddr_t dt)
   dtp_t dtp = DV_TYPE_OF (dt);
   if (DV_IRI_ID == dtp)
     {
-      caddr_t str = key_id_to_iri (qi, *(iri_id_t*)dt);
-      if (str)
-	box_flags (str) = BF_IRI;
-      return str;
+      if (MIN_64BIT_BNODE_IRI_ID <= unbox_iri_id (dt))
+	return box_copy (dt);
+      else
+	{
+	  caddr_t str = key_id_to_iri (qi, *(iri_id_t*)dt);
+	  if (str)
+	    box_flags (str) = BF_IRI;
+	  return str;
+	}
     }
   else if (DV_ARRAY_OF_POINTER == dtp)
     {
@@ -4637,12 +4677,65 @@ bif_stat_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       id_hash_iterator (&hit, ric->ric_samples);
       while (hit_next (&hit, (caddr_t*)&s_key, (caddr_t*)&smp))
 	{
-	  dk_set_push (&smps, list (3, sc_data_to_ext (qi, *(caddr_t*)s_key), box_float (smp->smp_card), box_float (smp->smp_inx_card)));
+	  caddr_t * ent = sc_data_to_ext (qi, *(caddr_t*)s_key);
+	  dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, unbox (ent[0]));
+	  if (key)
+	    {
+	      dk_free_box (ent[0]);
+	      ent[0] = box_dv_short_string (key->key_name);
+	    }
+	  dk_set_push (&smps, list (3, ent, box_float (smp->smp_card), box_float (smp->smp_inx_card)));
 	}
       dk_set_push (&rics, list (2, box_string (ric->ric_name), list_to_array (smps)));
     }
   END_DO_IDHASH;
   return list (3, list_to_array (cols), list_to_array (keys), list_to_array (rics));
+}
+
+dbe_key_t *
+key_by_name (char * name)
+{
+  DO_HT (ptrlong, id, dbe_key_t *, key, wi_inst.wi_schema->sc_id_to_key)
+    {
+      if (!strcmp (key->key_name, name))
+	return key;
+    }
+  END_DO_HT;
+  return NULL;
+}
+
+
+char * stat_trap = NULL;
+
+void
+stat_adjust_key (caddr_t * k)
+{
+  int64 op = unbox (k[1]);
+  int key_id = 0;
+  caddr_t kn = k[0];
+  if (DV_STRINGP (kn))
+    {
+      dbe_key_t * key = key_by_name (kn);
+      if (key)
+	{
+	  dk_free_box (kn);
+	  k[0] = box_num (key->key_id);
+	  key_id = unbox (k[0]);
+	}
+    }
+  else
+    key_id = unbox (k[0]);
+
+  if (66 == op && BOX_ELEMENTS (k) == 4
+      &&DV_IRI_ID == DV_TYPE_OF (k[2]) &&  !k[3])
+    k[3] = box_iri_id (MIN_64BIT_BNODE_IRI_ID);
+#if 0
+  switch (key_id)
+    {
+    case 1001: k[0] = (caddr_t)275; break;
+    default: ;
+    }
+#endif
 }
 
 
@@ -4709,8 +4802,20 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	continue;
       DO_BOX (caddr_t *, smp, inx2, rc[1])
 	{
+      tb_sample_t smpl;
 	  caddr_t k = sc_ext_to_data (qi, smp[0]);
-	  tb_sample_t smpl;
+	  if (stat_trap)
+	    {
+	      caddr_t * k = (caddr_t*)smp[0];
+	      int inx;
+	      for (inx = 2; inx < BOX_ELEMENTS (k); inx++)
+		{
+		  caddr_t * elt = k[inx];
+		  if (DV_STRINGP (elt) && strstr (elt, stat_trap))
+		    bing ();
+		}
+	    }
+	  stat_adjust_key ((caddr_t *)k);
 	  memzero (&smpl, sizeof (smpl));
 	  smpl.smp_time = approx_msec_real_time ();
 	  smpl.smp_card = unbox_float (smp[1]);

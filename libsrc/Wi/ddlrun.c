@@ -995,8 +995,11 @@ ddl_col_set_identity_start (char *table, char *check, caddr_t *col_options, char
       char q[MAX_NAME_LEN], o[MAX_NAME_LEN], n[MAX_NAME_LEN];
       int start = 1;
       caddr_t id_start;
+      int is_null = 0;
 
-      if (NULL != (id_start = col_options ? get_keyword_int (col_options, "identity_start", NULL) : NULL))
+      id_start = col_options ? get_keyword_int_zero (col_options, "identity_start", NULL, &is_null) : NULL;
+
+      if (col_options && !is_null)
 	{
 	  if (DV_TYPE_OF (id_start) == DV_LONG_INT)
 	    start = (int) unbox (id_start);
@@ -5353,6 +5356,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
     }
   else
     {
+      oid_t org_user = qi->qi_u_id;
 #ifdef VIRT30_40
       if (is_27_40_incompartible_procedure (qst_get (state, op->op_arg_1)))
         goto skip_incomp;
@@ -5360,8 +5364,10 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       /* first we will remove all entries with the same name,
 	 because the PK of that table is not designed to keep only one entry per name */
       is_cl = !cl_run_local_only;
+      qi->qi_u_id = U_ID_DBA;
       err = qr_rec_exec (is_cl ? cl_proc_rm_duplicate_query : proc_rm_duplicate_query, cli, NULL, qi, NULL, 1,
 			 ":0", qst_get (state, op->op_arg_1), QRP_STR);
+      qi->qi_u_id = org_user;
       /* the grants also must be removed */
       qr_rec_exec (proc_revoke_query, cli, NULL, qi, NULL, 1,
 		   ":0", qst_get (state, op->op_arg_1), QRP_STR);

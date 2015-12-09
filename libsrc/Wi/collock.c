@@ -39,14 +39,14 @@ ceic_del_dbg_log (ce_ins_ctx_t * ceic)
   /* debug func for logging delete locality and order.  Log the batch of rows that went intoo this seg */
   client_connection_t * cli = sqlc_client ();
   it_cursor_t * itc = ceic->ceic_itc;
-  lock_trx_t * lt = cli->cli_trx;
-  caddr_t * repl = lt->lt_replicate;
-  dk_session_t * save = lt->lt_log;
+  lock_trx_t * lt = cli ? cli->cli_trx : NULL;
+  caddr_t * repl = lt ? lt->lt_replicate : NULL;
+  dk_session_t * save = lt ? lt->lt_log : NULL;
   dk_session_t * ses;
   caddr_t * h = NULL;
   int fd;
   int inx;
-  if (!ceic->ceic_dbg_del_rds)
+  if (!ceic->ceic_dbg_del_rds || !cli)
     return;
   lt->lt_log = ses = strses_allocate ();
   lt->lt_replicate = REPL_LOG;
@@ -1346,7 +1346,28 @@ ceic_finalize_move (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
 }
 
 
-void
+int
+ceic_any_upd_rb (ce_ins_ctx_t * ceic)
+{
+  /* true if any update rollbacks in the present column */
+  int inx;
+  it_cursor_t *itc = ceic->ceic_itc;
+  for (inx = 0; inx < itc->itc_range_fill; inx++)
+    {
+      row_no_t nth_clk = itc->itc_ranges[inx].r_end;
+      if (COL_NO_ROW != nth_clk)
+	{
+	  col_row_lock_t *clk = itc->itc_rl->rl_cols[nth_clk];
+	  db_buf_t rb = clk->clk_rbe[ceic->ceic_nth_col];
+	  if (rb)
+	    return 1;
+	}
+    }
+  return 0;
+}
+
+
+int
 ceic_finalize_ranges (ce_ins_ctx_t * ceic, int is_rb)
 {
   it_cursor_t *itc = ceic->ceic_itc;
@@ -1376,6 +1397,7 @@ ceic_finalize_ranges (ce_ins_ctx_t * ceic, int is_rb)
   if (key->key_is_primary)
     key->key_table->tb_count_delta -= deletes;
   key->key_n_deletes += deletes;
+  return deletes;
 }
 
 int
@@ -1424,7 +1446,7 @@ ceic_finalize_check (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
 void
 ceic_col_finalize_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int is_rb)
 {
-  int action = -1;
+  int action = -1, n_deletes;
   it_cursor_t *itc = ceic->ceic_itc;
   dbe_key_t *key = itc->itc_insert_key;
   int nth = 0;
@@ -1433,7 +1455,7 @@ ceic_col_finalize_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int is_rb)
   ceic->ceic_is_finalize = 1;
   ceic->ceic_is_rb = is_rb;
   ceic->ceic_finalize_needs_update = 0;
-  ceic_finalize_ranges (ceic, is_rb);
+  n_deletes = ceic_finalize_ranges (ceic, is_rb);
   if (!itc->itc_range_fill)
     return;
   ceic_finalize_move (ceic, buf);
@@ -1448,12 +1470,15 @@ ceic_col_finalize_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int is_rb)
     ceic->ceic_nth_rb_rd = nth_rb_rd;
     ceic->ceic_col = col;
     ceic->ceic_nth_col = rdinx;
+    if (!n_deletes && !ceic_any_upd_rb (ceic))
+      goto next;
     cr = itc->itc_col_refs[nth];
     if (!cr)
       itc->itc_col_refs[nth] = cr = itc_new_cr (itc);
     if (!cr->cr_is_valid)
       itc_fetch_col (itc, buf, &key->key_row_var[nth], FC_FROM_CEIC, (ptrlong) ceic);
     cr_finalize (ceic, buf, cr);
+  next:
     nth++;
   }
   END_DO_SET ();

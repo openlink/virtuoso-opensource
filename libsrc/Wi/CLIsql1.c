@@ -552,20 +552,17 @@ con_set_defaults (cli_connection_t * con, caddr_t * login_res)
   if (BOX_ELEMENTS (login_res) > LG_DEFAULTS)
     {
       caddr_t *cdefs = (caddr_t *) login_res[LG_DEFAULTS];
-      con->con_isolation = cdef_param (cdefs, "SQL_TXN_ISOLATION", SQL_TXN_REPEATABLE_READ);
-      con->con_defs.cdef_prefetch = cdef_param (cdefs, "SQL_PREFETCH_ROWS", SELECT_PREFETCH_QUOTA);
+      con->con_isolation				= cdef_param (cdefs, "SQL_TXN_ISOLATION", SQL_TXN_REPEATABLE_READ);
+      con->con_defs.cdef_prefetch		= cdef_param (cdefs, "SQL_PREFETCH_ROWS", SELECT_PREFETCH_QUOTA);
+      con->con_defs.cdef_prefetch_bytes		= cdef_param (cdefs, "SQL_PREFETCH_BYTES", 0);
+      con->con_defs.cdef_txn_timeout		= cdef_param (cdefs, "SQL_TXN_TIMEOUT", 0);
+      con->con_defs.cdef_query_timeout		= cdef_param (cdefs, "SQL_QUERY_TIMEOUT", 0);
+      con->con_defs.cdef_no_char_c_escape	= cdef_param (cdefs, "SQL_NO_CHAR_C_ESCAPE", 0);
+      con->con_defs.cdef_utf8_execs		= cdef_param (cdefs, "SQL_UTF8_EXECS", 0);
+      con->con_defs.cdef_binary_timestamp	= cdef_param (cdefs, "SQL_BINARY_TIMESTAMP", 1);
+      con->con_defs.cdef_timezoneless_datetimes	= cdef_param (cdefs, "SQL_TIMEZONELESS_DATETIMES", 0);
 
-      con->con_defs.cdef_prefetch_bytes = cdef_param (cdefs, "SQL_PREFETCH_BYTES", 0);
-
-      con->con_defs.cdef_txn_timeout = cdef_param (cdefs, "SQL_TXN_TIMEOUT", 0);
-
-      con->con_defs.cdef_query_timeout = cdef_param (cdefs, "SQL_QUERY_TIMEOUT", 0);
-
-      con->con_defs.cdef_no_char_c_escape = cdef_param (cdefs, "SQL_NO_CHAR_C_ESCAPE", 0);
-
-      con->con_defs.cdef_utf8_execs = cdef_param (cdefs, "SQL_UTF8_EXECS", 0);
-
-      con->con_defs.cdef_binary_timestamp = cdef_param (cdefs, "SQL_BINARY_TIMESTAMP", 1);
+      timezoneless_datetimes = con->con_defs.cdef_timezoneless_datetimes;
 
       dk_free_tree ((box_t) cdefs);
     }

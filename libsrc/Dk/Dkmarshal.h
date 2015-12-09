@@ -99,7 +99,7 @@ NORETURN void box_read_error (dk_session_t * session, dtp_t dtp);
 
 #define MARSH_KEEP_OBJ(s, obj) do { \
   dk_set_push(&(s)->dks_pending_obj, obj); \
-  if (!(s)->dks_top_obj) (s)->dks_top_obj = obj; \
+  if (!(s)->dks_top_obj) (s)->dks_top_obj = (caddr_t)obj;	\
 } while (0)
 #define MARSH_POP_OBJ(s, obj) do { \
   dk_set_pop(&(s)->dks_pending_obj); \

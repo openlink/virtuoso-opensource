@@ -904,7 +904,7 @@ sqlp_table_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int do_c
   char temp[MAX_QUAL_NAME_LEN];
 
   if (do_case)
-    sch_normalize_new_table_case (top_sc->sc_cc->cc_schema, q, max_q, o, max_o);
+    sch_normalize_new_table_case (wi_inst.wi_schema, q, max_q, o, max_o);
 
   if (o)
     sqlp_check_infoschema (o);
@@ -934,7 +934,7 @@ sqlp_type_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int add_i
       if (!CASEMODESTRCMP (as_new_name, sqlp_udt_current_type))
 	return as_new_name;
     }
-  udt = sch_name_to_type (top_sc->sc_cc->cc_schema, as_new_name);
+  udt = sch_name_to_type (wi_inst.wi_schema, as_new_name);
   if (udt)
     return as_new_name;
   if (q)
@@ -943,7 +943,7 @@ sqlp_type_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int add_i
     snprintf (temp, sizeof (temp), "%s.%s", o, n);
   else
     snprintf (temp, sizeof (temp), "%s", n);
-  udt = sch_name_to_type (top_sc->sc_cc->cc_schema, temp);
+  udt = sch_name_to_type (wi_inst.wi_schema, temp);
   if (udt)
     return (t_box_string (udt->scl_name));
   return as_new_name;
@@ -953,7 +953,7 @@ sqlp_type_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int add_i
       caddr_t as_new_name = sqlp_new_table_name (q, o, n);
       udt = udt_alloc_class_def (as_new_name);
       udt->scl_ext_lang = sqlp_udt_current_type_lang == UDT_LANG_NONE ? UDT_LANG_SQL : sqlp_udt_current_type_lang;
-      id_hash_set (top_sc->sc_cc->cc_schema->sc_name_to_type,
+      id_hash_set (wi_inst.wi_schema->sc_name_to_type,
 	  (caddr_t) & udt->scl_name,
 	  (caddr_t) & udt);
       return as_new_name;
@@ -984,7 +984,7 @@ sqlp_new_table_name (char *q, size_t max_q, char *o, size_t max_o, char *n)
   char *q2 = q ? q : sqlc_client ()->cli_qualifier;
   char *o2 = o ? o : CLI_OWNER (sqlc_client ());
 
-  sch_normalize_new_table_case (top_sc->sc_cc->cc_schema, q, max_q, o, max_o);
+  sch_normalize_new_table_case (wi_inst.wi_schema, q, max_q, o, max_o);
 
   snprintf (temp, sizeof (temp), "%s.%s.%s", q2, o2, n);
 /*  dk_free_box (q);
@@ -997,7 +997,7 @@ caddr_t
 sqlp_new_qualifier_name (char *q, size_t max_q)
 {
   caddr_t new_q = t_box_string (q);
-  sch_normalize_new_table_case (top_sc->sc_cc->cc_schema, q, max_q, NULL, 0);
+  sch_normalize_new_table_case (wi_inst.wi_schema, q, max_q, NULL, 0);
   return new_q;
 }
 
@@ -1166,7 +1166,7 @@ sqlp_expand_1_star_table_ref (ST * col, ST * tb_ref, dk_set_t * exp)
 	  dbe_table_t *tb;
 
 	  sqlp_infoschema_redirect_tb (tb_name, new_tb_name, sizeof (new_tb_name), NULL);
-	  tb = sch_name_to_table (top_sc->sc_cc->cc_schema,
+	  tb = sch_name_to_table (wi_inst.wi_schema,
 					       new_tb_name);
 	  if (!tb)
 	    sqlp_no_table (tb_pref, tb_name);
@@ -1550,7 +1550,6 @@ sqlp_view_u_id (void)
 }
 
 
-dk_set_t html_lines;
 
 caddr_t
 sqlp_html_string (void)
@@ -2279,7 +2278,9 @@ generic_check:
               dk_free_box (ret_val);
               goto not_a_constant_pure; /* see below */
             }
-          lit = (ST *)(t_full_box_copy_tree (ret_val));
+	  lit = (ST *)(t_full_box_copy_tree (ret_val));
+	  if (DV_TYPE_OF (ret_val) == DV_RDF)
+	    lit = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__rdflit"), t_list (1, lit));
             dk_free_box (ret_val);
           return lit;
 not_a_constant_pure: ;

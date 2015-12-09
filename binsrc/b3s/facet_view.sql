@@ -45,7 +45,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
   if ('list' = mode)
     {
       --http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
-      http ('Find entity relationships', txt);
+      http ('Find entities ', txt);
     }
   if ('list-count' = mode)
     {
@@ -651,7 +651,7 @@ fct_nav (in tree any,
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties', 'Subject', txt, 'Relationships for which selected variable denotes relation subject');
+      fct_view_link ('properties', 'Predicates', txt, 'Relationships for which selected variable denotes relation subject');
     else
       fct_view_link ('properties', 'Attributes', txt, 'Relationships for which selected variable denotes relation entity');
 
@@ -692,16 +692,16 @@ fct_nav (in tree any,
 	    		'<select name="map_of" onchange="javascript:link_change(this.value)">'||
 	    		'<option value="any">Any location</option>'||
 	    		'<option value="">Shown items</option>'||
-	    		'<option value="dbpprop:location">dbpedia:location</option>'||
-	    		'<option value="dbpprop:place">dbpedia:place</option>'||
+	    		'<option value="dbp:location">dbpedia:location</option>'||
+	    		'<option value="dbp:place">dbpedia:place</option>'||
 	    		'<option value="foaf:based_near">foaf:based_near</option>'||
 	    		'<option value="geo:location">geo:location</option>'||
 	    		'<option value="geo:Point">geo:Point</option>'||
-	    		'<option value="dbpprop:birthPlace">dbpedia:birthPlace</option>'||
-	    		'<option value="dbpprop:placeOfBirth">dbpedia:placeOfBirth</option>'||
-	    		'<option value="dbpprop:birthplace">dbpedia:birthplace</option>'||
-	    		'<option value="dbpprop:placeOfDeath">dbpedia:placeOfDeath</option>'||
-	    		'<option value="dbpprop:deathPlace">dbpedia:deathPlace</option>'||
+	    		'<option value="dbp:birthPlace">dbpedia:birthPlace</option>'||
+	    		'<option value="dbp:placeOfBirth">dbpedia:placeOfBirth</option>'||
+	    		'<option value="dbp:birthplace">dbpedia:birthplace</option>'||
+	    		'<option value="dbp:placeOfDeath">dbpedia:placeOfDeath</option>'||
+	    		'<option value="dbp:deathPlace">dbpedia:deathPlace</option>'||
 			'</select></li>',
                  connection_get ('sid'), 'geo', 'Geospatial Entities projected over Map overlays', 'Places'), txt);
     }

@@ -109,7 +109,8 @@ itc_dv_param (it_cursor_t * itc, int nth_key, db_buf_t ctmp)
 {
   data_col_t *dc = NULL;
   int64 i;
-  dtp_t dtp;
+  dtp_t dtp, col_dtp;
+  db_buf_t dv;
   if (!itc->itc_n_sets)
     {
       if (ITC_IS_ANY_COL (itc, nth_key))
@@ -178,7 +179,11 @@ itc_dv_param (it_cursor_t * itc, int nth_key, db_buf_t ctmp)
       ctmp[0] = DV_DB_NULL;
       return ctmp;
     }
-  return (db_buf_t) (ptrlong) i;
+  col_dtp = itc->itc_insert_key->key_row_var[nth_key].cl_sqt.sqt_col_dtp;
+  dv = (db_buf_t) (ptrlong) i;
+  if (DV_ANY != col_dtp && DV_BOX_FLAGS == dv[0])
+    dv += 5;			/* a box flags prefix in a dv for any col other than an any is dropped, not part of comparison */
+  return dv;
 }
 
 

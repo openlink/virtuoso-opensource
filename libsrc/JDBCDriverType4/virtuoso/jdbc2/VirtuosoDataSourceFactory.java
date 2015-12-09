@@ -73,6 +73,10 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
 
     if (ds != null) {
       StringRefAddr refS;
+
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_logFileName)) != null)
+          ((VirtuosoDataSource) ds).setLogFileName((String)refS.getContent());
+
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_dataSourceName)) != null)
           ((VirtuosoDataSource) ds).setDataSourceName((String)refS.getContent());
 
@@ -97,11 +101,16 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_loginTimeout)) != null)
           ((VirtuosoDataSource) ds).setLoginTimeout(Integer.parseInt((String)refS.getContent()));
 
-      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_charSet)) != null)
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_charset)) != null)
+          ((VirtuosoDataSource) ds).setCharset((String)refS.getContent());
+      else if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_charSet)) != null)
           ((VirtuosoDataSource) ds).setCharset((String)refS.getContent());
 
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_pwdclear)) != null)
           ((VirtuosoDataSource) ds).setPwdClear((String)refS.getContent());
+
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_log_enable)) != null)
+          ((VirtuosoDataSource) ds).setLog_Enable(Integer.parseInt((String)refS.getContent()));
 
 #ifdef SSL
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_certificate)) != null)

@@ -863,7 +863,7 @@ div.dialog_text {
 
 div.confirm_dialog
 {
-  clear:both
+  clear:both;
   border: 4px solid red;
   padding: 10px;
 }
@@ -1890,4 +1890,69 @@ td.calendar_selected {
 
 .calendar_special {
 	color: #c55;
+}
+
+div.tabContent {
+  font-size: 1em;
+  padding: 6px;
+}
+
+div.tab {
+  cursor: pointer;
+  display: inline;
+  font-weight: bold;
+  background-color: #85B9D2;
+  border: 1px solid #000;
+  border-bottom-width: 0px;
+  border-color: #7f94a5;
+  padding: 2px 10px 2px 10px;
+  margin-right: 3px;
+  position: relative;
+  text-decoration: none;
+  top: -1px;
+  z-index: 100;
+}
+
+div.activeTab {
+  background-color: #EFEFEF;
+  border-color: #7f94a5;
+}
+
+div.contents {
+  background-color: #EFEFEF;
+  border: 1px solid #7F94A5;
+  padding: 0.5em;
+}
+
+.tabs {
+	margin-top: 1.5em;
+	list-style-type: none;
+	padding-bottom: 0px;
+	padding-left: 0.5em;
+}
+
+.tabs li {
+	display: inline;
+	padding: 1px 3px;
+	margin-left: 0.1em;
+	cursor: pointer;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-topright: 3px;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-top-right-radius: 3px;
+	background-color: #EFEFEF;
+	z-index: 10;
+}
+
+.tabs li.tab_selected {
+	background-color: #FFF;
+}
+
+.tabs li.tab:hover {
+	background-color: #FFF;
 }

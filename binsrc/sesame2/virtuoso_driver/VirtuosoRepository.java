@@ -66,10 +66,12 @@ public class VirtuosoRepository implements Repository {
 
 	private DataSource _ds;
 	private ConnectionPoolDataSource _pds;
+	private XADataSource _xads;
     
 	boolean useLazyAdd = true;
+	boolean insertBNodeAsVirtuosoIRI = false;
 	String defGraph;
-	int prefetchSize = 200;
+	int prefetchSize = 100;
 	int batchSize = 5000;
 	int queryTimeout = 0;
 	String ruleSet;
@@ -86,6 +88,13 @@ public class VirtuosoRepository implements Repository {
 		this.defGraph = defGraph;
 		this.useLazyAdd = useLazyAdd;
 		this._ds = ds;
+	}
+
+	public VirtuosoRepository(XADataSource ds, String defGraph) {
+	        super();
+		this.defGraph = defGraph;
+		this.useLazyAdd = false;
+		this._xads = ds;
 	}
 
 	/**
@@ -113,6 +122,7 @@ public class VirtuosoRepository implements Repository {
 	 *        </pre>
          *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
          *        or when batch size become more than predefined batch max_size. 
+         *        LazyAdd will be set false for XADataSource connection
          *
 	 */
 	public VirtuosoRepository(String url_hostlist, String user, String password, String defGraph, boolean useLazyAdd) {
@@ -147,6 +157,7 @@ public class VirtuosoRepository implements Repository {
 	 *        </pre>
          *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
          *        or when batch size become more than predefined batch max_size. 
+         *        LazyAdd will be set false for XADataSource connection
          *
 	 */
 	public VirtuosoRepository(String url_hostlist, String user, String password, boolean useLazyAdd) {
@@ -155,7 +166,7 @@ public class VirtuosoRepository implements Repository {
 
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters.
-	 * useLazyAdd will be set to <tt>true</tt>.
+	 * useLazyAdd will be set to <tt>false</tt>.
 	 * 
 	 * @param url_hostlist
 	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
@@ -179,7 +190,7 @@ public class VirtuosoRepository implements Repository {
 
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters.
-	 * <tt>useLazyAdd</tt> will be set to <tt>true</tt>.
+	 * <tt>useLazyAdd</tt> will be set to <tt>false</tt>.
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
 	 * 
 	 * @param url_hostlist
@@ -219,7 +230,19 @@ public class VirtuosoRepository implements Repository {
 	 *         If something went wrong during the creation of the Connection.
 	 */
 	public RepositoryConnection getConnection() throws RepositoryException {
-	        if (_pds != null) {
+	        if (_xads != null) {
+	           try {
+		     javax.sql.XAConnection xconn = _xads.getXAConnection();
+		     java.sql.Connection connection = xconn.getConnection();
+		     this.useLazyAdd = false;
+		     return new VirtuosoRepositoryConnection(this, connection);
+		   }
+		   catch (Exception e) {
+		     System.out.println("Connection to " + url_hostlist + " is FAILED.");
+		     throw new RepositoryException(e);
+		   }
+	        }
+	        else if (_pds != null) {
 	           try {
 		     javax.sql.PooledConnection pconn = _pds.getPooledConnection();
 		     java.sql.Connection connection = pconn.getConnection();
@@ -258,6 +281,13 @@ public class VirtuosoRepository implements Repository {
 	     					url = url + "roundrobin=1";
 				}
 		
+				if (url.toLowerCase().indexOf("log_enable=") == -1) {
+	   				if (url.charAt(url.length()-1) != '/')
+	     					url = url + "/log_enable=2";
+	   				else
+	     					url = url + "log_enable=2";
+				}
+		
 				java.sql.Connection connection = DriverManager.getConnection(url, user, password);
 				return new VirtuosoRepositoryConnection(this, connection);
 			}
@@ -285,7 +315,7 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	/**
-	 * Set the buffer fetch size(default 200) 
+	 * Set the buffer fetch size(default 100) 
 	 * 
 	 * @param sz
 	 *        buffer fetch size.
@@ -336,10 +366,28 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	/**
+	 * Set the UseLazyAdd state for connection(default true) 
+	 * for XADataSource connection set false and can't be changed
+	 * @param v
+	 *        true - useLazyAdd
+	 */
+	public void setUseLazyAdd(boolean v) {
+		this.useLazyAdd = v;
+	}
+
+	/**
+	 * Get the UseLazyAdd state for connection
+	 */
+	public boolean getUseLazyAdd() {
+		return this.useLazyAdd;
+	}
+
+
+	/**
 	 * Set the RoundRobin state for connection(default false) 
 	 * 
-	 * @param sz
-	 *        buffer fetch size.
+	 * @param v
+	 *        true - use roundrobin
 	 */
 	public void setRoundrobin(boolean v) {
 		this.roundrobin = v;
@@ -351,6 +399,26 @@ public class VirtuosoRepository implements Repository {
 	public boolean getRoundrobin() {
 		return this.roundrobin;
 	}
+
+
+	/**
+	 * Set the insertBNodeAsURI state for connection(default false) 
+	 * 
+	 * @param v
+	 *        true - insert BNode as Virtuoso IRI
+	 *        false - insert BNode as Virtuoso Native BNode
+	 */
+	public void setInsertBNodeAsVirtuosoIRI(boolean v) {
+		this.insertBNodeAsVirtuosoIRI = v;
+	}
+
+	/**
+	 * Get the insertBNodeAsURI state for connection
+	 */
+	public boolean getInsertBNodeAsVirtuosoIRI() {
+		return this.insertBNodeAsVirtuosoIRI;
+	}
+
 
 	
 	/**

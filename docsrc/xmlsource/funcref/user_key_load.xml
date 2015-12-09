@@ -91,7 +91,7 @@
   -->
   <refsect1 id="examples_USER_KEY_LOAD">
     <title>Example</title>
-    <example id="ex_USER_KEY_LOAD"><title></title>
+    <example id="ex_USER_KEY_LOAD"><title>Simple Use</title>
      <para>To load and persist an X.509 certificate contained in the 
      file wss.pfx in the server working directory one can use:</para>
       <screen><![CDATA[

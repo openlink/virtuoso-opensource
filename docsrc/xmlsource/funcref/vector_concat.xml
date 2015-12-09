@@ -58,7 +58,7 @@
     <para>A vector made of copies of elements contained in vec1..n.</para>
   </refsect1>
   <refsect1 id="examples_vector_concat"><title>Examples</title>
-    <example id="ex_vector_concat"><title></title>
+    <example id="ex_vector_concat"><title>Simple Use</title>
       <screen>
 dbg_obj_print (vector_concat (vector (now(), 'black', 'crow'), 
 	                      vector ('said', 'nevermore')));
@@ -74,9 +74,9 @@ dbg_obj_print (vector_concat (vector ('a','b'),
   </refsect1>
     <refsect1 id="seealso_vector_concat"><title>See Also</title>
     <para>
-      <link linkend="fn_aset"><function>aset</function></link>   
-      <link linkend="fn_aref"><function>aref</function></link>   
-      <link linkend="fn_vector"><function>vector</function></link>   
+      <link linkend="fn_aset"><function>aset()</function></link>
+      <link linkend="fn_aref"><function>aref()</function></link>
+      <link linkend="fn_vector"><function>vector()</function></link>
     </para>
   </refsect1>
 </refentry>

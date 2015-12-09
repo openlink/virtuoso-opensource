@@ -28,7 +28,7 @@
   </refmeta>
   <refnamediv>
     <refname>xenc_pkcs12_export</refname>
-    <refpurpose>Export of a certificate and private key into Personal Information Exchange Syntax (PKCS#12) format.</refpurpose>
+    <refpurpose>Generates a secure Public-Key Cryptography Standards (PKCS#12) file from a PEM (base64 encoded DER) file comprised of an X.509 certificate and an associated Private Key.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_xenc_pkcs12_export">
@@ -37,51 +37,49 @@
 	<paramdef>in <parameter>key_name</parameter> varchar</paramdef>
 	<paramdef>in <parameter>name</parameter> varchar</paramdef>
 	<paramdef>in <parameter>pass</parameter> varchar</paramdef>
+	<paramdef><optional>in <parameter>export_chain</parameter> integer := 0 </optional></paramdef>
+	<paramdef><optional>in <parameter>additional_certs</parameter> varchar</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_xenc_pkcs12_export">
     <title>Description</title>
-    <para>Export of a certificate and private key into Personal Information Exchange Syntax (PKCS#12) format.</para>
+    <para>Generates a secure Public-Key Cryptography Standards (PKCS#12) file from a PEM (base64 encoded DER) file comprised of an X.509 certificate and an associated Private Key.</para>
   </refsect1>
   <refsect1 id="params_xenc_pkcs12_export">
     <title>Parameters</title>
     <refsect2><title>key_name</title>
-      <para>The name of a key to which key belongs X.509 certificate.</para>
+      <para>Name that identifies private key associated with X.509 certificate.</para>
     </refsect2>
-    <refsect2><title>name</title>
-      <para>A name to be recorded in the PKCS#12 structure</para>
+    <refsect2>
+    	<title>name</title>
+      <para>Name to used to identify each  pkcs#12 object bundle.</para>
     </refsect2>
     <refsect2><title>pass</title>
-      <para>A password to encrypt the exported key</para>
+      <para>A password or pass phrase used to encrypt the pkcs#12 file</para>
     </refsect2>
-  </refsect1>
-  <refsect1 id="ret_xenc_pkcs12_export"><title>Return Types</title>
-    <para></para>
-  </refsect1>
-  <refsect1 id="errors_xenc_pkcs12_export">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
+    <refsect2><title>export_chain</title>
+      <para>1/0 - to export the certificate chain if there is a such</para>
+    </refsect2>
+    <refsect2><title>additional_certs</title>
+      <para>Certificates in PEM format to be added to the bundle even if they are not in the certificate chain stored in
+      	the memory object of the certificate</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="examples_xenc_pkcs12_export">
     <title>Examples</title>
     <example id="ex_xenc_pkcs12_export"><title>Persisting a key &amp; certificate</title>
-      <para>The example below persists a key named 'id_rsa' and certificate created for it into user's key space. Thus after server restart the key will be available again.</para>
-      <screen><![CDATA[
+      <para>The example below persists a key named 'id_rsa' and certificate created for it into user's key space.
+      Thus after server restart the key will be available again.</para>
+<programlisting><![CDATA[
        USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', xenc_pkcs12_export ('id_rsa', 'CA Certificate', ''));
-]]>
-</screen>
+]]></programlisting>
     </example>
   </refsect1>
   <refsect1 id="seealso_xenc_pkcs12_export">
     <title>See Also</title>
-    <para><link linkend="fn_xenc_x509_generate"><function>xenc_x509_generate</function></link></para>
-    <para><link linkend="fn_xenc_x509_ss_generate"><function>xenc_x509_ss_generate</function></link></para>
+    <para><link linkend="fn_user_key_store"><function>user_key_store()</function></link></para>
+    <para><link linkend="fn_xenc_x509_generate"><function>xenc_x509_generate()</function></link></para>
+    <para><link linkend="fn_xenc_x509_ss_generate"><function>xenc_x509_ss_generate()</function></link></para>
   </refsect1>
 </refentry>

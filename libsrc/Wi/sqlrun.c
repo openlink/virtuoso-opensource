@@ -454,10 +454,11 @@ void
 qi_inst_state_free (caddr_t * qi_box)
 {
   query_instance_t *qi = (query_instance_t *) qi_box;
+  client_connection_t * cli = qi->qi_client;
   query_t *qr = qi->qi_query;
   state_slot_t ** slots = qr->qr_freeable_slots;
   int n = slots ? BOX_ELEMENTS (slots) : 0, inx;
-  if (prof_on)
+  if (prof_on && qi->qi_log_stats && cli && CLI_TERMINATE != cli->cli_terminate_requested)
     qi_qn_stat (qi);
   if (!qi->qi_is_branch && qi->qi_root_id)
     qi_root_done (qi);
@@ -2842,15 +2843,12 @@ qi_dc_box_check (QI * qi)
 		      if (inx == ssl->ssl_index)
 			{
 			  ssl_found = 1;
-			  bing ();
 			  break;
 			}
 		    }
 		  END_DO_SET();
 		}
 	    }
-	  if (!dc_found || !ssl_found)
-	    bing ();
 	}
     }
   END_DO_HT;

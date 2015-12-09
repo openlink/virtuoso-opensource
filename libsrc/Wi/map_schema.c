@@ -236,7 +236,7 @@ extend_parent_xj_cols_by_parent_keys (xv_join_elt_t *parent_xj, caddr_t *parent_
     caddr_t p_name = parent_keys[inx];
     DO_BOX (xj_col_t *, col, colinx, parent_xj->xj_cols)
      {
-       if (ST_P (col->xc_exp, COL_DOTTED) && !strcmp (col->xc_exp->_.col_ref.name, p_name))
+       if (ST_COLUMN (col->xc_exp, COL_DOTTED) && !strcmp (col->xc_exp->_.col_ref.name, p_name))
          {
            col->xc_usage |= XV_XC_PARENT_OF_JOIN;
            goto parent_col_found; /* see below */

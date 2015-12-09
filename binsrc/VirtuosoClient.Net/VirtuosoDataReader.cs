@@ -862,6 +862,7 @@ namespace OpenLink.Data.Virtuoso
                           {
                             switch (column.data.GetType().FullName)
                             {
+                                case "System.Int64":
                                 case "System.Int32":
                                 case "System.Single":
                                 case "System.Double":

@@ -1560,7 +1560,20 @@ create function "CatFilter_DAV_SEARCH_PATH" (in id any, in what char(1)) returns
 ;
 
 
-create function "CatFilter_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function "CatFilter_DAV_RES_UPLOAD_COPY" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite integer,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   declare cfc_id integer;
   declare rfc_spath, schema_uri varchar;
@@ -1597,18 +1610,28 @@ create function "CatFilter_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts
   else
     {
       declare new_full_path varchar;
+
       new_full_path := DAV_CONCAT_PATH (rfc_spath, path_parts [length (path_parts) - 1]);
-      rc := DAV_COPY_INT (DAV_SEARCH_PATH (source_id, what), new_full_path, overwrite, permissions,
-         coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = uid), ''),
-         coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = gid), ''),
-         null, null, 0);
+      rc := DAV_COPY_INT (
+        DAV_SEARCH_PATH (source_id, what),
+        new_full_path,
+        overwrite,
+        permissions,
+        coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = uid), ''),
+        coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = gid), ''),
+        auth_uname,
+        auth_pwd,
+        extern);
       if (DAV_HIDE_ERROR (rc) is null)
         return rc;
+
       source_id := DAV_SEARCH_ID (new_full_path, what);
       if (DAV_HIDE_ERROR (source_id) is null)
         return source_id;
+
       if (not (isinteger (source_id)))
         return -13;
+
       "ResFilter_FIT_INTO_CONDITION" (source_id, what, fit_cond, auth_uid);
     }
   return 1;
@@ -1616,7 +1639,17 @@ create function "CatFilter_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts
 ;
 
 
-create function "CatFilter_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in auth_uid integer) returns any
+create function "CatFilter_DAV_RES_UPLOAD_MOVE" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   declare cfc_id integer;
   declare rfc_spath, schema_uri varchar;
@@ -1653,15 +1686,26 @@ create function "CatFilter_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts
   else
     {
       declare new_full_path varchar;
+
       new_full_path := DAV_CONCAT_PATH (rfc_spath, path_parts [length (path_parts) - 1]);
-      rc := DAV_MOVE_INT (DAV_SEARCH_PATH (source_id, what), new_full_path, overwrite, null, null, 0, 1);
+      rc := DAV_MOVE_INT (
+        DAV_SEARCH_PATH (source_id, what),
+        new_full_path,
+        overwrite,
+        auth_uname,
+        auth_pwd,
+        extern,
+        check_locks);
       if (DAV_HIDE_ERROR (rc) is null)
         return rc;
+
       source_id := DAV_SEARCH_ID (new_full_path, what);
       if (DAV_HIDE_ERROR (source_id) is null)
         return source_id;
+
       if (not (isinteger (source_id)))
         return -13;
+
       "ResFilter_FIT_INTO_CONDITION" (source_id, what, fit_cond, auth_uid);
     }
   return 1;

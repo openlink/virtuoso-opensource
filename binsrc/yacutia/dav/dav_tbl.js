@@ -97,13 +97,15 @@ TBL.viewCell42 = function (td, prefix, fldName, No, fldOptions)
 TBL.clickCell42 = function (fld)
 {
   var fldName = fld.name;
+  var i = fldName.indexOf('_fld_');
+  var n = parseInt(fldName.substring(i+5,i+6));
   if (fldName.indexOf('_deny') != -1) {
     fldName = fldName.replace('_deny', '_grant');
-    fldName = fldName.replace('fld_4', 'fld_3');
+    fldName = fldName.replace('fld_'+n, 'fld_'+(n-1));
   }
   else if (fldName.indexOf('_grant') != -1) {
     fldName = fldName.replace('_grant', '_deny');
-    fldName = fldName.replace('fld_3', 'fld_4');
+    fldName = fldName.replace('fld_'+n, 'fld_'+(n+1));
   }
   $(fldName).checked = false;
 }
@@ -121,7 +123,7 @@ TBL.createCell45 = function (td, prefix, fldName, No, fldOptions)
         TBL.createCell45Options(fld, fldOptions.value);
       } catch (e) {Cartridges = null;}
     }
-    OAT.AJAX.GET('ajax.vsp?a=cartridges', '', x);
+    OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=cartridges', '', x);
   }
   td.appendChild(fld);
   return fld;
@@ -146,7 +148,7 @@ TBL.createCell46 = function (td, prefix, fldName, No, fldOptions)
         TBL.createCell46Options(fld, fldOptions.value);
       } catch (e) {MetaCartridges = null;}
     }
-    OAT.AJAX.GET('ajax.vsp?a=metaCartridges', '', x);
+    OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=metaCartridges', '', x);
   }
   td.appendChild(fld);
   return fld;
@@ -499,6 +501,308 @@ TBL.createButton61 = function (td, prefix, fldName, No, fldOptions)
   return fld;
 }
 
+TBL.changeCell70 = function (obj)
+{
+  var parts = obj.id.split('_');
+  var prefix = parts[0];
+  var No = parts[3];
+
+  TBL.createCell70Ext(obj, null, true);
+
+  var td = $(prefix+'_td_'+No+'_2');
+  td.innerHTML = '';
+  TBL.createCell71(td, prefix, prefix+'_fld_2_'+No, No, {});
+
+  var td = $(prefix+'_td_'+No+'_3');
+  td.innerHTML = '';
+  TBL.createCell72(td, prefix, prefix+'_fld_3_'+No, No, {});
+}
+
+TBL.createCell70 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.create('select');
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.width = '95%';
+  OAT.Dom.option('', '', fld);
+  if (!TBL.imapPredicates) {
+    TBL.imapFilter();
+  }
+  for (var i = 0; i < TBL.imapPredicates.length; i = i + 2) {
+    if ((TBL.imapPredicates[i+1][0]).indexOf(TBL.imapFilterMode) != -1) {
+      OAT.Dom.option(TBL.imapPredicates[i+1][1], TBL.imapPredicates[i], fld);
+    }
+  }
+  if (fldOptions.value) {
+    fld.value = fldOptions.value;
+  }
+  fld.onchange = function(){TBL.changeCell70(this)};
+  td.appendChild(fld);
+
+  TBL.createCell70Ext(fld, fldOptions)
+
+  return fld;
+}
+
+TBL.createCell70Ext = function (obj, fldOptions, fldUnlink)
+{
+  var parts = obj.id.split('_');
+  var prefix = parts[0];
+  var No = parts[3];
+  var fldName = prefix+'_fld_0_'+No;
+
+  var predicate = TBL.imapGetPredicate(No);
+  if (!predicate)
+    return;
+
+  if (((predicate[2] != 'sparql') && (predicate[2] != 'header') && (predicate[2] != 'triplet')) || fldUnlink)
+    OAT.Dom.unlink('span_' + fldName);
+
+  if ((predicate[2] != 'sparql') && (predicate[2] != 'header') && (predicate[2] != 'triplet'))
+    return;
+
+  if ($(fldName))
+    return;
+
+  var td = $(prefix+'_td_'+No+'_1');
+  var span = OAT.Dom.create('span');
+  span.id = 'span_' + fldName;
+  if (predicate[2] == 'sparql') {
+    if (!fldOptions)
+      fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix nmo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#>\nprefix nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>\nASK\nWHERE\n  {\n    <%item_iri%> nmo:messageFrom \'value\'\n  }'};
+
+    var fld = OAT.Dom.create('textarea');
+    fld.id = fldName;
+    fld.name = fld.id;
+    fld.style.width = '94%';
+    fld.style.height = '8em';
+    if (fldOptions.valueExt)
+      fld.value = fldOptions.valueExt;
+
+    span.appendChild(fld);
+  }
+  else if (predicate[2] == 'header') {
+    if (!fldOptions)
+      fldOptions = {valueExt: ''};
+
+    var fld = TBL.createCellCombolist(td, fldOptions.valueExt, {name: fldName});
+    fld.input.style.width = "95%";
+
+    if (!TBL.imapHeaders)
+      TBL.imapFilter();
+
+    for (i = 0; i < TBL.imapHeaders.length; i++)
+      fld.addOption(TBL.imapHeaders[i]);
+
+    span.appendChild(fld.div);
+  }
+  else if (predicate[2] == 'triplet') {
+    if (!fldOptions)
+      fldOptions = {valueExt: ''};
+
+    var fld = TBL.createCellCombolist(td, fldOptions.valueExt, {name: fldName});
+    fld.input.style.width = "95%";
+
+    if (!TBL.imapTriplets)
+      TBL.imapFilter();
+
+    for (i = 0; i < TBL.imapTriplets.length; i++)
+      fld.addOption(TBL.imapTriplets[i]);
+
+    span.appendChild(fld.div);
+  }
+  td.appendChild(span);
+}
+
+TBL.changeCell71 = function (obj)
+{
+  var parts = obj.id.split('_');
+  var prefix = parts[0];
+  var No = parts[3];
+
+  var td = $(prefix+'_td_'+No+'_3');
+  td.innerHTML = '';
+  TBL.createCell72(td, prefix, prefix+'_fld_3_'+No, No, {});
+}
+
+TBL.createCell71 = function (td, prefix, fldName, No, fldOptions)
+{
+  var predicate = TBL.imapGetPredicate(No);
+  if (!predicate)
+    return;
+
+  var fld = OAT.Dom.create('select');
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.width = '95%';
+  OAT.Dom.option('', '', fld);
+  var predicateType = predicate[2];
+  for (var i = 0; i < TBL.imapCompares.length; i = i + 2) {
+    var compareTypes = TBL.imapCompares[i+1][1];
+    for (var j = 0; j < compareTypes.length; j++) {
+      if (compareTypes[j] == predicateType)
+        OAT.Dom.option(TBL.imapCompares[i+1][0], TBL.imapCompares[i], fld);
+    }
+  }
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+  fld.onchange = function(){TBL.changeCell71(this)};
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createCell72 = function (td, prefix, fldName, No, fldOptions)
+{
+  var predicate = TBL.imapGetPredicate(No);
+  if (!predicate)
+    return;
+
+  var fld_2 = $(fldName.replace('fld_3', 'fld_2'));
+  if (!fld_2)
+    return;
+
+  var compare;
+  for (var i = 0; i < TBL.imapCompares.length; i = i + 2) {
+    if (TBL.imapCompares[i] == fld_2.value)
+      compare = TBL.imapCompares[i+1];
+  }
+  if (!compare || (compare[2] == 0))
+    return;
+
+  if (predicate[2] == 'priority') {
+    var fld = OAT.Dom.create("select");
+    OAT.Dom.option('Normal', '3', fld);
+    OAT.Dom.option('Lowest', '5', fld);
+    OAT.Dom.option('Low', '4', fld);
+    OAT.Dom.option('High', '2', fld);
+    OAT.Dom.option('Highest', '1', fld);
+  }
+  else if (predicate[2] == 'folder') {
+    var fld = OAT.Dom.create("select");
+    for (var i = 0; i < TBL.imapFolders.length; i++) {
+      OAT.Dom.option(TBL.imapFolders[i][1], TBL.imapFolders[i][0], fld);
+    }
+  }
+  else if ((predicate[2] == 'boolean') || (predicate[2] == 'sparql')) {
+    var fld = OAT.Dom.create("select");
+    OAT.Dom.option('Yes', '1', fld);
+    OAT.Dom.option('No', '0', fld);
+  }
+  else
+  {
+    var fld = OAT.Dom.create("input");
+    fld.type = 'text';
+  }
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.width = '93%';
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+  td.appendChild(fld);
+
+  for (var i = 0; i < predicate[4].length; i += 2) {
+    if (predicate[4][i] == 'size') {
+      fld['size'] = predicate[4][i+1];
+      fld.style.width = null;
+    }
+
+    if (predicate[4][i] == 'class')
+      fld.className = predicate[4][i+1];
+
+    if (predicate[4][i] == 'onclick')
+      OAT.Event.attach(fld, "click", new Function((predicate[4][i+1]).replace(/-FIELD-/g, fld.id)));
+
+    if (predicate[4][i] == 'button') {
+      var span = OAT.Dom.create("span");
+      span.innerHTML = ' ' + (predicate[4][i+1]).replace(/-FIELD-/g, fld.id);
+      td.appendChild(span);
+    }
+  }
+  return fld;
+}
+
+TBL.changeCell75 = function (obj)
+{
+  var parts = obj.id.split('_');
+  var prefix = parts[0];
+  var No = parts[3];
+  var td = $(prefix+'_td_'+No+'_2');
+
+  td.innerHTML = '';
+  TBL.createCell76(td, prefix, prefix+'_fld_2_'+No, No, {});
+}
+
+TBL.createCell75 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.create('select');
+  fld.id = fldName;
+  fld.name = fld.id;
+  fld.style.width = '95%';
+  OAT.Dom.option('', '', fld);
+  if (!TBL.imapActions)
+    TBL.imapFilter();
+  for (var i = 0; i < TBL.imapActions.length; i = i + 2) {
+    if (TBL.imapActions[i+1][0] == 1)
+      OAT.Dom.option(TBL.imapActions[i+1][1], TBL.imapActions[i], fld);
+  }
+  if (fldOptions.value)
+    fld.value = fldOptions.value;
+  fld.onchange = function(){TBL.changeCell75(this)};
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createCell76 = function (td, prefix, fldName, No, fldOptions) {
+  var val = $v(fldName.replace('fld_2', 'fld_1'));
+  if (val && (val != '')) {
+    var fldParams;
+    for (var i = 0; i < TBL.imapActions.length; i += 2) {
+      if ((TBL.imapActions[i] == val) && (TBL.imapActions[i+1][0] == 1)) {
+        fldParams = TBL.imapActions[i+1];
+      }
+    }
+    if (!fldParams || !fldParams[2])
+      return;
+
+    var fld;
+    var fldButton;
+    if (fldParams[2] == 'input') {
+      fld = OAT.Dom.create("input");
+      fld.type = fldParams[3];
+    }
+    else if ((fldParams[2] == 'select') && (fldParams[3] == 'folder')) {
+      OAT.Loader.load(["drag", "dav"], function(){OAT.WebDav.init(davOptions);});
+      fld = OAT.Dom.create("input");
+      fld.type = 'text';
+      fldButton = OAT.Dom.create('img');
+      fldButton.src = '/ods/images/select.gif';
+      fldButton.className = "pointer";
+      fldButton.onclick = function(name){return function(){ WEBDAV.davFolderSelect (name);};}(fldName);
+    }
+    else if ((fldParams[2] == 'select') && (fldParams[3] == 'priority')) {
+      fld = OAT.Dom.create("select");
+      OAT.Dom.option('Normal', '3', fld);
+      OAT.Dom.option('Lowest', '5', fld);
+      OAT.Dom.option('Low', '4', fld);
+      OAT.Dom.option('High', '2', fld);
+      OAT.Dom.option('Highest', '1', fld);
+    }
+    fld.id = fldName;
+    fld.name = fld.id;
+    fld.style.width = '93%';
+    if (fldOptions.value) {
+      fld.value = fldOptions.value;
+    }
+    td.appendChild(fld);
+    if (fldButton) {
+      td.appendChild(fldButton);
+    }
+    return fld;
+  }
+}
+
 TBL.searchFilter = function ()
 {
   if (TBL.searchPredicates)
@@ -588,6 +892,34 @@ TBL.searchPredicate = function (fldName)
     for (var i = 0; i < TBL.searchPredicates.length; i = i + 2) {
       if (TBL.searchPredicates[i] == fld.value)
         return TBL.searchPredicates[i+1];
+    }
+  }
+  return null;
+}
+
+TBL.imapFilter = function ()
+{
+  // load filters data
+  var x = function(data) {
+    var o = OAT.JSON.parse(data);
+    TBL.imapPredicates = o[0];
+    TBL.imapCompares = o[1];
+    TBL.imapActions = o[2];
+    TBL.imapFolders = o[3];
+    TBL.imapHeaders = o[4];
+    TBL.imapTriplets = o[5];
+    TBL.imapFilterMode = 'filter';
+  }
+  OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=imapFilter&owner='+$v('imapOwner'), '', x, {async:false});
+}
+
+TBL.imapGetPredicate = function (No)
+{
+  var fld = $('search_fld_1_' + No)
+  if (fld) {
+    for (var i = 0; i < TBL.imapPredicates.length; i += 2) {
+      if (TBL.imapPredicates[i] == fld.value)
+        return TBL.imapPredicates[i+1];
     }
   }
   return null;

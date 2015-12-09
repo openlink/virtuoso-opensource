@@ -579,14 +579,14 @@ typedef struct xq_dt_mode_s {
 xq_dt_mode_t;
 
 xq_dt_mode_t xq_dt_modes[] = {
-  {"dateTime"	, DT_TYPE_DATETIME	, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD | DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
-  {"date"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
-  {"time"	, DT_TYPE_TIME		,                                     DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
-  {"gYearMonth"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
-  {"gYear"	, DT_TYPE_DATE		, DTFLAG_YY |                                                                          DTFLAG_ZH | DTFLAG_ZM	},
-  {"gMonthDay"	, DT_TYPE_DATE		,             DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
-  {"gMonth"	, DT_TYPE_DATE		,             DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
-  {"gDay"	, DT_TYPE_DATE		,                         DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	}
+  {"dateTime"	, DT_TYPE_DATETIME	, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD | DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"date"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"time"	, DT_TYPE_TIME		,                                     DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gYearMonth"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gYear"	, DT_TYPE_DATE		, DTFLAG_YY |                                                                          DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gMonthDay"	, DT_TYPE_DATE		,             DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gMonth"	, DT_TYPE_DATE		,             DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gDay"	, DT_TYPE_DATE		,                         DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	}
 };
 
 static void
@@ -3382,10 +3382,10 @@ xdt_define_builtin (
 static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
 /* Keep these strings sorted alphabetically by p_name! */
 /*	p_name			| p_proc			| p_rcheck		| p_opcode		| null	| box	| p_dest_dtp	| p_typed_bif_name		| p_sql_cast_type */
-    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
+    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
     {	"byte"			, __integer_from_string		, __integer_rcheck	, XQ_INT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"currentDateTime"	, __cur_datetime		, NULL			, 0			, 0	, 0	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, "DATE"		},
+    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, NULL /* not "DATE" */	},
     {	"dateTime"		, __datetime_from_string	, __datetime_rcheck	, XQ_DATETIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_datetime"	, "DATETIME"		},
     {	"dayTimeDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"decimal"		, __numeric_from_string		, NULL			, 0			, 0	, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, "DECIMAL"		},
@@ -3400,20 +3400,20 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"int"			, __integer_from_string		, __integer_rcheck	, XQ_INT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"integer"		, __integer_from_string		, __integer_rcheck	, XQ_INT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
     {	"long"			, __integer_from_string		, __integer_rcheck	, XQ_INT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
-    {	"negativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonNegativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NNINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonPositiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NPINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"negativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonNegativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NNINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonPositiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NPINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"normalizedString"	, __gen_string_from_string	, __gen_string_rcheck	, XQ_NORM_STRING	, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"positiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_PINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"positiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_PINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"precisionDecimal"	, __numeric_from_string		, NULL /*???*/		, 0			, 0	, 1	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, NULL			},
     {	"short"			, __integer_from_string		, __integer_rcheck	, XQ_INT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"string"		, __gen_string_from_string	, __gen_string_rcheck	, XQ_STRING		, 0	, 1	, DV_STRING	, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
-    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, "TIME"		},
+    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, NULL /* not "TIME" */	},
     {	"token"			, __gen_string_from_string	, __gen_string_rcheck	, XQ_TOKEN		, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedLong"		, __integer_from_string		, __integer_rcheck	, XQ_UINT64		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedShort"		, __integer_from_string		, __integer_rcheck	, XQ_UINT16		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedLong"		, __integer_from_string		, __integer_rcheck	, XQ_UINT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedShort"		, __integer_from_string		, __integer_rcheck	, XQ_UINT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"yearMonthDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			} };
 
 /* No parsing or validation for
@@ -3556,6 +3556,7 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           xte->xe_doc.xd->xd_id_scan = XD_ID_SCAN_COMPLETED;
           xte->xe_doc.xd->xd_ns_2dict = ns_2dict;
           xte->xe_doc.xd->xd_namespaces_are_valid = 0;
+	  xte->xe_doc.xd->xout_encoding = box_dv_short_string ("UTF-8");
           /* test only : xte_word_range(xte,&l1,&l2); */
           return ((caddr_t) xte);
         }
@@ -3570,7 +3571,7 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	  if (!err)
 	    {
 	      rdf_box_t * rb = rb_allocate ();
-	      geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+	      geo_calc_bounding ((geo_t *) g, GEO_CALC_BOUNDING_DO_ALL);
 	      rb->rb_type = RDF_BOX_GEO;
 	      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
 	      rb->rb_box = g;

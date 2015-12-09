@@ -41,9 +41,13 @@ create table DB.DBA.VSPX_SESSION
       VS_UID varchar,
       VS_STATE long varchar,
       VS_EXPIRY datetime,
+      VS_IP varchar,
       primary key (VS_REALM, VS_SID))
 ;
 --#pragma end session
+
+alter table DB.DBA.VSPX_SESSION add VS_IP varchar
+;
 
 create table WS.WS.HTTP_SES_TRAP_DISABLE
       (
@@ -6252,7 +6256,7 @@ create procedure
 VSPX_EXPIRE_SESSIONS ()
 {
   delete from VSPX_SESSION where VS_EXPIRY is null;
-  delete from VSPX_SESSION where datediff ('minute', VS_EXPIRY, now()) > 120;
+  delete from VSPX_SESSION where datediff ('minute', VS_EXPIRY, now()) > 30;
   --if (row_count () > 0)
   --  log_message (sprintf ('%d VSPX session entries erased', row_count ()));
 }

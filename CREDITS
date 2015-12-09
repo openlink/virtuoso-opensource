@@ -34,13 +34,14 @@ OpenSSL
     restrictions: <http://www.openssl.org/support/faq.html#LEGAL1>
 
 
-Tidy - HTML parser and pretty printer
-<http://www.w3.org/People/Raggett/tidy/>
+Tidy-html5 - HTML parser and pretty printer
+<http://www.htacg.org/tidy-html5/>
 
-    This product includes Tidy developed by the World Wide Web Consortium.
+    This product includes tidy-html5 which is currently maintained by HTACG:
+    <http://www.html-tidy.org/#acknowledgements>
 
-    Tidy is distributed under the terms of the W3C License:
-    <http://tidy.sourceforge.net/license.html>
+    Tidy-html5 is distributed under the terms of the W3C License:
+    <https://github.com/htacg/tidy-html5/blob/4.9.26/LICENSE.txt>
 
 
 Zlib - compression library

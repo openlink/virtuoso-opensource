@@ -56,7 +56,7 @@ public class VirtuosoQuery extends VirtuosoOperation implements Query {
 	 */
 	public int getMaxQueryTime()
 	{
-		return -1;
+		return maxQueryTime;
 	}
 
 }

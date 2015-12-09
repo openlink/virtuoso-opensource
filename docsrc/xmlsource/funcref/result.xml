@@ -57,24 +57,24 @@ the application already knows what columns and their types are to be returned.</
   </refsect1>
   <refsect1 id="params_result">
     <title>Parameters</title>
-    <refsect2>col_1, ..., col_n<title></title>
+    <refsect2><title>col_1, ..., col_n</title>
       <para>The data to be sent to the client.</para>
     </refsect2>
   </refsect1>
   <refsect1 id="examples_result">
     <title>Examples</title>
     <example id="ex_result"><title></title>
-      <para>This examples demonstrates outputting multiple result sets from a 
+      <para>This example demonstrates outputting multiple result sets from a
 stored procedure.  This procedure can be entered using ISQL but ISQL does not 
 support multiple result sets.  To view the output you can use the 
-the sample application odbctest or another application supporting multiple result 
+the sample application odbc test or another application that supports multiple result
 sets.  
-The RES procedure, below, returns two result sets, the first with two rows and 
-the second with four rows.  The result_names function gives each result column 
+The RES procedure below returns two result sets -- the first has two rows and
+the second has four rows. The result_names function gives each result column
 a type and title.  This can be omitted if the application knows which columns 
 to expect.  The result function sends the actual result row.  The end_result function 
 indicates that a new result set will begin.  These functions can be used inside 
-loops or subprocedures, thus allowing one call to yield a variable number of 
+loops or subprocedures, thus allowing with one call to yield a variable number of
 result sets.</para>
       <programlisting><![CDATA[
 CREATE PROCEDURE RES (IN I INTEGER)

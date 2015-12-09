@@ -44,13 +44,13 @@
     <funcsynopsis id="fsyn_backup_close">
       <funcprototype id="fproto_backup_close">
         <funcdef><function>backup_close</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
     <funcsynopsis id="fsyn_backup_flush">
       <funcprototype id="fproto_backup_flush">
         <funcdef><function>backup_flush</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
     <funcsynopsis id="fsyn_backup_prepare">
@@ -154,20 +154,6 @@ Also, when replaying a backup file  onto an empty database, the +replay-crash-du
       column <varname>_ROW</varname>.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_backup"><title>Return Types</title>
-    <refsect2><title></title>
-      <para></para></refsect2>
-  </refsect1>
-<!--
-  <refsect1 id="examples_backup"><title>Examples</title>
-    <example id="ex_backup_1"><title>Full backup</title>
-      <para></para>
-    </example>
-    <example id="ex_backup_2"><title>Partial backup</title>
-      <para></para>
-    </example>
-  </refsect1>
--->
   <refsect1 id="seealso_backup"><title>See Also</title>
     <para><link linkend="fn_replay">replay</link></para>
     <para><link linkend="fn_backup_online"><function>backup_online()</function></link>,

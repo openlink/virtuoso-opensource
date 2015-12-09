@@ -52,7 +52,7 @@ SQLOPTIMIZE=${SQLOPTIMIZE-0}
 PLDBG=${PLDBG-0}
 LITEMODE=${LITEMODE-0}
 CASE_MODE=${CASE_MODE-1}
-
+TIMEZONELESS=${TIMEZONELESS-2}
 DELETEMASK=${DELETEMASK-'wi.* witemp.*'}
 SRVMSGLOGFILE=${SRVMSGLOGFILE-'wi.err'}
 TESTCFGFILE=${TESTCFGFILE-witest.cfg}
@@ -489,7 +489,13 @@ MAKECFG_FILE ()
   _testcfgfile=$1
   _port=$2
   _cfgfile=$3
-  cat $_testcfgfile | sed -e "s/PORT/$_port/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/PLDBG/$PLDBG/g" -e "s/CASE_MODE/$CASE_MODE/g" -e "s/LITEMODE/$LITEMODE/g" > $_cfgfile
+  cat $_testcfgfile | sed -e \
+    "s/PORT/$_port/g" \
+    -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" \
+    -e "s/PLDBG/$PLDBG/g" \
+    -e "s/CASE_MODE/$CASE_MODE/g" \
+    -e "s/LITEMODE/$LITEMODE/g" \
+    -e "s/TIMEZONELESS/$TIMEZONELESS/g" > $_cfgfile
 }
 
 MAKECFG_FILE_WITH_HTTP()

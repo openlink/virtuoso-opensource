@@ -92,3 +92,31 @@ thr_set_error_code (thread_t *thr, caddr_t err)
   dk_free_tree (thr->thr_reset_code);
   thr->thr_reset_code = err;
 }
+
+
+#ifdef JMP_CKSUM
+uint32
+j_cksum (jmp_buf j)
+{
+  uint32 h = 0;
+  char * ptr = (char*)j;
+  BYTE_BUFFER_HASH (h, ptr, sizeof (jmp_buf));
+  return h;
+}
+
+int 
+j_set_cksum (jmp_buf_splice * j, int rc)
+{
+  if (!rc)
+    j->j_cksum = j_cksum (j->buf);
+  return rc;
+}
+
+void
+longjmp_brk (jmp_buf_splice * b, int rc)
+{
+  if (b->j_cksum != j_cksum (b->buf))
+    GPF_T1 ("uninited jmp buffer");
+  longjmp (b->buf, rc);
+}
+#endif

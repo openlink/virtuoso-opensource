@@ -32,7 +32,7 @@ BANNER "STARTED SQL OPTIMIZER VDB TESTS"
 
 if [ "$VIRTUOSO_VDB" = "0" ]
 then
-    LOG "VDB is not enabled by test suite."  
+    LOG "VDB is not enabled by test suite."
     exit
 fi
 

@@ -19,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <refentry id="fn_st_point">
   <refmeta>
@@ -57,7 +56,7 @@
   </refsect1>
   <refsect1 id="examples_st_point">
     <title>Examples</title>
-    <example id="ex_st_point"><title></title>
+    <example id="ex_st_point"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>select st_point (0, 52);
 callret
@@ -110,20 +109,20 @@ http://dbpedia.org/resource/Nonington                                           
   </refsect1>
   <refsect1 id="seealso_st_point">
     <title>See Also</title>
-    <para><link linkend="fn_st_x"><function>st_x</function></link></para>
-    <para><link linkend="fn_st_y"><function>st_y</function></link></para>
-    <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
-    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
-    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
-    <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
-    <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
-    <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>
-    <para><link linkend="fn_st_contains"><function>st_contains</function></link></para>
-    <para><link linkend="fn_st_within"><function>st_within</function></link></para>
-    <para><link linkend="fn_isgeometry"><function>isgeometry</function></link></para>
-    <para><link linkend="fn_geo_insert"><function>geo_insert</function></link></para>
-    <para><link linkend="fn_geo_delete"><function>geo_delete</function></link></para>
-    <para><link linkend="fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_ADD</function></link></para>
-    <para><link linkend="fn_rdf_geo_fill"><function>DB.DBA.RDF_GEO_FILL</function></link></para>
+    <para><link linkend="fn_st_x"><function>st_x()</function></link></para>
+    <para><link linkend="fn_st_y"><function>st_y()</function></link></para>
+    <para><link linkend="fn_st_distance"><function>st_distance()</function></link></para>
+    <para><link linkend="fn_ST_SRID"><function>st_srid()</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>st_setsrid()</function></link></para>
+    <para><link linkend="fn_st_astext"><function>st_astext()</function></link></para>
+    <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext()</function></link></para>
+    <para><link linkend="fn_st_intersects"><function>st_intersects()</function></link></para>
+    <para><link linkend="fn_st_contains"><function>st_contains()</function></link></para>
+    <para><link linkend="fn_st_within"><function>st_within()</function></link></para>
+    <para><link linkend="fn_isgeometry"><function>isgeometry()</function></link></para>
+    <para><link linkend="fn_geo_insert"><function>geo_insert()</function></link></para>
+    <para><link linkend="fn_geo_delete"><function>geo_delete()</function></link></para>
+    <para><link linkend="fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_ADD()</function></link></para>
+    <para><link linkend="fn_rdf_geo_fill"><function>DB.DBA.RDF_GEO_FILL()</function></link></para>
   </refsect1>
 </refentry>

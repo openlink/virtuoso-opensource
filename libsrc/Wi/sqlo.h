@@ -300,6 +300,7 @@ struct df_elt_s
       bitf_t	to_be_trans:1; /* if will be transitive even though ot_trans is not set during placing */
       bitf_t	is_control:1; /* if set, do not place things inside into supers evenn if could by  dependency. */
     bitf_t	not_in_top_and:1; /* existence in a not or or, scalar subq. if hash probe outside of this subq, must not prefilter on bloom when fetching the probe col */
+      bitf_t	is_leaf;
     } sub;
     struct {
       /* union dt head, or union coming from a table + or */
@@ -926,6 +927,8 @@ key_source_t * sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t
 void sqlg_non_index_ins (df_elt_t * tb_dfe);
 void sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts);
 data_source_t * sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe);
+int ts_check_unq (table_source_t * ts, int flg);
+int sqlg_rdf_ck (sql_comp_t * sc, table_source_t * ts, int is_wr);
 int dfe_is_eq_pred (df_elt_t * pred);
 float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret, df_elt_t * tb_dfe);
 data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code);
@@ -970,7 +973,8 @@ int sqlg_is_multistate_gb (sqlo_t * so);
 #ifdef DEBUG
 void dbg_qi_print_row( query_instance_t *qi, dk_set_t slots, int nthset );
 void dbg_qi_print_slots( query_instance_t *qi, state_slot_t** slots, int nthset );
-#endif // DEBUG
+#endif /* DEBUG */
+int  dfe_is_leaf (df_elt_t * dfe);
 dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
 float dfe_scan_card (df_elt_t * dfe);
 int sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes);

@@ -46,8 +46,10 @@ extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, ca
 #define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
 #define RDF_TYPE_PARSEABLE 0x1
 #define RDF_TYPE_PARSEABLE_TO_NUMERIC 0x2
-#define RDF_TYPE_PARSEABLE_TO_DATETIME 0x4
-int rb_uname_to_flags_of_parseable_datatype (caddr_t dt_uname);
+#define RDF_TYPE_PARSEABLE_TO_DTDURATION	0x4
+#define RDF_TYPE_PARSEABLE_TO_DATETIME		0x8
+extern int rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname);
+extern int rb_uname_to_flags_of_parseable_datatype (ccaddr_t dt_uname);
 extern int rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte);
 /*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
 extern caddr_t xsd_type_of_box (caddr_t arg);
@@ -345,5 +347,21 @@ int rdf_graph_is_in_enabled_repl (caddr_t * qst, iri_id_t q_iid, int *answer_is_
 
 #define SPLIT_MODE_TTL 0
 #define SPLIT_MODE_XML 1
+
+extern dk_mutex_t *rdf_obj_ft_rules_mtx;
+extern id_hash_t *rdf_obj_ft_rules_by_iids;
+
+typedef struct rdf_obj_ft_rule_iid_hkey_s
+{
+   iri_id_t hkey_g;
+   iri_id_t hkey_iid_p;
+} rdf_obj_ft_rule_iid_hkey_t;
+
+typedef struct rdf_obj_ft_rule_iri_hkey_s
+{
+   iri_id_t hkey_g;
+   caddr_t hkey_iri_p;
+} rdf_obj_ft_rule_iri_hkey_t;
+
 
 #endif

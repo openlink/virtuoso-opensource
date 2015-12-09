@@ -1082,13 +1082,20 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 		    _name), ses);
 	    }
 	  sql_val := __rdf_sqlval_of_obj (_val, 1);
-	  if (isentity (sql_val))
-	    is_xml_lit := 1;
-	  if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
-	    sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
-	  if (is_xml_lit) http ('<![CDATA[', ses);
-	  http_value (__rdf_strsqlval (sql_val), 0, ses);
-	  if (is_xml_lit) http (']]>', ses);
+	  if (__tag of rdf_box = __tag (_val) and __tag of datetime = rdf_box_data_tag (_val))
+	    {
+	      __rdf_long_to_ttl (_val, ses);
+	    }
+	  else
+	    {
+	      if (isentity (sql_val))
+		is_xml_lit := 1;
+	      if (__tag (sql_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
+		sql_val := charset_recode (sql_val, 'UTF-8', '_WIDE_');
+	      if (is_xml_lit) http ('<![CDATA[', ses);
+	      http_value (__rdf_strsqlval (sql_val), 0, ses);
+	      if (is_xml_lit) http (']]>', ses);
+	    }
           http ('</literal></binding>', ses);
         }
 end_of_binding: ;
@@ -1430,9 +1437,9 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
                 --}
               --else
                 --http_value (val, 0, ses);
-	    }
-	  else if (pure_html and __tag of rdf_box = __tag (val))
-	      http_rdf_object (val, ses, 1);
+            }
+          else if (pure_html and __tag of rdf_box = __tag (val))
+            http_rdf_object (val, ses, 1);
           else
             {
               http_escape (__rdf_strsqlval (val), esc_mode, ses, 1, 1);
@@ -1449,7 +1456,7 @@ end_of_val_print: ;
 create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in colname varchar, inout val any)
 {
   http(' "', ses);
-  http_escape (colname, 11, ses, 0, 1);
+  http_escape (colname, 14, ses, 0, 1);
   http('": { ', ses);
   if (isiri_id (val))
     {
@@ -1458,7 +1465,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       else
         {
           http ('"type": "uri", "value": "', ses);
-          http_escape (id_to_iri (val), 11, ses, 1, 1);
+          http_escape (id_to_iri (val), 14, ses, 1, 1);
         }
     }
   else if (__tag of rdf_box = __tag (val))
@@ -1474,7 +1481,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
             res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
           else
             res := cast (__xsd_type (dat) as varchar);
-          http_escape (res, 11, ses, 1, 1);
+          http_escape (res, 14, ses, 1, 1);
           http ('", "value": "', ses);
           dat := __rdf_strsqlval (dat);
         }
@@ -1482,19 +1489,22 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
         {
           http ('"type": "typed-literal", "datatype": "', ses);
           res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
-          http_escape (res, 11, ses, 1, 1);
+          http_escape (res, 14, ses, 1, 1);
           http ('", "value": "', ses);
         }
       else if (257 <> rdf_box_lang (val))
         {
           http ('"type": "literal", "xml:lang": "', ses);
           res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (val)));
-          http_escape (res, 11, ses, 1, 1);
+          http_escape (res, 14, ses, 1, 1);
           http ('", "value": "', ses);
         }
       else
         http ('"type": "literal", "value": "', ses);
-      http_escape (dat, 11, ses, 1, 1);
+      if (__tag of datetime = rdf_box_data_tag (val))
+	__rdf_long_to_ttl (val, ses);
+      else
+	http_escape (dat, 14, ses, 1, 1);
     }
   else if (__tag of varchar = __tag (val))
     {
@@ -1505,13 +1515,13 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
           else
             {
               http ('"type": "uri", "value": "', ses);
-              http_escape (val, 11, ses, 1, 1);
+              http_escape (val, 14, ses, 1, 1);
             }
         }
       else
         {
           http ('"type": "literal", "value": "', ses);
-          http_escape (val, 11, ses, 1, 1);
+          http_escape (val, 14, ses, 1, 1);
         }
     }
   else if (__tag of UNAME = __tag (val))
@@ -1521,30 +1531,30 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       else
         {
           http ('"type": "uri", "value": "', ses);
-          http_escape (val, 11, ses, 1, 1);
+          http_escape (val, 14, ses, 1, 1);
         }
     }
   else if (__tag of varbinary = __tag (val))
     {
       http ('"type": "literal", "value": "', ses);
-      http_escape (val, 11, ses, 0, 0);
+      http_escape (val, 14, ses, 0, 0);
     }
   else if (185 = __tag (val))
     {
       http ('"type": "literal", "value": "', ses);
-      http_escape (cast (val as varchar), 11, ses, 1, 1);
+      http_escape (cast (val as varchar), 14, ses, 1, 1);
     }
   else if (230 = __tag (val))
     {
       http ('"type": "literal", "value": "', ses);
-      http_escape (serialize_to_UTF8_xml (val), 11, ses, 1, 1);
+      http_escape (serialize_to_UTF8_xml (val), 14, ses, 1, 1);
     }
   else
     {
       http ('"type": "typed-literal", "datatype": "', ses);
-      http_escape (cast (__xsd_type (val) as varchar), 11, ses, 1, 1);
+      http_escape (cast (__xsd_type (val) as varchar), 14, ses, 1, 1);
       http ('", "value": "', ses);
-      http_escape (__rdf_strsqlval (val), 11, ses, 1, 1);
+      http_escape (__rdf_strsqlval (val), 14, ses, 1, 1);
     }
   http ('" }', ses);
 }
@@ -1562,7 +1572,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas an
         http(', "', ses);
       else
         http('"', ses);
-      http_escape (metas[0][varctr][0], 11, ses, 0, 1);
+      http_escape (metas[0][varctr][0], 14, ses, 0, 1);
       http('"', ses);
     }
   http ('] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
@@ -1649,6 +1659,140 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any
 }
 ;
 
+create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas any, inout rset any)
+{
+  declare varctr, varcount, resctr, rescount, ctr integer;
+  declare nice_host, describe_path, about_path varchar;
+  declare nsdict, nslist any;
+  varcount := length (metas[0]);
+  rescount := length (rset);
+  nice_host := registry_get ('URIQADefaultHost');
+  describe_path := about_path := null;
+  if (isstring (nice_host))
+    {
+      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+        describe_path := 'http://' || nice_host || '/describe/?url=';
+      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/cartridges/%/resources/dav/%'))
+        about_path := 'http://' || nice_host || '/about/html/';
+    }
+  nsdict := dict_new (10 + cast (sqrt (0.3e0 * varcount * rescount) as integer));
+  --dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
+  --dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
+  http ('<table class="sparql" border="1">', ses);
+  http ('\n  <tr>', ses);
+  http('\n    <th>Row #</th>', ses);
+  for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+    {
+      http('\n    <th>', ses);
+      http_escape (metas[0][varctr][0], 1, ses, 0, 1);
+      http('</th>', ses);
+    }
+  http ('\n  </tr>', ses);
+  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
+    {
+      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+        id_to_iri_nosignal (rset[resctr][varctr]);
+    }
+  for (resctr := 0; resctr < rescount; resctr := resctr + 1)
+        {
+      http('\n  <tr>', ses);
+      http('\n    <td>', ses);
+      http(cast((resctr + 1) as varchar), ses);
+      http('</td>', ses);
+      for (varctr := 0; varctr < varcount; varctr := varctr + 1)
+        {
+          declare val, split any;
+          val := rset[resctr][varctr];
+          if (val is null)
+            {
+              http('\n    <td></td>', ses);
+              goto end_of_val_print; -- see below
+            }
+          http('\n    <td>', ses);
+          if (isiri_id (val))
+            {
+              if (is_bnode_iri_id (val))
+                http_escape (id_to_iri (val), 1, ses, 1, 1);
+              else
+                {
+                  val := id_to_iri (val);
+                  goto iri_print; -- see below;
+                }
+            }
+          else if ((isstring (val) and (1 = __box_flags (val))) or (__tag of UNAME = __tag (val)))
+            {
+              if (val='' or (val[0]=95) or (val like 'nodeID://%'))
+                http_escape (val, 1, ses, 1, 1);
+              else
+                goto iri_print; -- see below;
+            }
+          else if (__tag of varchar = __tag (val))
+            {
+              http_escape (val, 1, ses, 1, 1);
+            }
+	  else if (185 = __tag (val)) -- string output
+	    {
+              http_escape (cast (val as varchar), 1, ses, 1, 1);
+	    }
+	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
+	    {
+              declare tmpses any;
+              tmpses := string_output();
+              http_value (val, 0, tmpses);
+              http_escape (cast (tmpses as varchar), 1, ses, 1, 1);
+            }
+          else if (__tag of rdf_box = __tag (val))
+            http_rdf_object (val, ses, 1);
+          else
+            {
+              http_escape (__rdf_strsqlval (val), 1, ses, 1, 1);
+            }
+          http ('</td>', ses);
+          goto end_of_val_print; -- see below
+
+iri_print:
+-- If you want to print QNames instead of full IRIs, uncomment this and comment out the IFs below:
+--          split := sparql_iri_split_rdfa_qname (val, nsdict, 2);
+--          if (describe_path is not null)
+--            {
+--              if ('' = split[1])		http (sprintf ('\n<a href="%s%U">%V</a></td>'		, describe_path, val, split[2]		)	, ses);
+--              else if (isstring (split[0]))	http (sprintf ('\n<a href="%s%U">%V:%V</a></td>'	, describe_path, val, split[0], split[2])	, ses);
+--              else				http (sprintf ('\n<a href="%s%U">%V%V</a></td>'		, describe_path, val, split[1], split[2])	, ses);
+--            }
+--          else if (about_path is not null)
+--            {
+--              if ('' = split[1])		http (sprintf ('\n<a href="%s%U">%V</a></td>'		, about_path, val, split[2]		)	, ses);
+--              else if (isstring (split[0]))	http (sprintf ('\n<a href="%s%U">%V:%V</a></td>'	, about_path, val, split[0], split[2]	)	, ses);
+--              else				http (sprintf ('\n<a href="%s%U">%V%V</a></td>'		, about_path, val, split[1], split[2]	)	, ses);
+--            }
+--          else
+--            {
+--              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a></td>'	, val, split[2])		, ses);
+--              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a></td>'	, val, split[0], split[2])	, ses);
+--              else				http (sprintf ('\n<a href="%U">%V%V</a></td>'	, val, split[1], split[2])	, ses);
+--            }
+
+          if (describe_path is not null)	http (sprintf ('\n<a href="%s%U">%V</a></td>'		, describe_path, val, val	)	, ses);
+          else if (about_path is not null)	http (sprintf ('\n<a href="%s%U">%V</a></td>'		, about_path, val, val		)	, ses);
+          else					http (sprintf ('\n<a href="%U">%V</a></td>'		, val, val			)	, ses);
+
+end_of_val_print: ;
+        }
+      http('\n  </tr>', ses);
+    }
+  http ('\n</table>', ses);
+  if (dict_size (nsdict))
+    {
+      http ('\n<table><tr><th>Prefix</th><th>Namespace IRI</th></tr>', ses);
+      nslist := dict_to_vector (nsdict, 0);
+      for (ctr := length (nslist) - 2; ctr >= 0; ctr := ctr-2)
+        {
+          http (sprintf ('\n<tr><td>%V</td><td>%V</td></tr>', nslist[ctr+1], nslist[ctr]), ses);
+        }
+      http ('</table>', ses);
+    }
+}
+;
 
 create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer, in status any := null) returns varchar
 {
@@ -1920,6 +2064,12 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     {
       ret_mime := 'text/tab-separated-values';
       DB.DBA.SPARQL_RESULTS_TSV_WRITE (ses, metas, rset);
+      goto body_complete;
+    }
+  if (ret_format = 'HTML;TR')
+    {
+      ret_mime := 'text/html';
+      DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (ses, metas, rset);
       goto body_complete;
     }
   ret_mime := 'application/sparql-results+xml';
@@ -2345,54 +2495,62 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('	{\n');
     http('		var query = query_obg.value; \n');
     http('		var format = query_obg.form.format;\n');
+    http('		var ctr = 0;\n');
+    http('		var query_is_construct = (query.match(/\\bconstruct\\b\\s/i) || query.match(/\\bdescribe\\b\\s/i));\n');
     http('\n');
-    http('		if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format != 2) {\n');
-    http('			for(var i = format.options.length; i > 0; i--)\n');
-    http('				format.options[i] = null;\n');
-    http('			format.options[1] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[2] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
-    http('			format.options[3] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
-    http('			format.options[4] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-    http('			format.options[5] = new Option(\'N-Triples\',\'text/plain\');\n');
-    http('			format.options[6] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
-    http('			format.options[7] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
-    http('			format.options[8] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-    http('			format.options[9] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
-    http('			format.options[10] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
-    http('			format.options[11] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
-    http('			format.options[12] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
-    http('			format.options[13] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
-    http('			format.options[14] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
-    http('			format.options[15] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
-    http('			format.options[16] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[17] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
-    http('			format.options[18] = new Option(\'TriG\',\'application/x-trig\');\n');
+    http('		if (query_is_construct && last_format != 2) {\n');
+    http('			for(ctr = format.options.length; ctr > 0; ctr--)\n');
+    http('				format.options[ctr] = null;\n');
+    http('			ctr = 1;\n');
+    http('			format.options[ctr++] = new Option(\'Turtle\',\'text/turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
+    http('			format.options[ctr++] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+    http('			format.options[ctr++] = new Option(\'N-Triples\',\'text/plain\');\n');
+    http('			format.options[ctr++] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
+    http('			format.options[ctr++] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
+    http('			format.options[ctr++] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
+    http('			format.options[ctr++] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
+    http('			format.options[ctr++] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
+    http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
+    http('			format.options[ctr++] = new Option(\'TriG\',\'application/x-trig\');\n');
 
     if (can_cxml)
       {
-	http('			format.options[19] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	http('			format.options[ctr++] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 	if (can_qrcode)
-	  http('		format.options[20] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+	  http('		format.options[ctr++] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 2;\n');
     http('		}\n');
     http('\n');
-    http('		if (!(query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format != 1) {\n');
-    http('			for(var i = format.options.length; i > 0; i--)\n');
-    http('				format.options[i] = null;\n');
-    http('			format.options[1] = new Option(\'HTML\',\'text/html\');\n');
-    http('			format.options[2] = new Option(\'Spreadsheet\',\'application/vnd.ms-excel\');\n');
-    http('			format.options[3] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
-    http('			format.options[4] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
-    http('			format.options[5] = new Option(\'Javascript\',\'application/javascript\');\n');
-    http('			format.options[6] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[7] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-    http('			format.options[8] = new Option(\'N-Triples\',\'text/plain\');\n');
-    http('			format.options[9] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[10] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
+    http('		if (!query_is_construct && last_format != 1) {\n');
+    http('			for(ctr = format.options.length; ctr > 0; ctr--)\n');
+    http('				format.options[ctr] = null;\n');
+    http('			ctr = 1;\n');
+    http('			format.options[ctr++] = new Option(\'HTML\',\'text/html\');\n');
+    if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
+      http('			format.options[ctr++] = new Option(\'HTML (Faceted Browsing Links)\',\'text/x-html+tr\');\n');
+    else
+      http('			format.options[ctr++] = new Option(\'HTML (Basic Browsing Links)\',\'text/x-html+tr\');\n');
+    http('			format.options[ctr++] = new Option(\'Spreadsheet\',\'application/vnd.ms-excel\');\n');
+    http('			format.options[ctr++] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
+    http('			format.options[ctr++] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
+    http('			format.options[ctr++] = new Option(\'Javascript\',\'application/javascript\');\n');
+    http('			format.options[ctr++] = new Option(\'Turtle\',\'text/turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+    http('			format.options[ctr++] = new Option(\'N-Triples\',\'text/plain\');\n');
+    http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
     if (can_cxml)
-      http('			format.options[11] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+      http('			format.options[ctr++] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 1;\n');
     http('		}\n');
@@ -2513,10 +2671,16 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
     }
   else
     {
+      declare lbl any;
+      if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
+	lbl := 'HTML (Faceted Browsing Links)';
+      else	
+	lbl := 'HTML (Basic Browsing Links)';
       if (not length (format)) format := 'text/html';
       opts := vector (
         vector ('Auto'							, 'auto'				),
         vector ('HTML'							, 'text/html'				),
+        vector (lbl							, 'text/x-html+tr'	),
         vector ('Spreadsheet'						, 'application/vnd.ms-excel'		),
         vector ('XML'							, 'application/sparql-results+xml'	),
         vector ('JSON'							, 'application/sparql-results+json'	),
@@ -4468,6 +4632,7 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_CSV_WRITE to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_TSV_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_HTML_NICE_TTL_WRITE to SPARQL_SELECT',
     'grant execute on DB.DBA.SPARQL_RESULTS_WRITE to SPARQL_SELECT' );
   foreach (varchar cmd in cmds) do
