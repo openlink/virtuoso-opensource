@@ -104,7 +104,7 @@ EXTRA_DIST = \
 	$(srcdir)/debian/libvirtodbc0.postinst \
 	$(srcdir)/debian/libvirtodbc0.prerm \
 	$(srcdir)/debian/libvirtodbc0.templates \
-	$(srcdir)/debian/libvirtuoso5.5-cil.install \
+	$(srcdir)/debian/libvirtmono0-cil.install \
 	$(srcdir)/debian/NEWS.Debian \
 	$(srcdir)/debian/odbc.ini \
 	$(srcdir)/debian/odbcinst.ini \
@@ -114,7 +114,7 @@ EXTRA_DIST = \
 	$(srcdir)/debian/README.Debian \
 	$(srcdir)/debian/rules \
 	$(srcdir)/debian/TODO.Debian \
-	$(srcdir)/debian/virtuoso-5.5.pc \
+	$(srcdir)/debian/virtuoso-mono.pc \
 	$(srcdir)/debian/virtuoso-opensource-7-bin.install \
 	$(srcdir)/debian/virtuoso-opensource-7-common.install \
 	$(srcdir)/debian/virtuoso-opensource-7.config \
