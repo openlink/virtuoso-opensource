@@ -151,6 +151,7 @@ clean-local:
 	-rm -rf doc
 
 EXTRA_DIST = \
+	java.sql.Driver* \
 	JDBC.release \
 	manifest*.main \
 	openlink/util/*.java \
