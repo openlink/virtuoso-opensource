@@ -293,7 +293,9 @@ Description: high-performance database - ODBC libraries
  .
  This package contains the Virtuoso ODBC client libraries.
 
-Package: libvirtuoso5.5-cil
+Package: libvirtmono0-cil
+Replaces: libvirtuoso5.5-cil
+Breaks: libvirtuoso5.5-cil
 Section: cli-mono
 Architecture: i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390
 Depends: ${cli:Depends}, ${misc:Depends}

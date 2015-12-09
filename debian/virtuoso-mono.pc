@@ -1,8 +1,8 @@
 prefix=/usr
 exec_prefix=${prefix}
-libdir=${prefix}/lib/cli/virtuoso-5.5
+libdir=${prefix}/lib/cli/virtuoso-opensource-7
 
 Name: OpenLink.Data
 Description: Virtuoso .NET Data Connector
-Version: 5.5.3015.1
+Version: 07.02.3215
 Libs: -r:${libdir}/OpenLink.Data.Virtuoso.dll
