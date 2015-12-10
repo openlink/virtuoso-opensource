@@ -68,11 +68,7 @@ build/virtuoso-opensource-7::
 	cd debian; find . -name "*.?.xml" -exec docbook2x-man --solinks {} \;
 
 build/libvirtmono0-cil::
-	$(MAKE) -C binsrc/VirtuosoClient.Net
 	chmod -x binsrc/VirtuosoClient.Net/OpenLink.Data.Virtuoso.dll
-
-cleanbuilddir/libvirtmono0-cil::
-	$(MAKE) -C binsrc/VirtuosoClient.Net clean
 
 binary-install/libvirtmono0-cil::
 	dh_installcligac
