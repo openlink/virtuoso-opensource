@@ -2470,6 +2470,8 @@ void
 dc_pop_last (data_col_t * dc)
 {
   dc->dc_n_values--;
+  if (dc->dc_nulls)
+    DC_CLR_NULL (dc, dc->dc_n_values);
   if (DCT_NUM_INLINE & dc->dc_type)
     return;
   if (DCT_BOXES & dc->dc_type && !(DCT_REF & dc->dc_type))
