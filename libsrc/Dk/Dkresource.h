@@ -63,4 +63,5 @@ int resource_store_fifo (resource_t * rc, void *item, int n_fifo);
 int resource_store_timed (resource_t * rc, void *item);
 unsigned long resource_clear (resource_t * rc, rc_destr_t destruct);
 void _resource_adjust (resource_t * rc);
+void rc_resize (resource_t * rc, int new_sz);
 #endif
