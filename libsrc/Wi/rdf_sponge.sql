@@ -22,6 +22,8 @@
 --
 
 -- Function				is called from
+-- RDF_LOG_DEBUG_INFO_RESET		RDF_GRAP
+-- RDF_LOG_DEBUG_INFO			almost everywhere :)
 -- RDF_FT_INDEX_GRABBED			RDF_GRAB_SEEALSO, RDF_GRAB
 -- RDF_GRAB_PREPARE_PRIVATE		RDF_GRAB_SINGLE
 -- RDF_GRAB_SINGLE			RDF_GRAB_SINGLE_ASYNC
@@ -46,6 +48,36 @@
 
 -----
 -- Procedures for graph grabber
+
+--!AWK PUBLIC
+
+create procedure DB.DBA.RDF_LOG_DEBUG_INFO_RESET (in flag varchar)
+{
+  declare ctx, flags_to_ignore any;
+  flags_to_ignore := connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO_RESET');
+  if ((__tag(ctx) = __tag of vector) and (0 < position (flag, flags_to_ignore)))
+    return;
+  vectorbld_init(ctx);
+  connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', ctx, -1);
+}
+;
+
+create procedure DB.DBA.RDF_LOG_DEBUG_INFO (in message varchar, in arg1 any, in arg2 any)
+{
+  dbg_obj_princ ('DB.DBA.RDF_LOG_DEBUG_INFO (', message, arg1, arg2);
+  declare ctx any;
+  if (not connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO', 0, -1))
+    return;
+  connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', ctx, -1);
+  if (__tag(ctx) <> __tag of vector)
+    {
+      dbg_obj_princ ('DB.DBA.RDF_LOG_DEBUG_INFO(): initialization');
+      vectorbld_init(ctx);
+    }
+  vectorbld_acc (ctx, vector (message, arg1, arg2));
+  connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', ctx, -1);
+}
+;
 
 --!AWK PUBLIC
 create procedure DB.DBA.RDF_FT_INDEX_GRABBED (inout grabbed any, inout options any)
@@ -163,7 +195,7 @@ create procedure DB.DBA.RDF_GRAB_PREPARE_PRIVATE (in graph_iri varchar, in group
 
 create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env any) returns integer
 {
-  declare url, get_method, recov varchar;
+  declare resolver, url, get_method, recov varchar;
   declare dest varchar;
   declare opts, err any;
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', coalesce (id_to_iri_nosignal (val), val), ',,... , ', env, ')');
@@ -180,10 +212,21 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
   if (__tag of UNAME = __tag (val))
     val := cast (val as varchar);
   dest := null;
-  call (get_keyword_ucase ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT')) (get_keyword_ucase ('base_iri', env), val, url, dest, get_method);
+  resolver := get_keyword_ucase ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT');
+  call (resolver) (get_keyword_ucase ('base_iri', env), val, url, dest, get_method);
   --if (dest is not null and dest = url)
   --  dest := null;
-  if (url is not null and not dict_get (grabbed, url, 0))
+  if (url is null)
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SINGLE() will not try to process <%s>, because the IRI resolver "%s" returned NULL', val, resolver);
+      return 0;
+    }
+  else if (dict_get (grabbed, url, 0))
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SINGLE() will not try to process <%s>, because it is resolved as <%s> and processed before', val, url);
+      return 0;
+    }
+  else
     {
       declare final_dest, final_gdest, get_private varchar;
       final_dest := get_keyword ('get:destination', env, dest);
@@ -199,6 +242,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:error-recovery', get_keyword_ucase ('get:error-recovery', env),
         'get:note', get_keyword_ucase ('get:note', env) );
       dict_put (grabbed, url, 1);
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SINGLE() has resolved <%s> as <%s> and will try to grab it', val, url);
       get_private := get_keyword_ucase ('get:private', env, null);
       if (get_private is not null)
         DB.DBA.RDF_GRAB_PREPARE_PRIVATE (final_dest, get_private, user, env);
@@ -216,7 +260,6 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         }
       return 1;
     }
-  return 0;
   }
 end_of_sponge:
   commit work;
@@ -249,7 +292,7 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
 {
   declare grabbed, aq any;
   declare sa_graphs, sa_preds any;
-  declare doc_limit integer;
+  declare doc_limit, flags integer;
   if (not isiri_id (subj))
     return 1;
   aq := async_queue (8);
@@ -270,11 +313,14 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
               if ("val" like 'http://%')
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests <%s> due to predicate <%s>', "val", __id2i (pred));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
                   if (dict_size (grabbed) > doc_limit)
                     goto out_of_limit;
                 }
+              else
+                DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO rejects <%s> inferred via predicate <%s> because it is not of <http://...> format', "val", __id2i (pred));
             }
         }
     }
@@ -290,11 +336,14 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
               if ("val" like 'http://%')
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests <%s> due to predicate <%s> in "see-also" graphs', "val", __id2i (pred));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
                   if (dict_size (grabbed) > doc_limit)
                     goto out_of_limit;
                 }
+                  else
+                    DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO rejects <%s> inferred via predicate <%s> in "see-also" graphs because it is not of <http://...> format', "val", __id2i (pred));
             }
         }
     }
@@ -309,21 +358,26 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
               if ("val" like 'http://%')
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests <%s> due to predicate <%s> in "additional" graph', "val", __id2i (pred));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
                   if (dict_size (grabbed) > doc_limit)
                     goto out_of_limit;
                 }
+              else
+                DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO rejects <%s> inferred via predicate <%s> in "additional" graph because it is not of <http://...> format', "val", __id2i (pred));
             }
         }
     }
-  if (bit_and (1, get_keyword ('flags', env, 0)))
+  flags := get_keyword ('flags', env, 0);
+  if (bit_and (1, flags))
     {
       declare subj_iri varchar;
       subj_iri := id_to_iri (subj);
       if (subj_iri like 'http://%')
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector (subj, '...', env, doc_limit));
+          DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests subject <%s> as required by bit 1 of flags %d', subj_iri, flags);
           --DB.DBA.RDF_GRAB_SINGLE_ASYNC (subj, grabbed, env, doc_limit);
           aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (subj_iri, grabbed, env, doc_limit));
         }
@@ -347,11 +401,13 @@ DB.DBA.RDF_GRAB (
   declare stat, msg varchar;
   declare sa_graphs, sa_preds, all_params any;
   declare grabbed, metas, rset, aq any;
-  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (', app_params, grab_params, ',..., ', ret_limit, const_iris, depth, doc_limit, plain_ret, uid, ')');
+  RDF_LOG_DEBUG_INFO_RESET ('DB.DBA.RDF_GRAB');
   sa_preds := get_keyword ('sa_preds', grab_params);
   doc_limit := get_keyword ('doc_limit', grab_params, 0hex1000000);
   grab_params := vector_concat (grab_params, vector ('grabbed', dict_new()));
   all_params := vector_concat (vector (grab_params), app_params);
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (', app_params, grab_params, ',..., ', ret_limit, const_iris, depth, doc_limit, plain_ret, uid, ')');
+  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() begins its work with limit on number of documents set to %d, depth limit is %d', doc_limit, depth);
   aq := async_queue (8);
   grabbed := dict_new ();
   foreach (any val in const_iris) do
@@ -379,6 +435,8 @@ DB.DBA.RDF_GRAB (
   for (iter_ctr := 0; iter_ctr <= depth; iter_ctr := iter_ctr + 1)
     {
       declare old_doc_count integer;
+      declare colctr integer;
+      declare col_null_stat, col_nonref_stat any;
       old_doc_count := dict_size (grabbed);
       stat := '00000';
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, will exec with params ', all_params);
@@ -389,10 +447,12 @@ DB.DBA.RDF_GRAB (
         signal (stat, msg);
       rcount := length (rset);
       colcount := length (metas[0]);
+      col_null_stat := make_array (colcount, 'any');
+      col_nonref_stat := make_array (colcount, 'any');
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, '/', depth, ' rset is ', rcount, ' rows * ', colcount, ' cols');
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() has executed query on iteration %d, result set is %d rows long', iter_ctr, rcount);
       for (rctr := 0; rctr < rcount; rctr := rctr + 1)
         {
-          declare colctr integer;
           for (colctr := 0; colctr < colcount; colctr := colctr + 1)
             {
               declare val any;
@@ -400,7 +460,9 @@ DB.DBA.RDF_GRAB (
               if (dict_size (grabbed) >= doc_limit)
                 goto final_exec;
               val := rset[rctr][colctr];
-              if (is_named_iri_id (val) and __rgs_ack_cbk (val, uid, 4))
+              if (is_named_iri_id (val))
+                {
+                  if (__rgs_ack_cbk (val, uid, 4))
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, ', row ', rctr, ', col ', colctr, ', vector (', val, '=<', id_to_iri(val), ',..., ', grab_params, doc_limit, ')');
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
@@ -413,20 +475,39 @@ DB.DBA.RDF_GRAB (
                       DB.DBA.RDF_GRAB_SEEALSO (val, null, grab_params);
                     }
                   if (dict_size (grabbed) >= doc_limit)
+                        {
+                          DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() has reached the limit of number of document IRIs to grab: %d grabbed, limit is %d', dict_size (grabbed), doc_limit);
                     goto final_exec;
                 }
+            }
+                  else
+                    DB.DBA.RDF_LOG_DEBUG_INFO ('No sponge permission on value "%s" of variable "%s"', __id2i (val), metas[0][colctr][0]);
+                }
+              else if (val is null)
+                col_null_stat[colctr] := col_null_stat[colctr] + 1;
+              else
+                col_nonref_stat[colctr] := col_nonref_stat[colctr] + 1;
             }
         }
       commit work;
       aq_wait_all (aq);
       commit work;
+      for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+        {
+          if (col_null_stat[colctr])
+             DB.DBA.RDF_LOG_DEBUG_INFO ('Note %d NULL values of variable "%s"', col_null_stat[colctr], metas[0][colctr][0]);
+          if (col_nonref_stat[colctr])
+             DB.DBA.RDF_LOG_DEBUG_INFO ('Note %d non-IRI values of variable "%s"', col_nonref_stat[colctr], metas[0][colctr][0]);
+        }
       DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
       commit work;
       if (old_doc_count = dict_size (grabbed))
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB () has reached a stable point with ', old_doc_count, ' grabbed docs');
+          DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() has reached a stable point with %d distinct document IRIs at iteration step %d. No need in further iterations.', dict_size (grabbed), iter_ctr);
         goto final_exec;
     }
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() iteration is done with %d document IRIs (was %d)', dict_size (grabbed), old_doc_count);
     }
 
 final_exec:
@@ -2022,13 +2103,18 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
   commit work;
   aq_wait_all (aq);
-
   graph_iri := cast (graph_iri as varchar);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)
-    local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_SPONGE_UP() uses destination <%s> for document <%s>', dest, graph_iri);
+      local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_SPONGE_UP() will return hash %s for document <%s>', local_iri, graph_iri);
+    }
   else
-    local_iri := graph_iri;
+    {
+      local_iri := graph_iri;
+    }
   return local_iri;
 }
 ;

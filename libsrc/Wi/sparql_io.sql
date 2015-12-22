@@ -1794,7 +1794,53 @@ end_of_val_print: ;
 }
 ;
 
-create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer, in status any := null) returns varchar
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_LOG_DEBUG_INFO (inout log_array any, in line_begin varchar, in line_end varchar, inout ses any)
+{
+  dbg_obj_princ ('DB.DBA.SPARQL_LOG_DEBUG_INFO (', log_array, line_begin, line_end, ',...)');
+  declare ctr, len integer;
+  len := length (log_array);
+  ctr := 0;
+  while (ctr < len)
+    {
+      declare line varchar;
+        {
+          whenever sqlstate '*' goto sprintf_err;
+          line := sprintf (log_array[ctr][0], log_array[ctr][1], log_array[ctr][2]);
+        }
+      goto line_is_ready;
+sprintf_err:
+      line := sprintf ('(internal error in logging SPARQL diagnostics, failed message is "%s")', log_array[ctr][0]);
+line_is_ready:
+      if (strstr (line, '\n') is not null)
+        line := replace (line, '\n', '[[LF]]');
+      if (strstr (line, '\r') is not null)
+        line := replace (line, '\r', '[[CR]]');
+      dbg_obj_princ ('Line ', ctr, '/', len, ': ', line);
+      http (line_begin, ses);
+      http (line, ses);
+      http (line_end, ses);
+find_next_line:
+      if ((ctr >= 4) and (log_array[ctr][0] = log_array[ctr-1][0]) and (log_array[ctr][0] = log_array[ctr-2][0]) and (log_array[ctr][0] = log_array[ctr-3][0]) and (log_array[ctr][0] = log_array[ctr-4][0])
+        and ((ctr+2) < len) and (log_array[ctr][0] = log_array[ctr+1][0]) and (log_array[ctr][0] = log_array[ctr+2][0]) )
+        {
+          declare next_ctr integer;
+          next_ctr := ctr + 3;
+          while ((next_ctr < len) and (log_array[next_ctr][0] = log_array[ctr][0]))
+            next_ctr := next_ctr + 1;
+          http (line_begin, ses);
+          http (sprintf ('(%d similar messages are skipped)', next_ctr - (ctr+1)), ses);
+          http (line_end, ses);
+          ctr := next_ctr;
+        }
+      else
+        ctr := ctr + 1;
+    }
+}
+;
+
+--! \c flags is bitmask: 1 to add HTTP headers, 2 to dump the log of debug info composed by RDF_LOG_DEBUG_INFO in current connection, there may be more in the future
+create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in flags integer, in status any := null) returns varchar
 {
   declare singlefield varchar;
   declare ret_mime, ret_format varchar;
@@ -1809,7 +1855,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     singlefield := metas[0][0][0];
   else
     singlefield := NULL;
-  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' add_http_headers=', add_http_headers);
+  dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
@@ -1902,9 +1948,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else if (ret_format = 'JSON;ODATA')
         DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
       else if (ret_format = 'CXML')
-        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 0, status);
+        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 0, status);
       else if (ret_format = 'CXML;QRCODE')
-        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 1, status);
+        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 1, status);
       else if (ret_format = 'CSV')
         DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
       else if (ret_format = 'TSV')
@@ -2051,7 +2097,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if ((ret_format = 'CXML') or (ret_format = 'CXML;QRCODE'))
     {
-      DB.DBA.SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, add_http_headers, status);
+      DB.DBA.SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, bit_and (flags, 1), status);
       goto body_complete;
     }
   if (ret_format = 'CSV')
@@ -2079,7 +2125,35 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   http ('\n</sparql>', ses);
 
 body_complete:
-  if (add_http_headers and strcasestr (http_header_get (), 'Content-Type:') is null)
+  if (bit_and (flags, 2))
+    {
+      declare line_begin, line_end varchar;
+      declare log_array any;
+      log_array := 0;
+      if (connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO', 0))
+        connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', log_array, -1);
+      if (__tag(log_array) <> __tag of vector)
+        log_array := vector (vector ('The debug log has no messages. The most probable reason is that the query has no sponging or similar activity.', '', ''));
+      else
+        vectorbld_final (log_array);
+      if (ret_format in ('HTML', 'HTML;TR'))
+        {
+          line_begin := '<xmp>'; line_end := '</xmp>';
+        }
+      else if (ret_format in ('SOAP', 'RDFXML', 'CXML', 'CXML;QRCODE'))
+        {
+          line_begin := '<!-' || '- '; line_end := '-' || '->';
+        }
+      else if (ret_format in ('TTL', 'NICE_TTL', 'NT'))
+        {
+          line_begin := '# '; line_end := '';
+        }
+      else
+        line_begin := null;
+      if (line_begin is not null)
+        DB.DBA.SPARQL_LOG_DEBUG_INFO (log_array, line_begin, line_end, ses);
+    }
+  if (bit_and (flags, 1) and strcasestr (http_header_get (), 'Content-Type:') is null)
     http_header (coalesce (http_header_get (), '') || 'Content-Type: ' || ret_mime || case when strstr (ret_mime, 'json') is null then '; charset=UTF-8' else '' end || '\r\n');
   return ret_mime;
 }
@@ -2858,6 +2932,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     in def_qry varchar,
     in timeout integer,
     in debug integer,
+    in log_debug_info integer,
     in save_mode integer,
     in dav_refresh varchar)
 {
@@ -2979,6 +3054,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<fieldset id="options">\n');
     http('		<input name="debug" id="debug" type="checkbox"' || case (debug) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="debug" class="ckb">Strict checking of void variables</label>\n');
+    http('		&nbsp;&nbsp;&nbsp;\n');
+    http('		<input name="log_debug_info" id="log_debug_info" type="checkbox"' || case (log_debug_info) when '' then '' else ' checked="checked"' end || '/>\n');
+    http('		<label for="log_debug_info" class="ckb">Log debug info at the end of output (has no effect on some queries and output formats)</label>\n');
 
 
     if (save_dir is not null)
@@ -3034,7 +3112,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
-  declare query, full_query, format, should_sponge, debug, def_qry varchar;
+  declare query, full_query, format, should_sponge, debug, log_debug_info, def_qry varchar;
   declare dflt_graphs, named_graphs, using_graphs, using_named_graphs any;
   declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time integer;
   declare ses, content any;
@@ -3080,6 +3158,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'TRACE');
   ses := 0;
   debug := '';
+  log_debug_info := '';
   query := null;
   format := '';
   should_sponge := '';
@@ -3239,7 +3318,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	    }
 	}
       debug := get_keyword ('debug', params, '1');
-      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, save_mode, dav_refresh);
+      log_debug_info := get_keyword ('log_debug_info', params, '');
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh);
 
       return;
     }
@@ -3388,6 +3468,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       else if ('debug' = pname)
         {
           debug := pvalue;
+        }
+      else if ('log_debug_info' = pname)
+        {
+          log_debug_info := pvalue;
         }
     }
   if (format <> '')
@@ -3635,6 +3719,7 @@ host_found:
     {
       set TRANSACTION_TIMEOUT=hard_timeout;
     }
+  connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);    
   set_user_id (user_id, 1);
   again:
   state := '00000';
@@ -3751,7 +3836,9 @@ write_results:
         }
       if (isstring (jsonp_callback))
         http (jsonp_callback || '(\n', ses);
-      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers, status);
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept,
+        case when add_http_headers then 1 else 0 end + case log_debug_info when '' then 0 else 2 end,
+        status);
       if (isstring (jsonp_callback))
         http (')', ses);
       if (save_mode is not null)
@@ -3771,42 +3858,41 @@ write_results:
           ttl_sec := 172800;
           full_uri := concat ('http://', registry_get ('URIQADefaultHost'), DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
           "DynaRes_INSERT_RESOURCE" (
-	      detcol_id => save_dir_id,
-	      fname => fname,
-	      owner_uid => sparql_uid,
-	      refresh_seconds => refresh_sec,
-	      ttl_seconds => ttl_sec,
-	      mime => accept,
-	      exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
-	      exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
-	      exec_uname => user_id,
-	      content => ses
-	  );
-
-	  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
-	  http ('<head>\n');
-	  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | Save to DAV');
-	  WS.WS.SPARQL_ENDPOINT_STYLE();
-	  http ('</head>\n');
-	  http ('<body>\n');
-	  http ('    <div id="header">\n');
-	  http ('	<h1 id="title">Virtuoso SPARQL Query Editor</h1>\n');
-	  http ('    </div>\n\n');
-	  http ('<h3>Saved to DAV</h3>');
-	  http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
-	  http_value (full_uri);
-	  http ('">');
-	  http_value (full_uri);
-	  http ('</a></p>');
-	  if (refresh_sec is not null)
-	  http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
-	  if (ttl_sec is not null)
-	  http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
-	  if (accept <> 'text/html')
-	  http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
-	  If the browser is unable to open the link itself it can prompt for action like launching an additional program.
-	  The program may let you edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
-	  http ('</body></html>');
+              detcol_id => save_dir_id,
+              fname => fname,
+              owner_uid => sparql_uid,
+              refresh_seconds => refresh_sec,
+              ttl_seconds => ttl_sec,
+              mime => accept,
+              exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
+              exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
+              exec_uname => user_id,
+              content => ses
+          );
+          WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+          http ('<head>\n');
+          WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | Save to DAV');
+          WS.WS.SPARQL_ENDPOINT_STYLE();
+          http ('</head>\n');
+          http ('<body>\n');
+          http ('    <div id="header">\n');
+          http ('	<h1 id="title">Virtuoso SPARQL Query Editor</h1>\n');
+          http ('    </div>\n\n');
+          http ('<h3>Saved to DAV</h3>');
+          http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
+          http_value (full_uri);
+          http ('">');
+          http_value (full_uri);
+          http ('</a></p>');
+          if (refresh_sec is not null)
+          http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
+          if (ttl_sec is not null)
+          http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
+          if (accept <> 'text/html')
+          http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
+          If the browser is unable to open the link itself it can prompt for action like launching an additional program.
+          The program may let you edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
+          http ('</body></html>');
         }
     }
   else
