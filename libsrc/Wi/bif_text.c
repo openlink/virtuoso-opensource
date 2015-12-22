@@ -1489,7 +1489,22 @@ process_string:
     }
   if (XE_XPACK_SERIALIZATION == is_serialized_xml)
     {
-      dk_session_t *ses = blob_to_string_output (qi->qi_trx, str);
+      dk_session_t *ses = NULL;
+      if (DV_STRINGP (str))
+        {
+	  ses = strses_allocate();
+	  ses->dks_in_buffer = str;
+	  ses->dks_in_read = 0;
+	  ses->dks_in_fill = box_length (str) - 1;
+	}
+      else if (DV_DB_NULL == DV_TYPE_OF (str))
+	return NULL;
+      else if (IS_BLOB_HANDLE (str))
+	{
+	  ses = blob_to_string_output (qi->qi_trx, str);
+	}
+      else
+	sqlr_new_error ("HT002", "XI022", "Can't deserialize XML tree from datum of type %d", (int) DV_TYPE_OF (str));
       xte_deserialize_packed (ses, (caddr_t **) &temp_tree, NULL);
       strses_free (ses);
       goto temp_tree_ready;
