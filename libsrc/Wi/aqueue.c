@@ -767,6 +767,7 @@ async_queue_t *
 aq_allocate (client_connection_t * cli, int n_threads)
 {
   async_queue_t *aq = (async_queue_t *) dk_alloc_box_zero (sizeof (async_queue_t), DV_ASYNC_QUEUE);
+  aq->aq_creator_cli = cli;
   aq->aq_ref_count = 1;
   aq->aq_requests = hash_table_allocate (101);
   aq->aq_mtx = all_aq_mtx;

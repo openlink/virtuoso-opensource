@@ -54,6 +54,7 @@ typedef struct async_queue_s
   int64			aq_main_trx_no;
   int64			aq_rc_w_id;
   char			aq_lt_timestamp[DT_LENGTH];
+  client_connection_t *	aq_creator_cli;
 } async_queue_t;
 
 
