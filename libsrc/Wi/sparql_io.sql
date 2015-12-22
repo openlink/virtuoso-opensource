@@ -1082,6 +1082,13 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 		    _name), ses);
 	    }
 	  sql_val := __rdf_sqlval_of_obj (_val, 1);
+ 	  if (isinteger (sql_val) and dt = 'http://www.w3.org/2001/XMLSchema#boolean')
+ 	    {
+ 	       if (sql_val = 0)
+                 sql_val := 'false';
+                else
+                 sql_val := 'true';
+ 	    }
 	  if (__tag of rdf_box = __tag (_val) and __tag of datetime = rdf_box_data_tag (_val))
 	    {
 	      __rdf_long_to_ttl (_val, ses);
@@ -1855,7 +1862,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     singlefield := metas[0][0][0];
   else
     singlefield := NULL;
-  dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
+  --dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
