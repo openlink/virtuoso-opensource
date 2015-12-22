@@ -4784,6 +4784,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (inout triples any, inout 
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
+  declare objs_of_sp any;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
@@ -4823,6 +4824,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   rowvector_subj_sort (triples, 0, 1);
   prev_subj := prev_pred := null;
   obj_needs_br := 0;
+  objs_of_sp := dict_new (20);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare subj, pred, obj, split, obj_iri_split any;
@@ -4858,6 +4860,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
         }
       if (prev_pred is null or (pred <> prev_pred))
         {
+          dict_zap (objs_of_sp, 2);
           if (prev_pred is not null)
             http ('\n</dd>', ses);
           split := sparql_iri_split_rdfa_qname (pred, nsdict, 2);
@@ -4873,6 +4876,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
         }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_HTML_MICRODATA: object is NULL');
+      if (dict_get (objs_of_sp, obj, 0))
+        goto skip_obj;
+      dict_put (objs_of_sp, obj, 1);
       if (obj_needs_br)
         http ('\n', ses);
       else
@@ -4958,6 +4964,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
             }
           http ('</span>', ses);
         }
+skip_obj: ;
     }
   if (prev_subj is not null)
     http ('\n</dd></dl>', ses);
@@ -4970,6 +4977,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, i
   declare env, prev_subj, prev_pred, nsdict, nslist any;
   declare val, p_itemprop, nice_host, describe_path, about_path varchar;
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
+  declare objs_of_sp any;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
@@ -4981,6 +4989,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, i
 This time the service made zero such statements, sorry.</p></body></html>', ses);
       return;
     }
+  objs_of_sp := dict_new (20);
   nice_host := registry_get ('URIQADefaultHost');
   describe_path := about_path := null;
   if (isstring (nice_host))
@@ -5067,6 +5076,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
         }
       if (prev_pred is null or (pred <> prev_pred))
         {
+          dict_zap (objs_of_sp, 2);
 --          if (prev_pred is not null)
 --            http ('\n</td></tr>', ses);
 --          http ('\n<tr>', ses);
@@ -5082,6 +5092,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           prev_pred := pred;
           obj_needs_br := 0;
         }
+      if (dict_get (objs_of_sp, obj, 0))
+        goto skip_obj;
+      dict_put (objs_of_sp, obj, 1);
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_HTML_NICE_MICRODATA: object is NULL');
       if (obj_needs_br)
@@ -5169,6 +5182,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
             }
           http ('</span>', ses);
         }
+skip_obj: ;
     }
   if (prev_subj is not null)
     http ('\n</td></tr></table>', ses);
@@ -5180,6 +5194,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
 {
   declare env, prev_subj, prev_pred any;
   declare ctr, len, tcount, tctr, status, obj_needs_comma integer;
+  declare objs_of_sp any;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   http ('{ "items" : [', ses);
@@ -5189,6 +5204,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   prev_subj := prev_pred := null;
   obj_needs_comma := 0;
+  objs_of_sp := dict_new (20);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare subj, pred, obj, split, obj_iri_split any;
@@ -5217,6 +5233,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
         }
       if (prev_pred is null or (pred <> prev_pred))
         {
+          dict_zap (objs_of_sp, 2);
           if (prev_pred is not null)
             http (' ] ,', ses);
           http ('\n        "', ses); http_escape (case when isstring (pred) then pred else id_to_iri (pred) end, 14, ses, 1, 1); http ('" : [ ', ses);
@@ -5225,6 +5242,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
         }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_JSON_MICRODATA: object is NULL');
+      if (dict_get (objs_of_sp, obj, 0))
+        goto skip_obj;
+      dict_put (objs_of_sp, obj, 1);
       if (obj_needs_comma)
         http (',\n          ', ses);
       else
@@ -5310,6 +5330,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
               http ('"', ses); http_escape (sqlval, 14, ses, 1, 1); http ('"', ses);
             }
         }
+skip_obj: ;
     }
   if (prev_subj is not null)
     http ('] } }', ses);
@@ -5382,7 +5403,6 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (inout triples any, inout ses 
   declare entry_dict, ns_dict, ns_arr any;
   declare pred_tagname varchar;
   declare p_ns_uri, p_ns_pref varchar;
-
   dict := dict_new ();
   ns_dict := dict_new ();
   ns_ctr := 0;
