@@ -380,6 +380,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <token_type> spar_all_distinct_opt
 %type <token_type> spar_ties_opt
 %type <tree> spar_having_clause_opt
+%type <tree> spar_constraint_list_as_and
 %type <trees> spar_order_clause_opt
 %type <backstack> spar_order_conditions
 %type <backstack> spar_order_condition_nocommalist
@@ -1135,13 +1136,18 @@ spar_bin_op_sign
 	| _GE
 	;
 
-spar_having_clause_opt	/* [Virt]	HavingClause	 ::= 'HAVING' Expn */
+spar_having_clause_opt	/* [Virt]	HavingClause	 ::= 'HAVING' Constraint+ */
 	: /* empty */	{ $$ = NULL; }
 	| HAVING_L {
 		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
-	    spar_expn {
+	    spar_constraint_list_as_and {
 		$$ = $3;
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1; }
+	;
+
+spar_constraint_list_as_and
+	: spar_constraint	{ $$ = $1; }
+	| spar_constraint_list_as_and spar_constraint	{ SPAR_BIN_OP ($$, BOP_AND, $1, $2); }
 	;
 
 spar_order_clause_opt	/* [15]	OrderClause	 ::=  'ORDER' 'BY' OrderCondition+	*/
@@ -1342,15 +1348,21 @@ spar_gp			/* [20]	GraphPattern	 ::=  Triples? ( GraphPatternNotTriples '.'? Grap
 		  sparyyerror (sparp_arg, "Ill formed triple pattern or macro pattern variable outside a macro body"); }
 	;
 
-spar_gp_not_triples	/* [21]*	GraphPatternNotTriples	 ::=  */
-	: spar_quad_map_gp { spar_gp_add_member (sparp_arg, $1); }	/*... QuadMapGraphPattern	*/
-	| spar_optional_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | OptionalGraphPattern	*/
+spar_gp_not_triples			/* [21]*	GraphPatternNotTriples	 ::=  */
+	: spar_quad_map_gp { spar_gp_add_member (sparp_arg, $1); }		/*... QuadMapGraphPattern	*/
+	| spar_optional_gp { spar_gp_add_member (sparp_arg, $1); }		/*... | OptionalGraphPattern	*/
 	| spar_group_or_union_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | GroupOrUnionGraphPattern	*/
-	| spar_graph_gp { spar_gp_add_member (sparp_arg, $1); }	/*... | GraphGraphPattern	*/
-	| spar_service_req { spar_gp_add_member (sparp_arg, $1); }	/*... | ServiceRequest	*/
-	| spar_binds { spar_gp_finalize_binds (sparp_arg, $1); }	/*... | Bind	*/
-	| spar_inline_data { spar_gp_add_member (sparp_arg, $1); }	/*... | InlineData	*/
-	| spar_constraint { spar_gp_add_filter (sparp_arg, $1, 1); }	/*... | Constraint	*/
+	| spar_graph_gp { spar_gp_add_member (sparp_arg, $1); }			/*... | GraphGraphPattern	*/
+	| spar_service_req { spar_gp_add_member (sparp_arg, $1); }		/*... | ServiceRequest	*/
+	| spar_binds { spar_gp_finalize_binds (sparp_arg, $1); }		/*... | Bind	*/
+	| spar_inline_data { spar_gp_add_member (sparp_arg, $1); }		/*... | InlineData	*/
+	| FILTER_L spar_constraint { spar_gp_add_filter (sparp_arg, $2, 1); }	/*... | 'FILTER' Constraint */
+	| ASSUME_L spar_constraint	{  spar_gp_add_filter (sparp_arg, sparp_make_builtin_call (sparp_arg, ASSUME_L, (SPART **)t_list (1, $2)), 1); }
+	| MINUS_L spar_constraint_exists_int {					/*... | 'MINUS' DatasetClause* WhereClause */
+		/*!!! Dirty hack! Works wrong if MINUS is at the middle of the GP (before smth or not a 2-nd item) */
+		  SPART *expn;
+		  SPAR_BIN_OP (expn, BOP_NOT, $2, NULL);
+		  spar_gp_add_filter (sparp_arg, expn, 1); }
 	;
 
 spar_optional_gp	/* [22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern	*/
@@ -1466,19 +1478,10 @@ spar_inline_data_value
 	| UNDEF_L		{$$ = NULL; }
 	;
 
-
-
-
-spar_constraint		/* [25]*	Constraint	 ::=  'FILTER' ( ( '(' Expn ')' ) | BuiltInCall | FunctionCall )	*/
-	: FILTER_L _LPAR spar_expn _RPAR	{ $$ = $3; }
-	| FILTER_L spar_built_in_call	{ $$ = $2; }
-	| FILTER_L spar_function_call	{ $$ = $2; }
-	| ASSUME_L _LPAR spar_expn _RPAR	{ $$ = sparp_make_builtin_call (sparp_arg, ASSUME_L, (SPART **)t_list (1, $3)); }
-	| ASSUME_L spar_built_in_call		{ $$ = sparp_make_builtin_call (sparp_arg, ASSUME_L, (SPART **)t_list (1, $2)); }
-	| ASSUME_L spar_function_call		{ $$ = sparp_make_builtin_call (sparp_arg, ASSUME_L, (SPART **)t_list (1, $2)); }
-	| MINUS_L spar_constraint_exists_int {		/*... | 'MINUS' DatasetClause* WhereClause */
-		/*!!! Dirty hack! Works wrong if MINUS is at the middle of the GP (before smth or not a 2-nd item) */
-		  SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
+spar_constraint				/* [69]	Constraint	 ::=  ( ( '(' Expn ')' ) | BuiltInCall | FunctionCall )	*/
+	: _LPAR spar_expn _RPAR	{ $$ = $2; }
+	| spar_built_in_call	{ $$ = $1; }
+	| spar_function_call	{ $$ = $1; }
 	;
 
 spar_exists_or_not_exists
@@ -1526,7 +1529,10 @@ spar_service_req	/* [Virt]	ServiceRequest ::=  'SERVICE' 'Silent'? VarOrIRIref S
 	    spar_service_options_list_opt {
 		$<box>$ = t_alloc (sizeof (sparp_sources_t));
 		if (-1 == sparp_arg->sparp_inner_permitted_syntax)
-		  sparp_arg->sparp_permitted_syntax = SSG_SD_GLOBALS | sparp_find_language_dialect_by_service (sparp_arg, $3);
+		  {
+		    sparp_find_language_dialect_by_service (sparp_arg, $3, &(sparp_arg->sparp_permitted_syntax), &(sparp_arg->sparp_syntax_exceptions));
+		    sparp_arg->sparp_permitted_syntax |= SSG_SD_GLOBALS;
+		  }
 		else
 		  sparp_arg->sparp_permitted_syntax = SSG_SD_GLOBALS | sparp_arg->sparp_inner_permitted_syntax;
 		memcpy ($<box>$, &(sparp_arg->sparp_env->spare_src), sizeof (sparp_sources_t));
