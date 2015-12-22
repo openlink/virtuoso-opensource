@@ -397,7 +397,7 @@ log_commit (lock_trx_t * lt)
   cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
 				   DV_ARRAY_OF_POINTER);
   memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
-  if (local_cll.cll_is_flt && !lt->lt_cl_branches && !lt->lt_cl_enlisted)
+  if (local_cll.cll_is_flt && !lt->lt_cl_branches && !lt->lt_cl_enlisted && !lt->lt_rc_w_id)
     log_for_flt = 1; /* If fault tolerance, log local only transactions as 2pc with commit since might need to ship for sync */
   if (lt->lt_log_2pc || log_for_flt)
     {
