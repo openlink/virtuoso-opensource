@@ -2654,17 +2654,42 @@ sqlp_default_cluster ()
 dk_set_t
 cl_all_host_group_list ()
 {
+  dk_hash_t *visited = NULL;
   dk_set_t res = NULL;
   int inx;
   for (inx = local_cll.cll_max_host; inx > 0; inx--)
     {
-      if (cl_id_to_host (inx))
+      cl_host_t *ch;
+      if ((ch = cl_id_to_host (inx)))
 	{
 	  char name[20];
 	  snprintf (name, sizeof (name), "Host%d", inx);
+	  if (ch->ch_replica)
+	    {
+	      if (!visited)
+		visited = hash_table_allocate (11);
+	      if (gethash ((void *) ch, visited))
+		continue;
+	      {
+		caddr_t *h_list = (caddr_t *) t_alloc_box (sizeof (caddr_t) * dk_set_length (ch->ch_replica), DV_ARRAY_OF_POINTER);
+		int fill = 0;
+		sethash ((void *) ch, visited, (void *) 1);
+		DO_SET (cl_host_t *, repl, &ch->ch_replica)
+		{
+		  snprintf (name, sizeof (name), "Host%d", repl->ch_id);
+		  sethash ((void *) repl, visited, (void *) 1);
+		  h_list[fill++] = t_sym_string (name);
+		}
+		END_DO_SET ();
+		dk_set_push (&res, t_list (3, NULL, h_list, NULL));
+	      }
+	    }
+	  else
 	  dk_set_push (&res, t_list (3, NULL, t_list (1, t_sym_string (name)), NULL));
 	}
     }
+  if (visited)
+    hash_table_free (visited);
   return res;
 }
 
