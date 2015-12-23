@@ -882,6 +882,7 @@ create function DB.DBA.RDF_PRESET_TWOBYTES_OF_DATATYPES ()
 }
 ;
 
+--!AFTER
 DB.DBA.RDF_PRESET_TWOBYTES_OF_DATATYPES ()
 ;
 
@@ -2868,11 +2869,6 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
       graph := base;
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
-    }
-  if (1 = sys_stat ('enable_vec') and not is_atomic ())
-    {
-      DB.DBA.TTLP_V (strg, base, graph, flags, 3, log_enable => log_enable, transactional => transactional);
-      return;
     }
   old_log_mode := null;
   if (transactional = 0)
@@ -7067,8 +7063,6 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
     return RDF_INSERT_TRIPLES_CL (graph_iid, triples, log_mode);
   if (not isiri_id (graph_iid))
     graph_iid := iri_to_id (graph_iid);
-  if (__rdf_graph_is_in_enabled_repl (graph_iid))
-    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iid), triples);
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   if (0 = bit_and (old_log_enable, 2))
@@ -7122,6 +7116,8 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
       log_enable (old_log_enable, 1);
       return;
     }
+  if (__rdf_graph_is_in_enabled_repl (graph_iid))
+    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iid), triples);
   ro_id_dict := null;
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
     {
