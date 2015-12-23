@@ -138,6 +138,7 @@ extern caddr_t uname_virtrdf_ns_uri_bnode_base;
 extern caddr_t uname_virtrdf_ns_uri_bnode_label;
 extern caddr_t uname_virtrdf_ns_uri_bnode_row;
 extern caddr_t uname_virtrdf_ns_uri_dialect;
+extern caddr_t uname_virtrdf_ns_uri_dialect_exceptions;
 extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 extern caddr_t uname_virtrdf_ns_uri_loadAs;

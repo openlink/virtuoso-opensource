@@ -73,6 +73,8 @@ JSO_CONST virtrdf SSG_SD_SPARQL11_DRAFT			0x2000	--!< Allows the use of SPARQL 1
 JSO_CONST virtrdf SSG_SD_SPARQL11_MORE			0x4000	--!< Allows the use of SPARQL 1.1 BIND, path expressions, entilement
 JSO_CONST virtrdf SSG_SD_NEED_LOAD_SERVICE_DATA		0x80000000	--!< Flags are not known for the service endpoint in question
 
+JSO_CONST virtrdf SSG_SD_NO_GRAPH			0x0001	--!< Disallows the use of GRAPH ... {...} group graph pattern, e.g. for bigdata endpoint in "triples only" mode
+
 
 JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field

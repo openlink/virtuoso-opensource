@@ -911,6 +911,8 @@ args_printed:
                       int valctr;
                       if (!strcmp (name, "lang:dialect"))
                         continue;
+                      if (!strcmp (name, "lang:exceptions"))
+                        continue;
                       ssg_puts (" DEFINE ");
                       ssg_puts (name);
                       DO_BOX_FAST (SPART **, val, valctr, vals)
@@ -1236,6 +1238,8 @@ args_printed:
           ssg_newline (0);
         if (need_new_graph)
           {
+            if (SSG_SD_NO_GRAPH & ssg->ssg_sd_no)
+              spar_error (ssg->ssg_sparp, "%.100s does not support GRAPH <...> {...} syntax, so SPARQL query is not composed", ssg->ssg_sd_service_naming);
             ssg_puts (" GRAPH");
             ssg_sdprint_tree (ssg, curr_graph);
             ssg_puts (" {");

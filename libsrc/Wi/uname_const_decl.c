@@ -115,6 +115,7 @@ caddr_t uname_virtrdf_ns_uri_bnode_base;
 caddr_t uname_virtrdf_ns_uri_bnode_label;
 caddr_t uname_virtrdf_ns_uri_bnode_row;
 caddr_t uname_virtrdf_ns_uri_dialect;
+caddr_t uname_virtrdf_ns_uri_dialect_exceptions;
 caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
@@ -311,6 +312,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_bnode_label		, VIRTRDF_NS_URI "bnode-label"	},
   { &uname_virtrdf_ns_uri_bnode_row		, VIRTRDF_NS_URI "bnode-row"	},
   { &uname_virtrdf_ns_uri_dialect		, VIRTRDF_NS_URI "dialect"	},
+  { &uname_virtrdf_ns_uri_dialect_exceptions		, VIRTRDF_NS_URI "dialect-exceptions"		},
   { &uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	},
   { &uname_virtrdf_ns_uri_isSubclassOf		, VIRTRDF_NS_URI "isSubclassOf"	},
   { &uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	},

@@ -9100,6 +9100,7 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
   ssg->ssg_param_pos_set = NULL;
   ssg->ssg_out = strses_allocate();
   ssg->ssg_sd_flags = unbox (sinv->_.sinv.syntax);
+  ssg->ssg_sd_no = unbox (sinv->_.sinv.syntax_exceptions);
   /* Query text composing starts here */
   define_count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
   for (define_ctr = 0; define_ctr < define_count; define_ctr += 2)
@@ -9108,6 +9109,8 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
       SPART ***vals = (SPART ***)(sinv->_.sinv.defines[define_ctr+1]);
       int valctr;
       if (!strcmp (name, "lang:dialect"))
+        continue;
+      if (!strcmp (name, "lang:exceptions"))
         continue;
       ssg_puts (" DEFINE ");
       ssg_puts (name);

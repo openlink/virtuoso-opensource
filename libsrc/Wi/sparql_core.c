@@ -499,6 +499,19 @@ spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const 
     feature_name, feature_in_use );
 }
 
+void
+spar_error_if_syntax_exception_imp (sparp_t *sparp, int feature_in_use, const char *feature_name)
+{
+  if (NULL != sparp->sparp_env->spare_context_sinvs)
+    {
+      SPART *sinv = (SPART *)(sparp->sparp_env->spare_context_sinvs->data);
+      spar_error (sparp, "The %.200s syntax is disabled for the %.300s (bit 0x%x is set)",
+        feature_name, spar_sinv_naming (sparp, sinv), feature_in_use );
+    }
+  spar_error (sparp, "The %.200s syntax is disabled for debugging or security purpose by setting bit 0x%x of define lang:exceptions",
+    feature_name, feature_in_use );
+}
+
 #ifdef MALLOC_DEBUG
 spartlist_track_t *
 spartlist_track (const char *file, int line)
@@ -931,7 +944,7 @@ static const char *sparp_known_get_params[] = {
     "get:accept", "get:cartridge", "get:destination", "get:error-recovery", "get:group-destination", "get:login", "get:method", "get:note", "get:private", "get:proxy", "get:query", "get:refresh", "get:soft", "get:strategy", "get:uri", NULL };
 
 static const char *sparp_integer_defines[] = {
-    "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", "sql:comment", "sql:sparql-ebv", NULL };
+    "input:grab-depth", "input:grab-limit", "lang:dialect", "lang:exceptions", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", "sql:comment", "sql:sparql-ebv", NULL };
 
 static const char *sparp_var_defines[] = { NULL };
 
@@ -1230,6 +1243,25 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
             spar_error (sparp, "'define %.30s' is used more than once", param);
           t_set_push (opts_ptr, t_box_dv_short_string (value));
           t_set_push (opts_ptr, t_box_dv_uname_string (param));
+          return;
+        }
+    }
+  if ((5 < strlen (param)) && !memcmp (param, "lang:", 4))
+    {
+      if (!strcmp (param, "lang:dialect"))
+        {
+          ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
+          if ((0 > val) || IS_BOX_POINTER (val))
+            spar_error (sparp, "define lang:dialect should have nonnegative integer value, a bitmask of valid bits");
+          sparp->sparp_permitted_syntax = val;
+          return;
+        }
+      if (!strcmp (param, "lang:exceptions"))
+        {
+          ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
+          if ((0 > val) || IS_BOX_POINTER (val))
+            spar_error (sparp, "define lang:exceptions should have nonnegative integer value, a bitmask of valid bits");
+          sparp->sparp_syntax_exceptions = val;
           return;
         }
     }
@@ -2261,7 +2293,7 @@ spar_add_service_inv_to_sg (sparp_t *sparp, SPART *sinv)
 }
 
 SPART *
-spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage, int silent)
+spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, ptrlong permitted_syntax, ptrlong syntax_exceptions, SPART **sources, caddr_t sinv_storage, int silent)
 {
   dk_set_t iri_params = NULL;
   dk_set_t param_varnames = NULL;
@@ -2324,11 +2356,12 @@ spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, pt
         }
 /*! TBD: add other cases */
     }
-  sinv = spartlist (sparp, 12, SPAR_SERVICE_INV,
+  sinv = spartlist (sparp, 13, SPAR_SERVICE_INV,
     (ptrlong)(0),
     endpoint,
     t_revlist_to_array (iri_params),
     t_box_num (permitted_syntax),
+    t_box_num (syntax_exceptions),
     t_revlist_to_array (param_varnames),
     (ptrlong)in_list_implicit,
     t_revlist_to_array (rset_varnames),
@@ -5684,7 +5717,7 @@ void sparp_make_sparqld_text (spar_sqlgen_t *ssg);
 caddr_t
 bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int param_ctr = 0, flags;
+  int param_ctr = 0, sd_flags, sd_no;
   spar_query_env_t sparqre;
   sparp_t * sparp;
   caddr_t str;
@@ -5693,7 +5726,8 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t *res;
   SPARP_SAVED_MP_SIZE_CAP;
   str = bif_string_arg (qst, args, 0, "sparql_detalize");
-  flags = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "sparql_detalize") : SSG_SD_VOS_CURRENT);
+  sd_flags = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "sparql_detalize") : SSG_SD_VOS_CURRENT);
+  sd_no = ((3 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 2, "sparql_detalize") : 0);
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
@@ -5718,7 +5752,8 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
   ssg.ssg_tree = sparp->sparp_entire_query;
-  ssg.ssg_sd_flags = flags;
+  ssg.ssg_sd_flags = sd_flags;
+  ssg.ssg_sd_no = sd_no;
   ssg.ssg_sd_used_namespaces = id_str_hash_create (16);
   ssg.ssg_comment_sql = sparp->sparp_sg->sg_comment_sql;
   QR_RESET_CTX

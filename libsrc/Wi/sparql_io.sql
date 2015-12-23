@@ -601,10 +601,12 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
 {
   declare STAT, MSG varchar;
   declare g_iri, lang_bits_hex varchar;
-  declare guess_bits, lang_bits, get_is_ok, post_is_ok integer;
+  declare guess_bits, lang_bits, langex_bits, get_is_ok, post_is_ok integer;
+  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() will probe service description of SPARQL web service endpoint <%s> (proxy %s)', service_iri, coalesce (proxy_iri, 'is not used'));
   if (not inside_resultset)
     result_names (STAT, MSG);
   lang_bits := 0;
+  langex_bits := 0;
   g_iri := null;
   get_is_ok := null;
   post_is_ok := null;
@@ -614,7 +616,10 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
       ask from virtrdf: { `iri(?:service_iri)` virtrdf:dialect [] } ) )
     set_user_id ('dba');
   if (isstring (registry_get ('URIQADefaultHost')) and strstr (service_iri, registry_get ('URIQADefaultHost')) is not null)
-    signal ('22023', 'Can not load own service description');
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() fails due to safety restruction: service in question, <%s>, seems to belong to the server itself ("URIQADefaultHost" registry is <%s>), HTTP connection to self may hang', service_iri, registry_get ('URIQADefaultHost'));
+      signal ('22023', 'Can not load own service description');
+    }
   if (exists (sparql define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       prefix sd: <http://www.w3.org/ns/sparql-service-description#>
@@ -624,6 +629,11 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
       sparql define input:storage "" clear graph iri (?:service_iri);
       commit work;
     }
+
+
+
+goto get_and_post_checks;
+
   if (proxy_iri is not null)
   {
     sparql load iri (?:proxy_iri);
@@ -760,6 +770,20 @@ g_done:
         result ('00000', 'The service metadata does not contain enough data about language capabilities, they will be probed by sample requests');
       else
         result ('00000', sprintf ('The service metadata contains data about language capabilities: equivalent of define lang:dialect %d (hex %8x)', lang_bits, lang_bits));
+      feats := vector (
+        'NO_GRAPH'		, 0hex0001 );
+      for (sparql define input:storage ""
+        prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+        prefix sd: <http://www.w3.org/ns/sparql-service-description#>
+        select (bif:subseq (str(?le), bif:length (str(virtrdf:SSG_SD_)))) as ?feat
+        where { graph `iri (?:g_iri)` { { `iri(?:srv_iri)` sd:languageException ?le } union { `iri(?:service_iri)` sd:languageException ?le } } } ) do
+        {
+          declare bits integer;
+          bits := get_keyword ("feat", feats, 0);
+          langex_bits := bit_or (langex_bits, bits);
+        }
+      if (langex_bits <> 0)
+        result ('00000', sprintf ('The service metadata contains data about language capabilities: equivalent of define lang:exceptions %d (hex %8x)', langex_bits, langex_bits));
       for (sparql define input:storage ""
         prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
         prefix sd: <http://www.w3.org/ns/sparql-service-description#>
@@ -815,52 +839,74 @@ post_done: ;
         DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#bestRequestMethod', req_method));
     }
   else
-    signal ('22023', 'The service <' || service_iri || '> has no description and the site is not responding as a SPARQL endpoint');
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() has proven that the service <%s> has no description and the site is not responding as a SPARQL endpoint%s', service_iri, '');
+      signal ('22023', 'The service <' || service_iri || '> has no description and the site is not responding as a SPARQL endpoint');
+    }
   if (lang_bits = 0)
     {
-      declare feats any;
       declare ctr, len integer;
+      declare feats any;
       feats := vector (
-        'prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> select ?s where { quad map virtrdf:DefaultQuadMap { ?s ?p ?o } } limit 1'	, 0hex0001,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (TABLE_OPTION "ORDER") } } limit 1'		, 0hex0002,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (BREAKUP) } } limit 1'		, 0hex0004,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (PKSELFJOIN) } } limit 1'		, 0hex0008,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (RVR) } } limit 1'			, 0hex0010,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o in ( 1, 2, 3)) } } limit 1'	, 0hex0020,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o like "%qaz%") } } limit 1'	, 0hex0040,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?:oglobal } } limit 1'				, 0hex0080,
-        'select (str(?s) as ?str) where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } group by ?s limit 1'	, 0hex0100,
-        'define input:storage "" select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } limit 1'	, 0hex0200,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } . service <http://dbpedia.org/sparql> { ?s <no-such-p-qazxswedc> ?t } } limit 1'		, 0hex0400,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> OPTION (TRANSITIVE) } } limit 1'		, 0hex1000,
-        'select (strdt (group_concat (?o), datatype (max(?o)) as ?gc) where { graph <no-such-g-qazxswedc> { { ?s <no-such-p-qazxswedc> ?o } MINUS { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> } } group by ?s having ?o > 1 } limit 1'		, 0hex2000 );
-      len := length (feats);
-      for (ctr := 0; ctr < len; ctr := ctr + 2)
+--      qtype bits        qtxt
+        '-' , 0hex0001	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } limit 1'																			,
+        '+' , 0hex0001	, 'prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> select ?s where { quad map virtrdf:DefaultQuadMap { ?s ?p ?o } } limit 1'													,
+        '+' , 0hex0002	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (TABLE_OPTION "ORDER") } } limit 1'															,
+        '+' , 0hex0004	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (BREAKUP) } } limit 1'																,
+        '+' , 0hex0008	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (PKSELFJOIN) } } limit 1'																,
+        '+' , 0hex0010	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (RVR) } } limit 1'																	,
+        '+' , 0hex0020	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o in ( 1, 2, 3)) } } limit 1'															,
+        '+' , 0hex0040	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o like "%qaz%") } } limit 1'															,
+        '+' , 0hex0080	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?:oglobal } } limit 1'																		,
+        '+' , 0hex0100	, 'select (str(?s) as ?str) where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } group by ?s limit 1'															,
+        '+' , 0hex0200	, 'define input:storage "" select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } limit 1'																,
+        '+' , 0hex0400	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } . service <http://dbpedia.org/sparql> { ?s <no-such-p-qazxswedc> ?t } } limit 1'										,
+        '+' , 0hex1000	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> OPTION (TRANSITIVE) } } limit 1'														,
+        '+' , 0hex2000	, 'select (strdt (group_concat (?o), datatype (max(?o))) as ?gc) where { graph <no-such-g-qazxswedc> { { ?s <no-such-p-qazxswedc> ?o } MINUS { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> } } } group by ?s having (sample(?o) > 1) limit 1'	 );
+      len := length (feats) / 3;
+      for (ctr := 0; ctr < len; ctr := ctr + 1)
         {
+          declare qtype, qtxt varchar;
+          declare bits integer;
+          qtype := feats[ctr * 3];
+          bits := feats[ctr * 3 + 1];
+          qtxt := feats[ctr * 3 + 2];
+          if (bit_and (langex_bits, 1))
+            qtxt := replace (qtxt, 'graph <no-such-g-qazxswedc>', '');
           whenever sqlstate '*' goto no_such_feat;
-          result ('00000', sprintf ('Test query %d/%d: define lang:dialect %d (hex %08x)...', ctr/2, len/2, feats[ctr+1], feats[ctr+1]));
-          DB.DBA.SPARQL_REXEC_TO_ARRAY (service_iri, feats[ctr], null, null, null, 1, null);
-          lang_bits := bit_or (lang_bits, feats[ctr+1]);
-          result ('00000', sprintf ('Test query %d/%d has found support for define lang:dialect %d (hex %08x)', ctr/2, len/2, feats[ctr+1], feats[ctr+1]));
+          result ('00000', sprintf ('Test query %d/%d: %s %d (hex %08x)...', ctr, len, case qtype when '+' then 'define lang:dialect' else 'define lang:exception' end, bits, bits));
+          DB.DBA.SPARQL_REXEC_TO_ARRAY (service_iri, qtxt, null, null, null, 1, null);
+          if (qtype = '+')
+            lang_bits := bit_or (lang_bits, bits);
+          result ('00000', sprintf ('Test query %d/%d has found %s %d (hex %08x)', ctr, len, case qtype when '+' then 'support for define lang:dialect' else 'the need for define lang:exception' end, bits, bits));
           goto probe_done;
 no_such_feat:
           if (verbose)
             result (__SQL_STATE, __SQL_MESSAGE);
+          if (qtype = '-')
+            langex_bits := bit_or (langex_bits, bits);
 probe_done:;
         }
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() has found that the service should be used with define lang:dialect 0hex%08x define lang:exceptions 0hex%08x', lang_bits, langex_bits);
       result ('00000', sprintf ('The endpoint <' || service_iri || '> has support for define lang:dialect %d (hex %08x)', lang_bits, lang_bits));
+      if (langex_bits)
+        result ('00000', sprintf ('The endpoint <' || service_iri || '> needs define lang:exceptions %d (hex %08x)', langex_bits, langex_bits));
     }
   sparql define input:storage ""
   prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-  prefix sd: <http://www.w3.org/ns/sparql-service-description#>
-  delete from virtrdf: { `iri(?:service_iri)` virtrdf:dialect ?lb } from virtrdf: { `iri(?:service_iri)` virtrdf:dialect ?lb };
+  with virtrdf: delete where { `iri(?:service_iri)` ?p ?lb . filter (?p in (virtrdf:dialect, virtrdf:dialect-exceptions)) };
   lang_bits_hex := sprintf ('%08x', lang_bits);
   sparql define input:storage ""
   prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-  prefix sd: <http://www.w3.org/ns/sparql-service-description#>
   insert in virtrdf: { `iri(?:service_iri)` virtrdf:dialect ?:lang_bits_hex };
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect'));
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect', lang_bits_hex));
+  lang_bits_hex := sprintf ('%08x', langex_bits);
+  sparql define input:storage ""
+  prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+  insert in virtrdf: { `iri(?:service_iri)` virtrdf:dialect-exceptions ?:lang_bits_hex };
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect-exceptions'));
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect-exceptions', lang_bits_hex));
 }
 ;
 
@@ -4630,9 +4676,9 @@ create procedure DB.DBA.SPARQL_SD_COMPOSE (inout sd any, in host varchar, in com
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:supportedLanguage', '!sd:SPARQL11Update');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_QUAD_MAP');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_OPTION');
-  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_BREAKUP');
-  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_PKSELFJOIN');
-  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_RVR');
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_BREAKUP');
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_PKSELFJOIN');
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_RVR');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_IN');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_LIKE');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_GLOBALS');
@@ -4641,6 +4687,8 @@ create procedure DB.DBA.SPARQL_SD_COMPOSE (inout sd any, in host varchar, in com
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_SERVICE');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_TRANSIT');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_SPARQL11_DRAFT');
+-- If some future standard features will not be supproted, there will be something like this:
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageException', '!virtrdf:SSG_SD_NO_SPARQL99_FOO');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:propertyFeature', '!bif:contains');
   if (complete)
     { -- List of extension functions and aggregates --- TBD!
