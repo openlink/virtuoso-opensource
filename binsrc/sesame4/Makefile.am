@@ -61,7 +61,7 @@ SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
 
-SESAME_CLASSPATH= lib/slf4j-api-1.7.10.jar:;lib/commons-io-2.4.jar:lib/openrdf-sesame-4.0.0-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
+SESAME_CLASSPATH= lib/slf4j-api-1.7.10.jar:lib/commons-io-2.4.jar:lib/openrdf-sesame-4.0.0-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
 
 all-am:	$(TARGETS)
 
@@ -99,7 +99,7 @@ doc:
 		$(SESAME_SRC)
 
 
-if WITH_JDK4
+if WITH_JDK4_2
 run-tests: virt_sesame4.jar
 	-rm -rf out.examples
 	-mkdir out.examples

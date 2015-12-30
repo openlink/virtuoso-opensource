@@ -2255,6 +2255,30 @@ AC_HELP_STRING([--with-jdk4_1=DIR], [use the Oracle JDK 1.7.x at the specified l
     ])
 AC_MSG_RESULT(done)
 
+ac_jdk4_2_path="none"
+AC_ARG_WITH(jdk4_2, [dnl
+AC_HELP_STRING([--with-jdk4_2=DIR], [use the Oracle JDK 1.8.x at the specified location])dnl
+], [
+    case "${withval}" in
+      yes)
+          AC_MSG_ERROR("You need to specify a directory")
+	  ;;
+
+      no)
+	  ac_jdk4_2_path="none"
+	  ;;
+
+      *)
+	  if test -d "${withval}" ; then
+	      ac_jdk4_2_path="${withval}"
+	  else
+	      AC_MSG_ERROR("Directory specified with --with-jdk4_2 does not exist")
+	  fi
+	  ;;
+    esac
+    ])
+AC_MSG_RESULT(done)
+
 
 #AC_PROG_JAVA_WORKS (jdk_path, min_acceptable_ver, max_acceptable_ver)
 
@@ -2334,8 +2358,16 @@ ac_jdk4_1_path="$ac_jw_jdk"
 AM_CONDITIONAL(WITH_JDK4_1, test "x$ac_jdk4_1_works" = "xyes")
 AC_SUBST(ac_jdk4_1_path)
 
+AC_PROG_JAVA_WORKS($ac_jdk4_2_path, 8, 8)
+ac_jdk4_2_works="$ac_cv_prog_java_works"
+ac_jdk4_2_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK4_2, test "x$ac_jdk4_2_works" = "xyes")
+AC_SUBST(ac_jdk4_2_path)
+
 ac_integ_jdk=""
-if test "x$ac_jdk4_1_works" = "xyes" ; then
+if test "x$ac_jdk4_2_works" = "xyes" ; then
+  ac_integ_jdk="$ac_jdk4_2_path/.."
+elif test "x$ac_jdk4_1_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_1_path/.."
 elif test "x$ac_jdk4_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_path/.."
@@ -2894,6 +2926,7 @@ AC_CONFIG_FILES([
 	binsrc/sesame/Makefile
 	binsrc/sesame2/Makefile
 	binsrc/sesame3/Makefile
+	binsrc/sesame4/Makefile
 	binsrc/sqldoc/Makefile
 	binsrc/sync/Makefile
 	binsrc/tests/biftest/Makefile
