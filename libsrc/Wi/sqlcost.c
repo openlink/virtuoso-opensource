@@ -761,7 +761,7 @@ typedef struct fn_card_s
 
 
 fn_card_t fn_cards[] =
-  {{"isiri_id", 1, 0.001},
+  {{"isiri_id", 0.98, 0.001},
    {"rdf_is_sub", 0.8, 0.01, FN_RESTR_ABS},
    {"__rgs_ack", 0, 0,1}, /* near always false, occurs inside a not, so sec cond always passes */
    {"__rgs_ack_cbk", 1, 0,1},
