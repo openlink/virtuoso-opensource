@@ -94,7 +94,7 @@ virt_sesame4.jar: $(SESAME_SRC) manifest.main
 
 .PHONY: doc
 doc:
-	$(JAVADOC) -d doc \
+	$(JAVADOC) -d doc -Xdoclint:none \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
 
