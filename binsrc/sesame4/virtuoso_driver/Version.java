@@ -30,6 +30,6 @@ public class Version {
 
     public static void main(String args[])
     {
-        System.out.println("OpenLink Virtuoso(TM) Provider for Sesame2(TM) Version " + DRV_VER + " [Build " + build_id + "]");
+        System.out.println("OpenLink Virtuoso(TM) Provider for Sesame4(TM) Version " + DRV_VER + " [Build " + build_id + "]");
     }
 }
