@@ -86,6 +86,9 @@ virt_sesame4.jar: $(SESAME_SRC) manifest.main
 	-mkdir out.driver/org/openrdf
 	-mkdir out.driver/org/openrdf/console
 	-cp virtuoso.ttl out.driver/org/openrdf/console
+	-mkdir out.driver/org/openrdf/repository
+	-mkdir out.driver/org/openrdf/repository/config
+	-cp virtuoso.ttl out.driver/org/openrdf/repository/config
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
