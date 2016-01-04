@@ -17,27 +17,6 @@
 	<xsl:include href="template.xsl" />
 
 	<xsl:template match="sparql:sparql">
-		<script type="text/javascript">
-			<![CDATA[
-			function populateParameters() {
-				var href = document.location.href;
-				var elements = href.substring(href.indexOf('?') + 1).split(decodeURIComponent('%26'));
-				for (var i=0;elements.length-i;i++) {
-					var pair = elements[i].split('=');
-					var value = decodeURIComponent(pair[1]).replace(/\+/g, ' ');
-					if (pair[0] == 'id') {
-						document.getElementById('id').value = value;
-					}
-					if (pair[0] == 'title') {
-						document.getElementById('title').value = value;
-					}
-				}
-			}
-			window.onload = function() {
-				populateParameters();
-			}
-			]]>
-		</script>
 		<form action="create" method="post">
 			<table class="dataentry">
 				<tbody>
@@ -199,15 +178,17 @@
 						<td></td>
 						<td>
 							<input type="button" value="{$cancel.label}"
-								style="float:right" href="repositories"
-								onclick="document.location.href=this.getAttribute('href')" />
-							<input type="submit"
-								value="{$create.label}" />
+								style="float:right" data-href="repositories"
+								onclick="document.location.href=this.getAttribute('data-href')" />
+							<input id="create" type="button" value="{$create.label}"
+								onclick="checkOverwrite()" />
 						</td>
 					</tr>
 				</tbody>
 			</table>
 		</form>
+		<script src="../../scripts/create.js" type="text/javascript">
+		</script>
 	</xsl:template>
 
 </xsl:stylesheet>
