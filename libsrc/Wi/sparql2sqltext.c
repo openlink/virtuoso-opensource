@@ -5621,8 +5621,13 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         ssg->ssg_indent++;
         if (tree->_.funcall.agg_mode)
           {
+            SPART *arg0 = BOX_ELEMENTS_0 (tree->_.funcall.argtrees) ? tree->_.funcall.argtrees[0] : NULL;
             if (DISTINCT_L == tree->_.funcall.agg_mode)
-              ssg_puts (" DISTINCT");
+              {
+                ssg_puts (" DISTINCT");
+                if ((SPAR_FUNCALL == SPART_TYPE (arg0)) && !strcmp (arg0->_.funcall.qname, "SQLVAL::_STAR") && !strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT"))
+                  arg0->_.funcall.qname = t_box_dv_uname_string ("bif:box_hash");
+              }
             if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
               {
                 ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
@@ -8094,23 +8099,29 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
             ssg_print_sparul_run_call (ssg, gp, tree, 1);
             goto print_asname;
           }
+        ssg_putchar (' ');
         bigtext =
           ((NULL != strstr (tree->_.funcall.qname, "bif:")) ||
            (NULL != strstr (tree->_.funcall.qname, "sql:")) ||
            (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
+        ssg->ssg_indent++;
         if (tree->_.funcall.agg_mode)
           {
+            SPART *arg0 = BOX_ELEMENTS_0 (tree->_.funcall.argtrees) ? tree->_.funcall.argtrees[0] : NULL;
             if (DISTINCT_L == tree->_.funcall.agg_mode)
-              ssg_puts (" DISTINCT");
+              {
+                ssg_puts (" DISTINCT");
+                if ((SPAR_FUNCALL == SPART_TYPE (arg0)) && !strcmp (arg0->_.funcall.qname, "SQLVAL::_STAR") && !strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT"))
+                  arg0->_.funcall.qname = t_box_dv_uname_string ("bif:box_hash");
+              }
             if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
               {
                 ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
                 goto args_are_printed; /* see below */
               }
           }
-        ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
             SPART *arg = tree->_.funcall.argtrees[arg_ctr];

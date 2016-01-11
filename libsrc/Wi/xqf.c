@@ -2370,7 +2370,6 @@ xqf_exists (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 }
 #endif
 
-#define ROL(h) ((h << 1) | ((h >> 31) & 1))
 static id_hashed_key_t
 xqf_box_hash (query_instance_t* qi, caddr_t box, collation_t * coll)
 {

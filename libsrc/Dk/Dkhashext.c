@@ -294,9 +294,6 @@ boxint_hashcmp (char *x, char *y)
   return k1 == k2 ? 1 : 0;
 }
 
-
-#define ROL(h) ((h << 1) | ((h >> 31) & 1))
-
 box_hash_func_t dtp_hash_func[256];
 
 extern id_hashed_key_t rdf_box_hash (caddr_t box);

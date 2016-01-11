@@ -14927,9 +14927,15 @@ caddr_t bif_md5_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t
 bif_box_hash (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return box_num (box_hash (bif_arg (qst, args, 0, "box_hash")));
+  int inx, len = BOX_ELEMENTS (args);
+  id_hashed_key_t h = 0;
+  for (inx = 0; inx < len; inx++)
+    {
+      caddr_t arg = bif_arg (qst, args, inx, "box_hash");
+      h = ROL (h) ^ box_hash (arg);
+    }
+  return box_num (h & ID_HASHED_KEY_MASK);
 }
-
 
 #if 1
 caddr_t bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
