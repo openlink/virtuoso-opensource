@@ -310,7 +310,7 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "        }" >> $STICKER
-echo "      if (__proc_exists ('WS.WS.VFS_EXTRACT_RDF_CARTRIDGES') is null)" >> $STICKER
+echo "      if (coalesce ((select 1 from DB.DBA.SYS_COLS where \"TABLE\" = 'DB.DBA.SYS_SCHEDULED_EVENT' and \"COLUMN\" = 'SE_DISABLED'), 0) = 0)" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER
