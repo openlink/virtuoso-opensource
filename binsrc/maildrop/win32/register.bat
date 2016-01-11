@@ -2,7 +2,7 @@ rem
 rem  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 rem  project.
 rem
-rem  Copyright (C) 1998-2015 OpenLink Software
+rem  Copyright (C) 1998-2016 OpenLink Software
 rem
 rem  This project is free software; you can redistribute it and/or modify it
 rem  under the terms of the GNU General Public License as published by the
