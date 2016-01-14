@@ -236,7 +236,10 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
               else if (__tag of XML = __tag (parsed))
                 {
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
-		  rdf_box_set_type (parsed, 257);
+		  tid := rdf_cache_id ('t', o_type);
+		  if (tid = 0)
+		    tid := rdf_rl_type_id (o_type);
+		  rdf_box_set_type (parsed, tid);
 		}
               -- if (not bit_and (is_text, 1))
               --   {
