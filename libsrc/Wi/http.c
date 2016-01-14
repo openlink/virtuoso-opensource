@@ -1869,6 +1869,8 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
       ws->ws_params = NULL;
       dk_free_tree ((box_t) ws->ws_resource);
       ws->ws_resource = NULL;
+      dk_free_tree ((box_t) ws->ws_redirect_from);
+      ws->ws_redirect_from = NULL;
       ws->ws_in_error_handler = 0;
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
@@ -5737,6 +5739,15 @@ bif_http_path (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_http_redirected_path (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  if(NULL == qi->qi_client->cli_http_ses)
+    sqlr_new_error ("42000", "HT013", "http_redirected_path() function allowed only inside HTTP request");
+  return (qi->qi_client->cli_ws->ws_redirect_from ? box_dv_short_string (qi->qi_client->cli_ws->ws_redirect_from) : NEW_DB_NULL);
+}
+
+caddr_t
 bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
@@ -5757,7 +5768,10 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 
   if (!keep_lpath)
     {
-      dk_free_tree (ws->ws_path_string);
+      if (!ws->ws_redirect_from)
+	ws->ws_redirect_from = ws->ws_path_string;
+      else
+	dk_free_tree (ws->ws_path_string);
       dk_free_tree (ws->ws_path);
       ws->ws_path_string = box_copy (new_path);
       parr = (caddr_t *) http_path_to_array (new_path, 1);
@@ -11275,6 +11289,7 @@ http_init_part_one ()
   bif_define_ex ("http_root", bif_http_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("dav_root", bif_dav_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("http_path", bif_http_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_redirected_path", bif_http_redirected_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_internal_redirect", bif_http_internal_redirect);
 #if 0
   bif_define_ex ("http_get", bif_http_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
