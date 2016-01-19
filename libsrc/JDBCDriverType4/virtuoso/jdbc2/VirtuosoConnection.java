@@ -1505,6 +1505,20 @@ public class VirtuosoConnection implements Connection
     */
    public void setCatalog(String catalog) throws VirtuosoException
    {
+      VirtuosoStatement st = null;
+      if (catalog!=null) {
+        try {
+          st = new VirtuosoStatement(this);
+          st.executeQuery("use "+catalog);
+          qualifier = catalog;
+        } finally {
+          if (st!=null) {
+            try {
+              st.close();
+            } catch (Exception e) {}
+          }
+        }
+      }
    }
 
    /**
