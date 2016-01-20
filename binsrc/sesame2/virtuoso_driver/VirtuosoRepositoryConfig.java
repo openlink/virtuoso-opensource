@@ -258,7 +258,7 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 				setBatchSize(Integer.parseInt(batchsize.getLabel()));
 			}
 			Literal bnodeAsUri = GraphUtil.getOptionalObjectLiteral(graph, implNode, INSERTBNodeAsVirtuosoIRI);
-			if (roundrobin != null) {
+			if (bnodeAsUri != null) {
 				setInsertBNodeAsVirtuosoIRI(Boolean.parseBoolean(bnodeAsUri.getLabel()));
 			}
 
