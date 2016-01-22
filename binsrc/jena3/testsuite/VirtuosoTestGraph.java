@@ -74,7 +74,9 @@ public class VirtuosoTestGraph extends AbstractTestGraph {
                     url = "jdbc:virtuoso://localhost:1111";
 
 		graph = new VirtGraph("http://example.org/testing", url, "dba", "dba");
+		graph.setInsertBNodeAsVirtuosoIRI(true);
 		graph1 = new VirtGraph("http://example.org/testing1", url, "dba", "dba");
+		graph1.setInsertBNodeAsVirtuosoIRI(true);
     }
 
 //	public static TestSuite suite() {

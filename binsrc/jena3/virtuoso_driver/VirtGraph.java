@@ -588,21 +588,21 @@ public class VirtGraph extends GraphBase {
             else
                 return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n)); 
         } else if (n.isLiteral()) {
-            String s;
+            String s, llang, ltype;
             StringBuilder sb = new StringBuilder();
             sb.append("\"");
             sb.append(escapeString(n.getLiteralLexicalForm()));
             sb.append("\"");
 
-            s = n.getLiteralLanguage();
-            if (s != null && s.length() > 0) {
+            llang = n.getLiteralLanguage();
+            if (llang != null && llang.length() > 0) {
                 sb.append("@");
-                sb.append(s);
+                sb.append(llang);
             }
-            s = n.getLiteralDatatypeURI();
-            if (s != null && s.length() > 0) {
+            ltype = n.getLiteralDatatypeURI();
+            if (llang==null && ltype != null && ltype.length() > 0) {
                 sb.append("^^<");
-                sb.append(s);
+                sb.append(ltype);
                 sb.append(">");
             }
             return sb.toString();
@@ -623,21 +623,21 @@ public class VirtGraph extends GraphBase {
                     return "<" + BNode2String_add(n) + ">";
                 }
             } else if (n.isLiteral()) {
-                String s;
+                String s, llang, ltype;
                 StringBuilder sb = new StringBuilder();
                 sb.append("\"");
                 sb.append(escapeString(n.getLiteralLexicalForm()));
                 sb.append("\"");
 
-                s = n.getLiteralLanguage();
-                if (s != null && s.length() > 0) {
+                llang = n.getLiteralLanguage();
+                if (llang != null && llang.length() > 0) {
                     sb.append("@");
-                    sb.append(s);
+                    sb.append(llang);
                 }
-                s = n.getLiteralDatatypeURI();
-                if (s != null && s.length() > 0) {
+                ltype = n.getLiteralDatatypeURI();
+                if (llang==null && ltype != null && ltype.length() > 0) {
                     sb.append("^^<");
-                    sb.append(s);
+                    sb.append(ltype);
                     sb.append(">");
                 }
                 return sb.toString();
@@ -748,7 +748,6 @@ public class VirtGraph extends GraphBase {
                     data.append(' ');
                     data.append(Node2Str_add(nO));
                     data.append(" .}");
-
                     st.execute(data.toString());
                     st.close();
                 } 
