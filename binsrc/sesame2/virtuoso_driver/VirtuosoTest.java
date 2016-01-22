@@ -107,7 +107,7 @@ public class VirtuosoTest {
 		for (int i = 0; i < sa.length && i < args.length; i++) {
 			sa[i] = args[i];
 		}
-		Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1], sa[2], sa[3]);
+		Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1]+"/log_enable=0", sa[2], sa[3]);
 		RepositoryConnection con = null;
 		try {
 			con = repository.getConnection();
