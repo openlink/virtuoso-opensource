@@ -20,9 +20,9 @@
 #  
 
 
-if WITH_JDK4_1
-TARGETS		= lib virt_jena4.jar
-JDK		= @ac_jdk4_1_path@
+if WITH_JDK4_2
+TARGETS		= lib virt_jena3.jar
+JDK		= @ac_jdk4_2_path@
 JDK_FLAGS	= -O -g
 
 JAVA		= $(JDK)/java
@@ -93,7 +93,7 @@ doc:
 #
 #  Run testsuite if WITH_JDK was found
 #
-if WITH_JDK4_1
+if WITH_JDK4_2
 run-tests: virt_jena3.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena3.jar" \
