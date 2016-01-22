@@ -589,6 +589,7 @@ public class VirtGraph extends GraphBase {
                 return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n)); 
         } else if (n.isLiteral()) {
             String s, llang, ltype;
+            boolean llang_exists = false;
             StringBuilder sb = new StringBuilder();
             sb.append("\"");
             sb.append(escapeString(n.getLiteralLexicalForm()));
@@ -598,9 +599,10 @@ public class VirtGraph extends GraphBase {
             if (llang != null && llang.length() > 0) {
                 sb.append("@");
                 sb.append(llang);
+                llang_exists = true;
             }
             ltype = n.getLiteralDatatypeURI();
-            if (llang==null && ltype != null && ltype.length() > 0) {
+            if (!llang_exists && ltype != null && ltype.length() > 0) {
                 sb.append("^^<");
                 sb.append(ltype);
                 sb.append(">");
@@ -624,6 +626,7 @@ public class VirtGraph extends GraphBase {
                 }
             } else if (n.isLiteral()) {
                 String s, llang, ltype;
+                boolean llang_exists = false;
                 StringBuilder sb = new StringBuilder();
                 sb.append("\"");
                 sb.append(escapeString(n.getLiteralLexicalForm()));
@@ -633,9 +636,10 @@ public class VirtGraph extends GraphBase {
                 if (llang != null && llang.length() > 0) {
                     sb.append("@");
                     sb.append(llang);
+                    llang_exists = true;
                 }
                 ltype = n.getLiteralDatatypeURI();
-                if (llang==null && ltype != null && ltype.length() > 0) {
+                if (!llang_exists && ltype != null && ltype.length() > 0) {
                     sb.append("^^<");
                     sb.append(ltype);
                     sb.append(">");
