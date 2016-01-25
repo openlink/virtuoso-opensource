@@ -102,7 +102,7 @@
 	      {
 	        if (self.ldap_s.ufl_value <> 'User-defined')
 		  {
-		    declare hf, arr, host, port, lver, bind, ufld, uid any;
+		    declare hf, arr, host, port, lver, bind, ufld, uid, pwd any;
 
 	            hf := WS.WS.PARSE_URI (self.ldap_s.ufl_value);
 		    arr := split_and_decode (hf[1], 0, '\0\0:');
@@ -111,9 +111,11 @@
 		      self.port.ufl_value := arr[1];
 		    else
 		      self.port.ufl_value := '389';
+		    pwd := pwd_magic_calc (uid, self.pwd.ufl_value, 0);  
 		    select LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL
-		    into self.base.ufl_value, lver, bind, ufld, uid, self.pwd.ufl_value, self.ssl.ufl_selected
+		    into self.base.ufl_value, lver, bind, ufld, uid, pwd, self.ssl.ufl_selected
 		      from SYS_LDAP_SERVERS where LS_ADDRESS = self.ldap_s.ufl_value;
+		    pwd := pwd_magic_calc (uid, pwd, 1);  
 		    self.bind.ufl_value := sprintf ('%s=%s, %s', ufld, uid, bind);
 		  }
 		self.ldaps.ufl_value := self.ldap_s.ufl_value;
