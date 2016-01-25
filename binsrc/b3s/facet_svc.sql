@@ -25,6 +25,11 @@ cl_exec ('registry_set (''fct_max_timeout'',''10000'')');
 DB.DBA.VHOST_REMOVE (lpath=>'/fct/service');
 DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'SPARQL');
 
+-- http://{cname}/fct/search(?q,view:type,c-term,s-term,same-as,inference,offet,limit,graph)
+DB.DBA.VHOST_REMOVE (lpath=>'/fct/search');
+DB.DBA.VHOST_DEFINE (lpath=>'/fct/search', ppath=>'/SOAP/Http/fct_search', soap_user=>'SPARQL');
+
+
 create procedure fct_init ()
 {
   if (__proc_exists ('WS.WS.host_meta_add') is not null)
@@ -110,6 +115,63 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
 }
 ;
 
+
+create procedure fct_http_param (in n any, in def any := '')
+{
+  declare v any;
+  v := http_param (n);
+  if (v = 0)
+    v := def;
+  return v;
+}
+;
+
+-- http://{cname}/fct/search(?q,view:type,c-term,s-term,same-as,inference,offet,limit,graph)
+create procedure fct_search () __soap_http 'application/json'
+{
+  declare cnt, tp, ret, timeout, xt, xslt, maxt, tmp, lines, accept any;
+  declare inf, sas, st, ct, qr, vt, lim, offs any;
+
+  lines := http_request_header ();
+  accept := http_request_header_full (lines, 'Accept', 'application/json');
+  accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+  if (accept = '*/*')
+    accept := 'application/json';
+  set http_charset='utf-8';
+  ret := '';
+  declare exit handler for sqlstate '*'
+    {
+      http_status_set (500);
+      ret := sprintf ('<error><code>%V</code><message>Error while executing query</message><diagnostics>%V</diagnostics></error>',
+	  __SQL_STATE, __SQL_MESSAGE);
+      goto ret;
+    };
+  inf := fct_http_param ('inference');  
+  sas := fct_http_param ('same-as');
+  st := fct_http_param ('s-term');
+  ct := fct_http_param ('c-term');
+  qr := fct_http_param ('q');
+  vt := fct_http_param ('view:type', 'text-d');
+  if (vt = 'text') vt := 'text-d';
+  if (vt = 'entity-types') vt := 'classes';
+  if (vt = 'attribute-names') vt := 'properties';
+  if (vt = 'attribute-values') vt := 'properties-in';
+  lim := atoi (fct_http_param ('limit', '20'));
+  offs := atoi (fct_http_param ('offset', '0'));
+  cnt := sprintf ('<query inference="%s" same-as="%s" s-term="%s" c-term="%s"><text>%V</text><view type="%s" limit="%d" offset="%d" /></query>', 
+     inf, sas, st, ct, qr, vt, lim, offs);
+  maxt := atoi (registry_get ('fct_timeout_max'));
+  ret := fct_svc_exec (xtree_doc (cnt), timeout, '*/*', lines);
+ret:
+  if (accept = 'application/json')
+    {
+      http_header ('Content-Type: application/json\r\n');
+      ret := xml2json (ret);
+    }
+  return ret;
+}
+;
+
 create procedure fct_svc () __soap_http 'text/xml'
 {
   declare cnt, tp, ret, timeout, xt, xslt, maxt, tmp, lines, accept any;
@@ -164,6 +226,7 @@ ret:
 ;
 
 grant execute on fct_svc to SPARQL_SELECT;
+grant execute on fct_search to SPARQL_SELECT;
 
 DB.DBA.VHOST_REMOVE (lpath=>'/fct/soap');
 DB.DBA.VHOST_DEFINE (lpath=>'/fct/soap', ppath=>'/SOAP/', soap_user=>'SPARQL');
