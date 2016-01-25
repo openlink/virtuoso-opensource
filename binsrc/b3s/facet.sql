@@ -1275,6 +1275,7 @@ fct_text (in tree any,
     {
       declare ciri varchar;
       ciri := fct_curie (cast (xpath_eval ('./@iri', tree) as varchar));
+      ciri := replace (ciri, ' ', '%20');
 
       fct_dbg_msg (sprintf ('class: %s', cast (ciri as varchar)));
 
@@ -1344,6 +1345,7 @@ fct_text (in tree any,
       new_s := max_s;
 
       piri := fct_curie (cast (xpath_eval ('./@iri', tree, 1) as varchar));
+      piri := replace (piri, ' ', '%20');
 
 --      fct_dbg_msg (sprintf ('property: <%s>', piri));
 
@@ -1365,9 +1367,12 @@ fct_text (in tree any,
   if ('property-of' = n)
     {
       declare new_s int;
+      declare piri any;
       max_s := max_s + 1;
       new_s := max_s;
-      http (sprintf (' ?s%d <%s> ?s%d .', new_s, fct_curie (cast (xpath_eval ('./@iri', tree, 1) as varchar)), this_s), txt);
+      piri := fct_curie (cast (xpath_eval ('./@iri', tree, 1) as varchar));
+      piri := replace (piri, ' ', '%20');
+      http (sprintf (' ?s%d <%s> ?s%d .', new_s, piri, this_s), txt);
       fct_text_1 (tree, new_s, max_s, txt, pre, post, full_tree, plain);
     }
 
