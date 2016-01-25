@@ -188,7 +188,7 @@
 		</v:button>
 		<v:button action="simple" name="get" value="-- case when self.mode = 'edit' then 'Save' else 'Add' end">
 		  <v:on-post>
-		    declare addr, ssl any;
+		    declare addr, ssl, pwd any;
 		    declare exit handler for sqlstate '*'
 		    {
 		      rollback work;
@@ -210,19 +210,21 @@
 
 		    if (self.mode = 'edit')
 		    {
+		      pwd := pwd_magic_calc (self.uid.ufl_value, self.pwd.ufl_value, 0);  
 		      insert replacing SYS_LDAP_SERVERS
 			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
 			  values
 			  (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value),
-			  self.uid.ufl_value, self.pwd.ufl_value, ssl);
+			  self.uid.ufl_value, pwd, ssl);
 		    }
 		    else
 		    {
+		      pwd := pwd_magic_calc (self.uid.ufl_value, self.pwd.ufl_value, 0);  
 		      insert soft SYS_LDAP_SERVERS
 			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
 			  values
 			  (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value),
-			  self.uid.ufl_value, self.pwd.ufl_value, ssl);
+			  self.uid.ufl_value, pwd, ssl);
 		      if (not row_count())
 			{
 			  self.vc_is_valid := 0;
@@ -268,7 +270,7 @@
 	  </tr>
 	<v:data-set name="lds" scrollable="1" nrows="1000" cursor="keyset" edit="0">
 	  <v:sql>
-	    select LS_ADDRESS, LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL from SYS_LDAP_SERVERS
+	    select LS_ADDRESS, LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, pwd_magic_calc (LS_ACCOUNT, LS_PASSWORD, 1) as LS_PASSWORD, LS_TRY_SSL from SYS_LDAP_SERVERS
 	  </v:sql>
 	  <v:template type="repeat" name="ldst1">
 	    <v:template type="browse" name="ldst2">

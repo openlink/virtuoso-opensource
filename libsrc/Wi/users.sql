@@ -1269,6 +1269,8 @@ DB.DBA.LDAP_LOGIN (inout user_name varchar, in digest varchar, in session_random
       select LS_BASE, LS_BIND_DN, LS_ACCOUNT, LS_PASSWORD, LS_UID_FLD, LS_TRY_SSL, LS_LDAP_VERSION
 	  into base, bind, lacc, lpwd, luid, ltry, lver from SYS_LDAP_SERVERS where LS_ADDRESS = lserv;
 
+      lpwd := pwd_magic_calc (lacc, lpwd, 1);
+
       if (is_http_ctx())
 	{
           if (get_keyword ('authtype', session_random) = 'basic')

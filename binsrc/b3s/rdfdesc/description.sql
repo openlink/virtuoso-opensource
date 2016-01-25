@@ -823,11 +823,12 @@ create procedure b3s_xsd_link (in t varchar)
 
 create procedure b3s_o_is_out (in x any)
 {
-  declare f, s any;
+  declare f, s, og any;
   f := 'http://xmlns.com/foaf/0.1/';
   s := 'http://schema.org/';
+  og := 'http://opengraphprotocol.org/schema/';
   -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
-  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl', 'http://schema.org/potentialAction', s||'logo', s||'image', s || 'mainEntityOfPage'))
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl', 'http://schema.org/potentialAction', s||'logo', s||'image', s || 'mainEntityOfPage', og || 'image'))
     {
       return 1;
     }

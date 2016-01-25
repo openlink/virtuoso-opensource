@@ -213,7 +213,7 @@ div.subj_nav { float: left; width: 100%;}
 p.subj_desc {
   float: left;
   clear: left;
-  width: 750px;
+  width: auto;
   text-align: left;
   font-style: italic;
   font-size: 12pt;

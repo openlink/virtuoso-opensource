@@ -284,12 +284,10 @@ again:
       sp_done := 1;
     }
     errend:;
-    if (sp_done and __proc_exists ('DB.DBA.RDF_PROXY_ENTITY_IRI'))
+    if (sp_done)
       {
-	declare pt any;
-	pt := DB.DBA.RDF_PROXY_ENTITY_IRI (_G);
         http_status_set (302);
-	http_header (sprintf ('Location: /describe/?url=%U%s\r\n', pt, ses_parms));
+	http_header (sprintf ('Location: /describe/?url=%U%s\r\n', _G, ses_parms));
         return;
       }
   }
