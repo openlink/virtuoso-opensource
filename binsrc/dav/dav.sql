@@ -2660,17 +2660,34 @@ again:
       sp_col_opt := DB.DBA.TTL_REDIRECT_PARAMS (_col);
       if (not isnull (sp_col_opt))
       {
+        declare ttl_sp_enable varchar;
+
         sp_col_opt := '&' || trim (sp_col_opt, '&');
         http_rewrite ();
         http_status_set (303);
-        if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
+
+        ttl_sp_enable := registry_get ('__WebDAV_sponge_ttl__');
+        if (isinteger (ttl_sp_enable))
+        {
+          ttl_sp_enable := 'no';
+        }
+        if ((ttl_sp_enable = 'yes') or (ttl_sp_enable = 'add'))
         {
           sp_opt := '&sponger:get=add';
+        }
+        else if (ttl_sp_enable = 'soft')
+        {
+          sp_opt := '&sponger:get=soft';
+        }
+        else if (ttl_sp_enable = 'replace')
+        {
+          sp_opt := '&sponger:get=replace';
         }
         else
         {
           sp_opt := '';
         }
+
         http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s%s\r\n',
           WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt, sp_col_opt));
 
