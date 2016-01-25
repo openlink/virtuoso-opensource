@@ -118,7 +118,7 @@
 		 stat := '00000';
 		 msg := 'OK';
 		 sparql clear graph iri (?:gr);
-		 exec ('DB.DBA.TTLP (?, \'\', ?, 255)', stat, msg, vector (self.body_o, gr), 0, meta, data);
+		 exec ('DB.DBA.TTLP (?, \'\', ?, 255, 1, 1)', stat, msg, vector (self.body_o, gr), 0, meta, data);
 		 res [length(arr)] := vector (vector (stat, msg));
 		 exec (sprintf ('sparql
 		 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
