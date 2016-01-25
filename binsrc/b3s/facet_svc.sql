@@ -127,7 +127,7 @@ create procedure fct_http_param (in n any, in def any := '')
 ;
 
 -- http://{cname}/fct/search(?q,view:type,c-term,s-term,same-as,inference,offet,limit,graph)
-create procedure fct_search () __soap_http 'application/json'
+create procedure fct_search () __soap_http 'text/xml'
 {
   declare cnt, tp, ret, timeout, xt, xslt, maxt, tmp, lines, accept any;
   declare inf, sas, st, ct, qr, vt, lim, offs any;
