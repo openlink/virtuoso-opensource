@@ -299,8 +299,8 @@
           ?>
 	  <tr><td colspan="2">
 		  <input type="hidden" name="tp" value="<?V tp ?>"/>
-		  <input type="submit" name="set_graphs" value="Set Graphs"/> 
-		  <input type="submit" name="clear_graphs" value="Exclude Graph Selection"/>
+		  <input type="submit" name="set_graphs" value="Set Graph(s) Scope"/>
+		  <input type="submit" name="clear_graphs" value="Exclude Selected Graph(s)"/>
 	  </td></tr>
 	  <?vsp } ?>
         </table>
