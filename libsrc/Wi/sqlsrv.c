@@ -3543,9 +3543,7 @@ sql_code_arfw_global_init ()
 {
   int was_col  = enable_col_by_default;
   enable_col_by_default = 0;
-/*
   ddl_scheduler_arfw_init ();
-*/
   sqls_arfw_define_sys ();
   sqls_arfw_define_sparql ();
   sqls_arfw_define ();
