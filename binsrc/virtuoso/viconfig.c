@@ -1065,8 +1065,11 @@ cfg_setup (void)
       c_default_txn_isolation != ISO_SERIALIZABLE)
     c_default_txn_isolation = ISO_REPEATABLE;
 
-  if (cfg_getlong (pconfig, section, "ColumnStore", &c_col_by_default) == -1)
+  if (cfg_getlong (pconfig, section, "ColumnStoreAll", &c_col_by_default) == -1)
     c_col_by_default = 0;
+
+  if (c_col_by_default > 0)
+    log_warning ("Setting ColumnStoreAll = 1 is not recommended in a production environment");
 
   if (0 != cfg_getsize (pconfig, section, "MaxQueryMem", &c_max_large_vec))
     c_max_large_vec = 0;
