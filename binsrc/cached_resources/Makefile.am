@@ -21,6 +21,7 @@
 
 noinst_SCRIPTS	= cache_gen.sh
 BUILT_SOURCES	= cached_resources.c
+DISTCLEANFILES  = cached_resources.c
 
 all: cached_resources.c
 
