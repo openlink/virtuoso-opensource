@@ -1733,7 +1733,7 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
   --dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
   http ('<table class="sparql" border="1">', ses);
   http ('\n  <tr>', ses);
-  http('\n    <th>Row #</th>', ses);
+  --http('\n    <th>Row #</th>', ses);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       http('\n    <th>', ses);
@@ -1749,9 +1749,7 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
         {
       http('\n  <tr>', ses);
-      http('\n    <td>', ses);
-      http(cast((resctr + 1) as varchar), ses);
-      http('</td>', ses);
+      --http('\n    <td>', ses); http(cast((resctr + 1) as varchar), ses); http('</td>', ses);
       for (varctr := 0; varctr < varcount; varctr := varctr + 1)
         {
           declare val, split any;
