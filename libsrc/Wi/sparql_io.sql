@@ -2645,7 +2645,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[ctr++] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Microdata (raw)\',\'text/html\');\n');
     http('			format.options[ctr++] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
     http('			format.options[ctr++] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
@@ -2791,7 +2791,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('JSON-LD'						, 'application/x-json+ld'		),
         vector ('HTML (list)'						, 'text/x-html+ul'			),
         vector ('HTML (table)'						, 'text/x-html+tr'			),
-        vector ('HTML+Microdata (inconvenient)'				, 'text/html'				),
+        vector ('HTML+Microdata (raw)'					, 'text/html'				),
         vector ('HTML+Microdata (pretty-printed table)'			, 'application/x-nice-microdata'		),
         vector ('Turtle-style HTML (for browsing, not for export)'	, 'text/x-html-nice-turtle'		),
         vector ('Microdata/JSON'					, 'application/microdata+json'		),
