@@ -2615,18 +2615,25 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('\n');
     http('    <script type="text/javascript">\n');
     http('    /*<![CDATA[*/\n');
-    http('	var last_format = 0;\n');
-    http('	function format_select(query_obg)\n');
+    http('	var timer;\n');
+    http('	function format_select(query_obg){\n');
+    http('	    clearTimeout(timer);\n');
+    http('	    timer = setTimeout (function delay_format_select() {do_format_select(query_obg);}, 1000);\n');
+    http('	}\n\n');
+    http('	var curr_format = 0;\n');
+    http('	function do_format_select(query_obg)\n');
     http('	{\n');
     http('		var query = query_obg.value; \n');
     http('		var format = query_obg.form.format;\n');
+    http('		var prev_value = format.options[format.selectedIndex].value;\n');
+    http('		var prev_format = curr_format;\n');
     http('		var ctr = 0;\n');
     http('		var query_is_construct = (query.match(/\\bconstruct\\b\\s/i) || query.match(/\\bdescribe\\b\\s/i));\n');
     http('\n');
-    http('		if (query_is_construct && last_format != 2) {\n');
-    http('			for(ctr = format.options.length; ctr > 0; ctr--)\n');
-    http('				format.options[ctr] = null;\n');
-    http('			ctr = 1;\n');
+    http('		if (query_is_construct && curr_format != 2) {\n');
+    http('			for(ctr = format.options.length - 1; ctr >= 0; ctr--)\n');
+    http('				format.remove(ctr);\n');
+    http('			ctr = 0;\n');
     http('			format.options[ctr++] = new Option(\'Turtle\',\'text/turtle\');\n');
     http('			format.options[ctr++] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
@@ -2652,14 +2659,14 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 	if (can_qrcode)
 	  http('		format.options[ctr++] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
-    http('			format.selectedIndex = 1;\n');
-    http('			last_format = 2;\n');
+    http('			curr_format = 2;\n');
     http('		}\n');
     http('\n');
-    http('		if (!query_is_construct && last_format != 1) {\n');
-    http('			for(ctr = format.options.length; ctr > 0; ctr--)\n');
-    http('				format.options[ctr] = null;\n');
-    http('			ctr = 1;\n');
+    http('		if (!query_is_construct && curr_format != 1) {\n');
+    http('			for(ctr = format.options.length - 1; ctr >= 0; ctr--)\n');
+    http('				format.remove(ctr);\n');
+    http('			ctr = 0;\n');
+    http('			format.options[ctr++] = new Option(\'Auto\',\'auto\');\n');
     http('			format.options[ctr++] = new Option(\'HTML\',\'text/html\');\n');
     if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
       http('			format.options[ctr++] = new Option(\'HTML (Faceted Browsing Links)\',\'text/x-html+tr\');\n');
@@ -2675,10 +2682,16 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
     http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
     if (can_cxml)
+      {
       http('			format.options[ctr++] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
-    http('			format.selectedIndex = 1;\n');
-    http('			last_format = 1;\n');
+	if (can_qrcode)
+	  http('		format.options[ctr++] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+      }
+    http('			curr_format = 1;\n');
     http('		}\n');
+    http('		if (prev_format != curr_format)\n');
+    http('			for(ctr = format.options.length - 1, format.selectedIndex=0; ctr >= 0; ctr--)\n');
+    http('				if (format.options[ctr].value == prev_value) format.selectedIndex = ctr;\n');
     http('	}\n');
     http('
 	function format_change(e)
@@ -2785,14 +2798,6 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('CSV'							, 'text/csv'				),
         vector ('TSV'							, 'text/tab-separated-values'		),
         vector ('TriG'							, 'application/x-trig'			) );
-      if (can_cxml)
-        {
-          opts := vector_concat (opts, vector (
-            vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
-          if (can_qrcode)
-            opts := vector_concat (opts, vector (
-              vector ('CXML (Pivot Collection with QRcodes)'		, 'text/cxml+qrcode'			) ) );
-        }
     }
   else
     {
@@ -2815,10 +2820,17 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('N-Triples'						, 'text/plain'				),
         vector ('CSV'							, 'text/csv'				),
         vector ('TSV'							, 'text/tab-separated-values'		) );
-        if (can_cxml)
-          opts := vector_concat (opts, vector (
-        vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
     }
+
+  if (can_cxml)
+    {
+      opts := vector_concat (opts, vector (
+        vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
+      if (can_qrcode)
+	opts := vector_concat (opts, vector (
+	  vector ('CXML (Pivot Collection with QRcodes)'		, 'text/cxml+qrcode'			) ) );
+    }
+
   foreach (any x in opts) do
     {
       http(sprintf ('			<option value="%V" %s>%V</option>\n',
@@ -3052,7 +3064,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<br /><br />\n');
 
     http('		<label for="query">Query Text</label><br />\n');
-    http('		<textarea rows="18" cols="80" name="query" id="query" onchange="format_select(this)" onkeyup="format_select(this)">'|| def_qry ||'</textarea>\n');
+    http('		<textarea rows="18" cols="80" name="query" id="query" onchange="javascript:format_select(this)" onkeyup="javascript:format_select(this)">'|| def_qry ||'</textarea>\n');
 
     http('		<br /><br />\n');
     if (can_sponge)
@@ -3069,7 +3081,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
     http('		<br />\n');
     http('		<label for="format" class="n">Results Format</label>\n');
-    http('		<select name="format" id="format" onchange="format_change(this)">\n');
+    http('		<select name="format" id="format" onchange="javascript:format_change(this)">\n');
     WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (can_cxml, can_qrcode, params, def_qry);
     http('		</select>\n');
     if (sys_stat('st_has_vdb'))
