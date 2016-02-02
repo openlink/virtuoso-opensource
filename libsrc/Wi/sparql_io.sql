@@ -2708,8 +2708,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 	}
 	function sparql_endpoint_init()
 	{
-		var cxml = document.getElementById("cxml");
-		if (cxml) cxml.style.display="none";
+		var format = document.getElementById("format");
+ 		if (format) format_change(format);
 		var savefs = document.getElementById("savefs");
 		if (savefs) savefs.style.display="none";
 	}
