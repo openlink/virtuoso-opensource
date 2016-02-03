@@ -440,14 +440,14 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
   }
 
 
-  public void setLog_Enable(int bits) throws SQLException
+  public void setLog_Enable(int bits)
   {
     if (bits<-1 || bits>3)
-      throw new SQLException("The log_enable options must be between -1 and 3");
+      bits = 0;
     log_enable = bits;
   }
 
-  public int getLog_Enable() throws SQLException
+  public int getLog_Enable()
   {
     return log_enable;
   }
