@@ -7121,8 +7121,8 @@ caddr_t
 bif_mod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int isnull1 = 0, isnull2 = 0;
-  long long1 = (long) bif_long_or_null_arg (qst, args, 0, "mod", &isnull1);
-  long long2 = (long) bif_long_or_null_arg (qst, args, 1, "mod", &isnull2);
+  int64 long1 = bif_long_or_null_arg (qst, args, 0, "mod", &isnull1);
+  int64 long2 = bif_long_or_null_arg (qst, args, 1, "mod", &isnull2);
 
   if (isnull1 || isnull2)
     return (NEW_DB_NULL);
