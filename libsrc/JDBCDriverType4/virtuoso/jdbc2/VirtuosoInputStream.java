@@ -535,6 +535,7 @@ class VirtuosoInputStream extends BufferedInputStream
                     break;
                 default:
                     /* 10xx xxxx,  1111 xxxx */
+                    count++;
                     c_arr[ch_count++] = bad_char;
 /**
                     throw new UTFDataFormatException("malformed input around byte " + count);
