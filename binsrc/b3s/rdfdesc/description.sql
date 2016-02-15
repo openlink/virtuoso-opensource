@@ -836,6 +836,20 @@ create procedure b3s_o_is_out (in x any)
 }
 ;
 
+create procedure b3s_o_is_img (in x any)
+{
+  declare f, s, og any;
+  f := 'http://xmlns.com/foaf/0.1/';
+  s := 'http://schema.org/';
+  og := 'http://opengraphprotocol.org/schema/';
+  if (__ro2sq (x) in (f||'img', f||'logo', f||'depiction', s||'logo', s||'image', og || 'image', 'http://ogp.me/ns#image'))
+    {
+      return 1;
+    }
+  return 0;
+}
+;
+
 create procedure
 b3s_http_print_r (in subj any, in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
@@ -907,7 +921,7 @@ again:
 	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0" sandbox=""><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _object else subj end));
 	 }
-       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or prop = 'http://xmlns.com/foaf/0.1/depiction')
+       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or b3s_o_is_img (prop))
 	 {
 	   declare u any;
 	   if (b3s_o_is_out (prop))
@@ -963,6 +977,11 @@ again:
    else if (__tag (_object) = 182)
      {
        declare vlbl any;
+       if (b3s_o_is_img (prop))
+	 {
+	   __box_flags_set (_object, 1);
+	   goto again;
+	 }
        http (sprintf ('<span %s>', rdfa));
        if (strstr (_object, 'http://') is not null)
 	 {
