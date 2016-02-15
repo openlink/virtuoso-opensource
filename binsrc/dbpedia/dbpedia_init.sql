@@ -234,7 +234,7 @@ DB.DBA.VHOST_DEFINE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('d
 
 create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
 {
-  declare host, lines, accept, loc, alt, exp any;
+  declare host, lines, accept, loc, alt, exp, lic any;
   lines := http_request_header ();
 --  dbg_obj_print ('in_path: ', in_path);
 --  dbg_obj_print ('lines: ', lines);
@@ -302,7 +302,8 @@ create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
 	alt := alt || sprintf ('<%s>; rel="hub", ', registry_get ('dbp_pshb_hub'));
       exp := sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 7, now ())));
     }
-  return sprintf ('%s%sLink: %s<http://mementoarchive.lanl.gov/dbpedia/timegate/http://%s%s>; rel="timegate"', exp, loc, alt, host, in_path);
+  lic := '<http://creativecommons.org/licenses/by-sa/3.0/>;rel="license",';
+  return sprintf ('%s%sLink: %s<http://mementoarchive.lanl.gov/dbpedia/timegate/http://%s%s>; rel="timegate"', exp, loc, lic, alt, host, in_path);
 }
 ;
 

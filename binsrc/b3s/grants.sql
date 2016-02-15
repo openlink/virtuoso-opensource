@@ -65,3 +65,4 @@ grant execute on b3s_get_user_graph_permissions to SPARQL_SELECT;
 grant execute on FCT.DBA.get_describe_request_params to SPARQL_SELECT;
 grant execute on FCT.DBA.build_page_url_on_current_host to SPARQL_SELECT;
 grant execute on DB.DBA.RDF_GRAPH_USER_PERMS_GET to SPARQL_SELECT;
+grant execute on DB.DBA.fct_load to "SPARQL_SELECT";

@@ -147,7 +147,8 @@
        rdf_link2 := rdf_link2 || '.rdf';
      }
 
-   links := sprintf ('Link: <%s>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)", ', rdf_link2); 
+   links := 'Link: <http://creativecommons.org/licenses/by-sa/3.0/>;rel="license", ';
+   links := links || sprintf ('<%s>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)", ', rdf_link2); 
    links := links || sprintf ('<%s>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)", ',rdf_link); 
    links := links || sprintf ('<%s>; rel="alternate"; type="application/json"; title="Structured Descriptor Document (RDF/JSON format)", ', rdf_link3); 
    links := links || sprintf ('<%s>; rel="alternate"; type="application/atom+xml"; title="OData (Atom+Feed format)", ', atom_link); 
