@@ -466,9 +466,9 @@
                                           <![CDATA[
                                             declare exit handler for SQLSTATE '*'
                                             {
-                                              if (__SQL_STATE = 'VALIDATE')
+                                              if (__SQL_STATE = 'NV%')
                                               {
-                                                self.vc_error_message := VALIDATE.DBA.validate_clear (__SQL_MESSAGE);
+                                                self.vc_error_message := VALIDATE.DBA.clear (__SQL_MESSAGE);
                                                 self.vc_is_valid := 0;
                                                 return;
                                               }
