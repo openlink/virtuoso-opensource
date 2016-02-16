@@ -8138,12 +8138,11 @@ create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any,
     {
       for vectored (in r_s any array := repl_sv, in r_p any array := repl_pv, in r_o any array := repl_ov, in r_g any array := repl_gv, out repl_quads := r_q)
         {
-          declare r_q, r_o any array;
+	  declare r_q any array;
           declare r_g_iri, r_s_iri, r_p_iri varchar;
-          r_g_iri := iri_canonicalize (__id2in (r_q[3]));
-          r_s_iri := iri_canonicalize (__id2in (r_q[0]));
-          r_p_iri := iri_canonicalize (__id2in (r_q[1]));
-          r_o := r_q[2];
+          r_g_iri := iri_canonicalize (__id2in (r_g));
+          r_s_iri := iri_canonicalize (__id2in (r_s));
+          r_p_iri := iri_canonicalize (__id2in (r_p));
           if (isiri_id (r_o) or (__tag (r_o) = __tag of UNAME) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
             r_q := vector (r_g_iri, r_s_iri, r_p_iri, iri_canonicalize (__id2in (r_o)));
           else
@@ -8291,12 +8290,11 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
         {
           for vectored (in r_s any array := repl_sv, in r_p any array := repl_pv, in r_o any array := repl_ov, in r_g any array := repl_gv, out repl_quads := r_q)
             {
-              declare r_q, r_o any array;
+	      declare r_q any array;
               declare r_g_iri, r_s_iri, r_p_iri varchar;
-              r_g_iri := iri_canonicalize (__id2in (r_q[3]));
-              r_s_iri := iri_canonicalize (__id2in (r_q[0]));
-              r_p_iri := iri_canonicalize (__id2in (r_q[1]));
-              r_o := r_q[2];
+              r_g_iri := iri_canonicalize (__id2in (r_g));
+              r_s_iri := iri_canonicalize (__id2in (r_s));
+              r_p_iri := iri_canonicalize (__id2in (r_p));
               if (isiri_id (r_o) or (__tag (r_o) = __tag of UNAME) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
                 r_q := vector (r_g_iri, r_s_iri, r_p_iri, iri_canonicalize (__id2in (r_o)));
               else
