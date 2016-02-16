@@ -356,7 +356,7 @@
                                       <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
                                       <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
                                       <?vsp } ?>
-				      <?vsp 
+				      <?vsp
             if (strstr (self.desc1.ufl_value, 'CSV') is not null and exists (select 1 from DB.DBA.sys_keys where key_table = 'DB.DBA.CSV_HEADER_PATTERNS')) { ?>
             <v:button style="url" action="simple" name="csv_patterns" value="CSV Patterns" >
               <v:on-post><v:script><![CDATA[
@@ -381,11 +381,20 @@
                                             <![CDATA[
                                               declare _id integer;
                                               declare _key, _opts any;
-                                              declare exit handler for sqlstate '23000'
+                                              declare exit handler for sqlstate '*'
                                               {
                                                 rollback work;
+                                                if (__SQL_STATE like 'NV%')
+                                                {
+
+                                                  dbg_obj_print(123);
+                                                  self.vc_error_message := VALIDATE.DBA.clear (__SQL_MESSAGE);
+                                                }
+                                                else
+                                                {
+                                                  self.vc_error_message := 'The values entered conflict with other RDF Mapper. Please supply correct values.';
+                                                }
                                                 self.vc_is_valid := 0;
-                                                self.vc_error_message := 'The values entered conflict with other RDF Mapper. Please supply correct values.';
                                                 return;
                                               };
 
@@ -396,7 +405,8 @@
                                               self.pl1.ufl_value   := trim (self.pl1.ufl_value);
                                               self.key1.ufl_value  := trim (self.key1.ufl_value);
                                               self.key2.ufl_value  := trim (self.key2.ufl_value);
-                                              _id   := atoi (self.seq1.ufl_value);
+
+                                              _id   := VALIDATE.DBA.validate (self.seq1.ufl_value, vector ('name', 'Sequence No', 'class', 'integer', 'minValue', 1));
                                               _opts := trim (self.opts1.ufl_value);
                                               _opts := replace (_opts, '\r', '\n');
                                               _opts := replace (_opts, '\n\n', '\n');
@@ -436,9 +446,6 @@
                                                        RM_OPTIONS = _opts
                                                  where RM_ID = self.c_id;
                                               }
-                                              if (_id <= 0)
-                                                _id := self.c_id;
-
                                               if (_id <> self.c_id)
                                               {
                                                 update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = self.c_id;

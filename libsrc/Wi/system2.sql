@@ -1774,7 +1774,7 @@ create procedure VALIDATE.DBA.validate_internal (
   }
   else if (propertyType = 'integer')
   {
-    if (isnull (regexp_match('^[0-9]+\$', propertyValue)))
+    if (isnull (regexp_match('^[-+]?[0-9]+\$', propertyValue)))
       goto _error;
 
     return cast (propertyValue as integer);
