@@ -151,6 +151,7 @@ create procedure fct_search () __soap_http 'text/plain'
   if (vt = 'entity-types') vt := 'classes';
   if (vt = 'attribute-names') vt := 'properties';
   if (vt = 'attribute-values') vt := 'properties-in';
+  if (vt = 'values') vt := 'properties-in';
   lim := atoi (fct_http_param ('limit', '20'));
   offs := atoi (fct_http_param ('offset', '0'));
   cnt := sprintf ('<query inference="%s" same-as="%s" s-term="%s" c-term="%s"><text>%V</text><view type="%s" limit="%d" offset="%d" /></query>', 
