@@ -127,7 +127,7 @@ create procedure fct_http_param (in n any, in def any := '')
 ;
 
 -- http://{cname}/fct/search(?q,view:type,c-term,s-term,same-as,inference,offet,limit,graph)
-create procedure fct_search () __soap_http 'text/plain'
+create procedure fct_search () __soap_http 'text/html'
 {
   declare cnt, tp, ret, timeout, xt, xslt, maxt, tmp, lines, accept any;
   declare inf, sas, st, ct, qr, vt, lim, offs any;
@@ -156,11 +156,27 @@ create procedure fct_search () __soap_http 'text/plain'
   offs := atoi (fct_http_param ('offset', '0'));
   cnt := sprintf ('<query inference="%s" same-as="%s" s-term="%s" c-term="%s"><text>%V</text><view type="%s" limit="%d" offset="%d" /></query>', 
      inf, sas, st, ct, qr, vt, lim, offs);
-  http_status_set (303);
   if (accept = 'text/html' or accept = '*/*' or accept = 'application/xhtml+xml')
-    http_header (sprintf ('Location: /fct/facet.vsp?qxml=%U\r\n', cnt));
+    {
+      declare full_path, p_full_path, long_url, pars any;
+      full_path := '/fct/facet.vsp';
+      long_url := null;
+      if (length (qr))
+	pars := vector ('qxml', cnt);
+      else
+        pars := vector ();
+      p_full_path := http_physical_path_resolve (full_path, 1);
+      http_internal_redirect (full_path, p_full_path, long_url, 0);
+      http_set_params (pars);
+      lines := http_request_header ();
+      WS.WS.GET (vector ('DAV', 'VAD', 'fct', 'facet.vsp'), pars, lines);
+      --http_header (sprintf ('Location: /fct/facet.vsp?qxml=%U\r\n', cnt));
+    }
   else  
-    http_header (sprintf ('Location: /sparql?query=%U&format=%U\r\n', fct_query (xtree_doc (cnt)), accept));
+    {
+      http_status_set (303);
+      http_header (sprintf ('Location: /sparql?query=%U&format=%U\r\n', fct_query (xtree_doc (cnt)), accept));
+    }
 ret:
   return '';
 }
