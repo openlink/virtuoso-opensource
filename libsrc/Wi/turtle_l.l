@@ -284,6 +284,14 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 %%
 
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xef][\xbb][\xbf]			{ }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>(([\xfe][\xff])|([\xff][\xfe]))	{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-16 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xf7][\x64][\x4c]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-1 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xdd][\x73][\x66][\x73]		{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-EBCDIC encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\x0e][\xfe][\xff]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the SCSU encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xfb][\xee][\x28]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the BOCU-1 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\x84][\x31][\x95][\x33]		{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the GB-18030 encoding but it is supposed to be UTF-8"); }
+
 <INITIAL>"^"[ \t]		{		return _CARET_WS; }
 <INITIAL>"^"{S_NLNL}		{ TTL_TWO_CRS;	return _CARET_WS; }
 <INITIAL>"^"{S_NL}		{ TTL_ONE_CR;	return _CARET_WS; }
@@ -756,7 +764,7 @@ resume_sniffing:
           else if (DV_UNAME == DV_TYPE_OF (lex_value))
             ttlyy_dbg_printf (("{Tuname %d %s %s} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), lex_value));
           else if (DV_LONG_INT == DV_TYPE_OF (lex_value))
-            ttlyy_dbg_printf (("{Tint %d %s %s " BOXINT_FMT "} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), unbox (lex_value)));
+            ttlyy_dbg_printf (("{Tint %d %s " BOXINT_FMT "} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), unbox (lex_value)));
           else
             ttlyy_dbg_printf (("{Tint %d %s ???} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt)));
 #endif
