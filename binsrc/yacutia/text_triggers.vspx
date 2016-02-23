@@ -243,7 +243,7 @@
       </tr>
       <tr>
         <td nowrap="nowrap" valign="top">
-          Enable redirection for .TTL files
+          Enable redirection for RDF-Turtle files
         </td>
         <td colspan="2">
           <label>
@@ -260,7 +260,7 @@
       </tr>
       <tr>
         <td nowrap="nowrap" valign="top">
-          Enable adding automatically missed prefixes for .TTL files
+          Enable adding automatically missed prefixes for RDF-Turtle files
         </td>
         <td colspan="2">
           <label>
@@ -277,7 +277,7 @@
       </tr>
       <tr>
         <td valign="top">
-          Enable sponge option for .TTL files redirection
+          Sponger options for RDF-Turtle redirection
         </td>
         <td colspan="2">
           <label>
