@@ -190,6 +190,61 @@ geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
   return geo_alloc_safe (geo_flags_, len_, srcode_, NULL);
 }
 
+int
+geo_looks_fine (geo_t * geo)
+{
+  switch (GEO_TYPE (geo->geo_flags))
+    {
+    case GEO_NULL_SHAPE:
+    case GEO_POINT:
+    case GEO_POINT_Z:
+    case GEO_POINT_M:
+    case GEO_POINT_Z_M:
+    case GEO_LINESTRING:
+    case GEO_LINESTRING_Z:
+    case GEO_LINESTRING_M:
+    case GEO_LINESTRING_Z_M:
+    case GEO_BOX:
+    case GEO_BOX_Z:
+    case GEO_BOX_M:
+    case GEO_BOX_Z_M:
+    case GEO_ARCSTRING:
+    case GEO_GSOP:
+    case GEO_RING:
+    case GEO_RING_Z:
+    case GEO_RING_M:
+    case GEO_RING_Z_M:
+    case GEO_POINTLIST:
+    case GEO_POINTLIST_Z:
+    case GEO_POINTLIST_M:
+    case GEO_POINTLIST_Z_M:
+    case GEO_MULTI_LINESTRING:
+    case GEO_MULTI_LINESTRING_Z:
+    case GEO_MULTI_LINESTRING_M:
+    case GEO_MULTI_LINESTRING_Z_M:
+    case GEO_POLYGON:
+    case GEO_POLYGON_Z:
+    case GEO_POLYGON_M:
+    case GEO_POLYGON_Z_M:
+    case GEO_MULTI_POLYGON:
+    case GEO_MULTI_POLYGON_Z:
+    case GEO_MULTI_POLYGON_M:
+    case GEO_MULTI_POLYGON_Z_M:
+    case GEO_COLLECTION:
+    case GEO_COLLECTION_Z:
+    case GEO_COLLECTION_M:
+    case GEO_COLLECTION_Z_M:
+    case GEO_CURVE:
+    case GEO_CLOSEDCURVE:
+    case GEO_CURVEPOLYGON:
+    case GEO_MULTI_CURVE:
+      break;
+    default:
+      return 0;
+    }
+  return 1;
+}
+
 #undef GEO_SET_CVECT
 #undef GEO_SET_MVECT
 #undef GEO_ALLOC_PLINE

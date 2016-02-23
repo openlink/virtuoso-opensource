@@ -1184,6 +1184,8 @@ int
 geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
 {
   int cctr, ictr, itemctr;
+  if (!geo_looks_fine (g1) || !geo_looks_fine (g2))
+    sqlr_new_error ("42000", "GEO..", "Bad geo type");
   if (GSOP_WITHIN == op)
     {
       geo_t * swap;
