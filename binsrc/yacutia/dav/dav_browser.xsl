@@ -2001,7 +2001,7 @@
               </div>
               <div style="margin: 0 0 6px 0;" />
             </div>
-            <script>
+            <script type="text/javascript">
               initDisabled();
               initTab(10, 7);
             </script>
@@ -3943,7 +3943,7 @@
                 </v:on-post>
               </v:button>
             </div>
-            <script>
+            <script type="text/javascript">
               <![CDATA[
                 updateLabel($v('dav_det'));
                 initDisabled();
@@ -5267,7 +5267,7 @@
                         </v:template>
 
                       </v:data-set>
-                      <script>
+                      <script type="text/javascript">
                         <![CDATA[
                           WEBDAV.enableToolbars (document.forms['F1'], 'cb_item');
                         ]]>
