@@ -1679,13 +1679,10 @@ create trigger SYS_DAV_PROP_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_PROP o
 }
 ;
 
-create trigger SYS_DAV_PROP_PRIVATE_GRAPH_U after update on WS.WS.SYS_DAV_PROP order 111 referencing old as O, new as N
+create trigger SYS_DAV_PROP_PRIVATE_GRAPH_U after update (PROP_VALUE) on WS.WS.SYS_DAV_PROP order 111 referencing old as O, new as N
 {
   -- Only collections
   if (N.PROP_TYPE <> 'C')
-    return;
-
-  if (O.PROP_VALUE = N.PROP_VALUE)
     return;
 
   if (N.PROP_NAME like 'virt:%-rdf')
