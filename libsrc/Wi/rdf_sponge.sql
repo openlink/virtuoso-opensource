@@ -64,7 +64,7 @@ create procedure DB.DBA.RDF_LOG_DEBUG_INFO_RESET (in flag varchar)
 
 create procedure DB.DBA.RDF_LOG_DEBUG_INFO (in message varchar, in arg1 any, in arg2 any)
 {
-  dbg_obj_princ ('DB.DBA.RDF_LOG_DEBUG_INFO (', message, arg1, arg2);
+  --dbg_obj_princ ('DB.DBA.RDF_LOG_DEBUG_INFO (', message, arg1, arg2);
   declare ctx any;
   if (not connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO', 0, -1))
     return;
