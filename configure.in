@@ -2297,7 +2297,7 @@ if test "x$ac_jw_jdk" != "xnone" ; then
   fi
   JAVAC=$ac_jw_jdk/javac
   JAVA=$ac_jw_jdk/java
-  ac_java_version=`$JAVA -version 2>&1 | grep 'java version' | cut -f 2 -d '"'`
+  ac_java_version=`$JAVA -version 2>&1 | grep ' version' | cut -f 2 -d '"'`
   ac_java_ver_major=`echo $ac_java_version | cut -f 1 -d .`
   ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
   if test "x$ac_java_ver_major" != "x1" -o "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor" ; then
