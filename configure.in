@@ -1770,7 +1770,11 @@ then
 int
 main ()
 {
-  BZ2_bzDecompressInit(NULL, 0, 0);
+  bz_stream strm = {0};
+  int ret = BZ2_bzDecompressInit(&strm, 0, 0) != BZ_OK;
+  if (ret == BZ_OK)
+    return 0;
+  return -1;
 }],
 [
  AC_MSG_RESULT(good)
