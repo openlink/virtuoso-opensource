@@ -27,13 +27,15 @@
 
 #include "Dk.h"
 
-#if defined(linux) || defined (__APPLE__)
+#if defined(HAVE_EXECINFO_H)
+
 #include <execinfo.h>
+
+#define N_FRAMES 100
 
 void
 print_trace (void)
 {
-#define N_FRAMES 100
   void *array[N_FRAMES];
   size_t size, i;
   char **strings;
