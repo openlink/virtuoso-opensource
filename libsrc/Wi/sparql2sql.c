@@ -4337,7 +4337,11 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
                 if (restr_set & SPART_VARR_LONG_EQ_SQL)
                   {
                     if (DV_ARRAY_OF_POINTER == datum_dtp)
-                      datum_dtp = DV_TYPE_OF (datum->_.lit.val);
+                      {
+                        if (uname_xmlschema_ns_uri_hash_boolean != datum->_.lit.datatype)
+                          restr_set &= ~SPART_VARR_IS_BOOL;
+                          datum_dtp = DV_TYPE_OF (datum->_.lit.val);
+                      }
                     if (!((DV_LONG_INT == datum_dtp) || (DV_DOUBLE_FLOAT == datum_dtp) || (DV_SINGLE_FLOAT == datum_dtp) || (DV_DATETIME == datum_dtp)))
                       restr_set &= ~SPART_VARR_LONG_EQ_SQL;
                     if (!(DV_LONG_INT == datum_dtp))
