@@ -828,7 +828,7 @@ create procedure b3s_o_is_out (in x any)
   s := 'http://schema.org/';
   og := 'http://opengraphprotocol.org/schema/';
   -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
-  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl', 'http://schema.org/potentialAction', s||'logo', s||'image', s || 'mainEntityOfPage', og || 'image'))
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl', 'http://schema.org/potentialAction', s||'logo', s||'image', s || 'mainEntityOfPage', og || 'image', 'http://www.openlinksw.com/ontology/webservices#usageExample'))
     {
       return 1;
     }
@@ -947,11 +947,8 @@ again:
 	   http (sprintf ('</a>'));
 	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _url else subj end));
 	   if (b3s_o_is_out (prop))
-	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/goout.gif" border="0"/></a>', _url));
+	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
 	 }
-       --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
-       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" alt="Sponge" title="Sponge" border="0"/></a>', 
-       --	       b3s_http_url (_url, sid)));
 
      }
    else if (__tag (_object) = 189)
