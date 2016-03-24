@@ -249,6 +249,11 @@ gb_aggregate (setp_node_t * setp, caddr_t * inst, chash_t * cha, int64 ** groups
 	CHA_AGG_MAX (int64, >);
       case AGG_C (DV_LONG_INT, AMMSC_MAX):
 	CHA_AGG_MAX (int64, <);
+      case AGG_C (DV_IRI_ID, AMMSC_MAX):
+	CHA_AGG_MAX (uint64, <);
+
+      case AGG_C (DV_IRI_ID, AMMSC_MIN):
+	CHA_AGG_MAX (uint64, >);
 
 
       case AGG_C (DV_SINGLE_FLOAT, AMMSC_MIN):
