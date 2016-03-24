@@ -923,6 +923,16 @@ t_list_nc (long n, ...)
 }
 
 caddr_t *
+t_list_memcpy (long n, ccaddr_t *src)
+{
+  caddr_t *box;
+  size_t sz = sizeof (caddr_t) * n;
+  box = (caddr_t *) t_alloc_box (sz, DV_ARRAY_OF_POINTER);
+  memcpy (box, src, sz);
+  return box;
+}
+
+caddr_t *
 t_list_concat_tail (caddr_t list, long n, ...)
 {
   caddr_t *res;
