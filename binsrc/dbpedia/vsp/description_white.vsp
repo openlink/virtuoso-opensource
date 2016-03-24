@@ -146,7 +146,7 @@
 	<a class="sparql-uri" href="http://dbpedia.org:8890/sparql">http://dbpedia.org:8890/sparql</a>.<br>
 
       <a href="http://linkeddata.org/"><img style="vertical-align: -3px;" alt="This material is Open Knowledge" src="http://dbpedia.org/statics/LoDLogo.gif" border="0"></a> &nbsp;
-      Browse using: 
+      Browse using:
       <a href="http://demo.openlinksw.com/rdfbrowser2/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
       <a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (page_resource_uri); ?>">Zitgist Data Viewer</a> |
       <a href="http://beckr.org/marbles?uri=<?vsp http_url (page_resource_uri); ?>">Marbles</a> |

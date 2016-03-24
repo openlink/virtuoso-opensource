@@ -162,7 +162,7 @@ b3s_e_type (in subj varchar)
     {	
       stat := '00000';
       data := null;
-      exec (sprintf ('sparql select ?tp where { <%S> a ?tp }', subj), stat, msg, vector (), 100, meta, data);
+      exec (sprintf ('sparql select ?tp where { <%s> a ?tp }', subj), stat, msg, vector (), 100, meta, data);
 
       if (length (data))
 	{
@@ -192,7 +192,7 @@ b3s_type (in subj varchar,
 
   if (length (subj))
     {
-      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
+      exec (sprintf ('sparql select ?l ?tp %s where { <%s> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
 	  null, null, vector (), 100, meta, data);
 
       if (length (data))
@@ -247,7 +247,7 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
   st := '00000';
   msg:= '';
 
-  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%S> }}', _f, _s);
+  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%s> }}', _f, _s);
 
   exec (stmt, st, msg, vector(), 1, meta, data);
 
@@ -286,7 +286,7 @@ b3s_get_types (in _s varchar,
   declare i int;
   declare stmt varchar;
 
-  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%S> a ?tp } }', _from, _s);
+  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%s> a ?tp } }', _from, _s);
   data := null;
   t_a := vector();
 
@@ -320,7 +320,7 @@ b3s_get_all_types (in _s varchar,
   declare i int;
   declare stmt varchar;
 
-  stmt := sprintf ('sparql select distinct ?tp %s where { <%S> a ?tp }', _from, _s);
+  stmt := sprintf ('sparql select distinct ?tp %s where { <%s> a ?tp }', _from, _s);
   data := null;
   t_a := vector();
 
@@ -782,7 +782,7 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
     }
   stat := '00000';
   --exec (sprintf ('sparql define input:inference "facets" '||
-  --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  --'select ?o (lang(?o)) where { <%s> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
   exec (sprintf ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P, %d) as int) from RDF_QUAD table option (with ''facets'')
 	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3 option (same_as)', lbl_order_pref_id), 
 	stat, msg, vector (_S), 0, meta, data);

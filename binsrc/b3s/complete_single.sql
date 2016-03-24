@@ -37,6 +37,7 @@ urilbl_ac_init_db ()
 
       n_ins := n_ins + 1;
 
+      o_str := charset_recode (o_str, 'UTF-8', '_WIDE_');
       o_str := "LEFT"(o_str, 512);
 
       insert soft urilbl_complete_lookup_2

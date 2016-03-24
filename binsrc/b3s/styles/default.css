@@ -512,6 +512,7 @@ div.error_msg div.body { margin: 10px;}
 div.error_msg div.nav { margin-top: 10px;}
 div.error_msg div.diag { margin: 10px; font-size: 8pt }
 div.error_msg div.diag h3 {}
+#err { color: red; font-size: 120%; }
 
 div.facet_ctr {
   float: left;

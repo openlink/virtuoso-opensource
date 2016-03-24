@@ -222,7 +222,8 @@ urilbl_ac_ruin_label (in lbl varchar)
 {
   declare tmp any;
   tmp := regexp_replace (lbl, '[''",.]', '', 1, null);
-  tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
+  if (not iswidestring (tmp))
+    tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
   tmp := upper (tmp);
   tmp := subseq (tmp, 0, 50);
   return charset_recode (tmp, '_WIDE_', 'UTF-8');

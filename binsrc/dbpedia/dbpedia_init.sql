@@ -117,10 +117,10 @@ create procedure DB.DBA.DBP_GRAPH_PARAM1 (in par varchar, in fmt varchar, in val
       if (length (val) = 0)
 	val := '';
       if (val = 'en')
-        val := '';  
+        val := '';
       if (val <> '')
 	{
-          val := 'http://' || val || '.dbpedia.org';	
+          val := 'http://' || val || '.dbpedia.org';
 	  tmp := tmp || sprintf ('&named-graph-uri=%U', val);
 	}
     }
@@ -252,11 +252,11 @@ create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
 	  if (accept is null)
 	    accept := 'application/rdf+xml';
 	  if (accept = 'application/rdf+xml')
-	    loc := 'Content-Location: ' || tmp || '.xml\r\n';	
+	    loc := 'Content-Location: ' || tmp || '.xml\r\n';
 	  else if (accept = 'text/rdf+n3')
-	    loc := 'Content-Location: ' || tmp || '.n3\r\n';	
+	    loc := 'Content-Location: ' || tmp || '.n3\r\n';
 	  else if (accept = 'text/n3')
-	    loc := 'Content-Location: ' || tmp || '.n3\r\n';	
+	    loc := 'Content-Location: ' || tmp || '.n3\r\n';
 	}
     }
   if (in_path like '/data/%')
@@ -326,7 +326,7 @@ create procedure DB.DBA.DBP_DATA_IRI1 (in par varchar, in fmt varchar, in val va
 }
 ;
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbp_rule_12', 1, '/resource/([^\\?]*)(\\?lang=.*)?\x24', vector ('par_1', 'par_2'), 1,
-    '/data/@__@%s', vector ('par_1'), 'DB.DBA.DBP_DATA_IRI1', 
+    '/data/@__@%s', vector ('par_1'), 'DB.DBA.DBP_DATA_IRI1',
     '(application/rdf.xml)|(text/rdf.n3)|(text/n3)|(application/x-turtle)|(application/rdf.json)|(application/json)|(application/atom.xml)|(application/odata.json)', 2, 303, '^{sql:DB.DBA.DBP_LINK_HDR}^');
 
 create procedure DB.DBA.DBP_TCN_LOC (in id any, in var any)
@@ -438,7 +438,7 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'pvsp_data4_rule', 1, '/data4/(.*)\\.(n3|r
 '/sparql?default-graph-uri=http%%3A%%2F%%2F'||replace(registry_get('dbp_graph'),'http://','')||'&query=DESCRIBE+%%3Chttp%%3A%%2F%%2Fdbpedia.org%%2Fproperty%%2F%U%%3E&format=%U',
 vector ('par_1', 'f'), NULL, NULL, 2, null, '');
 
---# about 
+--# about
 DB.DBA.VHOST_DEFINE (
 	 lhost=>registry_get ('dbp_lhost'),
 	 vhost=>registry_get ('dbp_vhost'),
@@ -451,22 +451,22 @@ DB.DBA.VHOST_DEFINE (
 	 is_default_host=>0
 );
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ( 
-    'ext_about_http_proxy_rule_list1', 1, 
+DB.DBA.URLREWRITE_CREATE_RULELIST (
+    'ext_about_http_proxy_rule_list1', 1,
       vector ('dbp_about_rule_1'));
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 
-    'dbp_about_rule_1', 1, 
-      '/about/html/(.*)\x24', 
-      vector ('par_1'), 
-      1, 
-      '/DAV/VAD/dbpedia/description.vsp?res=%U', 
-      vector ('par_1'), 
-      NULL, 
-      NULL, 
-      2, 
-      0, 
-      '' 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
+    'dbp_about_rule_1', 1,
+      '/about/html/(.*)\x24',
+      vector ('par_1'),
+      1,
+      '/DAV/VAD/dbpedia/description.vsp?res=%U',
+      vector ('par_1'),
+      NULL,
+      NULL,
+      2,
+      0,
+      ''
       );
 
 DB.DBA.VHOST_REMOVE (
@@ -602,7 +602,7 @@ DB.DBA.VHOST_DEFINE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('d
 	 opts=>vector ('url_rewrite', 'dbpl_void_page_rule_list'),
 	 is_default_host=>0
 );
-    
+
 DB.DBA.VHOST_DEFINE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('dbp_vhost'), lpath=>'/isparql',
 	 ppath=>'/DAV/VAD/iSPARQL/',
 	 is_dav=>1,
@@ -628,7 +628,7 @@ DB.DBA.VHOST_DEFINE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('d
 	 is_default_host=>0
 );
 
-create procedure DB.DBA.SPARQL_DESC_DICT_DBPEDIA_PHYSICAL 
+create procedure DB.DBA.SPARQL_DESC_DICT_DBPEDIA_PHYSICAL
 (in subj_dict any, in consts any, in good_graphs any, in bad_graphs any, in storage_name any, in options any)
 {
   declare res, subjs any;
@@ -636,7 +636,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_DBPEDIA_PHYSICAL
   if (is_http_ctx ())
     {
       subjs := dict_to_vector (subj_dict, 0);
-      for (declare i int, i := 0; i < length (subjs); i := i + 2) 
+      for (declare i int, i := 0; i < length (subjs); i := i + 2)
       {
 	declare s any;
 	s := subjs [i];
@@ -657,15 +657,15 @@ DB.DBA.VHOST_REMOVE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('d
 DB.DBA.VHOST_REMOVE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('dbp_vhost'), lpath=>'/services/rdf/iriautocomplete.get');
 DB.DBA.VHOST_REMOVE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('dbp_vhost'), lpath=>'/describe');
 
-DB.DBA.VHOST_DEFINE (lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('dbp_vhost'), 
-    lpath=>'/fct', ppath=>'/DAV/VAD/fct/', 
+DB.DBA.VHOST_DEFINE (lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('dbp_vhost'),
+    lpath=>'/fct', ppath=>'/DAV/VAD/fct/',
     is_dav=>1, def_page=>'facet.vsp', vsp_user=>'dba', ses_vars=>0, is_default_host=>0);
 
 
 DB.DBA.VHOST_DEFINE (lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('dbp_vhost'),
 	 lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc',
 	 is_dav=>0, soap_user=>'dba', ses_vars=>0, is_default_host=>0);
-    
+
 DB.DBA.VHOST_DEFINE (lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('dbp_vhost'),
 	 lpath=>'/fct/soap', ppath=>'/SOAP/',
 	 is_dav=>0, soap_user=>'dba', ses_vars=>0, is_default_host=>0);
