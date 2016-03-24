@@ -74,7 +74,7 @@ DB.DBA.XML_SET_NS_DECL ('mql', 'http://www.freebase.com/', 2);
 DB.DBA.XML_SET_NS_DECL ('nci', 'http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#', 2);
 DB.DBA.XML_SET_NS_DECL ('nfo', 'http://www.semanticdesktop.org/ontologies/nfo/#', 2);
 DB.DBA.XML_SET_NS_DECL ('ng', 'http://www.openlinksw.com/schemas/ning#', 2);
-DB.DBA.XML_SET_NS_DECL ('nyt', 'http://www.nytimes.com/', 2);
+DB.DBA.XML_SET_NS_DECL ('nyt', 'http://data.nytimes.com/', 2);
 DB.DBA.XML_SET_NS_DECL ('oai', 'http://www.openarchives.org/OAI/2.0/', 2);
 DB.DBA.XML_SET_NS_DECL ('oai_dc', 'http://www.openarchives.org/OAI/2.0/oai_dc/', 2);
 DB.DBA.XML_SET_NS_DECL ('obo', 'http://www.geneontology.org/formats/oboInOwl#', 2);
