@@ -1473,11 +1473,15 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
             }
           else if (__tag of varchar = __tag (val))
             {
+              http ('<pre>', ses);
               http_escape (val, esc_mode, ses, 1, 1);
+              http ('</pre>', ses);
             }
 	  else if (185 = __tag (val)) -- string output
 	    {
+              http ('<pre>', ses);
               http_escape (cast (val as varchar), esc_mode, ses, 1, 1);
+              http ('</pre>', ses);
 	    }
 	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
 	    {
@@ -1492,10 +1496,16 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
                 --http_value (val, 0, ses);
             }
           else if (pure_html and __tag of rdf_box = __tag (val))
-            http_rdf_object (val, ses, 1);
+            {
+              http ('<pre>', ses);
+              http_rdf_object (val, ses, 1);
+              http ('</pre>', ses);
+            }
           else
             {
+              http ('<pre>', ses);
               http_escape (__rdf_strsqlval (val), esc_mode, ses, 1, 1);
+              http ('</pre>', ses);
             }
           http ('</td>', ses);
 end_of_val_print: ;
@@ -1779,11 +1789,15 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
             }
           else if (__tag of varchar = __tag (val))
             {
+              http ('<pre>', ses);
               http_escape (val, 1, ses, 1, 1);
+              http ('</pre>', ses);
             }
 	  else if (185 = __tag (val)) -- string output
 	    {
+              http ('<pre>', ses);
               http_escape (cast (val as varchar), 1, ses, 1, 1);
+              http ('</pre>', ses);
 	    }
 	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
 	    {
@@ -1793,10 +1807,16 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
               http_escape (cast (tmpses as varchar), 1, ses, 1, 1);
             }
           else if (__tag of rdf_box = __tag (val))
-            http_rdf_object (val, ses, 1);
+            {
+              http ('<pre>', ses);
+              http_rdf_object (val, ses, 1);
+              http ('</pre>', ses);
+            }
           else
             {
+              http ('<pre>', ses);
               http_escape (__rdf_strsqlval (val), 1, ses, 1, 1);
+              http ('</pre>', ses);
             }
           http ('</td>', ses);
           goto end_of_val_print; -- see below
@@ -1906,7 +1926,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     singlefield := metas[0][0][0];
   else
     singlefield := NULL;
-  --dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
+  dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
@@ -2038,6 +2058,16 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 	  http ('</rdf:RDF>', ses);
 	  http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
 	}
+      else if (ret_format = 'HTML;SCRIPT_TTL')
+        {
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (triples, ses);
+          ret_mime := 'text/html';
+        }
+      else if (ret_format = 'HTML;SCRIPT_LD_JSON')
+        {
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (triples, ses);
+          ret_mime := 'text/html';
+        }
       else
         {
           ret_mime := 'application/rdf+xml';
@@ -2647,6 +2677,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[ctr++] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
     http('			format.options[ctr++] = new Option(\'HTML+Microdata (raw)\',\'text/html\');\n');
     http('			format.options[ctr++] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML with enclosed JSON-LD\',\'text/x-html-script-ld+json\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML with enclosed Turtle\',\'text/x-html-script-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
     http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
@@ -2793,6 +2825,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('HTML (table)'						, 'text/x-html+tr'			),
         vector ('HTML+Microdata (raw)'					, 'text/html'				),
         vector ('HTML+Microdata (pretty-printed table)'			, 'application/x-nice-microdata'		),
+        vector ('HTML with enclosed JSON-LD'				, 'text/x-html-script-ld+json'		),
+        vector ('HTML with enclosed Turtle'				, 'text/x-html-script-turtle'		),
         vector ('Turtle-style HTML (for browsing, not for export)'	, 'text/x-html-nice-turtle'		),
         vector ('Microdata/JSON'					, 'application/microdata+json'		),
         vector ('CSV'							, 'text/csv'				),
@@ -4583,6 +4617,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'text/cxml+qrcode') is not null or
       strcasestr (accept, 'text/csv') is not null or
       strcasestr (accept, 'application/x-nice-turtle') is not null or
+      strcasestr (accept, 'text/x-html-script-ld+json') is not null or
+      strcasestr (accept, 'text/x-html-script-turtle') is not null or
       strcasestr (accept, 'text/x-html-nice-turtle') is not null
      )
     {
