@@ -48,9 +48,9 @@ img { border: none; }
 
 #content {width: 100%; float: left; clear: left;}
 
-#footer { width: 100%;float: left; clear: left;border-top: 2px solid #696; margin: 1.2em 0 0; padding: 0.3em; background-color: #fff;}
+#footer { width: 100%;float: left; clear: left;border-top: 2px solid #696; margin: 1.2em 0 1.2em; padding: 0.3em; background-color: #f9fff9;}
 #ft_r { float: right; clear: right;}
-#ft_t { text-align: center; }
+#ft_t { text-align: left; }
 #ft_b { text-align: center; margin-top: 0.7ex }
 #ft_ccbysa { font-size: 8pt; text-align: center; margin-top: 0.7ex }
 
