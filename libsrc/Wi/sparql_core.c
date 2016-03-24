@@ -3110,7 +3110,7 @@ spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_m
   object = (SPART *)t_box_copy_tree ((caddr_t)object);
   if (pp_makes_union)
     spar_gp_init (sparp, 0);
-  if ((0 == pp_subtype) && (1 == part_count))
+  if ((0 == pp_subtype) && (1 == part_count) && ((SPART *)_STAR != parts[0]))
     res = spar_gp_add_triplelike (sparp, graph, subject, parts[0], object, qm_iri_or_pair, NULL, banned_tricks);
   else
     {
@@ -3118,7 +3118,12 @@ spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_m
       SPART *filt;
       res = spar_gp_add_triplelike (sparp, graph, subject, spar_make_variable (sparp, pred_vname), object, qm_iri_or_pair, NULL, banned_tricks);
       if (1 == part_count)
-        filt = spartlist (sparp, 3, ((0 == pp_subtype) ? BOP_EQ : BOP_NEQ), spar_make_variable (sparp, pred_vname), parts[0]);
+        {
+          if ((SPART *)_STAR != parts[0])
+            filt = spartlist (sparp, 3, ((0 == pp_subtype) ? BOP_EQ : BOP_NEQ), spar_make_variable (sparp, pred_vname), parts[0]);
+          else
+            filt = NULL;
+        }
       else if (1 < part_count)
         {
           SPART **p_and_qnames = (SPART **)t_alloc_list (1 + part_count);
@@ -3668,7 +3673,332 @@ spar_make_ppath_pred_or_predinf (sparp_t *sparp, SPART *predicate)
 }
 
 SPART *
+spar_make_ppath_union (sparp_t *sparp, SPART *part1, SPART *part2)
+{
+  int part1subt = part1->_.ppath.subtype;
+  int part2subt = part2->_.ppath.subtype;
+  SPART **p1 = part1->_.ppath.parts;
+  SPART **p2 = part2->_.ppath.parts;
+  int count1 = BOX_ELEMENTS (p1);
+  int count2 = BOX_ELEMENTS (p2);
+  int fwd_count1 = count1 - part1->_.ppath.num_of_invs;
+  int fwd_count2 = count2 - part2->_.ppath.num_of_invs;
+  int fwdstar1 = 0, fwdstar2 = 0, invstar1 = 0, invstar2 = 0;
+  if ((0 == part1subt) || ('!' == part1subt))
+    {
+      fwdstar1 = ((0 < fwd_count1) && ((SPART *)_STAR == p1[0]));
+      invstar1 = ((fwd_count1 < count1) && ((SPART *)_STAR == p1[fwd_count1]));
+    }
+  if ((0 == part2subt) || ('!' == part2subt))
+    {
+      fwdstar2 = ((0 < fwd_count2) && ((SPART *)_STAR == p2[0]));
+      invstar2 = ((fwd_count2 < count2) && ((SPART *)_STAR == p2[fwd_count2]));
+    }
+  if ((0 == part1subt) && (0 == part2subt))
+    {
+      int pres_count = count1+count2;
+      SPART **pres = (SPART **)t_alloc_list (pres_count);
+      int ctr1 = 0, ctr2 = 0, res_ctr = 0, fwd_res_count;
+      if (fwdstar1 || fwdstar2)
+        {
+          pres[res_ctr++] = (SPART *)_STAR;
+          ctr1 = fwd_count1; ctr2 = fwd_count2;
+        }
+      else
+        {
+          while ((ctr1 < fwd_count1) || (ctr2 < fwd_count2))
+            {
+              if ((ctr1 < fwd_count1) && ((ctr2 >= fwd_count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
+                pres[res_ctr++] = p1[ctr1++];
+              else if ((ctr2 < fwd_count2) && ((ctr1 >= fwd_count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
+                pres[res_ctr++] = p2[ctr2++];
+              else
+                {
+                  pres[res_ctr++] = p1[ctr1++]; ctr2++;
+                }
+            }
+        }
+      fwd_res_count = res_ctr;
+      if (invstar1 || invstar2)
+        {
+          pres[res_ctr++] = (SPART *)_STAR;
+          ctr1 = count1; ctr2 = count2;
+        }
+      else
+        {
+          while ((ctr1 < count1) || (ctr2 < count2))
+            {
+              if ((ctr1 < count1) && ((ctr2 >= count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
+                pres[res_ctr++] = p1[ctr1++];
+              else if ((ctr2 < count2) && ((ctr1 >= count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
+                pres[res_ctr++] = p2[ctr2++];
+              else
+                {
+                  pres[res_ctr++] = p1[ctr1++]; ctr2++;
+                }
+            }
+        }
+      if (res_ctr < pres_count)
+        pres = (SPART **)t_list_memcpy (res_ctr, (ccaddr_t *)pres);
+      return spartlist (sparp, 6, SPAR_PPATH, (ptrlong)0, pres, (ptrlong)0, (ptrlong)0, (ptrlong)(res_ctr - fwd_res_count));
+    }
+  if (('!' == part1subt) && ('!' == part2subt))
+    {
+      int pres_count = MAX (count1+count2, 2);
+      SPART **pres = (SPART **)t_alloc_list (pres_count);
+      int ctr1 = 0, ctr2 = 0, res_ctr = 0, fwd_res_count;
+      if (fwdstar1 || fwdstar2)
+        {
+          pres[res_ctr++] = (SPART *)_STAR;
+          ctr1 = fwd_count1; ctr2 = fwd_count2;
+        }
+      else if (0 == fwd_count1)
+        {
+          while (ctr2 < fwd_count2)
+            pres[res_ctr++] = p2[ctr2++];
+          ctr1 = fwd_count1;
+        }
+      else if (0 == fwd_count2)
+        {
+          while (ctr1 < fwd_count1)
+            pres[res_ctr++] = p1[ctr1++];
+          ctr2 = fwd_count2;
+        }
+      else
+        {
+          while ((ctr1 < fwd_count1) || (ctr2 < fwd_count2))
+            {
+              if ((ctr1 < fwd_count1) && ((ctr2 >= fwd_count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
+                ctr1++;
+              else if ((ctr2 < fwd_count2) && ((ctr1 >= fwd_count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
+                ctr2++;
+              else
+                {
+                  pres[res_ctr++] = p1[ctr1++]; ctr2++;
+                }
+            }
+          if (((0 != fwd_count1) || (0 != fwd_count2)) && (0 == res_ctr))
+            pres[res_ctr++] = (SPART *)_STAR;
+        }
+      fwd_res_count = res_ctr;
+      if (invstar1 || invstar2)
+        {
+          pres[res_ctr++] = (SPART *)_STAR;
+          ctr1 = count1; ctr2 = count2;
+        }
+      else if (fwd_count1 == count1)
+        {
+          while (ctr2 < count2)
+            pres[res_ctr++] = p2[ctr2++];
+        }
+      else if (fwd_count2 == count2)
+        {
+          while (ctr1 < count1)
+            pres[res_ctr++] = p1[ctr1++];
+        }
+      else
+        {
+          while ((ctr1 < count1) || (ctr2 < count2))
+            {
+              if ((ctr1 < count1) && ((ctr2 >= count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
+                ctr1++;
+              else if ((ctr2 < count2) && ((ctr1 >= count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
+                ctr2++;
+              else
+                {
+                  pres[res_ctr++] = p1[ctr1++]; ctr2++;
+                }
+            }
+          if (((count1 != fwd_count1) || (count2 != fwd_count2)) && (fwd_res_count == res_ctr))
+            pres[res_ctr++] = (SPART *)_STAR;
+        }
+      if (res_ctr < pres_count)
+        pres = (SPART **)t_list_memcpy (res_ctr, (ccaddr_t *)pres);
+      return spartlist (sparp, 6, SPAR_PPATH, (ptrlong)'!', pres, (ptrlong)0, (ptrlong)0, (ptrlong)(res_ctr - fwd_res_count));
+    }
+  if ((0 == part1subt) && ('!' == part2subt))
+    {
+      SPART *bangres;
+      int p_bangres_count = MAX (count2, 2);
+      SPART **p_bangres = (SPART **)t_alloc_list (p_bangres_count);
+      int ctr2 = 0, ctr1 = 0, c_bangres = 0, fwd_bangres;
+      int keep_part1_fwds, keep_part1_invs;
+      if (((0 < fwd_count1) && ((SPART *)_STAR == p1[0])) && ((fwd_count1 < count1) && ((SPART *)_STAR == p1[fwd_count1])))
+        return part1; /* if part1 is _STAR|^_STAR then it's "everything" already, no need to extend it. */
+      if (((0 < fwd_count2) && ((SPART *)_STAR == p2[0])) && ((fwd_count2 < count2) && ((SPART *)_STAR == p2[fwd_count2])))
+        { /* if part2 is _STAR|^_STAR then it's "everything" already, no need to extend it. */
+          part2->_.ppath.subtype = 0;
+          return part2;
+        }
+      if (fwdstar1 || fwdstar2)
+        {
+          p_bangres[c_bangres++] = (SPART *)_STAR;
+          ctr2 = fwd_count2; ctr1 = fwd_count1;
+        }
+      else
+        {
+          while ((ctr1 < fwd_count1) || (ctr2 < fwd_count2))
+            {
+              if ((ctr2 < fwd_count2) && ((ctr1 >= fwd_count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
+                p_bangres[c_bangres++] = p2[ctr2++];
+              else if ((ctr1 < fwd_count1) && ((ctr2 >= fwd_count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
+                ctr1++;
+              else
+                {
+                  ctr1++; ctr2++;
+                }
+            }
+          if ((0 < fwd_count2) && (0 == c_bangres)) /* We've got x|!x */
+            p_bangres[c_bangres++] = (SPART *)_STAR;
+        }
+      fwd_bangres = c_bangres;
+      if (invstar1 || invstar2)
+        {
+          p_bangres[c_bangres++] = (SPART *)_STAR;
+          ctr2 = count2; ctr1 = count1;
+        }
+      else
+        {
+          while ((ctr1 < count1) || (ctr2 < count2))
+            {
+              if ((ctr2 < count2) && ((ctr1 >= count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
+                p_bangres[c_bangres++] = p2[ctr2++];
+              else if ((ctr1 < count1) && ((ctr2 >= count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
+                ctr1++;
+              else
+                {
+                  ctr1++; ctr2++;
+                }
+            }
+          if ((fwd_count2 < count2) && (fwd_bangres == c_bangres)) /* We've got ^x|!^x */
+            p_bangres[c_bangres++] = (SPART *)_STAR;
+        }
+      if (c_bangres < p_bangres_count)
+        p_bangres = (SPART **)t_list_memcpy (c_bangres, (ccaddr_t *)p_bangres);
+      bangres = spartlist (sparp, 6, SPAR_PPATH, (ptrlong)part2subt, p_bangres, (ptrlong)0, (ptrlong)0, (ptrlong)(c_bangres - fwd_bangres));
+      keep_part1_fwds = ((0 == fwd_bangres) && (0 != fwd_count1));
+      keep_part1_invs = ((c_bangres == fwd_bangres) && (0 != part1->_.ppath.num_of_invs));
+      if (keep_part1_fwds || keep_part1_invs)
+        {
+          if (!keep_part1_fwds)
+            {
+              part1->_.ppath.parts = (SPART **)t_list_memcpy (part1->_.ppath.num_of_invs, (ccaddr_t *)(p1 + fwd_count1));
+              fwd_count1 = 0;
+            }
+          if (!keep_part1_invs)
+            {
+              part1->_.ppath.parts = (SPART **)t_list_memcpy (fwd_count1, (ccaddr_t *)(p1));
+              part1->_.ppath.num_of_invs = 0;
+            }
+          return spartlist (sparp, 6, SPAR_PPATH, (ptrlong)'|', (SPART **)t_list (2, part1, bangres), (ptrlong)0, (ptrlong)0, (ptrlong)0);
+        }
+      else
+        return bangres;
+    }
+  if (('!' == part1subt) && (0 == part2subt))
+    return spar_make_ppath_union (sparp, part2, part1);
+  if (('|' == part1subt) && ((0 == part2subt) || ('!' == part2subt)))
+    {
+      SPART *p1left = part1->_.ppath.parts[0];
+      SPART *p1next = part1->_.ppath.parts[1];
+      int p1left_subt = p1left->_.ppath.subtype;
+      int p1next_subt = p1next->_.ppath.subtype;
+      if (part2subt == p1left_subt)
+        {
+          part1->_.ppath.parts[0] = spar_make_ppath (sparp, '|', p1left, part2, 0, 0);
+          return part1;
+        }
+      if (part2subt == p1next_subt)
+        {
+          if ('!' != p1next_subt)
+            spar_internal_error (sparp, "Weird '|' ppath: second item is \"0 or '!'\" but not '!'");
+          part1->_.ppath.parts[1] = spar_make_ppath (sparp, '|', p1next, part2, 0, 0);
+          if (0 == part1->_.ppath.parts[1]->_.ppath.subtype) /* _STAR|^_STAR is made from two '!'s */
+            {
+              if (2 == BOX_ELEMENTS (part1->_.ppath.parts))
+                return part1->_.ppath.parts[1];
+              part1->_.ppath.parts = (SPART **) t_list_memcpy (BOX_ELEMENTS (part1->_.ppath.parts) - 1, (ccaddr_t *)(part1->_.ppath.parts+1));
+            }
+          return part1;
+        }
+      if ((0 == p1left_subt) || ('!' == p1left_subt))
+        {
+          SPART *mix = spar_make_ppath (sparp, '|', p1left, part2, 0, 0);
+          part1->_.ppath.parts[0] = spar_make_ppath (sparp, '|', p1left, part2, 0, 0);
+          if ('|' == mix->_.ppath.subtype)
+            {
+              part1->_.ppath.parts = (SPART **)t_list_insert_before_nth ((caddr_t)(part1->_.ppath.parts), (caddr_t)(mix->_.ppath.parts[1]), 1);
+              part1->_.ppath.parts[0] = mix->_.ppath.parts[0];
+            }
+          else
+            part1->_.ppath.parts[0] = mix;
+          return part1;
+        }
+      part1->_.ppath.parts = (SPART **) t_list_concat ((caddr_t)t_list (1, part2), (caddr_t)(part1->_.ppath.parts));
+      return part1;
+    }
+  if (('|' == part1subt) && ('|' == part2subt))
+    {
+      int ctr2;
+      for (ctr2 = 0; ctr2 < count2; ctr2++)
+        {
+          SPART *memb2 = p2[ctr2];
+          int memb2_subt = memb2->_.ppath.subtype;;
+          if ((0 == memb2_subt) || ('!' == memb2_subt))
+            part1 = spar_make_ppath (sparp, '|', part1, memb2, 0, 0);
+          else
+            break;
+        } 
+      if (ctr2 < count2)
+        part1->_.ppath.parts = (SPART **) t_list_concat ((caddr_t)(part1->_.ppath.parts), (caddr_t)t_list_memcpy ((count2 - ctr2), (ccaddr_t *)(p2 + ctr2)));
+      return part1;
+    }
+  if ('|' == part1subt)
+    {
+      part1->_.ppath.parts = (SPART **) t_list_concat_tail ((caddr_t)(part1->_.ppath.parts), 1, part2);
+      return part1;
+    }
+  if ('|' == part2subt)
+    return spar_make_ppath_union (sparp, part2, part1);
+  return spartlist (sparp, 6, SPAR_PPATH, (ptrlong)'|', (SPART **)t_list (2, part1, part2), (ptrlong)0, (ptrlong)0, (ptrlong)0);
+}
+
+#ifdef SPARQL_DEBUG
+extern SPART *spar_make_ppath_impl (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlong mincount, ptrlong maxcount);
+
+SPART *
 spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlong mincount, ptrlong maxcount)
+{
+  spar_sqlgen_t fake_ssg;
+  caddr_t out;
+  SPART *res;
+  memset (&fake_ssg, 0, sizeof (spar_sqlgen_t));
+  fake_ssg.ssg_sparp = sparp;
+  fake_ssg.ssg_out = strses_allocate ();
+  SES_PRINT (fake_ssg.ssg_out, "\nspar_make_ppath(...,   '");
+  session_buffered_write_char (subtype ? subtype : '0', fake_ssg.ssg_out);
+  SES_PRINT (fake_ssg.ssg_out, ",   ");
+  ssg_sdprint_tree (&fake_ssg, part1);
+  SES_PRINT (fake_ssg.ssg_out, ",   ");
+  if (NULL != part2)
+    ssg_sdprint_tree (&fake_ssg, part2);
+  else
+    SES_PRINT (fake_ssg.ssg_out, "NULL");
+  char buf[30]; sprintf (buf, ",   %ld, %ld)\nreturns ", (long)mincount, (long)maxcount); SES_PRINT (fake_ssg.ssg_out, buf);
+  res = spar_make_ppath_impl (sparp, subtype, part1, part2, mincount, maxcount);
+  ssg_sdprint_tree (&fake_ssg, res);
+  out = strses_string (fake_ssg.ssg_out);
+  puts (out);
+  dk_free_box (out);
+  strses_free (fake_ssg.ssg_out);
+  return res;
+}
+#else
+#define spar_make_ppath_impl spar_make_ppath
+#endif
+
+SPART *
+spar_make_ppath_impl (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlong mincount, ptrlong maxcount)
 {
   int part1subt, part2subt;
   if (SPAR_QNAME == SPART_TYPE (part1))
@@ -3688,125 +4018,17 @@ spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlo
     case '!':
       if (0 != part1->_.ppath.subtype)
         spar_error (sparp, "The '!' property path operator can be applied only to a predicate, ^predicate and groups of them");
-      part1->_.ppath.subtype = '!';
+      {
+        SPART **p1 = part1->_.ppath.parts;
+        int count1 = BOX_ELEMENTS (p1);
+        int fwd_count1 = count1 - part1->_.ppath.num_of_invs;
+        if (((0 < fwd_count1) && ((SPART *)_STAR == p1[0])) || ((fwd_count1 < count1) && ((SPART *)_STAR == p1[fwd_count1])))
+          spar_internal_error (sparp, "Weird use of '!' property path operator");
+        part1->_.ppath.subtype = '!';
+      }
       return part1;
     case '|':
-      if (((0 == part1subt) && (0 == part2subt)) || (('!' == part1subt) && ('!' == part2subt)))
-        {
-          SPART **p1 = part1->_.ppath.parts;
-          SPART **p2 = part2->_.ppath.parts;
-          int count1 = BOX_ELEMENTS (p1);
-          int count2 = BOX_ELEMENTS (p2);
-          SPART **pres = (SPART **)t_alloc_list (count1+count2);
-          int ctr1 = 0, ctr2 = 0, cres = 0, fwdres;
-          int fwd1ctr = count1 - part1->_.ppath.num_of_invs;
-          int fwd2ctr = count2 - part2->_.ppath.num_of_invs;
-          while ((ctr1 < fwd1ctr) || (ctr2 < fwd2ctr))
-            {
-              if ((ctr1 < fwd1ctr) && ((ctr2 >= fwd2ctr) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
-                pres[cres++] = p1[ctr1++];
-              else if ((ctr2 < fwd2ctr) && ((ctr1 >= fwd1ctr) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
-                pres[cres++] = p2[ctr2++];
-              else
-                {
-                  pres[cres++] = p1[ctr1++]; ctr2++;
-                }
-            }
-          fwdres = cres;
-          while ((ctr1 < count1) || (ctr2 < count2))
-            {
-              if ((ctr1 < count1) && ((ctr2 >= count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
-                pres[cres++] = p1[ctr1++];
-              else if ((ctr2 < count2) && ((ctr1 >= count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
-                pres[cres++] = p2[ctr2++];
-              else
-                {
-                  pres[cres++] = p1[ctr1++]; ctr2++;
-                }
-            }
-          if (cres < (count1+count2))
-            {
-              SPART **tmp = (SPART **)t_alloc_list (cres);
-              memcpy (tmp, pres, sizeof (SPART *) * cres);
-              pres = tmp;
-            }
-          return spartlist (sparp, 6, SPAR_PPATH, (ptrlong)part1subt, pres, (ptrlong)0, (ptrlong)0, (ptrlong)(cres - fwdres));
-        }
-      else if ((0 == part1subt) && ('!' == part2subt))
-        return spar_make_ppath (sparp, subtype, part2, part1, 0, 0);
-      else if (('!' == part1subt) && (0 == part2subt))
-        {
-          SPART **p1 = part1->_.ppath.parts;
-          SPART **p2 = part2->_.ppath.parts;
-          int count1 = BOX_ELEMENTS (p1);
-          int count2 = BOX_ELEMENTS (p2);
-          SPART **pres = (SPART **)t_alloc_list (count1);
-          int ctr1 = 0, ctr2 = 0, cres = 0, fwdres;
-          int fwd1ctr = count1 - part1->_.ppath.num_of_invs;
-          int fwd2ctr = count2 - part2->_.ppath.num_of_invs;
-          while ((ctr1 < fwd1ctr) || (ctr2 < fwd2ctr))
-            {
-              if ((ctr1 < fwd1ctr) && ((ctr2 >= fwd2ctr) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
-                pres[cres++] = p1[ctr1++];
-              else if ((ctr2 < fwd2ctr) && ((ctr1 >= fwd1ctr) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
-                ctr2++;
-              else
-                {
-                  ctr1++; ctr2++;
-                }
-            }
-          fwdres = cres;
-          while ((ctr1 < count1) || (ctr2 < count2))
-            {
-              if ((ctr1 < count1) && ((ctr2 >= count2) || (0 > strcmp (p1[ctr1]->_.qname.val, p2[ctr2]->_.qname.val))))
-                pres[cres++] = p1[ctr1++];
-              else if ((ctr2 < count2) && ((ctr1 >= count1) || (0 > strcmp (p2[ctr2]->_.qname.val, p1[ctr1]->_.qname.val))))
-                ctr2++;
-              else
-                {
-                  ctr1++; ctr2++;
-                }
-            }
-          if (cres < count1)
-            {
-              SPART **tmp = (SPART **)t_alloc_list (cres);
-              memcpy (tmp, pres, sizeof (SPART *) * cres);
-              pres = tmp;
-            }
-          return spartlist (sparp, 6, SPAR_PPATH, (ptrlong)part1subt, pres, (ptrlong)0, (ptrlong)0, (ptrlong)(cres - fwdres));
-        }
-      if (('|' == part1subt) && ((0 == part2subt) || ('!' == part2subt)))
-        {
-          SPART *p1left = part1->_.ppath.parts[0];
-          int p1left_subt = p1left->_.ppath.subtype;
-          if ((0 == p1left_subt) || ('!' == p1left_subt))
-            {
-              part1->_.ppath.parts[0] = spar_make_ppath (sparp, '|', p1left, part2, 0, 0);
-              return part1;
-            }
-          part1->_.ppath.parts = (SPART **) t_list_concat ((caddr_t)t_list (1, part2), (caddr_t)(part1->_.ppath.parts));
-          return part1;
-        }
-      if (('|' == part2subt) && ((0 == part1subt) || ('!' == part1subt)))
-        return spar_make_ppath (sparp, subtype, part2, part1, 0, 0);
-      /* no break */
-      if (('|' == part1subt) && ('|' == part2subt))
-        {
-          SPART *p1left = part1->_.ppath.parts[0];
-          SPART *p2left = part2->_.ppath.parts[0];
-          int p1left_subt = p1left->_.ppath.subtype;
-          int p2left_subt = p2left->_.ppath.subtype;
-          if ((0 == p2left_subt) || ('!' == p2left_subt))
-            {
-              if ((0 == p1left_subt) || ('!' == p1left_subt))
-                part1->_.ppath.parts[0] = spar_make_ppath (sparp, '|', p1left, p2left, 0, 0);
-              else
-                part1->_.ppath.parts = (SPART **) t_list_concat ((caddr_t)t_list (1, p2left), (caddr_t)(part1->_.ppath.parts));
-              if (2 == BOX_ELEMENTS (part2->_.ppath.parts))
-                return spar_make_ppath (sparp, '|', part1, part2->_.ppath.parts[1], 0, 0);
-              part2->_.ppath.parts = (SPART **)t_list_remove_nth ((caddr_t)(part2->_.ppath.parts), 0);
-            }
-        }
+      return spar_make_ppath_union (sparp, part1, part2);
     case '/':
       if (subtype == part1subt)
         {

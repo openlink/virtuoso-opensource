@@ -1440,21 +1440,52 @@ args_printed:
       }
     case SPAR_PPATH:
       {
-      int ctr, count = BOX_ELEMENTS (tree->_.ppath.parts);
+        SPART **p = tree->_.ppath.parts;
+        int count = BOX_ELEMENTS (p);
+        int fwd_ctr, ctr, fwdstar, invstar;
       switch (tree->_.ppath.subtype)
         {
-        case '!':
-          ssg_puts (" !");
-          /* no break */
-        case 0:
-          if (1 != count) ssg_puts (" (");
+        case 0: case '!':
+          fwd_ctr = count - tree->_.ppath.num_of_invs;
+          fwdstar = ((0 < fwd_ctr) && ((SPART *)_STAR == p[0]));
+          invstar = ((fwd_ctr < count) && ((SPART *)_STAR == p[fwd_ctr]));
+          if (fwdstar || invstar)
+            {
+              ssg_puts (" (");
+              if (fwdstar)
+                ssg_puts (" <star>|!<star>");
+              if (fwdstar && invstar)
+                ssg_puts ("|");
+              if (invstar)
+                ssg_puts (" ^<star>|!(^<star>)");
+              if ((0 < fwd_ctr) && !fwdstar)
+                {
+                  SPART *tmp = spartlist (ssg->ssg_sparp, 6, SPAR_PPATH, tree->_.ppath.subtype, t_list_memcpy (fwd_ctr, (ccaddr_t *)p), (ptrlong)0, (ptrlong)0, (ptrlong)0);
+                  ssg_puts ("|");
+                  ssg_sdprint_tree (ssg, tmp);
+                }
+              if ((0 < fwd_ctr) && !fwdstar)
+                {
+                  SPART *tmp = spartlist (ssg->ssg_sparp, 6, SPAR_PPATH, tree->_.ppath.subtype, t_list_memcpy (count-fwd_ctr, (ccaddr_t *)(p+fwd_ctr)), (ptrlong)0, (ptrlong)0, t_box_num(count-fwd_ctr));
+                  ssg_puts ("|");
+                  ssg_sdprint_tree (ssg, tmp);
+                }
+              ssg_puts (")");
+              break;
+            }
+          if ('!' == tree->_.ppath.subtype)
+            ssg_puts (" !");
+          if (('!' == tree->_.ppath.subtype) || (1 != count)) ssg_puts (" (");
           for (ctr = 0; ctr < count; ctr++)
             {
+              SPART *part = tree->_.ppath.parts[ctr];
               if (0 < ctr) ssg_puts (" |");
               if ((count - tree->_.ppath.num_of_invs) <= ctr) ssg_puts (" ^");
+              if ((SPART *)_STAR == part)
+                ssg_puts (" <x>|!<x>");
               ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
             }
-          if (1 != count) ssg_puts (" )");
+          if (('!' == tree->_.ppath.subtype) || (1 != count)) ssg_puts (" )");
           return;
         case 'D':
           ssg_puts (" DISTINCT");
@@ -1463,7 +1494,7 @@ args_printed:
           ssg_puts (" (");
           for (ctr = 0; ctr < count; ctr++)
             {
-              if (0 < ctr) ssg_puts (" |");
+              if (0 < ctr) ssg_puts ("  | ");
               ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
             }
           ssg_puts (" )");

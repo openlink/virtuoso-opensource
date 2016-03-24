@@ -791,8 +791,12 @@ typedef struct spar_tree_s
       } macropu;
     struct {
         /* #define SPAR_PPATH		(ptrlong)1025 */
-        ptrlong subtype;	/*!< Node subtype: '/', '|', 'D' or '*' for non-leafs ('D' is union of path with T_DISTINCT), 0 or '!' for plain or negative leafs. Leafs are '|' of iris and ^iris */
-        SPART **parts;		/*!< Descendants of type SPAR_PPATH for non-leafs, QNames for leafs. For '|' subtype, the (only) 0 or '!' part is always first */
+        ptrlong subtype;	/*!< Node subtype: '/', '|', 'D' or '*' for non-leafs ('D' is union of path with T_DISTINCT), 0 or '!' for plain or negative leafs.
+					Leafs are '|' of iris and ^iris.
+					There may be a single forward and/or single reverse leaf (SPART *)_STAR, it can't be mixed with IRIs of same direction.
+					When type is 0, (SPART *)_STAR means that any predicate will do, such as after optimization of x|!x
+					When type is '!', (SPART *)_STAR _also_ means that any predicate will do; negation for _STAR is no leafs of that direction. */
+        SPART **parts;		/*!< Descendants of type SPAR_PPATH for non-leafs, QNames for leafs. For '|' subtype, the (only) 0 part is always first, the (only) '!' part is either first or next after 0 part */
         caddr_t minrepeat;	/*!< Minimal number of repetitions for '*' non-leaf node: 0 for '?' and '*' operators, 1 for '+', an M integer for {M,N} modifier */
         caddr_t maxrepeat;	/*!< Maximal number of repetitions for '*' non-leaf node: 1 for '?', an N integer for {M,N} modifier however it is NEGATIVE for infinity */
         ptrlong num_of_invs;	/*!< Number of inverted predicates in a leaf. All inverted predicates are always after all forward predicates */
