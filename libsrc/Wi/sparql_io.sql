@@ -2665,7 +2665,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('				format.remove(ctr);\n');
     http('			ctr = 0;\n');
     http('			format.options[ctr++] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'Turtle (beautified)\',\'application/x-nice-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
     http('			format.options[ctr++] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
     http('			format.options[ctr++] = new Option(\'N-Triples\',\'text/plain\');\n');
@@ -2675,11 +2675,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[ctr++] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Microdata (raw)\',\'text/html\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML with enclosed JSON-LD\',\'text/x-html-script-ld+json\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML with enclosed Turtle\',\'text/x-html-script-turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Microdata (basic)\',\'text/html\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Microdata (table)\',\'application/x-nice-microdata\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+JSON-LD (basic)\',\'text/x-html-script-ld+json\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Turtle (basic)\',\'text/x-html-script-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'Turtle (beautified - browsing oriented)\',\'text/x-html-nice-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
     http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
     http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
@@ -2813,7 +2813,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
     {
       opts := vector (
         vector ('Turtle'						, 'text/turtle'				),
-        vector ('Pretty-printed Turtle (slow!)'				, 'application/x-nice-turtle'		),
+        vector ('Turtle (beautified)'					, 'application/x-nice-turtle'		),
         vector ('RDF/JSON'						, 'application/rdf+json'		),
         vector ('RDF/XML'						, 'application/rdf+xml'			),
         vector ('N-Triples'						, 'text/plain'				),
@@ -2823,11 +2823,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('JSON-LD'						, 'application/x-json+ld'		),
         vector ('HTML (list)'						, 'text/x-html+ul'			),
         vector ('HTML (table)'						, 'text/x-html+tr'			),
-        vector ('HTML+Microdata (raw)'					, 'text/html'				),
-        vector ('HTML+Microdata (pretty-printed table)'			, 'application/x-nice-microdata'		),
-        vector ('HTML with enclosed JSON-LD'				, 'text/x-html-script-ld+json'		),
-        vector ('HTML with enclosed Turtle'				, 'text/x-html-script-turtle'		),
-        vector ('Turtle-style HTML (for browsing, not for export)'	, 'text/x-html-nice-turtle'		),
+        vector ('HTML+Microdata (basic)'				, 'text/html'				),
+        vector ('HTML+Microdata (table)'				, 'application/x-nice-microdata'		),
+        vector ('HTML+JSON-LD (basic)'					, 'text/x-html-script-ld+json'		),
+        vector ('HTML+Turtle (basic)'					, 'text/x-html-script-turtle'		),
+        vector ('Turtle (beautified - browsing oriented)'		, 'text/x-html-nice-turtle'		),
         vector ('Microdata/JSON'					, 'application/microdata+json'		),
         vector ('CSV'							, 'text/csv'				),
         vector ('TSV'							, 'text/tab-separated-values'		),
