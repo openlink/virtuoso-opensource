@@ -427,7 +427,7 @@ DB.DBA.HTTP_VARIANT_ADD ('dbpl_resource_rule_list', '/(.*)@__@(.*)', '/data/\x24
 --	 opts=>vector ('url_rewrite', 'dbpl_wc_rule_list'));
 --DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_wc_rule_list', 1, vector ('dbpl_wc_rule1', 'dbpl_wc_rule2'));
 --DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_wc_rule1', 1, '(/[^#]*)', vector ('par_1'), 1,
---registry_get('_dbpedia_path_')||'description_white.vsp?res=%s', vector ('par_1'), NULL, NULL, 2, 0, '');
+--registry_get('_dbpedia_path_')||'description.vsp?res=%s', vector ('par_1'), NULL, NULL, 2, 0, '');
 --DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_wc_rule2', 1, '(/[^#]*)', vector ('par_1'), 1,
 --'/sparql?query=DESCRIBE%%20%%3Chttp%%3A%%2F%%2Fdbpedia.openlinksw.com%s%%3E%%20from%%20%%3Chttp%%3A%%2F%%2Fdbpedia.openlinksw.com%%2Fwikicompany%%3E&format=%U',
 --vector ('par_1', '*accept*'), NULL, '(application/rdf.xml)|(text/rdf.n3)', 2, 303, '');
