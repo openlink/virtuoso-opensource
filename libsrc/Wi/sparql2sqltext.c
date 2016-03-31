@@ -9103,7 +9103,7 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
 }
 
 void
-ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, caddr_t *qtext_template_ret, caddr_t *qtext_posmap_ret)
+ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, caddr_t *qtext_template_ret, caddr_t *qtext_posmap_ret, caddr_t **final_rset_varnames_ret)
 {
   wchar_t *qtext_posmap;
   int posmap_itm_ctr;
@@ -9185,6 +9185,7 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
         }
       if ((NULL != limit_expn) && (DV_LONG_INT == DV_TYPE_OF (limit_expn)) && (0 == sparp_req_top_has_limofs (single_subq)))
         single_subq->_.req_top.limit = limit_expn;
+      final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
       ssg_sdprint_tree (ssg, single_subq);
       goto query_text_is_composed; /* see below */
 failed_single_subq_optimization: ;
@@ -9205,7 +9206,10 @@ failed_single_subq_optimization: ;
         {
           ssg_puts (" ?"); ssg_puts (stub_varname);
         }
+      final_rset_varnames_ret[0] = t_list (1, stub_varname);
     }
+  else
+    final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
 /*!!!TBD FROM clauses */
   gp->_.gp.subtype = WHERE_L;
   ssg_sdprint_tree (ssg, gp);
@@ -9362,6 +9366,15 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
       int ctr, len;
       caddr_t qtext_template = NULL;
       caddr_t qtext_posmap = NULL;
+      caddr_t *final_rset_varnames = NULL;
+      sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
+      ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap, &final_rset_varnames);
+      ssg_print_where_or_and (ssg, "sinv");
+      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_template = ");
+      ssg_print_box_as_sql_atom (ssg, qtext_template, SQL_ATOM_UTF8_ONLY);
+      ssg_print_where_or_and (ssg, "sinv");
+      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_posmap = ");
+      ssg_print_box_as_sql_atom (ssg, qtext_posmap, SQL_ATOM_NARROW_OR_WIDE);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".ws_endpoint = ");
       ssg_print_scalar_expn (ssg, sinv->_.sinv.endpoint, SSG_VALMODE_SQLVAL, NULL_ASNAME);
@@ -9377,9 +9390,12 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           ssg_print_scalar_expn (ssg, sinv->_.sinv.iri_params[ctr+1], SSG_VALMODE_LONG, NULL_ASNAME);
         }
       ssg_putchar (')');
+/* The order of printing parameters here is important because ssg_prepare_sinv_template() has a side effect:
+if sinv->_.sinv.rset_varnames is empty then it uses ?stubvarXX in the printed result set in irder to provide compatibility with obsolete SPARQL endpoints.
+So the function provides \c final_rset_varnames that should be used instead of sinv->_.sinv.rset_varnames for expected_vars procedure call param */
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".expected_vars = vector (");
-      DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.rset_varnames)
+      DO_BOX_FAST (caddr_t, varname, ctr, final_rset_varnames)
         {
           if (ctr)
             ssg_putchar (',');
@@ -9387,14 +9403,6 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
         }
       END_DO_BOX_FAST;
       ssg_putchar (')');
-      sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
-      ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap);
-      ssg_print_where_or_and (ssg, "sinv");
-      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_template = ");
-      ssg_print_box_as_sql_atom (ssg, qtext_template, SQL_ATOM_UTF8_ONLY);
-      ssg_print_where_or_and (ssg, "sinv");
-      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_posmap = ");
-      ssg_print_box_as_sql_atom (ssg, qtext_posmap, SQL_ATOM_NARROW_OR_WIDE);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".param_row = vector (");
       DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.param_varnames)

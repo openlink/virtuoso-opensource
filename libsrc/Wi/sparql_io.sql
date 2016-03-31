@@ -914,7 +914,7 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
 {
   declare RSET, retarray any;
   result_names (RSET);
-  -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_var_list, ')');
+  -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_vars, ')');
   if (N'' <> qtext_posmap)
     {
       declare qtext_ses any;
@@ -1868,7 +1868,7 @@ end_of_val_print: ;
 --!AWK PUBLIC
 create function DB.DBA.SPARQL_LOG_DEBUG_INFO (inout log_array any, in line_begin varchar, in line_end varchar, inout ses any)
 {
-  dbg_obj_princ ('DB.DBA.SPARQL_LOG_DEBUG_INFO (', log_array, line_begin, line_end, ',...)');
+  -- dbg_obj_princ ('DB.DBA.SPARQL_LOG_DEBUG_INFO (', log_array, line_begin, line_end, ',...)');
   declare ctr, len integer;
   len := length (log_array);
   ctr := 0;
@@ -1887,7 +1887,7 @@ line_is_ready:
         line := replace (line, '\n', '[[LF]]');
       if (strstr (line, '\r') is not null)
         line := replace (line, '\r', '[[CR]]');
-      dbg_obj_princ ('Line ', ctr, '/', len, ': ', line);
+      -- dbg_obj_princ ('Line ', ctr, '/', len, ': ', line);
       http (line_begin, ses);
       http (line, ses);
       http (line_end, ses);
@@ -1926,7 +1926,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     singlefield := metas[0][0][0];
   else
     singlefield := NULL;
-  dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
