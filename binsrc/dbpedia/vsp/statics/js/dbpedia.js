@@ -21,7 +21,7 @@
  *
  */
 
-function init() {
+function disabled__init() {
 	init_long_literals();
 }
 
@@ -34,7 +34,7 @@ function init_long_literals() {
         if (spans[i].className != 'literal') continue;
         var span = spans[i];
         var textNode = span.firstChild;
-        var text = textNode.data;
+        var text = textNode.innerText;
         if (!text || text.length < 300) continue;
         var match = text.match(/([^\0]{150}[^\0]*? )([^\0]*)/);
         if (!match) continue;
