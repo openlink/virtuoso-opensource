@@ -71,6 +71,8 @@ ld_dir (in path varchar, in mask varchar, in graph varchar)
 		ngraph := trim (file_to_string (cgfile), ' \r\n');
 	      else if (file_stat (path || '/' || 'global.graph') <> 0)
 		ngraph := trim (file_to_string (path || '/' || 'global.graph'), ' \r\n');
+	      else if (graph = '')
+	        ngraph := 'none';
 	      else
 	        ngraph := graph;
 
