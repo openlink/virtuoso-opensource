@@ -1,0 +1,54 @@
+/*
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2016 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+body{padding-top:25;}
+
+.page-header 			{ margin-top: 70px; }
+
+table.description		{ border-collapse: collapse; clear: left; }
+table.description th		{ background: white; text-align: left; }
+table.description td,
+table.description th		{ line-height: 1.2em;  vertical-align: top; }
+table.description ul		{ padding:0;}
+table.description li		{ list-style-type: square; margin: 0 0 5px 0;}
+
+table.description a small	{ font-size: 80%;  }
+table.description small		{ font-size: 80%;  }
+table.description .property 	{ white-space: nowrap; }
+table.description .odd td 	{  }
+table.description .even td 	{  }
+
+
+#hd_r				{ float: right; clear: right; }
+#footer 			{ border-top: 2px solid #696; margin: 1.2em 0 1.2em; padding: 0.3em;}
+#ft_b				{ text-align: center; margin-top: 1.5em; }
+#ft_ccbysa			{ font-size: 8pt; text-align: center; margin-top: 0.7em; }
+
+.footer {
+    width: 100%;
+    height: 60;
+    border-top: 1px solid #fff;
+    margin: 1em 0 1em;
+    padding: 0.5em;
+    background-color: #f5f5f5;
+    text-align: center;
+    font-size: 80%;
+}
