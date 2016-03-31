@@ -8280,6 +8280,8 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
         return sprintf ('Insert into %d (or more) graphs, total %d (or less) quads -- done', ins_grp_count, ins_count);
       if (ins_count)
         return string_output_string (res_ses);
+      else if (dflt_graph_iri is null)
+        return sprintf ('Insert of 0 quads -- nothing to do');
       else
         return sprintf ('Insert into <%s>, 0 quads -- nothing to do', dflt_graph_iri);
     }
@@ -8371,6 +8373,8 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
     {
       if (del_count)
         return sprintf ('Delete %d (or less) quads -- done', del_count);
+      else if (dflt_graph_iri is null)
+        return sprintf ('Delete 0 quads -- nothing to do');
       else
         return sprintf ('Delete from <%s>, 0 quads -- nothing to do', dflt_graph_iri);
     }
