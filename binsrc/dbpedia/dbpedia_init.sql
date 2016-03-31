@@ -388,7 +388,7 @@ DB.DBA.VHOST_DEFINE ( lhost=>registry_get ('dbp_lhost'), vhost=>registry_get ('d
 DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbp_wc_rule_list1', 1, vector ('dbp_wc_rule1', 'dbp_wc_rule2'));
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbp_wc_rule1', 1, '(/[^#]*)', vector ('par_1'), 1,
-registry_get('_dbpedia_path_')||'description_white.vsp?res=%s', vector ('par_1'), NULL, NULL, 2, 0, '');
+registry_get('_dbpedia_path_')||'description.vsp?res=%s', vector ('par_1'), NULL, NULL, 2, 0, '');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbp_wc_rule2', 1, '(/[^#]*)', vector ('par_1'), 1,
 '/sparql?query=describe%%20%%3Chttp%%3A%%2F%%2Fdbpedia.openlinksw.com%s%%3E%%20from%%20%%3Chttp%%3A%%2F%%2Fdbpedia.openlinksw.com%%2Fwikicompany%%3E&format=%U',
