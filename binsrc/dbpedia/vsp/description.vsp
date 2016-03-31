@@ -236,9 +236,9 @@
     <link rel="timegate" type="text/html" 			href="http://mementoarchive.lanl.gov/dbpedia/timegate/<?V charset_recode(_resource_, 'UTF-8', '_WIDE_') ?>" title="Time Machine" />
     <link rel="foaf:primarytopic" 				href="<?V charset_recode (page_resource_uri, 'UTF-8', '_WIDE_') ?>"/>
     <link rev="describedby" 					href="<?V charset_recode (page_resource_uri, 'UTF-8', '_WIDE_') ?>"/>
-    <link rel="stylesheet" type="text/css" 			href="/statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
-    <link rel="stylesheet" type="text/css" 			href="/statics/highlighter.css" charset="utf-8" />
-    <script type="text/javascript" src="/statics/script.js"></script>
+    <link rel="stylesheet" type="text/css" 			href="/statics/css/<?=either (white_page, 'style_w.css', 'style.css')?>" />
+    <link rel="stylesheet" type="text/css" 			href="/statics/css/highlighter.css" charset="utf-8" />
+    <script type="text/javascript" src="/statics/js/script.js"></script>
 </head>
 <body onload="init();" about="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>">
     <div id="header">
@@ -255,7 +255,7 @@
       </div> <!-- hd_l -->
       <div id="hd_r">
 	  <a href="<?=registry_get('dbp_imprint') ?>" title="About DBpedia">
-	      <img src="/statics/dbpedia_logo.png" height="64" alt="About DBpedia"/>
+	      <img src="/statics/images/dbpedia_logo.png" height="64" alt="About DBpedia"/>
         </a>
       </div> <!-- hd_r -->
     </div> <!-- header -->
@@ -382,10 +382,10 @@
 	</tr>
 	</table>
 	<p>
-	  <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
-	  <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/statics/LoDLogo.gif"/></a> &nbsp;
-	  <a href="<?= project_home_page ?>/sparql"><img alt="W3C Semantic Web Technology" src="/statics/sw-sparql-blue.png"/></a> &nbsp;  &nbsp;
-	  <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/statics/od_80x15_red_green.png"/></a>
+	  <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/statics/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+	  <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/statics/images/LoDLogo.gif"/></a> &nbsp;
+	  <a href="<?= project_home_page ?>/sparql"><img alt="W3C Semantic Web Technology" src="/statics/images/sw-sparql-blue.png"/></a> &nbsp;  &nbsp;
+	  <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/statics/images/od_80x15_red_green.png"/></a>
 	  <span about=""
 	    resource="http://www.w3.org/TR/rdfa-syntax"
 	    rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
