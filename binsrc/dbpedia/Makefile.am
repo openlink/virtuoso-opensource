@@ -53,11 +53,13 @@ EXTRA_DIST = \
 	vad_version \
 	vsp/*.sql \
 	vsp/*.vsp \
-	vsp/images/*.gif \
-	vsp/images/*.png \
-	vsp/statics/*.css \
-	vsp/statics/*.gif \
-	vsp/statics/*.js \
-	vsp/statics/*.png \
-	vsp/statics/*.svg \
-	vsp/style/*.css
+	vsp/statics/css/*.css \
+	vsp/statics/fonts/*.eot \
+	vsp/statics/fonts/*.svg \
+	vsp/statics/fonts/*.ttf \
+	vsp/statics/fonts/*.woff \
+	vsp/statics/fonts/*.woff2 \
+	vsp/statics/images/*.gif \
+	vsp/statics/images/*.png \
+	vsp/statics/images/*.svg \
+	vsp/statics/js/*.js
