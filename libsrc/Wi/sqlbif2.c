@@ -1759,7 +1759,7 @@ sqlbif2_init (void)
   bif_define_ex ("os_chown", bif_os_chown, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("user_has_role", bif_user_has_role, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("user_is_dba", bif_user_is_dba, BMD_RET_TYPE, &bt_integer, BMD_DONE);
-  bif_define_ex ("client_attr", bif_client_attr, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("client_attr", bif_client_attr, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("query_instance_id", bif_query_instance_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
