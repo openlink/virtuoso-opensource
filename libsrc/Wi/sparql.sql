@@ -7328,7 +7328,6 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT (inout _env any)
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_iri any, in opcodes any, in vars any, in log_mode integer, in ctor_op integer)
 {
   declare triple_ctr, quads_found integer;
@@ -7468,7 +7467,6 @@ end_of_adding_triple: ;
 }
 ;
 
---!AWK PUBLIC
 create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
@@ -7480,7 +7478,6 @@ create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any,
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   -- dbg_obj_princ ('DB.DBA.SPARQL_INSERT_CTOR_ACC (', _env, graph_iri, opcodes, vars, uid, log_mode);
@@ -7493,7 +7490,6 @@ create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
@@ -7506,7 +7502,6 @@ create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN (inout _env any)
 {
   if (isarray (_env))
@@ -7535,17 +7530,14 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN (inout _env any)
 }
 ;
 
---!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_DELETE_CTOR (in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_DELETE_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
---!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_INSERT_CTOR (in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_INSERT_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
---!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_MODIFY_CTOR (in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_MODIFY_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
@@ -16931,6 +16923,14 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MODIFY_TRIPLES to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_DELETE_CTOR_ACC to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INSERT_CTOR_ACC to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_MODIFY_CTOR_ACC to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_DELETE_CTOR to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INSERT_CTOR to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_MODIFY_CTOR to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_INSERT_QUADS to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_QUADS to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE',
