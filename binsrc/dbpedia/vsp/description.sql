@@ -681,7 +681,7 @@ again:
        http (sprintf ('<span %s>', rdfa));
        http_value (charset_recode (_object, 'UTF-8', '_WIDE_'));
        http ('</span>');
-       lang := '';
+       --lang := '';
      }
    else if (__tag (_object) = 211)
      {
