@@ -38,13 +38,13 @@ rm -f "$importh" "$exportc" "$importc"
 
 #this does not work on Solaris:
 #grep '^#include[[:space:]]*"[[:alnum:]./_-]*"' < $list > tmp/includes.txt
-grep '^#include[ \t]*"[A-Za-z0-9./_-]*"' < $list > tmp/includes.txt
+grep --color=never '^#include[ \t]*"[A-Za-z0-9./_-]*"' < $list > tmp/includes.txt
 
 
 cat << "EOD" > tmp/process.sh
 gen_gate_4_file()
 {
-  grep 'EXE_EXPORT' < "$1" >> tmp/exports.txt
+  grep --color=never 'EXE_EXPORT' < "$1" >> tmp/exports.txt
 }
 
 EOD
@@ -57,7 +57,7 @@ tmp/process.sh
 
 #this does not work on Solaris:
 #grep '^[[:space:]]*EXE_EXPORT[[:space:]]*([^,)]*,[[:space:]]*[[:alpha:]][[:alnum:]_]*[[:space:]]*,' < tmp/exports.txt > tmp/decls.txt
-grep '^[ \t]*EXE_EXPORT[ \t]*([^,)]*,[ ]*[A-Za-z][A-Za-z0-9_]*[ \t]*,' < tmp/exports.txt > tmp/decls.txt
+grep --color=never '^[ \t]*EXE_EXPORT[ \t]*([^,)]*,[ ]*[A-Za-z][A-Za-z0-9_]*[ \t]*,' < tmp/exports.txt > tmp/decls.txt
 
 #this does not work on Solaris:
 ##       \(1-----------\)          \(2-----------\) \(3-----\) \(4-----------\)\(5-----------------------\)\(7-----------\) \(8-\)
@@ -67,7 +67,7 @@ sed 's/^\([ \t]*\)EXE_EXPORT\([ \t]*\)(\([^,)]*\),\([ ]*\)\([A-Za-z][A-Za-z0-9_]
 
 #this does not work on Solaris:
 #grep '^[[:space:]]*EXE_EXPORT_TYPED[[:space:]]*([[:space:]]*[[:alpha:]][[:alnum:]_]*[[:space:]]*,[[:space:]]*[[:alpha:]][[:alnum:]_]*[[:space:]]*)' < tmp/exports.txt > tmp/decls_t.txt
-grep '^[ \t]*EXE_EXPORT_TYPED[ \t]*([ ]*[A-Za-z][A-Za-z0-9_]*[ \t]*,[ ]*[A-Za-z][A-Za-z0-9_]*[ \t]*)' < tmp/exports.txt > tmp/decls_t.txt
+grep --color=never '^[ \t]*EXE_EXPORT_TYPED[ \t]*([ ]*[A-Za-z][A-Za-z0-9_]*[ \t]*,[ ]*[A-Za-z][A-Za-z0-9_]*[ \t]*)' < tmp/exports.txt > tmp/decls_t.txt
 
 #this does not work on Solaris:
 ##       \(1-----------\)                \(2-----------\) \(3-----------\)\(4-----------------------\)\(5-----------\) \(6-----------\)\(7-----------------------\)\(8-----------\) \(9-\)

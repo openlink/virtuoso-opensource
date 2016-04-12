@@ -12,12 +12,12 @@ DEB_AUTO_UPDATE_LIBTOOL = pre
 
 DEB_AUTOMAKE_ARGS += -Wno-portability
 
-JDK6PATH = $(shell dpkg -L openjdk-6-jdk | grep "/usr/lib/jvm/java-6-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
+JDK6PATH = $(shell dpkg -L openjdk-6-jdk | grep --color=never "/usr/lib/jvm/java-6-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
 ifeq ($(JDK6PATH),)
 JDK6PATH=no
 endif
 
-JDK7PATH = $(shell dpkg -L openjdk-7-jdk | grep "/usr/lib/jvm/java-7-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u)
+JDK7PATH = $(shell dpkg -L openjdk-7-jdk | grep --color=never "/usr/lib/jvm/java-7-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u)
 ifeq ($(JDK7PATH),)
 JDK7PATH=no
 endif
