@@ -211,7 +211,7 @@ create procedure dbp_ldd_get_default_lang_acc (in lines any := null)
     }
   else
     {
-      langs := registry('dbp_lang') || ', en;q=0.8';
+      langs := registry_get('dbp_lang') || ', en;q=0.8';
     }
 
   return langs;
