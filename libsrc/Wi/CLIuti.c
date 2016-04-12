@@ -2728,7 +2728,10 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 
 	case SQL_C_SLONG:
 	case SQL_C_LONG:
-	  ret_len = sizeof (long);
+	  if (max == 4)
+	    ret_len = sizeof (int);
+	  else
+	    ret_len = sizeof (long);
 	  switch (its_type)
 	    {
 	    case DV_LONG_INT:
@@ -2739,22 +2742,32 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 		  {
 		    set_error (&stmt->stmt_error, "22003", "CL098", "Integer value out of range");
 		  }
-		*((long *) place) = (long) unbox (it);
+		if (max == 4)
+		  *((int *) place) = (int) unbox (it);
+		else
+		  *((long *) place) = (long) unbox (it);
 		break;
 	      }
 	    case DV_SINGLE_FLOAT:
-	      *((long *) place) = (long) unbox_float (it);
+	      if (max == 4)
+		*((int *) place) = (int) unbox_float (it);
+	      else
+		*((long *) place) = (long) unbox_float (it);
 	      break;
-
 	    case DV_DOUBLE_FLOAT:
-	      *((long *) place) = (long) unbox_double (it);
+	      if (max == 4)
+		*((int *) place) = (int) unbox_double (it);
+	      else
+		*((long *) place) = (long) unbox_double (it);
 	      break;
-
 	    case DV_NUMERIC:
 	      {
 		int32 tl;
 		num_bind_check (stmt, numeric_to_int32 ((numeric_t) it, &tl));
-		*((long *) place) = tl;
+		if (max == 4)
+		  *((int *) place) = tl;
+		else
+		  *((long *) place) = tl;
 		break;
 	      }
 
@@ -2762,34 +2775,49 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	      {
 		long tl;
 		tl = atol (it);
-		*((long *) place) = tl;
+		if (max == 4)
+		  *((int *) place) = tl;
+		else
+		  *((long *) place) = tl;
 		break;
 	      }
 	    }
 	  break;
 
 	case SQL_C_ULONG:
-	  ret_len = sizeof (long);
+	  if (max == 4)
+	    ret_len = sizeof (int);
+	  else
+	    ret_len = sizeof (long);
 	  switch (its_type)
 	    {
 	    case DV_LONG_INT:
 	    case DV_SHORT_INT:
-	      *((unsigned long *) place) = (unsigned long) unbox (it);
+	      if (max == 4)
+		*((unsigned int *) place) = (unsigned int) unbox (it);
+	      else
+		*((unsigned long *) place) = (unsigned long) unbox (it);
 	      break;
-
 	    case DV_SINGLE_FLOAT:
-	      *((unsigned long *) place) = (long) unbox_float (it);
+	      if (max == 4)
+		*((unsigned int *) place) = (int) unbox_float (it);
+	      else
+		*((unsigned long *) place) = (long) unbox_float (it);
 	      break;
-
 	    case DV_DOUBLE_FLOAT:
-	      *((unsigned long *) place) = (long) unbox_double (it);
+	      if (max == 4)
+		*((unsigned int *) place) = (int) unbox_double (it);
+	      else
+		*((unsigned long *) place) = (long) unbox_double (it);
 	      break;
-
 	    case DV_NUMERIC:
 	      {
 		int32 tl;
 		num_bind_check (stmt, numeric_to_int32 ((numeric_t) it, &tl));
-		*((unsigned long *) place) = tl;
+		if (max == 4)
+		  *((unsigned int *) place) = tl;
+		else
+		  *((unsigned long *) place) = tl;
 		break;
 	      }
 
@@ -2797,7 +2825,10 @@ dv_to_place (caddr_t it,	/* Data in DV format  from the Kubl. */
 	      {
 		long tl;
 		tl = atol (it);
-		*((unsigned long *) place) = (unsigned long) tl;
+		if (max == 4)
+		  *((unsigned int *) place) = (unsigned int) tl;
+		else
+		  *((unsigned long *) place) = (unsigned long) tl;
 		break;
 	      }
 	    }
