@@ -946,7 +946,7 @@ again:
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
 	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _url else subj end));
-	   if (b3s_o_is_out (prop))
+	   if (b3s_o_is_out (prop) and flag = 0)
 	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
 	 }
 
