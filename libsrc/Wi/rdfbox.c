@@ -5615,17 +5615,15 @@ bif_rdf_graph_default_perms_of_user_dict (caddr_t * qst, caddr_t * err_ret, stat
   return box_copy (rdf_graph_default_world_perms_of_user_dict_hit);
 }
 
-caddr_t
-bif_rdf_cli_mark_qr_to_recompile (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+int
+cli_mark_qr_to_recompile (client_connection_t * cli)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
-  client_connection_t * cli = qi->qi_client;
   query_t **qr;
   caddr_t *text;
   id_hash_iterator_t it;
 
   if (!cli || !cli->cli_text_to_query)
-    return NULL;
+    return 0;
 
   IN_CLIENT (cli);
   id_hash_iterator (&it, cli->cli_text_to_query);
@@ -5634,7 +5632,15 @@ bif_rdf_cli_mark_qr_to_recompile (caddr_t * qst, caddr_t * err_ret, state_slot_t
       qr[0]->qr_to_recompile = 1;
     }
   LEAVE_CLIENT (cli);
-  return NULL;
+  return 1;
+}
+
+caddr_t
+bif_rdf_cli_mark_qr_to_recompile (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  client_connection_t *cli = qi->qi_client;
+  return box_num (cli_mark_qr_to_recompile (cli));
 }
 
 int
@@ -5731,6 +5737,41 @@ rdf_graph_app_cbk_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t 
   return rc;
 }
 
+int
+rdf_graph_specific_perms_of_user_set_impl (iri_id_t g_iid, oid_t u_id, boxint perms, int signal_unsafe_args)
+    {
+  user_t *u = sec_id_to_user (u_id);
+      if (NULL == u)
+    {
+      if (signal_unsafe_args)
+        sqlr_new_error ("42000", "SR608", "__rdf_graph_specific_perms_of_user() has got an invalid user ID %ld", (long)u_id);
+      else
+        return 0;
+    }
+      if (0 > perms)
+        {
+          if (NULL != u->usr_rdf_graph_perms)
+            {
+              mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+              remhash_64 (g_iid, u->usr_rdf_graph_perms);
+              mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+            }
+        }
+      else
+        {
+          if (NULL == u->usr_rdf_graph_perms)
+            {
+              dk_hash_64_t *ht = hash_table_allocate_64 (97);
+              ht->ht_mutex = mutex_allocate ();
+              u->usr_rdf_graph_perms = ht;
+            }
+          mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+          sethash_64 (g_iid, u->usr_rdf_graph_perms, perms);
+          mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+        }
+  return 1;
+}
+
 caddr_t
 bif_rdf_graph_specific_perms_of_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -5753,31 +5794,7 @@ bif_rdf_graph_specific_perms_of_user (caddr_t * qst, caddr_t * err_ret, state_sl
       sec_check_dba (qi, "__rdf_graph_specific_perms_of_user");
       u_id = bif_long_arg (qst, args, 1, "__rdf_graph_specific_perms_of_user");
       perms = bif_long_arg (qst, args, 2, "__rdf_graph_specific_perms_of_user");
-      u = sec_id_to_user (u_id);
-      if (NULL == u)
-        sqlr_new_error ("42000", "SR608", "__rdf_graph_specific_perms_of_user() has got an invalid user ID %ld", (long)u_id);
-      if (0 > perms)
-        {
-          if (NULL != u->usr_rdf_graph_perms)
-            {
-              mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
-              remhash_64 (g_iid, u->usr_rdf_graph_perms);
-              mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
-            }
-        }
-      else
-        {
-          if (NULL == u->usr_rdf_graph_perms)
-            {
-              dk_hash_64_t *ht = hash_table_allocate_64 (97);
-              ht->ht_mutex = mutex_allocate ();
-              u->usr_rdf_graph_perms = ht;
-            }
-          mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
-          sethash_64 (g_iid, u->usr_rdf_graph_perms, perms);
-          mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
-        }
-      return 0;
+      return box_num (rdf_graph_specific_perms_of_user_set_impl (g_iid, u_id, perms, 1 /*signal_unsafe_args*/));
     }
 }
 
