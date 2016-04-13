@@ -37,6 +37,8 @@
       <v:variable name="name1" type="varchar" default="''" persist="temp"/>
       <v:variable name="email1" type="varchar" default="''" persist="temp"/>
       <v:variable name="uri1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="sdt" type="varchar" default="''" persist="temp"/>
+      <v:variable name="edt" type="varchar" default="''" persist="temp"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
@@ -60,6 +62,8 @@
               self.name1 := get_keyword ('CN', arr, '');
               self.email1 := get_keyword ('emailAddress', arr, '');
               self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
+	      self.sdt := get_certificate_info (4, 'id_rsa', 3);
+	      self.edt := get_certificate_info (5, 'id_rsa', 3);
               if (self.uri1 is null)
                 self.uri1 := '';
               if (self.uri1 = '' or self.uri1 like 'email:%')
@@ -155,7 +159,27 @@
                                   control.vc_add_attribute ('disabled', '1');
                               </v:before-render>
                             </v:text>
+			    <br />
+
+			    <v:template type="simple" condition="xenc_key_exists ('id_rsa')">
+                            <label>Not Before:</label>
+                            <v:text xhtml_size="100" value="" name="sdt1" default_value="--self.sdt" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
                             <br />
+                            <label>Not After:</label>
+                            <v:text xhtml_size="100" value="" name="edt1" default_value="--self.edt" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+			    <br />
+			    </v:template>
+
                             <label>SAN (URI):</label>
                             <v:text xhtml_size="100" value="" name="uri" default_value="--self.uri1" >
                               <v:before-render>
