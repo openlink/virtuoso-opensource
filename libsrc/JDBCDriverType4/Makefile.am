@@ -43,14 +43,20 @@ JDK4_1_TEST = jdk4_1-test
 JDK4_1_DOC = jdk4_1-doc
 endif
 
-JDK_TESTS = $(JDK2_TEST) $(JDK3_TEST) $(JDK4_TEST) $(JDK4_1_TEST)
+if WITH_JDK4_2
+JDK4_2_TARGETS = jdk4_2-target
+JDK4_2_TEST = jdk4_2-test
+JDK4_2_DOC = jdk4_2-doc
+endif
+
+JDK_TESTS = $(JDK2_TEST) $(JDK3_TEST) $(JDK4_TEST) $(JDK4_1_TEST) $(JDK4_2_TEST)
 
 SUBDIRS	= . virtuoso testsuite_2.0 testsuite_3.0 testsuite_4.0
 
 
-all-am: $(JDK2_TARGETS) $(JDK3_TARGETS) $(JDK4_TARGETS) $(JDK4_1_TARGETS)
+all-am: $(JDK2_TARGETS) $(JDK3_TARGETS) $(JDK4_TARGETS) $(JDK4_1_TARGETS) $(JDK4_2_TARGETS)
 
-doc:	$(JDK2_DOC) $(JDK3_DOC) $(JDK4_DOC) $(JDK4_1_DOC)
+doc:	$(JDK2_DOC) $(JDK3_DOC) $(JDK4_DOC) $(JDK4_1_DOC) $(JDK4_2_DOC)
 
 run-tests:
 	$(MAKE) $(JDK_TESTS)
@@ -126,23 +132,47 @@ jdk4_1-test:
 .PHONY: jdk4_1-doc
 jdk4_1-doc:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4_1
-	
 
+
+#
+#  JDK 1.8 / JDBC 4.2
+#
+.PHONY: jdk4_2-target
+jdk4_2-target:
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_2
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4_2
+
+.PHONY: jdk4_2-test
+jdk4_2-test:
+	env "JDK4_2=@ac_jdk4_2_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
+
+.PHONY: jdk4_2-doc
+jdk4_2-doc:
+	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4_2
+
+
+#
+#  Install/uninstall
+#
 install-data-local:
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-2.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-3.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.1"
+	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.2"
 	-cp virtjdbc2.jar "$(DESTDIR)${libdir}/jdbc-2.0"
 	-cp virtjdbc3.jar virtjdbc3ssl.jar "$(DESTDIR)${libdir}/jdbc-3.0"
 	-cp virtjdbc4.jar virtjdbc4ssl.jar "$(DESTDIR)${libdir}/jdbc-4.0"
 	-cp virtjdbc4_1.jar virtjdbc4_1ssl.jar "$(DESTDIR)${libdir}/jdbc-4.1"
+	-cp virtjdbc4_2.jar virtjdbc4_2ssl.jar "$(DESTDIR)${libdir}/jdbc-4.2"
 
 uninstall-local:
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-2.0"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-3.0"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.0"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.1"
+	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.2"
+
 
 MAINTAINERCLEANFILES = *.jar
 clean-local:
@@ -164,6 +194,8 @@ EXTRA_DIST = \
 	test4.sh \
 	test4_1.bat \
 	test4_1.sh \
+	test4_2.bat \
+	test4_2.sh \
 	test.bat \
 	test.sh \
 	virtjdbc2.jar \
@@ -172,4 +204,6 @@ EXTRA_DIST = \
 	virtjdbc4.jar \
 	virtjdbc4ssl.jar \
 	virtjdbc4_1.jar \
-	virtjdbc4_1ssl.jar
+	virtjdbc4_1ssl.jar \
+	virtjdbc4_2.jar \
+	virtjdbc4_2ssl.jar
