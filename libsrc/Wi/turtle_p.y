@@ -131,7 +131,8 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token <box> QNAME	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:_f.Rag.2"), LAST(":_f.Rag.2") ::*/
 %token <box> QNAME_NS	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:") ::*/
 %token <box> VARIABLE	/*:: LITERAL("%s"), TTL, LAST("?x"), LAST("?_f.Rag.2") ::*/
-%token <box> BLANK_NODE_LABEL /*:: LITERAL("%s"), TTL, LAST("_:_f.Rag.2") ::*/
+%token <box> BLANK_NODE_LABEL_NQ /*:: LITERAL("%s"), TTL, LAST("_:_f.Rag.2"), LAST("_:_f.Rag:ment.2:") ::*/
+%token <box> BLANK_NODE_LABEL_TTL /*:: LITERAL("%s"), TTL, LAST("_:_f.Rag.2"), LAST("_:_f.Rag:m%ent%20of%20TTL.2:") ::*/
 %token <box> Q_IRI_REF	/*:: LITERAL("%s"), TTL, LAST("<something>"), LAST("<http://www.example.com/sample#frag>") ::*/
 
 %token _GARBAGE_BEFORE_DOT_WS	/* Syntax error that may be (inaccurately) recovered by skipping to dot and space */
@@ -143,6 +144,7 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %type<box> blank_block_subj_tail
 %type<box> blank_block_seq
 %type<box> blank_block_formula
+%type<box> blank_node_label
 %type<box> verb
 %type<box> rev_verb
 %type<token_type> keyword
@@ -485,7 +487,7 @@ verb
 		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
 		    ttlp_triples_for_bnodes_debug (ttlp_arg, $$, ttlp_arg->ttlp_lexlineno, NULL);
 		}
-	| BLANK_NODE_LABEL
+	| blank_node_label
 		{
 		  caddr_t label_copy_for_debug = NULL;
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '_:...' label) can not be used as a predicate");
@@ -605,7 +607,7 @@ object
 	;
 
 blank
-	: BLANK_NODE_LABEL
+	: blank_node_label
 		{
 		  caddr_t label_copy_for_debug = NULL;
 		  if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
@@ -768,6 +770,11 @@ blank_block_formula
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_formula_iid = dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
+	;
+
+blank_node_label
+	: BLANK_NODE_LABEL_NQ
+	| BLANK_NODE_LABEL_TTL
 	;
 
 q_complete
