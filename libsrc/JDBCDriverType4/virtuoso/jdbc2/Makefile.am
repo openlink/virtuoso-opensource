@@ -54,12 +54,19 @@ JDK4_1=@ac_jdk4_1_path@
 JDK4_1_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
+if WITH_JDK4_2
+CLASSPATH4=$(CLASSPATH4)
+JDK4_2=@ac_jdk4_2_path@
+JDK4_2_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
+endif
+
 
 jdbc1_defs = -DJDK_VER=11 '-DVIRT_JDBC_VER="1.x"' -Djdbc2=jdbc
 jdbc2_defs = -DJDK_VER=13 '-DVIRT_JDBC_VER="2.x"'
 jdbc3_defs = -DJDK_VER=14 -Djdbc2=jdbc3 '-DVIRT_JDBC_VER="3.x"'
-jdbc4_defs = -DJDK_VER=16 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.x"'
+jdbc4_defs = -DJDK_VER=16 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.0"'
 jdbc4_1_defs = -DJDK_VER=17 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.1"'
+jdbc4_2_defs = -DJDK_VER=18 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.2"'
 
 
 ###########################################
@@ -169,7 +176,7 @@ std2javafiles = \
 .PHONY: doc2
 doc2: ../../virtjdbc2.jar
 	@cd outstd2 ; $(JDK2)/javadoc -d ../../../doc/virtjdbc2 -classpath . virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	
+
 
 .PHONY: std2
 std2: ../../virtjdbc2.jar
@@ -250,7 +257,7 @@ std3javafiles = \
 .PHONY: doc3
 doc3: ../../virtjdbc3.jar
 	@cd outstd3 ; $(JDK3)/javadoc -d ../../../doc/virtjdbc3 -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	
+
 
 .PHONY: std3
 std3: ../../virtjdbc3.jar
@@ -348,7 +355,7 @@ std4javafiles = \
 .PHONY: doc4
 doc4: ../../virtjdbc4.jar
 	@cd outstd4 ; $(JDK4)/javadoc -d ../../../doc/virtjdbc4 -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	
+
 
 
 .PHONY: std4
@@ -449,7 +456,7 @@ std4_1javafiles = \
 .PHONY: doc4_1
 doc4_1: ../../virtjdbc4_1.jar
 	@cd outstd4_1 ; $(JDK4_1)/javadoc -d ../../../doc/virtjdbc4_1 -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	
+
 
 
 .PHONY: std4_1
@@ -534,6 +541,107 @@ outssl4_1/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 
 
 ###########################################
+# JDBC 4.2
+###########################################
+std4_2javafiles = \
+        $(utilfiles:%.java=outstd4_2/openlink/util/%.java) \
+        $(sqlfiles:%.java=outstd4_2/virtuoso/sql/%.java) \
+        $(util3files:%.java=outstd4_2/openlink/util/%.java) \
+        $(util4files:%.java=outstd4_2/openlink/util/%.java) \
+    	$(in3files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+    	$(in4files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+    	$(infiles:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+        $(javaxfiles:%.java=outstd4_2/virtuoso/javax/%.java)
+
+
+.PHONY: doc4_2
+doc4_2: ../../virtjdbc4_2.jar
+	@cd outstd4_2 ; $(JDK4_2)/javadoc -d ../../../doc/virtjdbc4_2 -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+
+
+
+.PHONY: std4_2
+std4_2: ../../virtjdbc4_2.jar
+
+../../virtjdbc4_2.jar: outstd4_2 $(std4_2javafiles)
+	@echo jdbc4_2 ssl javac $(JDK4_2_FLAGS)
+	@cd outstd4_2 ; $(JDK4_2)/javac $(JDK4_2_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	@cd outstd4_2 ; $(JDK4_2)/jar cfm ../../../virtjdbc4_2.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
+	@echo "............. Virtuoso pure Java 4.2 built"
+
+outstd4_2:
+	@mkdir outstd4_2
+	@mkdir outstd4_2/virtuoso
+	@mkdir outstd4_2/virtuoso/jdbc4
+	@mkdir outstd4_2/virtuoso/sql
+	@mkdir outstd4_2/openlink
+	@mkdir outstd4_2/openlink/util
+	@mkdir outstd4_2/virtuoso/javax
+	@mkdir outstd4_2/META-INF
+	@mkdir outstd4_2/META-INF/services
+	@cp ../../java.sql.Driver4 outstd4_2/META-INF/services/java.sql.Driver
+
+outstd4_2/virtuoso/jdbc4/%.java: %.java
+	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+
+outstd4_2/openlink/util/%.java: ../../openlink/util/%.java
+	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+
+outstd4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outstd4_2/virtuoso/sql; cp ../../../$< .
+
+outstd4_2/virtuoso/javax/%.java: ../javax/%.java
+	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+
+
+###########################################
+# JDBC 4.2 (SSL)
+###########################################
+ssl4_2javafiles = \
+        $(utilfiles:%.java=outssl4_2/openlink/util/%.java) \
+        $(sqlfiles:%.java=outssl4_2/virtuoso/sql/%.java) \
+        $(util3files:%.java=outssl4_2/openlink/util/%.java) \
+        $(util4files:%.java=outssl4_2/openlink/util/%.java) \
+    	$(in3files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+    	$(in4files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+    	$(infiles:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+        $(javaxfiles:%.java=outssl4_2/virtuoso/javax/%.java)
+
+.PHONY: ssl4_2
+ssl4_2: ../../virtjdbc4_2ssl.jar
+
+../../virtjdbc4_2ssl.jar: outssl4_2 $(ssl4_2javafiles)
+	@echo jdbc4_2 ssl javac $(JDK4_2_FLAGS)
+	@cd outssl4_2 ; $(JDK4_2)/javac $(JDK4_2_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	@cd outssl4_2 ; $(JDK4_2)/jar cfm ../../../virtjdbc4_2ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
+	@echo "............. Virtuoso pure Java SSL 4.2 built"
+
+outssl4_2:
+	@mkdir outssl4_2
+	@mkdir outssl4_2/virtuoso
+	@mkdir outssl4_2/virtuoso/jdbc4
+	@mkdir outssl4_2/virtuoso/sql
+	@mkdir outssl4_2/openlink
+	@mkdir outssl4_2/openlink/util
+	@mkdir outssl4_2/virtuoso/javax
+	@mkdir outssl4_2/META-INF
+	@mkdir outssl4_2/META-INF/services
+	@cp ../../java.sql.Driver4 outssl4_2/META-INF/services/java.sql.Driver
+
+outssl4_2/virtuoso/jdbc4/%.java: %.java
+	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+
+outssl4_2/openlink/util/%.java: ../../openlink/util/%.java
+	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+
+outssl4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outssl4_2/virtuoso/sql; cp ../../../$< .
+
+outssl4_2/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
+	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+
+
+###########################################
 # Cleanup
 ###########################################
 clean-local:
@@ -544,3 +652,4 @@ clean-local:
 	rm -rf outstd3 outssl3
 	rm -rf outstd4 outssl4
 	rm -rf outstd4_1 outssl4_1
+	rm -rf outstd4_2 outssl4_2
