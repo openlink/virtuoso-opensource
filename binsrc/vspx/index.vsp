@@ -1,26 +1,26 @@
-<?vsp 
---  
+<?vsp
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2015 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 ?>
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 <HTML>
@@ -34,31 +34,31 @@
   H1 {
     background-color: #eecdcc;
     color: Black;
-    border: 1px #aaaaff solid;  
+    border: 1px #aaaaff solid;
   }
   .filesource {
     background-color: #efefef;
     color: Black;
-    border: 1px #dddddd solid;  
+    border: 1px #dddddd solid;
     width: auto;
     position: absolute;
     top: 70px;
     left: 190px;
     bottom: auto;
-    font-size: 90%;  
+    font-size: 90%;
   }
   .filelist {
     font-family: Tahoma, sans-serif;
     background-color: #cccdee;
     color: Black;
-    border: 1px #dddddd solid;  
+    border: 1px #dddddd solid;
     width: 170px;
     position: absolute;
     top: 70px;
     left: 10px;
     bottom: auto;
     right: auto;
-    font-size: 90%;  
+    font-size: 90%;
   }
   </STYLE>
   </HEAD>

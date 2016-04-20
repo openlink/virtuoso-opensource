@@ -2,26 +2,26 @@
 <!--
  -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2015 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <html>
   <head>
@@ -179,13 +179,13 @@
                 <v:button name="ds_first" action="simple" value="&lt;&lt;" xhtml:size="10pt"/>
                 <v:button name="ds_prev" action="simple" value="&lt;" xhtml:size="10pt"/>
                 <v:template name="template_pager" type="page-navigator" name-to-remove="" set-to-remove="">
-                  <v:button 
-                    name="ds_pager" 
-                    style="button" 
-                    action="simple" 
-                    value="--sprintf('%d',self.ds.ds_data_source.ds_current_pager_idx)" 
-                    xhtml_disabled="--case when self.ds.ds_data_source.ds_current_pager_idx = self.ds.ds_data_source.ds_current_page then 'true' else '@@hidden@@' end" 
-                    xhtml_style="--case when self.ds.ds_data_source.ds_current_pager_idx = self.ds.ds_data_source.ds_current_page then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline' else 'width:24pt' end" 
+                  <v:button
+                    name="ds_pager"
+                    style="button"
+                    action="simple"
+                    value="--sprintf('%d',self.ds.ds_data_source.ds_current_pager_idx)"
+                    xhtml_disabled="--case when self.ds.ds_data_source.ds_current_pager_idx = self.ds.ds_data_source.ds_current_page then 'true' else '@@hidden@@' end"
+                    xhtml_style="--case when self.ds.ds_data_source.ds_current_pager_idx = self.ds.ds_data_source.ds_current_page then 'width:24pt;color:red;font-weight:bolder;text-decoration:underline' else 'width:24pt' end"
                   />
                 </v:template>
                 <v:button name="ds_next" action="simple" value="&gt;" xhtml:size="10pt"/>

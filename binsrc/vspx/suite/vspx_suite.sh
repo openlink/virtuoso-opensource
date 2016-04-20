@@ -1,25 +1,25 @@
 #!/bin/sh
-#  
+#
 #  $Id$
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
+#
 #  Copyright (C) 1998-2015 OpenLink Software
-#  
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
+#
 
 # ----------------------------------------------------------------------
 #  Fix issues with LOCALE
@@ -48,14 +48,14 @@ virtuoso_start() {
   rm -f *.lck
   $SERVER
   stat="true"
-  while true 
+  while true
   do
     sleep 4
     LOG "CHECKING: Is Virtuoso Server successfully started on port $PORT?"
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN` 
-    if [ "z$stat" != "z" ] 
-		then 
-      sleep 7 
+    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
+    if [ "z$stat" != "z" ]
+		then
+      sleep 7
       LOG "PASSED: Virtuoso Server successfully started on port $PORT"
       return 0
     fi
@@ -75,11 +75,11 @@ virtuoso_start() {
 do_command() {
   _dsn=$1
   command=$2
-  shift 
   shift
-  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE	
+  shift
+  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE
   $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if test $? -ne 0 
+  if test $? -ne 0
   then
     LOG "***FAILED: $command"
   else
@@ -143,7 +143,7 @@ CallstackOnException = 1
 ;
 
 [HTTPServer]
-ServerPort = $TPORT 
+ServerPort = $TPORT
 ServerRoot = ../
 ServerThreads = 5
 MaxKeepAlives = 10
