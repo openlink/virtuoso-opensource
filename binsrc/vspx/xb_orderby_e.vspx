@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2016 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
  <v:page name="data_set_page" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vd="http://www.openlinksw.com/vspx/deps/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openlinksw.com/vspx/
@@ -99,7 +99,7 @@ self.vc_find_descendant_control('outer_ds').vc_data_bind(e);
                   <v:label name="label5" element-value="--(control.vc_parent as vspx_row_template).te_rowset" element-place="@name" format="%s" width="80">
                   <v:before-render>dbg_obj_print('(control.vc_parent as vspx_row_template).te_rowset',(control.vc_parent as vspx_row_template).te_rowset);</v:before-render>
                   </v:label>
-                  
+
                 </td>
                 <td align="left" nowrap="1">
                    <v:button name="del" action="simple" value="Remove from list" style="url">
@@ -164,7 +164,7 @@ self.vc_find_descendant_control('outer_ds').vc_data_bind(e);
        </v:on-post>
        </v:button>
 <!--     </v:form> -->
-		   
+
                    <v:data-set name="ds" data="--xpath_eval ('item', (control.vc_parent as vspx_row_template).te_rowset, 0)" meta="--get_xml_meta()" nrows="10" scrollable="0" width="80">
                    <v:template name="inner_template1" type="simple" name-to-remove="table" set-to-remove="bottom">
                      (<v:label name="inner_label03" value="--(control.vc_parent.vc_parent as vspx_data_set).ds_rows_offs" format="Items rowset offset : %d" width="80"/>)
@@ -199,7 +199,7 @@ self.vc_find_descendant_control('outer_ds').vc_data_bind(e);
                              <v:label name="inner_label5" element-value="--(control.vc_parent as vspx_row_template).te_rowset" element-place="@name" format="%s" width="80">
                              <v:before-render>dbg_obj_print('(control.vc_parent as vspx_row_template).te_rowset',(control.vc_parent as vspx_row_template).te_rowset);</v:before-render>
                              </v:label>
-              
+
                            </td>
                            <td align="left" nowrap="1">
                               <v:button name="inner_del" action="simple" value="Remove from list" style="url">
@@ -256,12 +256,12 @@ if (cfoll)
                      </table>
                    </v:template>
                  </v:data-set>
-   
-		   
-		   
-		   
-		   
-		   
+
+
+
+
+
+
                 </td>
               </tr>
             </table>

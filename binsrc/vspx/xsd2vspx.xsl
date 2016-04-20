@@ -1,27 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2016 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vd="http://www.openlinksw.com/vspx/deps/" xmlns:vz="http://www.openlinksw.com/vspx/v-zard" xmlns:xs="http://www.w3.org/2001/XMLSchema" >
 <xsl:output method="XML" cdata-section-elements="v:on-init v:before-data-bind v:after-data-bind v:on-post v:before-render v:method" />
@@ -44,7 +44,7 @@
     <xsl:otherwise>
       <xsl:call-template name="v-page" />
     </xsl:otherwise>
-  </xsl:choose>    
+  </xsl:choose>
 </xsl:template>
 
 
@@ -117,7 +117,7 @@ if (self.thedoc is null)
     <xsl:for-each select="$el-els//xs:element">
        <xsl:choose>
         <xsl:when test="ancestor::xs:*[@maxOccurs='unbounded']">
-          <v:data-set 
+          <v:data-set
         </xsl:when>
       </xsl:choose>
     </xsl:for-each>

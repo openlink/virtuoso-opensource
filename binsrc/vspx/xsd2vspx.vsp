@@ -1,26 +1,26 @@
-<?vsp 
---  
+<?vsp
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2016 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
   declare _xsdname varchar;
   declare _pagename varchar;
@@ -28,7 +28,7 @@
   _xsdname := get_keyword ('xsdname', params, 'file://vspx/xsd2vspx_budget.xsd');
   _pagename := get_keyword ('pagename', params, 'xsd2vspx_budget');
   _topname := get_keyword ('topname', params, 'budget');
-  
+
   declare _ses, _compiled, _log, _vspx any;
   if (get_keyword ('_', params))
     {
@@ -36,19 +36,19 @@
         'file://vspx/xsd2vspx.xsl',
         xtree_doc (xml_uri_get ('file://', _xsdname), 128, _xsdname),
         vector ('pagename', _pagename, 'topname', _topname) );
-      _log := xquery_eval ('namespace vz="http://www.openlinksw.com/vspx/v-zard" <div>{//vz:log}</div>', _compiled);  
+      _log := xquery_eval ('namespace vz="http://www.openlinksw.com/vspx/v-zard" <div>{//vz:log}</div>', _compiled);
       _vspx := xml_cut (_compiled);
       _vspx := XMLUpdate (_vspx, '[xmlns:vz="http://www.openlinksw.com/vspx/v-zard"] //vz:log', '');
       _ses := string_output();
       http_value (_vspx, 0, _ses);
       string_to_file ('vspx/'|| _pagename || '.vspx', string_output_string(_ses), -2);
-    }  
+    }
 ?>
 <html>
   <head><title>XMLSchema to VSPX converter</title></head>
   <body>
     <form method="GET" action="/vspx/xsd2vspx.vsp">
-<table>    
+<table>
 <tr><th align="right">XSD name:</th><td><input type="text" name="xsdname" value="<?= _xsdname ?>" /></td></tr>
 <tr><th align="right">VSPX page:</th><td><input type="text" name="pagename" value="<?= _pagename ?>" /></td></tr>
 <tr><th align="right">Top component:</th><td><input type="text" name="topname" value="<?= _topname ?>" /></td></tr>
@@ -63,7 +63,7 @@ The VSPX page <a href="<?/ _pagename ?>.vspx" target="_new"><?= _pagename ?>.vsp
 See the log below for more details.
 <hr/>
 <?= _log ?>
-<hr />  
+<hr />
 <?vsp } ?>
   </body>
 </html>

@@ -2,26 +2,26 @@
 <!--
  -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
+ -
  -  Copyright (C) 1998-2016 OpenLink Software
- -  
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
@@ -35,7 +35,7 @@
 
   <body>
 		<v:page name="colored_data_set_page1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
-			
+
 <font color="red">
 				<v:error-summary/>
 			</font>
@@ -59,19 +59,19 @@
 									<tr>
 										<td align="center" valign="middle" width="15%">
 											<v:button name="add_button" action="submit" value="Add" width="80"></v:button></td>
-										
+
 										<td align="right" valign="middle" width="25%">
 											<v:update-field name="cust_id2" column="CustomerID" width="80"></v:update-field></td>
-										
+
 										<td align="left" valign="middle" nowrap="nowrap" width="35%">
 											<v:update-field name="company_name2" column="CompanyName" width="80"></v:update-field></td>
-										
+
 										<td align="left" valign="middle" width="25%">
 											<v:update-field name="phone2" column="Phone" width="80"></v:update-field></td>
-										
+
 									</tr>
 								</table></v:template>
-							
+
 						</v:form>
 					</v:template>
 					<v:template name="template4" type="if-not-exists" name-to-remove="table" set-to-remove="both">
@@ -162,27 +162,27 @@ ds.vc_data_bind(e);
 			</v:data-set>
 			<v:include name="include1" url="footer.xml"/>
 		</v:page></body>
-	
-		
-	
-		
-	
-		
-	
-		
-	
-		
-	
-		
-	
-		
-	
-		
-	
-		
-	
-		
-	
 
 
-</html>	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</html>

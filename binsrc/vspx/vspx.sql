@@ -2292,12 +2292,12 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
 	    }
 	  else
 	    {
-	      declare res any; 
+	      declare res any;
 	      res := 0;
 	      if (__tag (res_col) = 182 and cset is not null)
 		res := charset_recode (res_col, cset, '_WIDE_');
               if (res <> 0)
-	        res_col := res;		
+	        res_col := res;
 	      http_value (coalesce (res_col, '<DB NULL>'));
 	    }
 	  next:
@@ -2864,12 +2864,12 @@ create method prologue_render (in sid varchar, in realm varchar, in nonce varcha
 	  {
 	    if (length (sid) > 0)
 	      {
-	        http (sprintf ('<input type="hidden" name="sid" value="%s" />\n', sid));
-	        http (sprintf ('<input type="hidden" name="realm" value="%s" />\n', realm));
+	        http (sprintf ('<input type="hidden" name="sid" value="%V" />\n', sid));
+	        http (sprintf ('<input type="hidden" name="realm" value="%V" />\n', realm));
 	      }
 	    else
 	      {
-	        http (sprintf ('<input type="hidden" name="nonce" value="%s" />\n', nonce));
+	        http (sprintf ('<input type="hidden" name="nonce" value="%V" />\n', nonce));
 	      }
 	  }
 	http ('<input type="hidden" name="__submit_func" value="" />\n');
@@ -3169,10 +3169,10 @@ create method vc_render () for vspx_check_box
     return;
   if (self.ufl_is_boolean)
     self.vc_get_selected_from_value();
-  http (sprintf ('<input type="checkbox" name="%s%s" value="%s" %s %s',
+  http (sprintf ('<input type="checkbox" name="%s%s" value="%V" %s %s',
   case self.ufl_group when '' then self.vc_get_name () else self.ufl_group end,
   self.ufl_name_suffix,
-  case self.ufl_is_boolean when 0 then cast(self.ufl_value as varchar) else '1' end,
+  case self.ufl_is_boolean when 0 then cast(coalesce(self.ufl_value,'') as varchar) else '1' end,
   case self.ufl_selected when 1 then 'checked="checked"' else '' end,
   case self.ufl_client_validate when 0 then '' else ' onchange="javascript: vv_validate_' || self.vc_name || '(this)"' end));
   if (self.ufl_auto_submit) http (' onclick="doAutoSubmit (this.form, this)"');
@@ -4454,7 +4454,7 @@ create method vc_render () for vspx_select_list
 	  else
 	    sel := '';
 	}
-      http (sprintf ('<option value="%s" %s>%s</option>', self.vsl_item_values[inx], sel, self.vsl_items[inx]));
+      http (sprintf ('<option value="%V" %s>%V</option>', self.vsl_item_values[inx], sel, self.vsl_items[inx]));
       inx := inx + 1;
     }
   http ('</select>');
@@ -4982,7 +4982,10 @@ create method vc_render () for vspx_radio_button
 {
   if ( not self.vc_enabled)
     return;
-  http (sprintf ('<input type="radio" name="%s" value="%s" %s ', case coalesce(self.ufl_group,'') when '' then self.vc_get_name () else self.ufl_group end, cast(self.ufl_value as varchar), case self.ufl_selected when 0 then '' else 'checked="checked"'  end));
+  http (sprintf ('<input type="radio" name="%s" value="%V" %s ',
+	case coalesce(self.ufl_group,'') when '' then self.vc_get_name () else self.ufl_group end,
+	cast(coalesce(self.ufl_value, '') as varchar),
+	case self.ufl_selected when 0 then '' else 'checked="checked"'  end));
   vspx_print_html_attrs (self);
   if (self.ufl_auto_submit) http (' onclick="doAutoSubmit (this.form, this)"');
   http ('/>');
@@ -6321,7 +6324,7 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
 {
   declare _ext, result, name, content, pwd, cnt any;
   -- do nor record itself
-  if (registry_get ('__block_http_history') = http_path ()) 
+  if (registry_get ('__block_http_history') = http_path ())
     {
     return;
   }
@@ -6332,11 +6335,11 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
     return;
   -- record all others
   -- cut off parameters from resource name
-  if (length (vres) > 0) 
+  if (length (vres) > 0)
     {
     declare p any;
       p := strstr (vres, '?');
-      if (p) 
+      if (p)
 	{
       vres := subseq(vres, 0, p);
     }
@@ -6357,7 +6360,7 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
       if (registry_get ('__save_http_history_use_ip') = '1')
 	use_ip := 1;
       else
-        use_ip := 0; 	
+        use_ip := 0;
       ip := http_client_ip ();
       if (file_stat ('./sys_http_recording') = 0)
 	signal ('VSPX9', 'Can not upload resource into sys_http_recording/ directory');
@@ -6375,20 +6378,20 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
       name := concat ('/DAV/sys_http_recording/', name);
       -- check if necessary DAV path exists
       result := cast (DB.DBA.DAV_SEARCH_ID ('/DAV/sys_http_recording/', 'c') as integer);
-      if (result < 0) 
+      if (result < 0)
 	{
 	-- create DAV collection
-	  result := cast (DB.DBA.DAV_COL_CREATE_INT ('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', null, 
+	  result := cast (DB.DBA.DAV_COL_CREATE_INT ('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', null,
 	  0, 0, 0, http_dav_uid (), http_admin_gid ()) as integer);
-	  if(result < 0) 
+	  if(result < 0)
 	    {
 	      signal ('VSPX9', 'Can not create /DAV/sys_http_recording/ directory');
 	      return;
 	    }
 	}
-      result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN','dav','dav', 'dav', null, 
+      result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN','dav','dav', 'dav', null,
 	0, now (), now (), null, http_dav_uid (), http_admin_gid (), 0) as integer);
-      if (result < 0) 
+      if (result < 0)
 	{
 	  signal ('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
 	}
