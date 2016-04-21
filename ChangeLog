@@ -1,4 +1,28 @@
+2016-04-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue uploading turtle files containing special symbols
+
+2016-04-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+	Updated version of JDBC driver
+
+2016-04-21  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix JDBC driver remove finalizers
+
+2016-04-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added missing dirs
+
+	Renamed configure.in -> configure.ac
+
 2016-04-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.3-rc2 for upcoming release
+
+	Updated NEWS and Changelog for upcoming release
 
 	Merge branch 'develop/6' into develop/7
 

@@ -1,4 +1,4 @@
-April 20, 2016, V7.2.3:
+April 21, 2016, V7.2.3:
 
   * Virtuoso Engine
     - Added "obvious" index choice
@@ -49,7 +49,7 @@ April 20, 2016, V7.2.3:
     - Fixed conversion of broken unicode strings
     - Fixed variable initialization
     - Fixed VirtuosoDataSource methods setLog_Enable()/getLog_Enable() for properly work with Spring framework
-
+    - Fixed JDBC driver to remove finalizers
 
   * Faceted Browser
     - Added link-out icons
@@ -83,6 +83,7 @@ April 20, 2016, V7.2.3:
   * DAV
     - Small optimization for update triggers of WS.WS.SYS_DAV_RES
     - Fixed set specific sponger pragmas on text/html
+    - Fixed issue uploading turtle files containing special symbols
 
   * DBpedia
     - Implemented new fluid skin design for DBpedia /page based on the Bootstrap Framework
