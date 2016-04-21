@@ -1,7 +1,7 @@
 AC_PREREQ(2.59)
 AC_REVISION($Id$)
 #
-#  configure.in
+#  configure.ac
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.

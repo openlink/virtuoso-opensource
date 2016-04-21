@@ -108,7 +108,7 @@ use one of the following commands:
   * openssl version
 
 If you have an older version than automake version 1.9 you can edit
-the configure.in script around line 47 using the examples provided for
+the configure.ac script around line 47 using the examples provided for
 each version.
 
 Mac OS X 10.10
