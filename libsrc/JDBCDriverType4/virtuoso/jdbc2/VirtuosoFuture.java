@@ -222,19 +222,5 @@ class VirtuosoFuture
          return ((VirtuosoFuture)obj).req_no == req_no;
       return false;
    }
-
-   /**
-    * Method runs when the garbage collector want to erase the object
-    */
-   public void finalize() throws Throwable
-   {
-      connection = null;
-      if(results != null)
-      {
-         results.removeAllElements();
-         results = null;
-      }
-   }
-
 }
 
