@@ -1014,19 +1014,6 @@ class VirtuosoRow
        return content;
    }
 
-   /**
-    * Method runs when the garbage collector want to erase the object
-    */
-   public void finalize() throws Throwable
-   {
-      if(content != null)
-      {
-         content.removeAllElements();
-         content = null;
-      }
-      resultSet = null;
-   }
-
    public String toString ()
      {
        if (content == null)
