@@ -3561,7 +3561,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   inout ses varchar,
   in is_res integer := 0)
 {
-  declare ns, def_gr, giid, dict, triples, prefixes any;
+  declare ns, def_gr, giid, dict, triples, prefixes, flags any;
 	declare exit handler for sqlstate '*'
 	{
   _error:;
@@ -3570,6 +3570,7 @@ create procedure WS.WS.TTL_QUERY_POST (
 	  return -44;
 	};
   set_user_id ('dba');
+  flags := 255;
   def_gr := WS.WS.DAV_IRI (path);
   giid := iri_to_id (def_gr);
   log_enable (3);
@@ -3600,7 +3601,7 @@ create procedure WS.WS.TTL_QUERY_POST (
 
     ns := ses;
     dict := dict_new ();
-    DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+    DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict, flags);
 
     goto _exit;
   }
@@ -3612,7 +3613,7 @@ _again:;
     }
   http (ses, ns);
   dict := dict_new ();
-  DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+  DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict, flags);
 
 _next:;
   triples := dict_list_keys (dict, 1);
@@ -3626,7 +3627,7 @@ _next:;
   http (ses, ns);
 
 _exit:;
-  DB.DBA.TTLP (ns, def_gr, def_gr, 255);
+  DB.DBA.TTLP (ns, def_gr, def_gr, flags);
   if (def_gr like '%,meta')
     {
       declare subj, nsubj, org_path any;
