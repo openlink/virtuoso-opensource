@@ -1096,6 +1096,8 @@ normal_auth:
 	    rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
 	}
     }
+  if (user_name is null)
+    user_name := '';
   return rc;
 }
 ;
