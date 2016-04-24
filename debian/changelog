@@ -1,3 +1,11 @@
+virtuoso-opensource (7.2.4) unstable; urgency=medium
+
+  * Added support for building with OpenJDK 1.8 if available
+  * Hide errors from dpkg when openjdk version is not available on the system
+  * Fixed deprecated build rules for Virtuoso .Net adapter
+ 
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Sun, 24 Apr 2016 12:00:00 +0100
+
 virtuoso-opensource (7.2.2) unstable; urgency=medium
 
   * Fixed debian packaging of the Virtuoso .NET adapter
