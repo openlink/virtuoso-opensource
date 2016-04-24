@@ -22,6 +22,11 @@ ifeq ($(JDK7PATH),)
 JDK7PATH=no
 endif
 
+JDK8PATH = $(shell dpkg -L openjdk-8-jdk 2>/dev/null | grep "/usr/lib/jvm/java-8-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
+ifeq ($(JDK8PATH),)
+JDK8PATH=no
+endif
+
 DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
 		--program-transform-name='s/isql$$/isql-vt/;s/isqlw/isqlw-vt/' \
 		--with-readline \
@@ -37,7 +42,8 @@ DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
 		--enable-syncml-vad \
 		--enable-bpel-vad \
 		--with-jdk4=$(JDK6PATH) \
-		--with-jdk4_1=$(JDK7PATH)
+		--with-jdk4_1=$(JDK7PATH) \
+		--with-jdk4_2=$(JDK8PATH)
 
 ifeq ($(DEB_BUILD_ARCH),alpha)
 		EXTRA_LDFLAGS += -Wl,--no-relax
