@@ -32,7 +32,7 @@ AC_REVISION($Id$)
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
 m4_define(vos_patch,	[4])
-m4_define(vos_devel,	[1])
+m4_define(vos_devel,	[.2])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
