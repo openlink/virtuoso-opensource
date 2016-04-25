@@ -68,15 +68,15 @@ run-tests:
 #
 .PHONY: jdk2-target
 jdk2-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std2
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) std2
 
 .PHONY: jdk2-target-ssl
 jdk2-target-ssl:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl2
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) ssl2
 
 .PHONY: jdk2-doc
 jdk2-doc: 
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc2
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) doc2
 
 .PHONY: jdk2-test
 jdk2-test:
@@ -88,8 +88,8 @@ jdk2-test:
 #
 .PHONY: jdk3-target
 jdk3-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std3
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl3
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) std3
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) ssl3
 
 .PHONY: jdk3-test
 jdk3-test:
@@ -97,7 +97,7 @@ jdk3-test:
 
 .PHONY: jdk3-doc
 jdk3-doc:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc3
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) doc3
 
 
 #
@@ -105,8 +105,8 @@ jdk3-doc:
 #
 .PHONY: jdk4-target
 jdk4-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) std4
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) ssl4
 
 .PHONY: jdk4-test
 jdk4-test:
@@ -114,7 +114,7 @@ jdk4-test:
 
 .PHONY: jdk4-doc
 jdk4-doc:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) doc4
 
 
 #
@@ -122,8 +122,8 @@ jdk4-doc:
 #
 .PHONY: jdk4_1-target
 jdk4_1-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_1
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4_1
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) std4_1
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) ssl4_1
 
 .PHONY: jdk4_1-test
 jdk4_1-test:
@@ -131,7 +131,7 @@ jdk4_1-test:
 
 .PHONY: jdk4_1-doc
 jdk4_1-doc:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4_1
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) doc4_1
 
 
 #
@@ -139,8 +139,8 @@ jdk4_1-doc:
 #
 .PHONY: jdk4_2-target
 jdk4_2-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_2
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4_2
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) std4_2
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) ssl4_2
 
 .PHONY: jdk4_2-test
 jdk4_2-test:
@@ -148,7 +148,7 @@ jdk4_2-test:
 
 .PHONY: jdk4_2-doc
 jdk4_2-doc:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4_2
+	@cd virtuoso/jdbc2; $(MAKE) $(MAKEFLAGS) doc4_2
 
 
 #
