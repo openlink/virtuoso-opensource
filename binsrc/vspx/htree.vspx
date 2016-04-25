@@ -1,32 +1,32 @@
 <?xml version="1.0"?>
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
- -  Copyright (C) 1998-2015 OpenLink Software
- -  
+ -
+ -  Copyright (C) 1998-2016 OpenLink Software
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <html>
  <body>
 <v:page name="demo_htree" xmlns:v="http://www.openlinksw.com/vspx/">
- 
+
  <p>
  <?vsp http ('<H3>Simple page to demonstrate simple VSPX tree control</H3>'); ?>
  </p>
@@ -37,17 +37,17 @@
          root="root_node" start-path="vsp" child-function="child_node" >
   <v:node-template name="node_tmpl">
     <td nowrap="nowrap"><v:button name="tree1_toggle" action="simple" value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then '+' else '-' end" /><b><v:label name="label1" value="--(control.vc_parent as vspx_tree_node).tn_value" /></b></td>
-  </v:node-template>	
+  </v:node-template>
   <v:leaf-template name="leaf_tmpl">
     <td nowrap="nowrap"><v:label name="label2" value="--(control.vc_parent as vspx_tree_node).tn_value" /></td>
-  </v:leaf-template> 
+  </v:leaf-template>
   <v:horizontal-template name="ht">
     <tr><v:node-set /></tr>
   </v:horizontal-template>
  </v:tree>
  </table>
  </v:form>
- 
+
  <v:include url="footer.xml"/>
 </v:page>
  </body>

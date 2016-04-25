@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,8 +32,6 @@ import org.openrdf.query.impl.MapBindingSet;
 
 public class VirtuosoQuery extends VirtuosoOperation implements Query {
 
-	int maxQueryTime = 0;
-	
 	/**
 	 * Specifies the maximum time that a query is allowed to run. The query will
 	 * be interrupted when it exceeds the time limit. Any consecutive requests to
@@ -45,7 +43,7 @@ public class VirtuosoQuery extends VirtuosoOperation implements Query {
 	 */
 	public void setMaxQueryTime(int maxQueryTime)
 	{
-		this.maxQueryTime = maxQueryTime;
+		setMaxExecutionTime(maxQueryTime);
 	}
 
 	/**
@@ -56,7 +54,7 @@ public class VirtuosoQuery extends VirtuosoOperation implements Query {
 	 */
 	public int getMaxQueryTime()
 	{
-		return maxQueryTime;
+		return getMaxExecutionTime();
 	}
 
 }

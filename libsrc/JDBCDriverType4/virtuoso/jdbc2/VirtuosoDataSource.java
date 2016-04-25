@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -440,14 +440,14 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
   }
 
 
-  public void setLog_Enable(int bits) throws SQLException
+  public void setLog_Enable(int bits)
   {
     if (bits<-1 || bits>3)
-      throw new SQLException("The log_enable options must be between -1 and 3");
+      bits = 0;
     log_enable = bits;
   }
 
-  public int getLog_Enable() throws SQLException
+  public int getLog_Enable()
   {
     return log_enable;
   }

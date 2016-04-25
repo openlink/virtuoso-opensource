@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -389,6 +389,7 @@ typedef struct sparp_s {
 #endif
   ccaddr_t sparp_text;
   int sparp_permitted_syntax;		/*!< Bitmask of permitted syntax extensions, 0 for default */
+  int sparp_syntax_exceptions;		/*!< Bitmask of syntax exceptions, 0 for default, can be nonzero for remote endpoints or for testing etc. */
   int sparp_inner_permitted_syntax;	/*!< The value of last define lang:dialect, it will be assigned to sparp_permitted_syntax for the subquery, -1 before set */
   int sparp_unictr;			/*!< Unique counter for objects */
 /* Environment of yacc */
@@ -744,6 +745,7 @@ typedef struct spar_tree_s
         SPART *endpoint;	/*!< An IRI of web service endpoint without static parameters */
         SPART **iri_params;	/*!< A get_keyword style array of parameters to pass in the IRI, like maxrows */
         caddr_t syntax;		/*!< Boxed bitmask of SSG_SD_xxx flags of allowed query serialization features */
+        caddr_t syntax_exceptions;	/*!< Boxed bitmask of SSG_SD_NO_xxx flags of exceptions from standard syntax that breaks the standard compliance of the service */
         caddr_t *param_varnames;	/*!< Names of variables that are passed as parameters */
         ptrlong in_list_implicit;	/*!< Flags if IN variables were specified using '*' or not specified at all */
         caddr_t *rset_varnames;	/*!< Names of variables that are returned in the result set from the endpoint, in the order in the rset */
@@ -789,8 +791,12 @@ typedef struct spar_tree_s
       } macropu;
     struct {
         /* #define SPAR_PPATH		(ptrlong)1025 */
-        ptrlong subtype;	/*!< Node subtype: '/', '|', 'D' or '*' for non-leafs ('D' is union of path with T_DISTINCT), 0 or '!' for plain or negative leafs. Leafs are '|' of iris and ^iris */
-        SPART **parts;		/*!< Descendants of type SPAR_PPATH for non-leafs, QNames for leafs. For '|' subtype, the (only) 0 or '!' part is always first */
+        ptrlong subtype;	/*!< Node subtype: '/', '|', 'D' or '*' for non-leafs ('D' is union of path with T_DISTINCT), 0 or '!' for plain or negative leafs.
+					Leafs are '|' of iris and ^iris.
+					There may be a single forward and/or single reverse leaf (SPART *)_STAR, it can't be mixed with IRIs of same direction.
+					When type is 0, (SPART *)_STAR means that any predicate will do, such as after optimization of x|!x
+					When type is '!', (SPART *)_STAR _also_ means that any predicate will do; negation for _STAR is no leafs of that direction. */
+        SPART **parts;		/*!< Descendants of type SPAR_PPATH for non-leafs, QNames for leafs. For '|' subtype, the (only) 0 part is always first, the (only) '!' part is either first or next after 0 part */
         caddr_t minrepeat;	/*!< Minimal number of repetitions for '*' non-leaf node: 0 for '?' and '*' operators, 1 for '+', an M integer for {M,N} modifier */
         caddr_t maxrepeat;	/*!< Maximal number of repetitions for '*' non-leaf node: 1 for '?', an N integer for {M,N} modifier however it is NEGATIVE for infinity */
         ptrlong num_of_invs;	/*!< Number of inverted predicates in a leaf. All inverted predicates are always after all forward predicates */
@@ -972,7 +978,7 @@ extern SPART *spar_add_propvariable (sparp_t *sparp, SPART *lvar, int opcode, SP
 /*! Creates a tree for service invocation but does not add it to the array of all invocations.
 Use spar_add_service_inv_to_sg() to assign sinv.own_idx and store it in sparp->sparp_sg->sg_sinvs .
 Also make sure that sparp->sparp_query_uses_sinvs++ is made somewhere before the creation for the current sparp. */
-extern SPART *spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, ptrlong permitted_syntax, SPART **sources, caddr_t sinv_storage_uri, int silent);
+extern SPART *spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, ptrlong permitted_syntax, ptrlong syntax_exceptions, SPART **sources, caddr_t sinv_storage_uri, int silent);
 /*! Returns string like "SERVICE <iri> at line NNN" or "SERVICE ?var at line NNN" (for error reporting) */
 extern caddr_t spar_sinv_naming (sparp_t *sparp, SPART *sinv);
 /*! Assigns sinv->_.sinv.own_idx and store the pointer to invocation in sparp->sparp_sg->sg_sinvs. After that it is legal to refer to quad maps inside the sinv and to try optimizations */

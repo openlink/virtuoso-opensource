@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,6 +48,14 @@ extern int json_line;
 HEX             ([0-9A-Fa-f])
 
 %%
+
+<INITIAL>[\xef][\xbb][\xbf]			{ }
+<INITIAL>(([\xfe][\xff])|([\xff][\xfe]))	{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the UTF-16 encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\xf7][\x64][\x4c]			{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the UTF-1 encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\xdd][\x73][\x66][\x73]		{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the UTF-EBCDIC encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\x0e][\xfe][\xff]			{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the SCSU encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\xfb][\xee][\x28]			{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the BOCU-1 encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\x84][\x31][\x95][\x33]		{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the GB-18030 encoding but only UTF-8 is supported by this parser"); }
 
 <INITIAL>"{"	{ return OBJ_BEGIN; }
 <INITIAL>"}"	{ return OBJ_END; }

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1065,8 +1065,11 @@ cfg_setup (void)
       c_default_txn_isolation != ISO_SERIALIZABLE)
     c_default_txn_isolation = ISO_REPEATABLE;
 
-  if (cfg_getlong (pconfig, section, "ColumnStore", &c_col_by_default) == -1)
+  if (cfg_getlong (pconfig, section, "ColumnStoreAll", &c_col_by_default) == -1)
     c_col_by_default = 0;
+
+  if (c_col_by_default > 0)
+    log_warning ("Setting ColumnStoreAll = 1 is not recommended in a production environment");
 
   if (0 != cfg_getsize (pconfig, section, "MaxQueryMem", &c_max_large_vec))
     c_max_large_vec = 0;
@@ -1076,6 +1079,12 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "UseAIO", &c_c_use_aio) == -1)
     c_c_use_aio = 0;
+
+  /* Disable AIO for now */
+  if (c_c_use_aio) {
+    log_warning ("Setting UseAIO = 1 is not supported in this build");
+    c_c_use_aio = 0;
+  }
 
   if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
     c_aq_max_threads = 48;

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -882,6 +882,7 @@ create function DB.DBA.RDF_PRESET_TWOBYTES_OF_DATATYPES ()
 }
 ;
 
+--!AFTER
 DB.DBA.RDF_PRESET_TWOBYTES_OF_DATATYPES ()
 ;
 
@@ -2869,11 +2870,6 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
     }
-  if (1 = sys_stat ('enable_vec') and not is_atomic ())
-    {
-      DB.DBA.TTLP_V (strg, base, graph, flags, 3, log_enable => log_enable, transactional => transactional);
-      return;
-    }
   old_log_mode := null;
   if (transactional = 0)
     {
@@ -4784,6 +4780,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (inout triples any, inout 
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
+  declare objs_of_sp any;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
@@ -4823,6 +4820,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   rowvector_subj_sort (triples, 0, 1);
   prev_subj := prev_pred := null;
   obj_needs_br := 0;
+  objs_of_sp := dict_new (20);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare subj, pred, obj, split, obj_iri_split any;
@@ -4858,6 +4856,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
         }
       if (prev_pred is null or (pred <> prev_pred))
         {
+          dict_zap (objs_of_sp, 2);
           if (prev_pred is not null)
             http ('\n</dd>', ses);
           split := sparql_iri_split_rdfa_qname (pred, nsdict, 2);
@@ -4873,6 +4872,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
         }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_HTML_MICRODATA: object is NULL');
+      if (dict_get (objs_of_sp, obj, 0))
+        goto skip_obj;
+      dict_put (objs_of_sp, obj, 1);
       if (obj_needs_br)
         http ('\n', ses);
       else
@@ -4958,6 +4960,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
             }
           http ('</span>', ses);
         }
+skip_obj: ;
     }
   if (prev_subj is not null)
     http ('\n</dd></dl>', ses);
@@ -4970,6 +4973,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, i
   declare env, prev_subj, prev_pred, nsdict, nslist any;
   declare val, p_itemprop, nice_host, describe_path, about_path varchar;
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
+  declare objs_of_sp any;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
@@ -4981,6 +4985,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, i
 This time the service made zero such statements, sorry.</p></body></html>', ses);
       return;
     }
+  objs_of_sp := dict_new (20);
   nice_host := registry_get ('URIQADefaultHost');
   describe_path := about_path := null;
   if (isstring (nice_host))
@@ -5067,6 +5072,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
         }
       if (prev_pred is null or (pred <> prev_pred))
         {
+          dict_zap (objs_of_sp, 2);
 --          if (prev_pred is not null)
 --            http ('\n</td></tr>', ses);
 --          http ('\n<tr>', ses);
@@ -5082,6 +5088,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           prev_pred := pred;
           obj_needs_br := 0;
         }
+      if (dict_get (objs_of_sp, obj, 0))
+        goto skip_obj;
+      dict_put (objs_of_sp, obj, 1);
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_HTML_NICE_MICRODATA: object is NULL');
       if (obj_needs_br)
@@ -5169,6 +5178,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
             }
           http ('</span>', ses);
         }
+skip_obj: ;
     }
   if (prev_subj is not null)
     http ('\n</td></tr></table>', ses);
@@ -5180,6 +5190,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
 {
   declare env, prev_subj, prev_pred any;
   declare ctr, len, tcount, tctr, status, obj_needs_comma integer;
+  declare objs_of_sp any;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   http ('{ "items" : [', ses);
@@ -5189,6 +5200,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   prev_subj := prev_pred := null;
   obj_needs_comma := 0;
+  objs_of_sp := dict_new (20);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare subj, pred, obj, split, obj_iri_split any;
@@ -5217,6 +5229,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
         }
       if (prev_pred is null or (pred <> prev_pred))
         {
+          dict_zap (objs_of_sp, 2);
           if (prev_pred is not null)
             http (' ] ,', ses);
           http ('\n        "', ses); http_escape (case when isstring (pred) then pred else id_to_iri (pred) end, 14, ses, 1, 1); http ('" : [ ', ses);
@@ -5225,6 +5238,9 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
         }
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_JSON_MICRODATA: object is NULL');
+      if (dict_get (objs_of_sp, obj, 0))
+        goto skip_obj;
+      dict_put (objs_of_sp, obj, 1);
       if (obj_needs_comma)
         http (',\n          ', ses);
       else
@@ -5310,6 +5326,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
               http ('"', ses); http_escape (sqlval, 14, ses, 1, 1); http ('"', ses);
             }
         }
+skip_obj: ;
     }
   if (prev_subj is not null)
     http ('] } }', ses);
@@ -5382,7 +5399,6 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (inout triples any, inout ses 
   declare entry_dict, ns_dict, ns_arr any;
   declare pred_tagname varchar;
   declare p_ns_uri, p_ns_pref varchar;
-
   dict := dict_new ();
   ns_dict := dict_new ();
   ns_ctr := 0;
@@ -6688,6 +6704,32 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL (inout triples_di
 }
 ;
 
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_LD_JSON (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    triples := vector ();
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_TTL (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    triples := vector ();
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (triples, ses);
+  return ses;
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (inout triples any, inout ses any)
 {
   declare tcount integer;
@@ -6711,6 +6753,42 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (inout triples any, inout s
   http ('<pre>', ses);
   DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (triples, 257, ses);
   http ('</pre>', ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (inout triples any, inout ses any)
+{
+  declare tcount integer;
+  tcount := length (triples);
+  if (0 = tcount)
+    {
+      http ('<html><head><title>Empty RDF Graph</title></head><body><para>This document contains an empty RDF graph.</para><script type="text/turtle"></script></body></html>\n', ses);
+      return;
+    }
+  http ('<html><head><title>RDF Graph</title></head><body><para>This document contains ' || tcount || ' RDF triples in machine-readable format.</para><script type="text/turtle">', ses);
+  rowvector_obj_sort (triples, 2, 1);
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+--  if (2666 < tcount) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
+    DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+--  else
+--    DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (triples, 257, ses);
+  http ('</script></body></html>', ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (inout triples any, inout ses any)
+{
+  declare tcount integer;
+  tcount := length (triples);
+  if (0 = tcount)
+    {
+      http ('<html><head><title>Empty RDF Graph</title></head><body><para>This document contains an empty RDF graph.</para><script type="application/ld+json"></script></body></html>\n', ses);
+      return;
+    }
+  http ('<html><head><title>RDF Graph</title></head><body><para>This document contains ' || tcount || ' RDF triples in machine-readable format.</para><script type="application/ld+json">', ses);
+  DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, ses);
+  http ('</script></body></html>', ses);
 }
 ;
 
@@ -7047,8 +7125,6 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
     return RDF_INSERT_TRIPLES_CL (graph_iid, triples, log_mode);
   if (not isiri_id (graph_iid))
     graph_iid := iri_to_id (graph_iid);
-  if (__rdf_graph_is_in_enabled_repl (graph_iid))
-    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iid), triples);
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   if (0 = bit_and (old_log_enable, 2))
@@ -7102,6 +7178,8 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
       log_enable (old_log_enable, 1);
       return;
     }
+  if (__rdf_graph_is_in_enabled_repl (graph_iid))
+    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iid), triples);
   ro_id_dict := null;
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
     {
@@ -7250,7 +7328,6 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT (inout _env any)
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_iri any, in opcodes any, in vars any, in log_mode integer, in ctor_op integer)
 {
   declare triple_ctr, quads_found integer;
@@ -7390,7 +7467,6 @@ end_of_adding_triple: ;
 }
 ;
 
---!AWK PUBLIC
 create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
@@ -7402,7 +7478,6 @@ create function DB.DBA.SPARQL_DELETE_CTOR_ACC (inout _env any, in graph_iri any,
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   -- dbg_obj_princ ('DB.DBA.SPARQL_INSERT_CTOR_ACC (', _env, graph_iri, opcodes, vars, uid, log_mode);
@@ -7415,7 +7490,6 @@ create procedure DB.DBA.SPARQL_INSERT_CTOR_ACC (inout _env any, in graph_iri any
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer)
 {
   if (not (isarray (_env)))
@@ -7428,7 +7502,6 @@ create procedure DB.DBA.SPARQL_MODIFY_CTOR_ACC (inout _env any, in graph_iri any
 }
 ;
 
---!AWK PUBLIC
 create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN (inout _env any)
 {
   if (isarray (_env))
@@ -7457,17 +7530,14 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN (inout _env any)
 }
 ;
 
---!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_DELETE_CTOR (in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_DELETE_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
---!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_INSERT_CTOR (in graph_iri any, in opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_INSERT_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
 
---!AWK PUBLIC
 create aggregate DB.DBA.SPARQL_MODIFY_CTOR (in graph_iri any, in del_opcodes any, in ins_opcodes any, in vars any, in uid integer, in log_mode integer) returns any
 from DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_INIT, DB.DBA.SPARQL_MODIFY_CTOR_ACC, DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN
 ;
@@ -8122,12 +8192,11 @@ create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any,
     {
       for vectored (in r_s any array := repl_sv, in r_p any array := repl_pv, in r_o any array := repl_ov, in r_g any array := repl_gv, out repl_quads := r_q)
         {
-          declare r_q, r_o any array;
+	  declare r_q any array;
           declare r_g_iri, r_s_iri, r_p_iri varchar;
-          r_g_iri := iri_canonicalize (__id2in (r_q[3]));
-          r_s_iri := iri_canonicalize (__id2in (r_q[0]));
-          r_p_iri := iri_canonicalize (__id2in (r_q[1]));
-          r_o := r_q[2];
+          r_g_iri := iri_canonicalize (__id2in (r_g));
+          r_s_iri := iri_canonicalize (__id2in (r_s));
+          r_p_iri := iri_canonicalize (__id2in (r_p));
           if (isiri_id (r_o) or (__tag (r_o) = __tag of UNAME) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
             r_q := vector (r_g_iri, r_s_iri, r_p_iri, iri_canonicalize (__id2in (r_o)));
           else
@@ -8203,6 +8272,8 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
         return sprintf ('Insert into %d (or more) graphs, total %d (or less) quads -- done', ins_grp_count, ins_count);
       if (ins_count)
         return string_output_string (res_ses);
+      else if (dflt_graph_iri is null)
+        return sprintf ('Insert of 0 quads -- nothing to do');
       else
         return sprintf ('Insert into <%s>, 0 quads -- nothing to do', dflt_graph_iri);
     }
@@ -8275,12 +8346,11 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
         {
           for vectored (in r_s any array := repl_sv, in r_p any array := repl_pv, in r_o any array := repl_ov, in r_g any array := repl_gv, out repl_quads := r_q)
             {
-              declare r_q, r_o any array;
+	      declare r_q any array;
               declare r_g_iri, r_s_iri, r_p_iri varchar;
-              r_g_iri := iri_canonicalize (__id2in (r_q[3]));
-              r_s_iri := iri_canonicalize (__id2in (r_q[0]));
-              r_p_iri := iri_canonicalize (__id2in (r_q[1]));
-              r_o := r_q[2];
+              r_g_iri := iri_canonicalize (__id2in (r_g));
+              r_s_iri := iri_canonicalize (__id2in (r_s));
+              r_p_iri := iri_canonicalize (__id2in (r_p));
               if (isiri_id (r_o) or (__tag (r_o) = __tag of UNAME) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
                 r_q := vector (r_g_iri, r_s_iri, r_p_iri, iri_canonicalize (__id2in (r_o)));
               else
@@ -8295,6 +8365,8 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
     {
       if (del_count)
         return sprintf ('Delete %d (or less) quads -- done', del_count);
+      else if (dflt_graph_iri is null)
+        return sprintf ('Delete 0 quads -- nothing to do');
       else
         return sprintf ('Delete from <%s>, 0 quads -- nothing to do', dflt_graph_iri);
     }
@@ -16622,7 +16694,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2015-07-16 0001v7';
+  ver := '2015-12-09 0001v7';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
@@ -16803,6 +16875,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_ODATA_JSON to SPARQL_SELECT',
@@ -16838,6 +16912,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_LD_JSON to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML to SPARQL_SELECT',
@@ -16847,6 +16923,14 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_TRIPLES_AGG to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_MODIFY_TRIPLES to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_DELETE_CTOR_ACC to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INSERT_CTOR_ACC to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_MODIFY_CTOR_ACC to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INS_OR_DEL_OR_MODIFY_CTOR_FIN to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_DELETE_CTOR to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_INSERT_CTOR to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARQL_MODIFY_CTOR to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_INSERT_QUADS to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_DELETE_QUADS to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_INSERT_DICT_CONTENT to SPARQL_UPDATE',

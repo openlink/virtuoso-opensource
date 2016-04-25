@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1096,6 +1096,8 @@ normal_auth:
 	    rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
 	}
     }
+  if (user_name is null)
+    user_name := '';
   return rc;
 }
 ;
@@ -1268,6 +1270,8 @@ DB.DBA.LDAP_LOGIN (inout user_name varchar, in digest varchar, in session_random
       whenever not found goto LDAP_SERVER_REMOVED;
       select LS_BASE, LS_BIND_DN, LS_ACCOUNT, LS_PASSWORD, LS_UID_FLD, LS_TRY_SSL, LS_LDAP_VERSION
 	  into base, bind, lacc, lpwd, luid, ltry, lver from SYS_LDAP_SERVERS where LS_ADDRESS = lserv;
+
+      lpwd := pwd_magic_calc (lacc, lpwd, 1);
 
       if (is_http_ctx())
 	{

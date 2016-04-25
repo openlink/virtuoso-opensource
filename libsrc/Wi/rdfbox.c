@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3003,7 +3003,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
       int ctr;
       caddr_t *tmp;
 /*INDENT-OFF*/
-      tmp = (caddr_t *)list (39*2,
+      tmp = (caddr_t *)list (41*2,
         "application/x-trig"			, "TRIG"		, /*  0 */
         "text/rdf+n3"				, "TTL"			, /*  1 */
         "text/rdf+ttl"				, "TTL"			, /*  2 */
@@ -3041,8 +3041,10 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/csv"				, "CSV"			, /* 34 */
         "text/tab-separated-values"		, "TSV"			, /* 35 */
         "application/x-nice-turtle"		, "NICE_TTL"		, /* 36 */
-        "application/x-nice-microdata"		, "HTML;NICE_MICRODATA"	, /* 37  */
-        "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	/* 38 Increase count in this list() call when add more MIME types! */
+        "application/x-nice-microdata"		, "HTML;NICE_MICRODATA"	, /* 37 */
+        "text/x-html-script-ld+json"		, "HTML;SCRIPT_LD_JSON"	, /* 38 */
+        "text/x-html-script-turtle"		, "HTML;SCRIPT_TTL"	, /* 39 */
+        "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	/* 40 Increase count in this list() call when add more MIME types! */
         );
 /*INDENT-ON*/
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
@@ -5613,17 +5615,15 @@ bif_rdf_graph_default_perms_of_user_dict (caddr_t * qst, caddr_t * err_ret, stat
   return box_copy (rdf_graph_default_world_perms_of_user_dict_hit);
 }
 
-caddr_t
-bif_rdf_cli_mark_qr_to_recompile (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+int
+cli_mark_qr_to_recompile (client_connection_t * cli)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
-  client_connection_t * cli = qi->qi_client;
   query_t **qr;
   caddr_t *text;
   id_hash_iterator_t it;
 
   if (!cli || !cli->cli_text_to_query)
-    return NULL;
+    return 0;
 
   IN_CLIENT (cli);
   id_hash_iterator (&it, cli->cli_text_to_query);
@@ -5632,7 +5632,15 @@ bif_rdf_cli_mark_qr_to_recompile (caddr_t * qst, caddr_t * err_ret, state_slot_t
       qr[0]->qr_to_recompile = 1;
     }
   LEAVE_CLIENT (cli);
-  return NULL;
+  return 1;
+}
+
+caddr_t
+bif_rdf_cli_mark_qr_to_recompile (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  client_connection_t *cli = qi->qi_client;
+  return box_num (cli_mark_qr_to_recompile (cli));
 }
 
 int
@@ -5729,6 +5737,41 @@ rdf_graph_app_cbk_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t 
   return rc;
 }
 
+int
+rdf_graph_specific_perms_of_user_set_impl (iri_id_t g_iid, oid_t u_id, boxint perms, int signal_unsafe_args)
+    {
+  user_t *u = sec_id_to_user (u_id);
+      if (NULL == u)
+    {
+      if (signal_unsafe_args)
+        sqlr_new_error ("42000", "SR608", "__rdf_graph_specific_perms_of_user() has got an invalid user ID %ld", (long)u_id);
+      else
+        return 0;
+    }
+      if (0 > perms)
+        {
+          if (NULL != u->usr_rdf_graph_perms)
+            {
+              mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+              remhash_64 (g_iid, u->usr_rdf_graph_perms);
+              mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+            }
+        }
+      else
+        {
+          if (NULL == u->usr_rdf_graph_perms)
+            {
+              dk_hash_64_t *ht = hash_table_allocate_64 (97);
+              ht->ht_mutex = mutex_allocate ();
+              u->usr_rdf_graph_perms = ht;
+            }
+          mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+          sethash_64 (g_iid, u->usr_rdf_graph_perms, perms);
+          mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+        }
+  return 1;
+}
+
 caddr_t
 bif_rdf_graph_specific_perms_of_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -5751,31 +5794,7 @@ bif_rdf_graph_specific_perms_of_user (caddr_t * qst, caddr_t * err_ret, state_sl
       sec_check_dba (qi, "__rdf_graph_specific_perms_of_user");
       u_id = bif_long_arg (qst, args, 1, "__rdf_graph_specific_perms_of_user");
       perms = bif_long_arg (qst, args, 2, "__rdf_graph_specific_perms_of_user");
-      u = sec_id_to_user (u_id);
-      if (NULL == u)
-        sqlr_new_error ("42000", "SR608", "__rdf_graph_specific_perms_of_user() has got an invalid user ID %ld", (long)u_id);
-      if (0 > perms)
-        {
-          if (NULL != u->usr_rdf_graph_perms)
-            {
-              mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
-              remhash_64 (g_iid, u->usr_rdf_graph_perms);
-              mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
-            }
-        }
-      else
-        {
-          if (NULL == u->usr_rdf_graph_perms)
-            {
-              dk_hash_64_t *ht = hash_table_allocate_64 (97);
-              ht->ht_mutex = mutex_allocate ();
-              u->usr_rdf_graph_perms = ht;
-            }
-          mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
-          sethash_64 (g_iid, u->usr_rdf_graph_perms, perms);
-          mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
-        }
-      return 0;
+      return box_num (rdf_graph_specific_perms_of_user_set_impl (g_iid, u_id, perms, 1 /*signal_unsafe_args*/));
     }
 }
 

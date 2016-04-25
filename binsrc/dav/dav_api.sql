@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -5272,7 +5272,7 @@ create trigger SYS_DAV_RES_LDI_AI after insert on WS.WS.SYS_DAV_RES order 110 re
 }
 ;
 
-create trigger SYS_DAV_RES_LDI_AU after update on WS.WS.SYS_DAV_RES order 110 referencing new as N, old as O
+create trigger SYS_DAV_RES_LDI_AU after update (RES_FULL_PATH, RES_ID, RES_COL, RES_TYPE, RES_OWNER, RES_GROUP) on WS.WS.SYS_DAV_RES order 110 referencing new as N, old as O
 {
   declare c_id, _parent_co_id, depth integer;
   declare _inherit, rdf_graph varchar;
@@ -5295,14 +5295,11 @@ create trigger SYS_DAV_RES_LDI_AD after delete on WS.WS.SYS_DAV_RES order 110 re
 
 -- Web Access Control
 --
-create trigger SYS_DAV_COL_WAC_U after update on WS.WS.SYS_DAV_COL order 100 referencing new as N, old as O
+create trigger SYS_DAV_COL_WAC_U after update (COL_NAME, COL_PARENT) on WS.WS.SYS_DAV_COL order 100 referencing new as N, old as O
 {
   declare aciContent, oldPath, newPath, update_acl any;
 
   if (connection_get ('dav_acl_sync') = 1)
-    return;
-
-  if ((O.COL_NAME = N.COL_NAME) and (O.COL_PARENT = N.COL_PARENT))
     return;
 
   aciContent := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = N.COL_ID and PROP_TYPE = 'C' and PROP_NAME = 'virt:aci_meta_n3');

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -527,7 +527,7 @@ If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var
 \c allow_returning_null is useful when a \c var is a retval from subselect so it is not associated with any triple pattern */
 extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var, int allow_returning_null);
 
-extern int sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn);
+extern void sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn, int *dialect_ret, int *exceptions_ret);
 
 /*! This searches for storage by its name. NULL arg means default (or no storage if there's no default loaded), empty UNAME means no storage */
 extern quad_storage_t *sparp_find_storage_by_name (sparp_t *sparp, ccaddr_t name);
@@ -948,6 +948,7 @@ typedef struct spar_sqlgen_s
   SPART *		ssg_sd_current_sinv;	/*!< Service invocation that will receive the fragment that is printed ATM (for error reporting) */
   caddr_t		ssg_sd_service_naming;	/*!< The text like "SERVICE <iri>" or "SERVICE called via ?var" (for error reporting) */
   int			ssg_sd_flags;		/*!< Bitmask of SSG_SD_xxx flags, see rdf_mapping.jso */
+  int			ssg_sd_no;		/*!< Bitmask of SSG_SD_NO_xxx flags, see rdf_mapping.jso */
   id_hash_t		*ssg_sd_used_namespaces;	/*!< Dictionary of namespaces used for prettyprinting of IRIs */
   dk_set_t		ssg_sd_outer_gps;	/*!< Parent GP of the current tree */
   int			ssg_sd_forgotten_graph;	/*!< Flags that a '}' is not printed after the last triple (in hope that the next member of a group is a triple with same graph so '} GRAPH ... {' is not required */

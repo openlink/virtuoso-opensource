@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4337,7 +4337,11 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
                 if (restr_set & SPART_VARR_LONG_EQ_SQL)
                   {
                     if (DV_ARRAY_OF_POINTER == datum_dtp)
-                      datum_dtp = DV_TYPE_OF (datum->_.lit.val);
+                      {
+                        if (uname_xmlschema_ns_uri_hash_boolean != datum->_.lit.datatype)
+                          restr_set &= ~SPART_VARR_IS_BOOL;
+                          datum_dtp = DV_TYPE_OF (datum->_.lit.val);
+                      }
                     if (!((DV_LONG_INT == datum_dtp) || (DV_DOUBLE_FLOAT == datum_dtp) || (DV_SINGLE_FLOAT == datum_dtp) || (DV_DATETIME == datum_dtp)))
                       restr_set &= ~SPART_VARR_LONG_EQ_SQL;
                     if (!(DV_LONG_INT == datum_dtp))

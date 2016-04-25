@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -258,7 +258,7 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 				setBatchSize(Integer.parseInt(batchsize.getLabel()));
 			}
 			Literal bnodeAsUri = GraphUtil.getOptionalObjectLiteral(graph, implNode, INSERTBNodeAsVirtuosoIRI);
-			if (roundrobin != null) {
+			if (bnodeAsUri != null) {
 				setInsertBNodeAsVirtuosoIRI(Boolean.parseBoolean(bnodeAsUri.getLabel()));
 			}
 

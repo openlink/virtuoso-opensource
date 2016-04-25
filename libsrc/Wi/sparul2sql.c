@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -717,7 +717,8 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
   spar_compose_retvals_of_ctor (sparp, ins_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &ins, &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
-
+  if (NULL == graph_to_patch)
+    graph_to_patch = (SPART *)uname_virtrdf_ns_uri_DefaultSparul11Target;
   if (NULL != sparp->sparp_sg->sg_output_route_name)
     rv[0] = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_sg->sg_output_route_name),

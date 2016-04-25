@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2859,17 +2859,34 @@ again:
       sp_col_opt := DB.DBA.TTL_REDIRECT_PARAMS (_col);
       if (not isnull (sp_col_opt))
       {
+        declare ttl_sp_enable varchar;
+
         sp_col_opt := '&' || trim (sp_col_opt, '&');
         http_rewrite ();
         http_status_set (303);
-        if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
+
+        ttl_sp_enable := registry_get ('__WebDAV_sponge_ttl__');
+        if (isinteger (ttl_sp_enable))
+        {
+          ttl_sp_enable := 'no';
+        }
+        if ((ttl_sp_enable = 'yes') or (ttl_sp_enable = 'add'))
         {
           sp_opt := '&sponger:get=add';
+        }
+        else if (ttl_sp_enable = 'soft')
+        {
+          sp_opt := '&sponger:get=soft';
+        }
+        else if (ttl_sp_enable = 'replace')
+        {
+          sp_opt := '&sponger:get=replace';
         }
         else
         {
           sp_opt := '';
         }
+
         http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s%s\r\n',
           WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt, sp_col_opt));
 
@@ -3544,7 +3561,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   inout ses varchar,
   in is_res integer := 0)
 {
-  declare ns, def_gr, giid, dict, triples, prefixes any;
+  declare ns, def_gr, giid, dict, triples, prefixes, flags any;
 	declare exit handler for sqlstate '*'
 	{
   _error:;
@@ -3553,6 +3570,7 @@ create procedure WS.WS.TTL_QUERY_POST (
 	  return -44;
 	};
   set_user_id ('dba');
+  flags := 255;
   def_gr := WS.WS.DAV_IRI (path);
   giid := iri_to_id (def_gr);
   log_enable (3);
@@ -3583,7 +3601,7 @@ create procedure WS.WS.TTL_QUERY_POST (
 
     ns := ses;
     dict := dict_new ();
-    DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+    DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict, flags);
 
     goto _exit;
   }
@@ -3595,7 +3613,7 @@ _again:;
     }
   http (ses, ns);
   dict := dict_new ();
-  DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+  DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict, flags);
 
 _next:;
   triples := dict_list_keys (dict, 1);
@@ -3609,7 +3627,7 @@ _next:;
   http (ses, ns);
 
 _exit:;
-  DB.DBA.TTLP (ns, def_gr, def_gr, 255);
+  DB.DBA.TTLP (ns, def_gr, def_gr, flags);
   if (def_gr like '%,meta')
     {
       declare subj, nsubj, org_path any;

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -761,7 +761,7 @@ typedef struct fn_card_s
 
 
 fn_card_t fn_cards[] =
-  {{"isiri_id", 1, 0.001},
+  {{"isiri_id", 0.98, 0.001},
    {"rdf_is_sub", 0.8, 0.01, FN_RESTR_ABS},
    {"__rgs_ack", 0, 0,1}, /* near always false, occurs inside a not, so sec cond always passes */
    {"__rgs_ack_cbk", 1, 0,1},

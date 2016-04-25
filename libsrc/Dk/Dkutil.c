@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,13 +27,15 @@
 
 #include "Dk.h"
 
-#if defined(linux) || defined (__APPLE__)
+#if defined(HAVE_EXECINFO_H)
+
 #include <execinfo.h>
+
+#define N_FRAMES 100
 
 void
 print_trace (void)
 {
-#define N_FRAMES 100
   void *array[N_FRAMES];
   size_t size, i;
   char **strings;

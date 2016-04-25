@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -6492,6 +6492,7 @@ bif_gz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = -1;
+  sesfile->ses_temp_file_name = box_dv_short_string ("<gz stream>");
 
   sesfile->ses_lseek_func = zlib_lseek;
   sesfile->ses_read_func = zlib_read;
@@ -6668,6 +6669,7 @@ bif_xz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = -1;
+  sesfile->ses_temp_file_name = box_dv_short_string ("<lzma stream>");
 
   sesfile->ses_lseek_func = xz_lseek;
   sesfile->ses_read_func = xz_read;
@@ -6826,6 +6828,7 @@ bif_bz2_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = -1;
+  sesfile->ses_temp_file_name = box_dv_short_string ("<bz2 stream>");
 
   sesfile->ses_lseek_func = bz2_lseek;
   sesfile->ses_read_func = bz2_read;

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3065,6 +3065,19 @@ tsp_next (ts_split_state_t * tsp, it_cursor_t * itc, buffer_desc_t ** buf_ret, i
 
 
 buffer_desc_t *
+itc_check_dive_mode (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  /* can be that ranges are split in read only for update but at the end the buffer must be in write access */
+  if (PA_READ_ONLY != itc->itc_dive_mode && !buf->bd_is_write)
+    {
+      itc_register_and_leave (itc, buf);
+      buf = page_reenter_excl (itc);
+    }
+  return buf;
+}
+
+
+buffer_desc_t *
 ts_split_range (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_parts)
 {
   QNCAST (query_instance_t, qi, itc->itc_out_state);
@@ -3127,7 +3140,7 @@ ts_split_range (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_pa
 	      QST_INT (inst, ts->ts_aq_state) = TS_AQ_COORD;
 	      if (ctr + 1 != tsp.tsp_n_parts)
 		qi_inc_branch_count (qi, 10000, 1 + ctr - tsp.tsp_n_parts);
-	      return buf;
+	      return itc_check_dive_mode (itc, buf);
 	    }
 	  else
 	    {
@@ -3137,7 +3150,7 @@ ts_split_range (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_pa
 	      QST_INT (inst, ts->ts_aq_state) = TS_AQ_COORD;
 	      if (ctr + 1 != tsp.tsp_n_parts)
 		qi_inc_branch_count (qi, 10000, 1 + ctr - tsp.tsp_n_parts);
-	      return buf;
+	      return itc_check_dive_mode (itc, buf);
 	    }
 	}
       else if (TSS_AT_END == rc)
@@ -3157,7 +3170,7 @@ ts_split_range (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_pa
 	      QST_INT (inst, ts->ts_aq_state) = TS_AQ_COORD;
 	      if (ctr + 1 != tsp.tsp_n_parts)
 		qi_inc_branch_count (qi, 10000, 1 + ctr - tsp.tsp_n_parts);
-	      return buf;
+	      return itc_check_dive_mode (itc, buf);
 	    }
 	}
     }

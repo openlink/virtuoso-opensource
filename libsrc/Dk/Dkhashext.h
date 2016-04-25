@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,6 +45,8 @@ typedef uint32 id_hashed_key_t;
 #else
 #define ID_HASHED_KEY_CHECK(i)
 #endif
+
+#define ROL(h) ((h << 1) | ((h >> 31) & 1))
 
 typedef id_hashed_key_t (*hash_func_t) (caddr_t p_data);
 typedef int (*cmp_func_t) (caddr_t d1, caddr_t d2);

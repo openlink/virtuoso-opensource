@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -213,7 +213,7 @@ div.subj_nav { float: left; width: 100%;}
 p.subj_desc {
   float: left;
   clear: left;
-  width: 750px;
+  width: auto;
   text-align: left;
   font-style: italic;
   font-size: 12pt;
@@ -512,6 +512,7 @@ div.error_msg div.body { margin: 10px;}
 div.error_msg div.nav { margin-top: 10px;}
 div.error_msg div.diag { margin: 10px; font-size: 8pt }
 div.error_msg div.diag h3 {}
+#err { color: red; font-size: 120%; }
 
 div.facet_ctr {
   float: left;

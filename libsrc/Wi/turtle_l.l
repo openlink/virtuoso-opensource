@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -264,11 +264,15 @@ S_NLNL		((\r\n([ \t]*)\r\n)|(\n\r([ \t]*)\n\r)|(\n([ \t]*)\n)|(\r([ \t]*)\r))
 HEX		([0-9A-Fa-f])
 
 PN_CHARS_BASE	([A-Za-z\x7f-\xfe])
-PN_CHARS_U	([A-Za-z_\x7f-\xfe])
-PN_CHARS_U_09	([A-Za-z0-9_\x7f-\xfe])
-PN_CHARS	([A-Za-z0-9_\x7f-\xfe-])
-PN_PREFIX	({PN_CHARS_BASE}(([.]*{PN_CHARS})*))
-PN_LOCAL	(({PN_CHARS_U_09}|{PLX})(([.]*({PN_CHARS}|[:]|{PLX}))*))
+PN_CHARS_U	([A-Za-z\x7f-\xfe]_)
+PN_CHARS_UC	([A-Za-z\x7f-\xfe]_:)
+PN_CHARS_U_09	([A-Za-z\x7f-\xfe0-9_])
+PN_CHARS_UC_09	([A-Za-z\x7f-\xfe0-9_:])
+PN_CHARS_UM_09	([A-Za-z\x7f-\xfe0-9_-])
+PN_CHARS_UMC_09	([A-Za-z\x7f-\xfe0-9_:-])
+PN_PREFIX	({PN_CHARS_BASE}(([.]*{PN_CHARS_UM_09})*))
+PN_LOCAL_NQ	(({PN_CHARS_UMC_09})(([.]*({PN_CHARS_UMC_09}))*))
+PN_LOCAL_TTL	(({PN_CHARS_UMC_09}|{PLX})(([.]*({PN_CHARS_UMC_09}|{PLX}))*))
 PLX		({PERCENT}|{TTL_CR_PLX})
 PERCENT		([%]{HEX}{HEX})
 
@@ -283,6 +287,14 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xfe-]+)|([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[./#%+?&=@*:][A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[.]))
 
 %%
+
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xef][\xbb][\xbf]			{ }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>(([\xfe][\xff])|([\xff][\xfe]))	{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-16 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xf7][\x64][\x4c]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-1 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xdd][\x73][\x66][\x73]		{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-EBCDIC encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\x0e][\xfe][\xff]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the SCSU encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xfb][\xee][\x28]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the BOCU-1 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\x84][\x31][\x95][\x33]		{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the GB-18030 encoding but it is supposed to be UTF-8"); }
 
 <INITIAL>"^"[ \t]		{		return _CARET_WS; }
 <INITIAL>"^"{S_NLNL}		{ TTL_TWO_CRS;	return _CARET_WS; }
@@ -412,13 +424,14 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       TTLYYBEGIN (GARBAGE);
     else
       TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
-<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"({PN_CHARS_U_09})(([.]*{PN_CHARS})*)	{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"({PN_LOCAL_NQ})	{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL_NQ,"NQuads-compatible blank node label"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"({PN_LOCAL_TTL})	{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL_TTL,"Turtle-specific blank node label"); }
 
 <INITIAL>"_:"{SPAR_NCCHAR_X}+	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Ill formed blank node label; this error can be suppressed by parser flags");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Ill formed blank node label");
-    TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
+    TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL_TTL,"ill formed blank node label"); }
 
 <INITIAL>"?"{SPAR_NCNAME}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_VARIABLES))
@@ -756,7 +769,7 @@ resume_sniffing:
           else if (DV_UNAME == DV_TYPE_OF (lex_value))
             ttlyy_dbg_printf (("{Tuname %d %s %s} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), lex_value));
           else if (DV_LONG_INT == DV_TYPE_OF (lex_value))
-            ttlyy_dbg_printf (("{Tint %d %s %s " BOXINT_FMT "} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), unbox (lex_value)));
+            ttlyy_dbg_printf (("{Tint %d %s " BOXINT_FMT "} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), unbox (lex_value)));
           else
             ttlyy_dbg_printf (("{Tint %d %s ???} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt)));
 #endif

@@ -12,14 +12,19 @@ DEB_AUTO_UPDATE_LIBTOOL = pre
 
 DEB_AUTOMAKE_ARGS += -Wno-portability
 
-JDK6PATH = $(shell dpkg -L openjdk-6-jdk | grep "/usr/lib/jvm/java-6-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
+JDK6PATH = $(shell dpkg -L openjdk-6-jdk 2>/dev/null | grep "/usr/lib/jvm/java-6-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
 ifeq ($(JDK6PATH),)
 JDK6PATH=no
 endif
 
-JDK7PATH = $(shell dpkg -L openjdk-7-jdk | grep "/usr/lib/jvm/java-7-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u)
+JDK7PATH = $(shell dpkg -L openjdk-7-jdk 2>/dev/null | grep "/usr/lib/jvm/java-7-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
 ifeq ($(JDK7PATH),)
 JDK7PATH=no
+endif
+
+JDK8PATH = $(shell dpkg -L openjdk-8-jdk 2>/dev/null | grep "/usr/lib/jvm/java-8-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
+ifeq ($(JDK8PATH),)
+JDK8PATH=no
 endif
 
 DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
@@ -37,7 +42,8 @@ DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
 		--enable-syncml-vad \
 		--enable-bpel-vad \
 		--with-jdk4=$(JDK6PATH) \
-		--with-jdk4_1=$(JDK7PATH)
+		--with-jdk4_1=$(JDK7PATH) \
+		--with-jdk4_2=$(JDK8PATH)
 
 ifeq ($(DEB_BUILD_ARCH),alpha)
 		EXTRA_LDFLAGS += -Wl,--no-relax
@@ -68,11 +74,7 @@ build/virtuoso-opensource-7::
 	cd debian; find . -name "*.?.xml" -exec docbook2x-man --solinks {} \;
 
 build/libvirtmono0-cil::
-	$(MAKE) -C binsrc/VirtuosoClient.Net
 	chmod -x binsrc/VirtuosoClient.Net/OpenLink.Data.Virtuoso.dll
-
-cleanbuilddir/libvirtmono0-cil::
-	$(MAKE) -C binsrc/VirtuosoClient.Net clean
 
 binary-install/libvirtmono0-cil::
 	dh_installcligac

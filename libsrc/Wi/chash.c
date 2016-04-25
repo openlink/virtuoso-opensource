@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -249,6 +249,11 @@ gb_aggregate (setp_node_t * setp, caddr_t * inst, chash_t * cha, int64 ** groups
 	CHA_AGG_MAX (int64, >);
       case AGG_C (DV_LONG_INT, AMMSC_MAX):
 	CHA_AGG_MAX (int64, <);
+      case AGG_C (DV_IRI_ID, AMMSC_MAX):
+	CHA_AGG_MAX (uint64, <);
+
+      case AGG_C (DV_IRI_ID, AMMSC_MIN):
+	CHA_AGG_MAX (uint64, >);
 
 
       case AGG_C (DV_SINGLE_FLOAT, AMMSC_MIN):
@@ -2063,7 +2068,8 @@ setp_chash_group (setp_node_t * setp, caddr_t * inst)
   if (setp->setp_is_streaming
       && cha->cha_distinct_count * 100 > (dc_batch_sz * cha_stream_gb_flush_pct) && setp_stream_breakable (setp, inst))
     longjmp_splice (THREAD_CURRENT_THREAD->thr_reset_ctx, RST_GB_ENOUGH);
-  if (cha->cha_pool->mp_bytes > cha_max_gb_bytes && (cha->cha_pool->mp_bytes + mp_large_in_use) > c_max_large_vec && !setp->setp_is_streaming)
+  if (cha->cha_pool->mp_bytes > cha_max_gb_bytes && (cha->cha_pool->mp_bytes + mp_large_in_use) > c_max_large_vec && !setp->setp_is_streaming
+      && enable_chash_gb < 2)
     cha->cha_oversized = 1;
   return 1;
 no:

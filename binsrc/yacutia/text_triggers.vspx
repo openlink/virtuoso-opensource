@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2015 OpenLink Software
+ -  Copyright (C) 1998-2016 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -72,6 +72,7 @@
   <v:variable name="sse" type="integer" default="0" persist="0"/>
   <v:variable name="ttl" type="integer" default="0" persist="0"/>
   <v:variable name="ttl_prefixes" type="integer" default="0" persist="0"/>
+  <v:variable name="ttl_sp_enable" type="varchar" default="'no'" persist="0"/>
       <v:variable name="c_text" type="varchar" default="''" persist="0"/>
       <v:before-data-bind>
           <![CDATA[
@@ -172,14 +173,7 @@
         }
         self.ttl_prefixes := self.ttl_prefixes_enabled2 ();
 
-        if (atoi (get_keyword ('ttl_sp_enable', params)) = 1)
-        {
-          registry_set ('__WebDAV_sponge_ttl__', 'yes');
-        }
-        else
-        {
-          registry_set ('__WebDAV_sponge_ttl__', 'no');
-        }
+        registry_set ('__WebDAV_sponge_ttl__', get_keyword ('ttl_sp_enable', params));
         self.ttl := self.ttl_enabled2 ();
             }
       if ((self.sse = 1) and not self.sse_check_key ())
@@ -192,6 +186,19 @@
           ]]>
       </v:before-data-bind>
       <v:form name="inx_form" type="simple" method="POST" action="cont_page.vspx?page=3">
+    <v:before-data-bind>
+      <![CDATA[
+        self.ttl_sp_enable := registry_get ('__WebDAV_sponge_ttl__');
+        if (isinteger (self.ttl_sp_enable))
+        {
+          self.ttl_sp_enable := 'no';
+        }
+        if (self.ttl_sp_enable = 'yes')
+        {
+          self.ttl_sp_enable := 'add';
+        }
+      ]]>
+    </v:before-data-bind>
         <table class="SubData" border="0" cellpadding="3" cellspacing="0">
           <tr>
         <td style="width: 20%;">
@@ -236,7 +243,7 @@
       </tr>
       <tr>
         <td nowrap="nowrap" valign="top">
-          Enable redirection for .TTL files
+          Enable redirection for RDF-Turtle files
         </td>
         <td colspan="2">
           <label>
@@ -253,7 +260,7 @@
       </tr>
       <tr>
         <td nowrap="nowrap" valign="top">
-          Enable adding automatically missed prefixes for .TTL files
+          Enable adding automatically missed prefixes for RDF-Turtle files
         </td>
         <td colspan="2">
           <label>
@@ -270,18 +277,67 @@
       </tr>
       <tr>
         <td valign="top">
-          Enable sponge option for .TTL files redirection
+          Sponger options for RDF-Turtle redirection
         </td>
         <td colspan="2">
           <label>
-            <v:check-box name="ttl_sp_enable" value="1" xhtml_id="ttl_sp_enable">
+            <v:radio-button xhtml_id="ttl_sp_enable_0" name="ttl_sp_enable_0" value="no" group-name="ttl_sp_enable">
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_selected := case when (registry_get ('__WebDAV_sponge_ttl__') <> 'yes') then 0 else 1 end;
+                  control.ufl_selected := case when (self.ttl_sp_enable = 'no') then 1 else 0 end;
                   control.vc_data_bound := 1;
                 ]]>
               </v:before-data-bind>
-            </v:check-box>
+            </v:radio-button>
+            No
+          </label>
+        </td>
+      </tr>
+      <tr>
+        <td valign="top"></td>
+        <td colspan="2">
+          <label>
+            <v:radio-button xhtml_id="ttl_sp_enable_1" name="ttl_sp_enable_1" value="add" group-name="ttl_sp_enable">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_selected := case when (self.ttl_sp_enable = 'add') then 1 else 0 end;
+                  control.vc_data_bound := 1;
+                ]]>
+              </v:before-data-bind>
+            </v:radio-button>
+            Add (get:soft "add")
+          </label>
+        </td>
+      </tr>
+      <tr>
+        <td valign="top"></td>
+        <td colspan="2">
+          <label>
+            <v:radio-button xhtml_id="ttl_sp_enable_2" name="ttl_sp_enable_2" value="soft" group-name="ttl_sp_enable">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_selected := case when (self.ttl_sp_enable = 'soft') then 1 else 0 end;
+                  control.vc_data_bound := 1;
+                ]]>
+              </v:before-data-bind>
+            </v:radio-button>
+            Soft (get:soft "soft")
+          </label>
+        </td>
+      </tr>
+      <tr>
+        <td valign="top"></td>
+        <td colspan="2">
+          <label>
+            <v:radio-button xhtml_id="ttl_sp_enable_3" name="ttl_sp_enable_3" value="replace" group-name="ttl_sp_enable">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_selected := case when (self.ttl_sp_enable = 'replace') then 1 else 0 end;
+                  control.vc_data_bound := 1;
+                ]]>
+              </v:before-data-bind>
+            </v:radio-button>
+            Replace (get:soft "replace")
           </label>
         </td>
       </tr>

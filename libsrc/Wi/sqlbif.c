@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,6 +86,7 @@ extern "C" {
 #include "shcompo.h"
 #include "http_client.h" /* for MD5Init and the like */
 #include "sparql.h"
+#include "aqueue.h"
 
 #define box_bool(n) ((caddr_t)((ptrlong)((n) ? 1 : 0)))
 
@@ -7120,8 +7121,8 @@ caddr_t
 bif_mod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int isnull1 = 0, isnull2 = 0;
-  long long1 = (long) bif_long_or_null_arg (qst, args, 0, "mod", &isnull1);
-  long long2 = (long) bif_long_or_null_arg (qst, args, 1, "mod", &isnull2);
+  int64 long1 = bif_long_or_null_arg (qst, args, 0, "mod", &isnull1);
+  int64 long2 = bif_long_or_null_arg (qst, args, 1, "mod", &isnull2);
 
   if (isnull1 || isnull2)
     return (NEW_DB_NULL);
@@ -7680,6 +7681,19 @@ connection_set (client_connection_t *cli, caddr_t name, caddr_t val)
   cli->cli_globals_dirty = 1;
 }
 
+client_connection_t *
+cli_aqr_ancestor (client_connection_t *cli, int level)
+{
+  while ((0 != level) && (NULL != cli->cli_aqr))
+    {
+      client_connection_t *parent_cli = cli->cli_aqr->aqr_aq->aq_creator_cli;
+      if ((NULL == parent_cli) || (cli == parent_cli))
+        break;
+      cli = parent_cli;
+      level--;
+    }
+  return cli;
+}
 
 caddr_t
 bif_connection_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -7691,6 +7705,8 @@ bif_connection_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!box_outlives_qi (val))
   sqlr_new_error ("22023", "SR049",
     "Data type is not suitable for storage into a global variable (connection_set)");
+  if (2 < BOX_ELEMENTS (args))
+    cli = cli_aqr_ancestor (cli, bif_long_arg (qst, args, 2, "connection_set"));
   connection_set (cli, name, val);
   return 0;
 }
@@ -7703,7 +7719,10 @@ bif_connection_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   client_connection_t * cli = qi->qi_client;
   int n_args = BOX_ELEMENTS (args);
   caddr_t name = bif_string_or_uname_arg (qst, args, 0, "connection_get");
-  caddr_t * place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name);
+  caddr_t * place;
+  if (2 < n_args)
+    cli = cli_aqr_ancestor (cli, bif_long_arg (qst, args, 2, "connection_get"));
+  place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name);
   if (!place)
     {
       if (n_args > 1)
@@ -7715,10 +7734,36 @@ bif_connection_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_connection_swap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *)qst;
+  client_connection_t * cli = qi->qi_client;
+  caddr_t name = bif_string_or_uname_arg (qst, args, 0, "connection_swap");
+  caddr_t v = bif_arg (qst, args, 1, "connection_swap");
+  caddr_t * place;
+  int res;
+  if (2 < BOX_ELEMENTS (args))
+    cli = cli_aqr_ancestor (cli, bif_long_arg (qst, args, 2, "connection_swap"));
+  place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name);
+  if (!place)
+    {
+      caddr_t name2 = box_copy (name);
+      caddr_t val2 = NULL;
+      id_hash_set (cli->cli_globals, (caddr_t) &name2, (caddr_t) &val2);
+      place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name2);
+    }
+  res = qst_swap_or_get_copy (qst, args[1], place);
+  return box_num (res);
+}
+
+caddr_t
 bif_connection_is_dirty (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *)qst;
-  return box_num (qi->qi_client->cli_globals_dirty);
+  client_connection_t * cli = qi->qi_client;
+  if (0 < BOX_ELEMENTS (args))
+    cli = cli_aqr_ancestor (cli, bif_long_arg (qst, args, 0, "connection_is_dirty"));
+  return box_num (cli->cli_globals_dirty);
 }
 
 caddr_t
@@ -7729,7 +7774,8 @@ bif_connection_vars (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator_t it;
   dk_set_t set = NULL;
   caddr_t * name, * val;
-
+  if (1 < BOX_ELEMENTS (args))
+    cli = cli_aqr_ancestor (cli, bif_long_arg (qst, args, 1, "connection_vars"));
   id_hash_iterator (&it, cli->cli_globals);
   while (hit_next (&it, (caddr_t *) &name, (caddr_t *) &val))
   {
@@ -7749,7 +7795,8 @@ bif_connection_vars_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int len = 0, ix;
   id_hash_iterator_t it;
   caddr_t * name, * val1, vname;
-
+  if (1 < BOX_ELEMENTS (args))
+    cli = cli_aqr_ancestor (cli, bif_long_arg (qst, args, 1, "connection_is_dirty"));
   if (dtp != DV_DB_NULL && dtp != DV_ARRAY_OF_POINTER)
     sqlr_new_error ("22023", "SR050",
     "connenction_vars_set expects a vector or null as argument "
@@ -7757,26 +7804,24 @@ bif_connection_vars_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
      dv_type_title (dtp), dtp);
   len = ((dtp == DV_ARRAY_OF_POINTER) ? BOX_ELEMENTS (val) : 0);
   if (len % 2 != 0)
-  {
-    sqlr_new_error ("22023", "SR051",
-    "connenction_vars_set expects a vector of even length, "
-    "not of length %d (of type %s (%d))",
-    len, dv_type_title (dtp), dtp);
-  }
-
+    {
+      sqlr_new_error ("22023", "SR051",
+      "connenction_vars_set expects a vector of even length, "
+      "not of length %d (of type %s (%d))",
+      len, dv_type_title (dtp), dtp);
+    }
   for (ix = 0; ix < len; ix += 2)
-  {
-    vname = ((caddr_t *) val) [ix];
-    dtp = DV_TYPE_OF (vname);
-    if (!IS_STRING_DTP (dtp))
-  sqlr_new_error ("22023", "SR052",
-    "connenction_vars_set expects a string as name of connection variable not of type %s (%d)",
-    dv_type_title (dtp), dtp);
-    if (!box_outlives_qi (((caddr_t *) val) [ix + 1]))
-  sqlr_new_error ("22023", "SR053",
-    "Data type is not suitable for storage into a global variable (connection_set)");
-  }
-
+    {
+      vname = ((caddr_t *) val) [ix];
+      dtp = DV_TYPE_OF (vname);
+      if (!IS_STRING_DTP (dtp))
+        sqlr_new_error ("22023", "SR052",
+          "connenction_vars_set expects a string as name of connection variable not of type %s (%d)",
+      dv_type_title (dtp), dtp);
+      if (!box_outlives_qi (((caddr_t *) val) [ix + 1]))
+        sqlr_new_error ("22023", "SR053",
+          "Data type is not suitable for storage into a global variable (connection_set)");
+    }
   id_hash_iterator (&it, cli->cli_globals);
   while (hit_next (&it, (caddr_t *) &name, (caddr_t *) &val1))
   {
@@ -14882,9 +14927,15 @@ caddr_t bif_md5_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t
 bif_box_hash (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return box_num (box_hash (bif_arg (qst, args, 0, "box_hash")));
+  int inx, len = BOX_ELEMENTS (args);
+  id_hashed_key_t h = 0;
+  for (inx = 0; inx < len; inx++)
+    {
+      caddr_t arg = bif_arg (qst, args, inx, "box_hash");
+      h = ROL (h) ^ box_hash (arg);
+    }
+  return box_num (h & ID_HASHED_KEY_MASK);
 }
-
 
 #if 1
 caddr_t bif_grouping (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
@@ -16551,6 +16602,7 @@ sql_bif_init (void)
   bif_define_ex ("connection_id"	, bif_connection_id , BMD_RET_TYPE, &bt_varchar							, BMD_NO_CLUSTER, BMD_DONE);
   bif_define_ex ("connection_set"	, bif_connection_set										, BMD_NO_CLUSTER, BMD_DONE);
   bif_define_ex ("connection_get"	, bif_connection_get										, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("connection_swap"	, bif_connection_swap										, BMD_NO_CLUSTER, BMD_DONE);
   bif_define_ex ("connection_vars_set"	, bif_connection_vars_set									, BMD_NO_CLUSTER, BMD_DONE);
   bif_define_ex ("connection_vars"	, bif_connection_vars										, BMD_NO_CLUSTER, BMD_DONE);
   bif_define_ex ("connection_is_dirty"	, bif_connection_is_dirty									, BMD_NO_CLUSTER, BMD_DONE);

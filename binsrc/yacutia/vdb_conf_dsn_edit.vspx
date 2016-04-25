@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2015 OpenLink Software
+ -  Copyright (C) 1998-2016 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -482,7 +482,7 @@
 			    <tr>
 			      <td colspan="3" align="middle">
 				<p class="copyright_noalign"><?V self.driver ?><br />
-				  <small>Copyright 1998-2015 OpenLink Software</small><br />
+				  <small>Copyright 1998-2016 OpenLink Software</small><br />
 				  <small>All rights reserved</small></p></td></tr>
 			    <tr><td rowspan="4" valign="top"><img src="images/opl.jpg" border="1" /></td>
 			      <td valign="top">

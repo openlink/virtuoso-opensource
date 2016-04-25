@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2015 OpenLink Software
+#  Copyright (C) 1998-2016 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -61,7 +61,7 @@ SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
 
-SESAME_CLASSPATH= lib/slf4j-api-1.6.1.jar:lib/slf4j-simple-1.6.1.jar:lib/openrdf-sesame-2.7.3-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
+SESAME_CLASSPATH= lib/commons-io-2.4.jar:lib/slf4j-api-1.7.13.jar:lib/slf4j-simple-1.7.13.jar:lib/openrdf-sesame-2.8.6-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
 
 all-am:	$(TARGETS)
 

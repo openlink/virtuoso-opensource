@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1246,15 +1246,39 @@ create procedure WEBDAV.DBA.set_keyword (
   declare N integer;
 
   for (N := 0; N < length (params); N := N + 2)
-    if (params[N] = name) {
+  {
+    if (params[N] = name)
+    {
       aset(params, N + 1, value);
       goto _end;
     }
-
+  }
   params := vector_concat (params, vector (name, value));
 
 _end:
   return params;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.remove_keyword (
+  in    name   varchar,
+  inout params any)
+{
+  declare N integer;
+  declare V any;
+
+  V := vector ();
+  for (N := 0; N < length (params); N := N + 2)
+  {
+    if (params[N] <> name)
+    {
+      V := vector_concat (V, vector(params[N], params[N+1]));
+    }
+  }
+  params := V;
+  return V;
 }
 ;
 

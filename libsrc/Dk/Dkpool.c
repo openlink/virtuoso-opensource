@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -920,6 +920,16 @@ t_list_nc (long n, ...)
     }
   va_end (ap);
   return ((caddr_t *) box);
+}
+
+caddr_t *
+t_list_memcpy (long n, ccaddr_t *src)
+{
+  caddr_t *box;
+  size_t sz = sizeof (caddr_t) * n;
+  box = (caddr_t *) t_alloc_box (sz, DV_ARRAY_OF_POINTER);
+  memcpy (box, src, sz);
+  return box;
 }
 
 caddr_t *

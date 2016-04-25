@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -896,11 +896,14 @@ buf_row_compare (buffer_desc_t * buf1, int i1, buffer_desc_t * buf2, int i2, int
       caddr_t b = page_copy_col (buf2, row2, cl, NULL);
       int res = page_col_cmp (buf1, row1, cl, b);
       if (DVC_GREATER == res && is_assert)
-	    GPF_T1 ("out of order");
-	  dk_free_box (b);
-	  if (res != DVC_MATCH)
-	    return res;
+	{
+	  log_error ("Error on key %s, out of order", buf1->bd_tree->it_key->key_name);
+	  GPF_T1 ("out of order");
 	}
+      dk_free_box (b);
+      if (res != DVC_MATCH)
+	return res;
+    }
   END_DO_BOX;
   return DVC_MATCH;
 }

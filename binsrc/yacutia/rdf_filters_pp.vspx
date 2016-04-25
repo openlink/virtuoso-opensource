@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2015 OpenLink Software
+ -  Copyright (C) 1998-2016 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -376,11 +376,18 @@
                                             <![CDATA[
                                               declare _id, _seq integer;
                                               declare _key, _opts any;
-                                              declare exit handler for sqlstate '23000'
+                                              declare exit handler for sqlstate '*'
                                               {
                                                 rollback work;
+                                                if (__SQL_STATE like 'NV%')
+                                                {
+                                                  self.vc_error_message := VALIDATE.DBA.clear (__SQL_MESSAGE);
+                                                }
+                                                else
+                                                {
+                                                  self.vc_error_message := 'The values entered conflict with other RDF Mapper. Please supply correct values.';
+                                                }
                                                 self.vc_is_valid := 0;
-                                                self.vc_error_message := 'The values entered conflict with other RDF Mapper. Please supply correct values.';
                                                 return;
                                               };
 
@@ -391,7 +398,8 @@
                                               self.pl1.ufl_value   := trim (self.pl1.ufl_value);
                                               self.key1.ufl_value  := trim (self.key1.ufl_value);
                                               self.key2.ufl_value  := trim (self.key2.ufl_value);
-                                              _seq  := atoi (self.seq1.ufl_value);
+
+                                              _seq  := VALIDATE.DBA.validate (self.seq1.ufl_value, vector ('name', 'Sequence No', 'class', 'integer', 'minValue', 0));
                                               _opts := trim(self.opts1.ufl_value);
                                               _opts := replace (_opts, '\r', '\n');
                                               _opts := replace (_opts, '\n\n', '\n');
@@ -432,9 +440,6 @@
                                                        MC_OPTIONS = _opts
                                                  where MC_ID = self.c_id;
                                               }
-                                              if (_seq < 0)
-                                                _seq := self.c_seq;
-
                                               if (_seq <> self.c_seq)
                                               {
                                                 if (_seq < self.c_seq)

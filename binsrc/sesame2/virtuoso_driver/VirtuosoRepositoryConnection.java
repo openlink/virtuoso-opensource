@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,6 +56,8 @@ import java.util.Set;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 
+import org.openrdf.IsolationLevel;
+import org.openrdf.IsolationLevels;
 import org.openrdf.OpenRDFUtil;
 import org.openrdf.model.BNode;
 import org.openrdf.model.Graph;
@@ -182,6 +184,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private boolean insertBNodeAsVirtuosoIRI = false;
 
 	private volatile ParserConfig parserConfig = new ParserConfig();
+	private IsolationLevel isolationLevel;
 
 
 	public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) throws RepositoryException {
@@ -191,7 +194,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.prefetchSize = repository.prefetchSize;
 		this.BATCH_SIZE = repository.batchSize;
 		this.insertBNodeAsVirtuosoIRI = repository.insertBNodeAsVirtuosoIRI;
-		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
+		nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
 		this.repository.initialize();
 
 		try {
@@ -391,11 +394,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		TupleQuery q = new VirtuosoTupleQuery() {
 			public TupleQueryResult evaluate() throws QueryEvaluationException {
-				return executeSPARQLForTupleResult(query, getDataset(), getIncludeInferred(), getBindings(), getMaxQueryTime());
+				return executeSPARQLForTupleResult(query, getDataset(), getIncludeInferred(), getBindings(), getMaxExecutionTime());
 			}
 
 			public void evaluate(TupleQueryResultHandler handler) throws QueryEvaluationException, TupleQueryResultHandlerException {
-				executeSPARQLForHandler(handler, query, getDataset(), getIncludeInferred(), getBindings(), getMaxQueryTime());
+				executeSPARQLForHandler(handler, query, getDataset(), getIncludeInferred(), getBindings(), getMaxExecutionTime());
 			}
 		};
 		return q;
@@ -447,11 +450,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		GraphQuery q = new VirtuosoGraphQuery() {
 			public GraphQueryResult evaluate() throws QueryEvaluationException {
-				return executeSPARQLForGraphResult(query, getDataset(), getIncludeInferred(), getBindings(), getMaxQueryTime());
+				return executeSPARQLForGraphResult(query, getDataset(), getIncludeInferred(), getBindings(), getMaxExecutionTime());
 			}
 
 			public void evaluate(RDFHandler handler) throws QueryEvaluationException, RDFHandlerException {
-				executeSPARQLForHandler(handler, query, getDataset(), getIncludeInferred(), getBindings(), getMaxQueryTime());
+				executeSPARQLForHandler(handler, query, getDataset(), getIncludeInferred(), getBindings(), getMaxExecutionTime());
 			}
 		};
 		return q;
@@ -503,7 +506,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		BooleanQuery q = new VirtuosoBooleanQuery() {
 			public boolean evaluate() throws QueryEvaluationException {
-				return executeSPARQLForBooleanResult(query, getDataset(), getIncludeInferred(), getBindings(), getMaxQueryTime());
+				return executeSPARQLForBooleanResult(query, getDataset(), getIncludeInferred(), getBindings(), getMaxExecutionTime());
 			}
 		};
 		return q;
@@ -893,7 +896,19 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyNotTxnActive("Connection already has an active transaction");
 
 		try {
-			getQuadStoreConnection().setAutoCommit(false);
+       			Connection conn = getQuadStoreConnection();
+			conn.setAutoCommit(false);
+
+			if (isolationLevel == IsolationLevels.READ_UNCOMMITTED)
+				conn.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+			else if (isolationLevel == IsolationLevels.READ_COMMITTED)
+				conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+			else if (isolationLevel == IsolationLevels.SNAPSHOT_READ)
+				conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+			else if (isolationLevel == IsolationLevels.SNAPSHOT)
+				conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+			else if (isolationLevel == IsolationLevels.SERIALIZABLE)
+				conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException(e);
@@ -936,6 +951,87 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RepositoryException("Problem with rollback", e);
 		}
 	}
+
+
+
+	/**
+	 * Sets the transaction isolation level for the next transaction(s) on this
+	 * connection. If the level is set to a value that is not supported by the
+	 * underlying repository, this method will still succeed but a subsequent
+	 * call to {@link #begin()} will result in an exception.
+	 * 
+	 * @param level
+	 *        the transaction isolation level to set.
+	 * @throws IllegalStateException
+	 *         if the method is called while a transaction is already active.
+	 * @since 2.8.0
+	 */
+	public void setIsolationLevel(IsolationLevel level) throws IllegalStateException
+	{
+		try {
+			if (isActive()) {
+				throw new IllegalStateException(
+						"Transaction isolation level can not be modified while transaction is active");
+			}
+			this.isolationLevel = level;
+		}
+		catch (UnknownTransactionStateException e) {
+			throw new IllegalStateException(
+					"Transaction isolation level can not be modified while transaction state is unknown", e);
+
+		}
+		catch (RepositoryException e) {
+			throw new IllegalStateException(
+					"Transaction isolation level can not be modified due to repository error", e);
+		}
+	}
+
+	/**
+	 * Retrieves the current {@link IsolationLevel transaction isolation level}
+	 * of the connection.
+	 * 
+	 * @return the current transaction isolation level.
+	 * @since 2.8.0
+	 */
+	public IsolationLevel getIsolationLevel()
+	{
+		return this.isolationLevel;
+	}
+
+	/**
+	 * Begins a new transaction with the supplied {@link IsolationLevel},
+	 * requiring {@link #commit()} or {@link #rollback()} to be called to end the
+	 * transaction.
+	 * 
+	 * @param level
+	 *        The {@link IsolationLevel} at which this transaction will operate.
+	 *        If set to <code>null</code> the default isolation level of the
+	 *        underlying store will be used. If the specified isolation level is
+	 *        not supported by the underlying store, it will attempt to use a
+	 *        supported {@link IsolationLevel#isCompatibleWith(IsolationLevel)
+	 *        compatible level} instead.
+	 * @throws RepositoryException
+	 *         If the connection could not start the transaction. Possible
+	 *         reasons this may happen are:
+	 *         <ul>
+	 *         <li>a transaction is already {@link #isActive() active} on the
+	 *         current connection.
+	 *         <li>the specified {@link IsolationLevel} is not supported by the
+	 *         store, and no compatible level could be found.
+	 *         </ul>
+	 * @see #begin()
+	 * @see #isActive()
+	 * @see #commit()
+	 * @see #rollback()
+	 * @see #setIsolationLevel()
+	 * @since 2.8.0
+	 */
+	public void begin(IsolationLevel level) throws RepositoryException
+	{
+		setIsolationLevel(level);
+		begin();
+	}
+
 
 	/**
 	 * Adds RDF data from an InputStream to the repository, optionally to one or
@@ -1264,7 +1360,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 		flushDelayAdd();
 
-		Iterator it = statements.iterator();
+		Iterator<? extends Statement> it = statements.iterator();
 		boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
 		Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
@@ -1772,11 +1868,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		Vector<String> names = new Vector<String>();
 		try {
-			verifyIsOpen();
-			flushDelayAdd();
-			java.sql.Statement stmt = createStatement(maxQueryTime);
-			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
-
+		        PreparedStatement stmt = executeSPARQL(query, dataset, includeInferred, bindings, maxQueryTime);
+			ResultSet rs = stmt.executeQuery();
 			ResultSetMetaData rsmd = rs.getMetaData();
 
 			// begin at onset one
@@ -1801,11 +1894,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		HashMap<String,Integer> names = new HashMap<String,Integer>();
 
 		try {
-			verifyIsOpen();
-			flushDelayAdd();
-			java.sql.Statement stmt = createStatement(maxQueryTime);
-			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
-
+		        PreparedStatement stmt = executeSPARQL(query, dataset, includeInferred, bindings, maxQueryTime);
+			ResultSet rs = stmt.executeQuery();
 			ResultSetMetaData rsmd = rs.getMetaData();
 
 			// begin at onset one
@@ -1825,10 +1915,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		boolean result = false;
 		try {
-			verifyIsOpen();
-			flushDelayAdd();
-			java.sql.Statement stmt = createStatement(maxQueryTime);
-			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
+		        PreparedStatement stmt = executeSPARQL(query, dataset, includeInferred, bindings, maxQueryTime);
+			ResultSet rs = stmt.executeQuery();
 
 			while(rs.next())
 			{
@@ -1851,11 +1939,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	{
 		LinkedList<String> names = new LinkedList<String>();
 		try {
-			verifyIsOpen();
-			flushDelayAdd();
-			java.sql.Statement stmt = createStatement(maxQueryTime);
-			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
-
+		        PreparedStatement stmt = executeSPARQL(query, dataset, includeInferred, bindings, maxQueryTime);
+			ResultSet rs = stmt.executeQuery();
 			ResultSetMetaData rsmd = rs.getMetaData();
 			// begin at onset one
 			for (int i = 1; i <= rsmd.getColumnCount(); i++)
@@ -1890,10 +1975,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		int maxQueryTime) throws QueryEvaluationException, RDFHandlerException 
 	{
 		try {
-			verifyIsOpen();
-			flushDelayAdd();
-			java.sql.Statement stmt = createStatement(maxQueryTime);
-			ResultSet rs = stmt.executeQuery(fixQuery(false, query, dataset, includeInferred, bindings));
+		        PreparedStatement stmt = executeSPARQL(query, dataset, includeInferred, bindings, maxQueryTime);
+			ResultSet rs = stmt.executeQuery();
 			ResultSetMetaData rsmd = rs.getMetaData();
 	                int col_g = -1;
         	        int col_s = -1;
@@ -1945,16 +2028,27 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 	
 
+	private PreparedStatement executeSPARQL(String query, 
+		Dataset dataset, boolean includeInferred, BindingSet bindings, 
+		int maxQueryTime) throws RepositoryException, SQLException 
+	{
+		verifyIsOpen();
+		flushDelayAdd();
+		List<Value> pstmtParams = new LinkedList<Value>();
+		String fixedQuery = fixQuery(false, query, dataset, includeInferred, bindings, pstmtParams);
+		PreparedStatement stmt = prepareStatement(fixedQuery, maxQueryTime);
+		setQueryParams(stmt, pstmtParams);
+		return stmt;
+	}
+
+
         protected void executeSPARUL(String query, Dataset dataset, 
         	boolean includeInferred, BindingSet bindings, int maxQueryTime) throws UpdateExecutionException
         {
 		try {
-			verifyIsOpen();
-			flushDelayAdd();
-			java.sql.Statement stmt = createStatement(maxQueryTime);
-			stmt.execute(fixQuery(true, query, dataset, includeInferred, bindings));
+		        PreparedStatement stmt = executeSPARQL(query, dataset, includeInferred, bindings, maxQueryTime);
+			stmt.execute();
 			stmt.close();
-
 		}
 		catch (Exception e) {
 			throw new UpdateExecutionException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
@@ -2035,11 +2129,40 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
           return stmt;
 	}
 	
-	
-	private String substBindings(String query, BindingSet bindings)  throws RepositoryException 
+	private java.sql.PreparedStatement prepareStatement(String sql, int maxQueryTime) throws java.sql.SQLException
 	{
+	  java.sql.PreparedStatement stmt = quadStoreConnection.prepareStatement(sql);
+	  int timeout = repository.getQueryTimeout();
+          if (timeout > 0)
+           	stmt.setQueryTimeout(timeout);
+          if (maxQueryTime > 0)
+            stmt.setQueryTimeout(timeout);
+          stmt.setFetchSize(prefetchSize);
+          return stmt;
+	}
+	
+
+	private void setQueryParams(PreparedStatement stmt, List<Value> params) throws RepositoryException 
+	{
+		int i = 0;
+		for (Value value : params) {
+			try {
+				if (value instanceof Resource)
+					bindResource(stmt, ++i, (Resource)value);
+				else
+					bindValue(stmt, ++i, value);
+			} catch(SQLException e) {
+				throw new RepositoryException("Failed to bind parameter " + value.toString() + " to the query.", e);
+			}
+		}
+	}
+
+	
+	private String substBindings(String query, BindingSet bindings, List<Value> pstmtParams)  throws RepositoryException 
+	{
+	        boolean use_setParams = insertBNodeAsVirtuosoIRI ? false : true;
 		StringBuffer buf = new StringBuffer();
-		String delim = " \t\n\r\f,)(;.";
+		String delim = " \t\n\r\f,)(;.}{";
 	  	int i = 0;
 	  	char ch;
 	  	int qlen = query.length();
@@ -2067,7 +2190,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	        			String varName = query.substring(i, j);
 	        			Value val = bindings.getValue(varName);
 	        			if (val != null) {
-                  				varData = stringForValue(val);
+	        				if (use_setParams) {
+							pstmtParams.add(val);
+							if (val instanceof Resource)
+								varData = "`iri(??)`";
+							else
+								varData = "`bif:__rdf_long_from_batch_params(??,??,??)`";
+	        				} else {
+                  					varData = stringForValue(val);
+                  				}
                   				i=j;
                 			}
 	      			}
@@ -2083,8 +2214,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 	
 
-	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings)  throws RepositoryException 
+	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings, List<Value> pstmtParams)  throws RepositoryException 
 	{
+	        boolean use_def_graph = true;
 	        Set <URI> list;
 	        String removeGraph = null;
 	        String insertGraph = null;
@@ -2128,6 +2260,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		     {
 		       URI v = it.next();
 		       ret.append(" define input:default-graph-uri <" + v.toString() + "> \n");
+		       use_def_graph = false;
 		     }
 		   }
 
@@ -2142,7 +2275,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		     }
 		   }
 		}
-		ret.append(substBindings(query, bindings));
+
+		if (use_def_graph)
+		  ret.append(" define input:default-graph-uri <" + repository.defGraph + "> \n");
+
+		ret.append(substBindings(query, bindings, pstmtParams));
 		return ret.toString();
 	}
 
@@ -3057,9 +3194,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 **/
 
-        public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> {
-                                           
-
+        public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> 
+        {
 		E	  v_row;
 		boolean	  v_finished = false;
 		boolean	  v_prefetched = false;
@@ -3380,5 +3516,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         sb.append(tzm);
         return sb.toString();
       }
+
 }
 

@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -275,6 +275,7 @@ caddr_t *mp_list (mem_pool_t * mp, long n, ...);
 #define t_full_box_copy_tree(box)		mp_full_box_copy_tree (THR_TMP_POOL, (box))
 
 #define t_alloc_list(n) 			((caddr_t *)t_alloc_box ((n) * sizeof (caddr_t), DV_ARRAY_OF_POINTER))
+extern caddr_t *t_list_memcpy (long n, ccaddr_t *src);
 extern caddr_t *t_list_concat_tail (caddr_t list, long n, ...);
 extern caddr_t *t_list_concat (caddr_t list1, caddr_t list2);
 extern caddr_t *t_list_remove_nth (caddr_t list, int pos);

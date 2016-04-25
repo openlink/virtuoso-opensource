@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -4152,7 +4152,7 @@ create procedure FTI_MAKE_SEARCH_STRING_INNER (in exp varchar, inout words any)
          word1 := war[n];
          words := vector_concat (words, vector (word1));
          if (strchr (word1, '.') is not null or strchr (word1, '-') is not null
-	     or regexp_match ('^[A-Za-z_][A-Za-z0-9_-]*', word1) is null)
+	     or regexp_match ('^[A-Za-z_][A-Za-z0-9_-]*\x24', word1, 0, 'i', 1) is null)
            word1 := concat ('"', word1, '"');
          exp1 := concat (exp1, word1, ' AND ');
        }

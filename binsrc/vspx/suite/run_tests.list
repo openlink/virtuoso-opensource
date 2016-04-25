@@ -122,7 +122,7 @@ CHECK_EXISTS You are not logged in
 RUN 2003_07_22_03_36_01_000000__vspx_search_login_vspx
 SQL 2003_07_22_03_36_01_000000_new_session
 CHECK_EXISTS 200 OK
-CHECK_EXISTS Welcome to VSPX search demo 
+CHECK_EXISTS Welcome to VSPX search demo
 
 #RUN HEADER
 RUN 2003_07_22_03_36_53_000000__vspx_search_login_vspx

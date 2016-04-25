@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -767,6 +767,7 @@ async_queue_t *
 aq_allocate (client_connection_t * cli, int n_threads)
 {
   async_queue_t *aq = (async_queue_t *) dk_alloc_box_zero (sizeof (async_queue_t), DV_ASYNC_QUEUE);
+  aq->aq_creator_cli = cli;
   aq->aq_ref_count = 1;
   aq->aq_requests = hash_table_allocate (101);
   aq->aq_mtx = all_aq_mtx;

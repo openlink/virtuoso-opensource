@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3571,6 +3571,95 @@ tb_key_by_index_opt (dbe_table_t * tb, caddr_t opt)
 }
 
 
+
+dbe_key_t * 
+rq_find_key (dbe_table_t * tb, char * str)
+{
+  int n_cols = strlen (str);
+  DO_SET (dbe_key_t *, key, &tb->tb_keys)
+    {
+      int nth = 0;
+      if (dk_set_length (key->key_parts) != n_cols)
+	continue;
+      DO_SET (dbe_column_t *, col, &key->key_parts)
+	{
+	  if (toupper (col->col_name[0]) != toupper(str[nth]))
+	    goto next;
+	  nth++;
+	}
+      END_DO_SET();
+      return key;
+    next: ;
+    }
+  END_DO_SET();
+  return NULL;
+}
+
+
+#define P_EQ 1
+#define S_EQ 2
+#define O_EQ 4
+#define G_EQ 8
+dbe_key_t * rq_psog_key;
+dbe_key_t * rq_posg_key;
+int rq_key_inited;
+
+dbe_column_t *
+pred_in_col (df_elt_t * pred)
+{
+  df_elt_t * c = pred->_.bin.right->_.call.args[0];
+  if (c && DFE_COLUMN  == c->dfe_type && c->_.col.col)
+    return c->_.col.col;
+  return NULL;
+}
+
+int enable_rq_obvious = 1;
+
+dbe_key_t *
+rq_obvious_key (df_elt_t * tb_dfe)
+{
+  int eq_mask = 0, range_mask = 0;
+  if (!enable_rq_obvious)
+    return NULL;
+  if (!rq_key_inited)
+    {
+      rq_psog_key = rq_find_key (tb_dfe->_.table.ot->ot_table, "PSOG");
+      rq_posg_key = rq_find_key (tb_dfe->_.table.ot->ot_table, "POSG");
+      if (!rq_psog_key || !rq_posg_key)
+	rq_key_inited = 2;
+      else
+	rq_key_inited = 1;
+    }
+  if (2 == rq_key_inited)
+    return NULL;
+  DO_SET (df_elt_t *, pred, &tb_dfe->_.table.col_preds)
+    {
+      dbe_column_t * col = 1 == pred->_.bin.is_in_list ? pred_in_col (pred) : pred->_.bin.left->_.col.col;
+      int * mask = BOP_EQ == pred->_.bin.op || 1 == pred->_.bin.is_in_list ? &eq_mask :  &range_mask;
+      if (!col)
+	continue;
+      switch (col->col_name[0])
+	{
+	case 'P': case 'p': *mask |= P_EQ; break;
+	case 'S': case 's': *mask |= S_EQ; break;
+	case 'O': case 'o': *mask |= O_EQ; break;
+	case 'G': case 'g': *mask |= G_EQ; break;
+	}
+    }
+  END_DO_SET ();
+  if ((P_EQ | S_EQ) == (eq_mask & ~G_EQ))
+    return rq_psog_key;
+  if ((P_EQ | O_EQ) == (eq_mask & ~G_EQ))
+    return rq_posg_key;
+  if ((P_EQ & eq_mask) && (S_EQ & range_mask))
+    return rq_psog_key;
+  if ((P_EQ & eq_mask) && (O_EQ & range_mask))
+    return rq_posg_key;
+  return NULL;
+}
+
+
+
 void
 sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 		   dk_set_t * col_preds, dk_set_t * after_preds)
@@ -3582,6 +3671,7 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
   index_choice_t ic;
   int best_unq = 0;
   caddr_t opt_inx_name;
+  dbe_key_t * rq_obvious = tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table) ? rq_obvious_key (tb_dfe) : NULL;
   op_table_t *ot = dfe_ot (tb_dfe);
   int is_pk_inx = 0, is_txt_inx = 0;
   dk_set_t group = NULL;
@@ -3632,6 +3722,9 @@ sqlo_choose_index (sqlo_t * so, df_elt_t * tb_dfe,
 	  memset (&ic, 0, sizeof (ic));
 	  if (key_matches_index_opt (key, opt_inx_name))
 	    {
+	      if (!opt_inx_name && rq_obvious && key != rq_obvious)
+		continue;
+
 	      tb_dfe->_.table.key = key;
 	      tb_dfe->dfe_unit = 0;
 	      dfe_table_cost_ic (tb_dfe, &ic, 0);

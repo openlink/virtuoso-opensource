@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -588,21 +588,23 @@ public class VirtGraph extends GraphBase {
             else
                 return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n)); 
         } else if (n.isLiteral()) {
-            String s;
+            String s, llang, ltype;
+            boolean llang_exists = false;
             StringBuilder sb = new StringBuilder();
             sb.append("\"");
             sb.append(escapeString(n.getLiteralLexicalForm()));
             sb.append("\"");
 
-            s = n.getLiteralLanguage();
-            if (s != null && s.length() > 0) {
+            llang = n.getLiteralLanguage();
+            if (llang != null && llang.length() > 0) {
                 sb.append("@");
-                sb.append(s);
+                sb.append(llang);
+                llang_exists = true;
             }
-            s = n.getLiteralDatatypeURI();
-            if (s != null && s.length() > 0) {
+            ltype = n.getLiteralDatatypeURI();
+            if (!llang_exists && ltype != null && ltype.length() > 0) {
                 sb.append("^^<");
-                sb.append(s);
+                sb.append(ltype);
                 sb.append(">");
             }
             return sb.toString();
@@ -623,21 +625,23 @@ public class VirtGraph extends GraphBase {
                     return "<" + BNode2String_add(n) + ">";
                 }
             } else if (n.isLiteral()) {
-                String s;
+                String s, llang, ltype;
+                boolean llang_exists = false;
                 StringBuilder sb = new StringBuilder();
                 sb.append("\"");
                 sb.append(escapeString(n.getLiteralLexicalForm()));
                 sb.append("\"");
 
-                s = n.getLiteralLanguage();
-                if (s != null && s.length() > 0) {
+                llang = n.getLiteralLanguage();
+                if (llang != null && llang.length() > 0) {
                     sb.append("@");
-                    sb.append(s);
+                    sb.append(llang);
+                    llang_exists = true;
                 }
-                s = n.getLiteralDatatypeURI();
-                if (s != null && s.length() > 0) {
+                ltype = n.getLiteralDatatypeURI();
+                if (!llang_exists && ltype != null && ltype.length() > 0) {
                     sb.append("^^<");
-                    sb.append(s);
+                    sb.append(ltype);
                     sb.append(">");
                 }
                 return sb.toString();
@@ -730,7 +734,7 @@ public class VirtGraph extends GraphBase {
                 }
 
             } else {
-                boolean isAutocommit = connection.getAutoCommit();;
+                boolean isAutocommit = connection.getAutoCommit();
 
                 if (insertBNodeAsVirtuosoIRI 
                     || resetBNodesDictAfterCall

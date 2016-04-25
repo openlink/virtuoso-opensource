@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -6758,6 +6758,7 @@ static const char *sched_table_text =
 "				SE_ENABLE_NOTIFY int default 0,"
 "				SE_NOTIFY varchar default null,"
 "				SE_NOTIFICATION_SENT int default 0,"
+"				SE_DISABLED int default 0,"
 "				primary key (SE_NAME)) ";
 
 static const char *sched_alter1 =
@@ -6771,6 +6772,9 @@ static const char *sched_alter3 =
 
 static const char *sched_alter4 =
 "alter table SYS_SCHEDULED_EVENT add SE_NOTIFICATION_SENT int default 0";
+
+static const char *sched_alter5 =
+"alter table SYS_SCHEDULED_EVENT add SE_DISABLED int default 0";
 
 static const char * scheduler_do_round_text =
 #if 0
@@ -6809,7 +6813,7 @@ static const char * scheduler_do_round_text =
 "  achkp := sys_stat ('st_chkp_autocheckpoint'); \n"
 "  select count (*) into n_events\n"
 "      from SYS_SCHEDULED_EVENT \n"
-"      where SE_START <= dtn and SE_INTERVAL > 0 and\n"
+"      where coalesce (SE_DISABLED, 0) = 0 and SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
 "      (SE_LAST_COMPLETED is NULL or \n"
 "       dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= dtn);\n"
 " \n"
@@ -6819,7 +6823,7 @@ static const char * scheduler_do_round_text =
 "  inx := 0;\n"
 "  for select SE_NAME, SE_SQL, SE_NOTIFICATION_SENT  \n"
 "    from SYS_SCHEDULED_EVENT \n"
-"    where SE_START <= dtn and SE_INTERVAL > 0 and\n"
+"    where coalesce (SE_DISABLED, 0) = 0 and SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
 "    (SE_LAST_COMPLETED is NULL or \n"
 "     dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= dtn) \n"
 "    order by SE_LAST_COMPLETED \n"
@@ -6881,7 +6885,7 @@ ddl_scheduler_init (void)
   dbe_table_t *tb;
   ddl_ensure_table("DB.DBA.SYS_SCHEDULED_EVENT", sched_table_text);
   tb = sch_name_to_table (isp_schema(NULL), "DB.DBA.SYS_SCHEDULED_EVENT");
-  if (tb && tb_name_to_column (tb, "SE_NOTIFICATION_SENT"))
+  if (tb && tb_name_to_column (tb, "SE_DISABLED"))
     ddl_std_proc(scheduler_do_round_text, 0);
 }
 
@@ -6892,6 +6896,7 @@ ddl_scheduler_arfw_init (void)
   ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_ENABLE_NOTIFY", sched_alter2, 0);
   ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_NOTIFY", sched_alter3, 0);
   ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_NOTIFICATION_SENT", sched_alter4, 0);
+  ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_DISABLED", sched_alter5, 0);
   ddl_std_proc(scheduler_do_round_text, 0);
 }
 

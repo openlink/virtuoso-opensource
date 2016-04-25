@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -110,6 +110,7 @@ typedef struct ws_connection_s
     caddr_t		ws_path_string;
     caddr_t 		ws_resource;
     caddr_t		ws_status_line;
+    caddr_t 		ws_redirect_from;
     int			ws_status_code;
     int			ws_try_pipeline;
 #ifdef VIRTUAL_DIR

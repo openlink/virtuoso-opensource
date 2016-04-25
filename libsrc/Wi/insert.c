@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1555,7 +1555,7 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
 		{
-		  log_error ("Broken index %s", it->it_key->key_name ? it->it_key->key_name : "temp key");
+		  log_error ("Broken index %s, L=%d", it->it_key->key_name ? it->it_key->key_name : "temp key", leaf);
 		  GPF_T1 ("In compact, no remap dp for a dirty buffer");
 		}
 	      BD_SET_IS_WRITE (buf, 1);

@@ -1,4 +1,634 @@
+2016-04-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.4 for final release
+
+	Updated ChangeLog & News
+
+	Fixed issue passing make flags to subdirs
+
+	Fixed link to rdf-editor to edit whole article
+
+	Removed link to old ODE browser
+
+	Updated version of ODBC driver
+
+	Updated engine version to 3217
+
+2016-04-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for building with OpenJDK 1.8 if available
+
+	Hide errors from dpkg when openjdk version is not available on the system
+
+2016-04-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed if user_name is null return an empty string
+
+2016-04-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated docs
+
+	Fixed issue uploading turtle files containing special symbols
+
+2016-04-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+	Updated version of JDBC driver
+
+2016-04-21  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix JDBC driver remove finalizers
+
+2016-04-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added missing dirs
+
+	Renamed configure.in -> configure.ac
+
+2016-04-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.3-rc2 for upcoming release
+
+	Updated NEWS and Changelog for upcoming release
+
+	Merge branch 'develop/6' into develop/7
+
+	Backported fixes from v7
+
+2016-04-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to rc1
+
+	Merge branch 'feature/jdk18' into develop/7
+
+	Added initial jdbc4.2 driver
+
+	Added support for building JDK 1.8 / JDBC 4.2
+
+	Merge branch 'develop/7'
+
+2016-04-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with ':' in blank node labels
+
+	Turtle also permits it in the local parts of QNames, but NQuads
+	does not permit %NN in blank node labels
+
+2016-04-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Split functions and reindented for readability
+
+	Merge branch 'develop/6' into develop/7
+
+	Updated Conductor VAD version
+
+	Added start/expiry date of CA
+
+2016-04-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Updated DBpedia VAD version
+
+	Fixed show language with label, abstract, comment
+
+	Fixed typo in function name
+
+	Fixed issue with SQL_C_LONG bound to an int32 instead of an int64/long
+
+	Updated Facet VAD version
+
+	Fixed link-out icon
+
+2016-04-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added missing grants to SPARQL_UPDATE
+
+	Fixed client_attr can return ANY type
+
+2016-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with unused default graph
+
+	Even if default graph is not used in SPARUL MODIFY statement, it
+	should be set to a non-NULL stub for reporting purposes
+
+2016-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added t_list_memcpy
+
+	Added obvious index choice
+
+2016-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issues with property paths like <p>|!<p>
+
+	Deep optimizations of paths with complementary and/or repeating paths
+
+2016-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added min/max for iri id
+
+	Fixed label compressed stream
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed list of files to distribute
+
+	Removed deprecated files
+
+	Merge branch 'develop/6' into develop/7
+
+	Merge branch 'feature/dbpedia-fluid-design' into develop/6
+
+2016-03-31  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated DBpedia VAD version
+
+	Removed old describe_white page and related deprecated files
+
+	Implemented new fluid skin design for DBpedia /page based on the Bootstrap Framework
+
+	Added Bootstrap 3.x Framework
+
+	Reorganized /statics
+
+2016-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed labels
+
+	Fixed if graph name is not specified, use 'none'
+
+2016-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for CVS in RFC4180 format
+
+	Usage:
+	set csv_rfc4180 on;
+
+2016-03-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue when SERVICE clause does not return real vars, only ?stubvarXX
+
+2016-03-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with regexp
+
+	Added support for <script>...</script> inlining of RDF data in HTML output
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed missing line
+
+	Updated version of FCT vad
+
+	Fixed nyt prefix to http://data.nytimes.com/
+
+	Fixed splitting UTF-8 strings can produce bad encoded strings
+
+	Fixed handling of single quote char
+
+2016-03-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated DBpedia VAD for International Chapters
+
+	The http://dbpedia.org/ site  will start using UTF-8 based URIs
+	instead of %-encoded URIs to match the work done by Dimitris Kontokostas
+	and others for the DBpedia International Chapters.
+
+2016-03-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Added new link-out icons
+
+2016-03-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Updated DBpedia VAD version
+
+	Fixed the http://mementoarchive.lanl.gov link
+
+2016-03-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue calling STR() on numbers provided via VALUES (#539)
+
+	example: SELECT STR(?n) WHERE { VALUES ?n {1 2}}
+
+2016-02-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added check for execinfo.h
+
+	Fixed check for bzip2 compression
+
+2016-02-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed hang as page was not left if geo_pred signal an error
+
+	Fixed check if geo pred gets right arguments to prevent crash
+
+	Fixed java version check
+
+	Fixed # argument check to avoid bad memory read
+
+	Small optimization for update triggers of WS.WS.SYS_DAV_RES
+
+	Removed debug output
+
+	Merge branch 'develop/6' into develop/7
+
+	Synced Conductor WebDAV implementation with briefcase
+
+	Fixed labels
+
+2016-02-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed svc search to keep address
+
+	Added support for skipping UTF-8 BOM marks on Turtle and JSON lexers
+
+2016-02-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed include page # in the error log
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed missing alias in fct svc
+
+2016-02-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Updated Conductor VAD version
+
+	Added validation for sequence number value
+
+	Fixed issue with all to unknown procedure
+
+	Fixed issue with negative integers in validation API
+
+	Fixed issue with wrong vars in delete
+
+	Fixed log which key is out of order
+
+2016-02-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed missing grant
+
+	Added refererence to license
+
+	Fixed support for images
+
+2016-02-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed portability issue on windows
+
+	Updated engine version to 07.20.3216
+
+	Rebuild drivers
+
+	Merge branch 'feature/2016_02_09_Jdbc_fix' into develop/7
+
+	Updated version of JDBC driver
+
+2016-02-09  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix JDBC driver (Github pull requests)
+
+	- Fixed conversion of broken unicode strings. (#529)
+	- Fixed variable initialization. (#470)
+
+2016-02-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+	Merge branch 'feature/2016_02_03_Jdbc_fix' into develop/7
+
+	Updated version number of JDBC driver
+
+2016-02-03  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix VirtuosoDataSource methods setLog_Enable()/getLog_Enable() for properly work with Spring framework
+
+2016-02-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed label
+
+	Fixed issues with UI switching result dropdown
+
+	Fixed initialization of build-in sparql endpoint
+
+	Fixed remove row column # from html output
+
+2016-01-28  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed disable AIO for this release of virtuoso 7
+
+	Renamed ColumnStore to ColumnStoreAll in virtuoso.ini
+
+	Fixed remove generated file when making distribution
+
+2016-01-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed enabled scheduler upgrade
+
+2016-01-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed issue with css
+
+	Updated Facet Browser VAD version
+
+	Updated Conductor VAD version
+
+	Fixed set specific sponger pragmas on text/html
+
+	Fixed content negotiation
+
+	Fixed default output is xml
+
+	Fixed possible change of displayed resources post-sponge
+
+	Fixed facet search service
+
+	Fixed labels
+
+	Fixed og:image added to list
+
+	Fixed space encoding in iri
+
+	Fixed checkpoint after rdf view generation
+
+	Fixed issue with ldap server
+
+	Fixed use transactional mode
+
+	Fixed issue with scheduler
+
+2016-01-22  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix for Sesame2 test connection string
+
+2016-01-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild Jena2 and Jena3 providers
+
+	Merge branch 'feature/2016_01_22_Jena_fix' into develop/7
+
+	Updated version of Jena 2 and 3 providers
+
+2016-01-22  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Node2Str for Literals for Jane2/3 providers for more properly handle Literals with Lang
+
+	Fix Testsuites for Jena2/3 and fix Node2Str for Literals
+
+2016-01-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild providers
+
+	Fixed use JDK 1.8 for Jena3 provider
+
+	Updated testsuite to run Jena2, Jena3 and Sesame4 testsuites
+
+2016-01-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2016_01_20_Sesame2_update' into develop/7
+
+	Fixed filesystem permission
+
+	Updated version of Sesame2 provider
+
+2016-01-20  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed PreparedStatement with params binding for SPARQL queries with parameters instead of substitution parameter values to query
+
+2016-01-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2016_01_20_Jena3_update' into develop/7
+
+	Updated version of Jena3 provider
+
+2016-01-20  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix example
+
+2016-01-20  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Jena3 provider
+
+	- fixed class path for properly run Tests
+	- added new example VirtuosoSPARQLExample14.java
+
+2016-01-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild providers
+
+2016-01-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	New Jena example for use Inference and Ontology Model with Jena provider
+
+2016-01-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2015_12_25_fix_JDBC' into develop/7
+
+	Updated version of Virtuoso JDBC driver
+
+2016-01-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Connection.setCatalog() isn't implemented (for bugzilla #17155)
+
+2016-01-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/sesame2.8' into develop/7
+
+	Rebuild Virtuoso Sesame 2 provider
+
+	Added support for Sesame2 2.8.x
+
+	Fixed permissions
+
+	Merge branch 'feature/2015_10_12_Jena3_new' into develop/7
+
+	Fixed hook jena3 into build process
+
+2016-01-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	New Jena3 provider based on github  pull#487
+
+	https://github.com/openlink/virtuoso-opensource/pull/487
+
+2016-01-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated Conductor VAD version
+
+	Fixed should use transactional mode
+
+	Added new bif http_redirect_from for getting initial path from internal redirect
+
+	Fixed issue in ttlpv storing xmlliteral
+
+2016-01-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated Copyright to 2016
+
+	Merge branch 'develop/6' into develop/7
+
+	Updated Facet Browser VAD version
+
+	Updated Conductor VAD version
+
+	Added new option to disable scheduled job
+
+	Added more link-out relations
+
+	Fixed issue with SPARQL select count(distinct *) { ... }
+
+2016-01-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild provider
+
+	Updated version number of Sesame4 provider
+
+2016-01-08  Sergey Malinin  <smalinin@openlinksw.com>
+
+	fix RepositoryFactory class name in Sesame4 provider resources
+
+2016-01-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed no change from chash to pageable if enable_chash_gb = 2
+
+	Merge branch 'feature/2016_01_04_fix_Sesame4' into develop/7
+
+	Rebuild Sesame4 provider
+
+	Updated version of Sesame4 provider
+
+2016-01-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issue with openrdf-workbench application
+
+	- update create.xsl with new version
+	- update create-virtuoso.xsl with new version
+	- added file org/openrdf/repository/config/virtuoso.ttl resource to virt_sesame4.jar
+
+2015-12-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2015_12_31_fix_Sesame4' into develop/7
+
+	Fixed disable javadoc doclint setting for JDK1.8
+
+	Rebuild driver
+
+2015-12-31  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Version name from "Sesame2" to "Sesame4"
+
+2015-12-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with cost based optimizer for isiri_id
+
+	Merge branch 'feature/2015_12_29_Sesame4' into develop/7
+
+	Added support for JDK 1.8 to use with sesame 4 provider
+
+2015-12-29  Sergey Malinin  <smalinin@openlinksw.com>
+
+	new Sesame4 provider
+
+2015-12-23  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Small cleanups
+
+	Added support for service invocation of bigdata running in triples and introducing language exceptions
+
+2015-12-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with boolean in sparql/xml results
+
+	Fixed issue serialized xml
+
+	Added check for repl log replay
+
+	Fixed issue with duplicate triples in microdata
+
+	Fixed handling of strings containing serialized xml
+
+2015-12-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed SPARQL-BI syntax for HAVING
+
+	SPARQL-BI syntax for HAVING (any single expression) is replaced
+	with SPARQL 1.1 one (multiple constraints)
+
+2015-12-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added new debug switch to /sparql page
+
+	Added switch in /sparql page and a logic to log debug info during
+	SPARQL query run (esp.sponging) and to append it to the page of
+	query results.
+
+2015-12-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added new BIF connection_swap()
+
+	New BIF connection_swap() to exchange the value of a given variable
+	in procedure and a given connection variable without memory
+	allocations. + argument to deal with nested aq requests in API of
+	connection variables.
+
+2015-12-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with page access
+
+	If we need write for page access, get the split range position in
+	read and then switch to write
+
+2015-12-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed rc resize
+
+	Fixed list hosts for elastic
+
+	Fixed dup partitions in elastic
+
+2015-12-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed pop_last should clear the null flag
+
+2015-12-10  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed deprecated build rules for Virtuoso .Net adapter
+
+2015-12-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed building .sql files on windows
+
 2015-12-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/7' of github:openlink/virtuoso-opensource into develop/7
+
+	Fixed issue with make dist
+
+	Merge branch 'hotfix/7.2.2.1' into develop/7
+
+	Fixed issue with make dist
+
+	Updated version to 7.2.3-dev to start new development cycle
+
+	Merge branch 'release/7.2.2' into develop/7
+
+	Merge branch 'release/7.2.2' into stable/7
+
+	Updated NEWS and ChangeLog
 
 	Updated version to 7.2.2
 

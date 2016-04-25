@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -293,9 +293,6 @@ boxint_hashcmp (char *x, char *y)
   boxint k1 = *(boxint *) x, k2 = *(boxint *) y;
   return k1 == k2 ? 1 : 0;
 }
-
-
-#define ROL(h) ((h << 1) | ((h >> 31) & 1))
 
 box_hash_func_t dtp_hash_func[256];
 

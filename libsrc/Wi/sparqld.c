@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -911,6 +911,8 @@ args_printed:
                       int valctr;
                       if (!strcmp (name, "lang:dialect"))
                         continue;
+                      if (!strcmp (name, "lang:exceptions"))
+                        continue;
                       ssg_puts (" DEFINE ");
                       ssg_puts (name);
                       DO_BOX_FAST (SPART **, val, valctr, vals)
@@ -1236,6 +1238,8 @@ args_printed:
           ssg_newline (0);
         if (need_new_graph)
           {
+            if (SSG_SD_NO_GRAPH & ssg->ssg_sd_no)
+              spar_error (ssg->ssg_sparp, "%.100s does not support GRAPH <...> {...} syntax, so SPARQL query is not composed", ssg->ssg_sd_service_naming);
             ssg_puts (" GRAPH");
             ssg_sdprint_tree (ssg, curr_graph);
             ssg_puts (" {");
@@ -1436,21 +1440,52 @@ args_printed:
       }
     case SPAR_PPATH:
       {
-      int ctr, count = BOX_ELEMENTS (tree->_.ppath.parts);
+        SPART **p = tree->_.ppath.parts;
+        int count = BOX_ELEMENTS (p);
+        int fwd_ctr, ctr, fwdstar, invstar;
       switch (tree->_.ppath.subtype)
         {
-        case '!':
-          ssg_puts (" !");
-          /* no break */
-        case 0:
-          if (1 != count) ssg_puts (" (");
+        case 0: case '!':
+          fwd_ctr = count - tree->_.ppath.num_of_invs;
+          fwdstar = ((0 < fwd_ctr) && ((SPART *)_STAR == p[0]));
+          invstar = ((fwd_ctr < count) && ((SPART *)_STAR == p[fwd_ctr]));
+          if (fwdstar || invstar)
+            {
+              ssg_puts (" (");
+              if (fwdstar)
+                ssg_puts (" <star>|!<star>");
+              if (fwdstar && invstar)
+                ssg_puts ("|");
+              if (invstar)
+                ssg_puts (" ^<star>|!(^<star>)");
+              if ((0 < fwd_ctr) && !fwdstar)
+                {
+                  SPART *tmp = spartlist (ssg->ssg_sparp, 6, SPAR_PPATH, tree->_.ppath.subtype, t_list_memcpy (fwd_ctr, (ccaddr_t *)p), (ptrlong)0, (ptrlong)0, (ptrlong)0);
+                  ssg_puts ("|");
+                  ssg_sdprint_tree (ssg, tmp);
+                }
+              if ((0 < fwd_ctr) && !fwdstar)
+                {
+                  SPART *tmp = spartlist (ssg->ssg_sparp, 6, SPAR_PPATH, tree->_.ppath.subtype, t_list_memcpy (count-fwd_ctr, (ccaddr_t *)(p+fwd_ctr)), (ptrlong)0, (ptrlong)0, t_box_num(count-fwd_ctr));
+                  ssg_puts ("|");
+                  ssg_sdprint_tree (ssg, tmp);
+                }
+              ssg_puts (")");
+              break;
+            }
+          if ('!' == tree->_.ppath.subtype)
+            ssg_puts (" !");
+          if (('!' == tree->_.ppath.subtype) || (1 != count)) ssg_puts (" (");
           for (ctr = 0; ctr < count; ctr++)
             {
+              SPART *part = tree->_.ppath.parts[ctr];
               if (0 < ctr) ssg_puts (" |");
               if ((count - tree->_.ppath.num_of_invs) <= ctr) ssg_puts (" ^");
+              if ((SPART *)_STAR == part)
+                ssg_puts (" <x>|!<x>");
               ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
             }
-          if (1 != count) ssg_puts (" )");
+          if (('!' == tree->_.ppath.subtype) || (1 != count)) ssg_puts (" )");
           return;
         case 'D':
           ssg_puts (" DISTINCT");
@@ -1459,7 +1494,7 @@ args_printed:
           ssg_puts (" (");
           for (ctr = 0; ctr < count; ctr++)
             {
-              if (0 < ctr) ssg_puts (" |");
+              if (0 < ctr) ssg_puts ("  | ");
               ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
             }
           ssg_puts (" )");

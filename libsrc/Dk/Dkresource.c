@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -340,13 +340,20 @@ resource_store_fifo (resource_t * rc, void *item, int n_fifo)
 void
 rc_resize (resource_t * rc, int new_sz)
 {
-  void * new_items = malloc (sizeof (void*) * new_sz);
-  void * new_time = malloc (sizeof (int32) * new_sz);
-  memzero (new_time, sizeof (int32) * new_sz);
+  void * new_items;
+  void * new_time = NULL;
+  new_items = malloc (sizeof (void*) * new_sz);
+  if (rc->rc_item_time)
+    {
+      new_time = malloc (sizeof (int32) * new_sz);
+      memzero (new_time, sizeof (int32) * new_sz);
+    }
   memcpy (new_items, rc->rc_items, sizeof (void*) * rc->rc_fill);
-  memcpy (new_time, rc->rc_item_time, sizeof (int32) * rc->rc_fill);
+  if (rc->rc_item_time)
+    memcpy (new_time, rc->rc_item_time, sizeof (int32) * rc->rc_fill);
   free (rc->rc_items);
-  free (rc->rc_item_time);
+  if (rc->rc_item_time)
+    free (rc->rc_item_time);
   rc->rc_items = (void**)new_items;
   rc->rc_item_time = (unsigned int*)new_time;
   rc->rc_size = new_sz;

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -162,7 +162,7 @@ b3s_e_type (in subj varchar)
     {	
       stat := '00000';
       data := null;
-      exec (sprintf ('sparql select ?tp where { <%S> a ?tp }', subj), stat, msg, vector (), 100, meta, data);
+      exec (sprintf ('sparql select ?tp where { <%s> a ?tp }', subj), stat, msg, vector (), 100, meta, data);
 
       if (length (data))
 	{
@@ -192,7 +192,7 @@ b3s_type (in subj varchar,
 
   if (length (subj))
     {
-      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
+      exec (sprintf ('sparql select ?l ?tp %s where { <%s> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
 	  null, null, vector (), 100, meta, data);
 
       if (length (data))
@@ -247,7 +247,7 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
   st := '00000';
   msg:= '';
 
-  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%S> }}', _f, _s);
+  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%s> }}', _f, _s);
 
   exec (stmt, st, msg, vector(), 1, meta, data);
 
@@ -286,7 +286,7 @@ b3s_get_types (in _s varchar,
   declare i int;
   declare stmt varchar;
 
-  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%S> a ?tp } }', _from, _s);
+  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%s> a ?tp } }', _from, _s);
   data := null;
   t_a := vector();
 
@@ -320,7 +320,7 @@ b3s_get_all_types (in _s varchar,
   declare i int;
   declare stmt varchar;
 
-  stmt := sprintf ('sparql select distinct ?tp %s where { <%S> a ?tp }', _from, _s);
+  stmt := sprintf ('sparql select distinct ?tp %s where { <%s> a ?tp }', _from, _s);
   data := null;
   t_a := vector();
 
@@ -782,7 +782,7 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
     }
   stat := '00000';
   --exec (sprintf ('sparql define input:inference "facets" '||
-  --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  --'select ?o (lang(?o)) where { <%s> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
   exec (sprintf ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P, %d) as int) from RDF_QUAD table option (with ''facets'')
 	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3 option (same_as)', lbl_order_pref_id), 
 	stat, msg, vector (_S), 0, meta, data);
@@ -823,11 +823,26 @@ create procedure b3s_xsd_link (in t varchar)
 
 create procedure b3s_o_is_out (in x any)
 {
-  declare f, s any;
+  declare f, s, og any;
   f := 'http://xmlns.com/foaf/0.1/';
   s := 'http://schema.org/';
+  og := 'http://opengraphprotocol.org/schema/';
   -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
-  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl', 'http://schema.org/potentialAction', s||'logo', s||'image'))
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl', 'http://schema.org/potentialAction', s||'logo', s||'image', s || 'mainEntityOfPage', og || 'image', 'http://www.openlinksw.com/ontology/webservices#usageExample'))
+    {
+      return 1;
+    }
+  return 0;
+}
+;
+
+create procedure b3s_o_is_img (in x any)
+{
+  declare f, s, og any;
+  f := 'http://xmlns.com/foaf/0.1/';
+  s := 'http://schema.org/';
+  og := 'http://opengraphprotocol.org/schema/';
+  if (__ro2sq (x) in (f||'img', f||'logo', f||'depiction', s||'logo', s||'image', og || 'image', 'http://ogp.me/ns#image'))
     {
       return 1;
     }
@@ -906,7 +921,7 @@ again:
 	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0" sandbox=""><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _object else subj end));
 	 }
-       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or prop = 'http://xmlns.com/foaf/0.1/depiction')
+       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or b3s_o_is_img (prop))
 	 {
 	   declare u any;
 	   if (b3s_o_is_out (prop))
@@ -931,12 +946,9 @@ again:
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
 	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _url else subj end));
-	   if (b3s_o_is_out (prop))
-	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/goout.gif" border="0"/></a>', _url));
+	   if (b3s_o_is_out (prop) and flag = 0)
+	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
 	 }
-       --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
-       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" alt="Sponge" title="Sponge" border="0"/></a>', 
-       --	       b3s_http_url (_url, sid)));
 
      }
    else if (__tag (_object) = 189)
@@ -962,6 +974,11 @@ again:
    else if (__tag (_object) = 182)
      {
        declare vlbl any;
+       if (b3s_o_is_img (prop))
+	 {
+	   __box_flags_set (_object, 1);
+	   goto again;
+	 }
        http (sprintf ('<span %s>', rdfa));
        if (strstr (_object, 'http://') is not null)
 	 {

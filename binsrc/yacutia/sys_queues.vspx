@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2015 OpenLink Software
+ -  Copyright (C) 1998-2016 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +20,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="sys_queues_page"
@@ -40,26 +39,25 @@
     </vm:menu>
     <vm:header caption="Scheduled Events"/>
     <vm:pagebody>
-	  <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control"><![CDATA[
-		if (self.ord = x)
-		  {
-		    if (self.ordseq = 'asc')
-		      self.ordseq := 'desc';
-		    else
-		      self.ordseq := 'asc';
-		  }
-		else
-		  {
-		    self.ord := x;
-		    self.ordseq := 'asc';
-		  }
-		if (ds is not null)
-		  ds.vc_data_bind (e);
-	      ]]></v:method>
+    <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control"><![CDATA[
+    if (self.ord = x)
+      {
+        if (self.ordseq = 'asc')
+          self.ordseq := 'desc';
+        else
+          self.ordseq := 'asc';
+      }
+    else
+      {
+        self.ord := x;
+        self.ordseq := 'asc';
+      }
+    if (ds is not null)
+      ds.vc_data_bind (e);
+        ]]></v:method>
       <div class="scroll_area">
       <v:data-set name="data_set1"
-	          sql="select SE_NAME, SE_START, SE_LAST_COMPLETED, SE_INTERVAL, SE_LAST_ERROR from Y_SYS_SCHEDULED_EVENT where
-	            ord = :self.ord and seq = :self.ordseq"
+                  sql="select SE_NAME, SE_START, SE_LAST_COMPLETED, SE_INTERVAL, SE_LAST_ERROR from Y_SYS_SCHEDULED_EVENT where ord = :self.ord and seq = :self.ordseq"
                   nrows="1000"
                   scrollable="1"
                   cursor-type="static"
@@ -72,51 +70,51 @@
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
           <table class="listing">
             <tr class="listing_header_row">
-	      <th>
-			      <v:button action="simple" name="name_ord1" value="Event Name" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('name', e, self.data_set1);
-				      ]]></v:on-post>
-			      </v:button>
-	      </th>
-	      <th>
-			      <v:button action="simple" name="name_ord2" value="Status" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('error', e, self.data_set1);
-				      ]]></v:on-post>
-			      </v:button>
-	      </th>
-	      <th>
-			      <v:button action="simple" name="name_ord3" value="Start" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('start', e, self.data_set1);
-				      ]]></v:on-post>
-			      </v:button>
-	      </th>
-	      <th>
-			      <v:button action="simple" name="name_ord4" value="Last time" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('last', e, self.data_set1);
-				      ]]></v:on-post>
-			      </v:button>
-	      </th>
-	      <th>
-			      <v:button action="simple" name="name_ord5" value="Next" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('next', e, self.data_set1);
-				      ]]></v:on-post>
-			      </v:button>
-	      </th>
-	      <th>
-			      <v:button action="simple" name="name_ord6" value="Interval" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('interval', e, self.data_set1);
-				      ]]></v:on-post>
-			      </v:button>
-	      </th>
-	      <th class="new_item">
-		<v:url name="cr_new_ev1" value="Create New Event" url="sys_queues_edit.vspx?mode=create"/>
-	      </th>
+              <th>
+                <v:button action="simple" name="name_ord1" value="Event Name" style="url">
+                  <v:on-post><![CDATA[
+                    self.set_ord ('name', e, self.data_set1);
+                  ]]></v:on-post>
+                </v:button>
+              </th>
+              <th>
+                <v:button action="simple" name="name_ord2" value="Status" style="url">
+                  <v:on-post><![CDATA[
+                    self.set_ord ('error', e, self.data_set1);
+                  ]]></v:on-post>
+                </v:button>
+              </th>
+              <th>
+                <v:button action="simple" name="name_ord3" value="Start" style="url">
+                  <v:on-post><![CDATA[
+                    self.set_ord ('start', e, self.data_set1);
+                  ]]></v:on-post>
+                </v:button>
+              </th>
+              <th>
+                <v:button action="simple" name="name_ord4" value="Last time" style="url">
+                  <v:on-post><![CDATA[
+                    self.set_ord ('last', e, self.data_set1);
+                  ]]></v:on-post>
+                </v:button>
+              </th>
+              <th>
+                <v:button action="simple" name="name_ord5" value="Next" style="url">
+                  <v:on-post><![CDATA[
+                    self.set_ord ('next', e, self.data_set1);
+                  ]]></v:on-post>
+                </v:button>
+              </th>
+              <th>
+                <v:button action="simple" name="name_ord6" value="Interval" style="url">
+                  <v:on-post><![CDATA[
+                    self.set_ord ('interval', e, self.data_set1);
+                  ]]></v:on-post>
+                </v:button>
+              </th>
+              <th class="new_item">
+                <v:url name="cr_new_ev1" value="Create New Event" url="sys_queues_edit.vspx?mode=create"/>
+              </th>
             </tr>
           </table>
         </v:template>
@@ -141,27 +139,27 @@
                       set-to-remove="both"
                       name="data_set1_browse_template">
             <table border="1" cellspacing="0" cellpadding="3"> <!-- dummy -->
-<?vsp
-              self.r_count := self.r_count + 1;
-              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-?>
+              <?vsp
+                self.r_count := self.r_count + 1;
+                http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+              ?>
                 <td class="listing_col"><img class="listing_icon" src="images/icons/alarm_16.png" alt="Event" title="Event"/>
                   <v:label format="%s"
                            name="data_set1_browse_label_1"
                            value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
-		<td class="listing_col">
-		  <?vsp
-		    if (control.te_rowset[4] is not null)
-		      {
-		        http (sprintf ('<a target="_blank" href="sys_queues_error.vspx?sid=%s&realm=%s&ev=%U"><img src="images/icons/stop_16.png" border="0"/></a>',
-		           self.sid, self.realm, control.te_rowset[0]));
-		      }
-		    else
-		      {
-		        http ('OK');
-		      }
-		  ?>
+                <td class="listing_col">
+                  <?vsp
+                    if (control.te_rowset[4] is not null)
+                      {
+                        http (sprintf ('<a target="_blank" href="sys_queues_error.vspx?sid=%s&realm=%s&ev=%U"><img src="images/icons/stop_16.png" border="0"/></a>',
+                           self.sid, self.realm, control.te_rowset[0]));
+                      }
+                    else
+                      {
+                        http ('OK');
+                      }
+                  ?>
                 </td>
                 <td class="listing_col">
                   <v:label format="%s"
@@ -186,39 +184,40 @@
                            value="--((yac_hum_min_to_dur ((control.vc_parent as vspx_row_template).te_rowset[3])))" />
                 </td>
                 <td class="listing_col_action">
-                        <v:button action="simple" style="image" name="url1"
-                         text="&nbsp;Edit"
-			 value="images/icons/edit_16.png"
-                         url="--concat ('sys_queues_edit.vspx?mode=edit&name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
-			 xhtml_alt="Edit"
-			 xhtml_title="Edit" />
-                        <v:button action="simple" style="image" name="url2"
-			       value="images/icons/trash_16.png"
-			       url="--concat('sys_queues_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
-			       xhtml_alt="Delete"
-			       xhtml_title="Delete"
-			       text="&nbsp;Delete"
-                               />
+                  <v:button action="simple" style="image" name="url1"
+                            text="&nbsp;Edit"
+                            value="images/icons/edit_16.png"
+                            url="--concat ('sys_queues_edit.vspx?mode=edit&name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
+                            xhtml_alt="Edit"
+                            xhtml_title="Edit"
+                  />
+                  <v:button action="simple" style="image" name="url2"
+                            value="images/icons/trash_16.png"
+                            url="--concat('sys_queues_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
+                            xhtml_alt="Delete"
+                            xhtml_title="Delete"
+                            text="&nbsp;Delete"
+                   />
                 </td>
-<?vsp
-              http('</tr>');
-?>
+              <?vsp
+                http('</tr>');
+              ?>
             </table>
           </v:template>
         </v:template>
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
-	  <table class="browse_button_row">
-	    <tr>
-	      <td colspan="7" align="center"  class="listing_col_action">
-		<vm:ds-navigation data-set="data_set1"/>
-	      </td>
-	    </tr>
+          <table class="browse_button_row">
+            <tr>
+              <td colspan="7" align="center"  class="listing_col_action">
+                <vm:ds-navigation data-set="data_set1"/>
+              </td>
+            </tr>
           </table>
         </v:template>
       </v:data-set>
     </div>
       <span class="error_summary">
-          <v:error-summary />
+        <v:error-summary />
       </span>
     </vm:pagebody>
   </vm:pagewrapper>

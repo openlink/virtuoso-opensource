@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -134,7 +134,8 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token <box> QNAME	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:_f.Rag.2"), LAST(":_f.Rag.2") ::*/
 %token <box> QNAME_NS	/*:: LITERAL("%s"), TTL, LAST("pre.fi-X.1:") ::*/
 %token <box> VARIABLE	/*:: LITERAL("%s"), TTL, LAST("?x"), LAST("?_f.Rag.2") ::*/
-%token <box> BLANK_NODE_LABEL /*:: LITERAL("%s"), TTL, LAST("_:_f.Rag.2") ::*/
+%token <box> BLANK_NODE_LABEL_NQ /*:: LITERAL("%s"), TTL, LAST("_:_f.Rag.2"), LAST("_:_f.Rag:ment.2:") ::*/
+%token <box> BLANK_NODE_LABEL_TTL /*:: LITERAL("%s"), TTL, LAST("_:_f.Rag.2"), LAST("_:_f.Rag:m%ent%20of%20TTL.2:") ::*/
 %token <box> Q_IRI_REF	/*:: LITERAL("%s"), TTL, LAST("<something>"), LAST("<http://www.example.com/sample#frag>") ::*/
 
 %token _GARBAGE_BEFORE_DOT_WS	/* Syntax error that may be (inaccurately) recovered by skipping to dot and space */
@@ -241,9 +242,19 @@ pred
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[]') can not be used as a predicate");
 		  dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
-	| BLANK_NODE_LABEL
+	| BLANK_NODE_LABEL_NQ
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '_:...' label) can not be used as a predicate");
+		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		  if (ttlp_arg->ttlp_formula_iid)
+		    ttlp_arg->ttlp_pred_uri = tf_formula_bnode_iid (ttlp_arg, $1);
+		  else
+		    ttlp_arg->ttlp_pred_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
+		}
+	| BLANK_NODE_LABEL_TTL
+		{
+		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '_:...' label) can not be used as a predicate");
+		  TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_NAMES, "Blank node label has Turtle-specific syntax");
 		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		  if (ttlp_arg->ttlp_formula_iid)
 		    ttlp_arg->ttlp_pred_uri = tf_formula_bnode_iid (ttlp_arg, $1);
@@ -367,8 +378,16 @@ ctx_opt
 
 
 blank
-	: BLANK_NODE_LABEL
+	: BLANK_NODE_LABEL_NQ
 		{
+		  if (ttlp_arg->ttlp_formula_iid)
+		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
+		  else
+		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
+		}
+	| BLANK_NODE_LABEL_TTL
+		{
+		  TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_NAMES, "Blank node label has Turtle-specific syntax; this error can be suppressed by parser flag");
 		  if (ttlp_arg->ttlp_formula_iid)
 		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
 		  else

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -647,7 +647,7 @@ int web_mode = 0;		/* Is set to 1 in the beginning of main if used
 int kubl_mode = 1;		/* Currently affects only how MAXROWS are handled. */
 int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0,
     explain_mode = 0, sparql_translate_mode = 0, vert_row_out_mode = 0,
-    csv_mode = 0, profile_mode = 0;
+    csv_mode = 0, csv_rfc4180_mode = 0, profile_mode = 0;
 int flag_newlines_at_eor = 1;	/* By default print one nl at the end of row */
 long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
@@ -694,7 +694,9 @@ TCHAR *form_action = _T("");
 TCHAR *get_list_of_datasources (int for_html, TCHAR *dest_buf, int dest_size);
 int output_html_file (TCHAR *templatename);
 void print_csv_banner ();
+void print_csv_rfc4180_banner ();
 int print_csv_row();
+int print_csv_rfc4180_row();
 
 /* Only after fully_connected has been set to non-zero (i.e. after
 full connection to data source and statement allocation)
@@ -791,7 +793,9 @@ TCHAR *oo_oe = _T("</PRE>");		/* Other text, End. */
 
 /* CSV output mode */
 TCHAR *csv_field_separator = _T(";");
+TCHAR *csv_rfc4180_field_separator = _T(",");
 TCHAR *csv_row_separator = _T("\n");
+TCHAR *csv_rfc4180_row_separator = _T("\r\n");
 
 int oo_esc = 1;			/* Normally escape <, > and & */
 
@@ -2637,9 +2641,12 @@ struct name_var_pair isql_variables[] =
   add_var_def (_T("SPARQL_TRANSLATE"), (&sparql_translate_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("VERT_ROW_OUTPUT"), (&vert_row_out_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("CSV"), (&csv_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("CSV_RFC4180"), (&csv_rfc4180_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("PROFILE"), (&profile_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("CSV_FIELD_SEPARATOR"), (&csv_field_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("CSV_RFC4180_FIELD_SEPARATOR"), (&csv_rfc4180_field_separator), CHARPTR_VAR, NULL),
   add_var_def (_T("CSV_ROW_SEPARATOR"), (&csv_row_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("CSV_RFC4180_ROW_SEPARATOR"), (&csv_rfc4180_row_separator), CHARPTR_VAR, NULL),
   add_var_def (_T("HIDDEN_CRS"), (&clear_hidden_crs_flag), INT_FLAG, PRESERVED_CLEARED),
   add_var_def (_T("BINARY_OUTPUT"), (&flag_binary_output), INT_FLAG, OFF_ON),
   add_var_def (_T("BANNER"), (&print_banner_flag), INT_FLAG, OFF_ON),
@@ -4813,6 +4820,25 @@ field_print_csv (TCHAR *str, SQLULEN w, int unused, int inx)
 }
 
 void
+field_print_csv_rfc4180 (TCHAR *str, SQLULEN w, int unused, int inx)
+{
+  TCHAR *ch;
+  isqlt_puttchar ('"');
+  for (ch = str; *ch; ++ch)
+    {
+      if (!isprint(*ch))
+        isqlt_tprintf (_T("%%%2.2hX"), (short)*ch);
+      else if (*ch == (TCHAR)('"'))
+	isqlt_tprintf (_T("\"\""));
+      else
+        isqlt_puttchar (*ch);
+    }
+  isqlt_puttchar ('"');
+  if (inx < n_out_cols - 1)  /* not the rightmost column? */
+    isqlt_fputts (csv_rfc4180_field_separator, stdout);
+}
+
+void
 field_print (TCHAR *str, SQLULEN w, int rightp, int inx)
 {
   if (in_HTML_mode ())
@@ -5050,6 +5076,61 @@ print_blob_col_csv (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
 
   if (n_col < n_out_cols)  /* not the rightmost column? */
     isqlt_fputts (csv_field_separator, stdout);
+
+  return rc;
+}
+
+int
+print_blob_col_csv_rfc4180 (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
+{
+  static TCHAR blob_buffer[BLOB_BUFFER_SIZE + 1];
+  TCHAR *ch;
+  int got_n_bytes;
+  SQLULEN total = 0;
+  int rc;
+
+  for (;;)
+    {
+      SQLLEN n_recv;
+      rc = SQLGetData (stmt, n_col,
+                       SQL_C_TCHAR,
+                       blob_buffer, BLOB_BUFFER_SIZE, &n_recv);
+      /* Here we got either SQL_NO_DATA or an error. */
+      if ((rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+          || n_recv == SQL_NULL_DATA)
+        { /* This ^ means really a blob of length 0, not real NULL ??? */
+          /* Tell calling function that everything is still all right, no panic: */
+          if (SQL_NO_DATA_FOUND == rc)
+            rc = SQL_SUCCESS;
+          break;
+        }
+
+      /* If we get SQL_NO_TOTAL, then we have to use isqlt_tcslen. This doesn't
+         work with true binary data with null bytes in the last part. */
+      got_n_bytes = (int)
+        ((rc == SQL_SUCCESS) ? ((n_recv != SQL_NO_TOTAL) ? n_recv
+                                : isqlt_tcslen (blob_buffer))
+         : BLOB_BUFFER_SIZE - 1);       /* Not the last part. */
+      total += got_n_bytes;
+
+      isqlt_puttchar ('"');
+      for (ch = blob_buffer; *ch; ++ch)
+        {
+          if (!isprint(*ch))
+            isqlt_tprintf (_T("%%%2.2hX"), (short)*ch);
+	  else if (*ch == (TCHAR)('"'))
+	    isqlt_puttchar (_T("\"\""));
+          else
+            isqlt_puttchar (*ch);
+        }
+      isqlt_puttchar ('"');
+
+      if (rc == SQL_SUCCESS)    /* No more data after this one. */
+          break;
+    }
+
+  if (n_col < n_out_cols)  /* not the rightmost column? */
+    isqlt_fputts (csv_rfc4180_field_separator, stdout);
 
   return rc;
 }
@@ -5294,6 +5375,18 @@ print_csv_banner ()
 }
 
 void
+print_csv_rfc4180_banner ()
+{
+  int inx;
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      isqlt_tprintf (_T("\"%") PCT_S _T("\"%") PCT_S,
+                   out_cols[inx].o_title ? out_cols[inx].o_title : (TCHAR *) _T(""),
+                   (inx < n_out_cols -1) ? csv_rfc4180_field_separator : csv_rfc4180_row_separator );
+    }
+}
+
+void
 print_datetime_col_csv ( TCHAR *data, SQLULEN width, SQLLEN collen, int type, int inx, int n_cols)
 {
   if (type == SQL_DATE)
@@ -5317,6 +5410,32 @@ print_datetime_col_csv ( TCHAR *data, SQLULEN width, SQLLEN collen, int type, in
     }
   if (inx < n_cols - 1)  /* not the rightmost column? */
     isqlt_fputts (csv_field_separator, stdout);
+}
+
+void
+print_datetime_col_csv_rfc4180 ( TCHAR *data, SQLULEN width, SQLLEN collen, int type, int inx, int n_cols)
+{
+  if (type == SQL_DATE)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      DATE_STRUCT *ts = (DATE_STRUCT *) data;
+      isqlt_tprintf (_T("\"%d.%d.%d\""), ts->year, ts->month, ts->day);
+    }
+  else if (type == SQL_TIME)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIME_STRUCT *ts = (TIME_STRUCT *) data;
+
+      isqlt_tprintf (_T("\"%d:%d.%d\""), ts->hour, ts->minute, ts->second);
+    }
+  else if (type == SQL_TIMESTAMP)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIMESTAMP_STRUCT *ts = (TIMESTAMP_STRUCT *) data;
+      isqlt_tprintf (_T("\"%d.%d.%d %d:%d:%d.%ld\""), ts->year, ts->month, ts->day, ts->hour, ts->minute, ts->second, (long) ts->fraction);
+    }
+  if (inx < n_cols - 1)  /* not the rightmost column? */
+    isqlt_fputts (csv_rfc4180_field_separator, stdout);
 }
 
 
@@ -5355,6 +5474,43 @@ print_csv_row()
     }
 
   isqlt_fputts (csv_row_separator, stdout);
+
+  return (rc);
+}
+
+int
+print_csv_rfc4180_row()
+{
+  int inx;
+  int rc = SQL_SUCCESS;
+
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      if (out_cols[inx].o_col_len == SQL_NULL_DATA)
+        field_print_csv_rfc4180 (_T(""), out_cols[inx].o_width, 0, inx);
+      else if ((out_cols[inx].o_type == SQL_TIMESTAMP) ||
+               (out_cols[inx].o_type == SQL_DATE) ||
+               (out_cols[inx].o_type == SQL_TIME))
+        {
+          print_datetime_col_csv_rfc4180 ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, out_cols[inx].o_col_len, out_cols[inx].o_type, inx, n_out_cols);
+        }
+      else if (out_cols[inx].o_type == SQL_LONGVARCHAR ||
+               out_cols[inx].o_type == SQL_LONGVARBINARY ||
+               out_cols[inx].o_type == SQL_WLONGVARCHAR)
+        {
+          /* Note zero-based indexing here. print_blob_col needs one+ */
+          if ((rc = print_blob_col_csv_rfc4180 (stmt, ((UWORD) (inx + 1)),
+                                    out_cols[inx].o_width, out_cols[inx].o_type))
+              != SQL_SUCCESS)
+            {
+              return (rc);
+            }
+        }
+      else
+        field_print_csv_rfc4180 ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, 0, inx);
+    }
+
+  isqlt_fputts (csv_rfc4180_row_separator, stdout);
 
   return (rc);
 }
@@ -6477,6 +6633,8 @@ next_set:
 	        print_banner ();
 	      else if (vert_row_out_mode)
                 print_banner_vert ();
+	      else if (csv_rfc4180_mode)
+		print_csv_rfc4180_banner ();
 	      else if (csv_mode)
                 print_csv_banner ();
 	      else
@@ -6493,6 +6651,8 @@ next_set:
 	        rc = print_row();
 	      else if(vert_row_out_mode)
 	        rc = print_row_vert();
+	      else if(csv_rfc4180_mode)
+	        rc = print_csv_rfc4180_row();
 	      else if(csv_mode)
 	        rc = print_csv_row();
 	      else

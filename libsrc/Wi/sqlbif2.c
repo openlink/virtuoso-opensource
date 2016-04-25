@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1759,7 +1759,7 @@ sqlbif2_init (void)
   bif_define_ex ("os_chown", bif_os_chown, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("user_has_role", bif_user_has_role, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("user_is_dba", bif_user_is_dba, BMD_RET_TYPE, &bt_integer, BMD_DONE);
-  bif_define_ex ("client_attr", bif_client_attr, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("client_attr", bif_client_attr, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("query_instance_id", bif_query_instance_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);

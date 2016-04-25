@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4184,22 +4184,34 @@ sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, S
   return qmv;
 }
 
-int
-sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn)
+void
+sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn, int *dialect_ret, int *exceptions_ret)
 {
   caddr_t service_iri = SPAR_LIT_OR_QNAME_VAL (service_expn);
-  caddr_t *lang_strs;
-  int res;
+  caddr_t *obj_strings;
   if ((DV_STRING != DV_TYPE_OF (service_iri)) && (DV_UNAME != DV_TYPE_OF (service_iri)))
-    return 0;
-  lang_strs = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), service_iri, uname_virtrdf_ns_uri_dialect);
-  if (1 != BOX_ELEMENTS_0 (lang_strs))
-    return SSG_SD_NEED_LOAD_SERVICE_DATA;
-  if (1 != sscanf (lang_strs[0], "%08x", &res))
-    return 0;
-  if (0 > res)
-    return 0;
-  return res;
+    goto ret_zero; /* see below */
+  obj_strings = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), service_iri, uname_virtrdf_ns_uri_dialect);
+  if (1 != BOX_ELEMENTS_0 (obj_strings))
+    {
+      dialect_ret[0] = SSG_SD_NEED_LOAD_SERVICE_DATA;
+      exceptions_ret[0] = 0;
+      return;
+    }
+  if (1 != sscanf (obj_strings[0], "%08x", dialect_ret))
+    goto ret_zero; /* see below */
+  if (0 > dialect_ret[0])
+    goto ret_zero; /* see below */
+  exceptions_ret[0] = 0;
+  obj_strings = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), service_iri, uname_virtrdf_ns_uri_dialect_exceptions);
+  if (1 == BOX_ELEMENTS_0 (obj_strings))
+    if (1 == sscanf (obj_strings[0], "%08x", exceptions_ret))
+      if (0 > exceptions_ret[0])
+        exceptions_ret[0] = 0;
+  return;
+ret_zero:
+  dialect_ret[0] = exceptions_ret[0] = 0;
+  return;
 }
 
 quad_storage_t *

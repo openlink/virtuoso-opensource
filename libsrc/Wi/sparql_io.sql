@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -601,10 +601,12 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
 {
   declare STAT, MSG varchar;
   declare g_iri, lang_bits_hex varchar;
-  declare guess_bits, lang_bits, get_is_ok, post_is_ok integer;
+  declare guess_bits, lang_bits, langex_bits, get_is_ok, post_is_ok integer;
+  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() will probe service description of SPARQL web service endpoint <%s> (proxy %s)', service_iri, coalesce (proxy_iri, 'is not used'));
   if (not inside_resultset)
     result_names (STAT, MSG);
   lang_bits := 0;
+  langex_bits := 0;
   g_iri := null;
   get_is_ok := null;
   post_is_ok := null;
@@ -614,7 +616,10 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
       ask from virtrdf: { `iri(?:service_iri)` virtrdf:dialect [] } ) )
     set_user_id ('dba');
   if (isstring (registry_get ('URIQADefaultHost')) and strstr (service_iri, registry_get ('URIQADefaultHost')) is not null)
-    signal ('22023', 'Can not load own service description');
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() fails due to safety restruction: service in question, <%s>, seems to belong to the server itself ("URIQADefaultHost" registry is <%s>), HTTP connection to self may hang', service_iri, registry_get ('URIQADefaultHost'));
+      signal ('22023', 'Can not load own service description');
+    }
   if (exists (sparql define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       prefix sd: <http://www.w3.org/ns/sparql-service-description#>
@@ -624,6 +629,11 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
       sparql define input:storage "" clear graph iri (?:service_iri);
       commit work;
     }
+
+
+
+goto get_and_post_checks;
+
   if (proxy_iri is not null)
   {
     sparql load iri (?:proxy_iri);
@@ -760,6 +770,20 @@ g_done:
         result ('00000', 'The service metadata does not contain enough data about language capabilities, they will be probed by sample requests');
       else
         result ('00000', sprintf ('The service metadata contains data about language capabilities: equivalent of define lang:dialect %d (hex %8x)', lang_bits, lang_bits));
+      feats := vector (
+        'NO_GRAPH'		, 0hex0001 );
+      for (sparql define input:storage ""
+        prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+        prefix sd: <http://www.w3.org/ns/sparql-service-description#>
+        select (bif:subseq (str(?le), bif:length (str(virtrdf:SSG_SD_)))) as ?feat
+        where { graph `iri (?:g_iri)` { { `iri(?:srv_iri)` sd:languageException ?le } union { `iri(?:service_iri)` sd:languageException ?le } } } ) do
+        {
+          declare bits integer;
+          bits := get_keyword ("feat", feats, 0);
+          langex_bits := bit_or (langex_bits, bits);
+        }
+      if (langex_bits <> 0)
+        result ('00000', sprintf ('The service metadata contains data about language capabilities: equivalent of define lang:exceptions %d (hex %8x)', langex_bits, langex_bits));
       for (sparql define input:storage ""
         prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
         prefix sd: <http://www.w3.org/ns/sparql-service-description#>
@@ -815,52 +839,74 @@ post_done: ;
         DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#bestRequestMethod', req_method));
     }
   else
-    signal ('22023', 'The service <' || service_iri || '> has no description and the site is not responding as a SPARQL endpoint');
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() has proven that the service <%s> has no description and the site is not responding as a SPARQL endpoint%s', service_iri, '');
+      signal ('22023', 'The service <' || service_iri || '> has no description and the site is not responding as a SPARQL endpoint');
+    }
   if (lang_bits = 0)
     {
-      declare feats any;
       declare ctr, len integer;
+      declare feats any;
       feats := vector (
-        'prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> select ?s where { quad map virtrdf:DefaultQuadMap { ?s ?p ?o } } limit 1'	, 0hex0001,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (TABLE_OPTION "ORDER") } } limit 1'		, 0hex0002,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (BREAKUP) } } limit 1'		, 0hex0004,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (PKSELFJOIN) } } limit 1'		, 0hex0008,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (RVR) } } limit 1'			, 0hex0010,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o in ( 1, 2, 3)) } } limit 1'	, 0hex0020,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o like "%qaz%") } } limit 1'	, 0hex0040,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?:oglobal } } limit 1'				, 0hex0080,
-        'select (str(?s) as ?str) where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } group by ?s limit 1'	, 0hex0100,
-        'define input:storage "" select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } limit 1'	, 0hex0200,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } . service <http://dbpedia.org/sparql> { ?s <no-such-p-qazxswedc> ?t } } limit 1'		, 0hex0400,
-        'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> OPTION (TRANSITIVE) } } limit 1'		, 0hex1000,
-        'select (strdt (group_concat (?o), datatype (max(?o)) as ?gc) where { graph <no-such-g-qazxswedc> { { ?s <no-such-p-qazxswedc> ?o } MINUS { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> } } group by ?s having ?o > 1 } limit 1'		, 0hex2000 );
-      len := length (feats);
-      for (ctr := 0; ctr < len; ctr := ctr + 2)
+--      qtype bits        qtxt
+        '-' , 0hex0001	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } limit 1'																			,
+        '+' , 0hex0001	, 'prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> select ?s where { quad map virtrdf:DefaultQuadMap { ?s ?p ?o } } limit 1'													,
+        '+' , 0hex0002	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (TABLE_OPTION "ORDER") } } limit 1'															,
+        '+' , 0hex0004	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (BREAKUP) } } limit 1'																,
+        '+' , 0hex0008	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (PKSELFJOIN) } } limit 1'																,
+        '+' , 0hex0010	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o OPTION (RVR) } } limit 1'																	,
+        '+' , 0hex0020	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o in ( 1, 2, 3)) } } limit 1'															,
+        '+' , 0hex0040	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o . filter (?o like "%qaz%") } } limit 1'															,
+        '+' , 0hex0080	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?:oglobal } } limit 1'																		,
+        '+' , 0hex0100	, 'select (str(?s) as ?str) where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } group by ?s limit 1'															,
+        '+' , 0hex0200	, 'define input:storage "" select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } } limit 1'																,
+        '+' , 0hex0400	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> ?o } . service <http://dbpedia.org/sparql> { ?s <no-such-p-qazxswedc> ?t } } limit 1'										,
+        '+' , 0hex1000	, 'select ?s where { graph <no-such-g-qazxswedc> { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> OPTION (TRANSITIVE) } } limit 1'														,
+        '+' , 0hex2000	, 'select (strdt (group_concat (?o), datatype (max(?o))) as ?gc) where { graph <no-such-g-qazxswedc> { { ?s <no-such-p-qazxswedc> ?o } MINUS { ?s <no-such-p-qazxswedc> <no-such-o-qazxswedc> } } } group by ?s having (sample(?o) > 1) limit 1'	 );
+      len := length (feats) / 3;
+      for (ctr := 0; ctr < len; ctr := ctr + 1)
         {
+          declare qtype, qtxt varchar;
+          declare bits integer;
+          qtype := feats[ctr * 3];
+          bits := feats[ctr * 3 + 1];
+          qtxt := feats[ctr * 3 + 2];
+          if (bit_and (langex_bits, 1))
+            qtxt := replace (qtxt, 'graph <no-such-g-qazxswedc>', '');
           whenever sqlstate '*' goto no_such_feat;
-          result ('00000', sprintf ('Test query %d/%d: define lang:dialect %d (hex %08x)...', ctr/2, len/2, feats[ctr+1], feats[ctr+1]));
-          DB.DBA.SPARQL_REXEC_TO_ARRAY (service_iri, feats[ctr], null, null, null, 1, null);
-          lang_bits := bit_or (lang_bits, feats[ctr+1]);
-          result ('00000', sprintf ('Test query %d/%d has found support for define lang:dialect %d (hex %08x)', ctr/2, len/2, feats[ctr+1], feats[ctr+1]));
+          result ('00000', sprintf ('Test query %d/%d: %s %d (hex %08x)...', ctr, len, case qtype when '+' then 'define lang:dialect' else 'define lang:exception' end, bits, bits));
+          DB.DBA.SPARQL_REXEC_TO_ARRAY (service_iri, qtxt, null, null, null, 1, null);
+          if (qtype = '+')
+            lang_bits := bit_or (lang_bits, bits);
+          result ('00000', sprintf ('Test query %d/%d has found %s %d (hex %08x)', ctr, len, case qtype when '+' then 'support for define lang:dialect' else 'the need for define lang:exception' end, bits, bits));
           goto probe_done;
 no_such_feat:
           if (verbose)
             result (__SQL_STATE, __SQL_MESSAGE);
+          if (qtype = '-')
+            langex_bits := bit_or (langex_bits, bits);
 probe_done:;
         }
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() has found that the service should be used with define lang:dialect 0hex%08x define lang:exceptions 0hex%08x', lang_bits, langex_bits);
       result ('00000', sprintf ('The endpoint <' || service_iri || '> has support for define lang:dialect %d (hex %08x)', lang_bits, lang_bits));
+      if (langex_bits)
+        result ('00000', sprintf ('The endpoint <' || service_iri || '> needs define lang:exceptions %d (hex %08x)', langex_bits, langex_bits));
     }
   sparql define input:storage ""
   prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-  prefix sd: <http://www.w3.org/ns/sparql-service-description#>
-  delete from virtrdf: { `iri(?:service_iri)` virtrdf:dialect ?lb } from virtrdf: { `iri(?:service_iri)` virtrdf:dialect ?lb };
+  with virtrdf: delete where { `iri(?:service_iri)` ?p ?lb . filter (?p in (virtrdf:dialect, virtrdf:dialect-exceptions)) };
   lang_bits_hex := sprintf ('%08x', lang_bits);
   sparql define input:storage ""
   prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
-  prefix sd: <http://www.w3.org/ns/sparql-service-description#>
   insert in virtrdf: { `iri(?:service_iri)` virtrdf:dialect ?:lang_bits_hex };
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect'));
   DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect', lang_bits_hex));
+  lang_bits_hex := sprintf ('%08x', langex_bits);
+  sparql define input:storage ""
+  prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+  insert in virtrdf: { `iri(?:service_iri)` virtrdf:dialect-exceptions ?:lang_bits_hex };
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triples_del (?,?,null)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect-exceptions'));
+  DB.DBA.SECURITY_CL_EXEC_AND_LOG ('jso_triple_add (?,?,?)', vector (service_iri, UNAME'http://www.openlinksw.com/schemas/virtrdf#dialect-exceptions', lang_bits_hex));
 }
 ;
 
@@ -868,7 +914,7 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
 {
   declare RSET, retarray any;
   result_names (RSET);
-  -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_var_list, ')');
+  -- dbg_obj_princ ('DB.DBA.SPARQL_SINV_IMP (', ws_endpoint, ws_params, qtext_template, qtext_posmap, param_row, expected_vars, ')');
   if (N'' <> qtext_posmap)
     {
       declare qtext_ses any;
@@ -1082,6 +1128,13 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 		    _name), ses);
 	    }
 	  sql_val := __rdf_sqlval_of_obj (_val, 1);
+ 	  if (isinteger (sql_val) and dt = 'http://www.w3.org/2001/XMLSchema#boolean')
+ 	    {
+ 	       if (sql_val = 0)
+                 sql_val := 'false';
+                else
+                 sql_val := 'true';
+ 	    }
 	  if (__tag of rdf_box = __tag (_val) and __tag of datetime = rdf_box_data_tag (_val))
 	    {
 	      __rdf_long_to_ttl (_val, ses);
@@ -1420,11 +1473,15 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
             }
           else if (__tag of varchar = __tag (val))
             {
+              http ('<pre>', ses);
               http_escape (val, esc_mode, ses, 1, 1);
+              http ('</pre>', ses);
             }
 	  else if (185 = __tag (val)) -- string output
 	    {
+              http ('<pre>', ses);
               http_escape (cast (val as varchar), esc_mode, ses, 1, 1);
+              http ('</pre>', ses);
 	    }
 	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
 	    {
@@ -1439,10 +1496,16 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
                 --http_value (val, 0, ses);
             }
           else if (pure_html and __tag of rdf_box = __tag (val))
-            http_rdf_object (val, ses, 1);
+            {
+              http ('<pre>', ses);
+              http_rdf_object (val, ses, 1);
+              http ('</pre>', ses);
+            }
           else
             {
+              http ('<pre>', ses);
               http_escape (__rdf_strsqlval (val), esc_mode, ses, 1, 1);
+              http ('</pre>', ses);
             }
           http ('</td>', ses);
 end_of_val_print: ;
@@ -1680,7 +1743,7 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
   --dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
   http ('<table class="sparql" border="1">', ses);
   http ('\n  <tr>', ses);
-  http('\n    <th>Row #</th>', ses);
+  --http('\n    <th>Row #</th>', ses);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       http('\n    <th>', ses);
@@ -1696,9 +1759,7 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
         {
       http('\n  <tr>', ses);
-      http('\n    <td>', ses);
-      http(cast((resctr + 1) as varchar), ses);
-      http('</td>', ses);
+      --http('\n    <td>', ses); http(cast((resctr + 1) as varchar), ses); http('</td>', ses);
       for (varctr := 0; varctr < varcount; varctr := varctr + 1)
         {
           declare val, split any;
@@ -1728,11 +1789,15 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
             }
           else if (__tag of varchar = __tag (val))
             {
+              http ('<pre>', ses);
               http_escape (val, 1, ses, 1, 1);
+              http ('</pre>', ses);
             }
 	  else if (185 = __tag (val)) -- string output
 	    {
+              http ('<pre>', ses);
               http_escape (cast (val as varchar), 1, ses, 1, 1);
+              http ('</pre>', ses);
 	    }
 	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
 	    {
@@ -1742,10 +1807,16 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
               http_escape (cast (tmpses as varchar), 1, ses, 1, 1);
             }
           else if (__tag of rdf_box = __tag (val))
-            http_rdf_object (val, ses, 1);
+            {
+              http ('<pre>', ses);
+              http_rdf_object (val, ses, 1);
+              http ('</pre>', ses);
+            }
           else
             {
+              http ('<pre>', ses);
               http_escape (__rdf_strsqlval (val), 1, ses, 1, 1);
+              http ('</pre>', ses);
             }
           http ('</td>', ses);
           goto end_of_val_print; -- see below
@@ -1794,7 +1865,53 @@ end_of_val_print: ;
 }
 ;
 
-create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in add_http_headers integer, in status any := null) returns varchar
+--!AWK PUBLIC
+create function DB.DBA.SPARQL_LOG_DEBUG_INFO (inout log_array any, in line_begin varchar, in line_end varchar, inout ses any)
+{
+  -- dbg_obj_princ ('DB.DBA.SPARQL_LOG_DEBUG_INFO (', log_array, line_begin, line_end, ',...)');
+  declare ctr, len integer;
+  len := length (log_array);
+  ctr := 0;
+  while (ctr < len)
+    {
+      declare line varchar;
+        {
+          whenever sqlstate '*' goto sprintf_err;
+          line := sprintf (log_array[ctr][0], log_array[ctr][1], log_array[ctr][2]);
+        }
+      goto line_is_ready;
+sprintf_err:
+      line := sprintf ('(internal error in logging SPARQL diagnostics, failed message is "%s")', log_array[ctr][0]);
+line_is_ready:
+      if (strstr (line, '\n') is not null)
+        line := replace (line, '\n', '[[LF]]');
+      if (strstr (line, '\r') is not null)
+        line := replace (line, '\r', '[[CR]]');
+      -- dbg_obj_princ ('Line ', ctr, '/', len, ': ', line);
+      http (line_begin, ses);
+      http (line, ses);
+      http (line_end, ses);
+find_next_line:
+      if ((ctr >= 4) and (log_array[ctr][0] = log_array[ctr-1][0]) and (log_array[ctr][0] = log_array[ctr-2][0]) and (log_array[ctr][0] = log_array[ctr-3][0]) and (log_array[ctr][0] = log_array[ctr-4][0])
+        and ((ctr+2) < len) and (log_array[ctr][0] = log_array[ctr+1][0]) and (log_array[ctr][0] = log_array[ctr+2][0]) )
+        {
+          declare next_ctr integer;
+          next_ctr := ctr + 3;
+          while ((next_ctr < len) and (log_array[next_ctr][0] = log_array[ctr][0]))
+            next_ctr := next_ctr + 1;
+          http (line_begin, ses);
+          http (sprintf ('(%d similar messages are skipped)', next_ctr - (ctr+1)), ses);
+          http (line_end, ses);
+          ctr := next_ctr;
+        }
+      else
+        ctr := ctr + 1;
+    }
+}
+;
+
+--! \c flags is bitmask: 1 to add HTTP headers, 2 to dump the log of debug info composed by RDF_LOG_DEBUG_INFO in current connection, there may be more in the future
+create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in flags integer, in status any := null) returns varchar
 {
   declare singlefield varchar;
   declare ret_mime, ret_format varchar;
@@ -1809,7 +1926,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     singlefield := metas[0][0][0];
   else
     singlefield := NULL;
-  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' add_http_headers=', add_http_headers);
+  -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
   if ('__ask_retval' = singlefield)
     {
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
@@ -1902,9 +2019,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else if (ret_format = 'JSON;ODATA')
         DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
       else if (ret_format = 'CXML')
-        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 0, status);
+        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 0, status);
       else if (ret_format = 'CXML;QRCODE')
-        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, add_http_headers, 1, status);
+        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 1, status);
       else if (ret_format = 'CSV')
         DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
       else if (ret_format = 'TSV')
@@ -1941,6 +2058,16 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 	  http ('</rdf:RDF>', ses);
 	  http ('</query-result></soapenv:Body></soapenv:Envelope>', ses);
 	}
+      else if (ret_format = 'HTML;SCRIPT_TTL')
+        {
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (triples, ses);
+          ret_mime := 'text/html';
+        }
+      else if (ret_format = 'HTML;SCRIPT_LD_JSON')
+        {
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (triples, ses);
+          ret_mime := 'text/html';
+        }
       else
         {
           ret_mime := 'application/rdf+xml';
@@ -2051,7 +2178,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if ((ret_format = 'CXML') or (ret_format = 'CXML;QRCODE'))
     {
-      DB.DBA.SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, add_http_headers, status);
+      DB.DBA.SPARQL_RESULTS_CXML_WRITE(ses, metas, rset, accept, bit_and (flags, 1), status);
       goto body_complete;
     }
   if (ret_format = 'CSV')
@@ -2079,7 +2206,35 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   http ('\n</sparql>', ses);
 
 body_complete:
-  if (add_http_headers and strcasestr (http_header_get (), 'Content-Type:') is null)
+  if (bit_and (flags, 2))
+    {
+      declare line_begin, line_end varchar;
+      declare log_array any;
+      log_array := 0;
+      if (connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO', 0))
+        connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', log_array, -1);
+      if (__tag(log_array) <> __tag of vector)
+        log_array := vector (vector ('The debug log has no messages. The most probable reason is that the query has no sponging or similar activity.', '', ''));
+      else
+        vectorbld_final (log_array);
+      if (ret_format in ('HTML', 'HTML;TR'))
+        {
+          line_begin := '<xmp>'; line_end := '</xmp>';
+        }
+      else if (ret_format in ('SOAP', 'RDFXML', 'CXML', 'CXML;QRCODE'))
+        {
+          line_begin := '<!-' || '- '; line_end := '-' || '->';
+        }
+      else if (ret_format in ('TTL', 'NICE_TTL', 'NT'))
+        {
+          line_begin := '# '; line_end := '';
+        }
+      else
+        line_begin := null;
+      if (line_begin is not null)
+        DB.DBA.SPARQL_LOG_DEBUG_INFO (log_array, line_begin, line_end, ses);
+    }
+  if (bit_and (flags, 1) and strcasestr (http_header_get (), 'Content-Type:') is null)
     http_header (coalesce (http_header_get (), '') || 'Content-Type: ' || ret_mime || case when strstr (ret_mime, 'json') is null then '; charset=UTF-8' else '' end || '\r\n');
   return ret_mime;
 }
@@ -2490,20 +2645,27 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('\n');
     http('    <script type="text/javascript">\n');
     http('    /*<![CDATA[*/\n');
-    http('	var last_format = 0;\n');
-    http('	function format_select(query_obg)\n');
+    http('	var timer;\n');
+    http('	function format_select(query_obg){\n');
+    http('	    clearTimeout(timer);\n');
+    http('	    timer = setTimeout (function delay_format_select() {do_format_select(query_obg);}, 1000);\n');
+    http('	}\n\n');
+    http('	var curr_format = 0;\n');
+    http('	function do_format_select(query_obg)\n');
     http('	{\n');
     http('		var query = query_obg.value; \n');
     http('		var format = query_obg.form.format;\n');
+    http('		var prev_value = format.options[format.selectedIndex].value;\n');
+    http('		var prev_format = curr_format;\n');
     http('		var ctr = 0;\n');
     http('		var query_is_construct = (query.match(/\\bconstruct\\b\\s/i) || query.match(/\\bdescribe\\b\\s/i));\n');
     http('\n');
-    http('		if (query_is_construct && last_format != 2) {\n');
-    http('			for(ctr = format.options.length; ctr > 0; ctr--)\n');
-    http('				format.options[ctr] = null;\n');
-    http('			ctr = 1;\n');
+    http('		if (query_is_construct && curr_format != 2) {\n');
+    http('			for(ctr = format.options.length - 1; ctr >= 0; ctr--)\n');
+    http('				format.remove(ctr);\n');
+    http('			ctr = 0;\n');
     http('			format.options[ctr++] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'Turtle (beautified)\',\'application/x-nice-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
     http('			format.options[ctr++] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
     http('			format.options[ctr++] = new Option(\'N-Triples\',\'text/plain\');\n');
@@ -2513,9 +2675,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[ctr++] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
-    http('			format.options[ctr++] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Microdata (basic)\',\'text/html\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Microdata (table)\',\'application/x-nice-microdata\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+JSON-LD (basic)\',\'text/x-html-script-ld+json\');\n');
+    http('			format.options[ctr++] = new Option(\'HTML+Turtle (basic)\',\'text/x-html-script-turtle\');\n');
+    http('			format.options[ctr++] = new Option(\'Turtle (beautified - browsing oriented)\',\'text/x-html-nice-turtle\');\n');
     http('			format.options[ctr++] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
     http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
     http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
@@ -2527,14 +2691,14 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 	if (can_qrcode)
 	  http('		format.options[ctr++] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
-    http('			format.selectedIndex = 1;\n');
-    http('			last_format = 2;\n');
+    http('			curr_format = 2;\n');
     http('		}\n');
     http('\n');
-    http('		if (!query_is_construct && last_format != 1) {\n');
-    http('			for(ctr = format.options.length; ctr > 0; ctr--)\n');
-    http('				format.options[ctr] = null;\n');
-    http('			ctr = 1;\n');
+    http('		if (!query_is_construct && curr_format != 1) {\n');
+    http('			for(ctr = format.options.length - 1; ctr >= 0; ctr--)\n');
+    http('				format.remove(ctr);\n');
+    http('			ctr = 0;\n');
+    http('			format.options[ctr++] = new Option(\'Auto\',\'auto\');\n');
     http('			format.options[ctr++] = new Option(\'HTML\',\'text/html\');\n');
     if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
       http('			format.options[ctr++] = new Option(\'HTML (Faceted Browsing Links)\',\'text/x-html+tr\');\n');
@@ -2550,10 +2714,16 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
     http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
     if (can_cxml)
+      {
       http('			format.options[ctr++] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
-    http('			format.selectedIndex = 1;\n');
-    http('			last_format = 1;\n');
+	if (can_qrcode)
+	  http('		format.options[ctr++] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+      }
+    http('			curr_format = 1;\n');
     http('		}\n');
+    http('		if (prev_format != curr_format)\n');
+    http('			for(ctr = format.options.length - 1, format.selectedIndex=0; ctr >= 0; ctr--)\n');
+    http('				if (format.options[ctr].value == prev_value) format.selectedIndex = ctr;\n');
     http('	}\n');
     http('
 	function format_change(e)
@@ -2583,8 +2753,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 	}
 	function sparql_endpoint_init()
 	{
-		var cxml = document.getElementById("cxml");
-		if (cxml) cxml.style.display="none";
+		var format = document.getElementById("format");
+ 		if (format) format_change(format);
 		var savefs = document.getElementById("savefs");
 		if (savefs) savefs.style.display="none";
 	}
@@ -2643,7 +2813,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
     {
       opts := vector (
         vector ('Turtle'						, 'text/turtle'				),
-        vector ('Pretty-printed Turtle (slow!)'				, 'application/x-nice-turtle'		),
+        vector ('Turtle (beautified)'					, 'application/x-nice-turtle'		),
         vector ('RDF/JSON'						, 'application/rdf+json'		),
         vector ('RDF/XML'						, 'application/rdf+xml'			),
         vector ('N-Triples'						, 'text/plain'				),
@@ -2653,21 +2823,15 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('JSON-LD'						, 'application/x-json+ld'		),
         vector ('HTML (list)'						, 'text/x-html+ul'			),
         vector ('HTML (table)'						, 'text/x-html+tr'			),
-        vector ('HTML+Microdata (inconvenient)'				, 'text/html'				),
-        vector ('HTML+Microdata (pretty-printed table)'			, 'application/x-nice-microdata'		),
-        vector ('Turtle-style HTML (for browsing, not for export)'	, 'text/x-html-nice-turtle'		),
+        vector ('HTML+Microdata (basic)'				, 'text/html'				),
+        vector ('HTML+Microdata (table)'				, 'application/x-nice-microdata'		),
+        vector ('HTML+JSON-LD (basic)'					, 'text/x-html-script-ld+json'		),
+        vector ('HTML+Turtle (basic)'					, 'text/x-html-script-turtle'		),
+        vector ('Turtle (beautified - browsing oriented)'		, 'text/x-html-nice-turtle'		),
         vector ('Microdata/JSON'					, 'application/microdata+json'		),
         vector ('CSV'							, 'text/csv'				),
         vector ('TSV'							, 'text/tab-separated-values'		),
         vector ('TriG'							, 'application/x-trig'			) );
-      if (can_cxml)
-        {
-          opts := vector_concat (opts, vector (
-            vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
-          if (can_qrcode)
-            opts := vector_concat (opts, vector (
-              vector ('CXML (Pivot Collection with QRcodes)'		, 'text/cxml+qrcode'			) ) );
-        }
     }
   else
     {
@@ -2690,10 +2854,17 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('N-Triples'						, 'text/plain'				),
         vector ('CSV'							, 'text/csv'				),
         vector ('TSV'							, 'text/tab-separated-values'		) );
-        if (can_cxml)
-          opts := vector_concat (opts, vector (
-        vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
     }
+
+  if (can_cxml)
+    {
+      opts := vector_concat (opts, vector (
+        vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
+      if (can_qrcode)
+	opts := vector_concat (opts, vector (
+	  vector ('CXML (Pivot Collection with QRcodes)'		, 'text/cxml+qrcode'			) ) );
+    }
+
   foreach (any x in opts) do
     {
       http(sprintf ('			<option value="%V" %s>%V</option>\n',
@@ -2858,6 +3029,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     in def_qry varchar,
     in timeout integer,
     in debug integer,
+    in log_debug_info integer,
     in save_mode integer,
     in dav_refresh varchar)
 {
@@ -2926,7 +3098,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<br /><br />\n');
 
     http('		<label for="query">Query Text</label><br />\n');
-    http('		<textarea rows="18" cols="80" name="query" id="query" onchange="format_select(this)" onkeyup="format_select(this)">'|| def_qry ||'</textarea>\n');
+    http('		<textarea rows="18" cols="80" name="query" id="query" onchange="javascript:format_select(this)" onkeyup="javascript:format_select(this)">'|| def_qry ||'</textarea>\n');
 
     http('		<br /><br />\n');
     if (can_sponge)
@@ -2943,7 +3115,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
     http('		<br />\n');
     http('		<label for="format" class="n">Results Format</label>\n');
-    http('		<select name="format" id="format" onchange="format_change(this)">\n');
+    http('		<select name="format" id="format" onchange="javascript:format_change(this)">\n');
     WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (can_cxml, can_qrcode, params, def_qry);
     http('		</select>\n');
     if (sys_stat('st_has_vdb'))
@@ -2979,6 +3151,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<fieldset id="options">\n');
     http('		<input name="debug" id="debug" type="checkbox"' || case (debug) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="debug" class="ckb">Strict checking of void variables</label>\n');
+    http('		&nbsp;&nbsp;&nbsp;\n');
+    http('		<input name="log_debug_info" id="log_debug_info" type="checkbox"' || case (log_debug_info) when '' then '' else ' checked="checked"' end || '/>\n');
+    http('		<label for="log_debug_info" class="ckb">Log debug info at the end of output (has no effect on some queries and output formats)</label>\n');
 
 
     if (save_dir is not null)
@@ -3034,7 +3209,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
 create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout lines any)
 {
-  declare query, full_query, format, should_sponge, debug, def_qry varchar;
+  declare query, full_query, format, should_sponge, debug, log_debug_info, def_qry varchar;
   declare dflt_graphs, named_graphs, using_graphs, using_named_graphs any;
   declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time integer;
   declare ses, content any;
@@ -3080,6 +3255,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'TRACE');
   ses := 0;
   debug := '';
+  log_debug_info := '';
   query := null;
   format := '';
   should_sponge := '';
@@ -3239,7 +3415,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	    }
 	}
       debug := get_keyword ('debug', params, '1');
-      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, save_mode, dav_refresh);
+      log_debug_info := get_keyword ('log_debug_info', params, '');
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh);
 
       return;
     }
@@ -3388,6 +3565,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       else if ('debug' = pname)
         {
           debug := pvalue;
+        }
+      else if ('log_debug_info' = pname)
+        {
+          log_debug_info := pvalue;
         }
     }
   if (format <> '')
@@ -3635,6 +3816,7 @@ host_found:
     {
       set TRANSACTION_TIMEOUT=hard_timeout;
     }
+  connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);    
   set_user_id (user_id, 1);
   again:
   state := '00000';
@@ -3751,7 +3933,9 @@ write_results:
         }
       if (isstring (jsonp_callback))
         http (jsonp_callback || '(\n', ses);
-      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, add_http_headers, status);
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept,
+        case when add_http_headers then 1 else 0 end + case log_debug_info when '' then 0 else 2 end,
+        status);
       if (isstring (jsonp_callback))
         http (')', ses);
       if (save_mode is not null)
@@ -3771,42 +3955,41 @@ write_results:
           ttl_sec := 172800;
           full_uri := concat ('http://', registry_get ('URIQADefaultHost'), DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
           "DynaRes_INSERT_RESOURCE" (
-	      detcol_id => save_dir_id,
-	      fname => fname,
-	      owner_uid => sparql_uid,
-	      refresh_seconds => refresh_sec,
-	      ttl_seconds => ttl_sec,
-	      mime => accept,
-	      exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
-	      exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
-	      exec_uname => user_id,
-	      content => ses
-	  );
-
-	  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
-	  http ('<head>\n');
-	  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | Save to DAV');
-	  WS.WS.SPARQL_ENDPOINT_STYLE();
-	  http ('</head>\n');
-	  http ('<body>\n');
-	  http ('    <div id="header">\n');
-	  http ('	<h1 id="title">Virtuoso SPARQL Query Editor</h1>\n');
-	  http ('    </div>\n\n');
-	  http ('<h3>Saved to DAV</h3>');
-	  http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
-	  http_value (full_uri);
-	  http ('">');
-	  http_value (full_uri);
-	  http ('</a></p>');
-	  if (refresh_sec is not null)
-	  http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
-	  if (ttl_sec is not null)
-	  http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
-	  if (accept <> 'text/html')
-	  http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
-	  If the browser is unable to open the link itself it can prompt for action like launching an additional program.
-	  The program may let you edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
-	  http ('</body></html>');
+              detcol_id => save_dir_id,
+              fname => fname,
+              owner_uid => sparql_uid,
+              refresh_seconds => refresh_sec,
+              ttl_seconds => ttl_sec,
+              mime => accept,
+              exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
+              exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
+              exec_uname => user_id,
+              content => ses
+          );
+          WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
+          http ('<head>\n');
+          WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | Save to DAV');
+          WS.WS.SPARQL_ENDPOINT_STYLE();
+          http ('</head>\n');
+          http ('<body>\n');
+          http ('    <div id="header">\n');
+          http ('	<h1 id="title">Virtuoso SPARQL Query Editor</h1>\n');
+          http ('    </div>\n\n');
+          http ('<h3>Saved to DAV</h3>');
+          http ('<p>The SPARQL result is successfully saved in DAV storage as <a href="');
+          http_value (full_uri);
+          http ('">');
+          http_value (full_uri);
+          http ('</a></p>');
+          if (refresh_sec is not null)
+          http (sprintf ('<p>The content of the linked resource will be re-calculated on demand, and the result will be cached for %d minutes.</p>', refresh_sec/60));
+          if (ttl_sec is not null)
+          http (sprintf ('<p>The link will stay valid for %d days. To preserve the referenced document for future use, copy it to some other location before expiration.</p>', ttl_sec/(60*60*24)));
+          if (accept <> 'text/html')
+          http (sprintf ('<p>The resource MIME type is "%s". This type will be reported to the browser when you click on the link.
+          If the browser is unable to open the link itself it can prompt for action like launching an additional program.
+          The program may let you edit the loaded resource, in this case save the changed version should be saved to a different place, so use "Save As" command, not plain "Save".</p>', accept));
+          http ('</body></html>');
         }
     }
   else
@@ -4434,6 +4617,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'text/cxml+qrcode') is not null or
       strcasestr (accept, 'text/csv') is not null or
       strcasestr (accept, 'application/x-nice-turtle') is not null or
+      strcasestr (accept, 'text/x-html-script-ld+json') is not null or
+      strcasestr (accept, 'text/x-html-script-turtle') is not null or
       strcasestr (accept, 'text/x-html-nice-turtle') is not null
      )
     {
@@ -4537,9 +4722,9 @@ create procedure DB.DBA.SPARQL_SD_COMPOSE (inout sd any, in host varchar, in com
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:supportedLanguage', '!sd:SPARQL11Update');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_QUAD_MAP');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_OPTION');
-  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_BREAKUP');
-  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_PKSELFJOIN');
-  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_RVR');
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_BREAKUP');
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_PKSELFJOIN');
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_RVR');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_IN');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_LIKE');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_GLOBALS');
@@ -4548,6 +4733,8 @@ create procedure DB.DBA.SPARQL_SD_COMPOSE (inout sd any, in host varchar, in com
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_SERVICE');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_TRANSIT');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageExtension', '!virtrdf:SSG_SD_SPARQL11_DRAFT');
+-- If some future standard features will not be supproted, there will be something like this:
+--  DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:languageException', '!virtrdf:SSG_SD_NO_SPARQL99_FOO');
   DB.DBA.SPARQL_SD_TRIPLE (sd, service_iri, '!sd:propertyFeature', '!bif:contains');
   if (complete)
     { -- List of extension functions and aggregates --- TBD!

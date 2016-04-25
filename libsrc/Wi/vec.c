@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2470,6 +2470,8 @@ void
 dc_pop_last (data_col_t * dc)
 {
   dc->dc_n_values--;
+  if (dc->dc_nulls)
+    DC_CLR_NULL (dc, dc->dc_n_values);
   if (DCT_NUM_INLINE & dc->dc_type)
     return;
   if (DCT_BOXES & dc->dc_type && !(DCT_REF & dc->dc_type))

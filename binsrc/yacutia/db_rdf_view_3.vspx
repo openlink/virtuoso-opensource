@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2015 OpenLink Software
+ -  Copyright (C) 1998-2016 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -118,7 +118,7 @@
 		 stat := '00000';
 		 msg := 'OK';
 		 sparql clear graph iri (?:gr);
-		 exec ('DB.DBA.TTLP (?, \'\', ?, 255)', stat, msg, vector (self.body_o, gr), 0, meta, data);
+		 exec ('DB.DBA.TTLP (?, \'\', ?, 255, 1, 1)', stat, msg, vector (self.body_o, gr), 0, meta, data);
 		 res [length(arr)] := vector (vector (stat, msg));
 		 exec (sprintf ('sparql
 		 prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -127,6 +127,7 @@
 	         from <%S> { ?s rdfs:subPropertyOf virtrdf:label }', gr), stat, msg, vector (), 0, meta, data);
 	         rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
 	       }
+	     exec ('checkpoint');  
 	     self.text_e := 1;
 	     self.exec_ret := res;
 	     self.back.vc_enabled := 1;

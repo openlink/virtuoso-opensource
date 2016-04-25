@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -236,7 +236,10 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
               else if (__tag of XML = __tag (parsed))
                 {
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
-		  rdf_box_set_type (parsed, 257);
+		  tid := rdf_cache_id ('t', o_type);
+		  if (tid = 0)
+		    tid := rdf_rl_type_id (o_type);
+		  rdf_box_set_type (parsed, tid);
 		}
               -- if (not bit_and (is_text, 1))
               --   {

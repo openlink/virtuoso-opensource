@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -307,6 +307,7 @@ EXE_EXPORT (void, geo_print_as_dxf_entity, (geo_t *g, caddr_t *attrs, dk_session
 
 extern int geo_calc_length_of_serialization (geo_t *g, int is_topmost);
 extern int geo_serial_length (geo_t *g);
+extern int geo_looks_fine (geo_t * geo);
 
 /* EWKT Reader */
 

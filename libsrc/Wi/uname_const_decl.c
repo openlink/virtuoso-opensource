@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -115,6 +115,7 @@ caddr_t uname_virtrdf_ns_uri_bnode_base;
 caddr_t uname_virtrdf_ns_uri_bnode_label;
 caddr_t uname_virtrdf_ns_uri_bnode_row;
 caddr_t uname_virtrdf_ns_uri_dialect;
+caddr_t uname_virtrdf_ns_uri_dialect_exceptions;
 caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
@@ -311,6 +312,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_bnode_label		, VIRTRDF_NS_URI "bnode-label"	},
   { &uname_virtrdf_ns_uri_bnode_row		, VIRTRDF_NS_URI "bnode-row"	},
   { &uname_virtrdf_ns_uri_dialect		, VIRTRDF_NS_URI "dialect"	},
+  { &uname_virtrdf_ns_uri_dialect_exceptions		, VIRTRDF_NS_URI "dialect-exceptions"		},
   { &uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	},
   { &uname_virtrdf_ns_uri_isSubclassOf		, VIRTRDF_NS_URI "isSubclassOf"	},
   { &uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	},

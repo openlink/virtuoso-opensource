@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -403,6 +403,18 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_RESULT_SET_AS_HTML_NICE_TTL"; return;
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL"; return;
       case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_HTML_NICE_TTL"; return;
+      default: return;
+      }
+  if (!strcmp (name, "HTML;SCRIPT_LD_JSON"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_LD_JSON"; return;
+      default: return;
+      }
+  if (!strcmp (name, "HTML;SCRIPT_TTL"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_TTL"; return;
       default: return;
       }
   if (!strcmp (name, "JSON;MICRODATA"))
@@ -5621,8 +5633,13 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         ssg->ssg_indent++;
         if (tree->_.funcall.agg_mode)
           {
+            SPART *arg0 = BOX_ELEMENTS_0 (tree->_.funcall.argtrees) ? tree->_.funcall.argtrees[0] : NULL;
             if (DISTINCT_L == tree->_.funcall.agg_mode)
-              ssg_puts (" DISTINCT");
+              {
+                ssg_puts (" DISTINCT");
+                if ((SPAR_FUNCALL == SPART_TYPE (arg0)) && !strcmp (arg0->_.funcall.qname, "SQLVAL::_STAR") && !strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT"))
+                  arg0->_.funcall.qname = t_box_dv_uname_string ("bif:box_hash");
+              }
             if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
               {
                 ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
@@ -8094,23 +8111,29 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
             ssg_print_sparul_run_call (ssg, gp, tree, 1);
             goto print_asname;
           }
+        ssg_putchar (' ');
         bigtext =
           ((NULL != strstr (tree->_.funcall.qname, "bif:")) ||
            (NULL != strstr (tree->_.funcall.qname, "sql:")) ||
            (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
+        ssg->ssg_indent++;
         if (tree->_.funcall.agg_mode)
           {
+            SPART *arg0 = BOX_ELEMENTS_0 (tree->_.funcall.argtrees) ? tree->_.funcall.argtrees[0] : NULL;
             if (DISTINCT_L == tree->_.funcall.agg_mode)
-              ssg_puts (" DISTINCT");
+              {
+                ssg_puts (" DISTINCT");
+                if ((SPAR_FUNCALL == SPART_TYPE (arg0)) && !strcmp (arg0->_.funcall.qname, "SQLVAL::_STAR") && !strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT"))
+                  arg0->_.funcall.qname = t_box_dv_uname_string ("bif:box_hash");
+              }
             if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
               {
                 ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
                 goto args_are_printed; /* see below */
               }
           }
-        ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
             SPART *arg = tree->_.funcall.argtrees[arg_ctr];
@@ -9080,7 +9103,7 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
 }
 
 void
-ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, caddr_t *qtext_template_ret, caddr_t *qtext_posmap_ret)
+ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, caddr_t *qtext_template_ret, caddr_t *qtext_posmap_ret, caddr_t **final_rset_varnames_ret)
 {
   wchar_t *qtext_posmap;
   int posmap_itm_ctr;
@@ -9100,6 +9123,7 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
   ssg->ssg_param_pos_set = NULL;
   ssg->ssg_out = strses_allocate();
   ssg->ssg_sd_flags = unbox (sinv->_.sinv.syntax);
+  ssg->ssg_sd_no = unbox (sinv->_.sinv.syntax_exceptions);
   /* Query text composing starts here */
   define_count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
   for (define_ctr = 0; define_ctr < define_count; define_ctr += 2)
@@ -9108,6 +9132,8 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
       SPART ***vals = (SPART ***)(sinv->_.sinv.defines[define_ctr+1]);
       int valctr;
       if (!strcmp (name, "lang:dialect"))
+        continue;
+      if (!strcmp (name, "lang:exceptions"))
         continue;
       ssg_puts (" DEFINE ");
       ssg_puts (name);
@@ -9159,6 +9185,7 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
         }
       if ((NULL != limit_expn) && (DV_LONG_INT == DV_TYPE_OF (limit_expn)) && (0 == sparp_req_top_has_limofs (single_subq)))
         single_subq->_.req_top.limit = limit_expn;
+      final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
       ssg_sdprint_tree (ssg, single_subq);
       goto query_text_is_composed; /* see below */
 failed_single_subq_optimization: ;
@@ -9179,7 +9206,10 @@ failed_single_subq_optimization: ;
         {
           ssg_puts (" ?"); ssg_puts (stub_varname);
         }
+      final_rset_varnames_ret[0] = t_list (1, stub_varname);
     }
+  else
+    final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
 /*!!!TBD FROM clauses */
   gp->_.gp.subtype = WHERE_L;
   ssg_sdprint_tree (ssg, gp);
@@ -9336,6 +9366,15 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
       int ctr, len;
       caddr_t qtext_template = NULL;
       caddr_t qtext_posmap = NULL;
+      caddr_t *final_rset_varnames = NULL;
+      sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
+      ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap, &final_rset_varnames);
+      ssg_print_where_or_and (ssg, "sinv");
+      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_template = ");
+      ssg_print_box_as_sql_atom (ssg, qtext_template, SQL_ATOM_UTF8_ONLY);
+      ssg_print_where_or_and (ssg, "sinv");
+      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_posmap = ");
+      ssg_print_box_as_sql_atom (ssg, qtext_posmap, SQL_ATOM_NARROW_OR_WIDE);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".ws_endpoint = ");
       ssg_print_scalar_expn (ssg, sinv->_.sinv.endpoint, SSG_VALMODE_SQLVAL, NULL_ASNAME);
@@ -9351,9 +9390,12 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           ssg_print_scalar_expn (ssg, sinv->_.sinv.iri_params[ctr+1], SSG_VALMODE_LONG, NULL_ASNAME);
         }
       ssg_putchar (')');
+/* The order of printing parameters here is important because ssg_prepare_sinv_template() has a side effect:
+if sinv->_.sinv.rset_varnames is empty then it uses ?stubvarXX in the printed result set in irder to provide compatibility with obsolete SPARQL endpoints.
+So the function provides \c final_rset_varnames that should be used instead of sinv->_.sinv.rset_varnames for expected_vars procedure call param */
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".expected_vars = vector (");
-      DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.rset_varnames)
+      DO_BOX_FAST (caddr_t, varname, ctr, final_rset_varnames)
         {
           if (ctr)
             ssg_putchar (',');
@@ -9361,14 +9403,6 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
         }
       END_DO_BOX_FAST;
       ssg_putchar (')');
-      sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
-      ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap);
-      ssg_print_where_or_and (ssg, "sinv");
-      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_template = ");
-      ssg_print_box_as_sql_atom (ssg, qtext_template, SQL_ATOM_UTF8_ONLY);
-      ssg_print_where_or_and (ssg, "sinv");
-      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_posmap = ");
-      ssg_print_box_as_sql_atom (ssg, qtext_posmap, SQL_ATOM_NARROW_OR_WIDE);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".param_row = vector (");
       DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.param_varnames)

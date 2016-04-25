@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2015 OpenLink Software
+#  Copyright (C) 1998-2016 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -289,7 +289,7 @@ echo "  <caption>" >> $STICKER
 echo "    <name package=\"conductor\">" >> $STICKER
 echo "      <prop name=\"Title\" value=\"Virtuoso Conductor\"/>" >> $STICKER
 echo "      <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-echo "      <prop name=\"Copyright\" value=\"(C) 1998-2015 OpenLink Software\"/>" >> $STICKER
+echo "      <prop name=\"Copyright\" value=\"(C) 1998-2016 OpenLink Software\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/conductor/download\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/conductor/download\"/>" >> $STICKER
 echo "    </name>" >> $STICKER
@@ -310,7 +310,7 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "        }" >> $STICKER
-echo "      if (__proc_exists ('WS.WS.VFS_EXTRACT_RDF_CARTRIDGES') is null)" >> $STICKER
+echo "      if (coalesce ((select 1 from DB.DBA.SYS_COLS where \"TABLE\" = 'DB.DBA.SYS_SCHEDULED_EVENT' and \"COLUMN\" = 'SE_DISABLED'), 0) = 0)" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER

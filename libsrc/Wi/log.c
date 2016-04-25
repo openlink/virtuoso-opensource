@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -397,7 +397,7 @@ log_commit (lock_trx_t * lt)
   cbox = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * LOG_HEADER_LENGTH,
 				   DV_ARRAY_OF_POINTER);
   memset (cbox, 0, sizeof (caddr_t) * LOG_HEADER_LENGTH);
-  if (local_cll.cll_is_flt && !lt->lt_cl_branches && !lt->lt_cl_enlisted)
+  if (local_cll.cll_is_flt && !lt->lt_cl_branches && !lt->lt_cl_enlisted && !lt->lt_rc_w_id)
     log_for_flt = 1; /* If fault tolerance, log local only transactions as 2pc with commit since might need to ship for sync */
   if (lt->lt_log_2pc || log_for_flt)
     {
@@ -1950,6 +1950,26 @@ log_replay_sequence_64 (lock_trx_t * lt, dk_session_t * in)
   return ((caddr_t) SQL_SUCCESS);
 }
 
+caddr_t
+log_check_replay_entry (dtp_t op)
+{
+  switch (op)
+    {
+      case LOG_INSERT:
+      case LOG_INSERT_SOFT:
+      case LOG_INSERT_REPL:
+      case LOG_KEY_INSERT:
+      case LOG_DELETE:
+      case LOG_KEY_DELETE:
+      case LOG_UPDATE:
+      case LOG_TEXT:
+      case LOG_USER_TEXT:
+      case LOG_SEQUENCE:
+      case LOG_SEQUENCE_64:
+	  return SQL_SUCCESS;
+    }
+  return srv_make_new_error ("42000", "REPL0", "Bad record in log replay");
+}
 
 caddr_t
 log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
@@ -2921,7 +2941,7 @@ log_replay_entry_async (lr_executor_t* executor, lock_trx_t * lt, dtp_t op, dk_s
 caddr_t
 log_cl_trx_id (caddr_t * header)
 {
-  caddr_t * cl2pc = (caddr_t*)header[LOGH_CL_2PC];
+  caddr_t * cl2pc = header ? (caddr_t*)header[LOGH_CL_2PC] : NULL;
   if (!cl2pc)
     return NULL;
   return ARRAYP (cl2pc) ? cl2pc[0] : (caddr_t)cl2pc;
@@ -3145,16 +3165,23 @@ log_replay_trx (lr_executor_t * lr_executor, dk_session_t * in, client_connectio
 	  while (has_more)
 	    {
 	      if (in->dks_in_read != in->dks_in_fill)
-	        {
+		{
 		  op_ctr++;
-	      op = session_buffered_read_char (in);
+		  op = session_buffered_read_char (in);
 		  if (dbf_rq_key && LOG_UPDATE == op)
 		    return LTE_OK;
 		  if (lr_executor)
 		    err = log_replay_entry_async (lr_executor, lt, op, in, is_pushback);
-	          else
-	      err = log_replay_entry (lt, op, in, is_pushback);
-	        }
+		  else
+		    {
+		      if (org)
+			err = log_check_replay_entry (op);
+		      else
+			err = SQL_SUCCESS;
+		      if (SQL_SUCCESS == err)
+			err = log_replay_entry (lt, op, in, is_pushback);
+		    }
+		}
 	      else
 	        {
 		  has_more=0;

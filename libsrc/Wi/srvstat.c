@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -217,6 +217,7 @@ extern int sqlo_max_layouts;
 extern size_t sqlo_max_mp_size;
 extern int enable_initial_plan;
 extern int32 enable_dt_leaf;
+extern int enable_rq_obvious;
 extern int32 sqlo_compiler_exceeds_run_factor;
 extern int sqlo_n_layout_steps;
 extern int sqlo_n_best_layouts;
@@ -1800,6 +1801,7 @@ stat_desc_t dbf_descs [] =
     {"sqlo_max_mp_size", &sqlo_max_mp_size},
     {"enable_initial_plan", &enable_initial_plan, SD_INT32},
     {"enable_dt_leaf", &enable_dt_leaf, SD_INT32},
+    {"enable_rq_obvious", &enable_rq_obvious, SD_INT32},
     {"sqlo_n_layout_steps", &sqlo_n_layout_steps, SD_INT32},
     {"sqlo_n_best_layouts", &sqlo_n_best_layouts, SD_INT32},
     {"sqlo_n_full_layouts", &sqlo_n_full_layouts, SD_INT32},

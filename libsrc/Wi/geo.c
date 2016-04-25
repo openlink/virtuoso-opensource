@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -151,11 +151,24 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
 	{
 	  geo_t *pt;
 	  char pt_buf[sizeof (geo_t) + BOX_AUTO_OVERHEAD];
+	  int rc;
 	  BOX_AUTO_TYPED (geo_t *, pt, pt_buf, sizeof (geo_t), DV_GEO);
 	  pt->geo_flags = GEO_POINT;
 	  pt->XYbox.Xmin = pt->XYbox.Xmax = (rx + rx2) / 2.0;
 	  pt->XYbox.Ymin = pt->XYbox.Ymax = (ry + ry2) / 2.0;
-	  if (geo_pred (pt, g_shape, gs_op, prec + geoc_EPSILON * (1 + abs (rx) + abs (ry))))
+	  QR_RESET_CTX
+	  {
+	    rc = geo_pred (pt, g_shape, gs_op, prec + geoc_EPSILON * (1 + abs (rx) + abs (ry)));
+	  }
+	  QR_RESET_CODE
+	  {
+	    caddr_t err;
+	    itc_page_leave (itc, buf);
+	    POP_QR_RESET;
+	    err = thr_get_error_code (THREAD_CURRENT_THREAD);
+	    sqlr_resignal (err);
+	  }
+	  END_QR_RESET if (rc)
 	    return DVC_MATCH;
 	  else
 	    return DVC_LESS;

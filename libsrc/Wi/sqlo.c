@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2016 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1157,7 +1157,7 @@ sqlo_replace_fun_refs_prefixes (ST *tree, caddr_t old_prefix, caddr_t new_prefix
   int inx;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
-  if (ST_P (tree, FUN_REF) && tree->_.fn_ref.fn_name &&
+  if (ST_P (tree, FUN_REF) && BOX_ELEMENTS (tree) > 6 && tree->_.fn_ref.fn_name &&
       !CASEMODESTRCMP (tree->_.fn_ref.fn_name, old_prefix))
     {
       tree->_.fn_ref.fn_name = new_prefix;

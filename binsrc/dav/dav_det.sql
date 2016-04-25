@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1679,13 +1679,10 @@ create trigger SYS_DAV_PROP_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_PROP o
 }
 ;
 
-create trigger SYS_DAV_PROP_PRIVATE_GRAPH_U after update on WS.WS.SYS_DAV_PROP order 111 referencing old as O, new as N
+create trigger SYS_DAV_PROP_PRIVATE_GRAPH_U after update (PROP_VALUE) on WS.WS.SYS_DAV_PROP order 111 referencing old as O, new as N
 {
   -- Only collections
   if (N.PROP_TYPE <> 'C')
-    return;
-
-  if (O.PROP_VALUE = N.PROP_VALUE)
     return;
 
   if (N.PROP_NAME like 'virt:%-rdf')
