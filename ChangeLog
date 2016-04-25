@@ -1,4 +1,32 @@
+2016-04-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.4 for final release
+
+	Updated ChangeLog & News
+
+	Fixed issue passing make flags to subdirs
+
+	Fixed link to rdf-editor to edit whole article
+
+	Removed link to old ODE browser
+
+	Updated version of ODBC driver
+
+	Updated engine version to 3217
+
+2016-04-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for building with OpenJDK 1.8 if available
+
+	Hide errors from dpkg when openjdk version is not available on the system
+
+2016-04-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed if user_name is null return an empty string
+
 2016-04-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated docs
 
 	Fixed issue uploading turtle files containing special symbols
 
