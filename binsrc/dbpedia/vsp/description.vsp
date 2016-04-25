@@ -268,7 +268,6 @@
 	    <li class="dropdown">
 		<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Browse using <span class="caret"></span></a>
 		<ul class="dropdown-menu">
-		<li><a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a></li>
 		<li><a href="/describe/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Faceted Browser</a></li>
 		<li><a href="http://linkeddata.uriburner.com/rdf-editor/#/editor?newDocument=true&amp;statement:subject=<?vsp http_url(page_resource_uri); ?>&amp;view=statements">OpenLink Structured Data Editor</a></li>
 		<li><a href="http://en.lodlive.it/?<?vsp http_url (page_resource_uri); ?>">LodLive Browser</a></li>
