@@ -117,7 +117,11 @@ class DateObject
          default:
            {
               Timestamp ts = new VirtuosoTimestamp(cal_dat.getTime().getTime(), tz, sparql_executed);
-              ts.setNanos(fraction * 1000);
+              int nanos = fraction * 1000;
+              if (nanos > 999999999)
+                ts.setNanos(fraction);
+              else
+                ts.setNanos(nanos);
               return ts;
            }
        }

@@ -757,8 +757,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
       // Send the number of minute
       yday = _second;
       write(((_minute << 2) & 0xfc) | ((yday >> 4) & 0x3));
-//--      temp = _frac / 1000;
-      temp = _frac;
+      temp = _frac / 1000;
       write((yday << 4) | ((temp >> 16) & 0xf));
       // Send the fraction if it's a time stamp
       write(temp >> 8);
