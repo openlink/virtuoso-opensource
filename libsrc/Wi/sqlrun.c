@@ -1793,7 +1793,7 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
 	{
 	  DO_SET (state_slot_t *, sl, &term->iop_ks->ks_out_slots)
 	    {
-	      qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	      qst_set_null (qst, sl);
 	    }
 	  END_DO_SET ();
 	}
@@ -1803,7 +1803,7 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
     {
       DO_SET (state_slot_t *, sl, &ts->ts_order_ks->ks_out_slots)
 	{
-	  qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	  qst_set_null (qst, sl);
 	}
       END_DO_SET ();
     }
@@ -1811,7 +1811,7 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
     {
       DO_SET (state_slot_t *, sl, &ts->ts_main_ks->ks_out_slots)
       {
-	qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	qst_set_null (qst, sl);
       }
       END_DO_SET ();
     }
