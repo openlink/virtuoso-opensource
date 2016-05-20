@@ -17727,8 +17727,11 @@ create procedure rdf_geo_fill (in threads int := null, in batch int := 100000)
   fill := 0;
   ctr := 0;
   log_enable (2, 1);
-  for select "s", "long", "lat", "g" from (sparql define output:valmode "LONG" select ?g ?s ?long ?lat where {
-    graph ?g { ?s geo:long ?long . ?s geo:lat ?lat}}) f  do
+  for (select "s", "long", "lat", "g" from (sparql define output:valmode "LONG"
+      prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+      select ?g ?s ?long ?lat where {
+          graph ?g {
+              ?s geo:long ?long . ?s geo:lat ?lat . } } ) as f) do
     {
       declare lat2, long2 any;
       long2 := num_or_null (rdf_box_data ("long"));
