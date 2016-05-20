@@ -17697,11 +17697,23 @@ create procedure GEO_FILL_SRV  (in arr any, in fill int)
       l := aref_set_0 (arr, inx);
       gs[inx]  := aref_set_0 (l, 0);
       ss[inx] := aref_set_0 (l, 1);
+      {
+	  -- can have some bad input so skip and do next
+	  declare exit handler for sqlstate '*' {
+	  os[inx] := null;
+	  goto next;
+	};
       os[inx] := st_point (aref_set_0 (l, 2), aref_set_0 (l, 3));
+    }
+      next:;
     }
   for vectored (in g1 iri_id_8 := gs, in s1 iri_id_8 := ss, in o1 any array := os)
     {
-      insert soft rdf_quad (g, s, p, o) values ("g1", "s1", geop, rdf_geo_add (rdf_box (o1, 256, 257, 0, 1)));
+      if (o1 is not null)
+	{
+	  insert soft rdf_quad (g, s, p, o) values ("g1", "s1", geop,
+	      rdf_geo_add (rdf_box (o1, 256, 257, 0, 1)));
+	}
     }
 }
 ;
