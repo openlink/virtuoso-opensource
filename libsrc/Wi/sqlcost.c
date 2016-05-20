@@ -943,7 +943,7 @@ sqlo_rq_g_in_check (df_elt_t * in_tb, df_elt_t ** in_list)
   df_elt_t * s_pred, *o_pred;
   int n_in = BOX_ELEMENTS(in_list) - 1;
   dbe_table_t * tb;
-  if (!in_tb)
+  if (!in_tb || in_tb->dfe_type != DFE_TABLE)
     return n_in;
   tb  = in_tb->_.table.ot->ot_table;
   if (!tb_is_rdf_quad (tb))
