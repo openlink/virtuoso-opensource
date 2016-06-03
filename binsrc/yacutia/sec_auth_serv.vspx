@@ -132,11 +132,11 @@
                         <td class="page_tab" align="center">
                           <v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
                         </td>
+                        <td class="page_tab" align="center">
+                          <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Root Certificates" render-only="1"/>
+                        </td>
                         <td class="page_tab_selected" align="center">
                           Access Control
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Roots" render-only="1"/>
                         </td>
                         <td class="page_tab_empty" align="right" width="100%">
                         </td>

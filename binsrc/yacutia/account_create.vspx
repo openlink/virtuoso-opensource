@@ -729,6 +729,8 @@
                                           if (params[i] = 'cb_key')
                                             xenc_key_remove (params[i+1]);
                                         }
+					http_request_status ('HTTP/1.1 302 Found');
+					http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -758,7 +760,9 @@
 					username:= self.t_login_name.ufl_value;
                                         set_user_id (username);
                                         USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
-                                        exec (make_cert_stmt (self.k_name.ufl_value));
+                                        EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
+					http_request_status ('HTTP/1.1 302 Found');
+					http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -771,7 +775,7 @@
                                   <v:on-post>
                                     <![CDATA[
                                       http_request_status ('HTTP/1.1 302 Found');
-                                      http_header (sprintf ('Location: accounts_page.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+				      http_header (sprintf ('Location: accounts_page.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
                                       return;
                                     ]]>
                                   </v:on-post>

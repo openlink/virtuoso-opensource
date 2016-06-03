@@ -45,7 +45,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
   if ('list' = mode)
     {
       --http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
-      http ('Find entities ', txt);
+      http ('Find entity ', txt);
     }
   if ('list-count' = mode)
     {

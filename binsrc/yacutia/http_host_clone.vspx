@@ -170,6 +170,7 @@
 	   if (self.vhost = vhost and lhost = self.lhost)
 	     goto same_host;
 
+	   set triggers off;
 	   for select
 	       HP_HOST, HP_LISTEN_HOST, HP_PPATH, HP_LPATH,
 	       HP_AUTH_FUNC, HP_AUTH_OPTIONS, HP_DEFAULT, HP_STORE_AS_DAV,
@@ -195,6 +196,7 @@
                   }
 	     }
 	    commit work;
+	    set triggers on;
 	    same_host:
             self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));
                       ]]>
