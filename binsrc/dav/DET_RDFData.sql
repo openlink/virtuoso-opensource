@@ -572,7 +572,10 @@ create function DB.DBA."RDFData_DAV_SEARCH_PATH" (in id any, in what char(1)) re
   RDFData_log_message (current_proc_name ());
 --  dbg_obj_princ ('RDFData_DAV_SEARCH_PATH (', id, what, ')');
   col_path := WS.WS.COL_PATH (id[1]);
-  ret := sprintf ('%s%s/iid (%d).rdf', col_path, id_to_iri (id[2]), iri_id_num (id[4]));
+  if (what = 'C')
+    ret := sprintf ('%s%s/', col_path, id_to_iri (id[2]));
+  else
+    ret := sprintf ('%s%s/iid (%d).rdf', col_path, id_to_iri (id[2]), iri_id_num (id[4]));
 --  dbg_obj_print (ret);
   return ret;
 }
