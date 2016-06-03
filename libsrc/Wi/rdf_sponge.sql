@@ -1701,6 +1701,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
   dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
   
   sparql define input:storage "" 
+    define sql:table-option "index G"
     insert in iri(?:graph) { 
       `iri(?:graph)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
       `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` 
@@ -1713,6 +1714,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
     }
   };
   sparql define input:storage "" 
+    define sql:table-option "index G"
     insert in graph iri(?:graph) { 
       `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
       <http://www.w3.org/ns/formats/media_type> `?:mimetype` ;
