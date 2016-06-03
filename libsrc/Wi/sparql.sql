@@ -4110,7 +4110,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
 create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any)
 {
   declare env any;
-  declare tcount, tctr, status integer;
+  declare tcount, tctr, nesting integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_LD:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   if (0 = tcount)
@@ -4124,14 +4124,11 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any
   rowvector_subj_sort (triples, 0, 1);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('{ "@graph": [\n    ', ses);
-  status := 0;
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    {
-      if (http_ld_json_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses))
-        status := 1;
-    }
-  if (status)
-    http (' ] }\n', ses);
+  nesting := http_ld_json_triple_batch (env, triples, ses);
+  if (nesting > 1)
+    http (' ]', ses);
+  if (nesting)
+    http (' }\n', ses);
   http ('] }\n', ses);
 }
 ;
