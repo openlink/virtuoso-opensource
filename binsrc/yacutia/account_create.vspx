@@ -758,7 +758,7 @@
 					username:= self.t_login_name.ufl_value;
                                         set_user_id (username);
                                         USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
-                                        exec (make_cert_stmt (self.k_name.ufl_value));
+                                        EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
                                       ]]>
                                     </v:on-post>
                                   </v:button>
