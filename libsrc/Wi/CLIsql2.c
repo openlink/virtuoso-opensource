@@ -1824,7 +1824,7 @@ virtodbc__SQLSetStmtOption (
 
     case SQL_ASYNC_ENABLE:
 #ifndef WIN32
-      so->so_is_async = vParam;
+/*    so->so_is_async = vParam; */ /* SQLExecDirect doesn't support Async mode*/
 #endif
       break;
 
