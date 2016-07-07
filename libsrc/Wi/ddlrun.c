@@ -6848,7 +6848,7 @@ static const char * scheduler_do_round_text =
 "      exec (aref (aref (arr, inx), 1), st, msg, vector (), 0);\n"
 "      if (st <> '00000')\n"
 "	{\n"
-"	  fl := 4;\n"
+"	  fl := 4; notify_flag := 0;\n"
 "         emsg := msg;\n"
 "	  rollback work;\n"
 "	}\n"
