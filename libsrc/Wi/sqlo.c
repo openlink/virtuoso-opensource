@@ -2872,6 +2872,12 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	    SEL_SET_DISTINCT (tree, 0)
 	}
     }
+  if (SEL_IS_DISTINCT (tree) &&
+      texp && !texp->_.table_exp.group_by &&
+      dk_set_length (ot->ot_fun_refs) == 1 &&
+      ((sql_tree_t *) ot->ot_fun_refs->data)->_.fn_ref.fn_code >= AMMSC_AVG &&
+      ((sql_tree_t *) ot->ot_fun_refs->data)->_.fn_ref.fn_code <= AMMSC_COUNTSUM)
+    SEL_SET_DISTINCT (tree, 0)
 
   if (texp && texp->_.table_exp.where)
     texp->_.table_exp.where = sqlo_bop_expand_or_exp (so, texp->_.table_exp.where);
