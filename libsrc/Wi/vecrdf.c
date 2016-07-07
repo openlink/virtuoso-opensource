@@ -341,8 +341,9 @@ bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slo
   if (!rb_complete_qr)
     {
       rb_complete_qr =
-	  sql_compile_static ("select ro_dt_and_lang, ro_flags, ro_val, ro_long from rdf_obj where ro_id = rdf_box_ro_id (?)",
-	  bootstrap_cli, &err, SQLC_DEFAULT);
+	  sql_compile_static
+	  ("select RO_DT_AND_LANG, RO_FLAGS, RO_VAL, RO_LONG from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", bootstrap_cli,
+	  &err, SQLC_DEFAULT);
     }
 
   if (!ret)
