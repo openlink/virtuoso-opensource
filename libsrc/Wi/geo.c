@@ -1402,7 +1402,7 @@ geo_rdf_check (text_node_t * txs, caddr_t * inst)
   SRC_IN_STATE (txs, inst) = NULL;
   if (!geo_ck_qr)
     {
-      geo_ck_qr = sql_compile_static ("select coalesce (blob_to_string (ro_long), ro_val)  from rdf_obj table option (no cluster) where ro_id = ?", qi->qi_client, &err, SQLC_DEFAULT);
+      geo_ck_qr = sql_compile_static ("select coalesce (blob_to_string (RO_LONG), RO_VAL)  from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = ?", qi->qi_client, &err, SQLC_DEFAULT);
       if (err)
 	sqlr_resignal (err);
     }
