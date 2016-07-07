@@ -4915,7 +4915,7 @@ create procedure DB.DBA.SCHEDULER_NOTIFY ()
 	}
       else if (current_rec <> _SE_NOTIFY)
 	{
-	  mime_parts := vector (DB.DBA.MIME_PART ('text/html', null, null, err_text));
+	  mime_parts := vector (DB.DBA.MIME_PART ('text/plain', null, null, err_text));
           update SYS_SCHEDULED_EVENT set SE_NOTIFICATION_SENT = 1 where SE_NOTIFY = current_rec and SE_NOTIFICATION_SENT = 0;
 	  commit work;
 	  {
@@ -4930,11 +4930,12 @@ create procedure DB.DBA.SCHEDULER_NOTIFY ()
 	  current_rec := _SE_NOTIFY;
 	  err_text := '';
         }
-      err_text := err_text || '<pre>' || _SE_NAME || ' ' || _SE_SQL || '\r\n' || blob_to_string (_SE_LAST_ERROR) || '</pre>\r\n' ;
+      err_text := err_text || '\r\nEvent : ' || _SE_NAME || '\r\nSQL   : ' || _SE_SQL || '\r\nError : ' || blob_to_string (_SE_LAST_ERROR) || '\r\n\r\n' ;
+
     }
   if (length (err_text) and current_rec is not null)
     {
-      mime_parts := vector (DB.DBA.MIME_PART ('text/html', null, null, err_text));
+      mime_parts := vector (DB.DBA.MIME_PART ('text/plain', null, null, err_text));
       update SYS_SCHEDULED_EVENT set SE_NOTIFICATION_SENT = 1 where SE_NOTIFY = current_rec and SE_NOTIFICATION_SENT = 0;
       commit work;
       smtp_send (null, current_rec, current_rec, concat (hdrs, DB.DBA.MIME_BODY (mime_parts)));
