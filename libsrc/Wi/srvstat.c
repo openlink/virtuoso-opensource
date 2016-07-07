@@ -1817,6 +1817,7 @@ stat_desc_t dbf_descs [] =
     {"enable_distinct_sas", (long *)&enable_distinct_sas, SD_INT32},
     {"enable_inline_sqs", (long *)&enable_inline_sqs, SD_INT32},
     {"hash_join_enable", (long *)&hash_join_enable, SD_INT32},
+    {"enable_chash_join", (long *)&enable_chash_join, SD_INT32},
     {"enable_joins_only", &enable_joins_only, SD_INT32},
     {"enable_exact_p_stat", &enable_exact_p_stat, SD_INT32},
     {"em_ra_window", (long *)&em_ra_window, SD_INT32},
