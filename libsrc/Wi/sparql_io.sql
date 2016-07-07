@@ -3635,7 +3635,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
   if (sp_ini)
     {
-      SPARQL_INI_PARAMS (metas, rset);
+      DB.DBA.SPARQL_INI_PARAMS (metas, rset);
       goto write_results;
     }
 
