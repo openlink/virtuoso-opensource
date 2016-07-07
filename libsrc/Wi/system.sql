@@ -4890,7 +4890,7 @@ create procedure DB.DBA.SCHEDULER_NOTIFY ()
   if (not isstring (hostname))
     return;
 
-  hdrs := sprintf ('Subject: [Scheduled Event Errors] %s\r\n', hostname);
+  hdrs := sprintf ('Message-Id: <%s@%s>\r\nSubject: [Scheduled Event Errors] %s\r\n', uuid(), hostname, hostname);
 
   for select SE_NAME, SE_SQL, SE_LAST_ERROR, SE_NOTIFY from SYS_SCHEDULED_EVENT where
     SE_LAST_ERROR is not null and SE_ENABLE_NOTIFY = 1 and SE_NOTIFICATION_SENT = 0 order by SE_NOTIFY do
