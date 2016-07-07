@@ -646,6 +646,7 @@ cha_any (chash_t * cha, db_buf_t dv)
   chash_page_t *chp = cha->cha_current_data, *chp2;
   int off;
   int len;
+  unsigned char dvnull[1] = {DV_DB_NULL};
   if (!chp)
     {
       if (cha->cha_is_parallel)
@@ -656,6 +657,7 @@ cha_any (chash_t * cha, db_buf_t dv)
       memset (chp, 0, DP_DATA);
     }
   off = chp->h.h.chp_fill;
+  if (!dv) dv = dvnull;
   DB_BUF_TLEN (len, dv[0], dv);
   if (len > chash_max_key_len)
     {
