@@ -884,7 +884,7 @@ create function "S3_DAV_SCHEDULER" (
       DB.DBA.S3_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
     }
   }
-  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+  DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
 }
 ;
 

@@ -2893,7 +2893,7 @@ create procedure RDF_SINK_FUNC (
   }
 
 _bad_content:;
-  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+  DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
 }
 ;
 
@@ -3211,7 +3211,7 @@ create procedure RDF_SINK_CLEAR (
     DB.DBA.RDF_GRAPH_GROUP_DEL (rdf_group, rdf_graph2);
   }
 
-  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+  DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
 }
 ;
 
@@ -7704,6 +7704,7 @@ create table WS.WS.SYS_DAV_QUEUE (
 
   PRIMARY KEY (DQ_ID)
 )
+create index SYS_DAV_QUEUE_STATE ON WS.WS.SYS_DAV_QUEUE (DQ_STATE)
 ;
 
 create table WS.WS.SYS_DAV_QUEUE_LCK (DQL_ID int primary key)
@@ -7724,7 +7725,7 @@ create procedure DB.DBA.DAV_QUEUE_ADD (
   declare _id, _count integer;
 
   _count := 0;
-  _id := (select TOP 1 DQ_ID from WS.WS.SYS_DAV_QUEUE where DQ_CLASS = _class and DQ_CLASS_ID = _class_id);
+  _id := (select TOP 1 DQ_ID from WS.WS.SYS_DAV_QUEUE where DQ_CLASS = _class and DQ_CLASS_ID = _class_id for update);
   if (isnull (_id) or _insertMode)
   {
     insert into WS.WS.SYS_DAV_QUEUE (DQ_CLASS, DQ_CLASS_ID, DQ_PROCEDURE, DQ_PARAMS, DQ_PRIORITY, DQ_TS)
@@ -7735,7 +7736,8 @@ create procedure DB.DBA.DAV_QUEUE_ADD (
   else
   {
     update WS.WS.SYS_DAV_QUEUE
-       set DQ_PRIORITY = _priority
+       set DQ_PRIORITY = _priority,
+           DQ_TS = now ()
      where DQ_ID = _id
        and DQ_PRIORITY < _priority;
   }
@@ -7745,32 +7747,41 @@ create procedure DB.DBA.DAV_QUEUE_ADD (
 }
 ;
 
-create procedure DB.DBA.DAV_QUEUE_UPDATE_TS (
-  in _queue_id integer)
-{
-  update WS.WS.SYS_DAV_QUEUE
-     set DQ_TS = now (),
-         DQ_STATE = 1
-   where DQ_ID = _queue_id;
-  commit work;
-}
-;
-
 create procedure DB.DBA.DAV_QUEUE_UPDATE_STATE (
   in _queue_id integer,
-  in _state integer := 2)
+  in _state integer := 1,
+  in _commit integer := 1)
 {
   update WS.WS.SYS_DAV_QUEUE
      set DQ_STATE = _state,
          DQ_TS = now ()
-   where DQ_ID = _queue_id;
+   where DQ_ID = _queue_id
+     and ((DQ_STATE <> _state) or (DQ_TS < dateadd ('minute', -1, now())));
+
+  if (_commit)
+    commit work;
 }
 ;
 
-create procedure DB.DBA.DAV_QUEUE_DELETE (
+create procedure DB.DBA.DAV_QUEUE_UPDATE_TS (
+  in _queue_id integer,
+  in _commit integer := 1)
+{
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (_queue_id, 1, _commit);
+}
+;
+
+create procedure DB.DBA.DAV_QUEUE_UPDATE_FINAL (
   in _queue_id integer)
 {
   delete from WS.WS.SYS_DAV_QUEUE where DQ_ID = _queue_id;
+  commit work;
+}
+;
+
+create procedure DB.DBA.DAV_QUEUE_CLEAR ()
+{
+  delete from WS.WS.SYS_DAV_QUEUE where DQ_STATE = 2;
   commit work;
 }
 ;
@@ -7780,33 +7791,59 @@ create procedure DB.DBA.DAV_QUEUE_GET (
 {
   declare dummy, items any;
 
-  set isolation = 'serializable';
-  select DQL_ID into dummy from WS.WS.SYS_DAV_QUEUE_LCK where DQL_ID = 0 for update;
+  if (_count <= 0)
+    return vector ();
 
   vectorbld_init (items);
-  if (_count <= 0)
-    goto _exit;
 
-  for (select TOP 100 DQ_ID, DQ_PROCEDURE, DQ_PARAMS
+  set isolation = 'serializable';
+
+  select DQL_ID into dummy from WS.WS.SYS_DAV_QUEUE_LCK where DQL_ID = 0;
+  for (select TOP (_count) DQ_ID, DQ_PROCEDURE, DQ_PARAMS
          from WS.WS.SYS_DAV_QUEUE
         where DQ_STATE = 0
-        order by DQ_PRIORITY desc, DQ_TS for update) do
+        order by DQ_PRIORITY desc, DQ_TS) do
   {
+    DB.DBA.DAV_QUEUE_UPDATE_STATE (DQ_ID, 1, 0);
     vectorbld_acc (items, vector (DQ_ID, DQ_PROCEDURE, DQ_PARAMS));
-    _count := _count - 1;
-    if (_count <= 0)
-      goto _exit;
-  }
-_exit:
-  vectorbld_final (items);
-  foreach (any item in items) do
-  {
-    update WS.WS.SYS_DAV_QUEUE set DQ_STATE = 1 where DQ_ID = item[0];
   }
   commit work;
   set isolation = 'committed';
 
+  vectorbld_final (items);
   return items;
+}
+;
+
+create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
+{
+  declare retValue integer;
+  declare dt datetime;
+  declare dummy any;
+
+  retValue := 0;
+  if (is_atomic ())
+  {
+    retValue := 1;
+  }
+  else
+  {
+    set isolation = 'serializable';
+
+    dt := dateadd ('minute', -5, now());
+    select DQL_ID into dummy from WS.WS.SYS_DAV_QUEUE_LCK where DQL_ID = 0;
+    update WS.WS.SYS_DAV_QUEUE
+       set DQ_STATE = 0,
+           DQ_TS    = now ()
+     where DQ_STATE = 1
+       and DQ_TS    < dt;
+
+    retValue := coalesce ((select top 1 1 from WS.WS.SYS_DAV_QUEUE where DQ_STATE = 1), 0);
+    commit work;
+
+    set isolation = 'committed';
+  }
+  return retValue;
 }
 ;
 
@@ -7815,61 +7852,69 @@ create procedure DB.DBA.DAV_QUEUE_INIT ()
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_INIT ()');
   declare aq any;
 
-  set_user_id ('dba');
-  aq := async_queue (1, 4);
-  aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector ());
+  if (not DB.DBA.DAV_QUEUE_ACTIVE ())
+  {
+    set_user_id ('dba');
+    aq := async_queue (1, 4);
+    aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0));
+  }
 }
 ;
 
-create procedure DB.DBA.DAV_QUEUE_RUN ()
+create procedure DB.DBA.DAV_QUEUE_RUN (
+  in _notInit integer := 1)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_RUN ()');
-  declare N, waited, threads integer;
+  declare N, L, waited, threads integer;
   declare retValue, error any;
   declare aq, item, items, threadsArray any;
-
-  if (is_atomic ())
-    return;
-
   declare exit handler for sqlstate '*'
   {
     log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
     resignal;
   };
 
-  set isolation = 'serializable';
-  for (select DQ_ID, DQ_CLASS from WS.WS.SYS_DAV_QUEUE where DQ_STATE = 1 and DQ_TS < dateadd ('minute', -1, now())) do
-  {
-    DB.DBA.DAV_QUEUE_UPDATE_STATE (DQ_ID, 0);
-  }
-  if (exists (select top 1 1 from WS.WS.SYS_DAV_QUEUE where DQ_STATE = 1))
-  {
-    commit work;
-    set isolation = 'committed';
+  if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
     return;
-  }
+
+  aq := null;
   threads := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
   if (threads <= 0)
     threads := 1;
 
-  aq := async_queue (threads, 4);
-
 _new_batch:;
   items := DB.DBA.DAV_QUEUE_GET (threads);
-  if (not length (items))
+  L := length (items);
+  if (not L)
     goto _exit;
 
-  threadsArray := make_array (threads, 'any');
-  for (N := 0; N < length (items); N := N + 1)
+
+  if (isnull (aq))
   {
- 	  threadsArray[N] := aq_request (aq, items[N][1], vector_concat (vector (items[N][0]), items[N][2]));
+    if (L + 1 < threads)
+    {
+      threads := length (items) + 1;
+    }
+    aq := async_queue (threads, 4);
   }
-  for (N := length (items); N < threads; N := N + 1)
+
+  threadsArray := make_array (threads, 'any');
+  for (N := 0; N < threads; N := N + 1)
   {
-    threadsArray[N] := -1;
+    if (N < L)
+    {
+      threadsArray[N] := aq_request (aq, items[N][1], vector_concat (vector (items[N][0]), items[N][2]));
+    }
+    else
+    {
+      threadsArray[N] := -1;
+    }
   }
 
 _again:;
+  commit work;
+
+  waited := 0;
   for (N := 0; N < threads; N := N + 1)
   {
     if (threadsArray[N] >= 0)
@@ -7885,23 +7930,21 @@ _again:;
       if (length (item) = 1)
      	  threadsArray[N] := aq_request (aq, item[0][1], vector_concat (vector (item[0][0]), item[0][2]));
     }
-  }
-  waited := 0;
-  for (N := 0; N < threads; N := N + 1)
-  {
     if (threadsArray[N] >= 0)
-    	waited := 1;
+    {
+      waited := 1;
+    }
   }
-  delay (1);
   if (waited)
+  {
+    delay (1);
     goto _again;
+  }
 
   goto _new_batch;
 
 _exit:;
-  -- clean
-  delete from WS.WS.SYS_DAV_QUEUE where DQ_STATE = 2;
-  commit work;
+  DB.DBA.DAV_QUEUE_CLEAR ();
 }
 ;
 
@@ -7921,9 +7964,10 @@ create function DB.DBA.DAV_EXPIRE_SCHEDULER (
   for (select PROP_TYPE, PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:expireDate' and cast (PROP_VALUE as date) <= _today) do
   {
     DB.DBA.DAV_DELETE_INT (DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, PROP_TYPE), 1, null, null, 0);
+    DB.DBA.DAV_QUEUE_UPDATE_TS (queue_id);
   }
 
-  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+  DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
 }
 ;
 
@@ -7989,7 +8033,7 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
 
   log_enable (old_mode, 1);
   registry_set ('__dav_rdf_sink_update', '1');
-  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+  DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
 }
 ;
 
