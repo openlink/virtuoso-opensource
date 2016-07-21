@@ -847,7 +847,7 @@ create function DB.DBA.DAV_DET_RDF (
     return;
 
   set_user_id ('dba');
-  aq := async_queue (1);
+  aq := async_queue (1, 4);
   aq_request (aq, 'DB.DBA.DAV_DET_RDF_AQ', vector (det, detcol_id, id, what, rdf_params));
 }
 ;
@@ -1421,7 +1421,7 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE (
   -- update graph if needed
   if (oldGraph <> newGraph)
   {
-    aq := async_queue (1);
+    aq := async_queue (1, 4);
     aq_request (aq, 'DB.DBA.DAV_DET_GRAPH_UPDATE_AQ', vector (path, cast (detType as varchar), oldRDFParams, newRDFParams));
   }
 }

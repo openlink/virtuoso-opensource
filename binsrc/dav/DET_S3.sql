@@ -2146,7 +2146,7 @@ create function DB.DBA.S3__downloads (
     declare aq any;
 
     set_user_id ('dba');
-    aq := async_queue (1);
+    aq := async_queue (1, 4);
     aq_request (aq, 'DB.DBA.S3__downloads_aq', vector (detcol_id, downloads));
   }
 }

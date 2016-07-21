@@ -7521,7 +7521,7 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resnam
   else
     {
       declare aq any;
-      aq := async_queue (1);
+      aq := async_queue (1, 4);
       if (not isstring (rescontent))
 	rescontent := cast (rescontent as varchar);
       aq_request (aq, 'DB.DBA.DAV_EXTRACT_AND_SAVE_RDF_INT2', vector (resid, resname, restype, rescontent));
@@ -7816,7 +7816,7 @@ create procedure DB.DBA.DAV_QUEUE_INIT ()
   declare aq any;
 
   set_user_id ('dba');
-  aq := async_queue (1);
+  aq := async_queue (1, 4);
   aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector ());
 }
 ;
