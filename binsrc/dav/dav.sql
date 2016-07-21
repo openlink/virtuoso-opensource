@@ -3484,7 +3484,12 @@ create procedure WS.WS.SPARQL_QUERY_POST (
   declare stat, msg, meta, data any;
 
   qr := ses;
-  if (not isstring (ses))
+  if (__tag (ses) = 222)
+  {
+    -- Varbinary
+    qr := cast (ses as varchar);
+  }
+  else if (not isstring (ses))
     {
     qr := string_output_string (ses);
     }
