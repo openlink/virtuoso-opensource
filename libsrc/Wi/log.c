@@ -2916,6 +2916,7 @@ log_replay_entry_async (lr_executor_t* executor, lock_trx_t * lt, dtp_t op, dk_s
     {
       flush_request (executor, lq);
       request = NULL;
+      executor->lre_need_sync = 1;
     }
   if (request == NULL)
     {
