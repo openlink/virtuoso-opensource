@@ -3203,6 +3203,8 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      /* no break */
 	    default:
 	      {
+		char save = qi->qi_no_cast_error;
+		qi->qi_no_cast_error = 0; /* concat may get vector as input, this is not a cast to be done w/o error here */
 		QR_RESET_CTX
 		{
 		  if (haveWides)
@@ -3226,7 +3228,9 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  dk_free_tree ((caddr_t) cast_args);
 		  sqlr_resignal (err);
 		}
-		END_QR_RESET break;
+		END_QR_RESET;
+		qi->qi_no_cast_error = save;
+		break;
 	      }
 	    }
 	}
