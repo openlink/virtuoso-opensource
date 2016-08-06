@@ -1814,6 +1814,20 @@ bif_raw_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (raw_length (arg));
 }
 
+caddr_t
+bif_octet_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned long len = 0;
+  caddr_t arg = bif_arg (qst, args, 0, "octet_length"); /* Was: bif_array_arg */
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_RDF == dtp) {
+    len = box_length (arg) + raw_length (((rdf_box_t *)arg)->rb_box);
+  }
+  else {
+    len = raw_length (arg);
+  }
+  return box_num (len * 2);
+}
 
 
 /* Generic vector accessor for bif_aref and bif_get_keyword.
@@ -15150,7 +15164,7 @@ sql_bif_init (void)
   bif_define_typed ("length", bif_length, &bt_integer);
   bif_define_typed ("char_length", bif_length, &bt_integer);
   bif_define_typed ("character_length", bif_length, &bt_integer);
-  bif_define_typed ("octet_length", bif_length, &bt_integer);
+  bif_define_typed ("octet_length", bif_octet_length, &bt_integer);
 
   bif_define_typed ("aref", bif_aref, &bt_any);
   bif_define_typed ("aref_or_default", bif_aref_or_default, &bt_any);
