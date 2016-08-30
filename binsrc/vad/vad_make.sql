@@ -1292,7 +1292,7 @@ failure:;
   result ('00000', 'Errors detected');
   result ('00000', sprintf ('Installation of "%s" was unsuccessful.', coalesce (connection_get ('vad_pkg_fullname'), fname)));
 
-  log_message (sprintf ('Errors where detected during installation of "%s".',
+  log_message (sprintf ('Errors were detected during installation of "%s".',
   coalesce (connection_get ('vad_pkg_fullname'), fname)));
 
   if (registry_get ('VAD_wet_run') = '0')
