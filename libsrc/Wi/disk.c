@@ -467,7 +467,7 @@ it_temp_tree_check ()
       void * dp;
       buffer_desc_t * buf;
       int inx;
-      GPF_T ("function not complete");
+      GPF_T1 ("function not complete");
       for (inx = 0; inx < IT_N_MAPS; inx++)
 	{
 	  it_map_t * itm = &it->it_maps[inx];
