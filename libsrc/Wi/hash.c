@@ -85,7 +85,7 @@ long tc_slow_temp_lookup;
 
 #define HA_MEMCACHE(ha) \
   (HA_PROC_FILL == ha->ha_op ? 0 : HA_FILL == ha->ha_op ? enable_mem_hash_join : \
-   HA_GROUP == ha->ha_op ? 1 : 0)
+   HA_GROUP == ha->ha_op && enable_chash_gb > 0 ? 1 : 0)
 
 #define set_dbg_fprintf(x)
 #define retr_dbg_fprintf(x)
