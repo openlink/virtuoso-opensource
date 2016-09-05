@@ -8841,7 +8841,7 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name,
 		  log_error ("SSL: The stored certificate '%s' can not be used as extra chain certificate", tok);
 		  break;
 		}
-	      CRYPTO_add(&k->xek_x509->references, 1, CRYPTO_LOCK_X509);
+	      X509_up_ref(k->xek_x509);
               tok = strtok_r (NULL, ",", &tok_s);
 	    }
 	  dk_free_box (str);
