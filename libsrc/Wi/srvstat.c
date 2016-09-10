@@ -1913,6 +1913,7 @@ stat_desc_t dbf_descs [] =
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
     {"enable_qr_comment", &enable_qr_comment, SD_INT32},
     {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
+    {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
     {NULL, NULL, NULL}
   };
 
