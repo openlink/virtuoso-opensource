@@ -7874,6 +7874,7 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
     resignal;
   };
 
+  set isolation = 'committed';
   if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
     return;
 
