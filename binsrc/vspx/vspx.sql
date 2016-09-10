@@ -43,6 +43,7 @@ create table DB.DBA.VSPX_SESSION
       VS_EXPIRY datetime,
       VS_IP varchar,
       primary key (VS_REALM, VS_SID))
+create index VSPX_SESSION_TS on DB.DBA.VSPX_SESSION (VS_EXPIRY)
 ;
 --#pragma end session
 
@@ -6259,7 +6260,7 @@ create procedure
 VSPX_EXPIRE_SESSIONS ()
 {
   delete from VSPX_SESSION where VS_EXPIRY is null;
-  delete from VSPX_SESSION where datediff ('minute', VS_EXPIRY, now()) > 30;
+  delete from VSPX_SESSION where VS_EXPIRY < dateadd ('minute', -30, now());
   --if (row_count () > 0)
   --  log_message (sprintf ('%d VSPX session entries erased', row_count ()));
 }
