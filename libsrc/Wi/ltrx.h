@@ -467,7 +467,7 @@ typedef struct page_lock_s
 #define PL_FINISHING ((dp_addr_t)-2)
 
 #define ITC_PREFER_PAGE_LOCK(itc) \
-  ((itc)->itc_n_lock_escalations > 2 || lock_escalation_pct < 0)
+  (!(itc)->itc_is_col && ((itc)->itc_n_lock_escalations > 2 || lock_escalation_pct < 0))
 
 
 
