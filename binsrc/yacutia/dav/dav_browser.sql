@@ -1839,6 +1839,7 @@ create procedure WEBDAV.DBA.user_id (
 create procedure WEBDAV.DBA.user_initialize (
   in user_name varchar) returns varchar
 {
+  -- dbg_obj_princ ('WEBDAV.DBA.user_initialize ()');
   declare user_home, new_folder varchar;
   declare uid, gid, cid integer;
   declare retCode any;
@@ -1968,9 +1969,15 @@ create procedure WEBDAV.DBA.dav_home (
   in user_name varchar := null) returns varchar
 {
   declare cid integer;
+  declare user_home varchar;
 
   if (isnull (user_name))
     user_name := WEBDAV.DBA.account ();
+
+  user_home := '/DAV/home/' || user_name || '/';
+  cid := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
+  if (not WEBDAV.DBA.DAV_ERROR (cid))
+    return user_home;
 
   cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
   if (WEBDAV.DBA.DAV_ERROR (cid))
@@ -1986,15 +1993,22 @@ create procedure WEBDAV.DBA.dav_home2 (
   in user_id integer,
   in user_role varchar := 'public')
 {
-  declare user_name, user_home any;
   declare cid integer;
+  declare user_name, user_home any;
 
   user_name := WEBDAV.DBA.account_name (user_id);
+  user_home := '/DAV/home/' || user_name || '/';
+  cid := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
+  if (not WEBDAV.DBA.DAV_ERROR (cid))
+    goto _skip;
+
   cid := DB.DBA.DAV_HOME_DIR_CREATE (user_name);
   if (WEBDAV.DBA.DAV_ERROR (cid))
     return '/DAV/';
 
   user_home := DB.DBA.DAV_SEARCH_PATH (cid, 'C');
+
+_skip:;
     if (user_role <> 'public')
       return user_home;
 
@@ -5471,6 +5485,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
 	  {
 	    ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
 	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
+      TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), uri, uri);
 	    {
 	      declare continue handler for sqlstate '*';
 	      TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
