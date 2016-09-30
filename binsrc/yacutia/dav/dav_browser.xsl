@@ -1405,6 +1405,13 @@
               if ((self.command = 0) and (self.command_mode = 2))
                 self.search_simple := trim (get_keyword ('simple', _params, self.search_simple));
 
+              tmp := get_keyword ('filter', _params, '');
+              if (tmp <> '')
+              {
+                self.command_set (0, 1);
+                self.search_filter := tmp;
+              }
+
               if (get_keyword ('mode', _params) = 'simple')
               {
                 self.command_set (0, 2);
@@ -1700,7 +1707,7 @@
                     else if (_action = 'filter')
                     {
                       self.command_set (0, 1);
-                      self.search_filter := self.filter.ufl_value;
+                      self.search_filter := self.filters.ufl_value;
                     }
                     else if (_action = 'cancelFilter')
                     {
@@ -4847,8 +4854,8 @@
                 <v:item name="List" value="1" />
               </v:select-list>
               <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
-                <b><v:label for="filter" value="--' Filter Pattern '" /></b>
-                <v:text name="filter" xhtml_id="filter" value="--self.search_filter" type="simple" />
+                <b><v:label for="filters" value="--' Filter Pattern '" /></b>
+                <v:text name="filters" xhtml_id="filters" value="--self.search_filter" type="simple" />
                 <img class="pointer" border="0" alt="Filter" title="Filter" src="<?V self.image_src ('dav/image/filter_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'filter');" />
                 <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="<?V self.image_src ('dav/image/close_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" />
               </v:template>
