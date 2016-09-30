@@ -1004,10 +1004,7 @@ create procedure WEBDAV.DBA.xml2string (
 create procedure WEBDAV.DBA.isVector (
   inout aVector any)
 {
-  if (isarray (aVector) and not isstring (aVector))
-    return 1;
-
-  return 0;
+  return isvector (aVector);
 }
 ;
 
@@ -1020,10 +1017,7 @@ create procedure WEBDAV.DBA.vector_contains (
   inout aVector any,
   in value any)
 {
-  if (not isarray (aVector))
-    return 0;
-
-  return case when position (value, aVector) then 1 else 0 end;
+  return case when (isvector (aVector) and position (value, aVector)) then 1 else 0 end;
 }
 ;
 
@@ -1031,36 +1025,22 @@ create procedure WEBDAV.DBA.vector_contains (
 --
 create procedure WEBDAV.DBA.vector_index (
   inout aVector any,
-  in value any)
+  in value any,
+  in notFound integer := null)
 {
-  declare N integer;
+  declare retValue integer;
 
-  for (N := 0; N < length(aVector); N := N + 1)
-    if (value = aVector[N])
-      return N;
-  return null;
+  if (isnull (aVector))
+    return notFound;
+
+  retValue := position (value, aVector);
+  return case when (retValue > 0) then retValue -1 else notFound end;
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.vector_cut(
-  inout pVector any,
-  in pIndex integer)
-{
-  declare N integer;
-  declare retValue any;
-
-  retValue := vector ();
-  for (N := 0; N < length (pVector); N := N + 1)
-    if (N <> pIndex)
-      retValue := vector_concat (retValue, vector (pVector[N]));
-  return retValue;
-};
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.vector_unique(
+create procedure WEBDAV.DBA.vector_unique (
   inout aVector any,
   in minLength integer := 0)
 {
@@ -1083,7 +1063,7 @@ create procedure WEBDAV.DBA.vector_unique(
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.vector2str(
+create procedure WEBDAV.DBA.vector2str (
   inout aVector any,
   in delimiter varchar := ' ')
 {
@@ -1091,15 +1071,13 @@ create procedure WEBDAV.DBA.vector2str(
   declare N integer;
 
   aResult := '';
-  for (N := 0; N < length (aVector); N := N + 1) {
-    tmp := trim(aVector[N]);
+  for (N := 0; N < length (aVector); N := N + 1)
+  {
+    tmp := trim (aVector[N]);
     if (strchr (tmp, ' ') is not null)
       tmp := concat ('''', tmp, '''');
-    if (N = 0) {
-      aResult := tmp;
-    } else {
-      aResult := concat (aResult, delimiter, tmp);
-    }
+
+    aResult := case when (N = 0) then tmp else concat (aResult, delimiter, tmp) end;
   }
   return aResult;
 }
@@ -4709,7 +4687,7 @@ create procedure WEBDAV.DBA.acl_send_mail (
   _path_url := WEBDAV.DBA.ssl2iri (WEBDAV.DBA.dav_url (_path));
   _old_acl := WEBDAV.DBA.acl_vector_unique (WEBDAV.DBA.acl_vector (_old_acl));
   _new_acl := WEBDAV.DBA.acl_vector_unique (WEBDAV.DBA.acl_vector (_new_acl));
-  aq := async_queue (1);
+  aq := async_queue (1, 4);
   aq_request (aq, 'WEBDAV.DBA.acl_send_mail_aq', vector (_path, _path_url, _from, _old_acl, _new_acl, _encryption_state));
 }
 ;
@@ -5133,7 +5111,7 @@ create procedure WEBDAV.DBA.aci_send_mail (
   _path_url := WEBDAV.DBA.iri2ssl (WEBDAV.DBA.dav_url (_path));
   _old_acl := WEBDAV.DBA.aci_vector (_old_acl);
   _new_acl := WEBDAV.DBA.aci_vector (_new_acl);
-  aq := async_queue (1);
+  aq := async_queue (1, 4);
   aq_request (aq, 'WEBDAV.DBA.aci_send_mail_aq', vector (_path, _path_url, _from, _old_acl, _new_acl, _encryption_state));
 }
 ;
@@ -5468,7 +5446,7 @@ create procedure WEBDAV.DBA.ldp_recovery (
 {
   declare aq any;
 
-  aq := async_queue (1);
+  aq := async_queue (1, 4);
   aq_request (aq, 'WEBDAV.DBA.ldp_recovery_aq', vector (path));
 }
 ;
