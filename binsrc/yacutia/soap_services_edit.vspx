@@ -50,8 +50,8 @@
         {
           if (document.frm_edit_path.t_auth_opt.value == '')
           {
-	    document.frm_edit_path.t_auth_opt.value =
-	    'https_cert=[file_with_certificate].pem;\nhttps_key=[file_with_private_key].pem;';
+            document.frm_edit_path.t_auth_opt.value =
+              'https_cert=[file_with_certificate].pem;\nhttps_key=[file_with_private_key].pem;';
           }
         }
       }
@@ -153,49 +153,50 @@
     <vm:header caption="Options for Web Service Endpoint"/>
     <vm:pagebody>
       <v:method name="astyle" arglist="in cmp varchar">
-	if (self.tab1.tb_active is not null and self.tab1.tb_active.vc_name = cmp)
-	  return 'page_tab_selected';
-	return 'page_tab';
+        if (self.tab1.tb_active is not null and self.tab1.tb_active.vc_name = cmp)
+          return 'page_tab_selected';
+        return 'page_tab';
       </v:method>
 
       <v:method name="ensure_soapuser" arglist="">
         self.soapuser := self.dl_soapuser.ufl_value;
-			  if (self.soapuser = ' __none' or self.soapuser = '')
-			    {
-			      if (
-			         length (self.roles_grant_list) > 0 or
-			         length (self.mod_grant_list) > 0 or
-			         length (self.udt_grant_list) > 0 or
-			         length (self.xml_grant_list)
-			        )
-			      {
-			        declare ui int;
-				select max(U_ID) into ui from DB.DBA.SYS_USERS;
-				self.soapuser := sprintf ('SOAP_%d', ui);
-				USER_CREATE (self.soapuser, md5 (datestring (now())), vector ('DISABLED', 1));
-				self.dl_soapuser.ufl_value :=  self.soapuser;
-				USER_SET_QUALIFIER (self.soapuser, self.soapuser);
-			      }
-			    else
-			      {
-			        self.soapuser := NULL;
-			      }
-			  }
+        if (self.soapuser = ' __none' or self.soapuser = '')
+          {
+            if (
+               length (self.roles_grant_list) > 0 or
+               length (self.mod_grant_list) > 0 or
+               length (self.udt_grant_list) > 0 or
+               length (self.xml_grant_list)
+              )
+            {
+              declare ui int;
+
+              select max(U_ID) into ui from DB.DBA.SYS_USERS;
+              self.soapuser := sprintf ('SOAP_%d', ui);
+              USER_CREATE (self.soapuser, md5 (datestring (now())), vector ('DISABLED', 1));
+              self.dl_soapuser.ufl_value :=  self.soapuser;
+              USER_SET_QUALIFIER (self.soapuser, self.soapuser);
+            }
+          else
+            {
+              self.soapuser := NULL;
+            }
+        }
       </v:method>
       <v:before-data-bind>
-	<v:script>
+        <v:script>
           <![CDATA[
-	    --self.c_xml_rpc.ufl_selected := 0;
-	    if (self.roles_grant_list is null)
-	      self.roles_grant_list := vector ();
-	    if (self.udt_grant_list is null)
-	      self.udt_grant_list := vector ();
-	    if (self.xml_grant_list is null)
-	      self.xml_grant_list := vector ();
-	    if (self.mod_grant_list is null)
-	      self.mod_grant_list := vector ();
+            --self.c_xml_rpc.ufl_selected := 0;
+            if (self.roles_grant_list is null)
+              self.roles_grant_list := vector ();
+            if (self.udt_grant_list is null)
+              self.udt_grant_list := vector ();
+            if (self.xml_grant_list is null)
+              self.xml_grant_list := vector ();
+            if (self.mod_grant_list is null)
+              self.mod_grant_list := vector ();
 
-	    if (get_keyword('_host', self.vc_event.ve_params, null) is not null)
+            if (get_keyword('_host', self.vc_event.ve_params, null) is not null)
             {
               declare i integer;
               i := 0;
@@ -260,48 +261,48 @@
                   self.xmlexec := get_keyword('xml_templates', self.global_opts, NULL);
                 if (self.ovrexec = '' and isarray(self.global_opts) and not mod(length(self.global_opts),2))
                   self.ovrexec := get_keyword('executable', self.global_opts, NULL);
-		if (isarray(self.global_opts) and not mod(length(self.global_opts),2))
-                  {
-                    self.cors := get_keyword ('cors', self.global_opts, '');  
-                    self.cors_rej := get_keyword ('cors_restricted', self.global_opts, 0);  
-		  }
+                if (isarray(self.global_opts) and not mod(length(self.global_opts),2))
+                {
+                  self.cors := get_keyword ('cors', self.global_opts, '');
+                  self.cors_rej := get_keyword ('cors_restricted', self.global_opts, 0);
+                }
               }
               else if( self.mode = 'add1' )
               {
-                 self.lpath := '';
-                 self.defdir := 0;
-                 self.ppath := '';
-                 self.defpage := '';
+                self.lpath := '';
+                self.defdir := 0;
+                self.ppath := '';
+                self.defpage := '';
 
-                 self.dirbrowsing := 0;
-                 self.xmlexec := 0;
-                 self.ovrexec := 0;
-                 self.persistvars := 0;
-                 self.vspuser := '';
-                 self.soapuser := '';
+                self.dirbrowsing := 0;
+                self.xmlexec := 0;
+                self.ovrexec := 0;
+                self.persistvars := 0;
+                self.vspuser := '';
+                self.soapuser := '';
               }
               self.roles_grant_list := vector();
               self.mod_grant_list := vector();
               if (isstring(self.soapuser))
               {
-	        declare _u_id integer;
-	        declare plist any;
+                declare _u_id integer;
+                declare plist any;
                 whenever not found goto nf_user;
-		select U_ID into _u_id from SYS_USERS where U_NAME = self.soapuser;
-		self.xml_grant_list := get_granted_xml_templates (_u_id, plist);
+                select U_ID into _u_id from SYS_USERS where U_NAME = self.soapuser;
+                self.xml_grant_list := get_granted_xml_templates (_u_id, plist);
                 for select P_NAME from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_GRANTS
                   where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME and P_TYPE is null
                 do
                 {
-		  if (0 = position (P_NAME, plist))
+                  if (0 = position (P_NAME, plist))
                     self.roles_grant_list := vector_concat(self.roles_grant_list, vector(P_NAME));
-		}
+                }
 
                 for select P_NAME from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_GRANTS
                   where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME and P_TYPE = 3
                 do
                 {
-		  if (0 = position (P_NAME, plist))
+                  if (0 = position (P_NAME, plist))
                     self.mod_grant_list := vector_concat(self.mod_grant_list, vector(P_NAME));
                 }
 
@@ -346,83 +347,83 @@
                   if (cast(self.soap_opt[idx] as varchar) = 'WS-RP')
                     self.ws_pr := cast(self.soap_opt[idx+1] as varchar);
                   if (cast(self.soap_opt[idx] as varchar) = 'wsrp-from')
-		    self.wsrp_from := cast(self.soap_opt[idx+1] as varchar);
-		  if (cast(self.soap_opt[idx] as varchar) = 'Use')
-		    self._use1 := cast(self.soap_opt[idx+1] as varchar);
+                    self.wsrp_from := cast(self.soap_opt[idx+1] as varchar);
+                  if (cast(self.soap_opt[idx] as varchar) = 'Use')
+                    self._use1 := cast(self.soap_opt[idx+1] as varchar);
                   idx := idx + 2;
                   -- opts := concat( opts, sprintf ('%s=%s;\r\n', cast(self.soap_opt[idx] as varchar), cast(self.soap_opt[idx+1] as varchar)));
                 }
               }
             }
-	    -- load initial values if not a post
-	    if (not self.vc_event.ve_is_post)
+            -- load initial values if not a post
+            if (not self.vc_event.ve_is_post)
             {
-	      self.t_lpath.ufl_value := self.lpath;
-	      self.t_auth_realm.ufl_value := self.auth_realm;
-	      self.t_auth_func.ufl_value := self.auth_func;
-	      self.t_after_func.ufl_value := self.after_func;
-	      if (isarray(self.auth_opt))
-	      {
-		declare idx integer;
-		declare opts varchar;
-		opts := '';
-		idx := 0;
-		while (idx < length(self.auth_opt))
-		{
-		  opts := concat(opts, sprintf('%s=%s;\r\n', cast(self.auth_opt[idx] as varchar), cast(self.auth_opt[idx+1] as varchar)));
-		  idx := idx + 2;
-		}
-		self.t_auth_opt.ufl_value := opts;
-	      }
-	      declare idx interger;
-	      idx := 0;
-	      while (idx < length (self.soap_opt))
-	      {
-		if (cast(self.soap_opt[idx] as varchar) = 'XML-RPC' and cast(self.soap_opt[idx+1] as varchar) = 'yes')
-		  self.c_xml_rpc.ufl_selected := 1;
-		idx := idx + 2;
-	      }
-	      self._servicename.ufl_value := self.servicename;
-	      self._namespace.ufl_value := self.namespace;
-	      self._headerns.ufl_value := self.headerns;
-	      self._faultns.ufl_value := self.faultns;
-	      self._wsrp_from.ufl_value := self.wsrp_from;
-	      self._wss_key.ufl_value := self.wss_key;
-	      self._wss_template.ufl_value := self.wss_template;
-	    }
+              self.t_lpath.ufl_value := self.lpath;
+              self.t_auth_realm.ufl_value := self.auth_realm;
+              self.t_auth_func.ufl_value := self.auth_func;
+              self.t_after_func.ufl_value := self.after_func;
+              if (isarray(self.auth_opt))
+              {
+                declare idx integer;
+                declare opts varchar;
+                opts := '';
+                idx := 0;
+                while (idx < length(self.auth_opt))
+                {
+                  opts := concat(opts, sprintf('%s=%s;\r\n', cast(self.auth_opt[idx] as varchar), cast(self.auth_opt[idx+1] as varchar)));
+                  idx := idx + 2;
+                }
+                self.t_auth_opt.ufl_value := opts;
+                    }
+                    declare idx interger;
+                    idx := 0;
+                    while (idx < length (self.soap_opt))
+                    {
+                if (cast(self.soap_opt[idx] as varchar) = 'XML-RPC' and cast(self.soap_opt[idx+1] as varchar) = 'yes')
+                  self.c_xml_rpc.ufl_selected := 1;
+                idx := idx + 2;
+              }
+              self._servicename.ufl_value := self.servicename;
+              self._namespace.ufl_value := self.namespace;
+              self._headerns.ufl_value := self.headerns;
+              self._faultns.ufl_value := self.faultns;
+              self._wsrp_from.ufl_value := self.wsrp_from;
+              self._wss_key.ufl_value := self.wss_key;
+              self._wss_template.ufl_value := self.wss_template;
+            }
 
-      if (self.vc_event.ve_button is not null and
-          (self.vc_event.ve_button.vc_name = 'next' or
-           self.vc_event.ve_button.vc_name = 'back' or
-           self.vc_event.ve_button.vc_name = 'finish'))
-      {
-        -- Get all tabs
-        declare tabs any;
-        declare pos integer;
-        tabs := vector();
-        foreach (vspx_control c in self.tab1.vc_children) do
-        {
-          if (c is not null)
-            tabs := vector_concat(tabs,vector(c.vc_name));
-        }
-        -- find the active one
-        pos := position(self.tab1.tb_active.vc_name,tabs);
-        if (self.vc_event.ve_button.vc_name = 'back')
-          pos := pos - 2;
-        if (self.vc_event.ve_button.vc_name = 'finish')
-          pos := length(tabs) - 1;
+            if (self.vc_event.ve_button is not null and
+                (self.vc_event.ve_button.vc_name = 'next' or
+                 self.vc_event.ve_button.vc_name = 'back' or
+                 self.vc_event.ve_button.vc_name = 'finish'))
+            {
+              -- Get all tabs
+              declare tabs any;
+              declare pos integer;
+              tabs := vector();
+              foreach (vspx_control c in self.tab1.vc_children) do
+              {
+                if (c is not null)
+                  tabs := vector_concat(tabs,vector(c.vc_name));
+              }
+              -- find the active one
+              pos := position(self.tab1.tb_active.vc_name,tabs);
+              if (self.vc_event.ve_button.vc_name = 'back')
+                pos := pos - 2;
+              if (self.vc_event.ve_button.vc_name = 'finish')
+                pos := length(tabs) - 1;
 
-        declare new_tab_switch_button vspx_button;
-        new_tab_switch_button := self.frm_edit_path.vc_find_control ('tab1_switch_' || tabs[pos]);
-        new_tab_switch_button.vc_focus := 1;
-        new_tab_switch_button.vc_set_childs_focus (1, e);
-        self.vc_event.ve_button := new_tab_switch_button;
-      }
-      else 
-      {
-        self.t_cors.ufl_value := self.cors;
-        self.c_cors_rej.ufl_selected := self.cors_rej;
-      }
+              declare new_tab_switch_button vspx_button;
+              new_tab_switch_button := self.frm_edit_path.vc_find_control ('tab1_switch_' || tabs[pos]);
+              new_tab_switch_button.vc_focus := 1;
+              new_tab_switch_button.vc_set_childs_focus (1, e);
+              self.vc_event.ve_button := new_tab_switch_button;
+            }
+            else
+            {
+              self.t_cors.ufl_value := self.cors;
+              self.c_cors_rej.ufl_selected := self.cors_rej;
+            }
           ]]>
         </v:script>
       </v:before-data-bind>
@@ -437,19 +438,20 @@
           }
         ]]>
       </v:after-data-bind>
+
       <v:template name="t_template" type="simple" enabled="-- equ(self.mode, 'add1')">
         <v:form name="frm_add_templ2" action="soap_services_edit.vspx" method="POST" type="simple">
-	  <table class="sub_page" align="left" border="0" cellspacing="0" cellpadding="3" >
-	    <tr class="listing_header_row">
-	      <th colspan="3">
-		Select template to fill standard options into next form
-	      </th>
-	    </tr>
+          <table class="sub_page" align="left" border="0" cellspacing="0" cellpadding="3" >
+            <tr class="listing_header_row">
+              <th colspan="3">
+                Select template to fill standard options into next form
+              </th>
+            </tr>
             <tr>
               <td>
                 <v:radio-button name="rb_templ" group-name="radio_gr" value="none" initial-checked="1" />
               </td>
-	      <td>Create as new (blank form)</td>
+                <td>Create as new (blank form)</td>
               <td/>
             </tr>
             <tr>
@@ -706,10 +708,14 @@
                             <label for="dl_soapuser">SOAP User</label>
                           </td>
                           <td>
-                            <v:data-list xhtml_id="dl_soapuser" name="dl_soapuser" sql="select ' __none' as UNAME, 'none' as UFNAME from DB.DBA.SYS_USERS union select U_NAME, U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE=0 and U_SQL_ENABLE = 1 order by UNAME"
+                                            <v:data-list
+                                              xhtml_id="dl_soapuser"
+                                              name="dl_soapuser"
+                                              sql="select ' __none' as UNAME, 'none' as UFNAME from DB.DBA.SYS_USERS union select U_NAME, U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE=0 and U_SQL_ENABLE = 1 order by UNAME"
                                          key-column="UNAME" value-column="UFNAME"
                                          defvalue="--case when self.soapuser='' then ' __none' else self.soapuser end"
-                                         xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload1\');"/>
+                                              xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload1\');"
+                                            />
                             <v:button action="simple" name="reload1" value="Reload">
                               <v:on-post>
                                 <![CDATA[
@@ -763,8 +769,7 @@
                             <label for="s_authmethod">Method</label>
                           </td>
 			  <td>
-			    <v:select-list name="s_authmethod" xhtml_onchange="defineOpts(this);"
-			      	value="--coalesce (control.ufl_value, self.security)">
+                                            <v:select-list name="s_authmethod" xhtml_onchange="defineOpts(this);" value="--coalesce (control.ufl_value, self.security)">
 				<v:item name="None" value="none"/>
 				<v:item name="Basic" value="basic"/>
 				<v:item name="Digest" value="digest"/>
@@ -1107,17 +1112,23 @@
               </td>
             </tr>
           </table>
-            <v:data-set name="ds_add_procedures" sql="select P_NAME, position(p_name, self.roles_grant_list) AS STATE from DB.DBA.SYS_PROCEDURES
-			  where self.browse_cat = name_part (p_name, 0) and p_name not like '%.vsp' and P_TYPE is null
-                          order by p_name" nrows="1000" scrollable="1" edit="1">
+                                  <v:data-set
+                                    name="ds_add_procedures"
+                                    sql="select P_NAME
+                                           from DB.DBA.SYS_PROCEDURES
+                                          where self.browse_cat = name_part (P_NAME, 0) and p_name not like '%.vsp' and P_TYPE is null
+                                          order by P_NAME"
+                                    nrows="1000"
+                                    scrollable="1"
+                                    edit="1">
               <v:column name="P_NAME"/>
-              <v:column name="STATE"/>
               <v:before-data-bind>
-                if (isnull(self.browse_cat) or self.browse_cat = '' or
-                    not exists(select 1 from DB.DBA.SYS_PROCEDURES where P_TYPE is null and name_part (p_name, 0) = self.browse_cat) ) {
-			            self.browse_cat := (select top 1 name_part (p_name, 0) from DB.DBA.SYS_PROCEDURES where P_TYPE is null);
+                                      if (isnull (self.browse_cat) or self.browse_cat = '' or not exists(select 1 from DB.DBA.SYS_PROCEDURES where P_TYPE is null and name_part (P_NAME, 0) = self.browse_cat) )
+                                      {
+                                        self.browse_cat := (select top 1 name_part (P_NAME, 0) from DB.DBA.SYS_PROCEDURES where P_TYPE is null);
 			          }
               </v:before-data-bind>
+
               <v:template name="temp_ds_add_procedures_header" type="simple" name-to-remove="table" set-to-remove="bottom">
   	      <?vsp http('<div class="scroll_area">'); ?>
                 <table class="listing" rules="groups">
@@ -1150,8 +1161,7 @@
                         <input type="checkbox" name="cb_add_pr" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                        <v:label name="l_add_pr" value="--case when (control.vc_parent as vspx_row_template).te_rowset[1]
-                                                               then 'Published' else '' end" format="%s"/>
+                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.roles_grant_list) then 'Published' else '' end" format="%s" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
@@ -1366,17 +1376,23 @@
                 </td>
               </tr>
             </table>
-            <v:data-set name="ds_add_modules" sql="select P_NAME, position(p_name, self.mod_grant_list) AS STATE from DB.DBA.SYS_PROCEDURES
-			  where self.browse_cat = name_part (p_name, 0) and p_name not like '%.vsp' and P_TYPE = 3
-                          order by p_name" nrows="1000" scrollable="1" edit="1">
+                                  <v:data-set
+                                    name="ds_add_modules"
+                                    sql="select P_NAME
+                                           from DB.DBA.SYS_PROCEDURES
+                                          where self.browse_cat = name_part (P_NAME, 0) and p_name not like '%.vsp' and P_TYPE = 3
+                                          order by P_NAME"
+                                    nrows="1000"
+                                    scrollable="1"
+                                    edit="1">
               <v:column name="P_NAME"/>
-              <v:column name="STATE"/>
               <v:before-data-bind>
-                if (isnull(self.browse_cat) or self.browse_cat = '' or
-                    not exists(select 1 from DB.DBA.SYS_PROCEDURES where P_TYPE = 3 and name_part (p_name, 0) = self.browse_cat) ) {
-			            self.browse_cat := (select top 1 name_part (p_name, 0) from DB.DBA.SYS_PROCEDURES where P_TYPE = 3);
+                                      if (isnull(self.browse_cat) or self.browse_cat = '' or not exists(select 1 from DB.DBA.SYS_PROCEDURES where P_TYPE = 3 and name_part (P_NAME, 0) = self.browse_cat) )
+                                      {
+                                        self.browse_cat := (select top 1 name_part (P_NAME, 0) from DB.DBA.SYS_PROCEDURES where P_TYPE = 3);
 			          }
               </v:before-data-bind>
+
               <v:template name="temp_ds_add_modules_header" type="simple" name-to-remove="table" set-to-remove="bottom">
   	      <?vsp http('<div class="scroll_area">'); ?>
                 <table class="listing" rules="groups">
@@ -1409,8 +1425,7 @@
                         <input type="checkbox" name="cb_add_mod" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                        <v:label name="l_add_mod" value="--case when (control.vc_parent as vspx_row_template).te_rowset[1]
-                                                               then 'Published' else '' end" format="%s"/>
+                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.mod_grant_list) then 'Published' else '' end" format="%s" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/script_16.png" alt="PL Module" title="PL Module"/>
@@ -1534,11 +1549,14 @@
                 </td>
               </tr>
             </table>
-            <v:data-set name="ds_add_udt" sql="select distinct UT_NAME,position(UT_NAME, self.udt_grant_list) AS STATE from DB.DBA.SYS_USER_TYPES
+                                  <v:data-set
+                                    name="ds_add_udt"
+                                    sql="select distinct UT_NAME
+                                           from DB.DBA.SYS_USER_TYPES
 			  where self.browse_cat = name_part (UT_NAME, 0)
-                          order by UT_NAME" nrows="1000" scrollable="1" edit="1">
+                                          order by UT_NAME"
+                                    nrows="1000" scrollable="1" edit="1">
               <v:column name="UT_NAME"/>
-              <v:column name="STATE"/>
               <v:before-data-bind>
                 if (isnull(self.browse_cat) or self.browse_cat = '' or
                     not exists(select 1 from SYS_USER_TYPES where name_part (UT_NAME, 0) = self.browse_cat) ) {
@@ -1577,8 +1595,7 @@
                         <input type="checkbox" name="cb_add_udt" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                        <v:label name="l_add_udt" value="--case when (control.vc_parent as vspx_row_template).te_rowset[1]
-                                                               then 'Published' else '' end" format="%s"/>
+                                            <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.udt_grant_list) then 'Published' else '' end" format="%s" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/apps_16.png" alt="User-defined Type" title="User-defined type"/>
@@ -1674,11 +1691,15 @@
 
       		<v:template type="simple" name="pub_xml2" enabled="--case when (self.sp_add <> 1 and self.sp_desc <> 1 and self.subtab = 4) then 1 else 0 end">
   	        <h3>Publish Saved Queries for user <v:label name="l_add_xml_user" value="--self.soapuser" format="%s"/></h3>
-            <v:data-set name="ds_add_xml" sql="select RES_FULL_PATH, position(RES_FULL_PATH, self.xml_grant_list) AS STATE from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_PROP
-			  where PROP_NAME = 'xml-template' and RES_ID = PROP_PARENT_ID and PROP_TYPE = 'R'
-			  and length (RES_FULL_PATH)" nrows="1000" scrollable="1" edit="1">
+                                  <v:data-set
+                                    name="ds_add_xml"
+                                    sql="select RES_FULL_PATH
+                                           from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_PROP
+                                          where PROP_NAME = 'xml-template' and RES_ID = PROP_PARENT_ID and PROP_TYPE = 'R' and length (RES_FULL_PATH)"
+                                    nrows="1000"
+                                    scrollable="1"
+                                    edit="1">
               <v:column name="RES_FULL_PATH"/>
-              <v:column name="STATE"/>
               <v:template name="temp_ds_add_xml_header" type="simple" name-to-remove="table" set-to-remove="bottom">
   	      <?vsp http('<div class="scroll_area">'); ?>
                 <table class="listing" rules="groups">
@@ -1711,8 +1732,7 @@
                         <input type="checkbox" name="cb_add_xml" value="<?V (control as vspx_row_template).te_rowset[0] ?>"/>
                       </td>
                       <td class="listing_col">
-                        <v:label name="l_add_xml" value="--case when (control.vc_parent as vspx_row_template).te_rowset[1]
-                                                               then 'Published' else '' end" format="%s"/>
+                                              <v:label name="l_add_pr" value="--case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.xml_grant_list) then 'Published' else '' end" format="%s" />
                       </td>
                       <td class="listing_col">
                         <img src="images/icons/apps_16.png" alt="Saved Query" title="Saved Query"/>
@@ -1972,7 +1992,8 @@
                         self.auth_opt := self.t_auth_opt.ufl_value;
                         if (self.auth_opt = '' or self.auth_opt = 0)
                           self.auth_opt := NULL;
-                        else if(isstring (self.auth_opt) ) {
+                                            else if(isstring (self.auth_opt) )
+                                            {
                             self.auth_opt := replace (self.auth_opt, '\r', '');
                             self.auth_opt := replace (self.auth_opt, '\n', '');
                             self.auth_opt := trim (self.auth_opt);
@@ -2061,11 +2082,13 @@
 			else   
 			self.global_opts := NULL;
                         commit work;
-                        if(exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath) ) {
+                                            if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath) )
+                                            {
                           declare _soapuser varchar;
                           whenever not found goto nf_user2;
                           select HP_RUN_SOAP_AS into _soapuser from DB.DBA.HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath;
-                          if( isstring(_soapuser) ) {
+                                              if( isstring(_soapuser) )
+                                              {
                             declare _u_id integer;
                             select U_ID into _u_id from SYS_USERS where U_NAME = _soapuser;
 			    for select G_OBJECT from DB.DBA.SYS_GRANTS
@@ -2103,7 +2126,8 @@
                         }
                         else
                         {
-                          if( not isnull(self.soapuser) ) {
+                                              if( not isnull(self.soapuser) )
+                                              {
 			    declare vho, lho, lp varchar;
                             declare inx integer;
                             inx := 0;
@@ -2122,15 +2146,13 @@
                             inx := 0;
 			    while( inx < length(self.mod_grant_list) )
 			     {
-			       exec(sprintf('GRANT EXECUTE ON %s TO %s',
-			          self.mod_grant_list[inx], self.soapuser));
+                                                 exec(sprintf('GRANT EXECUTE ON %s TO %s', self.mod_grant_list[inx], self.soapuser));
                                inx := inx + 1;
                              }
                             inx := 0;
 			    while( inx < length (self.udt_grant_list))
 			     {
-			       exec(sprintf('GRANT EXECUTE ON %s TO %s',
-			          self.udt_grant_list[inx], self.soapuser));
+                                                exec(sprintf('GRANT EXECUTE ON %s TO %s', self.udt_grant_list[inx], self.soapuser));
 			       vho := self._httphost;
 			       lho := self._host;
 		               lp := self.lpath;
