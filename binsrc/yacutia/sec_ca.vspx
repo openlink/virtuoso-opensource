@@ -116,36 +116,6 @@
                 			  ]]>
         		          </v:on-post>
 	                  </v:button>
-              	      <v:button action="simple" value="Import" name="import_select">
-                  		  <v:on-post>
-                  			  <![CDATA[
-                            self.ca_mode := 'import';
-
-                            self.vc_data_bind (e);
-                  			  ]]>
-          		          </v:on-post>
-  	                  </v:button>
-              	      <v:button action="simple" value="Export" name="export_select">
-                  		  <v:on-post>
-                  			  <![CDATA[
-                  			    declare N integer;
-                            declare params any;
-
-                            params := self.vc_event.ve_params;
-                            self.ca_certs := vector ();
-                            for (N := 0; N < length (params); N := N + 4)
-                            {
-                              if (params[N] like '%cb_select%')
-                              {
-                                self.ca_certs := vector_concat (self.ca_certs, vector(params[N+1]));
-                              }
-                            }
-                            self.ca_mode := 'export';
-
-                            self.vc_data_bind (e);
-                  			  ]]>
-          		          </v:on-post>
-  	                  </v:button>
                     <br /><br />
                     <table class="listing">
                       <tr class="listing_header_row">
