@@ -363,8 +363,8 @@
 
                     if (get_keyword ('mode', params) = 'create')
                     {
-                      insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
-                        values (name, stringdate(start_str), sql_str, inter);
+		      insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL, SE_NOTIFY, SE_ENABLE_NOTIFY, SE_DISABLED)
+		        values (name, stringdate (start_str), sql_str, inter, u_notif, notif_enable, disabled);
                       if (row_count () = 0)
                       {
                         self.vc_is_valid := 0;
