@@ -198,7 +198,10 @@
 		   foreach (any c in r) do
 		     {
 			   declare v any;
+			   if (isstring (c))
                            v := charset_recode (c, enc, '_WIDE_');
+			   else
+			     v := c;   
 			   http_value (v, 'td');
 		     }
 		   http ('</tr>');
