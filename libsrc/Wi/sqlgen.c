@@ -3280,6 +3280,7 @@ setp_copy_if_constant (sql_comp_t * sc, setp_node_t * setp, state_slot_t * ssl)
       dk_set_push (&setp->setp_const_gb_values, (void*)ssl);
       return ssl2;
     }
+  ssl->ssl_always_vec = 1;
   return ssl;
 }
 
