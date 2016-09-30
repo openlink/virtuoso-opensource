@@ -3907,6 +3907,7 @@
                         }
                       }
                     }
+                    commit work;
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
                     {
                       self.webdav_redirect (WEBDAV.DBA.path_parent (self.dav_path, 1), '');
@@ -4053,6 +4054,8 @@
                       retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.source, content, self.mimeType, WEBDAV.DBA.DAV_GET (item, 'permissions'), WEBDAV.DBA.DAV_GET (item, 'ownerID'), WEBDAV.DBA.DAV_GET (item, 'groupID'));
                       if (WEBDAV.DBA.DAV_ERROR (retValue))
                         signal ('TEST', WEBDAV.DBA.DAV_PERROR (retValue) || '<>');
+
+                      commit work;
                     }
                     if (self.mode = 'webdav')
                     {
