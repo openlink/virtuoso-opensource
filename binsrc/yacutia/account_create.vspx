@@ -743,7 +743,15 @@
                                   <label>Key Password</label>
                                   <v:text name="k_pwd" type="password" value="" />
                                   <br />
-                                  <label>PKCS12 file:</label>
+				  <label>Key File Format</label>
+				  <v:select-list xhtml_id="k_type" name="k_type">
+				      <v:item name="PKCS12" value="PKCS12" />
+				      <v:item name="PEM" value="PEM" />
+				      <v:item name="DER" value="DER" />
+				  </v:select-list>
+				  <br/>
+
+                                  <label>Key File:</label>
                                   <input type="file" name="k_value" value="Select Key"/>
                                   <v:button action="simple" name="imp_key" value="Import Key">
                                     <v:on-post>
@@ -759,7 +767,8 @@
                                         };
 					username:= self.t_login_name.ufl_value;
                                         set_user_id (username);
-                                        USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
+					USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', self.k_type.ufl_value, 
+						self.k_pwd.ufl_value, null, 1);
                                         EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
 					http_request_status ('HTTP/1.1 302 Found');
 					http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
