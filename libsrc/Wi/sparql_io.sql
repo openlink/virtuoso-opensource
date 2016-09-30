@@ -1988,6 +1988,8 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, ses);
       else if (ret_format = 'JSON;LD')
         DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, ses);
+      else if (ret_format = 'JSON;LD_CTX')
+        DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (triples, ses);
       else if (ret_format = 'JSON;RES')
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
       else if (ret_format = 'RDFA;XHTML')
@@ -2672,7 +2674,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[ctr++] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
     http('			format.options[ctr++] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
     http('			format.options[ctr++] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-    http('			format.options[ctr++] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
+    http('			format.options[ctr++] = new Option(\'JSON-LD (plain)\',\'application/x-json+ld\');\n');
+    http('			format.options[ctr++] = new Option(\'JSON-LD (with context)\',\'application/x-json+ld+ctx\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
     http('			format.options[ctr++] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
     http('			format.options[ctr++] = new Option(\'HTML+Microdata (basic)\',\'text/html\');\n');
@@ -2820,7 +2823,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
         vector ('XHTML+RDFa'						, 'application/xhtml+xml'		),
         vector ('ATOM+XML'						, 'application/atom+xml'		),
         vector ('ODATA/JSON'						, 'application/odata+json'		),
-        vector ('JSON-LD'						, 'application/x-json+ld'		),
+        vector ('JSON-LD (plain)'					, 'application/x-json+ld'		),
+        vector ('JSON-LD (with context)'					, 'application/x-json+ld+ctx'		),
         vector ('HTML (list)'						, 'text/x-html+ul'			),
         vector ('HTML (table)'						, 'text/x-html+tr'			),
         vector ('HTML+Microdata (basic)'				, 'text/html'				),
@@ -4537,6 +4541,8 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
         DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (triples, out_ses);
       else if ('application/x-json+ld' = mime)
         DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, out_ses);
+      else if ('application/x-json+ld+ctx' = mime)
+        DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (triples, out_ses);
       else if ('application/ld+json' = mime)
         DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, out_ses);
       else if ('application/xhtml+xml' = mime)

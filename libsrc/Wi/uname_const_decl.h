@@ -69,6 +69,8 @@ extern caddr_t uname__srcfile;
 extern caddr_t uname__srcline;
 extern caddr_t uname__txt;
 extern caddr_t uname__xslt;
+extern caddr_t uname_at_id;
+extern caddr_t uname_at_num;
 extern caddr_t uname_SPECIAL_cc_bif_c_AVG;
 extern caddr_t uname_SPECIAL_cc_bif_c_COUNT;
 extern caddr_t uname_SPECIAL_cc_bif_c_GROUPING;

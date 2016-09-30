@@ -46,6 +46,8 @@ caddr_t uname__srcfile;
 caddr_t uname__srcline;
 caddr_t uname__txt;
 caddr_t uname__xslt;
+caddr_t uname_at_id;
+caddr_t uname_at_num;
 caddr_t uname_SPECIAL_cc_bif_c_AVG;
 caddr_t uname_SPECIAL_cc_bif_c_COUNT;
 caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
@@ -243,6 +245,8 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__srcline				, " srcline"			},
   { &uname__txt					, " txt"			},
   { &uname__xslt				, " xslt"			},
+  { &uname_at_id					, "@id"						},
+  { &uname_at_num					, "@num"					},
   { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
   { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
   { &uname_SPECIAL_cc_bif_c_GROUPING			, "SPECIAL::bif:GROUPING"			},

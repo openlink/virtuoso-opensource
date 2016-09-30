@@ -4133,6 +4133,205 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any
 }
 ;
 
+create function DB.DBA.JSON_LD_CTX_USED_NAMES (in ctx_dict any)
+{
+  declare used_names any;
+  declare k,v any;
+  used_names := dict_new (dict_size (ctx_dict));
+  dict_iter_rewind (ctx_dict);
+  while (dict_iter_next (ctx_dict, k, v))
+    if (k[1] is not null)
+      {
+        declare prev_use any;
+        prev_use := dict_get (used_names, v[0], null);
+        if (k[1] is not null and prev_use is not null)
+          signal ('22023', 'JSON-LD context dictionary is invalid, it uses shortcut "' || dict_get (used_names, v[0], null)
+            || '" for both <' || k[0] || '> with ' || k[1] || ' and <' || prev_use[0] || '> with ' || prev_use[1] );
+        dict_put (used_names, v[0], k);
+      }
+  return used_names;
+}
+;
+
+create function DB.DBA.JSON_LD_CTX_MAKE_NEW_SHORTCUT (in p varchar, in otype varchar, in used_names any)
+{
+  declare old_k any;
+  declare p_tail, otype_tail integer;
+  declare orig_p, shortcut, short2, o_suffix varchar;
+  orig_p := p;
+  otype_tail := strrchr (otype, '#');
+  if (otype_tail is null)
+    o_suffix := otype;
+  else
+    o_suffix := subseq (otype, otype_tail+1);
+again:
+  p_tail := strrchr (p, '#');
+  if (p_tail is null)
+    p_tail := strrchr (p, '/');
+  if (p_tail is not null)
+    {
+      shortcut := subseq (p, p_tail+1);
+      old_k := dict_get (used_names, shortcut, null);
+      if (old_k is null or (p = old_k[0] and otype = old_k[1]))
+        return shortcut;
+      short2 := shortcut || o_suffix;
+      old_k := dict_get (used_names, short2, null);
+      if (old_k is null or (p = old_k[0] and otype = old_k[1]))
+        return short2;
+      p [p_tail] := ascii ('_');
+      goto again;
+    }
+  return 'x' || tree_md5 (vector (orig_p, otype), 1);
+}
+;
+
+-- ctx_dict is a dictionary of JSON_LD shortcut names and at the same time the dictionary of preset types for some predicates.
+-- The keys of the dictionary are either vector (predicate, type) or vector (predicate, NULL); first variant is for shortcuts and second one is for checking types.
+-- The values are vector (shortcut, reserved-for-future) for first variant and vector (first-type, can-add-more-types) for second one.
+-- ctx_mode tells what to do with the context dictionary:
+-- bit 1 = create dictionary if not exists.
+-- bit 2 = if needed, extend the existing or newly created dictionary by new properties (but not create the dictionary if bit 1 is not set).
+-- bit 4 = if needed, extend the existing or newly created dictionary by new object types for known properties (otherwise only new properties can be edited, or none at all if bit 2 is not set).
+-- bit 8 = signal an error if type of object does not match the type in dictionary (if not set then plain notation is used).
+-- bit 256 = 100% accuracy in types, different numeric types get different entries in dictionary (or results in an error).
+-- bit 512 = signal an error if the property in triples is not listed in the dictionary (if not set then plain notation is used).
+-- Note then now bits 1 2 4 are more or less ok, but not higher.
+
+create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses any, in ctx_dict any := null, in ctx_mode integer := 255)
+{
+  declare env any;
+  declare tcount, tctr, nesting integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX with mode ', ctx_mode, ':'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('{ }\n', ses);
+      return;
+    }
+  env := vector (0, 0, 0, null);
+  if (214 <> __tag (ctx_dict))
+    {
+      if (bit_and (ctx_mode, 1))
+        ctx_dict := dict_new (31);
+      else if (bit_and (ctx_mode, 2+4))
+        signal ('22023', 'JSON-LD context dictionary is required but neither provided nor allowed to be created (bit 1 of context mode is not set)');
+    }
+-- No error handlers here because failed sorting by predicate or subject would result in poorly structured output.
+  rowvector_obj_sort (triples, 2, 1);
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
+  if (bit_and (ctx_mode, 2+4))
+    {
+      declare used_names any;
+      declare prev_p, prev_otype any;
+      declare fixed_otype_of_p any;
+      used_names := DB.DBA.JSON_LD_CTX_USED_NAMES (ctx_dict);
+      prev_p := '';
+      prev_otype := '@:)';
+      fixed_otype_of_p := null;
+      for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+        {
+          declare p, obj, raw_otype, otype any;
+          p := triples[tctr][1];
+          obj := triples[tctr][2];
+          otype := raw_otype := case __tag(obj)
+            when __tag of rdf_box then UNAME'@@lit'
+            when __tag of integer then UNAME'@num'
+            when __tag of real then UNAME'@num'
+            when __tag of double precision then UNAME'@num'
+            when __tag of decimal then UNAME'@num'
+            when __tag of IRI_ID then UNAME'@id'
+            when __tag of UNAME then UNAME'@id'
+            when __tag of varchar then case when (bit_and (__box_flags (obj), 1)) then UNAME'@id' else UNAME'http://www.w3.org/2001/XMLSchema#string' end
+            when __tag of nvarchar then UNAME'http://www.w3.org/2001/XMLSchema#string'
+            else uname(__xsd_type (obj)) end;
+          if (otype = UNAME'@@lit')
+            {
+              otype := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)), UNAME'http://www.w3.org/2001/XMLSchema#string');
+              if (otype in ('http://www.w3.org/2001/XMLSchema#integer', 'http://www.w3.org/2001/XMLSchema#float', 'http://www.w3.org/2001/XMLSchema#double', 'http://www.w3.org/2001/XMLSchema#decimal'))
+                otype := UNAME'@num';
+              else
+                otype := uname(otype);
+            }
+          if (((p <> prev_p) or (otype <> prev_otype)) and (p <> UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'))
+            {
+              declare shortcut_etc any;
+              declare shortcut varchar;
+              shortcut_etc := dict_get (ctx_dict, vector (p, otype), null);
+              if (p <> prev_p)
+                {
+                  fixed_otype_of_p := dict_get (ctx_dict, vector (p, null), null);
+                  if (fixed_otype_of_p is null)
+                    {
+                      if (fixed_otype_of_p is not null and (fixed_otype_of_p <> otype))
+                        signal ('22023', 'JSON-LD context is not suitable for data: property <' || p || '> is supposed to have values of type " || fixed_otype_of_p || " but the data contain value of type "' || otype || '".');
+                    }
+                }
+              if (shortcut_etc is null)
+                {
+                  if (bit_and (ctx_mode, 4) or fixed_otype_of_p is null)
+                    {
+                      shortcut := DB.DBA.JSON_LD_CTX_MAKE_NEW_SHORTCUT (p, otype, used_names);
+                      dict_put (ctx_dict, vector (p, otype), vector (shortcut));
+                      dict_put (used_names, shortcut, vector (p, otype));
+                    }
+                }
+            }
+          prev_p := p;
+          prev_otype := otype;
+        }
+    }
+  if (214 <> __tag (ctx_dict))
+    http ('{ "@graph": [\n    ', ses);
+  else
+    {
+      declare need_comma integer;
+      declare k,v any;
+      http ('{ "@context": {', ses);
+      dict_iter_rewind (ctx_dict);
+      need_comma := 0;
+      while (dict_iter_next (ctx_dict, k, v))
+        {
+          if (k[1] is not null)
+            {
+              if (need_comma)
+                http (',', ses);
+              else
+                need_comma := 1;
+              http ('\n    "', ses);
+              http (v[0], ses);
+              http ('": { "@id": "', ses);
+              http (id_to_iri (k[0]), ses);
+              if (k[1] not in (UNAME'@num', UNAME'http://www.w3.org/2001/XMLSchema#string'))
+                {
+                  http ('", "@type": "', ses);
+                  http (k[1], ses);
+                  http ('" }', ses);
+                }
+              else
+                {
+            -- Uncomment either
+                  --http ('" /*, "@type": "', ses);
+                  --http (k[1], ses);
+                  --http ('"*/ }', ses);
+            -- or
+                  http ('" }', ses);
+            -- but not both
+                }
+            }
+        }
+      http (' },\n  "@graph": [\n    ', ses);
+    }
+  nesting := http_ld_json_triple_batch (env, triples, ses, ctx_dict, ctx_mode);
+  if (nesting > 1)
+    http (' ]', ses);
+  if (nesting)
+    http (' }\n', ses);
+  http ('] }\n', ses);
+}
+;
+
 create procedure DB.DBA.RDF_TRIPLES_TO_JSON (inout triples any, inout ses any)
 {
   declare tcount, tctr, env integer;
@@ -6624,6 +6823,21 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD (inout triples_dict any
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX (inout triples_dict any, in ctx_dict any := null) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (triples, ses, ctx_dict);
   return ses;
 }
 ;
@@ -16864,6 +17078,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_LD to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML to SPARQL_SELECT',
@@ -16905,6 +17120,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL to SPARQL_SELECT',
