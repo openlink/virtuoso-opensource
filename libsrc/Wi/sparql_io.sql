@@ -2974,7 +2974,7 @@ create procedure WS.WS.sparql_predefined_nsdecl ()
   http (sprintf ('	<tr><th>Prefix</th><th>URI</th></tr>\n'));
   for select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by 1 do
     {
-       http (sprintf ('	<tr><td>%V</td><td>%V</td></tr>\n', NS_PREFIX, NS_URL));
+       http (sprintf ('	<tr><td>%V</td><td><a href="%s">%V</a></td></tr>\n', NS_PREFIX, NS_URL, NS_URL));
     }
   http ('    </table>\n');
   http ('    </div>\n\n');
