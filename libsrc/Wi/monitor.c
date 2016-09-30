@@ -63,6 +63,12 @@ extern int64 mp_mmap_clocks;
 static unsigned int monitor_index = 0;
 static unsigned int current_inx; /* the last sample in stats */
 
+#ifdef WIN32
+static ULARGE_INTEGER lastCPU, lastSysCPU, lastUserCPU;
+static int numProcessors;
+static HANDLE me;
+#endif
+
 void
 mon_init ()
 {
@@ -70,6 +76,20 @@ mon_init ()
     return;
   mon_max_threads = enable_qp;
   mon_max_cpu_pct = 100 * mon_max_threads;
+#ifdef WIN32
+  {
+    SYSTEM_INFO sysInfo;
+    FILETIME ftime, fsys, fuser;
+    GetSystemInfo (&sysInfo);
+    numProcessors = sysInfo.dwNumberOfProcessors;
+    GetSystemTimeAsFileTime (&ftime);
+    memcpy (&lastCPU, &ftime, sizeof (FILETIME));
+    me = GetCurrentProcess ();
+    GetProcessTimes (me, &ftime, &ftime, &fsys, &fuser);
+    memcpy (&lastSysCPU, &fsys, sizeof (FILETIME));
+    memcpy (&lastUserCPU, &fuser, sizeof (FILETIME));
+  }
+#endif
   mon_is_inited = 1;
 }
 
@@ -87,6 +107,25 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
   next->mon_cpu_time = (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000) + (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000);
   curr_cpu_pct = next->mon_cpu_pct = (next->mon_cpu_time - prev->mon_cpu_time) / (double)(next->mon_time_now - prev->mon_time_now) * 100;
   next->mon_pageflts = ru.ru_majflt - prev->mon_pageflts;
+#elif defined (WIN32)
+  {
+    FILETIME ftime, fsys, fuser;
+    ULARGE_INTEGER now, sys, user;
+    double percent;
+
+    GetSystemTimeAsFileTime (&ftime);
+    memcpy (&now, &ftime, sizeof (FILETIME));
+    GetProcessTimes (me, &ftime, &ftime, &fsys, &fuser);
+    memcpy (&sys, &fsys, sizeof (FILETIME));
+    memcpy (&user, &fuser, sizeof (FILETIME));
+    percent = (sys.QuadPart - lastSysCPU.QuadPart) + (user.QuadPart - lastUserCPU.QuadPart);
+    percent /= (now.QuadPart - lastCPU.QuadPart);
+    percent /= numProcessors;
+    lastCPU = now;
+    lastUserCPU = user;
+    lastSysCPU = sys;
+    curr_cpu_pct = next->mon_cpu_pct = percent * 100;
+  }
 #endif
   /* thread counts */
   next->mon_thr_run = thr_run;
