@@ -20,16 +20,20 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package virtuoso.rdf4j.driver;
+package com.openlink.virtuoso.rdf4j.driver;
 
-public class Version {
-    protected static final String DRV_VER = "2.0.1";
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.query.TupleQuery;
+import org.eclipse.rdf4j.query.TupleQueryResult;
+import org.eclipse.rdf4j.query.TupleQueryResultHandler;
+import org.eclipse.rdf4j.query.TupleQueryResultHandlerException;
 
-    // The major and minor version number
-    protected static final String build_id = "1.0";
+public class VirtuosoTupleQuery extends VirtuosoQuery  implements TupleQuery {
+    public TupleQueryResult evaluate() throws QueryEvaluationException {
+        return null;
+    }
 
-    public static void main(String args[])
-    {
-        System.out.println("OpenLink Virtuoso(TM) Provider for RDF4J(TM) Version " + DRV_VER + " [Build " + build_id + "]");
+    public void evaluate(TupleQueryResultHandler tupleQueryResultHandler) throws QueryEvaluationException, TupleQueryResultHandlerException {
+
     }
 }

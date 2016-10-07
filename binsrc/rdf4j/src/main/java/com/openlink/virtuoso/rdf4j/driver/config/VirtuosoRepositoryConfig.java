@@ -20,25 +20,27 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package virtuoso.rdf4j.driver.config;
+package com.openlink.virtuoso.rdf4j.driver.config;
 
-import org.eclipse.rdf4j.model.*;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.DEFGRAPH;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.FETCHSIZE;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.HOSTLIST;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.PASSWORD;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.ROUNDROBIN;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.RULESET;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.USELAZYADD;
+import static com.openlink.virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.USERNAME;
+
+import org.eclipse.rdf4j.model.Model;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.model.util.ModelException;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.repository.config.AbstractRepositoryImplConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigException;
-
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.PASSWORD;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.HOSTLIST;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.USERNAME;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.DEFGRAPH;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.USELAZYADD;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.FETCHSIZE;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.ROUNDROBIN;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.RULESET;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
-import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
 
 public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     private String hostlist;

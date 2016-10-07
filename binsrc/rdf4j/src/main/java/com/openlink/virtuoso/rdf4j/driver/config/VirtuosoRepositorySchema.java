@@ -20,7 +20,7 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package virtuoso.rdf4j.driver.config;
+package com.openlink.virtuoso.rdf4j.driver.config;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.ValueFactory;
@@ -28,7 +28,7 @@ import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 
 /**
  * Defines constants for the VirtuosoRepository schema which is used by
- * {@link VirtuosoRepositoryFactory}s to initialize {@link virtuoso.rdf4j.driver.VirtuosoRepository}s.
+ * {@link VirtuosoRepositoryFactory}s to initialize {@link com.openlink.virtuoso.rdf4j.driver.VirtuosoRepository}s.
  *
  */
 public class VirtuosoRepositorySchema {

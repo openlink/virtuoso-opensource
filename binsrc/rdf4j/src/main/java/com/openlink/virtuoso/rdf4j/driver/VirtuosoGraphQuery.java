@@ -20,18 +20,20 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package virtuoso.rdf4j.driver;
+package com.openlink.virtuoso.rdf4j.driver;
 
-import org.eclipse.rdf4j.query.Update;
-import org.eclipse.rdf4j.query.UpdateExecutionException;
+import org.eclipse.rdf4j.query.GraphQuery;
+import org.eclipse.rdf4j.query.GraphQueryResult;
+import org.eclipse.rdf4j.query.QueryEvaluationException;
+import org.eclipse.rdf4j.rio.RDFHandler;
+import org.eclipse.rdf4j.rio.RDFHandlerException;
 
-public class VirtuosoUpdate extends VirtuosoOperation implements Update {
-
-    /**
-     * Execute this update on the repository
-     */
-    public void execute() throws UpdateExecutionException {
-
+public class VirtuosoGraphQuery extends VirtuosoQuery implements GraphQuery {
+    public GraphQueryResult evaluate() throws QueryEvaluationException {
+        return null;
     }
 
+    public void evaluate(RDFHandler rdfHandler) throws QueryEvaluationException, RDFHandlerException {
+
+    }
 }

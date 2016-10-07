@@ -20,13 +20,14 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package virtuoso.rdf4j.driver.config;
+package com.openlink.virtuoso.rdf4j.driver.config;
 
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigException;
 import org.eclipse.rdf4j.repository.config.RepositoryFactory;
 import org.eclipse.rdf4j.repository.config.RepositoryImplConfig;
-import virtuoso.rdf4j.driver.VirtuosoRepository;
+
+import com.openlink.virtuoso.rdf4j.driver.VirtuosoRepository;
 
 /**
  * A {@link RepositoryFactory} that creates {@link VirtuosoRepository}s based on
