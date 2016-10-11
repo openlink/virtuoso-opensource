@@ -1,0 +1,51 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>virtuoso.rdf4j</groupId>
+  <artifactId>virtuoso-rdf4j</artifactId>
+  <version>4</version>
+  <name>Virtuoso RDF4J Provider</name>
+  <description>The Virtuoso Sesame Provider is a fully operational Native Graph Model Storage Provider for the Sesame Framework, allowing users of Virtuoso to leverage the Sesame framework to modify, query, and reason with the Virtuoso quad store using the Java language. </description>
+	<properties>
+		<jdk.version>1.8</jdk.version>
+	</properties>
+	<dependencyManagement>
+	    <dependencies>
+	        <dependency>
+	            <groupId>org.eclipse.rdf4j</groupId>
+	            <artifactId>rdf4j-bom</artifactId>
+	            <version>2.0.1</version>
+	            <type>pom</type>
+	            <scope>import</scope>
+	        </dependency>
+	    </dependencies>
+	</dependencyManagement>
+	<dependencies>
+		<dependency>
+		  <groupId>virtuoso.rdf4j</groupId>
+		  <artifactId>virtuoso-jdbc4</artifactId>
+		  <version>4</version>
+		</dependency>
+	
+		<!-- rdf4j -->
+		<dependency>
+		  <groupId>org.eclipse.rdf4j</groupId>
+		  <artifactId>rdf4j-runtime</artifactId>
+		</dependency>
+	</dependencies>
+	
+	<build>
+	<plugins>
+			<!-- Set JDK Compiler Level -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<version>2.3.2</version>
+				<configuration>
+					<source>${jdk.version}</source>
+					<target>${jdk.version}</target>
+				</configuration>
+			</plugin>
+	</plugins>
+	</build>
+	
+</project>

@@ -20,20 +20,22 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-package virtuoso.rdf4j.driver;
+package com.openlink.virtuoso.rdf4j.driver;
+
+import java.io.File;
+import java.sql.DriverManager;
+
+import javax.sql.ConnectionPoolDataSource;
+import javax.sql.DataSource;
+import javax.sql.XADataSource;
 
 import org.eclipse.rdf4j.model.ValueFactory;
 import org.eclipse.rdf4j.model.impl.SimpleValueFactory;
 import org.eclipse.rdf4j.repository.Repository;
 import org.eclipse.rdf4j.repository.RepositoryConnection;
 import org.eclipse.rdf4j.repository.RepositoryException;
-import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
-import javax.sql.ConnectionPoolDataSource;
-import javax.sql.DataSource;
-import javax.sql.XADataSource;
-import java.io.File;
-import java.sql.DriverManager;
+import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 /**
  * A Sesame repository that contains RDF data that can be queried and updated.

@@ -21,21 +21,32 @@
  *
  */
 
-
 //package virtuoso.sesame.driver;
+package com.openlink.virtuoso.rdf4j.driver.test;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.Vector;
 
-import org.eclipse.rdf4j.model.*;
+import org.eclipse.rdf4j.model.BNode;
+import org.eclipse.rdf4j.model.Graph;
+import org.eclipse.rdf4j.model.IRI;
+import org.eclipse.rdf4j.model.Literal;
+import org.eclipse.rdf4j.model.Namespace;
+import org.eclipse.rdf4j.model.Resource;
+import org.eclipse.rdf4j.model.Statement;
+import org.eclipse.rdf4j.model.URI;
+import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.model.impl.GraphImpl;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
@@ -54,9 +65,10 @@ import org.eclipse.rdf4j.rio.RDFFormat;
 import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 
+import com.openlink.virtuoso.rdf4j.driver.VirtuosoRepository;
+
 import virtuoso.jdbc4.VirtuosoExtendedString;
 import virtuoso.jdbc4.VirtuosoRdfBox;
-import virtuoso.rdf4j.driver.*;
 
 public class VirtuosoTest {
 
@@ -100,7 +112,7 @@ public class VirtuosoTest {
 		for (int i = 0; i < sa.length && i < args.length; i++) {
 			sa[i] = args[i];
 		}
-		Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1]+"/log_enable=0", sa[2], sa[3]);
+		Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" + sa[1] + "/log_enable=0", sa[2], sa[3]);
 		RepositoryConnection con = null;
 		try {
 			con = repository.getConnection();
@@ -125,21 +137,23 @@ public class VirtuosoTest {
 				IRI predicate = repository.getValueFactory().createIRI("urn:p");
 				IRI object = repository.getValueFactory().createIRI("urn:o");
 				boolean rc;
-                                rc = con.getStatements(subject, predicate, object, false, context).hasNext();
-                                if (rc != false) {
-                                	ok = false;
-                                } else {
+				rc = con.getStatements(subject, predicate, object, false, context).hasNext();
+				if (rc != false) {
+					ok = false;
+				}
+				else {
 					con.setAutoCommit(false);
 					con.add(subject, predicate, object, context);
-                                	rc = con.getStatements(subject, predicate, object, false, context).hasNext();
-                                	if (rc != true) {
-                                		ok = false;
-                                	} else {
-                                		con.rollback();
-                                		rc = con.getStatements(subject, predicate, object, false, context).hasNext();
-                                		ok = rc ? false : true;
-                                	}
-                                }
+					rc = con.getStatements(subject, predicate, object, false, context).hasNext();
+					if (rc != true) {
+						ok = false;
+					}
+					else {
+						con.rollback();
+						rc = con.getStatements(subject, predicate, object, false, context).hasNext();
+						ok = rc ? false : true;
+					}
+				}
 			}
 			catch (Exception e) {
 				log("Error[" + e + "]");
@@ -184,14 +198,19 @@ public class VirtuosoTest {
 
 			// test add data from a flat file
 			startTest();
-			String fstr = "virtuoso_driver" + File.separator + "data.nt";
-			log("Loading data from file: " + fstr);
+			// String fstr = "virtuoso_driver" + File.separator + "data.nt";
+			ClassLoader cLoader = VirtuosoTest.class.getClassLoader();
+			InputStream is = cLoader.getResourceAsStream("data.nt");
+			log("Loading data from file: data.nt");
 			try {
 				ok = true;
-				File dataFile = new File(fstr);
-				con.add(dataFile, "", RDFFormat.NTRIPLES, context);
-				query = "SELECT * FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
-				results = doTupleQuery(con, query);
+				// File dataFile = new File(fstr);
+				con.add(is, "", RDFFormat.NTRIPLES, context);
+				query = "SELECT ?s FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
+				HashMap<String, Value> bind = new HashMap<String, Value>();
+				bind.put("s", repository.getValueFactory().createIRI("http://myopenlink.net/dataspace/person/kidehen"));
+				bind.put("o", repository.getValueFactory().createLiteral("Kingsley Idehen"));
+				results = doTupleQuery(con, query, bind);
 			}
 			catch (Exception e) {
 				log("Error[" + e + "]");
@@ -200,10 +219,7 @@ public class VirtuosoTest {
 			}
 			endTest((results != null && results.length > 0)); // should return true
 
-
-			byte utf8data[] = { (byte)0xd0, (byte)0xbf, (byte)0xd1, (byte)0x80, 
-			   (byte)0xd0, (byte)0xb8, (byte)0xd0, (byte)0xb2, 
-			   (byte)0xd0, (byte)0xb5, (byte)0xd1, (byte)0x82 };
+			byte utf8data[] = { (byte) 0xd0, (byte) 0xbf, (byte) 0xd1, (byte) 0x80, (byte) 0xd0, (byte) 0xb8, (byte) 0xd0, (byte) 0xb2, (byte) 0xd0, (byte) 0xb5, (byte) 0xd1, (byte) 0x82 };
 			String utf8str = new String(utf8data, "UTF8");
 
 			IRI un_testuri = repository.getValueFactory().createIRI("http://myopenlink.net/foaf/unicodeTest");
@@ -225,17 +241,12 @@ public class VirtuosoTest {
 				ok = false;
 			}
 			if (ok && results.length > 0) {
-			  if (!results[0][0].toString().equals(un_testuri.toString())
-			       || !results[0][1].toString().equals(un_name.toString())
-			       || !results[0][2].toString().equals(un_Value.toString()))
-			  {
-			    ok = false;
-			  }
+				if (!results[0][0].toString().equals(un_testuri.toString()) || !results[0][1].toString().equals(un_name.toString()) || !results[0][2].toString().equals(un_Value.toString())) {
+					ok = false;
+				}
 			}
 			endTest((ok && (results.length > 0))); // should return true
 
-			
-			
 			IRI kingsleyidehen = repository.getValueFactory().createIRI("http://myopenlink.net/dataspace/person/kidehen");
 			BNode snode = repository.getValueFactory().createBNode("kidehenNode");
 			IRI name = repository.getValueFactory().createIRI("http://myopenlink.net/foaf/name");
@@ -452,8 +463,8 @@ public class VirtuosoTest {
 				e.printStackTrace();
 				ok = false;
 			}
-			endTest(ok && result); // should return sz > 0 results	
-			
+			endTest(ok && result); // should return sz > 0 results
+
 			// do construct
 			startTest();
 			Graph g = new GraphImpl();
@@ -465,9 +476,9 @@ public class VirtuosoTest {
 				g = doGraphQuery(con, query);
 				Iterator<Statement> it = g.iterator();
 				statementFound = true;
-				while(it.hasNext()) {
+				while (it.hasNext()) {
 					Statement st = it.next();
-					if( !st.getPredicate().stringValue().equals("http://myopenlink.net/mlo/handle")) statementFound = false;
+					if (!st.getPredicate().stringValue().equals("http://myopenlink.net/mlo/handle")) statementFound = false;
 				}
 			}
 			catch (Exception e) {
@@ -475,8 +486,8 @@ public class VirtuosoTest {
 				e.printStackTrace();
 				ok = false;
 			}
-			endTest(ok && g.size() > 0); // should return sz > 0 results	
-			
+			endTest(ok && g.size() > 0); // should return sz > 0 results
+
 			// do describe
 			startTest();
 			g = new GraphImpl();
@@ -488,18 +499,18 @@ public class VirtuosoTest {
 				g = doGraphQuery(con, query);
 				Iterator<Statement> it = g.iterator();
 				statementFound = it.hasNext();
-//				while(it.hasNext()) {
-//					Statement st = it.next();
-//					if( !st.getPredicate().stringValue().equals("http://myopenlink.net/mlo/handle")) statementFound = false;
-//				}
+				// while(it.hasNext()) {
+				// Statement st = it.next();
+				// if( !st.getPredicate().stringValue().equals("http://myopenlink.net/mlo/handle")) statementFound = false;
+				// }
 			}
 			catch (Exception e) {
 				System.out.println("Error[" + e + "]");
 				e.printStackTrace();
 				ok = false;
 			}
-			endTest(ok && statementFound); // should return sz > 0 results	
-			
+			endTest(ok && statementFound); // should return sz > 0 results
+
 			// get total passed and failed
 			getTotal();
 		}
@@ -520,31 +531,38 @@ public class VirtuosoTest {
 	private static boolean doBooleanQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
 		BooleanQuery resultsTable = con.prepareBooleanQuery(QueryLanguage.SPARQL, query);
 		return resultsTable.evaluate();
-//
-//		Vector<Value[]> results = new Vector<Value[]>();
-//		for (int row = 0; bindings.hasNext(); row++) {
-//			// System.out.println("RESULT " + (row + 1) + ": ");
-//			BindingSet pairs = bindings.next();
-//			List<String> names = bindings.getBindingNames();
-//			Value[] rv = new Value[names.size()];
-//			for (int i = 0; i < names.size(); i++) {
-//				String name = names.get(i);
-//				Value value = pairs.getValue(name);
-//				rv[i] = value;
-//				// if(column > 0) System.out.print(", ");
-//				// System.out.println("\t" + name + "=" + value);
-//				// vars.add(value);
-//				// if(column + 1 == names.size()) System.out.println(";");
-//			}
-//			results.add(rv);
-//		}
-//		return (Value[][]) results.toArray(new Value[0][0]);
-	}	
-	
-	private static Value[][] doTupleQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
-		TupleQuery resultsTable = con.prepareTupleQuery(QueryLanguage.SPARQL, query);
-		TupleQueryResult bindings = resultsTable.evaluate();
+		//
+		// Vector<Value[]> results = new Vector<Value[]>();
+		// for (int row = 0; bindings.hasNext(); row++) {
+		// // System.out.println("RESULT " + (row + 1) + ": ");
+		// BindingSet pairs = bindings.next();
+		// List<String> names = bindings.getBindingNames();
+		// Value[] rv = new Value[names.size()];
+		// for (int i = 0; i < names.size(); i++) {
+		// String name = names.get(i);
+		// Value value = pairs.getValue(name);
+		// rv[i] = value;
+		// // if(column > 0) System.out.print(", ");
+		// // System.out.println("\t" + name + "=" + value);
+		// // vars.add(value);
+		// // if(column + 1 == names.size()) System.out.println(";");
+		// }
+		// results.add(rv);
+		// }
+		// return (Value[][]) results.toArray(new Value[0][0]);
+	}
 
+	private static Value[][] doTupleQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+		return doTupleQuery(con, query, new HashMap<String, Value>());
+	}
+
+	private static Value[][] doTupleQuery(RepositoryConnection con, String query, HashMap<String, Value> bind) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+		TupleQuery resultsTable = con.prepareTupleQuery(QueryLanguage.SPARQL, query);
+		Set<String> keys = bind.keySet();
+		for (String bindName : keys) {
+			resultsTable.setBinding(bindName, bind.get(bindName));
+		}
+		TupleQueryResult bindings = resultsTable.evaluate();
 		Vector<Value[]> results = new Vector<Value[]>();
 		for (int row = 0; bindings.hasNext(); row++) {
 			// System.out.println("RESULT " + (row + 1) + ": ");
@@ -574,19 +592,19 @@ public class VirtuosoTest {
 		for (int row = 0; statements.hasNext(); row++) {
 			Statement pairs = statements.next();
 			g.add(pairs);
-//			List<String> names = statements.getBindingNames();
-//			Value[] rv = new Value[names.size()];
-//			for (int i = 0; i < names.size(); i++) {
-//				String name = names.get(i);
-//				Value value = pairs.getValue(name);
-//				rv[i] = value;
-//			}
-//			results.add(rv);
+			// List<String> names = statements.getBindingNames();
+			// Value[] rv = new Value[names.size()];
+			// for (int i = 0; i < names.size(); i++) {
+			// String name = names.get(i);
+			// Value value = pairs.getValue(name);
+			// rv[i] = value;
+			// }
+			// results.add(rv);
 		}
-//		return (Value[][]) results.toArray(new Value[0][0]);
+		// return (Value[][]) results.toArray(new Value[0][0]);
 		return g;
 	}
-	
+
 	public static void test(String args[]) {
 		try {
 			String url;
@@ -597,11 +615,13 @@ public class VirtuosoTest {
 
 			stmt.execute("clear graph <gr>");
 			ResultSet rs = stmt.getResultSet();
-			while (rs.next());
+			while (rs.next())
+				;
 
 			stmt.execute("insert into graph <gr> " + "{ <aa> <bb> \"cc\" . <xx> <yy> <zz> . " + "  <mm> <nn> \"Some long literal with language\"@en . " + "  <oo> <pp> \"12345\"^^<http://www.w3.org/2001/XMLSchema#int> }");
 			rs = stmt.getResultSet();
-			while (rs.next());
+			while (rs.next())
+				;
 
 			// output:valmode "LONG" turns RDF box on output
 			// boolean more = stmt.execute("define output:valmode \"LONG\" select * from <gr> where { ?x ?y ?z }");
@@ -630,7 +650,7 @@ public class VirtuosoTest {
 							if (vs.iriType == VirtuosoExtendedString.IRI) System.out.println("<" + vs.str + ">");
 							else if (vs.iriType == VirtuosoExtendedString.BNODE) System.out.println("<" + vs.str + ">");
 							else // not reached atm, literals are String or RdfBox
-							System.out.println("\"" + vs.str + "\"");
+								System.out.println("\"" + vs.str + "\"");
 						}
 						else if (stmt.getResultSet().wasNull()) System.out.println("NULL\t");
 						else System.out.println(s + " (No extended type availible)\t");
