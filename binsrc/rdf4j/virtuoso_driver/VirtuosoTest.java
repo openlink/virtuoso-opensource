@@ -34,6 +34,8 @@ import java.sql.ResultSetMetaData;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Vector;
+import java.util.HashMap;
+import java.util.Set;
 
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.GraphImpl;
@@ -152,6 +154,7 @@ public class VirtuosoTest {
 
 			con.clear(context);
 			startTest();
+			results = null;
 			// test query data
 			query = "SELECT * FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
 			try {
@@ -184,6 +187,7 @@ public class VirtuosoTest {
 
 			// test add data from a flat file
 			startTest();
+			results = null;
 			String fstr = "virtuoso_driver" + File.separator + "data.nt";
 			log("Loading data from file: " + fstr);
 			try {
@@ -201,6 +205,27 @@ public class VirtuosoTest {
 			endTest((results != null && results.length > 0)); // should return true
 
 
+
+			startTest();
+			results = null;
+			log("Execute query with parameter binding");
+			try {
+				ok = true;
+				query = "SELECT ?s ?o FROM <" + context + "> WHERE {?s ?p ?o} LIMIT 1";
+				HashMap<String, Value> bind = new HashMap<String, Value>();
+				bind.put("s", repository.getValueFactory().createIRI("http://dbpedia.org/resource/BatMan"));
+				bind.put("o", repository.getValueFactory().createIRI("http://sw.cyc.com/2006/07/27/cyc/Batman-TheComicStrip"));
+				results = doTupleQuery(con, query, bind);
+			}
+			catch (Exception e) {
+				log("Error[" + e + "]");
+				e.printStackTrace();
+				ok = false;
+			}
+			endTest((results != null && results.length > 0)); // should return true
+
+
+
 			byte utf8data[] = { (byte)0xd0, (byte)0xbf, (byte)0xd1, (byte)0x80, 
 			   (byte)0xd0, (byte)0xb8, (byte)0xd0, (byte)0xb2, 
 			   (byte)0xd0, (byte)0xb5, (byte)0xd1, (byte)0x82 };
@@ -211,6 +236,7 @@ public class VirtuosoTest {
 			Literal un_Value = repository.getValueFactory().createLiteral(utf8str);
 
 			startTest();
+			results = null;
 			try {
 				ok = true;
 				con.clear(context);
@@ -233,6 +259,7 @@ public class VirtuosoTest {
 			  }
 			}
 			endTest((ok && (results.length > 0))); // should return true
+			results = null;
 
 			
 			
@@ -242,6 +269,7 @@ public class VirtuosoTest {
 			Literal nameValue = repository.getValueFactory().createLiteral("Kingsley Idehen");
 
 			startTest();
+			results = null;
 			try {
 				ok = true;
 				con.clear(context);
@@ -267,6 +295,7 @@ public class VirtuosoTest {
 			}
 
 			startTest();
+			results = null;
 			try {
 				ok = true;
 				log("Selecting property");
@@ -279,6 +308,7 @@ public class VirtuosoTest {
 				ok = false;
 			}
 			endTest((ok && (results.length > 0))); // should return true
+			results = null;
 
 			boolean exists = false;
 			startTest();
@@ -301,6 +331,7 @@ public class VirtuosoTest {
 			endTest((ok && !exists)); // should return false
 
 			startTest();
+			results = null;
 			try {
 				ok = true;
 				log("Statement exists (by resultset size)");
@@ -542,13 +573,21 @@ public class VirtuosoTest {
 	}	
 	
 	private static Value[][] doTupleQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
-		TupleQuery resultsTable = con.prepareTupleQuery(QueryLanguage.SPARQL, query);
-		TupleQueryResult bindings = resultsTable.evaluate();
+		return doTupleQuery(con, query, new HashMap<String, Value>());
+	}
 
+	private static Value[][] doTupleQuery(RepositoryConnection con, String query, HashMap<String, Value> bind) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
+		TupleQuery resultsTable = con.prepareTupleQuery(QueryLanguage.SPARQL, query);
+		Set<String> keys = bind.keySet();
+		for (String bindName : keys) {
+			resultsTable.setBinding(bindName, bind.get(bindName));
+		}
+		TupleQueryResult bindings = resultsTable.evaluate();
 		Vector<Value[]> results = new Vector<Value[]>();
 		for (int row = 0; bindings.hasNext(); row++) {
 			// System.out.println("RESULT " + (row + 1) + ": ");
 			BindingSet pairs = bindings.next();
+
 			List<String> names = bindings.getBindingNames();
 			Value[] rv = new Value[names.size()];
 			for (int i = 0; i < names.size(); i++) {
@@ -564,6 +603,8 @@ public class VirtuosoTest {
 		}
 		return (Value[][]) results.toArray(new Value[0][0]);
 	}
+
+
 
 	private static Graph doGraphQuery(RepositoryConnection con, String query) throws RepositoryException, MalformedQueryException, QueryEvaluationException {
 		GraphQuery resultsTable = con.prepareGraphQuery(QueryLanguage.SPARQL, query);
