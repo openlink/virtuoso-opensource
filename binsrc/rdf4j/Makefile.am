@@ -86,6 +86,7 @@ virt_rdf4j.jar: $(RDF4J_SRC) manifest.main
 	-cp META-INF/services/org.eclipse.rdf4j.repository.config.RepositoryFactory  out.driver/META-INF/services
 	-mkdir out.driver/org
 	-mkdir out.driver/org/eclipse
+	-mkdir out.driver/org/eclipse/rdf4j
 	-mkdir out.driver/org/eclipse/rdf4j/repository
 	-mkdir out.driver/org/eclipse/rdf4j/repository/config
 	-cp virtuoso.ttl out.driver/org/eclipse/rdf4j/repository/config

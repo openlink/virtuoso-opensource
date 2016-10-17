@@ -1503,11 +1503,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 String ctx = _context.toString();
                 StringBuilder row = new StringBuilder(256);
 
-                append(st.getSubject(), row);
+                append(st.getSubject(), row, true);
                 row.append(' ');
-                append(st.getPredicate(), row);
+                append(st.getPredicate(), row, true);
                 row.append(' ');
-                append(st.getObject(), row);
+                append(st.getObject(), row, true);
                 row.append(" .\n");
 
                 StringBuilder data = map.get(ctx);
@@ -1571,11 +1571,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 String ctx = _context.toString();
                 StringBuilder row = new StringBuilder(256);
 
-                append(st.getSubject(), row);
+                append(st.getSubject(), row, true);
                 row.append(' ');
-                append(st.getPredicate(), row);
+                append(st.getPredicate(), row, true);
                 row.append(' ');
-                append(st.getObject(), row);
+                append(st.getObject(), row, true);
                 row.append(" .\n");
 
                 StringBuilder data = map.get(ctx);
@@ -2044,22 +2044,31 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     }
 
 
-    private String substBindings(String query, BindingSet bindings, List<Value> pstmtParams)  throws RepositoryException
+    private String substBindings(String query, BindingSet bindings, List<Value> pstmtParams, boolean isSPARUL)  throws RepositoryException
     {
         boolean use_setParams = insertBNodeAsVirtuosoIRI ? false : true;
+        StringBuilder tok = new StringBuilder();
         StringBuilder buf = new StringBuilder();
         String delim = " \t\n\r\f,)(;.}{";
+        int inCurly = 0;
         int i = 0;
         char ch;
+        boolean afterFROM = false;
         int qlen = query.length();
+
         while( i < qlen) {
             ch = query.charAt(i++);
             if (ch == '\\') {
                 buf.append(ch);
-                if (i < qlen)
-                    buf.append(query.charAt(i++));
+                tok.append(ch);
+                if (i < qlen) {
+                    ch = query.charAt(i++);
+                    buf.append(ch);
+                    tok.append(ch);
+                }
 
             } else if (ch == '"' || ch == '\'') {
+                tok.setLength(0);
                 char end = ch;
                 buf.append(ch);
                 while (i < qlen) {
@@ -2068,23 +2077,45 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     if (ch == end)
                         break;
                 }
-            } else  if ( ch == '?' ) {  //Parameter
+            } else if ( ch == '{' ) {
+                inCurly++;
+                buf.append(ch);
+                tok.setLength(0);
+            } else if ( ch == '{' ) {
+                inCurly--;
+                buf.append(ch);
+                tok.setLength(0);
+            } else if ( ch == '?' ) {  //Parameter
+                tok.setLength(0);
                 String varData = null;
                 int j = i;
                 while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
                 if (j != i) {
+                    boolean useBackSlash = (isSPARUL || inCurly > 0);
                     String varName = query.substring(i, j);
                     Value val = bindings.getValue(varName);
                     if (val != null) {
                         if (use_setParams) {
-                            pstmtParams.add(val);
-                            if (val instanceof Resource)
-                                varData = "`iri(??)`";
-                            else
-                                varData = "`bif:__rdf_long_from_batch_params(??,??,??)`";
+                            if (inCurly>0) { 
+                                // in triple pattern
+                                pstmtParams.add(val);
+                                if (val instanceof Resource)
+                                    varData = "`iri(??)`";
+                                else
+                                    varData = "`bif:__rdf_long_from_batch_params(??,??,??)`";
+                            } else {
+                                if (isSPARUL || afterFROM)
+                                    varData = stringForValue(val, useBackSlash);
+                                else
+                                    varData = stringForValue(val, useBackSlash)+" AS ?"+varName;
+                            }
                         } else {
-                            varData = stringForValue(val);
+                            if (inCurly==0 && !isSPARUL && !afterFROM) //for values in SELECT before triple pattern
+                                varData = stringForValue(val, useBackSlash)+" AS ?"+varName;
+                            else
+                                varData = stringForValue(val, useBackSlash);
                         }
+
                         i=j;
                     }
                 }
@@ -2094,6 +2125,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     buf.append(ch);
             } else {
                 buf.append(ch);
+                if (delim.indexOf(ch) < 0) {
+                    tok.append(ch);
+                } else {
+                    if (tok.length()==4 
+                        && (tok.charAt(0)=='F' || tok.charAt(0)=='f')
+                        && tok.toString().equalsIgnoreCase("FROM")
+                       )
+                        afterFROM = true;
+                    tok.setLength(0);
+                }
             }
         }
         return buf.toString();
@@ -2168,7 +2209,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         if (use_def_graph)
             ret.append(" define input:default-graph-uri <" + repository.defGraph + "> \n");
 
-        ret.append(substBindings(query, bindings, pstmtParams));
+        ret.append(substBindings(query, bindings, pstmtParams, isSPARUL));
         return ret.toString();
     }
 
@@ -2348,11 +2389,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
                 String ctx = context.stringValue();
                 StringBuilder sb = new StringBuilder(256);
-                append(subject, sb);
+                append(subject, sb, true);
                 sb.append(' ');
-                append(predicate, sb);
+                append(predicate, sb, true);
                 sb.append(' ');
-                append(object, sb);
+                append(object, sb, true);
                 sb.append(" .\n");
 
                 psInsert_BNode.setString(1, sb.toString());
@@ -2534,14 +2575,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     }
 
 
-    private void append(Object value, StringBuilder sb)
+    private void append(Object value, StringBuilder sb, boolean inTriplePattern)
             throws RepositoryException
     {
         if (value instanceof Resource) {
-            append((Resource)value, sb);
+            append((Resource)value, sb, inTriplePattern);
         }
         else if (value instanceof Literal) {
-            append((Literal)value, sb);
+            append((Literal)value, sb, inTriplePattern);
         }
         else if (value instanceof String) {
             sb.append((String)value);
@@ -2551,21 +2592,21 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         }
     }
 
-    private void append(Resource resource, StringBuilder sb)
+    private void append(Resource resource, StringBuilder sb, boolean inTriplePattern)
             throws RepositoryException
     {
         if (resource instanceof IRI) {
-            append((IRI)resource, sb);
+            append((IRI)resource, sb, inTriplePattern);
         }
         else if (resource instanceof BNode) {
-            append((BNode)resource, sb);
+            append((BNode)resource, sb, inTriplePattern);
         }
         else {
             throw new RepositoryException("Unknown resource type: " + resource.getClass());
         }
     }
 
-    private void append(IRI uri, StringBuilder sb)
+    private void append(IRI uri, StringBuilder sb, boolean inTriplePattern)
             throws RepositoryException
     {
         sb.append("<");
@@ -2574,15 +2615,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     }
 
 
-    private void append(BNode bNode, StringBuilder sb)
+    private void append(BNode bNode, StringBuilder sb, boolean inTriplePattern)
             throws RepositoryException
     {
         String bid = bNode.getID();
         if (bid.startsWith("nodeID://")) {
-            sb.append("`iri('");
-            sb.append(bid);
-            sb.append("')`");
+            if (inTriplePattern)
+                sb.append("`");
 
+            sb.append("iri('");
+            sb.append(bid);
+            sb.append("')");
+
+            if (inTriplePattern)
+                sb.append("`");
         } else {
             if (insertBNodeAsVirtuosoIRI) {
                 sb.append("<");
@@ -2595,7 +2641,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     }
 
 
-    private void append(Literal lit, StringBuilder sb)
+    private void append(Literal lit, StringBuilder sb, boolean inTriplePattern)
             throws RepositoryException
     {
         sb.append("\"");
@@ -2607,7 +2653,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             IRI ltype = lit.getDatatype();
             if (!(insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING))) {
                 sb.append("^^");
-                append(ltype, sb);
+                append(ltype, sb, inTriplePattern);
             }
         }
         else if (lit.getLanguage() != null) {
@@ -2945,9 +2991,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
 
-    private String stringForValue(Value n)  throws RepositoryException {
+    private String stringForValue(Value n, boolean inTriplePattern)  throws RepositoryException {
         StringBuilder sb = new StringBuilder(256);
-        append(n, sb);
+        append(n, sb, inTriplePattern);
         return sb.toString();
     }
 
