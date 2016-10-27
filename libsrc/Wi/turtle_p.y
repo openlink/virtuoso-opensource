@@ -373,7 +373,7 @@ inner_predicate_object_list
 top_blank_predicate_object_list_or_garbage_with_dot
 	: top_blank_predicate_object_list _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	| top_blank_predicate_object_list _GARBAGE_BEFORE_DOT_WS _DOT_WS		{ ttlp_triple_forget_prepared (ttlp_arg); }
-	| _DOT_WS { TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "Missing predicate and object between top-level blank node subject and a dot"); }
+	| _DOT_WS /* This was before Turtle 1.1: { TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "Missing predicate and object between top-level blank node subject and a dot"); } */
 	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	| _LBRA_TOP_TRIG { ttlyyerror_action ("Virtuoso does not support blank nodes as graph identifiers inTriG, graphs are identified only by IRIs"); }
 	;
