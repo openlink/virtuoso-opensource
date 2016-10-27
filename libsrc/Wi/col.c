@@ -4640,6 +4640,19 @@ itc_cr_print (it_cursor_t * itc, int nth, int from, int to)
   mp_free (mp);
 }
 
+void
+itc_cr_print_all (it_cursor_t * itc)
+{
+  int c;
+  DO_BOX (col_data_ref_t *, cr, c, itc->itc_col_refs)
+    {
+      if (!cr)
+	continue;
+      itc_cr_print (itc, c, 0, COL_NO_ROW);
+    }
+  END_DO_BOX;
+}
+
 caddr_t *
 itc_box_col_seg (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl)
 {
