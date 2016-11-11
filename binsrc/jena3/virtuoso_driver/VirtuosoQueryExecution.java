@@ -42,8 +42,11 @@ import org.apache.jena.query.QueryExecution;
 import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.graph.Node;
 import org.apache.jena.graph.Triple;
+import org.apache.jena.graph.Graph ;
 import org.apache.jena.rdf.model.*;
 
+import org.apache.jena.sparql.core.DatasetGraph;
+import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingMap;
@@ -133,6 +136,72 @@ public class VirtuosoQueryExecution implements QueryExecution {
         return mj_query;
     }
 
+    
+    /**
+     * Execute a CONSTRUCT query, returning the results as an iterator of {@link Quad}.
+     * <p>
+     * <b>Caution:</b> This method may return duplicate Quads.  This method may be useful if you only
+     * need the results for stream processing, as it can avoid having to place the results in a Model.
+     * </p>
+     * @return An iterator of Quad objects (possibly containing duplicates) generated
+     * by applying the CONSTRUCT template of the query to the bindings in the WHERE clause.
+     * </p>
+     * <p>
+     * See {@link #execConstructTriples} for usage and features.
+     */
+    public Iterator<Quad> execConstructQuads() {
+        throw new JenaException("execConstructQuads isn't supported.");
+//??todo 
+/*** we don't support return Quad else
+        try {
+            stmt = graph.createStatement();
+            if (timeout > 0)
+                stmt.setQueryTimeout((int) (timeout / 1000));
+            java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
+            return new VirtResSetIter3(graph, stmt, rs);
+
+        } catch (Exception e) {
+            throw new JenaException("execConstructQuads has FAILED.:" + e);
+        }
+***/
+    }
+
+
+    /** Execute a CONSTRUCT query, putting the statements into 'dataset'.
+     *  This maybe an exetended synatx query (if supported).   
+     */
+    public Dataset execConstructDataset() {
+        return execConstructDataset(DatasetFactory.create()) ;
+    }
+
+    /** Execute a CONSTRUCT query, putting the statements into 'dataset'.
+     *  This maybe an exetended synatx query (if supported).   
+     */
+    public Dataset execConstructDataset(Dataset dataset) {
+//??todo
+/***** we don't support return Quad else
+        DatasetGraph dsg = dataset.asDatasetGraph() ; 
+        try {
+            execConstructQuads().forEachRemaining(dsg::add);
+//??todo            insertPrefixesInto(dataset);
+        } finally {
+            this.close();
+        }
+        return dataset ; 
+*****/
+        DatasetGraph dsg = dataset.asDatasetGraph() ; 
+        Graph g = dsg.getDefaultGraph();
+        try {
+            for(Iterator<Triple> it = execConstructTriples(); it.hasNext(); )
+              g.add(it.next());
+        } finally {
+            this.close();
+        }
+        return dataset ; 
+    }
+
+    
+    
     public Model execConstruct() {
         return execConstruct(ModelFactory.createDefaultModel());
     }
@@ -159,7 +228,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
             stmt = null;
 
         } catch (Exception e) {
-            throw new JenaException("Convert results are FAILED.:" + e);
+            throw new JenaException("Convert results has FAILED.:" + e);
         }
         return model;
     }
@@ -181,7 +250,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
             return new VirtResSetIter2(graph, stmt, rs);
 
         } catch (Exception e) {
-            throw new JenaException("execConstructTriples was FAILED.:" + e);
+            throw new JenaException("execConstructTriples has FAILED.:" + e);
         }
     }
 
@@ -233,7 +302,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
             return new VirtResSetIter2(graph, stmt, rs);
 
         } catch (Exception e) {
-            throw new JenaException("execDescribeTriples was FAILED.:" + e);
+            throw new JenaException("execDescribeTriples has FAILED.:" + e);
         }
     }
 
@@ -257,7 +326,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
             stmt = null;
 
         } catch (Exception e) {
-            throw new JenaException("Convert results are FAILED.:" + e);
+            throw new JenaException("Convert results has FAILED.:" + e);
         }
         return ret;
     }
@@ -432,7 +501,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
                 if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
                     resVars.add("graph");
             } catch (Exception e) {
-                throw new JenaException("ViruosoResultBindingsToJenaResults is FAILED.:" + e);
+                throw new JenaException("ViruosoResultBindingsToJenaResults has FAILED.:" + e);
             }
         }
 
@@ -513,7 +582,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
                 if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
                     v_row.add(Var.alloc("graph"), NodeFactory.createURI(virt_graph));
             } catch (Exception e) {
-                throw new JenaException("ViruosoResultBindingsToJenaResults is FAILED.:" + e);
+                throw new JenaException("ViruosoResultBindingsToJenaResults has FAILED.:" + e);
             }
         }
 
