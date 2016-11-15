@@ -54,6 +54,7 @@ public class VirtGraph extends GraphBase {
         VirtuosoQueryEngine.register();
     }
 
+    static final String xsd_string = "http://www.w3.org/2001/XMLSchema#string";
     static final protected String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
 //    static final protected String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
     static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
@@ -86,6 +87,7 @@ public class VirtGraph extends GraphBase {
     protected boolean insertBNodeAsVirtuosoIRI = false;
     protected boolean resetBNodesDictAfterCall = false;
     protected boolean resetBNodesDictAfterCommit = true;
+    protected boolean insertStringLiteralAsSimple = false;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
@@ -415,6 +417,25 @@ public class VirtGraph extends GraphBase {
     }
 
 
+    /**
+     * Get the insertStringLiteralAsSimple state for connection
+     */
+    public boolean getInsertStringLiteralAsSimple() {
+        return this.insertStringLiteralAsSimple;
+    }
+
+    /**
+     * Set the insertStringLiteralAsSimple state for connection(default false) 
+     * 
+     * @param v
+     *        true - insert String Literals as Simple Literals
+     *        false - insert String Literals as is
+     */
+    public void setInsertStringLiteralAsSimple(boolean v) {
+        this.insertStringLiteralAsSimple = v;
+    }
+
+
 
     public int getCount() {
         return size();
@@ -603,9 +624,11 @@ public class VirtGraph extends GraphBase {
             }
             ltype = n.getLiteralDatatypeURI();
             if (!llang_exists && ltype != null && ltype.length() > 0) {
-                sb.append("^^<");
-                sb.append(ltype);
-                sb.append(">");
+                if (!(insertStringLiteralAsSimple && ltype.equals(xsd_string))) {
+                    sb.append("^^<");
+                    sb.append(ltype);
+                    sb.append(">");
+                }
             }
             return sb.toString();
         } else {
@@ -640,9 +663,11 @@ public class VirtGraph extends GraphBase {
                 }
                 ltype = n.getLiteralDatatypeURI();
                 if (!llang_exists && ltype != null && ltype.length() > 0) {
-                    sb.append("^^<");
-                    sb.append(ltype);
-                    sb.append(">");
+                    if (!(insertStringLiteralAsSimple && ltype.equals(xsd_string))) {
+                        sb.append("^^<");
+                        sb.append(ltype);
+                        sb.append(">");
+                    }
                 }
                 return sb.toString();
             } else {
@@ -693,9 +718,15 @@ public class VirtGraph extends GraphBase {
                 ps.setString(col + 1, n.getLiteralLexicalForm());
                 ps.setString(col + 2, n.getLiteralLanguage());
             } else if (ltype != null && ltype.length() > 0) {
-                ps.setInt(col, 4);
-                ps.setString(col + 1, n.getLiteralLexicalForm());
-                ps.setString(col + 2, n.getLiteralDatatypeURI());
+                if (!(insertStringLiteralAsSimple && ltype.equals(xsd_string))) {
+                    ps.setInt(col, 4);
+                    ps.setString(col + 1, n.getLiteralLexicalForm());
+                    ps.setString(col + 2, n.getLiteralDatatypeURI());
+                } else {
+                    ps.setInt(col, 3);
+                    ps.setString(col + 1, n.getLiteralLexicalForm());
+                    ps.setNull(col + 2, java.sql.Types.VARCHAR);
+                } 
             } else {
                 ps.setInt(col, 3);
                 ps.setString(col + 1, n.getLiteralLexicalForm());
@@ -1207,10 +1238,11 @@ public class VirtGraph extends GraphBase {
                 }
 
                 flushDelayAdd_batch(psInsert, psInsert_Count);
-                stopBatchAdd();
 
             } catch (Exception e) {
                 throw new JenaException(e);
+            } finally {
+                stopBatchAdd();
             }
         }
     }
@@ -1236,9 +1268,11 @@ public class VirtGraph extends GraphBase {
                 }
 
                 flushDelayAdd_batch(psInsert, psInsert_Count);
-                stopBatchAdd();
 
             } catch (Exception e) {
+                throw new JenaException(e);
+            } finally {
+                stopBatchAdd();
             }
         }
     }
@@ -1616,8 +1650,13 @@ public class VirtGraph extends GraphBase {
                 ps.setString(4, s_lang);
                 ps.setInt(5, 2);
             } else if (s_type != null && s_type.length() > 0) {
-                ps.setString(4, s_type);
-                ps.setInt(5, 3);
+                if (!(insertStringLiteralAsSimple && s_type.equals(xsd_string))) {
+                    ps.setString(4, s_type);
+                    ps.setInt(5, 3);
+                } else {
+                    ps.setNull(4, java.sql.Types.VARCHAR);
+                    ps.setInt(5, 1);
+                }
             } else {
                 ps.setNull(4, java.sql.Types.VARCHAR);
                 ps.setInt(5, 1);

@@ -265,6 +265,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
         return handler.transactionsXASupported();
     }
 
+    public boolean supportsTransactionAbort() {
+        TransactionHandler handler = getTransactionHandler();
+        return handler.transactionsSupported();
+    }
+
+
     /**
      * Start either a READ or WRITE transaction
      */
@@ -571,6 +577,57 @@ public class VirtDataset extends VirtGraph implements Dataset {
         protected boolean isWildcard(Node g) {
             return g == null || Node.ANY.equals(g);
         }
+
+
+        /**
+         * A {@code DatasetGraph} supports tranactions if it provides {@link #begin}/
+         * {@link #commit}/{@link #end}. There core storage {@code DatasetGraph} that
+         * provide fully serialized transactions.  {@code DatasetGraph} that provide
+         * functionality acorss independent systems can not provide such strong guarantees.
+         * For example, they may use MRSW locking and some isolation control.
+         * Specifically, they do not necessarily provide {@link #abort}.
+         * <p>
+         * See {@link #supportsTransactionAbort()} for {@link #abort}.
+         * In addition, check details of a specific implementation.
+         */
+        public boolean supportsTransactions() {
+            return vd.supportsTransactions();
+        }
+
+        /** Declare whether {@link #abort} is supported.
+         *  This goes along with clearing up after exceptions inside application transaction code.
+         */
+        public boolean supportsTransactionAbort() {
+            return vd.supportsTransactionAbort();
+        }
+
+
+        /** Say whether inside a transaction. */ 
+        public boolean isInTransaction() {
+            return vd.isInTransaction();
+        }
+
+        /** Start either a READ or WRITE transaction */ 
+        public void begin(ReadWrite readWrite) {
+            vd.begin(readWrite);
+        }
+    
+        /** Commit a transaction - finish the transaction and make any changes permanent (if a "write" transaction) */  
+        public void commit() {
+            vd.commit();
+        }
+    
+        /** Abort a transaction - finish the transaction and undo any changes (if a "write" transaction) */  
+        public void abort() {
+            vd.abort();
+        }
+
+        /** Finish the transaction - if a write transaction and commit() has not been called, then abort */  
+        public void end() {
+            vd.end();
+        }
+
+
 
     }
 

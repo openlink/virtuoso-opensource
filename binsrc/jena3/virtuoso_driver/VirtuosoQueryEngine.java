@@ -50,7 +50,7 @@ import org.apache.jena.sparql.engine.binding.BindingMap;
 import org.apache.jena.sparql.engine.main.QueryEngineMain;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.util.Context;
-import org.apache.jena.sparql.util.Utils;
+import org.apache.jena.atlas.lib.Lib ;
 import org.apache.jena.atlas.io.IndentedWriter;
 
 
@@ -246,7 +246,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
 
 
         public void output(IndentedWriter out, SerializationContext sCxt) {
-            out.print(Utils.className(this));
+            out.print(Lib.className(this));
         }
 
         protected boolean hasNextBinding() {
