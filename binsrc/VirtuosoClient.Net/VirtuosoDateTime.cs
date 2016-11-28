@@ -47,46 +47,84 @@ namespace OpenLink.Data.Virtuoso
 		, IComparable<VirtuosoDateTime>, IEquatable <VirtuosoDateTime>
 	{
 		private DateTime value;
+		private int tz;
+		private TimeSpan offset;
+		private DateTimeType dt_Type;
 
 		private VirtuosoDateTime (DateTime val)
 		{
 			this.value = val;
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoDateTime (long ticks)
 		{
 			this.value = new DateTime(ticks);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day)
 		{
 			this.value = new DateTime(year, month, day);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
-		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, long microsecond)
+		public VirtuosoDateTime(int year, int month, int day, int hour, int minute, int second, long microsecond)
 		{
 			if (microsecond < 0 || microsecond > 999999)
-				throw new ArgumentOutOfRangeException ("Microsecond parameters describe an " +
+				throw new ArgumentOutOfRangeException("Microsecond parameters describe an " +
 									"unrepresentable VirtuosoDateTime.");
 			DateTime t = new DateTime(year, month, day, hour, minute, second);
-			
-			long dateTick = (long) (t.Ticks + microsecond * 10);
-			this.value = new DateTime (dateTick);
+
+			long dateTick = (long)(t.Ticks + microsecond * 10);
+			this.value = new DateTime(dateTick);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
-		public VirtuosoDateTime (int year, int month, int day, Calendar calendar)
+		internal VirtuosoDateTime(int year, int month, int day, int hour, int minute, int second, long microsecond, int tz, DateTimeType type)
+		{
+			if (microsecond < 0 || microsecond > 999999)
+				throw new ArgumentOutOfRangeException("Microsecond parameters describe an " +
+									"unrepresentable VirtuosoDateTime.");
+			DateTime t = new DateTime(year, month, day, hour, minute, second);
+
+			long dateTick = (long)(t.Ticks + microsecond * 10);
+			this.dt_Type = type;
+			this.tz = tz;
+			this.offset = new TimeSpan(0, tz, 0);
+			this.value = new DateTime(dateTick).Add(offset);
+		}
+
+		public VirtuosoDateTime(int year, int month, int day, Calendar calendar)
 		{
 			this.value = new DateTime(year, month, day, calendar);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 		
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, Calendar calendar)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, calendar);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, long microsecond, Calendar calendar)
@@ -98,27 +136,42 @@ namespace OpenLink.Data.Virtuoso
 			
 			long dateTick = (long) (t.Ticks + microsecond * 10);
 			this.value = new DateTime (dateTick);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 
 		public VirtuosoDateTime (long ticks, DateTimeKind kind)
 		{
 			this.value = new DateTime(ticks, kind);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, DateTimeKind kind)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, kind);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, millisecond, kind);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
-                public VirtuosoDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
+        public VirtuosoDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, millisecond, calendar, kind);
+			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}			
 
 
@@ -239,6 +292,15 @@ namespace OpenLink.Data.Virtuoso
 				return value;
 			}
 		}
+
+		public TimeSpan Offset
+		{
+			get
+			{
+				return this.offset;
+			}
+		}
+
 
 		/* methods */
 
@@ -442,6 +504,53 @@ namespace OpenLink.Data.Virtuoso
 		public VirtuosoDateTime ToUniversalTime()
 		{
 			return new VirtuosoDateTime(value.ToUniversalTime());
+		}
+
+
+		public string ToXSD_String()
+		{
+			String timeZoneString = null;
+			StringBuilder sb = new StringBuilder();
+			if (dt_Type == DateTimeType.DT_TYPE_DATE)
+			{
+				sb.Append(value.ToString("yyyy\\-MM\\-dd"));   //1999-05-31
+			}
+			else
+			{
+				sb.Append(value.ToString("yyyy\\-MM\\-dd\\THH\\:mm\\:ss\\.FFF"));
+
+				if (tz == 0)
+				{
+					timeZoneString = "Z";
+				}
+				else
+				{
+					StringBuilder s = new StringBuilder();
+					s.Append(tz > 0 ? '+' : '-');
+
+					int _tz = Math.Abs(tz);
+					int _tzh = _tz / 60;
+					int _tzm = _tz % 60;
+
+					if (_tzh < 10)
+						s.Append('0');
+
+					s.Append(_tzh);
+					s.Append(':');
+
+					if (_tzm < 10)
+						s.Append('0');
+
+					s.Append(_tzm);
+					timeZoneString = s.ToString();
+				}
+			}
+
+
+			if (timeZoneString != null)
+				sb.Append(timeZoneString);
+
+			return sb.ToString();
 		}
 
 

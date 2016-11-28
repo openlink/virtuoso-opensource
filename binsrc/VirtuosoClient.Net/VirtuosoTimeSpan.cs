@@ -46,20 +46,28 @@ namespace OpenLink.Data.Virtuoso
 		, IComparable<VirtuosoTimeSpan>, IEquatable <VirtuosoTimeSpan>
 	{
 		private TimeSpan value;
+		private int tz;
+		private TimeSpan offset;
 
 		public VirtuosoTimeSpan (long val)
 		{
 			this.value = new TimeSpan(val);
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoTimeSpan (int hours, int minutes, int seconds)
 		{
 			this.value = new TimeSpan(hours, minutes, seconds);
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoTimeSpan (int days, int hours, int minutes, int seconds)
 		{
 			this.value = new TimeSpan(days, hours, minutes, seconds);
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
 		}
 
 		public VirtuosoTimeSpan (int days, int hours, int minutes, int seconds, long microseconds)
@@ -71,6 +79,21 @@ namespace OpenLink.Data.Virtuoso
 			
 			long dateTick = (long) (t.Ticks + microseconds * 10);
 			this.value = new TimeSpan (dateTick);
+			this.tz = 0;
+			this.offset = TimeSpan.Zero;
+		}
+
+		internal VirtuosoTimeSpan(int days, int hours, int minutes, int seconds, long microseconds, int tz)
+		{
+			if (microseconds < 0 || microseconds > 999999)
+				throw new ArgumentOutOfRangeException("Microseconds parameters describe an " +
+									"unrepresentable VirtuosoTimeSpan.");
+			TimeSpan t = new TimeSpan(days, hours, minutes, seconds);
+
+			long dateTick = (long)(t.Ticks + microseconds * 10);
+			this.tz = tz;
+			this.offset = new TimeSpan(0, tz, 0);
+			this.value = (new TimeSpan(dateTick)).Add(offset);
 		}
 
 
@@ -152,7 +175,16 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
-	
+
+		public TimeSpan Offset
+		{
+			get
+			{
+				return this.offset;
+			}
+		}
+
+
 		
 		public TimeSpan Add (TimeSpan ts)
 		{
@@ -265,5 +297,43 @@ namespace OpenLink.Data.Virtuoso
 		        return value.ToString();
 		}
 
-    }
+		public string ToXSD_String()
+		{
+			String timeZoneString = null;
+			StringBuilder sb = new StringBuilder();
+			sb.Append(value.ToString("hh\\:mm\\:ss\\.fff"));
+
+			if (tz == 0)
+			{
+				timeZoneString = "Z";
+			}
+			else
+			{
+				StringBuilder s = new StringBuilder();
+				s.Append(tz > 0 ? '+' : '-');
+
+				int _tz = Math.Abs(tz);
+				int _tzh = _tz / 60;
+				int _tzm = _tz % 60;
+
+				if (_tzh < 10)
+					s.Append('0');
+
+				s.Append(_tzh);
+				s.Append(':');
+
+				if (_tzm < 10)
+					s.Append('0');
+
+				s.Append(_tzm);
+				timeZoneString = s.ToString();
+			}
+
+			if (timeZoneString != null)
+				sb.Append(timeZoneString);
+
+			return sb.ToString();
+		}
+
+	}
 }
