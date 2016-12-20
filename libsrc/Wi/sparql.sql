@@ -4163,7 +4163,11 @@ create function DB.DBA.JSON_LD_CTX_MAKE_NEW_SHORTCUT (in p varchar, in otype var
   if (otype_tail is null)
     o_suffix := otype;
   else
-    o_suffix := subseq (otype, otype_tail+1);
+    {
+      o_suffix := subseq (otype, otype_tail+1);
+      if (o_suffix = '')
+        o_suffix := otype;
+    }
 again:
   p_tail := strrchr (p, '#');
   if (p_tail is null)
@@ -4171,12 +4175,17 @@ again:
   if (p_tail is not null)
     {
       shortcut := subseq (p, p_tail+1);
+      if (o_suffix = '')
+        {
+          p := subseq (p, 0, p_tail);
+          goto again;
+        }
       old_k := dict_get (used_names, shortcut, null);
-      if (old_k is null or (p = old_k[0] and otype = old_k[1]))
+      if (old_k is null or (orig_p = old_k[0] and otype = old_k[1]))
         return shortcut;
       short2 := shortcut || o_suffix;
       old_k := dict_get (used_names, short2, null);
-      if (old_k is null or (p = old_k[0] and otype = old_k[1]))
+      if (old_k is null or (orig_p = old_k[0] and otype = old_k[1]))
         return short2;
       p [p_tail] := ascii ('_');
       goto again;
