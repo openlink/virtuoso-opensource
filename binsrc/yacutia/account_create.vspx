@@ -708,7 +708,7 @@
                                     }
                                     if (i = 0)
                                     {
-                                      http ('<tr><td colspan="2">~no keys available~</td></tr>');
+                                      http ('<tr><td colspan="2">~ no keys available ~</td></tr>');
                                     }
                                   ?>
                                 </table>
@@ -777,6 +777,109 @@
                                         set_user_id (username);
                                         USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', self.k_type.ufl_value, self.k_pwd.ufl_value, null, 1);
                                         EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              </tr>
+                            <?vsp } ?>
+                            <?vsp if (self.mode = 'edit') { ?>
+                            <tr>
+                              <td valign="top">
+                                <table class="complex_selector" width="90%">
+                                  <caption style="text-align:left;"><strong>Certificates</strong></caption>
+                                  <?vsp
+                                    declare i integer;
+                                    declare username, certs any;
+
+                                    username := y_wide2utf (self.t_login_name.ufl_value);
+                                    certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+                                    for (i := 0; i < length (certs); i := i + 1)
+                                    {
+                                  ?>
+                                  <tr>
+                                    <td>
+                                      <input type="checkbox" name="cb_ca" value="<?V i ?>" />
+                                      <?vsp http_value (certs[i],'b'); ?>
+                                    </td>
+                                  </tr>
+                                  <?vsp
+                                    }
+                                    if (length (certs) = 0)
+                                    {
+                                      http ('<tr><td colspan="2">~ no certificates available ~</td></tr>');
+                                    }
+                                  ?>
+                                </table>
+                                <br />
+                                <?vsp if (i > 0) { ?>
+                                  <v:button action="simple" name="del_ca" value="Remove Selected Keys" xhtml_tabindex="21">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare username, cert, certs any;
+
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        username := y_wide2utf (self.t_login_name.ufl_value);
+                                        certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+                                        set_user_id (username);
+                                        set_qualifier ('DB');
+                                        for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
+                                        {
+                                          if (params[i] = 'cb_ca')
+                                          {
+                                            cert := certs[atoi(params[i+1])];
+                                            USER_CERT_UNREGISTER (username, cert);
+                                          }
+                                        }
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <?vsp } ?>
+                                </td>
+                                <td>
+                                  <table> <!-- right side -->
+                                    <tr>
+                                      <th width="130px"><label for="ca_pwd">Password</label></th>
+                                      <td><v:text name="ca_pwd" id="ca_pwd" type="password" value="" /></td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="ca_type">File Format</label></th>
+                                      <td>
+                                        <v:select-list xhtml_id="ca_type" name="ca_type">
+                                          <v:item name="PKCS12" value="PKCS12" />
+                                          <v:item name="PEM" value="PEM" />
+                                          <v:item name="DER" value="DER" />
+                                        </v:select-list>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="ca_value">Import File</label></th>
+                                      <td><input type="file" name="ca_value" id="ca_value" /></td>
+                                    </tr>
+                                  </table>
+                                  <v:button action="simple" name="imp_ca" value="Import Certificate">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare username any;
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        declare exit handler for sqlstate '*', not found
+                                        {
+                                          self.vc_error_message := __SQL_MESSAGE;
+                                          self.vc_is_valid := 0;
+                                          return;
+                                        };
+                                        username := y_wide2utf (self.t_login_name.ufl_value);
+                                        set_user_id (username);
+                                        USER_CERT_REGISTER (username, get_keyword ('ca_value', params), self.ca_pwd.ufl_value, self.ca_type.ufl_value);
+
                                         http_request_status ('HTTP/1.1 302 Found');
                                         http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
