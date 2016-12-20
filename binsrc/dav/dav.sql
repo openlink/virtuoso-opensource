@@ -3604,6 +3604,11 @@ create procedure WS.WS.TTL_QUERY_POST (
       goto _again;
     };
 
+    -- Varbinary
+    if (__tag (ses) = 222)
+    {
+      ses := cast (ses as varchar);
+    }
     ns := ses;
     dict := dict_new ();
     DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict, flags);
