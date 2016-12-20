@@ -531,7 +531,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           return bcopy;
         }
 /* The following three rows are intentionally duplicated from above in order to get different location of memory leaks for two cases: a string lost after being returned "as is" and string lost in rb_box field */
-      bcopy = box_copy (box); 
+      bcopy = box_copy (box);
       if (BF_IRI & box_flags(bcopy))
         box_flags(bcopy) = BF_UTF8;
     }
@@ -4941,9 +4941,77 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
   session_buffered_write (ses, " }", 2);
 }
 
-ptrlong
-bif_http_ld_json_triple_impl (query_instance_t *qi, ld_json_env_t *env, caddr_t subj_iri_or_id, caddr_t pred_iri_or_id, caddr_t p_shorthand, caddr_t obj, dk_session_t *ses, int obj_is_single, int obj_can_be_simplified, const char *fname)
+typedef struct ld_json_env2_s
 {
+  query_instance_t *qi;
+  dk_session_t *ses;
+  caddr_t **batch;
+  int triple_count;
+  int single_subject_only;
+  int first_triple_idx;
+  int obj_is_single;
+  int obj_can_be_simplified;
+  id_hash_t *bnode_usage;
+  caddr_t printed_triples_mask;
+  id_hash_iterator_t *ctx_iter;
+  int ctx_flags;
+  int nesting_level;
+  const char *fname;
+}
+ld_json_env2_t;
+
+int bif_http_ld_json_triple_batch_impl (ld_json_env_t *env, ld_json_env2_t *e2);
+
+int
+bif_http_ld_json_first_subj_triple_idx (ld_json_env2_t *e2, caddr_t obj, int return_only_if_has_parent, iri_id_t *parent_iid_ret)
+{
+  caddr_t *obj_u;
+  caddr_t obj_iid;
+  caddr_t **obj_u_ptr;
+  caddr_t err = NULL;
+  if (NULL == e2->bnode_usage) return -2;
+  obj_iid = ((DV_IRI_ID == DV_TYPE_OF (obj)) ? obj : iri_to_id ((caddr_t *)(e2->qi), obj, 0, &err));
+  if (NULL != err)
+    {
+      dk_free_box (err);
+      return -3;
+    }
+  obj_u_ptr = (caddr_t **)id_hash_get (e2->bnode_usage, (caddr_t)(&obj_iid));
+  if (DV_IRI_ID != DV_TYPE_OF (obj))
+    dk_free_box (obj_iid);
+  if (NULL == obj_u_ptr)
+    return -4;
+  obj_u = obj_u_ptr[0];
+  if (NULL != parent_iid_ret)
+    {
+      if (DV_IRI_ID == DV_TYPE_OF (obj_u[0]))
+        parent_iid_ret[0] = unbox_iri_id (obj_u[0]);
+      else
+        parent_iid_ret[0] = 0;
+    }
+  if (DV_LONG_INT != DV_TYPE_OF (obj_u[1]))
+    return -5;
+  if (return_only_if_has_parent)
+    {
+      if (DV_IRI_ID != DV_TYPE_OF (obj_u[0]))
+        return -5;
+    }
+  return unbox (obj_u[1]);
+}
+
+/* obj_is_single is 0 to print one triple of sequence belonging to a same subject-predicate pair or nonzero if that's really one triple with value of that predicate for that subject. */
+ptrlong
+bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t subj_iri_or_id, caddr_t pred_iri_or_id, caddr_t p_shorthand, caddr_t obj)
+{
+#define TAB_WS_INDENT(ses,n) do { \
+  int indent_n = n; \
+  int indent_ctr; \
+  if (64 < (indent_n)) (indent_n) = 64; \
+  for (indent_ctr = 0; indent_ctr < (indent_n & ~7); indent_ctr += 8) \
+    session_buffered_write_char ('\t', (ses)); \
+  for (; indent_ctr < indent_n; indent_ctr++) \
+    session_buffered_write_char (' ', (ses)); \
+  } while (0);
   int obj_is_iri = 0;
   dtp_t obj_dtp = 0;
   caddr_t subj_iri = NULL, pred_iri = NULL, obj_iri = NULL;
@@ -4952,10 +5020,10 @@ bif_http_ld_json_triple_impl (query_instance_t *qi, ld_json_env_t *env, caddr_t 
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (ld_json_env_t) != box_length ((caddr_t)env)) ||
     ((DV_STRING == DV_TYPE_OF (env->tje_prev_subj)) && (DV_STRING != DV_TYPE_OF (env->tje_prev_pred)) && ((caddr_t)((ptrlong)1) != env->tje_prev_pred)) )
-    sqlr_new_error ("22023", "SR607", "Argument 1 of %.500s() should be an array of special format", fname);
-  if (!iri_cast_ld_json_qname (qi, subj_iri_or_id, &subj_iri, &subj_iri_is_new, &is_bnode /* never used after return */))
+    sqlr_new_error ("22023", "SR607", "Argument 1 of %.500s() should be an array of special format", e2->fname);
+  if (!iri_cast_ld_json_qname (e2->qi, subj_iri_or_id, &subj_iri, &subj_iri_is_new, &is_bnode /* never used after return */))
     goto fail; /* see below */
-  if (!iri_cast_ld_json_qname (qi, pred_iri_or_id, &pred_iri, &pred_iri_is_new, &is_bnode /* never used after return */))
+  if (!iri_cast_ld_json_qname (e2->qi, pred_iri_or_id, &pred_iri, &pred_iri_is_new, &is_bnode /* never used after return */))
     goto fail; /* see below */
   obj_dtp = DV_TYPE_OF (obj);
   switch (obj_dtp)
@@ -4966,90 +5034,127 @@ bif_http_ld_json_triple_impl (query_instance_t *qi, ld_json_env_t *env, caddr_t 
     }
   if (obj_is_iri)
     {
-      if (!iri_cast_ld_json_qname (qi, obj, &obj_iri, &obj_iri_is_new, &obj_is_bnode /* used ;) */))
+      if (!iri_cast_ld_json_qname (e2->qi, obj, &obj_iri, &obj_iri_is_new, &obj_is_bnode /* used ;) */))
         goto fail; /* see below */
     }
   if ((DV_STRING != DV_TYPE_OF (env->tje_prev_subj)) && (DV_UNAME != DV_TYPE_OF (env->tje_prev_subj)))
     {
-      dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
-      dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+      dk_free_tree (env->tje_prev_subj);	 env->tje_prev_subj = NULL;
+      dk_free_tree (env->tje_prev_pred);	 env->tje_prev_pred = NULL;
     }
   if ((NULL == env->tje_prev_subj) || strcmp (env->tje_prev_subj, subj_iri))
     {
       if (NULL != env->tje_prev_pred)
         {
           if ((caddr_t)((ptrlong)1) == env->tje_prev_pred)
-                                       /* 012.345678 */
-            session_buffered_write (ses, " },\n    ", 8);
-          else                         /* 01234.567890 */
-            session_buffered_write (ses, " ] },\n    ", 10);
+                                             /* 012.34 */
+              session_buffered_write (e2->ses, " },\n", 4);
+          else                              /* 01234.56 */
+            session_buffered_write (e2->ses, " ] },\n", 6);
+          TAB_WS_INDENT (e2->ses, e2->nesting_level);
           dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
-                                 /* 01.2345.678.90 */
-      session_buffered_write (ses, "{ \"@id\": \"", 10);
-      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-                                 /* .01.23456789 */
-      session_buffered_write (ses, "\",\n      ", 9);
+                                     /* 01.2345.678.90 */
+      session_buffered_write (e2->ses, "{ \"@id\": \"", 10);
+      dks_esc_write (e2->ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+                                     /* .01.23 */
+      session_buffered_write (e2->ses, "\",\n", 3);
+      TAB_WS_INDENT (e2->ses, e2->nesting_level + 2);
       env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
     }
   if (!strcmp (pred_iri, uname_rdf_ns_uri_type))
     pred_is_type = 1;
   else if ((pred_iri_or_id != p_shorthand) && !((DV_RDF == obj_dtp) && (RDF_BOX_DEFAULT_LANG != ((rdf_box_t *)obj)->rb_lang)))
-    obj_can_be_simplified = 1;
-  if (obj_is_single || (NULL == env->tje_prev_pred) || ((caddr_t)((ptrlong)1) == env->tje_prev_pred) || strcmp (env->tje_prev_pred, pred_iri))
+    e2->obj_can_be_simplified = 1;
+  if (e2->obj_is_single || (NULL == env->tje_prev_pred) || ((caddr_t)((ptrlong)1) == env->tje_prev_pred) || strcmp (env->tje_prev_pred, p_shorthand))
     {
       if (NULL != env->tje_prev_pred)
         {
           if ((caddr_t)((ptrlong)1) == env->tje_prev_pred)
-                                       /* 0.12345678 */
-            session_buffered_write (ses, ",\n      ", 8);
-          else                         /* 012.34567890 */
-            session_buffered_write (ses, " ],\n      ", 10);
+                                           /* 0.12 */
+            session_buffered_write (e2->ses, ",\n", 2);
+          else                             /* 012.34 */
+            session_buffered_write (e2->ses, " ],\n", 4);
+          TAB_WS_INDENT (e2->ses, e2->nesting_level + 2);
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
-      session_buffered_write_char ('\"', ses);
+      session_buffered_write_char ('\"', e2->ses);
       if (pred_is_type)
-        session_buffered_write (ses, "@type", 5);
+        session_buffered_write (e2->ses, "@type", 5);
       else if (pred_iri_or_id != p_shorthand)
-        dks_esc_write (ses, p_shorthand, box_length (p_shorthand) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+        dks_esc_write (e2->ses, p_shorthand, box_length (p_shorthand) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       else
-        dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-      if (obj_is_single)
+        dks_esc_write (e2->ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      if (e2->obj_is_single)
         {
-                                     /* .0123 */
-          session_buffered_write (ses, "\": ", 3);
+                                         /* .0123 */
+          session_buffered_write (e2->ses, "\": ", 3);
           env->tje_prev_pred = (caddr_t)((ptrlong)1);
-          if (pred_iri_is_new)
-            dk_free_box (pred_iri);
         }
       else
         {
-                                     /* .012345 */
-          session_buffered_write (ses, "\": [ ", 5);
-          env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri);
+                                         /* .012345 */
+          session_buffered_write (e2->ses, "\": [ ", 5);
+          if (pred_iri_or_id != p_shorthand)
+            env->tje_prev_pred = box_copy (p_shorthand);
+          else
+            {
+              env->tje_prev_pred = (pred_iri_is_new ? pred_iri : box_copy (pred_iri));
+              pred_iri_is_new = 0;
+            }
         }
-      pred_iri_is_new = 0;
-    }
-  else                         /* 0.1234567890 */
-    session_buffered_write (ses, ",\n        ", 10);
-  if (obj_is_iri)
-    {
-      if (pred_is_type || (pred_iri_or_id != p_shorthand)) /* Fix for 17108: values of @type should be printed without { "@id" : ... } enclosing */
+      if (pred_iri_is_new)
         {
-          session_buffered_write_char ('\"', ses);
-          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-          session_buffered_write_char ('\"', ses);
-        }
-      else
-        {                            /* 01 2345 678 90*/
-          session_buffered_write (ses, "{ \"@id\": \"", 10);
-          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-          session_buffered_write (ses, "\"}", 2);
+          dk_free_box (pred_iri);
+          pred_iri_is_new = 0;
         }
     }
   else
-    http_ld_json_write_literal_obj (ses, qi, obj, obj_dtp, obj_can_be_simplified);
+    {                                /* 0.12 */
+      session_buffered_write (e2->ses, ",\n", 2);
+      TAB_WS_INDENT (e2->ses, e2->nesting_level + 8);
+    }
+  if (obj_is_iri)
+    {
+      int first_subj_triple_idx = (pred_is_type ? -1 : bif_http_ld_json_first_subj_triple_idx (e2, obj, 1, NULL));
+      if (0 <= first_subj_triple_idx)
+        {
+          caddr_t saved_subj = env->tje_prev_subj;
+          caddr_t saved_pred = env->tje_prev_pred;
+          int sub_nesting;
+          ld_json_env2_t sub_e2 = e2[0];
+          QI_CHECK_STACK(e2->qi, &sub_e2, 10000);
+          sub_e2.first_triple_idx = first_subj_triple_idx;
+          sub_e2.single_subject_only = 1;
+          sub_e2.nesting_level = e2->nesting_level + ((e2->obj_is_single) ? 4 : 8);
+          env->tje_prev_subj = NULL;
+          env->tje_prev_pred = NULL;
+          session_buffered_write_char ('\n', e2->ses);
+          TAB_WS_INDENT (e2->ses, sub_e2.nesting_level);
+          sub_nesting = bif_http_ld_json_triple_batch_impl (env, &sub_e2);
+          env->tje_prev_subj = saved_subj;
+          env->tje_prev_pred = saved_pred;
+          if (sub_nesting > 1)
+            session_buffered_write (e2->ses, " ]", 2);
+          if (sub_nesting)
+            session_buffered_write (e2->ses, " }", 2);
+        }
+      else if (pred_is_type || (pred_iri_or_id != p_shorthand)) /* Fix for 17108: values of @type should be printed without { "@id" : ... } enclosing */
+        {
+          session_buffered_write_char ('\"', e2->ses);
+          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write_char ('\"', e2->ses);
+        }
+      else
+        {                                /* 01 2345 678 90*/
+          session_buffered_write (e2->ses, "{ \"@id\": \"", 10);
+          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write (e2->ses, "\"}", 2);
+        }
+    }
+  else
+    http_ld_json_write_literal_obj (e2->ses, e2->qi, obj, obj_dtp, e2->obj_can_be_simplified);
 fail:
   if (subj_iri_is_new) dk_free_box (subj_iri);
   if (pred_iri_is_new) dk_free_box (pred_iri);
@@ -5060,13 +5165,16 @@ fail:
 caddr_t
 bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
+  ld_json_env2_t e2;
   ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple");
   caddr_t subj_iri_or_id = bif_arg (qst, args, 1, "http_ld_json_triple");
   caddr_t pred_iri_or_id = bif_arg (qst, args, 2, "http_ld_json_triple");
   caddr_t obj = bif_arg (qst, args, 3, "http_ld_json_triple");
-  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_ld_json_triple");
-  return box_num (bif_http_ld_json_triple_impl (qi, env, subj_iri_or_id, pred_iri_or_id, pred_iri_or_id /* no context dictionary --- no shorthands to use */, obj, ses, 0 /* not proven to be single */, 0 /* can not simplify value */, "http_ld_json_triple"));
+  memset (&e2, 0, sizeof (ld_json_env2_t));
+  e2.qi = (query_instance_t *)qst;
+  e2.ses = http_session_no_catch_arg (qst, args, 4, "http_ld_json_triple");
+  e2.fname = "http_ld_json_triple";
+  return box_num (bif_http_ld_json_triple_impl (env, &e2, subj_iri_or_id, pred_iri_or_id, pred_iri_or_id, obj));
 }
 
 caddr_t
@@ -5116,38 +5224,56 @@ ld_json_ctx_get_shorthand (query_instance_t *qi, caddr_t pred_iri_or_id, caddr_t
   return val[0];
 }
 
-caddr_t
-bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+int
+bif_http_ld_json_triple_batch_impl (ld_json_env_t *env, ld_json_env2_t *e2)
 {
-  int triple_ctr, triple_count;
-  query_instance_t *qi = (query_instance_t *)qst;
-  ptrlong nesting = 0;
-  int n_args = BOX_ELEMENTS (args);
-  ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple_batch");
-  caddr_t **batch = (caddr_t **)bif_array_of_pointer_arg (qst, args, 1, "http_ld_json_triple_batch");
-  dk_session_t *ses = http_session_no_catch_arg (qst, args, 2, "http_ld_json_triple_batch");
-  id_hash_iterator_t *ctx_iter = ((3 < n_args) ? bif_dict_iterator_or_null_arg (qst, args, 3, "http_ld_json_triple_batch", 0) : NULL);
-  int ctx_flags = ((4 < n_args) ? bif_long_arg (qst, args, 4, "http_ld_json_triple_batch") : 0);
-  char next_is_distinct_YN0 = 'Y';
+  int triple_ctr, nesting;
+  char next_sp_pair_is_distinct_YN0 = 'Y';
+  int try_parent = (!e2->single_subject_only) && (NULL != e2->printed_triples_mask);
   caddr_t prev_p_shorthand = NULL;
   caddr_t next_p_shorthand = NULL;
-  triple_count = BOX_ELEMENTS (batch);
-  for (triple_ctr = 0; triple_ctr < triple_count; triple_ctr++)
+  for (triple_ctr = e2->first_triple_idx; triple_ctr < e2->triple_count; triple_ctr++)
     {
-      caddr_t *triple = batch [triple_ctr];
-      if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (triple)) || (3 > BOX_ELEMENTS (triple)))
-        sqlr_new_error ("22023", "SR607", "Argument 2 of http_ld_json_triple_batch() should be vector of triples");
-    }
-  for (triple_ctr = 0; triple_ctr < triple_count; triple_ctr++)
-    {
-      caddr_t *triple = batch [triple_ctr];
+      caddr_t *triple = e2->batch [triple_ctr];
       caddr_t subj_iri_or_id = triple[0], pred_iri_or_id = triple[1], obj = triple[2];
       caddr_t p_shorthand = next_p_shorthand;
-      int obj_is_single = 0;
-      char prev_is_distinct_YN0 = next_is_distinct_YN0;
-      int obj_can_be_simplified = 0;
+      char prev_sp_pair_is_distinct_YN0 = next_sp_pair_is_distinct_YN0;
+      char next_s_is_distinct_YN0 = 0;
       int found;
-      next_is_distinct_YN0 = 0;
+again:
+      if ((NULL != e2->printed_triples_mask) && (' ' != e2->printed_triples_mask [triple_ctr]))
+        continue;
+      if (try_parent)
+        {
+          ld_json_env2_t sub_e2;
+          iri_id_t parent_iid = 0;
+          int best_triple_idx = bif_http_ld_json_first_subj_triple_idx (e2, subj_iri_or_id, 1, &parent_iid);
+          if ((0 <= best_triple_idx) && (' ' == e2->printed_triples_mask [best_triple_idx]))
+            {
+              do {
+                  caddr_t boxed_parent_iid = box_iri_id (parent_iid);
+                  iri_id_t candidate_iid = 0;
+                  int candidate_triple_idx = bif_http_ld_json_first_subj_triple_idx (e2, boxed_parent_iid, 0, &candidate_iid);
+                  dk_free_box (boxed_parent_iid);
+                  if ((0 <= candidate_triple_idx) && (' ' == e2->printed_triples_mask [candidate_triple_idx]))
+                    {
+                      best_triple_idx = candidate_triple_idx;
+                      parent_iid = candidate_iid;
+                    }
+                  else
+                    break;
+                } while (0);
+              sub_e2 = e2[0];
+              sub_e2.first_triple_idx = best_triple_idx;
+              sub_e2.single_subject_only = 1;
+              bif_http_ld_json_triple_batch_impl (env, &sub_e2);
+              try_parent = 1;
+              goto again;
+            }
+          else
+            try_parent = 0;
+        }
+      next_sp_pair_is_distinct_YN0 = 0;
       next_p_shorthand = NULL;
 /* For purposes of this routine, any invalid iri-or-ids "differs" */
 #define FLD_DIFFERS(x,y) ((DV_TYPE_OF(x) != DV_TYPE_OF(y)) || \
@@ -5156,30 +5282,71 @@ bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       ((DV_STRING == DV_TYPE_OF(x)) ? strcmp ((x), (y)) : \
       1 ) ) ) )
       if (NULL == p_shorthand)
-        p_shorthand = ((NULL == ctx_iter) ? pred_iri_or_id : ld_json_ctx_get_shorthand (qi, pred_iri_or_id, obj, ctx_iter, &found));
+        p_shorthand = ((NULL == e2->ctx_iter) ? pred_iri_or_id : ld_json_ctx_get_shorthand (e2->qi, pred_iri_or_id, obj, e2->ctx_iter, &found));
       if (p_shorthand != pred_iri_or_id)
-        obj_can_be_simplified = 1;
-      if (!obj_can_be_simplified)
-        obj_can_be_simplified = http_ld_json_obj_can_be_simplified (qi, obj);
-      if (0 == prev_is_distinct_YN0)
+        e2->obj_can_be_simplified = 1;
+      if (!e2->obj_can_be_simplified)
+        e2->obj_can_be_simplified = http_ld_json_obj_can_be_simplified (e2->qi, obj);
+      if (0 == prev_sp_pair_is_distinct_YN0)
         {
-          prev_is_distinct_YN0 = ((FLD_DIFFERS (prev_p_shorthand, p_shorthand) || FLD_DIFFERS (batch[triple_ctr-1][0], subj_iri_or_id)) ? 'Y' : 'N');
+          prev_sp_pair_is_distinct_YN0 = ((FLD_DIFFERS (prev_p_shorthand, p_shorthand) || FLD_DIFFERS (e2->batch[triple_ctr-1][0], subj_iri_or_id)) ? 'Y' : 'N');
         }
-      if ('Y' == prev_is_distinct_YN0)
+      if (('Y' == prev_sp_pair_is_distinct_YN0) || e2->single_subject_only || (!e2->single_subject_only))
         {
-          if (triple_count-1 == triple_ctr)
-            next_is_distinct_YN0 = 'Y';
+          if ((e2->triple_count-1 == triple_ctr) || ((NULL != e2->printed_triples_mask) && (' ' != e2->printed_triples_mask [triple_ctr+1])))
+            next_s_is_distinct_YN0 = next_sp_pair_is_distinct_YN0 = 'Y';
           else
             {
-              next_p_shorthand = ((NULL == ctx_iter) ? batch[triple_ctr+1][1] : ld_json_ctx_get_shorthand (qi, batch[triple_ctr+1][1], batch[triple_ctr+1][2], ctx_iter, &found));
-              next_is_distinct_YN0 = ((FLD_DIFFERS (next_p_shorthand, p_shorthand) || FLD_DIFFERS (batch[triple_ctr+1][0], subj_iri_or_id)) ? 'Y' : 'N');
+              next_s_is_distinct_YN0 = (FLD_DIFFERS (e2->batch[triple_ctr+1][0], subj_iri_or_id) ? 'Y' : 'N');
+              next_p_shorthand = ((NULL == e2->ctx_iter) ? e2->batch[triple_ctr+1][1] : ld_json_ctx_get_shorthand (e2->qi, e2->batch[triple_ctr+1][1], e2->batch[triple_ctr+1][2], e2->ctx_iter, &found));
+              next_sp_pair_is_distinct_YN0 = (('Y' == next_s_is_distinct_YN0) || (FLD_DIFFERS (next_p_shorthand, p_shorthand)) ? 'Y' : 'N');
             }
-          if ('Y' == next_is_distinct_YN0)
-            obj_is_single = 1;
         }
-      nesting = bif_http_ld_json_triple_impl (qi, env, subj_iri_or_id, pred_iri_or_id, p_shorthand, obj, ses, obj_is_single, obj_can_be_simplified, "http_ld_json_triple_batch");
+      e2->obj_is_single = (('Y' == prev_sp_pair_is_distinct_YN0) && ('Y' == next_sp_pair_is_distinct_YN0));
+      if (NULL != e2->printed_triples_mask)
+        e2->printed_triples_mask [triple_ctr] = 'p';
+      nesting = bif_http_ld_json_triple_impl (env, e2,subj_iri_or_id, pred_iri_or_id, p_shorthand, obj);
       prev_p_shorthand = p_shorthand;
+      if (e2->single_subject_only && ('Y' == next_s_is_distinct_YN0))
+        break;
+      if ('Y' == next_s_is_distinct_YN0)
+        try_parent = (!e2->single_subject_only) && (NULL != e2->printed_triples_mask);
     }
+  return nesting;
+}
+
+caddr_t
+bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  ld_json_env2_t e2;
+  int triple_ctr;
+  ptrlong nesting = 0;
+  int n_args = BOX_ELEMENTS (args);
+  id_hash_iterator_t *bnode_usage_iter = ((5 < n_args) ? bif_dict_iterator_arg (qst, args, 5, "http_ld_json_triple_batch", 0) : NULL);
+  ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple_batch");
+  memset (&e2, 0, sizeof (ld_json_env2_t));
+  e2.qi = (query_instance_t *)qst;
+  e2.ses = http_session_no_catch_arg (qst, args, 2, "http_ld_json_triple_batch");
+  e2.batch = (caddr_t **)bif_array_of_pointer_arg (qst, args, 1, "http_ld_json_triple_batch");
+  e2.ctx_iter = ((3 < n_args) ? bif_dict_iterator_or_null_arg (qst, args, 3, "http_ld_json_triple_batch", 0) : NULL);
+  e2.ctx_flags = ((4 < n_args) ? bif_long_arg (qst, args, 4, "http_ld_json_triple_batch") : 0);
+  e2.bnode_usage = ((NULL != bnode_usage_iter) ? bnode_usage_iter->hit_hash : NULL);
+  e2.printed_triples_mask = ((6 < n_args) ? bif_string_arg (qst, args, 6, "http_ld_json_triple_batch") : NULL);
+  e2.triple_count = BOX_ELEMENTS (e2.batch);
+  e2.nesting_level = 4;
+  for (triple_ctr = 0; triple_ctr < e2.triple_count; triple_ctr++)
+    {
+      caddr_t *triple = e2.batch [triple_ctr];
+      if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (triple)) || (3 > BOX_ELEMENTS (triple)))
+        sqlr_new_error ("22023", "SR607", "Argument 2 of http_ld_json_triple_batch() should be vector of triples");
+    }
+  if ((NULL != e2.printed_triples_mask) && (e2.triple_count != box_length (e2.printed_triples_mask) - 1))
+    sqlr_new_error ("22023", "SR607", "Argument 5 of http_ld_json_triple_batch() should be a mask string with length matching to the vector of triples");
+  if ((NULL != e2.bnode_usage) && (e2.bnode_usage->ht_mutex))
+    mutex_enter (e2.bnode_usage->ht_mutex);
+  nesting = bif_http_ld_json_triple_batch_impl (env, &e2);
+  if ((NULL != e2.bnode_usage) && (e2.bnode_usage->ht_mutex))
+    mutex_leave (e2.bnode_usage->ht_mutex);
   return box_num (nesting);
 }
 

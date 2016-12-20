@@ -4133,6 +4133,205 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any
 }
 ;
 
+-- The function calculates data needed for writing triples in nested form, resulting in dominance subgraphs.
+-- If \c trees4all is nonzero then both named and blank nodes may form hierarchies and uses of one node as an object for multiple subjects does not prevent from making trees.
+-- If \c trees4all is zero then only blank nodes may form hierarchies and hierarchy is built only if a bnode is used as an object for a single triple.
+create procedure DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (inout triples any, in trees4all integer, out bnode_usage_dict_ret any, out tail_to_head_dict_ret any, out printed_triples_mask_ret varchar)
+{
+  declare bnode_usage_dict any;
+-- Keys of bnode_usage_dict are IRI_IDs of all blank nodes of the \c triples,
+-- values are vectors of six items
+-- [0]:
+--     If \c trees4all is nonzero then
+--       NULL if key node is not used as object OR IRI_ID of some subject such that the key node is object.
+--     If \c trees4all is zero then
+--       NULL if key bnode is not used as object OR IRI_ID of subject of a single triple such that the key bnode is object OR an empty string UNAME if the key bnode is used as object many times or makes a loop made of anonymous bnodes.
+-- [1]: Index of first triple where the bnode appears as a subject, NULL if there are no such.
+-- [2]: temporary integer to check for loops
+-- [3]: NULL if key bnode does not have rdf:first property OR an integer index of that rdf:first triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:first or non-list predicates.
+-- [4]: NULL if key bnode does not have rdf:rest property OR an integer index of that rdf:rest triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:rest or non-list predicates.
+-- [5]: NULL if not in the list or not yet checked OR an integer that indicates the length of proper tail of the list OR an empty string UNAME if the list is ended up with cycle or something weird.
+  declare tail_to_head_dict any;
+-- Keys of tail_to_head_dict are last bnodes of lists, values are first bnodes of (valid parts of) lists OR empty string UNAME for last bnodes that were later proven to be inappropriate.
+  declare printed_triples_mask varchar;
+  declare rdf_first_iid, rdf_rest_iid, rdf_nil_iid IRI_ID;
+  declare all_bnodes any;
+  declare tcount, tctr, bnode_ctr integer;
+  declare tail_bnode, head_bnode IRI_ID;
+  tcount := length (triples);
+  printed_triples_mask := space (tcount);
+  rowvector_obj_sort (triples, 2, 1);
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+  rdf_first_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#first');
+  rdf_rest_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest');
+  rdf_nil_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil');
+-- First of all we gather info into bnode_usage_dict, except items #2 and #5 of values
+  bnode_usage_dict := dict_new (13 + (tcount / 100));
+  tail_to_head_dict := dict_new (13 + (tcount / 1000));
+  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+    {
+      declare s_iid, o_iid IRI_ID;
+      -- dbg_obj_princ ('Gathering ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
+      if (triples[tctr][0] is null or triples[tctr][1] is null or triples[tctr][2] is null)
+        {
+          printed_triples_mask[tctr] := ascii ('N');
+          goto triple_skipped;
+        }
+      s_iid := iri_to_id_nosignal (triples[tctr][0]);
+      o_iid := iri_to_id_nosignal (triples[tctr][2]);
+      if (trees4all or is_bnode_iri_id (s_iid))
+        {
+          declare p_iid IRI_ID;
+          declare u any;
+          p_iid := iri_to_id_nosignal (triples[tctr][1]);
+          u := dict_get (bnode_usage_dict, s_iid, null);
+          if (u is null)
+            u := vector (null, tctr, null, null, null, null);
+          else if (u[1] is null)
+            u[1] := tctr;
+          if (trees4all)
+            goto s_iid_done;
+          if (rdf_first_iid = p_iid)
+            {
+              if (u[3] is null)
+                {
+                  u[3] := tctr;
+                  goto s_iid_done;
+                }
+              else
+                goto bad_for_list;
+            }
+          else if (rdf_rest_iid = p_iid)
+            {
+              if (u[4] is not null)
+                goto bad_for_list;
+              else if (rdf_nil_iid = o_iid)
+                {
+                  dict_put (tail_to_head_dict, s_iid, s_iid);
+                  u[4] := tctr;
+                  goto s_iid_done;
+                }
+              else if (is_bnode_iri_id (o_iid))
+                {
+                  u[4] := tctr;
+                  goto s_iid_done;
+                }
+              else
+                goto bad_for_list;
+            }
+bad_for_list:
+          u[3] := UNAME'';
+          u[4] := UNAME'';
+          if (dict_get (tail_to_head_dict, s_iid, null) is not null)
+            dict_put (tail_to_head_dict, s_iid, UNAME'');
+s_iid_done:
+          dict_put (bnode_usage_dict, s_iid, u);
+        }
+      if (trees4all or is_bnode_iri_id (o_iid))
+        {
+          declare u any;
+          u := dict_get (bnode_usage_dict, o_iid, null);
+          if (u is null)
+            dict_put (bnode_usage_dict, o_iid, vector (s_iid, null, null, null, null, null));
+          else
+            {
+              if (u[0] is null)
+                u[0] := s_iid;
+              else
+                u[0] := UNAME'';
+              dict_put (bnode_usage_dict, o_iid, u);
+            }
+        }
+triple_skipped: ;
+    }
+-- Now it's possible to check for loops
+  all_bnodes := dict_list_keys (bnode_usage_dict, 0);
+  gvector_sort (all_bnodes, 1, 0, 1);
+  for (bnode_ctr := length (all_bnodes) - 1; bnode_ctr >= 0; bnode_ctr := bnode_ctr - 1)
+    {
+      declare top_bn_iid, next_bn_iid IRI_ID;
+      declare u, top_u, next_u any;
+      top_bn_iid := all_bnodes[bnode_ctr];
+      u := dict_get (bnode_usage_dict, top_bn_iid, null);
+next_loop_check:
+      if (u[5] is not null)
+        goto bn_iid_done;
+      if (u[2] = bnode_ctr)
+        {
+          while (u[5] is not null)
+            {
+              -- dbg_obj_princ ('Marking as part of a loop: ', top_bn_iid, u);
+              next_bn_iid := u[0];
+              u[5] := UNAME'';
+              dict_put (bnode_usage_dict, top_bn_iid, u);
+              top_bn_iid := next_bn_iid;
+              u := dict_get (bnode_usage_dict, top_bn_iid, null);
+            }
+          goto bn_iid_done;
+        }
+      next_bn_iid := u[0];
+      u[2] := bnode_ctr;
+      dict_put (bnode_usage_dict, top_bn_iid, u);
+      if (not case trees4all when 0 then is_bnode_iri_id (next_bn_iid) else isiri_id (next_bn_iid) end)
+        goto bn_iid_done;
+      next_u := dict_get (bnode_usage_dict, next_bn_iid, null);
+      top_bn_iid := next_bn_iid;
+      u := next_u;
+      goto next_loop_check;
+bn_iid_done: ;
+    }
+-- Now it is possible to check list nodes
+  if (not trees4all)
+    {
+      dict_iter_rewind (tail_to_head_dict);
+      while (dict_iter_next (tail_to_head_dict, tail_bnode, head_bnode))
+        {
+          declare u, next_u any;
+          declare last_good_head_bnode, next_bn_iid IRI_ID;
+          declare len_ctr integer;
+          len_ctr := 0;
+          last_good_head_bnode := head_bnode;
+          -- dbg_obj_princ ('Loop from ', tail_bnode, ' to ', head_bnode);
+          while (is_bnode_iri_id (head_bnode))
+            {
+              u := dict_get (bnode_usage_dict, head_bnode, null);
+              if (isinteger (u[3]) and isinteger (u[4]) and u[5] is null)
+                {
+                  -- dbg_obj_princ ('Reached ', head_bnode, u, ' from ', last_good_head_bnode);
+                  last_good_head_bnode := head_bnode;
+                  u[5] := len_ctr;
+                  len_ctr := len_ctr + 1;
+                  dict_put (bnode_usage_dict, head_bnode, u);
+                  next_bn_iid := u[0];
+                  next_u := dict_get (bnode_usage_dict, next_bn_iid, null);
+                  if (next_u is not null and isinteger (next_u[4]) and (triples[next_u[4]][2] = head_bnode))
+                    {
+                      head_bnode := next_bn_iid;
+                      u := next_u;
+                    }
+                  else
+                    {
+                      -- dbg_obj_princ ('Rejected ', head_bnode, u, ' from last goood ', last_good_head_bnode);
+                      head_bnode := null;
+                    }
+                }
+              else
+                {
+                  -- dbg_obj_princ ('Rejected ', head_bnode, u, ' from ', last_good_head_bnode);
+                  u[5] := UNAME'';
+                  dict_put (bnode_usage_dict, head_bnode, u);
+                  head_bnode := null;
+                }
+            }
+        }
+    }
+  bnode_usage_dict_ret := bnode_usage_dict;
+  tail_to_head_dict_ret := tail_to_head_dict;
+  printed_triples_mask_ret := printed_triples_mask;
+}
+;
+
 create function DB.DBA.JSON_LD_CTX_USED_NAMES (in ctx_dict any)
 {
   declare used_names any;
@@ -4140,13 +4339,13 @@ create function DB.DBA.JSON_LD_CTX_USED_NAMES (in ctx_dict any)
   used_names := dict_new (dict_size (ctx_dict));
   dict_iter_rewind (ctx_dict);
   while (dict_iter_next (ctx_dict, k, v))
-    if (k[1] is not null)
+    if (k[3] is not null)
       {
         declare prev_use any;
         prev_use := dict_get (used_names, v[0], null);
-        if (k[1] is not null and prev_use is not null)
+        if (k[3] is not null and prev_use is not null)
           signal ('22023', 'JSON-LD context dictionary is invalid, it uses shortcut "' || dict_get (used_names, v[0], null)
-            || '" for both <' || k[0] || '> with ' || k[1] || ' and <' || prev_use[0] || '> with ' || prev_use[1] );
+            || '" for both <' || k[0] || '> with ' || k[3] || ' and <' || prev_use[0] || '> with ' || prev_use[3] );
         dict_put (used_names, v[0], k);
       }
   return used_names;
@@ -4208,7 +4407,10 @@ again:
 
 create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses any, in ctx_dict any := null, in ctx_mode integer := 255)
 {
+  declare bnode_usage_dict any;
+  declare tail_to_head_dict any;
   declare env any;
+  declare printed_triples_mask varchar;
   declare tcount, tctr, nesting integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX with mode ', ctx_mode, ':'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
@@ -4225,10 +4427,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
       else if (bit_and (ctx_mode, 2+4))
         signal ('22023', 'JSON-LD context dictionary is required but neither provided nor allowed to be created (bit 1 of context mode is not set)');
     }
--- No error handlers here because failed sorting by predicate or subject would result in poorly structured output.
-  rowvector_obj_sort (triples, 2, 1);
-  rowvector_subj_sort (triples, 1, 1);
-  rowvector_subj_sort (triples, 0, 1);
+  DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (triples, 0, bnode_usage_dict, tail_to_head_dict, printed_triples_mask);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   if (bit_and (ctx_mode, 2+4))
     {
@@ -4242,7 +4441,12 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
       for (tctr := 0; tctr < tcount; tctr := tctr + 1)
         {
           declare p, obj, raw_otype, otype any;
-          p := triples[tctr][1];
+          if (ascii(' ') <> printed_triples_mask[tctr])
+            {
+              -- dbg_obj_princ ('skipping ', triples[tctr], ' due to mask ', printed_triples_mask[tctr]);
+              goto skip_shortcut_calc; -- see below;
+            }
+          p := id_to_iri (triples[tctr][1]);
           obj := triples[tctr][2];
           otype := raw_otype := case __tag(obj)
             when __tag of rdf_box then UNAME'@@lit'
@@ -4255,6 +4459,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
             when __tag of varchar then case when (bit_and (__box_flags (obj), 1)) then UNAME'@id' else UNAME'http://www.w3.org/2001/XMLSchema#string' end
             when __tag of nvarchar then UNAME'http://www.w3.org/2001/XMLSchema#string'
             else uname(__xsd_type (obj)) end;
+          -- dbg_obj_princ ('was ', prev_p, prev_otype, '; now ', p, obj, otype);
           if (otype = UNAME'@@lit')
             {
               otype := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)), UNAME'http://www.w3.org/2001/XMLSchema#string');
@@ -4268,9 +4473,11 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
               declare shortcut_etc any;
               declare shortcut varchar;
               shortcut_etc := dict_get (ctx_dict, vector (p, otype), null);
+              -- dbg_obj_princ ('dict_get (ctx_dict, ', vector (p, otype), ') returned ', shortcut_etc);
               if (p <> prev_p)
                 {
                   fixed_otype_of_p := dict_get (ctx_dict, vector (p, null), null);
+                  -- dbg_obj_princ ('dict_get (ctx_dict, ', vector (p, null), ') returned ', fixed_otype_of_p);
                   if (fixed_otype_of_p is null)
                     {
                       if (fixed_otype_of_p is not null and (fixed_otype_of_p <> otype))
@@ -4282,6 +4489,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
                   if (bit_and (ctx_mode, 4) or fixed_otype_of_p is null)
                     {
                       shortcut := DB.DBA.JSON_LD_CTX_MAKE_NEW_SHORTCUT (p, otype, used_names);
+                      -- dbg_obj_princ ('dict_put (ctx_dict, ', vector (p, otype), vector (shortcut));
                       dict_put (ctx_dict, vector (p, otype), vector (shortcut));
                       dict_put (used_names, shortcut, vector (p, otype));
                     }
@@ -4289,6 +4497,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
             }
           prev_p := p;
           prev_otype := otype;
+skip_shortcut_calc: ;
         }
     }
   if (214 <> __tag (ctx_dict))
@@ -4332,7 +4541,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
         }
       http (' },\n  "@graph": [\n    ', ses);
     }
-  nesting := http_ld_json_triple_batch (env, triples, ses, ctx_dict, ctx_mode);
+  nesting := http_ld_json_triple_batch (env, triples, ses, ctx_dict, ctx_mode, bnode_usage_dict, printed_triples_mask);
   if (nesting > 1)
     http (' ]', ses);
   if (nesting)
@@ -6455,164 +6664,17 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL (inout triples any, inout ses an
 
 create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (inout triples any, in env_flags integer, inout ses any)
 {
-  declare env, printed_triples_mask any;
-  declare rdf_first_iid, rdf_rest_iid, rdf_nil_iid IRI_ID;
   declare bnode_usage_dict any;
--- Keys of bnode_usage_dict are IRI_IDs of all blank nodes of the \c triples,
--- values are vectors of five items
--- #0: NULL if key bnode is not used as object OR IRI_ID of single subject such that the key bnode is object OR an empty string UNAME if the key bnode is used as object many times or makes a loop made of anonymous bnodes.
--- #1: NULL if key bnode does not have rdf:first property OR an integer index of that rdf:first triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:first or non-list predicates.
--- #2: NULL if key bnode does not have rdf:rest property OR an integer index of that rdf:rest triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:rest or non-list predicates.
--- #3: NULL if not in the list or not yet checked OR an integer that indicates the length of proper tail of the list OR an empty string UNAME if the list is ended up with cycle or something weird.
--- #4: Index of first triple where the bnode appears as a subject, NULL if there are no such.
   declare tail_to_head_dict any;
--- Keys of tail_to_head_dict are last bnodes of lists, values are first bnodes of (valid parts of) lists OR empty string UNAME for last bnodes that were later proven to be inappropriate.
-  declare all_bnodes any;
+  declare env, printed_triples_mask any;
   declare tcount, tctr, bnode_ctr integer;
-  declare tail_bnode, head_bnode IRI_ID;
   declare prefixes_are_printed integer;
   declare prev_s, prev_p varchar;
-  tcount := length (triples);
-  rowvector_obj_sort (triples, 2, 1);
-  rowvector_subj_sort (triples, 1, 1);
-  rowvector_subj_sort (triples, 0, 1);
-  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, env_flags, 0, ses);
-  rdf_first_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#first');
-  rdf_rest_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest');
-  rdf_nil_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil');
-  printed_triples_mask := space (tcount);
--- First of all we gather info into bnode_usage_dict, except items #3 of values
-  bnode_usage_dict := dict_new (13 + (tcount / 100));
-  tail_to_head_dict := dict_new (13 + (tcount / 1000));
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    {
-      declare s_iid, o_iid IRI_ID;
-      -- dbg_obj_princ ('Gathering ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
-      if (triples[tctr][0] is null or triples[tctr][1] is null or triples[tctr][2] is null)
-        {
-          printed_triples_mask[tctr] := ascii ('N');
-          goto triple_skipped;
-        }
-      s_iid := iri_to_id_nosignal (triples[tctr][0]);
-      o_iid := iri_to_id_nosignal (triples[tctr][2]);
-      if (is_bnode_iri_id (s_iid))
-        {
-          declare p_iid IRI_ID;
-          declare u any;
-          p_iid := iri_to_id_nosignal (triples[tctr][1]);
-          u := dict_get (bnode_usage_dict, s_iid, null);
-          if (u is null)
-            u := vector (null, null, null, null, tctr);
-          else if (u[4] is null)
-            u[4] := tctr;
-          if (rdf_first_iid = p_iid)
-            {
-              if (u[1] is null)
-                {
-                  u[1] := tctr;
-                  goto s_iid_done;
-                }
-              else
-                goto bad_for_list;
-            }
-          else if (rdf_rest_iid = p_iid)
-            {
-              if (u[2] is not null)
-                goto bad_for_list;
-              else if (rdf_nil_iid = o_iid)
-                {
-                  dict_put (tail_to_head_dict, s_iid, s_iid);
-                  u[2] := tctr;
-                  goto s_iid_done;
-                }
-              else if (is_bnode_iri_id (o_iid))
-                {
-                  u[2] := tctr;
-                  goto s_iid_done;
-                }
-              else
-                goto bad_for_list;
-            }
-bad_for_list:
-          u[1] := UNAME'';
-          u[2] := UNAME'';
-          if (dict_get (tail_to_head_dict, s_iid, null) is not null)
-            dict_put (tail_to_head_dict, s_iid, UNAME'');
-s_iid_done:
-          dict_put (bnode_usage_dict, s_iid, u);
-        }
-      if (is_bnode_iri_id (o_iid))
-        {
-          declare u any;
-          u := dict_get (bnode_usage_dict, o_iid, null);
-          if (u is null)
-            dict_put (bnode_usage_dict, o_iid, vector (s_iid, null, null, null, null));
-          else
-            {
-              if (u[0] is null)
-                u[0] := s_iid;
-              else
-                u[0] := UNAME'';
-              dict_put (bnode_usage_dict, o_iid, u);
-            }
-        }
-triple_skipped: ;
-    }
--- Now it's possible to check for loops of anonymous cycles
-  all_bnodes := dict_list_keys (bnode_usage_dict, 0);
-  gvector_sort (all_bnodes, 1, 0, 1);
-  foreach (IRI_ID bn_iid in all_bnodes) do
-    {
-      declare top_bn_iid IRI_ID;
-      top_bn_iid := bn_iid;
-      while (is_bnode_iri_id (top_bn_iid))
-        {
-          declare u any;
-          u := dict_get (bnode_usage_dict, top_bn_iid, null);
-          if (u[0] = bn_iid)
-            {
-              u := dict_get (bnode_usage_dict, bn_iid, null);
-              u[0] := UNAME'';
-              dict_put (bnode_usage_dict, bn_iid, u);
-              goto bn_iid_done;
-            }
-          top_bn_iid := u[0];
-        }
-bn_iid_done: ;
-    }
--- Now it is possible to check list nodes
-  dict_iter_rewind (tail_to_head_dict);
-  while (dict_iter_next (tail_to_head_dict, tail_bnode, head_bnode))
-    {
-      declare last_good_head_bnode IRI_ID;
-      declare len_ctr integer;
-      len_ctr := 0;
-      last_good_head_bnode := head_bnode;
-      -- dbg_obj_princ ('Loop from ', tail_bnode, ' to ', head_bnode);
-      while (is_bnode_iri_id (head_bnode))
-        {
-          declare u any;
-          u := dict_get (bnode_usage_dict, head_bnode, null);
-          -- dbg_obj_princ (head_bnode, ' has ', u);
-          if (isinteger (u[1]) and isinteger (u[2]) and u[3] is null and (u[0] is null or isiri_id (u[0])))
-            {
-              -- dbg_obj_princ ('Reached ', last_good_head_bnode);
-              last_good_head_bnode := head_bnode;
-              u[3] := len_ctr;
-              len_ctr := len_ctr + 1;
-              dict_put (bnode_usage_dict, head_bnode, u);
-              head_bnode := u[0];
-            }
-          else
-            {
-              u[3] := UNAME'';
-              dict_put (bnode_usage_dict, head_bnode, u);
-              head_bnode := null;
-            }
-        }
-    }
+  DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (triples, 0, bnode_usage_dict, tail_to_head_dict, printed_triples_mask);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
 -- Start the actual serialization
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, env_flags, 0, ses);
+  tcount := length (triples);
   prefixes_are_printed := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     prefixes_are_printed := prefixes_are_printed + http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
@@ -6627,7 +6689,6 @@ bn_iid_done: ;
       declare s, p, o any;
       if (ascii (' ') <> printed_triples_mask[tctr])
         goto done_triple;
-      -- dbg_obj_princ ('Printing ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
       s := triples[tctr][0];
       p := triples[tctr][1];
       o := triples[tctr][2];
@@ -6638,8 +6699,12 @@ bn_iid_done: ;
           declare u any;
           u := dict_get (bnode_usage_dict, s_iid, null);
           if (isiri_id (u[0]))
-            goto done_triple;
+            {
+              -- dbg_obj_princ ('Skipping ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2], ': subj has ', u);
+              goto done_triple;
+            }
         }
+      -- dbg_obj_princ ('Printing ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
       if (s <> prev_s)
         {
           if (prev_s <> '')
@@ -6686,7 +6751,7 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
       http_ttl_value (env, s_bnode_iid, 2, ses);
       return;
     }
-  if (isinteger (u[3]))
+  if (isinteger (u[5]))
     {
       -- dbg_obj_princ ('Printing list from ', s_bnode_iid, ' u=', u);
       http ('(', ses);
@@ -6694,25 +6759,25 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
         {
           declare itm any;
           declare itm_iid IRI_ID;
-          itm := triples[u[1]][2];
+          itm := triples[u[3]][2];
           itm_iid := iri_to_id_nosignal (itm);
-          if (ascii (' ') <> printed_triples_mask[u[1]]) signal ('OBLOM', 'Corrupted CAR in list');
-          if (ascii (' ') <> printed_triples_mask[u[2]]) signal ('OBLOM', 'Corrupted CDR in list');
-          printed_triples_mask[u[1]] := ascii ('A');
+          if (ascii (' ') <> printed_triples_mask[u[3]]) signal ('OBLOM', 'Corrupted CAR in list');
+          if (ascii (' ') <> printed_triples_mask[u[4]]) signal ('OBLOM', 'Corrupted CDR in list');
+          printed_triples_mask[u[3]] := ascii ('A');
           http (' ', ses);
           if (is_bnode_iri_id (itm_iid))
             DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (triples, printed_triples_mask, itm_iid, env, bnode_usage_dict, depth + 1, ses);
           else
             http_ttl_value (env, itm, 2, ses);
-          printed_triples_mask[u[2]] := ascii ('D');
-          s_bnode_iid := iri_to_id_nosignal (triples[u[2]][2]);
+          printed_triples_mask[u[4]] := ascii ('D');
+          s_bnode_iid := iri_to_id_nosignal (triples[u[4]][2]);
           u := dict_get (bnode_usage_dict, s_bnode_iid, null);
           -- dbg_obj_princ ('next node ', s_bnode_iid, ' u=', u);
         }
       http (' )', ses);
       return;
     }
-  tctr := u[4];
+  tctr := u[1];
   if (tctr is null)
     {
       -- dbg_obj_princ ('Printing empty bnode ', s_bnode_iid, ' u=', u);
