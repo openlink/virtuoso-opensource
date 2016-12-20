@@ -4060,7 +4060,7 @@ typedef struct nt_env_s {
 } nt_env_t;
 
 void
-nt_http_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri, int esc)
+http_nt_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri, int esc)
 {
   caddr_t uri = ti->uri;
   if (NULL == uri)
@@ -4090,9 +4090,29 @@ nt_http_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t
 }
 
 void
-nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
+http_nt_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
 {
-  nt_http_write_ref_1 (ses, env, ti, dflt_uri, 0);
+  http_nt_write_ref_1 (ses, env, ti, dflt_uri, 0);
+}
+
+void
+http_sparql_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti)
+{
+  caddr_t uri = ti->uri;
+  if (NULL == uri)
+    sqlr_new_error ("22023", "SR655", "SPARQL serialization of RDF data has got NULL instead of an URI");
+  if (ti->is_bnode)
+    {
+      session_buffered_write (ses, uri, strlen (uri));
+      return;
+    }
+#ifndef NDEBUG
+  if (NULL != ti->prefix)
+    GPF_T;
+#endif
+  session_buffered_write_char ('<', ses);
+  dks_esc_write (ses, uri, box_length (uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_QNAME_11);
+  session_buffered_write_char ('>', ses);
 }
 
 static void
@@ -4126,7 +4146,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         if (DV_RDF != obj_dtp)
           {
             session_buffered_write (ses, "^^", 2);
-            nt_http_write_ref (ses, env, dt_ptr, NULL);
+            http_nt_write_ref (ses, env, dt_ptr, NULL);
           }
         break;
       }
@@ -4156,7 +4176,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         ewkt_print_sf12 ((geo_t *)obj_box_value, ses);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, "^^", 2);
-        nt_http_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
+        http_nt_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
         return;
       }
     default:
@@ -4203,7 +4223,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
         {
           session_buffered_write (ses, "^^", 2);
-          nt_http_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
+          http_nt_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
         }
     }
 }
@@ -4245,12 +4265,12 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
-  nt_http_write_ref (ses, env, &(tii.s), subj);
+  http_nt_write_ref (ses, env, &(tii.s), subj);
   session_buffered_write_char ('\t', ses);
-  nt_http_write_ref (ses, env, &(tii.p), pred);
+  http_nt_write_ref (ses, env, &(tii.p), pred);
   session_buffered_write_char ('\t', ses);
   if (obj_is_iri)
-    nt_http_write_ref (ses, env, &(tii.o), obj);
+    http_nt_write_ref (ses, env, &(tii.o), obj);
   else
     http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
   SES_PRINT (ses, " .\n");
@@ -4365,7 +4385,46 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
   if (obj_is_iri)
-    nt_http_write_ref (ses, &env, &(tii.o), obj);
+    http_nt_write_ref (ses, &env, &(tii.o), obj);
+  else
+    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
+fail:
+  dk_free_box (tii.o.uri);
+  dk_free_box (tii.dt.uri);
+  return (caddr_t)(ptrlong)(status);
+}
+
+caddr_t
+bif_http_sparql_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  nt_env_t env;
+  caddr_t obj = bif_arg (qst, args, 0, "http_sparql_object");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 1, "http_sparql_object");
+  int status = 0;
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  ttl_iriref_items_t tii;
+  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  env.ne_out_ses = ses;
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
+        goto fail; /* see below */
+    }
+  else
+    {
+      http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
+    }
+  if (obj_is_iri)
+    http_sparql_write_ref (ses, &env, &(tii.o));
   else
     http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
 fail:
@@ -4414,16 +4473,16 @@ bif_http_nquad (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
-  nt_http_write_ref (ses, env, &(tii.s), subj);
+  http_nt_write_ref (ses, env, &(tii.s), subj);
   session_buffered_write_char ('\t', ses);
-  nt_http_write_ref (ses, env, &(tii.p), pred);
+  http_nt_write_ref (ses, env, &(tii.p), pred);
   session_buffered_write_char ('\t', ses);
   if (obj_is_iri)
-    nt_http_write_ref (ses, env, &(tii.o), obj);
+    http_nt_write_ref (ses, env, &(tii.o), obj);
   else
     http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
   session_buffered_write_char ('\t', ses);
-  nt_http_write_ref (ses, env, &(tii.g), graph);
+  http_nt_write_ref (ses, env, &(tii.g), graph);
   SES_PRINT (ses, " .\n");
 fail:
   dk_free_box (tii.s.uri);
@@ -4465,7 +4524,7 @@ bif_http_rdf_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
   if (obj_is_iri)
-    nt_http_write_ref (ses, &env, &(tii.o), obj);
+    http_nt_write_ref (ses, &env, &(tii.o), obj);
   else
     http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, esc_mode);
 fail:
@@ -5502,7 +5561,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       SES_PRINT (ses, colid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#variable> \""); dks_esc_write (ses, col_ti->colname, strlen (col_ti->colname), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ); SES_PRINT (ses, "\" .\n");
       SES_PRINT (ses, colid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#value> ");
       if (col_ti->is_iri)
-        nt_http_write_ref (ses, env, col_ti, obj);
+        http_nt_write_ref (ses, env, col_ti, obj);
       else
         http_nt_write_obj (ses, env, qi, obj, obj_dtp, col_ti, DKS_ESC_TTL_DQ);
       SES_PRINT (ses, " .\n");
@@ -7040,6 +7099,8 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_ttl_value);
   bif_define ("http_nt_object", bif_http_nt_object);
   bif_set_uses_index (bif_http_nt_object);
+  bif_define ("http_sparql_object", bif_http_sparql_object);
+  bif_set_uses_index (bif_http_sparql_object);
   bif_define ("http_rdf_object", bif_http_rdf_object);
   bif_set_uses_index (bif_http_rdf_object);
   bif_define_ex ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);

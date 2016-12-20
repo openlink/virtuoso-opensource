@@ -927,7 +927,7 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
           declare qpos integer;
           qpos := qtext_posmap[qctr];
           http (subseq (qtext_template, prev_pos, qpos), qtext_ses);
-          http_nt_object (param_row[qtext_posmap[qctr+1]-1], qtext_ses);
+          http_sparql_object (param_row[qtext_posmap[qctr+1]-1], qtext_ses);
           prev_pos := qpos+8;
         }
       http (subseq (qtext_template, prev_pos), qtext_ses);

@@ -336,7 +336,8 @@ the order of columns in dks_charclasses, file dks_esc.c */
 #define DKS_ESC_HTML_TTL_IRI	0x11	/*! 17 */
 #define DKS_ESC_JAVA_SQ		0x12	/*! 18 */
 #define DKS_ESC_JAVA_DQ		0x13	/*! 19 */
-#define COUNTOF__DKS_ESC	0x14	/*! 20 */
+#define DKS_ESC_QNAME_11	0x14	/*! 20 */
+#define COUNTOF__DKS_ESC	0x15	/*! 21 */
 
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200
