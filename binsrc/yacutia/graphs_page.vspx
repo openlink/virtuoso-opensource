@@ -38,7 +38,7 @@
       }
       else
       {
-        http (sprintf ('<a class="uddi" href="graphs_page.vspx?page=%s&amp;sid=%s&amp;realm=%s">%s</a>', ndx, self.sid, self.realm, label));
+        http (sprintf ('<a class="uddi" href="graphs_page.vspx?page=%s&amp;sid=%s&amp;realm=%s">%V</a>', ndx, self.sid, self.realm, label));
       }
     ]]>
   </v:method>
@@ -93,9 +93,9 @@
         plen := length (params);
         for (pctr := 0; pctr < plen; pctr := pctr + 2)
         {
-          if ('Content' <> params[pctr])
+          if (('Content' <> params[pctr]) and not is_empty_or_null (params[pctr+1]))
           {
-            final_iri := final_iri || leadchar || params[pctr] || '=' || params[pctr+1];
+            final_iri := final_iri || leadchar || sprintf ('%s=%U', params[pctr], cast (params[pctr+1] as varchar));
             leadchar := '&';
           }
         }
