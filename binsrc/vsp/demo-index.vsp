@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2017 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -206,7 +206,7 @@ direct access to  Virtuoso Servers.
 </TABLE>
 <TABLE WIDTH="100%" BORDER="0" CELLPADDING="0" CELLSPACING="0">
 <TR CLASS="CopyrightBorder"><TD><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
-<TR><TD><P CLASS="copyright">Virtuoso Server <!--(<?= sys_stat('st_dbms_ver') ?>)--> Administration Interface - Copyright&copy; 1998-2015 OpenLink Software.  </P></TD></TR>
+<TR><TD><P CLASS="copyright">Virtuoso Server <!--(<?= sys_stat('st_dbms_ver') ?>)--> Administration Interface - Copyright&copy; 1998-2017 OpenLink Software.  </P></TD></TR>
 </TABLE>
 <!--?include admin/admin_footer.vsp ?-->
 </html>

@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2015 OpenLink Software
+#  Copyright (C) 1998-2017 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -96,7 +96,7 @@ GenVAD1 ()
 	  <name package="rdf_lib">
 		<prop name="Title" value="RDF Support Library" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2015 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2017 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -135,7 +135,7 @@ GenVAD2 ()
 	  <name package="test1">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2015 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2017 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -172,7 +172,7 @@ GenVAD3 ()
 	  <name package="test1">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2015 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2017 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -208,7 +208,7 @@ GenVAD4 ()
 	  <name package="test2">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2015 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2017 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>

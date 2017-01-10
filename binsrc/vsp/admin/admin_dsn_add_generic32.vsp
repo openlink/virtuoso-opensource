@@ -5,7 +5,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2017 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -140,7 +140,7 @@
 ?>
       <FORM method="POST" action="admin_dsn_add_generic32_2.vsp" name="gen32">
       <TABLE BORDER="0" CELLSPACING="0" CELLPADDING="5">
-      <TR><TD COLSPAN="3" ALIGN="middle"><P CLASS="copyright_noalign"><?=_driver_de?><BR /><small>Copyright 1998-2015 OpenLink Software</small><BR /><small>All rights reserved</small></P></TD></TR>
+      <TR><TD COLSPAN="3" ALIGN="middle"><P CLASS="copyright_noalign"><?=_driver_de?><BR /><small>Copyright 1998-2017 OpenLink Software</small><BR /><small>All rights reserved</small></P></TD></TR>
       <TR><TD ROWSPAN="3" VALIGN="top"><IMG SRC="images/opl.jpg" BORDER="1" /></TD>
       <TD VALIGN="top">
 

@@ -5725,7 +5725,7 @@ are directly and unambiguously connected to equivalent vertexes by identical pre
 </orderedlist>
 <programlisting><![CDATA[
 -- Fast Approximate RDF Graph Equivalence Test
--- (C) 2009-2015 OpenLink Software
+-- (C) 2009-2017 OpenLink Software
 -- License: GNU General Public License (only version 2 of the license).
 -- No warranty, even implied warranty
 
@@ -14460,7 +14460,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2015 OpenLink Software
+ -  Copyright (C) 1998-2017 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21002,7 +21002,7 @@ cl_exec ('checkpoint');
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2015 OpenLink Software
+--  Copyright (C) 1998-2017 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the

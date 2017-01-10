@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2015 OpenLink Software
+ -  Copyright (C) 1998-2017 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -692,7 +692,7 @@ while (i < t/n)
               </div>
       </v:form>
       <div id="poweredby"><img src="PoweredByVirtuoso.gif" width="137px" height="44px" alt="Powered by Virtuoso" /></div>
-      <DIV id="footer"><DIV>&amp;copy; 2005-2015 OpenLink Software. All rights reserved.</DIV></DIV>
+      <DIV id="footer"><DIV>&amp;copy; 2005-2017 OpenLink Software. All rights reserved.</DIV></DIV>
     </body>
     &lt;?vsp
     <![CDATA[
