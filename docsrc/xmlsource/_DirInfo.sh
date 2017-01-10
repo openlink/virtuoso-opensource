@@ -10,7 +10,7 @@ out='_DirInfo.xml'
 echo '<?xml version="1.0" ?>' > $out
 echo '<!--
   $Id$
-  Copyright (C) 1998-2016 OpenLink Software
+  Copyright (C) 1998-2017 OpenLink Software
 -->
 <dirinfo>' >> $out
 echo '  <dir path="">

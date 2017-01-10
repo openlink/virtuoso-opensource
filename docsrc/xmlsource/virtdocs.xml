@@ -1130,7 +1130,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 		<authorgroup><author><email>virtuoso.docs@openlinksw.com</email>
 		<firstname>OpenLink Software Documentation Team</firstname></author></authorgroup>
 		<copyright>
-			<year>1999 - 2016</year>
+			<year>1999 - 2017</year>
 			<holder>OpenLink Software</holder>
 		</copyright>
 		<keywordset>

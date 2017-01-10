@@ -8,7 +8,7 @@ Installation
    [where is isql tool in your directories]\isql [put your server ip@ or host here]:[port] dba dba
    
    Connected to OpenLink Virtuoso VDBMS
-   Driver: 02.10.2015 OpenLink Virtuoso ODBC Driver
+   Driver: 02.10.2017 OpenLink Virtuoso ODBC Driver
    OpenLink Interactive SQL (Virtuoso), version 0.9849b.
    Type HELP; for help and EXIT; to exit.
    SQL>load c:\temp\def.sql;

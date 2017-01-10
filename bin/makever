@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2017 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -93,7 +93,7 @@ then
 	OpenLink Version Information
 	Version $PRODUCT_VERSION as of $DATE.
 	Compiled for $UNAME_SYSTEM $UNAME_RELEASE
-	Copyright (C) 1998-2016 OpenLink Software.
+	Copyright (C) 1998-2017 OpenLink Software.
 
 	Usage: makever [OPTIONS]
 
@@ -118,7 +118,7 @@ cat >$OUTPUT_FILE <<-EOF_VERSION
 	$PRODUCT_NAME\\n\\
 	Version $PRODUCT_VERSION as of $DATE.\\n\\
 	Compiled for $UNAME_SYSTEM $UNAME_RELEASE\\n\\
-	Copyright (C) 1998-2016 OpenLink Software.\\n";
+	Copyright (C) 1998-2017 OpenLink Software.\\n";
 EOF_VERSION
 
 exit 0

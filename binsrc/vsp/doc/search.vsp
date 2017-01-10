@@ -5,7 +5,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2017 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -49,7 +49,7 @@ _keywords := get_keyword('keywords', params, '');
     <meta name="AUTHOR" CONTENT="<?=_author?>">
     <meta name="DESCRIPTION" CONTENT="<?=_page_desc?>">
     <meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
-    <meta name="COPYRIGHT" content="2005-2016 OpenLink Software">
+    <meta name="COPYRIGHT" content="2005-2017 OpenLink Software">
     <meta name="GENERATOR" content="OpenLink XSLT Team"></head>
     <link rel="top" href="index.html" title="Virtuoso Universal Server Documentation">
     <link rel="search" href="/doc/search.vsp" title="Search Virtdocs">
@@ -300,6 +300,6 @@ endf:;
 <?vsp } ?>
 </DIV>
 
-<DIV id="footer"><DIV>©2005-2016 OpenLink Software. All rights reserved.</DIV></DIV>
+<DIV id="footer"><DIV>©2005-2017 OpenLink Software. All rights reserved.</DIV></DIV>
 </body>
 </HTML>
