@@ -5793,7 +5793,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   comp_context_t cc;
   sql_comp_t sc;
   SPARP_SAVED_MP_SIZE_CAP;
-  caddr_t str = strses_string (sparqre->sparqre_src->sif_skipped_part);
+  caddr_t str = t_strses_string (sparqre->sparqre_src->sif_skipped_part);
   caddr_t res;
 #ifdef SPARQL_DEBUG
   printf ("\nsparp_compile_subselect() input:\n%s\n", str);
@@ -5804,7 +5804,6 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
   SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,sparqre);
   sparp = sparp_query_parse (str, sparqre, 1);
-  dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     {
 #ifdef SPARQL_DEBUG
