@@ -792,17 +792,23 @@
                                   <caption style="text-align:left;"><strong>Certificates</strong></caption>
                                   <?vsp
                                     declare i integer;
-                                    declare username, certs any;
+                                    declare username, certs, cert_subjects any;
 
                                     username := y_wide2utf (self.t_login_name.ufl_value);
                                     certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+                                    cert_subjects := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS'), vector ());
                                     for (i := 0; i < length (certs); i := i + 1)
                                     {
                                   ?>
                                   <tr>
-                                    <td>
+                                    <td nowrap="nowrap">
                                       <input type="checkbox" name="cb_ca" value="<?V i ?>" />
-                                      <?vsp http_value (certs[i],'b'); ?>
+                                      <?vsp
+                                        declare subject varchar;
+
+                                        subject := get_keyword (certs[i], cert_subjects);
+                                        http_value (coalesce (subject, certs[i]), 'b');
+                                      ?>
                                     </td>
                                   </tr>
                                   <?vsp
