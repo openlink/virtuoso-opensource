@@ -3240,7 +3240,7 @@ create procedure WS.WS.LDP_HDRS (in is_col int := 0, in add_rel int := 0, in pag
   h := 'MS-Author-Via: DAV, SPARQL\r\n' ||
       'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,MKCOL,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
       'Accept-Patch: application/sparql-update\r\n' ||
-      'Accept-Post: text/turtle,text/n3,text/nt\r\n' ||
+      'Accept-Post: text/turtle,text/n3,text/nt,text/html\r\n' ||
       'Vary: Accept,Origin,If-Modified-Since,If-None-Match\r\n';
   nid := connection_get ('NetId');
   if (nid is not null)
