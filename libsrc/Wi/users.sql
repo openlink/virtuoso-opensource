@@ -1,8 +1,4 @@
 --
---  users.sql
---
---  $Id$
---
 --  Unified user model
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -953,78 +949,105 @@ USER_KEY_LOAD (
 create procedure
 USER_CERT_REGISTER (in username varchar, in cert varchar, in pwd varchar := '', in coding varchar := 'PKCS12')
 {
-  declare certs, path, cfp, cont any;
+  declare certs, path, cfp, cfp_subject, cont any;
   declare inx, enc int;
 
   if (cert like '__:__:__:__:__:__:__:__:__:__:__:__:__:__:__:__%')
-    {
-      cfp := cert;
-      goto process;
-    }
-
-  if (USER_KEY_IS_FILE (cert, path))
-    cont := file_to_string (path);
+  {
+    cfp := cert;
+    cfp_subject := null;
+  }
   else
-    cont := cert;
+  {
+    if (USER_KEY_IS_FILE (cert, path))
+    {
+      cont := file_to_string (path);
+    }
+    else
+    {
+      cont := cert;
+    }
+    enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
+    cfp := get_certificate_info (6, cont, enc, pwd);
+    cfp_subject := get_certificate_info (2, cont, enc, pwd);
+    if (cfp is null)
+      signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
+  }
 
-  enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
-
-  cfp := get_certificate_info (6, cont, enc, pwd);
-
-  if (cfp is null)
-    signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
-process:
+  -- add certificate
   certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
   inx := position (cfp, certs);
   if (inx > 0)
     return;
+
   certs := vector_concat (certs, vector (cfp));
   USER_SET_OPTION (username, 'LOGIN_CERTIFICATES', certs);
   sec_set_user_cert (username, cfp);
+
+  -- add certificate label
+  if (isnull (cfp_subject))
+    return;
+
+  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS'), vector ());
+  if (get_keyword (cfp, certs) is not null)
+    return;
+
+  certs := vector_concat (certs, vector (cfp, cfp_subject));
+  USER_SET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS', certs);
 }
 ;
 
 create procedure
 USER_CERT_UNREGISTER (in username varchar, in cert varchar, in pwd varchar := '', in coding varchar := 'PKCS12')
 {
-  declare certs, new_certs any;
-  declare path, cfp, cont any;
-  declare inx, len, enc int;
+  declare certs, new_certs, path, cfp, cont any;
+  declare i, len, enc integer;
 
   if (cert like '__:__:__:__:__:__:__:__:__:__:__:__:__:__:__:__%')
-    {
-      cfp := cert;
-      goto process;
-    }
-
-  if (USER_KEY_IS_FILE (cert, path))
-    cont := file_to_string (path);
+  {
+    cfp := cert;
+  }
   else
-    cont := cert;
-
-  enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
-
-  cfp := get_certificate_info (6, cont, enc, pwd);
-
-  if (cfp is null)
-    signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
-
-process:
-  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
-  inx := position (cfp, certs);
-  if (inx = 0)
-    return;
-  aset (certs, inx-1, NULL);
-  len := length (certs); inx := 0; new_certs := vector ();
-  while (inx < len)
+  {
+    if (USER_KEY_IS_FILE (cert, path))
     {
-      if (certs[inx] is not null)
-        new_certs := vector_concat (new_certs, vector (certs[inx]));
-      inx := inx + 1;
+      cont := file_to_string (path);
     }
+    else
+    {
+      cont := cert;
+    }
+    enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
+    cfp := get_certificate_info (6, cont, enc, pwd);
+    if (cfp is null)
+      signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
+  }
 
+  -- delete certificate
+  new_certs := vector ();
+  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+  len := length (certs);
+  for (i := 0; i < len; i := i + 1)
+  {
+    if (cfp <> certs[i])
+      new_certs := vector_concat (new_certs, vector (certs[i]));
+  }
   USER_SET_OPTION (username, 'LOGIN_CERTIFICATES', new_certs);
   sec_remove_user_cert (username, cfp);
+
+  -- delete certificate label
+  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS'), vector ());
+  if (get_keyword (cfp, certs) is null)
+    return;
+
+  new_certs := vector ();
+  len := length (certs);
+  for (i := 0; i < len; i := i + 2)
+  {
+    if (cfp <> certs[i])
+      new_certs := vector_concat (new_certs, vector (certs[i], certs[i+1]));
+  }
+  USER_SET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS', new_certs);
 }
 ;
 
@@ -1066,6 +1089,7 @@ create procedure
         if (new_user is null)
 	  new_user := sec_get_user_by_cert (fp);
 
+	if (new_user is not null)
         certs := coalesce (USER_GET_OPTION (new_user, 'LOGIN_CERTIFICATES'), vector ());
 
 	if (new_user is not null and position (fp, certs) > 0)
