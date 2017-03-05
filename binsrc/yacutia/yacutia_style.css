@@ -602,6 +602,18 @@ table.listing th
   padding: 2px;
 }
 
+table.listing th.checkbox, table.listing td.checkbox {
+  width: 1px;
+  text-align: center;
+  margin: 0;
+  padding: 0.5px;
+}
+
+table.listing th.action, table.listing td.action {
+  width: 1px;
+  white-space: nowrap;
+}
+
 table.listing tbody tr:nth-child(odd) {
   background-color: #f0f0f0;
 }
@@ -612,6 +624,22 @@ table.listing tbody tr:nth-child(even) {
 
 table.listing tbody tr:hover {
  	background-color: #eec;
+}
+
+table.ODS_grid tbody tr.selected {
+  background-color: #FFFFCC;
+}
+
+table.listing th.checkbox, table.listing td.checkbox {
+  width: 1px;
+  text-align: center;
+  margin: 0;
+  padding: 0.5px;
+}
+
+table.listing th.action, table.listing td.action {
+  width: 1px;
+  white-space: nowrap;
 }
 
 tr.listing_header_row
