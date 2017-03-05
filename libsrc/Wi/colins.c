@@ -4294,6 +4294,7 @@ key_col_insert (it_cursor_t * itc, row_delta_t * rd)
 void
 key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins)
 {
+  query_instance_t *qi;
   int inx;
   itc->itc_n_sets = 1;
   itc->itc_set = 0;
@@ -4305,6 +4306,10 @@ key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins)
       itc->itc_param_order[0] = 0;
     }
   itc->itc_vec_rds = (row_delta_t **) list (1, (caddr_t) rd);
+  qi = (query_instance_t *) (rd->rd_qst);
+  itc->itc_ins_flags = ((ins->ins_key_only
+	  || itc->itc_insert_key->key_partition) ? LOG_KEY_ONLY : 0) | (ins->ins_mode ? INS_SOFT : 0) | (qi->
+      qi_non_txn_insert ? LOG_SYNC : 0);
   itc_col_vec_insert (itc, ins);
   dk_free_box ((caddr_t) itc->itc_vec_rds);
   itc_free_box (itc, itc->itc_param_order);
