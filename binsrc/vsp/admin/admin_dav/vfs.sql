@@ -30,20 +30,20 @@ use WS
 
 create procedure WS.WS.COPY_PAGE (in _host varchar, in _urls any, in _root varchar, in _upd integer, in _dbg integer)
 {
-
+  -- dbg_obj_print ('WS.WS.COPY_PAGE (', _host, ')');
   declare exit handler for sqlstate '*', not found
     {
       rollback work;
       __SQL_STATE := cast (__SQL_STATE as varchar);
       if (__SQL_STATE <> '40001')
 	{
-	  update VFS_QUEUE set VQ_STAT = 'error', VQ_ERROR = __SQL_MESSAGE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL in (_urls);
+  	  update WS.WS.VFS_QUEUE set VQ_STAT = 'error', VQ_ERROR = __SQL_MESSAGE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL in (_urls);
 	  commit work;
 	  ERR_MAIL_SEND (_host, _urls, _root, __SQL_STATE, __SQL_MESSAGE);
 	}
       else
 	{
-	  update VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_URL in (_urls) and VQ_ROOT = _root;
+  	  update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_URL in (_urls) and VQ_ROOT = _root;
 	  commit work;
 	}
       if (__SQL_STATE <> '40001' and __SQL_STATE <> '2E000' and __SQL_STATE not like '0800_' and __SQL_STATE <> 'HTCLI')
@@ -58,7 +58,9 @@ create procedure WS.WS.COPY_PAGE (in _host varchar, in _urls any, in _root varch
 
 create procedure WS.WS.VFS_HTTP_RESP_CODE (inout _resp any)
 {
+  -- dbg_obj_print ('WS.WS.VFS_HTTP_RESP_CODE');
   declare _tmp varchar;
+
   _tmp := WS.WS.FIND_KEYWORD (_resp, 'HTTP/1.');
   _tmp := subseq (_tmp, strchr (_tmp, ' ') + 1, length (_tmp));
   _tmp := subseq (_tmp, 0, strchr (_tmp, ' '));
@@ -68,11 +70,11 @@ create procedure WS.WS.VFS_HTTP_RESP_CODE (inout _resp any)
 
 create procedure WS.WS.VFS_ENSURE_NEW_SITE (in _host varchar, in _root varchar, in _new_host varchar, in _new_url varchar)
 {
-  if (not exists (select 1 from VFS_SITE where VS_HOST = _new_host and VS_ROOT = _new_host))
+  if (not exists (select 1 from WS.WS.VFS_SITE where VS_HOST = _new_host and VS_ROOT = _new_host))
     {
-      insert into VFS_SITE (VS_HOST, VS_ROOT, VS_URL, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR)
+      insert into WS.WS.VFS_SITE (VS_HOST, VS_ROOT, VS_URL, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, VS_DESCR)
       select _new_host, _new_host, _new_url, VS_SRC, VS_OWN, VS_DEL, VS_NEWER, VS_FOLLOW, VS_NFOLLOW, VS_METHOD, VS_OTHER, _new_host
-	  from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+	  from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
     }
 }
 ;
@@ -93,6 +95,7 @@ create procedure WS.WS.VFS_GUESS_CONTENT_TYPE (in origin_uri varchar, in ret_con
 create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root varchar,
     in _upd integer, in _dbg integer)
 {
+  -- dbg_obj_print ('WS.WS.COPY_PAGE_1 (', _host, ')');
   declare _header, _etag, _http_resp_code, _start_url varchar;
   declare _del, _desc, _t_urls, _opts, _c_type varchar;
   declare _dav_method, _d_imgs, _opage varchar;
@@ -117,9 +120,10 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
       	 redir_flag, store_flag, try_to_get_rdf,
 	 _udata, ext_hook, store_hook, _del, _other,
 	 conv_html, is_sitemap, xp_exp, accept_rdf, time_out, cust_headers
-      from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
-nf_opt:
+   from WS.WS.VFS_SITE
+  where VS_HOST = _host and VS_ROOT = _root;
 
+nf_opt:
   if (length (cust_headers) > 2)
     cust_headers := rtrim (cust_headers, ' \r\n') || '\r\n';
   else
@@ -150,7 +154,7 @@ nf_opt:
 	  -- take Etag if present
 	  _etag := null;
 	  _dt := _since;
-	  for select VU_ETAG, VU_CPTIME from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root do
+      for select VU_ETAG, VU_CPTIME from WS.WS.VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root do
 	    {
 	      _etag := VU_ETAG;
 	      _dt := VU_CPTIME;
@@ -183,12 +187,12 @@ nf_opt:
       _dav_enabled := http_request_header (_dav_opts, 'DAV', null, null);
       if (0 = length (_dav_enabled))
 	{
-          update VFS_SITE set VS_METHOD = null where VS_HOST = _host and VS_ROOT = _root;
+      update WS.WS.VFS_SITE set VS_METHOD = null where VS_HOST = _host and VS_ROOT = _root;
           _dav_method := null;
           goto html_mode;
 	}
       dav_urls := WS.WS.DAV_PROP (WS.WS.MAKE_URL (_host, _url), _d_imgs, _header);
-      lev := coalesce ((select VQ_LEVEL from VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url), 0);
+    lev := coalesce ((select VQ_LEVEL from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url), 0);
       WS.WS.GET_URLS (_host, _url, _root, dav_urls, lev + 1, null);
     }
 
@@ -209,13 +213,15 @@ html_mode:
 	 else
 	   goto get_again;
        };
-     declare exit handler for sqlstate '0800*' {
+    declare exit handler for sqlstate '0800*'
+    {
          if (retr <= 0)
 	   resignal;
 	 else
 	   goto get_again;
        };
-     declare exit handler for sqlstate 'HTCLI' {
+    declare exit handler for sqlstate 'HTCLI'
+    {
          if (retr <= 0)
 	   resignal;
 	 else
@@ -256,7 +262,7 @@ get_again:
       _url := _urls[i];
       _resp := _resps[i][1];
       _content := _resps[i][0];
-      lev := coalesce ((select VQ_LEVEL from VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url), 0);
+    lev := coalesce ((select VQ_LEVEL from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url), 0);
       commit work;
       if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
 	{
@@ -272,12 +278,15 @@ get_again:
 	  new_loc := WS.WS.EXPAND_URL (_t_urls[i], new_loc);
 	  ht := WS.WS.PARSE_URI (new_loc);
 	  new_host := ht[1];
-	  ht[0] := ''; ht[1] := '';
+      ht[0] := '';
+      ht[1] := '';
 	  new_url := VFS_URI_COMPOSE (ht);
 	  if (_host <> new_host)
 	    new_url := new_loc;
-	  insert soft VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_STAT, VQ_TS, VQ_LEVEL)
+
+      insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_STAT, VQ_TS, VQ_LEVEL)
 	      values (_host, _root, new_url, 'waiting', now (), lev + 1);
+
 	  goto end_crawl;
 	}
 
@@ -296,14 +305,13 @@ get_again:
 
 	  if (store_hook is not null and __proc_exists (store_hook))
 	  {
-	    call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, 
-		vector_concat (_udata, vector ('start_url', _start_url)), lev + 1);
+        call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, vector_concat (_udata, vector ('start_url', _start_url)), lev + 1);
 	  }
 	  else
 	    {
 	      WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag, conv_html);
 	      if (try_to_get_rdf)
-		WS.WS.VFS_EXTRACT_RDF (_host, _root, _start_url, _udata, _url, _content, _c_type, _header, _resp);
+          WS.WS.VFS_EXTRACT_RDF (_host, _root, _start_url, _udata, _url, _content, _c_type, _header, _resp, lev + 1);
 	    }
 	}
       else if (_http_resp_code = '401')
@@ -317,7 +325,8 @@ get_again:
 	}
     end_crawl:
       if (_http_resp_code like '2__' or _http_resp_code like '3__' or _http_resp_code like '4__' or _http_resp_code like '5__')
-	update VFS_QUEUE set VQ_STAT = 'retrieved'
+      update WS.WS.VFS_QUEUE
+         set VQ_STAT = 'retrieved'
 	    where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _root and VQ_STAT = 'pending';
    }
   commit work;
@@ -325,11 +334,10 @@ get_again:
 }
 ;
 
-
 create procedure WS.WS.DELETE_LOCAL_COPY (in _host varchar, in _url varchar, in _root varchar)
 {
-  delete from VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
-  delete from SYS_DAV_RES where RES_FULL_PATH = concat ('/DAV/', _root, _url);
+  delete from WS.WS.VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
+  delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = concat ('/DAV/', _root, _url);
 }
 ;
 
@@ -347,9 +355,11 @@ create procedure WS.WS.VFS_RUN (in url varchar, in threads int := null, in batch
 create procedure WS.WS.VFS_STATUS_GET (in _tgt varchar, in _root varchar)
 {
   declare rc any;
+
   rc := registry_get (sprintf ('__VFS_%s_%s', _tgt, _root));
   if (not isstring (rc))
     rc := 'not started';
+
   return rc;
 }
 ;
@@ -361,18 +371,28 @@ create procedure WS.WS.VFS_STATUS_SET (in _tgt varchar, in _root varchar, in _st
 ;
 
 -- /* top level procedure for processing queues, don't grant NEVER to any body else */
-create procedure WS.WS.SERV_QUEUE_TOP (in _tgt varchar, in _root varchar, in _upd integer,
-    in _dbg integer, in _fn varchar, in _clnt_data any, in threads int := null, in batch_size int := 1)
+create procedure WS.WS.SERV_QUEUE_TOP (
+  in _tgt varchar,
+  in _root varchar,
+  in _upd integer,
+  in _dbg integer,
+  in _fn varchar,
+  in _clnt_data any,
+  in threads int := null,
+  in batch_size int := 1)
 {
+  -- dbg_obj_print ('WS.WS.SERV_QUEUE_TOP (', _tgt, ')');
   declare _msg, _stat, oq varchar;
+
   set_user_id ('dba');
+
 do_again:
   _stat := '00000';
   _msg := '';
   WS.WS.VFS_STATUS_SET (_tgt, _root, 'running');
   commit work;
-  exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
-      vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data, threads, batch_size));
+
+  exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg, vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data, threads, batch_size));
   if (_stat = '40001')
     {
       rollback work;
@@ -384,10 +404,9 @@ do_again:
       signal (_stat, _msg);
     }
   commit work;
-  if (WS.WS.VFS_STATUS_GET (_tgt, _root) = 'running' and
-      not exists (select 1 from WS.WS.VFS_QUEUE where VQ_STAT = 'waiting' and VQ_HOST = _tgt and VQ_ROOT = _root))
+
+  if (WS.WS.VFS_STATUS_GET (_tgt, _root) = 'running' and not exists (select 1 from WS.WS.VFS_QUEUE where VQ_STAT = 'waiting' and VQ_HOST = _tgt and VQ_ROOT = _root))
     WS.WS.VFS_STATUS_SET (_tgt, _root, 'done');
-  --dbg_obj_print ('COMPLETED WITH STATUS: ', _stat, ' ', _msg);
 }
 ;
 
@@ -399,6 +418,7 @@ do_again:
 create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd integer,
     in _dbg integer, in _fn varchar, in _clnt_data any, in nthreads int := null, in batch_size int := 1)
 {
+  -- dbg_obj_print ('WS.WS.SERV_QUEUE (', _tgt, ')');
   declare _total, active_thread integer;
   declare _rc integer;
   declare _tgt_url varchar;
@@ -423,30 +443,33 @@ create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd in
   whenever not found goto n_site;
   select VS_URL, VS_METHOD, VS_THREADS, VS_BOT, VS_DELAY
       into _tgt_url, _dav_method, thr_conf, care_bot, delay_sec
-      from VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root with (exclusive);
+      from WS.WS.VFS_SITE where VS_HOST = _tgt and VS_ROOT = _root with (exclusive);
   if (care_bot)
     VFS_ROBOTS_GET (_tgt, _root, delay_sec);
+
   if (thr_conf is not null and thr_conf > 0)
     nthreads := thr_conf;
+
   if (nthreads is null or nthreads < 0)
     nthreads := 1;
+
   commit work;
   -- if it is an update
   if (_upd = 1)
     {
-      if (not exists (select 1 from VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL <> _tgt_url))
+      if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL <> _tgt_url))
 	{
-	  for select VU_URL from VFS_URL where VU_HOST = _tgt and VU_ROOT = _root and VU_URL <> _tgt_url do
+	  for select VU_URL from WS.WS.VFS_URL where VU_HOST = _tgt and VU_ROOT = _root and VU_URL <> _tgt_url do
 	    {
-	      insert into VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_STAT, VQ_TS)
+	      insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_STAT, VQ_TS)
 		  values (_tgt, _root, VU_URL, 'waiting', now ());
 	    }
-	  update VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL = _tgt_url;
+	  update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_URL = _tgt_url;
 	}
-      else if (not exists (select 1 from VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_STAT = 'waiting'))
+      else if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_STAT = 'waiting'))
 	{
 	  -- make only sitemaps (if any) waiting here, otherwise make all waiting
-	  update VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_VIA_SITEMAP = 0;
+	  update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_VIA_SITEMAP = 0;
 	}
       commit work;
     }
@@ -505,7 +528,6 @@ create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd in
 	if (active_thread < 0)
 	  {
 	    pid := null;
---	    dbg_obj_print ('pids', aq_list);
 	    for (declare i int, i := 0; i < nthreads; i := i + 1)
                {
 		 if (pid is null or pid > aq_list[i])
@@ -515,12 +537,11 @@ create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd in
 		   }
 	       }
 	    commit work;
---	    dbg_obj_print ('waiting for', pid);
 	    aq_wait (aq, pid, 1, err);
---	    dbg_obj_print ('got free thread', err);
 	  }
 	if (active_thread < 0)
 	  signal ('42000', 'Cannot get free thread', 'CRAWL');
+
 	aq_list [active_thread] := aq_request (aq, 'WS.WS.COPY_PAGE', vector (_tgt, url_batch, _root, _upd, _dbg));
 	if (ndone < batch_size or not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _tgt and VQ_ROOT = _root and VQ_STAT = 'waiting'))
 	  {
@@ -573,7 +594,7 @@ create procedure WS.WS.LOCAL_STORE (in _host varchar, in _url varchar, in _root 
 
   if (not store_flag)
     {
-      insert soft VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
+      insert soft WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
 	  values (_host, _url, md5 (_content), now (), _s_etag, _root);
       if (row_count () = 0)
 	update WS.WS.VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag where
@@ -582,7 +603,7 @@ create procedure WS.WS.LOCAL_STORE (in _host varchar, in _url varchar, in _root 
     }
 
   whenever not found goto err_end;
-  select VS_OWN, VS_INX, VS_OPAGE into _own, _idx, _opage from VFS_SITE
+  select VS_OWN, VS_INX, VS_OPAGE into _own, _idx, _opage from WS.WS.VFS_SITE
       where VS_HOST = _host and VS_ROOT = _root;
   if (isstring (_root) and length (_root) > 0 and aref(_root, 0) = ascii ('/'))
     _sl := '';
@@ -599,7 +620,7 @@ create procedure WS.WS.LOCAL_STORE (in _host varchar, in _url varchar, in _root 
   if (_own is not null and _own > 0)
     {
       whenever not found goto default_s;
-      select U_GROUP, U_DEF_PERMS into _grp, _perms from SYS_DAV_USER where U_ID = _own;
+      select U_GROUP, U_DEF_PERMS into _grp, _perms from WS.WS.SYS_DAV_USER where U_ID = _own;
     }
   else
     {
@@ -621,51 +642,51 @@ default_s:
       else
         _type := _c_type;
       whenever not found goto not_res;
-      select RES_ID into _res_id from SYS_DAV_RES where RES_NAME = _name and RES_COL = _col_id;
+      select RES_ID into _res_id from WS.WS.SYS_DAV_RES where RES_NAME = _name and RES_COL = _col_id;
 not_res:
       if (_res_id is null or _res_id = 0)
 	{
 	  _res_id := GETID ('R');
 	  if (__tag (_content) = 185) -- string session
 	    {
-	      insert into SYS_DAV_RES (RES_ID, RES_NAME, RES_CONTENT, RES_TYPE,
+	      insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_CONTENT, RES_TYPE,
 		  RES_PERMS, RES_OWNER, RES_GROUP, RES_CR_TIME, RES_MOD_TIME, RES_COL)
 		  values (_res_id, _name, _content, _type, _perms, _own, _grp, now (), now (), _col_id);
 	    }
 	  else
 	    {
-	      insert into SYS_DAV_RES (RES_ID, RES_NAME, RES_CONTENT, RES_TYPE,
+	      insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_CONTENT, RES_TYPE,
 		  RES_PERMS, RES_OWNER, RES_GROUP, RES_CR_TIME, RES_MOD_TIME, RES_COL)
 		  values (_res_id, _name, WS.WS.REPLACE_HREF (_host, _url, _root, _content, _type, conv_html),
 		      _type, _perms, _own, _grp, now (), now (), _col_id);
 	    }
 
-	  insert replacing VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT, VU_RES_ID)
+	  insert replacing WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT, VU_RES_ID)
 	      values (_host, _url, md5 (_content), now (), _s_etag, _root, _res_id);
 	}
       else if (_res_id > 0)
 	{
 	  whenever not found goto no_chksum;
-	  select VU_CHKSUM, VU_ETAG into _etag, _e_etag from VFS_URL
+	  select VU_CHKSUM, VU_ETAG into _etag, _e_etag from WS.WS.VFS_URL
 	      where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
 no_chksum:
 	  if (_etag <> md5 (_content) or _s_etag <> _e_etag)
 	    {
 	      if (__tag (_content) = 185) -- string session
 		{
-		  update SYS_DAV_RES set RES_CONTENT = _content, RES_MOD_TIME = now () where RES_ID = _res_id;
+		  update WS.WS.SYS_DAV_RES set RES_CONTENT = _content, RES_MOD_TIME = now () where RES_ID = _res_id;
 		}
 	      else
 		{
-		  update SYS_DAV_RES set RES_CONTENT = WS.WS.REPLACE_HREF (_host, _url, _root, _content, _type, conv_html),
+		  update WS.WS.SYS_DAV_RES set RES_CONTENT = WS.WS.REPLACE_HREF (_host, _url, _root, _content, _type, conv_html),
 			 RES_MOD_TIME = now () where RES_ID = _res_id;
 		}
 
 	      if (_etag is not null and isstring (_etag))
-		update VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag
+		update WS.WS.VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag
 		    where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
 	      else
-		insert replacing VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT, VU_RES_ID)
+		insert replacing WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT, VU_RES_ID)
 		    values (_host, _url, md5 (_content), now (), _s_etag, _root, _res_id);
 	    }
 	}
@@ -979,7 +1000,7 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
   whenever not found goto no_site_rec;
   select VS_SRC, VS_OTHER, VS_OWN, VS_METHOD, VS_FOLLOW, VS_NFOLLOW, VS_DEL, VS_NEWER, VS_XPATH, VS_DEPTH, VS_URL, VS_ROBOTS, VS_BOT, deserialize (VS_UDATA)
       into _d_imgs, _other, _own, _method, _flw, _nflw, _delete, _newer, xp_exp, depth, _start_url, robots, care_of_bot, udata
-      from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+      from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   --dbg_obj_print ('OTHER SITES:', _other);
   if (depth is not null and depth >= 0 and lev > depth)
     return;
@@ -999,11 +1020,12 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
 
   if (care_of_bot)
     _nflw := cast (robots as varchar) || _nflw;
+
   if ((isstring (_flw) and length (_flw) > 0) or (isstring (_nflw) and length (_nflw) > 0))
     frames := vector ();
 
   _inx := 0;
-  base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+  base := WS.WS.MAKE_URL (_host, _url);
   origin_iri := iri_to_id (base, 1);
   urls := make_array (_urls_arr_len, 'any');
   while (_inx < _urls_arr_len)
@@ -1017,12 +1039,13 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
       _tmp := rfc1808_expand_uri (base, _tmp);
       hi := rfc1808_parse_uri (_tmp);
       sch := lower (hi[0]);
-      if (sch = '') sch := 'http';
+      if (sch = '')
+        sch := 'http';
       -- hi[4] := ''; if so prevents pages traversal
       hi[5] := '';
       _tmp := WS.WS.VFS_URI_COMPOSE (hi);
 
-      if (sch = 'http')
+      if ((sch = 'http') or (sch = 'https'))
 	{
 	  _tmp_host := hi[1]; -- host part
 	  hi[0] := ''; hi[1] := '';
@@ -1033,7 +1056,7 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
 	  --dbg_obj_print ('LINK: ',_tmp_host,_tmp_url);
 	  if ((get_keyword (_tmp_url, frames) is not null or WS.WS.FOLLOW (_host, _root, _tmp_url, _flw, _nflw, _start_url, _d_imgs)))
 	    {
-	      insert soft VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL, VQ_ORIGIN)
+	      insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_TS, VQ_URL, VQ_STAT, VQ_ROOT, VQ_LEVEL, VQ_ORIGIN)
 		  values (_host, now (), _tmp_url, 'waiting', _root, lev, origin_iri);
 	    }
 	}
@@ -1045,7 +1068,6 @@ no_site_rec:
   return;
 }
 ;
-
 
 create procedure WS.WS.SITEMAP_PROCESS (in _host varchar, in _url varchar, in _root varchar, inout _content varchar, in _c_type varchar, in lev int)
 {
@@ -1112,14 +1134,17 @@ create procedure WS.WS.SITEMAP_PROCESS (in _host varchar, in _url varchar, in _r
 
 create procedure WS.WS.MAKE_URL (in _host varchar, in _url varchar)
 {
-  declare hf, _res any;
-  hf := WS.WS.PARSE_URI (_url);
-  if (hf[0] = '')
-    hf[0] := 'http';
-  if (hf[1] = '')
-    hf[1] := _host;
-  _res := WS.WS.VFS_URI_COMPOSE (hf);
-  return _res;
+  declare hf_host, hf_url any;
+
+  hf_host := WS.WS.PARSE_URI (_host);
+  hf_url := WS.WS.PARSE_URI (_url);
+  if (hf_url[0] = '')
+    hf_url[0] := case when (hf_host[0] = '') then 'http' else hf_host[0] end;
+
+  if (hf_url[1] = '')
+    hf_url[1] := case when (hf_host[0] = '') then _host else hf_host[1] end;;
+
+  return WS.WS.VFS_URI_COMPOSE (hf_url);
 }
 ;
 
@@ -1239,7 +1264,6 @@ end_loop:
 }
 ;
 
-
 create procedure WS.WS.MKPATH (in _path any, in _own integer, in _grp integer, in _perms varchar)
 {
   declare _col, _len, _inx, _t_col integer;
@@ -1255,7 +1279,7 @@ create procedure WS.WS.MKPATH (in _path any, in _own integer, in _grp integer, i
   whenever not found goto not_found;
   while (_inx < _len)
     {
-      select COL_ID into _col from SYS_DAV_COL where COL_PARENT = _t_col and COL_NAME = aref (_path, _inx);
+      select COL_ID into _col from WS.WS.SYS_DAV_COL where COL_PARENT = _t_col and COL_NAME = aref (_path, _inx);
       _t_col := _col;
       _inx := _inx + 1;
     }
@@ -1264,7 +1288,7 @@ not_found:
     {
       _col := getid ('C');
       _name := aref (_path, _inx);
-      insert into SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER,
+      insert into WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER,
          COL_GROUP, COL_PERMS) values (_col, _name, _t_col, now (), now (), _own, _grp, _perms);
       _inx := _inx + 1;
       _t_col := _col;
@@ -1272,7 +1296,6 @@ not_found:
   return _col;
 }
 ;
-
 
 create procedure WS.WS.FOLLOW (in _host varchar, in _root varchar, in _t_url varchar, in _flw_s varchar, in _nflw_s varchar, in _url varchar, in _img varchar)
 {
@@ -1339,7 +1362,6 @@ end_step:
 }
 ;
 
-
 create procedure WS.WS.REPLACE_HREF (in _host varchar, in _url varchar, in _root varchar,
     in _content varchar, in _c_type varchar, in conv_html int := 1)
 {
@@ -1370,7 +1392,6 @@ create procedure WS.WS.REPLACE_HREF (in _host varchar, in _url varchar, in _root
   return _tmp;
 }
 ;
-
 
 create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
     in _host varchar, in _url varchar, in xp_exp varchar, out frames any, in ctype varchar, in use_tidy varchar := 'Y')
@@ -1448,9 +1469,11 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
 	}
 
       fr := vector_concat (fr, ifr, sty, js);
-      _inx := 0; _len := length (fr);
+      _inx := 0;
+      _len := length (fr);
       if (_len > 0)
-        base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+        base :=  WS.WS.MAKE_URL (_host, _url);
+
       while (_inx < _len)
 	{
 	  declare hi any;
@@ -1475,7 +1498,7 @@ create procedure WS.WS.LFS_EXP (in _host varchar, in _url varchar, in _root varc
   declare _path, _name, _content, _dest, _tmp, _dst, _err varchar;
   declare _os_path any;
   declare _o_len, _n, _rc, _win integer;
-  declare c cursor for select RES_FULL_PATH, RES_NAME, blob_to_string (RES_CONTENT) from SYS_DAV_RES
+  declare c cursor for select RES_FULL_PATH, RES_NAME, blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES
       where RES_FULL_PATH like concat (_root, '%');
 
   if (dav_root () = '/')
@@ -1545,7 +1568,6 @@ end_exp:
 ;
 -- END export to local file system
 
-
 create procedure WS.WS.FIND_KEYWORD (inout params varchar, in _pkey varchar)
 {
   declare inx integer;
@@ -1583,7 +1605,6 @@ end_find:
   return result;
 }
 ;
-
 
 -- This is a old procedure for getting uri's
 create procedure WS.WS.GET_HREF_IN_ARRAY (in _content varchar, in _d_imgs varchar)
@@ -1680,7 +1701,6 @@ end_find:
 }
 ;
 
-
 create procedure WS.WS.DAV_EXP (in _host varchar, in _url varchar, in _root varchar, in _i_dst varchar)
 {
   declare _path, _name, _content, _dest, _tmp, _etag, _dst varchar;
@@ -1690,7 +1710,7 @@ create procedure WS.WS.DAV_EXP (in _host varchar, in _url varchar, in _root varc
   declare _visited, _t_root varchar;
   declare tgt_is_vis integer;
   declare bm, err any;
-  declare c static cursor for select RES_FULL_PATH, RES_NAME, blob_to_string (RES_CONTENT) from SYS_DAV_RES
+  declare c static cursor for select RES_FULL_PATH, RES_NAME, blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES
       where RES_FULL_PATH like concat (_root, '%');
   set isolation = 'committed';
   _visited := ';';
@@ -1788,7 +1808,6 @@ end_exp:
 }
 ;
 
-
 create procedure WS.WS.DAV_HEAD (inout _url varchar)
 {
   declare _res any;
@@ -1806,7 +1825,6 @@ create procedure WS.WS.DAV_HEAD (inout _url varchar)
     return _err;
 }
 ;
-
 
 create procedure WS.WS.DAV_MKCOL (inout _url varchar)
 {
@@ -1826,7 +1844,6 @@ create procedure WS.WS.DAV_MKCOL (inout _url varchar)
 }
 ;
 
-
 create procedure WS.WS.DAV_PUT (inout _url varchar,in _content varchar)
 {
   declare _res any;
@@ -1842,7 +1859,6 @@ create procedure WS.WS.DAV_PUT (inout _url varchar,in _content varchar)
     return -1;
 }
 ;
-
 
 create procedure WS.WS.DAV_PROP (inout _url varchar, in _d_imgs varchar, in _auth varchar)
 {
@@ -1865,7 +1881,6 @@ create procedure WS.WS.DAV_PROP (inout _url varchar, in _d_imgs varchar, in _aut
   return _res;
 }
 ;
-
 
 -- This is a old procedure for getting uri's
 create procedure WS.WS.GET_HREF_FROM_XML (in _content varchar, in _d_imgs varchar)
@@ -1972,18 +1987,13 @@ end_find:
 }
 ;
 
-
 create procedure WS.WS.ISEMPTY (in x any)
 {
   if ('' = x or x is null or x = 0)
-    {
       return 1;
-    }
-  else
-    {
+
       return 0;
     }
-}
 ;
 
 -- Demo hook function
@@ -2040,7 +2050,6 @@ done:
 --
 -- simple wrappers for command-line run
 --
-
 create procedure WS.WS.VFS_MAKE_ENTRY (
 	in url varchar,
 	in follow varchar := '/*',
@@ -2072,9 +2081,7 @@ create procedure WS.WS.VFS_GO (in url varchar)
 }
 ;
 
-
-create procedure
-WS.WS.VFS_URI_COMPOSE (in res any)
+create procedure WS.WS.VFS_URI_COMPOSE (in res any)
 {
   declare _full_path, _elm varchar;
   declare idx integer;
@@ -2120,7 +2127,8 @@ create procedure WS.WS.VFS_EXTRACT_RDF (
   inout content any,
   in ctype varchar,
   inout outhdr any,
-  inout inhdr any)
+  inout inhdr any,
+  in lev any)
 {
   -- dbg_obj_princ ('WS.WS.VFS_EXTRACT_RDF (', _host, ')');
   declare mime_type, _graph, _base, out_arr, tmp varchar;
@@ -2132,7 +2140,6 @@ create procedure WS.WS.VFS_EXTRACT_RDF (
   _graph := get_keyword ('rdf-graph', opts);
   if (length (_graph) = 0)
     _graph := WS.WS.MAKE_URL (_host, url);
-
   _base := WS.WS.MAKE_URL (_host, url);
 
   commit work;
@@ -2208,7 +2215,43 @@ again:
     outhdr,
     inhdr
   );
+  -- handle properties to follow, can be any for example ldp:contains
+  if (isvector (opts) and isvector (get_keyword ('follow-property', opts)))
+    {
+      declare objs, arr, ids any;
+      arr := get_keyword ('follow-property', opts);
+      for (declare i int, i := 0; i < length (arr); i := i + 1)
+        {
+  	if (not isiri_id (arr[i]))
+  	  arr[i] := iri_to_id (arr[i], 0);
+        }
+      objs := (select DB.DBA.VECTOR_AGG (id_to_iri (O)) from DB.DBA.RDF_QUAD where G = iri_to_id (_graph, 0) and P in (arr) and isiri_id (O));
+      WS.WS.SITEMAP_URLS_REGISTER (_host, _root, _start_path, objs, lev, 0, 0);
+   }
 
+  if (0 = table_exists ('DB.DBA.RDF_META_CARTRIDGES'))
+    return;
+  -- Meta artridges
+  WS.WS.VFS_EXTRACT_RDF_CARTRIDGES (
+    content,
+    mime_type,
+    'select MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS ' ||
+    '  from DB.DBA.RDF_META_CARTRIDGES,                      ' ||
+    '       WS.WS.VFS_SITE_RDF_MAP                           ' ||
+    ' where VM_RDF_MAP = MC_ID                               ' ||
+    '   and VM_HOST = ?                                      ' ||
+    '   and VM_ROOT = ?                                      ' ||
+    '   and VM_RDF_MAP = 1                                   ' ||
+    '   and MC_ENABLED = 1                                   ' ||
+    ' order by VM_SEQ',
+    vector (_host, _root),
+    _host,
+    url,
+    _graph,
+    _base,
+    outhdr,
+    inhdr
+  );
 }
 ;
 
@@ -2308,7 +2351,6 @@ create procedure WS.WS.SITEMAP_ENSURE_NEW_SITE (in _host varchar, in _root varch
 }
 ;
 
-
 create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar, in src_url varchar, inout xp any, in lev int := 0, in sm int := 0, in delta int := 1)
 {
   declare _flw_s, _nflw_s, _url, _img, origin_iri varchar;
@@ -2316,7 +2358,7 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
   dict := dict_new (1000);
   whenever not found goto no_ini;
   select VS_FOLLOW, VS_NFOLLOW, VS_URL, VS_SRC into _flw_s, _nflw_s, _url, _img
-      from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+      from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   origin_iri := iri_to_id (WS.WS.MAKE_URL (_host, src_url), 1);
   len := length (xp);
   urls := make_array (len, 'any');
@@ -2343,7 +2385,7 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
       hf [1] := '';
       hf [5] := '';
       url := WS.WS.VFS_URI_COMPOSE (hf);
-      if (host <> _host or sch <> 'http')
+      if ((host <> _host) or ((sch <> 'http') and (sch <> 'https')))
 	{
 	  url := abs_url;
 	  hf := WS.WS.PARSE_URI (url);
@@ -2543,7 +2585,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
 }
 ;
 
-create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar, out delay_sec float)
+create procedure WS.WS.VFS_ROBOTS_PARSE (in txt varchar, in ua varchar, out delay_sec float)
 {
   declare s any;
   declare v1 any;
@@ -2598,27 +2640,27 @@ create procedure VFS_ROBOTS_PARSE (in txt varchar, in ua varchar, out delay_sec 
 }
 ;
 
-create procedure VFS_ROBOTS_GET (in _host varchar, in _root varchar, inout site_delay_sec float)
+create procedure WS.WS.VFS_ROBOTS_GET (in _host varchar, in _root varchar, inout site_delay_sec float)
 {
   declare url, ret, head, me, robots, delay_sec any;
-  url := vector ('http', _host, '/robots.txt', '', '', '');
-  url := vfs_uri_compose (url);
-  robots := null;
   declare exit handler for sqlstate '*'
     {
       goto en;
     };
-  ret := DB.DBA.HTTP_CLIENT_EXT (url=>url, headers=>head, n_redirects=>5);
+
+  url := WS.WS.MAKE_URL (_host, '/robots.txt');
+  robots := null;
+  ret := http_client_ext (url=>url, headers=>head, n_redirects=>5);
   if (not isvector (head) or length (head) = 0 or head[0] not like 'HTTP/1._ 200 %')
     goto en;
-  me := coalesce (cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ClientIdString'),
-  	'Mozilla/4.0 (compatible; OpenLink Virtuoso)');
+
+  me := coalesce (cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'ClientIdString'), 'Mozilla/4.0 (compatible; OpenLink Virtuoso)');
   robots := VFS_ROBOTS_PARSE (ret, me, delay_sec);
   if (delay_sec > site_delay_sec)
     site_delay_sec := delay_sec;
+
   en:
-  update VFS_SITE set VS_ROBOTS = robots, VS_DELAY = delay_sec where VS_HOST = _host and VS_ROOT = _root;
+  update WS.WS.VFS_SITE set VS_ROBOTS = robots, VS_DELAY = delay_sec where VS_HOST = _host and VS_ROOT = _root;
   return robots;
 }
 ;
-
