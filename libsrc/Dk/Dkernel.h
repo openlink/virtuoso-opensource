@@ -1011,7 +1011,6 @@ extern uint32 time_now_msec;
 void dks_stop_burst_mode (dk_session_t * ses);
 #endif
 
-#endif
 extern long client_trace_flag;
 
 #ifdef PCTCP
@@ -1025,3 +1024,8 @@ extern long init_brk;
 void strses_mem_initalize (void);
 void strses_readtable_initialize (void);
 void dk_box_initialize (void);
+void log_thread_initialize (void);
+int bytes_in_read_buffer (dk_session_t * ses);
+long read_wides_from_utf8_file (dk_session_t * ses, long nchars, unsigned char *dest, int copy_as_utf8, unsigned char **dest_ptr_out);
+
+#endif /* _DKERNEL_H */

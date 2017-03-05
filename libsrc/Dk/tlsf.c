@@ -294,8 +294,6 @@ tlsf_printf (char * fmt, ...)
 /******************** Begin of the allocator code *****************/
 /******************************************************************/
 
-static char *mp = NULL;         /* Default memory pool. */
-
 /******************************************************************/
 size_t init_memory_pool(size_t mem_pool_size, void *mem_pool)
 {
@@ -340,24 +338,26 @@ size_t add_new_area(void *area, size_t area_size, void *mem_pool)
 {
 /******************************************************************/
     tlsf_t *tlsf = (tlsf_t *) mem_pool;
-    area_info_t *ptr, *ptr_prev, *ai;
-    bhdr_t *ib0, *b0, *lb0, *ib1, *b1, *lb1, *next_b;
-
-    memset(area, 0, area_size);
+    area_info_t *ai;
+    bhdr_t *ib0, *b0, *lb0;
+#ifdef TLSF_32BIT_ONLY
+    area_info_t *ptr, *ptr_prev;
     ptr = tlsf->area_head;
     ptr_prev = 0;
+#endif
+
+    memset(area, 0, area_size);
 
     ib0 = process_area(area, area_size);
     b0 = GET_NEXT_BLOCK(ib0->ptr.buffer, ib0->size & BLOCK_SIZE);
     lb0 = GET_NEXT_BLOCK(b0->ptr.buffer, b0->size & BLOCK_SIZE);
 
-    /* Before inserting the new area, we have to merge this area with the
-       already existing ones */
-#if 0 /* sizes are 32 bit and addresses are 64.  Cannot  merge areas if result were over 4G in size.  Do not merge at all */
+    /* Before inserting the new area, we have to merge this area with the already existing ones */
+#ifdef TLSF_32BIT_ONLY /* sizes are 32 bit and addresses are 64.  Cannot merge areas if result were over 4G in size.  Do not merge at all */
     while (ptr) {
-        ib1 = (bhdr_t *) ((char *) ptr - BHDR_OVERHEAD);
-        b1 = GET_NEXT_BLOCK(ib1->ptr.buffer, ib1->size & BLOCK_SIZE);
-        lb1 = ptr->end;
+        bhdr_t *ib1 = (bhdr_t *) ((char *) ptr - BHDR_OVERHEAD);
+        bhdr_t *b1 = GET_NEXT_BLOCK(ib1->ptr.buffer, ib1->size & BLOCK_SIZE);
+        bhdr_t *lb1 = ptr->end;
 
         /* Merging the new area with the next physically contigous one */
         if ((unsigned long) ib1 == (unsigned long) lb0 + BHDR_OVERHEAD) {
@@ -382,6 +382,7 @@ size_t add_new_area(void *area, size_t area_size, void *mem_pool)
         /* Merging the new area with the previous physically contigous
            one */
         if ((unsigned long) lb1->ptr.buffer == (unsigned long) ib0) {
+            bhdr_t *next_b;
             if (tlsf->area_head == ptr) {
                 tlsf->area_head = ptr->next;
                 ptr = ptr->next;
@@ -1161,7 +1162,7 @@ tlsf_check (tlsf_t * tlsf, int mode)
 	    fill += 3;
 	  }
 	qsort (arr, fill / 3, 3 * sizeof (int64), mbs_cmp);
-	printf ("%Ld/%Ld total %Ld/%d allocd %Ld/%d free\n", total, n_blocks, allocd_bytes, n_allocd, free_bytes, n_free);
+	printf ("%Ld/%Ld bytes/blocks total, %Ld/%d allocd, %Ld/%d free; %Ld bytes of allocd+free+overhead\n", total, n_blocks, allocd_bytes, n_allocd, free_bytes, n_free, ts);
 	for (inx = 0; inx < fill; inx += 3)
 	  {
 	    printf ("sz %Ld %Ld allocd %Ld free\n", arr[inx], arr[inx + 1], arr[inx + 2]);
@@ -1178,18 +1179,11 @@ tlsf_check (tlsf_t * tlsf, int mode)
 int
 tlsf_by_addr (caddr_t * ptr)
 {
-  int64 * arr;
-  int64 ts;
   int t_inx;
-  int fill = 0, inx;
   for (t_inx = 1; t_inx < tlsf_ctr; t_inx++)
     {
       tlsf_t * tlsf = dk_all_tlsfs[t_inx];
-
-      int64 *sz;
-
       area_info_t *ai;
-      uint32 size;
       bhdr_t *next, * end;
       mutex_enter (&tlsf->tlsf_mtx);
       ai = tlsf->area_head;
@@ -1207,13 +1201,13 @@ tlsf_by_addr (caddr_t * ptr)
 
 		      if (FREE_BLOCK & next->size)
 			{
-			  printf ("%p in area %p of tlsf %p\n", next, ai, tlsf);
+			  printf ("%p is in free bock of size %Ld starting at %p in area %p--%p of tlsf %p\n", ptr, (long long)sz, next, ai, end, tlsf);
 			  mutex_leave (&tlsf->tlsf_mtx);
 			  return t_inx;
 			}
 		      else 
 			{
-			  printf ("%p in area %p of tlsf %p\n", next, ai, tlsf);
+			  printf ("%p is in allocd bock of size %Ld starting at %p in area %p--%p of tlsf %p\n", ptr, (long long)sz, next, ai, end, tlsf);
 			  mutex_leave (&tlsf->tlsf_mtx);
 			  return t_inx;
 			}

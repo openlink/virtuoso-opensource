@@ -278,7 +278,7 @@ strdev_write (session_t * ses2, char *buffer, int bytes)
 	      size_t len;
 	      unsigned char *buf = (unsigned char *) buffer;
 	      memset (&mb, 0, sizeof (mb));
-	      len = virt_mbsnrtowcs (NULL, &buf, written, 0, &mb);
+	      len = virt_mbsnrtowcs (NULL, (const unsigned char **)(&buf), written, 0, &mb);
 	      if (len == -1)
 		goto report_error;
 	      ses2->ses_file->ses_fd_fill_chars += len;
