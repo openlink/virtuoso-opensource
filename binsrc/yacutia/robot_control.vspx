@@ -130,10 +130,7 @@
           </v:template>
           <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set2_browse_template">
             <table>
-              <?vsp
-                self.r_count := self.r_count + 1;
-                http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-              ?>
+              <tr>
                 <td align="left">
                   <input type="checkbox" name="cb_<?V control.te_rowset[4] ?>" value="on"/>
                 </td>
@@ -141,10 +138,7 @@
                   <v:label format="%s" name="data_set2_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
                 <td align="left">
-                  <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri (concat ('http://',
-                    (control.vc_parent as vspx_row_template).te_rowset[1],
-                    (control.vc_parent as vspx_row_template).te_rowset[2]
-                  ), 50)" />
+                  <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[1] || (control.vc_parent as vspx_row_template).te_rowset[2], 50)" />
                 </td>
                 <td nowrap="0"  class="listing_col_action">
                   <v:button action="simple" style="image" name="url1"
@@ -192,9 +186,7 @@
                     </v:on-post>
                   </v:button>
                 </td>
-              <?vsp
-                http ('</tr>');
-              ?>
+              </tr>
             </table>
           </v:template>
         </v:template>

@@ -107,26 +107,77 @@
           if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'copy')
           {
             declare _host, _root, _tmp any;
+
             _n_own := 0;
             _host := get_keyword ('EDIT', self.vc_page.vc_event.ve_params);
             _root := get_keyword ('root', self.vc_page.vc_event.ve_params);
-
-            select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
-                   VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
-                   VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE,
-                   VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
-                   VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY, VS_HEADERS
-              into self._descr, self._host, self._url, _idx, self._root,
-                   self._newd, self._del, self._flow, self._dflow, self._auth,
-                   self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store,
-                   self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
-                   self._accept_rdf, self._bot, self._thr, self._delay, self._head
-              from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+            select VS_DESCR,
+                   VS_HOST,
+                   VS_URL,
+                   VS_INX,
+                   VS_ROOT,
+                   VS_NEWER,
+                   VS_DEL,
+                   VS_FOLLOW,
+                   VS_NFOLLOW,
+                   VS_OPTIONS,
+                   VS_SRC,
+                   VS_METHOD,
+                   VS_OWN,
+                   VS_OTHER,
+                   VS_OPAGE,
+                   VS_REDIRECT,
+                   VS_STORE,
+                   VS_DLOAD_META,
+                   deserialize (VS_UDATA),
+                   VS_STORE_FN,
+                   VS_EXTRACT_FN,
+                   VS_CONVERT_HTML,
+                   VS_XPATH,
+                   coalesce (VS_DEPTH, 'unlimited'),
+                   VS_ACCEPT_RDF,
+                   VS_BOT,
+                   VS_THREADS,
+                   VS_DELAY,
+                   VS_HEADERS
+              into self._descr,
+                   self._host,
+                   self._url,
+                   _idx,
+                   self._root,
+                   self._newd,
+                   self._del,
+                   self._flow,
+                   self._dflow,
+                   self._auth,
+                   self._img,
+                   self._dav,
+                   _n_own,
+                   self._other,
+                   self._opage,
+                   self._redir,
+                   self._store,
+                   self._ask_rdf,
+                   self._udata,
+                   self._store_fn,
+                   self._ext_fn,
+                   self._convhtml,
+                   self._xp_exp,
+                   self._depth,
+                   self._accept_rdf,
+                   self._bot,
+                   self._thr,
+                   self._delay,
+                   self._head
+              from WS.WS.VFS_SITE
+             where VS_HOST = _host
+               and VS_ROOT = _root;
 
             if (self._other is null)
               self._other := 0;
             else if (self._other = 'checked')
               self._other := 1;
+
             self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
             ename := concat(self._descr, '(', _host,' in /DAV/',_root,')');
             self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
@@ -134,7 +185,6 @@
             self._root := concat('/DAV/', self._root);
             self._newd := subseq (datestring(coalesce (self._newd, now ())), 0, 19);
             self._old_url := self._url;
-            self.target_url := 'http://';
             if (self._udata is null)
               self._udata := vector ();
 
@@ -157,7 +207,10 @@
                 self.target_pwd := auth[1];
               }
             }
-            self.target_url := concat(self.target_url, self._host, self._url);
+            self.target_url := self._host || self._url;
+            if ((self.target_url not like 'http://%') and (self.target_url not like 'https://%'))
+              self.target_url := 'http://' || self.target_url;
+
             self._get_rdf := coalesce ((select top 1 1 from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = _host and VM_ROOT = _root), 0);
           }
           else if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'create')
@@ -193,13 +246,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
@@ -657,32 +703,43 @@
                                       declare item, idx, len, _idx, tar_url, sav_host, desc_save varchar;
                                       declare ret_arr, opts, tmp any;
                                       declare pos integer;
-                                      tar_url := trim (get_keyword ('tar_url', params, ''));
+
                                       desc_save := self._descr;
-                                      if (length(tar_url) <= 0)
+                                      tar_url := trim (get_keyword ('tar_url', params, ''));
+                                      if (length(tar_url) = 0)
                                       {
                                         self.vc_error_message := 'Incorrect target URL';
                                         self.vc_is_valid := 0;
                                         return;
                                       }
                                       ret_arr := WS.WS.PARSE_URI(tar_url);
-                                      pos := 0;
-                                      pos := strchr(aref(ret_arr, 1), '@');
+                                      pos := strchr (ret_arr[1], '@');
                                       if (pos is null)
                                         pos := 0;
 
-                                      self._auth := left(aref(ret_arr, 1), pos);
                                       sav_host := self._host;
-                                      self._host := right(aref(ret_arr, 1), length(aref(ret_arr, 1)) - pos);
+                                      self._host := right (ret_arr[1], length (ret_arr[1]) - pos);
+                                      if (self._host[0] = ascii ('@'))
+                                      {
+                                        self._host := substring (self._host, 2, length (self._host));
+                                      }
+                                      self._host := ret_arr[0] || '://' || right (ret_arr[1], length (ret_arr[1]) - pos);
+                                      if (self.mode = 'edit' and sav_host <> self._host)
+                                      {
+                                        self._host := sav_host;
+                                        self.vc_error_message := sprintf ('Host name can not be edited, it must be "%s".', sav_host);
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
 
-                                      self._auth := '';
                                       if (length (self.tar_uid.ufl_value) and length (self.tar_pwd.ufl_value))
                                       {
                                         self._auth := concat (self.tar_uid.ufl_value,':',self.tar_pwd.ufl_value);
                                       }
-
-                                      if (self._host[0] = ascii ('@'))
-                                        self._host := substring (self._host, 2, length (self._host));
+                                      else
+                                      {
+                                        self._auth := left (ret_arr[1], pos);
+                                      }
 
                                       if (self.mode = 'edit' and sav_host <> self._host)
                                       {
@@ -693,17 +750,19 @@
                                       }
 
                                       self._descr := trim (get_keyword ('descr', params));
-                                      self._url := aref(ret_arr, 2);
-                                      if (aref(ret_arr, 4) is not null and length(aref(ret_arr, 4)) > 0)
+                                      self._url := ret_arr[2];
+                                      if (ret_arr[4] is not null and length (ret_arr[4]) > 0)
                                       {
-                                        self._url := concat(self._url, '?', aref(ret_arr, 4));
-                                        self._url := trim(self._url);
+                                        self._url := concat (self._url, '?', ret_arr[4]);
+                                        self._url := trim (self._url);
                                       }
                                       self._root := trim (get_keyword ('root', params));
                                       if (self.mode <> 'edit' and right(self._root, 1) <> '/')
                                         self._root := concat(self._root, '/');
+
                                       if (left(self._root, 5) = '/DAV/')
                                         self._root := right(self._root, length(self._root) - 5);
+
                                       self._newd := get_keyword ('newd', params);
                                       self._flow := get_keyword ('flow', params);
                                       self._dflow := get_keyword ('dflow', params);
@@ -716,9 +775,14 @@
                                       self._head := get_keyword ('head', params, '');
                                       self._depth := get_keyword ('depth', params, '');
 
-                                      if (self._depth = '' or self._depth = 'unlimited') self._depth := null;
-                                      if (self._xp_exp = '') self._xp_exp := null;
-                                      if (self._head = '') self._head := null;
+                                      if (self._depth = '' or self._depth = 'unlimited')
+                                        self._depth := null;
+
+                                      if (self._xp_exp = '')
+                                        self._xp_exp := null;
+
+                                      if (self._head = '')
+                                        self._head := null;
 
                                       if (self._xp_exp is not null)
                                       {
@@ -794,12 +858,16 @@
 
                                       if (self.mode <> 'edit' and self._opage = '1')
                                         self._opage := 'checked';
+
                                       if (self._del = '1')
                                         self._del := 'checked';
+
                                       if (self._img = '1')
                                         self._img := 'checked';
+
                                       if (self._dav = '1')
                                         self._dav := 'checked';
+
                                       if (WS.WS.isempty(self._host) or WS.WS.isempty(self._root) or WS.WS.isempty(self._url))
                                       {
                                         self.vc_error_message := 'Host, Target collection and Start path must be specified';
@@ -837,6 +905,7 @@
                                         self.vc_is_valid := 0;
                                         return;
                                       }
+
                                       if (self.mode = 'edit')
                                       {
                                         update WS.WS.VFS_SITE
@@ -873,73 +942,116 @@
                                         if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._url))
                                           update WS.WS.VFS_QUEUE set VQ_URL = self._url where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._old_url;
 
-                                        insert soft WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
+                                        insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
+                                          values (self._host, self._url, now(), 'waiting', self._root);
                                       }
                                       else
                                       {
-                                        declare hinf any;
+                                        insert into WS.WS.VFS_SITE (
+                                            VS_DESCR,
+                                            VS_HOST,
+                                            VS_URL,
+                                            VS_INX,
+                                            VS_OWN,
+                                            VS_ROOT,
+                                            VS_NEWER,
+                                            VS_DEL,
+                                            VS_FOLLOW,
+                                            VS_NFOLLOW,
+                                            VS_SRC,
+                                            VS_METHOD,
+                                            VS_OTHER,
+                                            VS_OPTIONS,
+                                            VS_OPAGE,
+                                            VS_REDIRECT,
+                                            VS_STORE,
+                                            VS_DLOAD_META,
+                                            VS_UDATA,
+                                            VS_STORE_FN,
+                                            VS_EXTRACT_FN,
+                                            VS_CONVERT_HTML,
+                                            VS_XPATH,
+                                            VS_DEPTH,
+                                            VS_ACCEPT_RDF,
+                                            VS_THREADS,
+                                            VS_BOT,
+                                            VS_DELAY,
+                                            VS_HEADERS
+                                          )
+                                          values (
+                                            self._descr,
+                                            self._host,
+                                            self._url,
+                                            _idx,
+                                            (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+                                            self._root,
+                                            stringdate (self._newd),
+                                            self._del,
+                                            self._flow,
+                                            self._dflow,
+                                            self._img,
+                                            self._dav,
+                                            case when self._other then 'checked' else NULL end,
+                                            self._auth,
+                                            self._opage,
+                                            self._redir,
+                                            self._store,
+                                            self._ask_rdf,
+                                            serialize (self._udata),
+                                            self._store_fn,
+                                            self._ext_fn,
+                                            self._convhtml,
+                                            self._xp_exp,
+                                            self._depth,
+                                            self._accept_rdf,
+                                            self._thr,
+                                            self._bot,
+                                            self._delay,
+                                            self._head
+                                          );
 
-                                        hinf := WS.WS.PARSE_URI(self._host);
-                                        if (lower(hinf[0]) = 'http' and hinf[1] <> '')
-                                          self._host := hinf[1];
+                                        insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
+                                          values (self._host, self._url, now(), 'waiting', self._root);
+                                      }
 
-                                        insert into WS.WS.VFS_SITE
-                                           (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
-                                            VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
-                                            VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS,
-                                            VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
-                                            VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
-                                            VS_THREADS, VS_BOT, VS_DELAY, VS_HEADERS)
-                                          values
-                                            (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-                                            self._root, stringdate(self._newd), self._del, self._flow, self._dflow,
-                                            self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
-                                            self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata),
-                                            self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
-                                            self._thr, self._bot, self._delay, self._head);
+                                      declare _mp, _idx, p_id, _seq, ename, ename_old any;
 
-                                          insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
-                                            values (self._host, self._url, now(), 'waiting', self._root);
-                                        }
-
-                                        declare _mp, _idx, p_id, _seq, ename, ename_old any;
-
-                                        _seq := _idx := 0;
-                                        delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
-                                        if (self._get_rdf)
+                                      _seq := _idx := 0;
+                                      delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
+                                      if (self._get_rdf)
+                                      {
+                                        while (_mp := adm_next_keyword ('mapper', control.vc_page.vc_event.ve_params, _idx))
                                         {
-                                          while (_mp := adm_next_keyword ('mapper', control.vc_page.vc_event.ve_params, _idx))
-                                          {
-                                            _seq := _seq + 1;
-                                            p_id := atoi (_mp);
-                                            insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
-                                              values (self._host, self._root, p_id, 0, _seq);
-                                          }
-                                          while (_mp := adm_next_keyword ('metaMapper', control.vc_page.vc_event.ve_params, _idx))
-                                          {
-                                            _seq := _seq + 1;
-                                            p_id := atoi (_mp);
-                                            insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
-                                              values (self._host, self._root, p_id, 1, _seq);
-                                          }
+                                          _seq := _seq + 1;
+                                          p_id := atoi (_mp);
+                                          insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
+                                            values (self._host, self._root, p_id, 0, _seq);
                                         }
+                                        while (_mp := adm_next_keyword ('metaMapper', control.vc_page.vc_event.ve_params, _idx))
+                                        {
+                                          _seq := _seq + 1;
+                                          p_id := atoi (_mp);
+                                          insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
+                                            values (self._host, self._root, p_id, 1, _seq);
+                                        }
+                                      }
 
-                                        ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
-                                        if (desc_save <> '')
-                                        {
-                                          ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
-                                          if (ename_old <> ename)
-                                            delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;
-                                        }
-                                        if (self._intv = 0)
-                                        {
-                                          delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
-                                        }
-                                        else
-                                        {
-                                          insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
-                                             values (ename, now (), self._intv, concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)'));
-                                        }
+                                      ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
+                                      if (desc_save <> '')
+                                      {
+                                        ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
+                                        if (ename_old <> ename)
+                                          delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;
+                                      }
+                                      if (self._intv = 0)
+                                      {
+                                        delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
+                                      }
+                                      else
+                                      {
+                                        insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+                                          values (ename, now (), self._intv, concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)'));
+                                      }
                                       commit work;
 
                                       http_request_status ('HTTP/1.1 302 Found');

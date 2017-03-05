@@ -39,13 +39,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
@@ -147,110 +140,103 @@
                             </v:template>
                             <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set2_browse_template">
                               <table>
-                                <?vsp
-                                  self.r_count := self.r_count + 1;
-                                  http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                                ?>
+                                <tr>
                                   <td class="listing_col" nowrap="1">
                                     <v:label format="%s" name="data_set2_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
                                   </td>
                                   <td class="listing_col" nowrap="1">
-                                    <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri (concat ('http://',
-                                      (control.vc_parent as vspx_row_template).te_rowset[1],
-                                      (control.vc_parent as vspx_row_template).te_rowset[4]
-                                    ), 50)" />
+                                    <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[1] || (control.vc_parent as vspx_row_template).te_rowset[4], 50)" />
                                   </td>
                                   <td class="listing_col" nowrap="1">
                                     <v:label format="%s" name="data_set2_browse_label_5" value="--WS.WS.VFS_STATUS_GET ((control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])" />
                                   </td>
                                   <td class="listing_col_action">
                                     <v:button action="simple" style="image" name="data_set2_update"
-                                        value="images/icons/fastf_16.png"
-                                        xhtml_alt="Run"
-                                        xhtml_title="Run"
-                                        text="&nbsp;Run"
-                                        >
-                                        <v:on-post width="0" height="16">
-                                          <![CDATA[
-                                            declare _host, _root, _url varchar;
-                                            declare update_flag integer;
+                                       value="images/icons/fastf_16.png"
+                                       xhtml_alt="Run"
+                                       xhtml_title="Run"
+                                       text="&nbsp;Run"
+                                    >
+                                      <v:on-post width="0" height="16">
+                                        <![CDATA[
+                                          declare _host, _root, _url varchar;
+                                          declare update_flag integer;
 
-                                            _host := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                            _root := (control.vc_parent as vspx_row_template).te_rowset[3];
-                                            _url := (control.vc_parent as vspx_row_template).te_rowset[4];
-                                            if (WS.WS.VFS_STATUS_GET (_host, _root) = 'done')
-                                              update_flag := 1;
-                                            else
-                                              update_flag := 0;
-                                            http_rewrite ();
-                                            self.vc_redirect (sprintf ('robot_status.vspx?host=%U&root=%U&url=%U', _host, _root, _url));
-                                            http_flush ();
-                                            if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT = 'pending' ))
-                                              return;
+                                          _host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                          _root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                          _url := (control.vc_parent as vspx_row_template).te_rowset[4];
+                                          if (WS.WS.VFS_STATUS_GET (_host, _root) = 'done')
+                                            update_flag := 1;
+                                          else
+                                            update_flag := 0;
 
-                                            WS.WS.SERV_QUEUE_TOP (_host, _root, update_flag, 3, null, null);
-                                          ]]>
-                                        </v:on-post>
-                                      </v:button>
-                                      <v:button action="simple" style="image" name="url2"
-                                        value="images/icons/alarm_16.png"
-                                        xhtml_alt="Schedule"
-                                        xhtml_title="Schedule"
-                                        text="&nbsp;Schedule"
-                                        url="--concat('robot_sched.vspx?mode=create&host=', (control.vc_parent as vspx_row_template).te_rowset[1], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
-                                        />
-                                      <v:button action="simple" value="Reset" width="64" height="24" name="data_set2_reset" style="url" >
-                                        <v:on-post width="0" height="16">
-                                          <![CDATA[
-                                            declare _host, _root, _url varchar;
-                                            declare old_mode int;
-                                            _host := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                            _root := (control.vc_parent as vspx_row_template).te_rowset[3];
-                                            declare exit handler for sqlstate '*'
-                                            {
-                                                log_enable (old_mode, 1);
-                                              self.vc_is_valid := 0;
-                                              self.vc_error_message := __SQL_MESSAGE;
-                                              return;
-                                            };
-                                                              commit work;
-                                            WS.WS.VFS_STATUS_SET (_host, _root, 'stopped');
-                                            old_mode := log_enable (3,1);
-                                            update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT <> 'waiting';
-                                            commit work;
-                                            log_enable (old_mode, 1);
-                                          ]]>
-                                        </v:on-post>
-                                      </v:button>
-                                      <v:button action="simple" style="image" name="data_set2_stop"
-                                        value="images/icons/stop_16.png"
-                                        xhtml_alt="Stop"
-                                        xhtml_title="Stop"
-                                        text="&nbsp;Stop"
-                                        >
-                                        <v:on-post width="0" height="16">
-                                          <![CDATA[
-                                            declare _host, _root, _url varchar;
-                                            declare old_mode int;
-                                            _host := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                            _root := (control.vc_parent as vspx_row_template).te_rowset[3];
-                                            _url := (control.vc_parent as vspx_row_template).te_rowset[4];
-                                            declare exit handler for sqlstate '*'
-                                            {
-                                                log_enable (old_mode, 1);
-                                              self.vc_is_valid := 0;
-                                              self.vc_error_message := __SQL_MESSAGE;
-                                              return;
-                                            };
-                                            commit work;
-                                            WS.WS.VFS_STATUS_SET (_host, _root, 'stopped');
-                                          ]]>
-                                        </v:on-post>
-                                      </v:button>
-                                    </td>
-                                  <?vsp
-                                    http ('</tr>');
-                                  ?>
+                                          http_rewrite ();
+                                          self.vc_redirect (sprintf ('robot_status.vspx?host=%U&root=%U&url=%U', _host, _root, _url));
+                                          http_flush ();
+                                          if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT = 'pending' ))
+                                            return;
+
+                                          WS.WS.SERV_QUEUE_TOP (_host, _root, update_flag, 3, null, null);
+                                        ]]>
+                                      </v:on-post>
+                                    </v:button>
+                                    <v:button action="simple" style="image" name="url2"
+                                      value="images/icons/alarm_16.png"
+                                      xhtml_alt="Schedule"
+                                      xhtml_title="Schedule"
+                                      text="&nbsp;Schedule"
+                                      url="--concat('robot_sched.vspx?mode=create&host=', (control.vc_parent as vspx_row_template).te_rowset[1], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
+                                      />
+                                    <v:button action="simple" value="Reset" width="64" height="24" name="data_set2_reset" style="url" >
+                                      <v:on-post width="0" height="16">
+                                        <![CDATA[
+                                          declare _host, _root, _url varchar;
+                                          declare old_mode int;
+                                          _host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                          _root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                          declare exit handler for sqlstate '*'
+                                          {
+                                              log_enable (old_mode, 1);
+                                            self.vc_is_valid := 0;
+                                            self.vc_error_message := __SQL_MESSAGE;
+                                            return;
+                                          };
+                                                            commit work;
+                                          WS.WS.VFS_STATUS_SET (_host, _root, 'stopped');
+                                          old_mode := log_enable (3,1);
+                                          update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT <> 'waiting';
+                                          commit work;
+                                          log_enable (old_mode, 1);
+                                        ]]>
+                                      </v:on-post>
+                                    </v:button>
+                                    <v:button action="simple" style="image" name="data_set2_stop"
+                                      value="images/icons/stop_16.png"
+                                      xhtml_alt="Stop"
+                                      xhtml_title="Stop"
+                                      text="&nbsp;Stop"
+                                      >
+                                      <v:on-post width="0" height="16">
+                                        <![CDATA[
+                                          declare _host, _root, _url varchar;
+                                          declare old_mode int;
+                                          _host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                          _root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                          _url := (control.vc_parent as vspx_row_template).te_rowset[4];
+                                          declare exit handler for sqlstate '*'
+                                          {
+                                              log_enable (old_mode, 1);
+                                            self.vc_is_valid := 0;
+                                            self.vc_error_message := __SQL_MESSAGE;
+                                            return;
+                                          };
+                                          commit work;
+                                          WS.WS.VFS_STATUS_SET (_host, _root, 'stopped');
+                                        ]]>
+                                      </v:on-post>
+                                    </v:button>
+                                  </td>
+                                 </tr>
                                 </table>
                               </v:template>
                             </v:template>
@@ -295,10 +281,7 @@
                               </v:template>
                               <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set3_browse_template">
                                 <table>
-                                  <?vsp
-                                    self.r_count := self.r_count + 1;
-                                    http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                                  ?>
+                                  <tr>
                                     <td class="listing_col" nowrap="1">
                                       <v:label format="%s" name="data_set3_browse_label_1" value="--y_trunc_uri((control.vc_parent as vspx_row_template).te_rowset[0], 50)" />
                                     </td>
@@ -336,16 +319,14 @@
                                         </v:on-post>
                                       </v:button>
                                     </td>
-                                  <?vsp
-                                    http('</tr>');
-                                  ?>
+                                  </tr>
                                 </table>
                               </v:template>
                             </v:template>
                             <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set3_footer_template">
                               <table>
                                 <tr class="browse_button_row">
-                                  <td colspan="5" align="center"  class="listing_col_action">
+                                  <td colspan="5" align="center" class="listing_col_action">
                                     <vm:ds-navigation data-set="data_set3"/>
                                   </td>
                                 </tr>
