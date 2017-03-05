@@ -868,7 +868,7 @@ mutex_try_enter (dk_mutex_t *mtx)
 
 
 #ifdef MTX_DEBUG
-void mutex_leave_dbg (int line, char * file, dk_mutex_t *self)
+void mutex_leave_dbg (int line, const char * file, dk_mutex_t *self)
 #else
 void mutex_leave (dk_mutex_t *self)
 #endif

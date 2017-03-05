@@ -818,7 +818,7 @@ int
 ce_total_bytes (db_buf_t ce)
 {
   dtp_t flags, ce_type;
-  int n_bytes, n_values, hl, is_null;
+  int n_bytes = 0, n_values, hl, is_null;
   flags = ce[0];
   ce_type = flags & CE_TYPE_MASK;
   if (ce_type < CE_BITS)

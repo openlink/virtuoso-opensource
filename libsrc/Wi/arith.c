@@ -1642,6 +1642,7 @@ artm_vec (caddr_t * inst, instruction_t * ins, artm_vec_f * ops)
   dtp_t l_dtp = ssl_artm_dtp (inst, l);
   dtp_t r_dtp = ssl_artm_dtp (inst, r);
   int n_sets = qi->qi_n_sets;
+  int64 *la = NULL, *ra = NULL;
   if (DV_ANY == l_dtp || DV_ANY == r_dtp || SSL_VEC != ins->_.artm.result->ssl_type)
     return 0;
   target_dtp = MAX (l_dtp, r_dtp);
@@ -1670,7 +1671,6 @@ artm_vec (caddr_t * inst, instruction_t * ins, artm_vec_f * ops)
   for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
     {
       int n = MIN (ARTM_VEC_LEN, n_sets - inx);
-      int64 *la, *ra;
       int64 *res = (DV_SINGLE_FLOAT == target_dtp) ? (int64 *) & ((float *) res_dc->dc_values)[inx]
 	  : &((int64 *) res_dc->dc_values)[inx];
       if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
@@ -2016,6 +2016,7 @@ CMP_VEC_OP (cmp_vec_any, dtp_t **, cmp_op & dv_compare (((db_buf_t*)l)[set], ((d
   dtp_t l_dtp = ssl_cmp_dtp (inst, l);
   dtp_t r_dtp = ssl_cmp_dtp (inst, r);
   int n_sets = qi->qi_n_sets;
+  int64 *la = NULL, *ra = NULL;
   if (DV_ARRAY_OF_POINTER == l_dtp || DV_ARRAY_OF_POINTER == r_dtp)
     return CMP_VEC_NA;
   cmp_op = ins->_.cmp.op;
@@ -2047,7 +2048,6 @@ CMP_VEC_OP (cmp_vec_any, dtp_t **, cmp_op & dv_compare (((db_buf_t*)l)[set], ((d
       for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
 	{
 	  int n = MIN (ARTM_VEC_LEN, n_sets - inx);
-	  int64 * la, *ra;
 	  if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
 	    la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, target_dtp, inx, n, NULL, NULL);
 	  if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
@@ -2062,7 +2062,6 @@ CMP_VEC_OP (cmp_vec_any, dtp_t **, cmp_op & dv_compare (((db_buf_t*)l)[set], ((d
       for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
 	{
 	  int n = MIN (ARTM_VEC_LEN, n_sets - inx);
-	  int64 * la, *ra;
 	  if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
 	    la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, DV_DATETIME, inx, n, NULL, NULL);
 	  if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
@@ -2078,7 +2077,6 @@ CMP_VEC_OP (cmp_vec_any, dtp_t **, cmp_op & dv_compare (((db_buf_t*)l)[set], ((d
       for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
 	{
 	  int n = MIN (ARTM_VEC_LEN, n_sets - inx);
-	  int64 * la, *ra;
 	  if (!inx || (SSL_VEC == l->ssl_type || SSL_REF == l->ssl_type))
 	    la = ssl_artm_param (inst, l, (int64 *) & vn_temp_1.i, DV_ANY, inx, n, &ap, &allocd);
 	  if (!inx || (SSL_VEC == r->ssl_type || SSL_REF == r->ssl_type))
