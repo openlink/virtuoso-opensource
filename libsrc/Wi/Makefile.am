@@ -646,7 +646,6 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_PropFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_RDFData.sql \
-	$(top_srcdir)/binsrc/dav/DET_S3.sql \
 	$(top_srcdir)/binsrc/dav/DET_DynaRes.sql \
 	$(top_srcdir)/binsrc/dav/Versioning/DET_Versioning.sql \
 	$(srcdir)/xml_view.sql
