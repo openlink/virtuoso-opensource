@@ -453,7 +453,7 @@
 
           <v:method name="sortChange" arglist="in columnName varchar">
             <![CDATA[
-              if (columnName = '')
+              if ((columnName = '') or (self.account_id = http_nobody_uid ()) or (self.account_id < 0))
               {
                 -- check if we have a session cookie for sort state
                 --
