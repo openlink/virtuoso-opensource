@@ -3430,8 +3430,7 @@ create procedure WS.WS.POST (
   _content_type := http_request_header (lines, 'Content-Type', null, '');
   _content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
   slug := http_request_header (lines, 'Slug', null, '');
-  if (_content_type = 'application/vnd.syncml+wbxml' or
-      _content_type = 'application/vnd.syncml+xml')
+  if (_content_type in ('application/vnd.syncml+wbxml', 'application/vnd.syncml+xml'))
   {
     if (not __proc_exists ('DB.DBA.SYNCML'))
       signal ('37000', 'The SyncML server is not available');
@@ -3450,50 +3449,60 @@ create procedure WS.WS.POST (
   {
     WS.WS.PUT (path, params, lines);
   }
+  else if (_content_type = 'application/ld+json')
+  {
+    WS.WS.PUT (path, params, lines);
+  }
   else if (_content_type = 'text/turtle' or length (slug) > 0)
   {
-    declare cid int;
+    declare cid integer;
+
     cid := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (http_physical_path (), '/'),'C'));
-    if (cid IS NOT NULL)
+    if (cid is not null)
+    {
+      declare p varchar;
+      if (length (slug))
       {
-	declare p varchar;
-	if (length (slug))
-	  p := slug;
-	else
-	  {
-	    declare meta, cont, ppath, nth any;
-	    ppath := rtrim (http_physical_path (), '/');
-            meta := iri_to_id (WS.WS.DAV_IRI (ppath || ',meta'));
-	    cont := iri_to_id (WS.WS.DAV_IRI (ppath || '/'));
-	    p := (sparql select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }}); 
-	    if (p is null)
-	      {
-		cont := iri_to_id (WS.WS.DAV_IRI (ppath));
-		p := (sparql select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }}); 
-	      }
-	    if (p is not null)
-	      {
-		declare dir, pwd, auid, sinv any;
-		pwd := null;
-		auid := http_dav_uid ();
-		dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, p||'%', 'dba', pwd, auid); 
-		nth := 0;
-		foreach (any r in dir) do
-		  {
-		    if (r[10] not like '%,meta' and r[10] not like '%,acl')
-		      {
-			sinv := sprintf_inverse (r[10], p||'%d', 0);
-			if (length (sinv) > 0 and sinv[0] > nth)
-			  nth := sinv[0];
-		      }
-		  }
-		p := sprintf ('%s%d', p, nth + 1);
-	      }
-	    else
-	      p := xenc_rand_bytes (8,1);
-	  }
-	path := vector_concat (path, vector (p));
+        p := slug;
       }
+      else
+      {
+        declare meta, cont, ppath, nth any;
+
+        ppath := rtrim (http_physical_path (), '/');
+        meta := iri_to_id (WS.WS.DAV_IRI (ppath || ',meta'));
+        cont := iri_to_id (WS.WS.DAV_IRI (ppath || '/'));
+        p := (sparql select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }});
+        if (p is null)
+        {
+          cont := iri_to_id (WS.WS.DAV_IRI (ppath));
+          p := (sparql select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }});
+        }
+        if (p is not null)
+        {
+          declare dir, pwd, auid, sinv any;
+          pwd := null;
+          auid := http_dav_uid ();
+          dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, p||'%', 'dba', pwd, auid);
+          nth := 0;
+          foreach (any r in dir) do
+          {
+            if (r[10] not like '%,meta' and r[10] not like '%,acl')
+            {
+              sinv := sprintf_inverse (r[10], p||'%d', 0);
+              if (length (sinv) > 0 and sinv[0] > nth)
+                nth := sinv[0];
+            }
+          }
+          p := sprintf ('%s%d', p, nth + 1);
+        }
+        else
+        {
+          p := xenc_rand_bytes (8,1);
+        }
+      }
+      path := vector_concat (path, vector (p));
+    }
     WS.WS.PUT (path, params, lines);
   }
   else
