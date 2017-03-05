@@ -71,7 +71,7 @@
               OAT.Loader.load(["ajax", "json", "drag", "dialog", "tab", "combolist"]);
               var davOptions = {
                 imagePath: OAT.Preferences.imagePath,
-                path: "/DAV",
+                path: "/DAV/home/",
                 user: "<?V connection_get ('vspx_user') ?>",
                 connectionHeaders: {Authorization: "<?V WEBDAV.DBA.account_basicAuthorization (connection_get ('vspx_user')) ?>"}
               };
@@ -2422,13 +2422,8 @@
                             </v:before-render>
                           </v:text>
                           <vm:if test="self.editField ('link') and self.dav_enable">
-                            <input type="button" onclick="javascript: WEBDAV.davFileSelect ('dav_link');" value="Select"  disabled="disabled" class="button"/>
+                            <input type="button" onclick="javascript: WEBDAV.davSelect ('dav_link', false);" value="Select" disabled="disabled" class="button"/>
                           </vm:if>
-                          <![CDATA[
-                            <script type="text/javascript">
-                              OAT.Loader.load(['dav'], function(){OAT.WebDav.init(davOptions);});
-                            </script>
-                          ]]>
                         </td>
                       </tr>
                     </v:template>
@@ -4104,18 +4099,13 @@
             <v:template type="simple" name="template_40_50" condition="(self.command in (40, 50))">
               <table id="progress_params" class="WEBDAV_formBody">
                 <tr>
-                    <th width="30%">
-                      Destination folder
-                    </th>
-                    <td>
-                      <input name="f_folder" id="f_folder" value="<?V self.v_source ?>" class="field-short" />&amp;nbsp;
-                      <input type="button" class="button" onclick="javascript: WEBDAV.davFolderSelect ('f_folder');" value="Select" />
-                      <![CDATA[
-                        <script type="text/javascript">
-                          OAT.Loader.load(["drag", "dav"], function(){OAT.WebDav.init(davOptions);});
-                        </script>
-                      ]]>
-                    </td>
+                  <th width="30%">
+                    Destination folder
+                  </th>
+                  <td>
+                    <input name="f_folder" id="f_folder" value="<?V self.v_source ?>" class="field-short" />&amp;nbsp;
+                    <input type="button" class="button" onclick="javascript: WEBDAV.davSelect ('f_folder', true);" value="Select" />
+                  </td>
                 </tr>
                 <tr>
                   <th />

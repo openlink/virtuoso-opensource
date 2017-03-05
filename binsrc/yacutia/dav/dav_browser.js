@@ -705,32 +705,37 @@ WEBDAV.resetToolbars = function ()
   WEBDAV.enableElement('tb_share', 'tb_share_gray', 0);
 }
 
-WEBDAV.davFolderSelect = function (fld)
+WEBDAV.davSelect = function (fld, mode)
 {
-  /* load stylesheets */
-  OAT.Style.include("grid.css");
-  OAT.Style.include("webdav.css");
+  var callback = function() {
+    var pathHome = $v(fld);
+    var options = {
+      "mode": 'browser',
+      "pathDefault": pathHome,
+      "onConfirmClick": function(path, fname) {
+        $(fld).value = path + ((mode)? '': fname);
+      }
+    };
+    OAT.WebDav.options.foldersOnly = mode;
+    OAT.WebDav.open(options);
+  }
 
-  var options = {
-    mode: 'browser',
-    onConfirmClick: function(path) {$(fld).value = path;}
-  };
-  OAT.WebDav.options.foldersOnly = true;
-  OAT.WebDav.open(options);
-}
+  if (OAT.WebDav) {
+    callback();
+  }
+  else {
+    /* load stylesheets */
+    OAT.Style.include("grid.css");
+    OAT.Style.include("webdav.css");
 
-WEBDAV.davFileSelect = function (fld)
-{
-  /* load stylesheets */
-  OAT.Style.include("grid.css");
-  OAT.Style.include("webdav.css");
-
-  var options = {
-    mode: 'browser',
-    onConfirmClick: function(path, fname) {$(fld).value = path + fname;}
-  };
-  OAT.WebDav.options.foldersOnly = false;
-  OAT.WebDav.open(options);
+    OAT.Loader.load(
+      ["drag", "dav"],
+      function() {
+        OAT.WebDav.init(davOptions);
+        callback();
+      }
+    );
+  }
 }
 
 WEBDAV.validateInputs = function (fld)
