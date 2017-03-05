@@ -3766,87 +3766,91 @@ get_sql_tables (in dsn varchar,
   declare key_list, cat_list, sch_list, tables_list any;
   declare i, len, j, lz, sz, n, is_found integer;
   declare c_cat, c_sch, m_mask, v varchar;
+
   cat_list := vector ();
   sch_list := vector ();
-
   if (cat ='%' or sch = '%')
-    {
-       key_list := sql_tables (dsn, null, null, null, null);
-    }
+  {
+    key_list := sql_tables (dsn, null, null, null, null);
+  }
 
   if (cat = '%')
+  {
+    len := length (key_list);
+    for (i:= 0; i < len; i := i + 1)
     {
-      i:= 0; len :=  length (key_list);
+      v := key_list[i][0];
+  	  if (v is null)
+	      v := '%';
 
-      while (i < len)
-        {
-          v := aref (aref (key_list, i), 0);
-	  if (v is null)
-	    v := '%';
-          if (v is not null and not position (v, cat_list))
-            cat_list := vector_concat (cat_list, vector (v));
-          i := i + 1;
-        }
+      if (not position (v, cat_list))
+        cat_list := vector_concat (cat_list, vector (v));
     }
+  }
   else
+  {
     cat_list := vector_concat (cat_list, vector(cat));
+  }
 
   if (sch = '%')
+  {
+    len :=  length (key_list);
+    for (i := 0; i < len; i := i + 1)
     {
-      i := 0; len :=  length (key_list);
-      while (i < len)
-        {
-          v := aref (aref (key_list, i), 1);
-          if (v is not null and not position (v, sch_list))
-            sch_list := vector_concat (sch_list, vector (v));
+      v := key_list[i][1];
+  	  if (v is null)
+	      v := '%';
 
-          i := i + 1;
-       }
+      if (v is not null and not position (v, sch_list))
+        sch_list := vector_concat (sch_list, vector (v));
     }
+  }
   else
+  {
     sch_list := vector_concat (sch_list, vector (sch));
+  }
 
    -- now  fetch all records
+  if (table_mask is not null)
+    m_mask := table_mask;
+  else
+    m_mask := '%';
 
-   if (table_mask is not null)
-     m_mask := table_mask;
-   else
-     m_mask := '%';
+  tables_list := vector();
+  len := length (cat_list);
+  for (i := 0; i < len; i := i + 1)
+  {
+    c_cat := cat_list[i];
+    if (c_cat = '%')
+      c_cat := null;
 
-   tables_list := vector();
-   i := 0; len := length (cat_list);
+    lz := length (sch_list);
+    for (j := 0; j < lz; j := j + 1)
+    {
+      declare tbls any;
 
-   while (i < len)
-     {
-       c_cat := aref (cat_list, i);
-       j := 0; lz := length (sch_list);
+      c_sch := sch_list[j];
+      if (c_sch = '%')
+        c_sch := null;
 
-       while (j < lz)
-         {
-	   declare tbls any;
-           c_sch := aref (sch_list, j);
-	   if (c_cat = '%')
-	     c_cat := null;
-	   tbls := sql_tables (dsn, c_cat, c_sch, null, obj_type);
-	   if (m_mask = '%')
-	     {
-	       tables_list := vector_concat (tables_list, tbls);
-	     }
-	   else
-	     {
-	       foreach (any tbl in tbls) do
-		 {
-		   if (length (tbl) > 1 and tbl[2] is not null and tbl[2] like m_mask)
-		     {
-		       tables_list := vector_concat (tables_list, vector (tbl));
-		     }
-		 }
-	     }
-           j := j + 1;
-         }
-       i:= i + 1;
-     }
-   return tables_list;
+	    tbls := sql_tables (dsn, c_cat, c_sch, null, obj_type);
+	    if (m_mask = '%')
+	    {
+	      tables_list := vector_concat (tables_list, tbls);
+	    }
+	    else
+	    {
+	      foreach (any tbl in tbls) do
+	      {
+	        if (length (tbl) > 1 and tbl[2] is not null and tbl[2] like m_mask)
+	        {
+	          tables_list := vector_concat (tables_list, vector (tbl));
+	        }
+	      }
+	    }
+	  }
+  }
+  return tables_list;
 }
 ;
 
