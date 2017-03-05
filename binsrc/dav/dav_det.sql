@@ -50,7 +50,7 @@ create function DB.DBA.DAV_DET_IS_WEBDAV_BASED (
 create function DB.DBA.DAV_DET_NAME (
   in id any)
 {
-  if (isinteger (id))
+  if (isnull (id) or isinteger (id))
     return null;
 
   return cast (id[0] as varchar);
@@ -60,7 +60,7 @@ create function DB.DBA.DAV_DET_NAME (
 create function DB.DBA.DAV_DET_DETCOL_ID (
   in id any)
 {
-  if (isinteger (id))
+  if (isnull (id) or isinteger (id))
     return id;
 
   return cast (id[1] as integer);
@@ -70,7 +70,7 @@ create function DB.DBA.DAV_DET_DETCOL_ID (
 create function DB.DBA.DAV_DET_DAV_ID (
   in id any)
 {
-  if (isinteger (id))
+  if (isnull (id) or isinteger (id))
     return id;
 
   return id[2];
