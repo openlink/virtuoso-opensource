@@ -4253,7 +4253,7 @@ static caddr_t
 udo_new_object_ref (caddr_t udi)
 {
    object_space_t *udo;
-   caddr_t ref = dk_alloc_box (sizeof (int32) * 2, DV_REFERENCE);
+   caddr_t ref = dk_alloc_box_zero (sizeof (int32) * 2, DV_REFERENCE);
    OBJECT_SPACE_GET (udo);
    LONG_SET (ref, 0);
    LONG_SET (ref + IE_FIRST_KEY, (long) udo->os_next_serial);
