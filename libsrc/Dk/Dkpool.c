@@ -1294,19 +1294,54 @@ mp_check_tree (mem_pool_t * mp, box_t box)
 caddr_t
 t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail)
 {
-  char *tmpbuf;
   int res_len;
   caddr_t res;
   buflen_eval &= 0xFFFFFF;
-  tmpbuf = (char *) dk_alloc (buflen_eval);
+  if (buflen_eval < 1000)
+    {
+      char autobuf[1000];
+      res_len = vsnprintf (autobuf, buflen_eval, format, tail);
+      if (res_len >= buflen_eval)
+        GPF_T;
+      res = t_box_dv_short_nchars (autobuf, res_len);
+    }
+  else
+    {
+      char *tmpbuf = (char *) dk_alloc (buflen_eval);
   res_len = vsnprintf (tmpbuf, buflen_eval, format, tail);
   if (res_len >= buflen_eval)
     GPF_T;
   res = t_box_dv_short_nchars (tmpbuf, res_len);
   dk_free (tmpbuf, buflen_eval);
+    }
   return res;
 }
 
+caddr_t
+t_box_vsprintf_uname (size_t buflen_eval, const char *format, va_list tail)
+{
+  int res_len;
+  caddr_t res;
+  buflen_eval &= 0xFFFFFF;
+  if (buflen_eval < 1000)
+    {
+      char autobuf[1000];
+      res_len = vsnprintf (autobuf, buflen_eval, format, tail);
+      if (res_len >= buflen_eval)
+        GPF_T;
+      res = t_box_dv_uname_nchars (autobuf, res_len);
+    }
+  else
+    {
+      char *tmpbuf = (char *) dk_alloc (buflen_eval);
+      res_len = vsnprintf (tmpbuf, buflen_eval, format, tail);
+      if (res_len >= buflen_eval)
+        GPF_T;
+      res = t_box_dv_uname_nchars (tmpbuf, res_len);
+      dk_free (tmpbuf, buflen_eval);
+    }
+  return res;
+}
 
 caddr_t
 t_box_sprintf (size_t buflen_eval, const char *format, ...)
@@ -1315,6 +1350,17 @@ t_box_sprintf (size_t buflen_eval, const char *format, ...)
   caddr_t res;
   va_start (tail, format);
   res = t_box_vsprintf (buflen_eval, format, tail);
+  va_end (tail);
+  return res;
+}
+
+caddr_t
+t_box_sprintf_uname (size_t buflen_eval, const char *format, ...)
+{
+  va_list tail;
+  caddr_t res;
+  va_start (tail, format);
+  res = t_box_vsprintf_uname (buflen_eval, format, tail);
   va_end (tail);
   return res;
 }
