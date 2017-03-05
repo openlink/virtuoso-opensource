@@ -1,30 +1,30 @@
-<?vsp 
+<?vsp
 --
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2017 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
  adm_pre_page(lines);
 
-  declare _g_user, _g_op, _role integer; 
-  declare _g_object, _g_col varchar; 
+  declare _g_user, _g_op, _role integer;
+  declare _g_object, _g_col varchar;
   declare _class, stmt, _user varchar;
 
   if (not adm_check_auth (lines)) { adm_tell_unauth (lines); return (0); }
@@ -36,8 +36,8 @@
 
   if (_g_object <> '')
     {
-      delete from DB.DBA.SYS_GRANTS where 
-	  G_USER = _g_user and  G_OP = _g_op and G_OBJECT = _g_object and G_COL = _g_col; 
+      delete from DB.DBA.SYS_GRANTS where
+	  G_USER = _g_user and  G_OP = _g_op and G_OBJECT = _g_object and G_COL = _g_col;
     }
 
   if (get_keyword ('add_grant_bt', params, '') <> '')
@@ -50,14 +50,14 @@
 	select '"' || U_NAME || '"' into _user from DB.DBA.SYS_USERS where U_ID = _role;
       else
 	_user := 'public';
-     
-      stmt := 'grant execute on "' || _class || '" to ' || _user; 
 
-      exec (stmt); 
+      stmt := 'grant execute on "' || _class || '" to ' || _user;
+
+      exec (stmt);
 
       commit work;
     }
-  
+
 ?>
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 
@@ -80,7 +80,7 @@
     <TH COLSPAN ="2" CLASS="genlistheadt">Grant to</TH>
   </TR>
 <?vsp
-     for (select _type, _class from defined_types) do 
+     for (select _type, _class from defined_types) do
 	{
 	   if (not exists (select 1 from SYS_GRANTS where _class like G_OBJECT and G_USER = 1))
 	     {
@@ -95,7 +95,7 @@
 <?vsp
             for (select u_name, u_id from sys_users where u_id = u_group and u_sql_enable = 1) do
                   {
-?>                  
+?>
                      <option value="<?= u_id + 1?>"><?= u_name ?></option>
 <?vsp
                   }
@@ -108,7 +108,7 @@
       </TD>
     </TR>
     </FORM>
-      
+
 <?vsp	    }
 	}
 ?>
@@ -126,7 +126,7 @@
     <TH CLASS="genlistheadt">Action</TH>
   </TR>
 <?vsp
-     for (select G_USER, G_OP, G_OBJECT, G_COL, _type, _class from SYS_GRANTS, defined_types where _class like G_OBJECT) do 
+     for (select G_USER, G_OP, G_OBJECT, G_COL, _type, _class from SYS_GRANTS, defined_types where _class like G_OBJECT) do
 	{
 	  declare user_name varchar;
 
@@ -143,13 +143,13 @@
         <a class="tablelistaction" href="hosted_modules_grants.vsp?r1=<?=G_USER?>&r2=<?=G_OP?>&r3=<?=G_OBJECT?>&r4=<?=G_COL?>">remove</a>
       </TD>
     </TR>
-      
+
 <?vsp
 	}
 ?>
   </TABLE>
 
-  
+
   </FORM>
 
 <?vsp adm_page_footer(); ?>

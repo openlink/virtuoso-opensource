@@ -32,26 +32,26 @@ create procedure WS.WS.COPY_PAGE (in _host varchar, in _urls any, in _root varch
 {
   -- dbg_obj_print ('WS.WS.COPY_PAGE (', _host, ')');
   declare exit handler for sqlstate '*', not found
-    {
-      rollback work;
-      __SQL_STATE := cast (__SQL_STATE as varchar);
-      if (__SQL_STATE <> '40001')
-	{
+  {
+    rollback work;
+    __SQL_STATE := cast (__SQL_STATE as varchar);
+    if (__SQL_STATE <> '40001')
+  	{
   	  update WS.WS.VFS_QUEUE set VQ_STAT = 'error', VQ_ERROR = __SQL_MESSAGE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL in (_urls);
-	  commit work;
-	  ERR_MAIL_SEND (_host, _urls, _root, __SQL_STATE, __SQL_MESSAGE);
-	}
-      else
-	{
+  	  commit work;
+  	  ERR_MAIL_SEND (_host, _urls, _root, __SQL_STATE, __SQL_MESSAGE);
+  	}
+    else
+  	{
   	  update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_URL in (_urls) and VQ_ROOT = _root;
-	  commit work;
-	}
-      if (__SQL_STATE <> '40001' and __SQL_STATE <> '2E000' and __SQL_STATE not like '0800_' and __SQL_STATE <> 'HTCLI')
-	{
-	  resignal;
-	}
-      return null;
-    };
+  	  commit work;
+  	}
+    if (__SQL_STATE <> '40001' and __SQL_STATE <> '2E000' and __SQL_STATE not like '0800_' and __SQL_STATE <> 'HTCLI')
+  	{
+  	  resignal;
+  	}
+    return null;
+  };
   return WS.WS.COPY_PAGE_1 (_host, _urls, _root, _upd, _dbg);
 }
 ;
@@ -114,12 +114,12 @@ create procedure WS.WS.COPY_PAGE_1 (in _host varchar, in _urls any, in _root var
   whenever not found goto nf_opt;
   select VS_NEWER, VS_OPTIONS, coalesce (VS_METHOD, ''), VS_URL, VS_SRC, coalesce (VS_OPAGE, ''),
          coalesce (VS_REDIRECT, 1), coalesce (VS_STORE, 1), coalesce (VS_DLOAD_META, 0),
-	 deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''),
-	 VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH, VS_ACCEPT_RDF, VS_TIMEOUT, VS_HEADERS
-      into _since, _opts, _dav_method, _start_url, _d_imgs, _opage,
-      	 redir_flag, store_flag, try_to_get_rdf,
-	 _udata, ext_hook, store_hook, _del, _other,
-	 conv_html, is_sitemap, xp_exp, accept_rdf, time_out, cust_headers
+         deserialize (VS_UDATA), VS_EXTRACT_FN, VS_STORE_FN, coalesce (VS_DEL, ''), coalesce (VS_OTHER, ''),
+         VS_CONVERT_HTML, VS_IS_SITEMAP, VS_XPATH, VS_ACCEPT_RDF, VS_TIMEOUT, VS_HEADERS
+    into _since, _opts, _dav_method, _start_url, _d_imgs, _opage,
+         redir_flag, store_flag, try_to_get_rdf,
+        _udata, ext_hook, store_hook, _del, _other,
+        conv_html, is_sitemap, xp_exp, accept_rdf, time_out, cust_headers
    from WS.WS.VFS_SITE
   where VS_HOST = _host and VS_ROOT = _root;
 
@@ -138,197 +138,200 @@ nf_opt:
   -- global setting for crawler UA
   ua := registry_get ('vfs_ua');
   if (isstring (ua) and length (ua) and strstr (_header, 'User-Agent:') is null)
-    {
-      ua := trim (ua, ' \r\n');
-      _header := _header || 'User-Agent: ' || ua || '\r\n';
-    }
+  {
+    ua := trim (ua, ' \r\n');
+    _header := _header || 'User-Agent: ' || ua || '\r\n';
+  }
 
   if (_upd = 1)
+  {
+    _header_arr := make_array (n_urls, 'any');
+    for (declare i int, i := 0; i < n_urls; i := i + 1)
     {
-      _header_arr := make_array (n_urls, 'any');
-      for (declare i int, i := 0; i < n_urls; i := i + 1)
-        {
-	  declare _url, _hdr varchar;
-	  declare _dt datetime;
-	  _url := _urls[i];
-	  -- take Etag if present
-	  _etag := null;
-	  _dt := _since;
+      declare _url, _hdr varchar;
+      declare _dt datetime;
+      _url := _urls[i];
+      -- take Etag if present
+      _etag := null;
+      _dt := _since;
       for select VU_ETAG, VU_CPTIME from WS.WS.VFS_URL where VU_HOST = _host and VU_URL = _url and VU_ROOT = _root do
-	    {
-	      _etag := VU_ETAG;
-	      _dt := VU_CPTIME;
-	    }
-	  if (_etag is not null and isstring (_etag) and length (_etag))
-	    _hdr := concat (_header,'If-None-Match: ', _etag, '\r\n');
-	  else
-	    _hdr := _header;
-	  -- check against last fetch
-	  if (_upd = 1 and _dt is not null)
-	    _hdr := concat (_hdr, 'If-Modified-Since: ', soap_print_box (_dt, '', 1), '\r\n');
-	  _header_arr[i] := _hdr;
-	}
+      {
+        _etag := VU_ETAG;
+        _dt := VU_CPTIME;
+      }
+      if (_etag is not null and isstring (_etag) and length (_etag))
+        _hdr := concat (_header,'If-None-Match: ', _etag, '\r\n');
+      else
+        _hdr := _header;
+
+      -- check against last fetch
+      if (_upd = 1 and _dt is not null)
+        _hdr := concat (_hdr, 'If-Modified-Since: ', soap_print_box (_dt, '', 1), '\r\n');
+      _header_arr[i] := _hdr;
     }
+  }
   else
     _header_arr := _header;
 
   commit work;
 
   if (_dav_method = 'checked' and _upd = 0 and _opage <> 'checked')
+  {
+    declare dav_urls, _dav_opts, _url any;
+    declare lev int;
+
+    if (length (_urls) <> 1)
+      signal ('22023', 'When using WebDAV methods batch size cannot be greater than 1', 'CRAWL');
+
+    _url := _urls[0];
+    dt := msec_time ();
+    http_get (WS.WS.MAKE_URL (_host, _url), _dav_opts, 'OPTIONS');
+    prof_sample ('web robot GET', msec_time () - dt, 1);
+    _dav_enabled := http_request_header (_dav_opts, 'DAV', null, null);
+    if (0 = length (_dav_enabled))
     {
-      declare dav_urls, _dav_opts, _url any;
-      declare lev int;
-      if (length (_urls) <> 1)
-        signal ('22023', 'When using WebDAV methods batch size cannot be greater than 1', 'CRAWL');
-      _url := _urls[0];
-      dt := msec_time ();
-      http_get (WS.WS.MAKE_URL (_host, _url), _dav_opts, 'OPTIONS');
-      prof_sample ('web robot GET', msec_time () - dt, 1);
-      _dav_enabled := http_request_header (_dav_opts, 'DAV', null, null);
-      if (0 = length (_dav_enabled))
-	{
       update WS.WS.VFS_SITE set VS_METHOD = null where VS_HOST = _host and VS_ROOT = _root;
-          _dav_method := null;
-          goto html_mode;
-	}
-      dav_urls := WS.WS.DAV_PROP (WS.WS.MAKE_URL (_host, _url), _d_imgs, _header);
-    lev := coalesce ((select VQ_LEVEL from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url), 0);
-      WS.WS.GET_URLS (_host, _url, _root, dav_urls, lev + 1, null);
+      _dav_method := null;
+      goto html_mode;
     }
+    dav_urls := WS.WS.DAV_PROP (WS.WS.MAKE_URL (_host, _url), _d_imgs, _header);
+    lev := coalesce ((select VQ_LEVEL from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url), 0);
+    WS.WS.GET_URLS (_host, _url, _root, dav_urls, lev + 1, null);
+  }
 
 html_mode:
   _t_urls := make_array (n_urls, 'any');
- for (declare i int, i := 0; i < n_urls; i := i + 1)
-   {
-     _t_urls[i] := WS.WS.MAKE_URL (_host, _urls[i]);
-   }
+  for (declare i int, i := 0; i < n_urls; i := i + 1)
+  {
+    _t_urls[i] := WS.WS.MAKE_URL (_host, _urls[i]);
+  }
 
   dt := msec_time ();
   {
-     declare retr integer;
-     retr := 4;
-     declare exit handler for sqlstate '2E000' {
-         if (retr <= 0)
-	   resignal;
-	 else
-	   goto get_again;
-       };
+    declare retr integer;
+
+    retr := 4;
+    declare exit handler for sqlstate '2E000' {
+      if (retr <= 0)
+        resignal;
+      else
+        goto get_again;
+    };
     declare exit handler for sqlstate '0800*'
     {
-         if (retr <= 0)
-	   resignal;
-	 else
-	   goto get_again;
-       };
+      if (retr <= 0)
+        resignal;
+      else
+        goto get_again;
+    };
     declare exit handler for sqlstate 'HTCLI'
     {
-         if (retr <= 0)
-	   resignal;
-	 else
-	   goto get_again;
-       };
+      if (retr <= 0)
+        resignal;
+      else
+        goto get_again;
+    };
 
-get_again:
+  get_again:
     retr := retr - 1;
-
     if (n_urls = 1)
+    {
+      declare _resp, _content any;
+
+      _content := http_get (_t_urls[0], _resp, 'GET', case when _upd = 1 then _header_arr[0] else _header_arr end, null, null, redir_flag, time_out);
+      -- when single request we can check here and re-try if no header is received
+      if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
       {
-	declare _resp, _content any;
-        _content := http_get (_t_urls[0], _resp, 'GET', case when _upd = 1 then _header_arr[0] else _header_arr end, null, null, redir_flag, time_out);
-	-- when single request we can check here and re-try if no header is received
-	if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
-	  {
-	    if (retr <= 0)
-	      signal ('2E000', 'Bad header received');
-	    else
-	      goto get_again;
-	  }
-	_resps := vector (vector (_content, _resp));
+        if (retr <= 0)
+          signal ('2E000', 'Bad header received');
+        else
+          goto get_again;
       }
+      _resps := vector (vector (_content, _resp));
+    }
     else
       _resps := http_pipeline (_t_urls, 'GET', _header_arr);
   }
   prof_sample ('web robot GET', msec_time () - dt, 1);
-
- if (length (_resps) <> n_urls)
+  if (length (_resps) <> n_urls)
    signal ('2E000', 'Different length of requests and responces');
 
  for (declare i int, i := 0; i < n_urls; i := i + 1)
-   {
-      declare _url varchar;
-      declare _resp, _content any;
-      declare lev int;
+ {
+    declare _url varchar;
+    declare _resp, _content any;
+    declare lev int;
 
-      _url := _urls[i];
-      _resp := _resps[i][1];
-      _content := _resps[i][0];
+    _url := _urls[i];
+    _resp := _resps[i][1];
+    _content := _resps[i][0];
     lev := coalesce ((select VQ_LEVEL from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url), 0);
-      commit work;
-      if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
-	{
-	  signal ('2E000', 'Bad header received');
-	}
+    commit work;
+    if (isarray(_resp) and length (_resp) and not isstring (_resp [0]))
+    {
+      signal ('2E000', 'Bad header received');
+    }
 
-      _http_resp_code := WS.WS.VFS_HTTP_RESP_CODE (_resp);
-      if (redir_flag and _http_resp_code in ('301', '302', '303'))
-	{
-	  declare new_loc, new_url, new_host varchar;
-	  declare ht any;
-	  new_loc :=  http_request_header (_resp, 'Location', null, null);
-	  new_loc := WS.WS.EXPAND_URL (_t_urls[i], new_loc);
-	  ht := WS.WS.PARSE_URI (new_loc);
-	  new_host := ht[1];
+    _http_resp_code := WS.WS.VFS_HTTP_RESP_CODE (_resp);
+    if (redir_flag and _http_resp_code in ('301', '302', '303'))
+    {
+      declare new_loc, new_url, new_host varchar;
+      declare ht any;
+      new_loc :=  http_request_header (_resp, 'Location', null, null);
+      new_loc := WS.WS.EXPAND_URL (_t_urls[i], new_loc);
+      ht := WS.WS.PARSE_URI (new_loc);
+      new_host := ht[1];
       ht[0] := '';
       ht[1] := '';
-	  new_url := VFS_URI_COMPOSE (ht);
-	  if (_host <> new_host)
-	    new_url := new_loc;
+      new_url := VFS_URI_COMPOSE (ht);
+      if (_host <> new_host)
+        new_url := new_loc;
 
       insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_URL, VQ_STAT, VQ_TS, VQ_LEVEL)
-	      values (_host, _root, new_url, 'waiting', now (), lev + 1);
+        values (_host, _root, new_url, 'waiting', now (), lev + 1);
 
-	  goto end_crawl;
-	}
+      goto end_crawl;
+    }
 
-      if (_http_resp_code = '200' and (isstring (_content) or __tag (_content) = 185))
-	{
-	  _c_type := http_request_header (_resp, 'Content-Type', null, '');
-	  _c_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (_url, _c_type, _content);
-	  _c_type := WS.WS.VFS_GUESS_CONTENT_TYPE (_url, _c_type, _content);
-	  _etag := http_request_header (_resp, 'ETag', null, '');
+    if (_http_resp_code = '200' and (isstring (_content) or __tag (_content) = 185))
+    {
+      _c_type := http_request_header (_resp, 'Content-Type', null, '');
+      _c_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (_url, _c_type, _content);
+      _c_type := WS.WS.VFS_GUESS_CONTENT_TYPE (_url, _c_type, _content);
+      _etag := http_request_header (_resp, 'ETag', null, '');
 
-	  if (ext_hook is not null and __proc_exists (ext_hook))
-	    call (ext_hook) (_host, _url, _root, _content, _c_type, lev + 1);
-	  else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%' or _c_type like 'application/%xml' or _c_type = 'text/xml' or _url like '%.xml' or _url like '%.xml.gz')
-	      and _dav_method <> 'checked' and _opage <> 'checked')
-	    WS.WS.GET_URLS (_host, _url, _root, _content, lev + 1, _c_type);
+      if (ext_hook is not null and __proc_exists (ext_hook))
+        call (ext_hook) (_host, _url, _root, _content, _c_type, lev + 1);
+      else if ((_url like '%.htm%' or _url like '%/' or _c_type like 'text/html%' or _c_type like 'application/%xml' or _c_type = 'text/xml' or _url like '%.xml' or _url like '%.xml.gz')
+              and _dav_method <> 'checked' and _opage <> 'checked')
+        WS.WS.GET_URLS (_host, _url, _root, _content, lev + 1, _c_type);
 
-	  if (store_hook is not null and __proc_exists (store_hook))
-	  {
+      if (store_hook is not null and __proc_exists (store_hook))
+      {
         call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, vector_concat (_udata, vector ('start_url', _start_url)), lev + 1);
-	  }
-	  else
-	    {
-	      WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag, conv_html);
-	      if (try_to_get_rdf)
+      }
+      else
+      {
+        WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag, conv_html);
+        if (try_to_get_rdf)
           WS.WS.VFS_EXTRACT_RDF (_host, _root, _start_url, _udata, _url, _content, _c_type, _header, _resp, lev + 1);
-	    }
-	}
-      else if (_http_resp_code = '401')
-	{
-	  signal ('22023', 'This site requires authentication credentials which are not supplied or incorrect.');
-	}
-      else if (_http_resp_code = '404' and _upd = 1 and _del = 'checked')
-	{
-	  -- delete on remote detected
-	  WS.WS.DELETE_LOCAL_COPY (_host, _url, _root);
-	}
-    end_crawl:
-      if (_http_resp_code like '2__' or _http_resp_code like '3__' or _http_resp_code like '4__' or _http_resp_code like '5__')
+      }
+    }
+    else if (_http_resp_code = '401')
+    {
+      signal ('22023', 'This site requires authentication credentials which are not supplied or incorrect.');
+    }
+    else if (_http_resp_code = '404' and _upd = 1 and _del = 'checked')
+    {
+      -- delete on remote detected
+      WS.WS.DELETE_LOCAL_COPY (_host, _url, _root);
+    }
+  end_crawl:
+    if (_http_resp_code like '2__' or _http_resp_code like '3__' or _http_resp_code like '4__' or _http_resp_code like '5__')
       update WS.WS.VFS_QUEUE
          set VQ_STAT = 'retrieved'
-	    where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _root and VQ_STAT = 'pending';
-   }
+        where VQ_HOST = _host and VQ_URL = _url and VQ_ROOT = _root and VQ_STAT = 'pending';
+  }
   commit work;
   return;
 }
@@ -394,15 +397,16 @@ do_again:
 
   exec ('WS.WS.SERV_QUEUE (?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg, vector (_tgt, _root, _upd, _dbg, _fn, _clnt_data, threads, batch_size));
   if (_stat = '40001')
-    {
-      rollback work;
-      goto do_again;
-    }
+  {
+    rollback work;
+    goto do_again;
+  }
+
   if (_stat <> '00000')
-    {
-      WS.WS.VFS_STATUS_SET (_tgt, _root, 'error');
-      signal (_stat, _msg);
-    }
+  {
+    WS.WS.VFS_STATUS_SET (_tgt, _root, 'error');
+    signal (_stat, _msg);
+  }
   commit work;
 
   if (WS.WS.VFS_STATUS_GET (_tgt, _root) = 'running' and not exists (select 1 from WS.WS.VFS_QUEUE where VQ_STAT = 'waiting' and VQ_HOST = _tgt and VQ_ROOT = _root))
@@ -530,12 +534,12 @@ create procedure WS.WS.SERV_QUEUE (in _tgt varchar, in _root varchar, in _upd in
 	    pid := null;
 	    for (declare i int, i := 0; i < nthreads; i := i + 1)
                {
-		 if (pid is null or pid > aq_list[i])
-		   {
-		     pid := aq_list[i];
-		     active_thread := i;
-		   }
-	       }
+ 		  if (pid is null or pid > aq_list[i])
+		  {
+		    pid := aq_list[i];
+		    active_thread := i;
+		  }
+    }
 	    commit work;
 	    aq_wait (aq, pid, 1, err);
 	  }
@@ -701,7 +705,7 @@ create procedure WS.WS.LDP_STORE (
   in _url varchar,    -- file path being crawled, e.g. '/DAV/fusepool_staging_area/tuscany/attractions/tuscany_museums.csv'
   in _root varchar,   -- LDP root container for storage, e.g. 'http://fusepool.openlinksw.com/DAV/fusepool/ldp/'
   inout _content varchar,
-  in _s_etag varchar,   
+  in _s_etag varchar,
   in _c_type varchar, -- content mime type
   in store_flag int,  -- store? 1/0, from VFS_SITE(VS_STORE)
   in _udata any,      -- vector of options from VFS_SITE(VS_UDATA)
@@ -715,22 +719,22 @@ create procedure WS.WS.LDP_STORE (
   declare src_folder_tree_handling varchar; -- 'recreate' or 'collapse'
 
   -- ldpnr_create_method:
-  -- 'put' => Use PUT to create LDP-NRs 
+  -- 'put' => Use PUT to create LDP-NRs
   --          The target containing LDPC is implied by the supplied LDPNR's URL when src_folder_tree_handling == 'recreate'
   -- 'post' => Use POST + slug to create LDP-NRs
 
   -- src_folder_tree_handling:
   -- 'recreate' => Recreate the folder hierarchy under the source start_url under the target LDPC
-  -- 'collapse' => Do not recreate the folder hierarchy under the source start_url. 
+  -- 'collapse' => Do not recreate the folder hierarchy under the source start_url.
   --               Place all crawled files directly in the target LDPC (Required for Fusepool P3)
 
   ldpc_credentials := get_keyword ('auth-ldp', _udata);
   ldpnr_create_method := get_keyword ('ldpr-creation-method', _udata);
   src_folder_tree_handling := get_keyword ('folder-tree', _udata);
-  start_url := get_keyword ('start_url', _udata); 
+  start_url := get_keyword ('start_url', _udata);
 
   -- remove the leading directories from the _url of the crawled LDPC / LDPNR, to limit the creation of empty LDPCs
-  -- we use the last directory from the start_url, but remove all parent directories    
+  -- we use the last directory from the start_url, but remove all parent directories
   if (ends_with (start_url, '/')) start_url_processed := subseq (start_url, 0, length (start_url) - 1); -- trim the last '/' from start_url
   if (strcontains (start_url_processed, '/'))
   {
@@ -793,8 +797,8 @@ create procedure WS.WS.LDP_STORE (
       -- we need to change _url so that it contains ONLY the file name
       -- this is necessary because we want to 'collapse' the source file hierarchy
       -- and save all source files into the same destination LDPC
-      declare i_last_sep int;      
-      i_last_sep := strrchr (_url, '/');      
+      declare i_last_sep int;
+      i_last_sep := strrchr (_url, '/');
       _url := subseq (_url, i_last_sep + 1);
 
       rc := WS.WS.LDP_STORE__LDPNR_CREATE (_content, _c_type, _root, _url, ldpc_credentials, ldpnr_create_method);
@@ -814,12 +818,12 @@ create procedure WS.WS.LDP_STORE (
               VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
       }
     }
-  }  
+  }
 }
 ;
 
 create procedure WS.WS.LDP_STORE__LDPC_CREATE (
-  in ldpc_root varchar, -- the root LDP Container, e.g. 'http://fusepool.openlinksw.com/DAV/fusepool/ldp/'  
+  in ldpc_root varchar, -- the root LDP Container, e.g. 'http://fusepool.openlinksw.com/DAV/fusepool/ldp/'
   in ldpc_url varchar, -- the URL of the LDPC to be created, e.g. '/DAV/fusepool_staging_area/tuscany/attractions/'
   in ldp_credentials varchar -- the credentials for LDP, in 'username:password' format
 )
@@ -843,8 +847,8 @@ create procedure WS.WS.LDP_STORE__LDPC_CREATE (
     if (strcontains (ldpc_fullpath, '/')) -- if the directory has a parent directory
     {
       i_last_sep := strrchr (ldpc_fullpath, '/');
-      ldpc_parent := subseq (ldpc_fullpath, 0, i_last_sep + 1); 
-      ldpc_basename := subseq (ldpc_fullpath, i_last_sep + 1); 
+      ldpc_parent := subseq (ldpc_fullpath, 0, i_last_sep + 1);
+      ldpc_basename := subseq (ldpc_fullpath, i_last_sep + 1);
     }
     else
     {
@@ -862,7 +866,7 @@ create procedure WS.WS.LDP_STORE__LDPC_CREATE (
         signal ('CRAWL', 'LDP_STORE: LDPC parent does not exist / creation failed', 'CWLXX');
         return -1;
       } -- if the parent container exists / is successfully created, we continue with the creation of the LDPC in question
-    } -- otherwise, there is not parent container and we continue with the creation of the LDPC in question 
+    } -- otherwise, there is not parent container and we continue with the creation of the LDPC in question
 
     -- we prepare the variables for the LDP calls for LDPC creation
     request_content := '';
@@ -936,7 +940,7 @@ create procedure WS.WS.LDP_STORE__LDPNR_CREATE (
   {
     hasParent := 1;
     i_last_sep := strrchr (ldpnr_url, '/');
-    ldpnr_parent := subseq (ldpnr_url, 0, i_last_sep + 1); 
+    ldpnr_parent := subseq (ldpnr_url, 0, i_last_sep + 1);
     ldpnr_basename := subseq (ldpnr_url, i_last_sep + 1);
 
     rc := WS.WS.LDP_STORE__LDPC_CREATE (ldpnr_root, ldpnr_parent, ldp_credentials);
@@ -1990,10 +1994,10 @@ end_find:
 create procedure WS.WS.ISEMPTY (in x any)
 {
   if ('' = x or x is null or x = 0)
-      return 1;
+    return 1;
 
-      return 0;
-    }
+  return 0;
+}
 ;
 
 -- Demo hook function
@@ -2386,12 +2390,12 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
       hf [5] := '';
       url := WS.WS.VFS_URI_COMPOSE (hf);
       if ((host <> _host) or ((sch <> 'http') and (sch <> 'https')))
-	{
-	  url := abs_url;
-	  hf := WS.WS.PARSE_URI (url);
-	  hf [5] := '';
-	  url := WS.WS.VFS_URI_COMPOSE (hf);
-	}
+    	{
+    	  url := abs_url;
+    	  hf := WS.WS.PARSE_URI (url);
+    	  hf [5] := '';
+    	  url := WS.WS.VFS_URI_COMPOSE (hf);
+    	}
       urls [inx] := url;
       inx := inx + 1;
       if (WS.WS.FOLLOW (_host, _root, url, _flw_s, _nflw_s, _url, _img))
@@ -2644,9 +2648,9 @@ create procedure WS.WS.VFS_ROBOTS_GET (in _host varchar, in _root varchar, inout
 {
   declare url, ret, head, me, robots, delay_sec any;
   declare exit handler for sqlstate '*'
-    {
-      goto en;
-    };
+  {
+    goto en;
+  };
 
   url := WS.WS.MAKE_URL (_host, '/robots.txt');
   robots := null;
@@ -2659,7 +2663,7 @@ create procedure WS.WS.VFS_ROBOTS_GET (in _host varchar, in _root varchar, inout
   if (delay_sec > site_delay_sec)
     site_delay_sec := delay_sec;
 
-  en:
+en:
   update WS.WS.VFS_SITE set VS_ROBOTS = robots, VS_DELAY = delay_sec where VS_HOST = _host and VS_ROOT = _root;
   return robots;
 }

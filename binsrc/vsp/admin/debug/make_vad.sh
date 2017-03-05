@@ -41,7 +41,7 @@ ISQL=${ISQL-isql}
 DSN="$HOST:$PORT"
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
-then 
+then
 TEMPFILE="`cygpath -m $TMP/isql.$$`"
 if [ "x$SRC" != "x" ]
 then
@@ -79,14 +79,14 @@ virtuoso_start() {
 	  virtuoso +wait
   fi
   stat="true"
-  while true 
+  while true
   do
     sleep 4
     echo "Waiting Virtuoso Server start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN` 
-    if [ "z$stat" != "z" ] 
-		then 
-      sleep 7 
+    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
+    if [ "z$stat" != "z" ]
+		then
+      sleep 7
       LOG "PASSED: Virtuoso Server successfully started on port $PORT"
       return 0
     fi
@@ -106,16 +106,16 @@ virtuoso_start() {
 do_command_safe () {
   _dsn=$1
   command=$2
-  shift 
   shift
-  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*	>> $LOGFILE	
+  shift
+  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*	>> $LOGFILE
   if [ "x$HOST_OS" != "x" ]
 	then
 	  $BUILD/../bin/isql.exe $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
 	else
 	  $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* > "${LOGFILE}.tmp"
 	fi
-  if test $? -ne 0 
+  if test $? -ne 0
   then
     LOG "***FAILED: starting $command"
   else
@@ -126,9 +126,9 @@ do_command_safe () {
       echo "------------ SQL ERROR -------------"
       echo "$msg"
       echo "------------------------------------"
-      echo "------------ SQL ERROR -------------"	>> $LOGFILE	
-      echo "$msg"	>> $LOGFILE	
-      echo "------------------------------------"	>> $LOGFILE	
+      echo "------------ SQL ERROR -------------"	>> $LOGFILE
+      echo "$msg"	>> $LOGFILE
+      echo "------------------------------------"	>> $LOGFILE
     else
       LOG "PASSED: $command"
     fi
@@ -139,11 +139,11 @@ do_command_safe () {
 do_command() {
   _dsn=$1
   command=$2
-  shift 
   shift
-  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*	>> $LOGFILE	
+  shift
+  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*	>> $LOGFILE
   $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if test $? -ne 0 
+  if test $? -ne 0
   then
     LOG "***FAILED: $command"
   else
@@ -224,16 +224,16 @@ sticker_init() {
 
   for file in `find vad/data/http_debug -type f -print | sort`
   do
-     if echo "$file" | grep -v ".vspx" >/dev/null  
+     if echo "$file" | grep -v ".vspx" >/dev/null
      then
-	perms="110100100NN"	 
+	perms="110100100NN"
      else
-	perms="111101101NN"	 
+	perms="111101101NN"
      fi
      name=`echo "$file" | cut -b10-`
      echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
-  
+
   echo "</resources>" >> $STICKER
   echo "<registry>" >> $STICKER
   echo "</registry>" >> $STICKER
@@ -281,7 +281,7 @@ CallstackOnException = 1
 ;
 
 [!HTTPServer]
-ServerPort = $TPORT 
+ServerPort = $TPORT
 ServerRoot = .
 ServerThreads = 5
 MaxKeepAlives = 10
@@ -313,7 +313,7 @@ vad_create() {
   cd $HOME/binsrc/vad
   if [ "x$HOST_OS" != "x" ]
 	then
-	  $BUILD/../bin/isql.exe $DSN dba dba vad.isql 1>/dev/null 2>/dev/null 
+	  $BUILD/../bin/isql.exe $DSN dba dba vad.isql 1>/dev/null 2>/dev/null
 	else
 	  $ISQL $DSN dba dba vad.isql 1>/dev/null 2>/dev/null
 	fi

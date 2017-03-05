@@ -7,98 +7,98 @@ Last version of DBDUMP is complete in terms of plain RDBMS-independent operation
 thing to be improved for generic-purpose operations is the interface. Meanwhile Virtuoso,
 providing much more various functionalities than plain RDBMS, has some uncommon data types and
 schema features. Currently they are not supported in DBDUMP, but should.
-And what is more important DBPUMP is aimed to be not only the specialized 'DBDUMP-for-Virtuoso' 
+And what is more important DBPUMP is aimed to be not only the specialized 'DBDUMP-for-Virtuoso'
 but rather a backup/restore utility with support for all Virtuoso features.
 
 
 	2.	VSP - pages hierarchy
 
-DBDUMP is a single command-line program with ability to be run via CGI and in this case 
+DBDUMP is a single command-line program with ability to be run via CGI and in this case
 to generate HTML content 'on-the-fly'. In DBPUMP we have the situation with separation of interface
-content and sensible work. DBDUMP consists of a number of independent components each of which can be 
-called by name and VSP pages can be considered just as a visually convenient method to call this 
-components. Each page consists of three parts - header, body and footer. In header we can see the title 
-of current page and the set of buttons - jumps to other pages. Buttons can have different colors what 
-means their status: blue-current page, red-forbidden from current state, green- available. Page body 
-contains the current contest and footer currently is empty with exception for possibility to turn on 
+content and sensible work. DBDUMP consists of a number of independent components each of which can be
+called by name and VSP pages can be considered just as a visually convenient method to call this
+components. Each page consists of three parts - header, body and footer. In header we can see the title
+of current page and the set of buttons - jumps to other pages. Buttons can have different colors what
+means their status: blue-current page, red-forbidden from current state, green- available. Page body
+contains the current contest and footer currently is empty with exception for possibility to turn on
 a debug printing.
 
-The root page for all DBPUMP VSP-tree is 'Intro' (dbdump.vsp). Its just contains a general text and 
-zero of useful information. In this page all links are permitted. This page uses the only DBPUMP 
-component - 'retrieve_oper_pars' to deserialize the current context. Here there should be mentioned 
-what all DBPUMP vsp-pages use this component explicitly or implicitly and we will not refer to this 
+The root page for all DBPUMP VSP-tree is 'Intro' (dbdump.vsp). Its just contains a general text and
+zero of useful information. In this page all links are permitted. This page uses the only DBPUMP
+component - 'retrieve_oper_pars' to deserialize the current context. Here there should be mentioned
+what all DBPUMP vsp-pages use this component explicitly or implicitly and we will not refer to this
 component later.
 
-The next page is 'Datasource'(select_datasource.vsp). Here you can choice parameters for ODBC connection - 
-default qualifier, username, password and datasource name. The datasource choice list is provided and 
-refers to 'select_datasource' DBPUMP component but in current state this works only at WIN32 with 
-native ODBC driver manager. This information will be used in two ways: first of all for any future 
-ODBC connection and secondly as arguments for internal isql call. In this case to achieve compatibility 
-when defining names for new datasources you should use special (isql-compatible) datasource names like 
+The next page is 'Datasource'(select_datasource.vsp). Here you can choice parameters for ODBC connection -
+default qualifier, username, password and datasource name. The datasource choice list is provided and
+refers to 'select_datasource' DBPUMP component but in current state this works only at WIN32 with
+native ODBC driver manager. This information will be used in two ways: first of all for any future
+ODBC connection and secondly as arguments for internal isql call. In this case to achieve compatibility
+when defining names for new datasources you should use special (isql-compatible) datasource names like
 'localhost:1111'.
 
-'Options' (select_options.vsp) page represents all options and execution parameters which can be found 
-in DBPUMP vsp pages. Initially here there was all the bulk of DBDUMP options but due to above mentioned 
+'Options' (select_options.vsp) page represents all options and execution parameters which can be found
+in DBPUMP vsp pages. Initially here there was all the bulk of DBDUMP options but due to above mentioned
 DBDUMP specialization they was mostly obsolete.
 
 'S-Dump' (dump_schema.vsp) page lets you to save the current database schema. This page uses 'choice_rdir'
 component to obtain server filesystem subtree and 'get_schema_comment' instead of 'retrieve_oper_pars'
-which is in fact just wrapper around it. So you can choice necessary folder to save schema from list or 
+which is in fact just wrapper around it. So you can choice necessary folder to save schema from list or
 write it manually. If you defined non-existing path manually and 'allow_make_path' switch in 'Options'
-is set to on, new path will be created and used. Server folders which already have saved schemas have 
-corresponding suffices in brackets. You can change current server folder by double-click on necessary 
-one and in so case if schema dump exists in this place you will see old comment. Also you can define 
+is set to on, new path will be created and used. Server folders which already have saved schemas have
+corresponding suffices in brackets. You can change current server folder by double-click on necessary
+one and in so case if schema dump exists in this place you will see old comment. Also you can define
 comment to be stored in this schema. Later you can use it for orientation in a set of similar dumps.
 Schema dump contains:
 	- comment
 	- creation of all users
 	- creation of new qualifiers
-	- drops of all tables, the order of tables drops corresponds to the order of 
+	- drops of all tables, the order of tables drops corresponds to the order of
 	  tables inheritance via foreign keys and 'under' links.
-	- creation clauses for all tables in partially back (in dependent sets) order 
+	- creation clauses for all tables in partially back (in dependent sets) order
 	  in comparison with drop section, all indexes based on this table also are mentioned here
 	- all triggers for above mentioned tables
 	- views section, and normal and xml views are created here
-	- stored procedures 
-	
+	- stored procedures
 
-'S-Restore' (restore_schema.vsp) page is set aside for restoring information from previously made dumps. 
-This page has very similar with previous explained page external view and the same components but just 
-inverse action. It never connects to ODBC datasource directly but uses 'isql' call to run saved schema 
+
+'S-Restore' (restore_schema.vsp) page is set aside for restoring information from previously made dumps.
+This page has very similar with previous explained page external view and the same components but just
+inverse action. It never connects to ODBC datasource directly but uses 'isql' call to run saved schema
 which is just plain PL-SQL text.
 
-'T-Dump' (dump_table.vsp) - using this page you can make dumps of selected tables. And its time to 
-explain the internal details of such dump. The thing which in context of DBPUMP is called 'Current Folder' 
-in fact means the root directory of tables dump. In this root folder there will be saved the schema 
-(if needed) and placed temporary files for 'isql'. Each table dump will be placed in subfolder of this 
-root. The name of such subfolder is not the same with table name because of table name can be 
-too long and/or contain invalid from the file system's point of view symbols. And such name is 
-being calculated as MD5 value of raw table name with suffix '.table'. In this subfolder there 
+'T-Dump' (dump_table.vsp) - using this page you can make dumps of selected tables. And its time to
+explain the internal details of such dump. The thing which in context of DBPUMP is called 'Current Folder'
+in fact means the root directory of tables dump. In this root folder there will be saved the schema
+(if needed) and placed temporary files for 'isql'. Each table dump will be placed in subfolder of this
+root. The name of such subfolder is not the same with table name because of table name can be
+too long and/or contain invalid from the file system's point of view symbols. And such name is
+being calculated as MD5 value of raw table name with suffix '.table'. In this subfolder there
 can be files of 3 kinds:
-	- blob.xxxx - files with outlined blobs, file size is in general limited by 
-	  'split_by' option in 'Options' page. 
-	  In general here means what if we have  blob greater then 'split_by' parameter, 
+	- blob.xxxx - files with outlined blobs, file size is in general limited by
+	  'split_by' option in 'Options' page.
+	  In general here means what if we have  blob greater then 'split_by' parameter,
 	  current blob file will be closed and next will be written without size restriction.
 	  xxxx here means 0000 for first file, 0001 for second, etc...
-	- data.xxxx - files with table data. Here and later we use the same 
+	- data.xxxx - files with table data. Here and later we use the same
 	  rules with files lengths. Files have the next structure:
-		- magic: "--DBPUMP--\n" written through 'PrpcWriteObject', 
+		- magic: "--DBPUMP--\n" written through 'PrpcWriteObject',
 		  we should note here what all values in this file are written via this mechanism.
 		- raw table name e.g.: 'Demo.demo.Order_Details'
 		- comment defined by user in 'T-Dump' page
-		- serialization of DBPUMP's internal state at the moment of dump 
+		- serialization of DBPUMP's internal state at the moment of dump
 		  (we will talk about the mechanism of permanent state transmission few later).
-		- the beginning of sql insert statement up to the data values, this will be used 
-		  for data restore. Certainly this can be easily calculated through column info 
-		  but in such form it is very useful to control data serialization and in general 
+		- the beginning of sql insert statement up to the data values, this will be used
+		  for data restore. Certainly this can be easily calculated through column info
+		  but in such form it is very useful to control data serialization and in general
 		  you can consider it as additional reserve point.
 		- reserve
-		- number of 'before tables' - tables which should be 
+		- number of 'before tables' - tables which should be
 		  created before the current one (and, obviously, drooped after it)
 		- above described number of strings with tables names
 		- number of 'after tables' - which are antipodes of 'before tables'
 		- above described number of strings with tables names
-		- number of schema clauses which are:  drops, table & 
+		- number of schema clauses which are:  drops, table &
 		  indices creations, grants and triggers
 		- above described number of strings with sql statements
 		- number of columns
@@ -106,124 +106,124 @@ can be files of 3 kinds:
 			- column type as returned by ODBC 'SQLColumns'
 			- column bind type - as was used in ODBC 'SQLBindCol' for main loop's 'select'.
 			- is that blob flag
-			- column name 
+			- column name
 			- reserve
-		- the rest of file is filled with data row by row, column by column in the same 
-		  order as filled above. The number of 'PrpcWriteObject' call per column depends 
-		  only on column type, usually this is 1 call as for integer or varchar up to 7 
-		  calls in case of TIMESTAMP. The most complex case is the blob type 
-		  (SQL_LONGVARCHAR, SQL_LONGVARBINARY, SQL_WLONGVARCHAR). If blob length is less then 
-		  some threshold (currently 64 bytes) it will be written as varchar 
-		  with pre-written integer zero, in other case the blob's record consists of  
-		  three items: integer length in bytes, starting position of blob in file, 
+		- the rest of file is filled with data row by row, column by column in the same
+		  order as filled above. The number of 'PrpcWriteObject' call per column depends
+		  only on column type, usually this is 1 call as for integer or varchar up to 7
+		  calls in case of TIMESTAMP. The most complex case is the blob type
+		  (SQL_LONGVARCHAR, SQL_LONGVARBINARY, SQL_WLONGVARCHAR). If blob length is less then
+		  some threshold (currently 64 bytes) it will be written as varchar
+		  with pre-written integer zero, in other case the blob's record consists of
+		  three items: integer length in bytes, starting position of blob in file,
 		  the name of blob file.
-	- text.xxxx - files for dump in plain text mode, this is very similar to what you get at 
+	- text.xxxx - files for dump in plain text mode, this is very similar to what you get at
 	  'T-Restore' procedure with the following exceptions:
-		- there will not be possible to restore this data by no means except 
+		- there will not be possible to restore this data by no means except
 		  manual 'isql' call
 		- even this will not work if your table has foreign key(s) and/or super-table
-		- each table slice will have stored procedure with table creation, but only in 
+		- each table slice will have stored procedure with table creation, but only in
 		  first one there will be explicit call of this procedure
 	- isql.code - temporary log file with all sql statements concerning this table
-Now let's glance at 'T-Dump' page itself. In the upper area you can see two list-box for 
+Now let's glance at 'T-Dump' page itself. In the upper area you can see two list-box for
 tables selection. In left one there are available tables, in left - selected for dump.
-With buttons '<', '<<', '>>' and '>' you can manipulate by them. There should be noticed what 
-the number of really dumped tables can be greater then the number of selected tables. 
+With buttons '<', '<<', '>>' and '>' you can manipulate by them. There should be noticed what
+the number of really dumped tables can be greater then the number of selected tables.
 The reason of that exists in dependencies with other tables via foreign keys and super-tables.
-Below table filters and comments are placed. Filter works on the list of available tables, 
+Below table filters and comments are placed. Filter works on the list of available tables,
 to activate them you should enter some value in one of them and press 'Refresh' button below.
-Comment will be written in every table dump and if schema was dumped in this folder, its comment 
-will be read. 'Split_by' parameter have been mentioned above and almost always means maximal 
-dump-file slice length. SQL/Binary switch lets you to select method of data dump. 
-In the bottom area of screen there are placed already familiar remote path list-box in this case 
-advanced by the content of current folder i.e. here you also can see names of already dumped 
-in this folder tables. This page uses following DBPUMP components: 
+Comment will be written in every table dump and if schema was dumped in this folder, its comment
+will be read. 'Split_by' parameter have been mentioned above and almost always means maximal
+dump-file slice length. SQL/Binary switch lets you to select method of data dump.
+In the bottom area of screen there are placed already familiar remote path list-box in this case
+advanced by the content of current folder i.e. here you also can see names of already dumped
+in this folder tables. This page uses following DBPUMP components:
 	- 'choice_tables' to retrieve selected tables
 	- 'retrieve_tables' to obtain available via datasource tables
 	- 'choice_rpath' to get remote filesystem sub-tree
 	- 'choice_rdir' to retrieve dumped tables in current folder
-	- 'get_schema_comment_and_pars_retrieve' to not only deserialize 
+	- 'get_schema_comment_and_pars_retrieve' to not only deserialize
 	  context but also to get the schema comment in current folder (if exists).
 
-'T-Restore' (restore_tables.vsp) - using this page you can restore previously saved state of 
-selected tables. This page consists of the same as in 'T-Dump' 'remote directory' control, 
-analogous comment textarea, username&password to be passed to 'isql', 'Name Filter' which can be 
-activated by refresh button, 'Qualifier' field to set default qualifier for 'isql' connection and 
-'Print To Screen' flag to redirect isql output to http client (but this can exhaust your virtual 
-memory). This page uses following DBPUMP components: 
+'T-Restore' (restore_tables.vsp) - using this page you can restore previously saved state of
+selected tables. This page consists of the same as in 'T-Dump' 'remote directory' control,
+analogous comment textarea, username&password to be passed to 'isql', 'Name Filter' which can be
+activated by refresh button, 'Qualifier' field to set default qualifier for 'isql' connection and
+'Print To Screen' flag to redirect isql output to http client (but this can exhaust your virtual
+memory). This page uses following DBPUMP components:
 	- 'choice_rpath' for the same reasons as in previous page
 	- 'choice_rdir' ...
 	- 'get_schema_comment_and_pars_retrieve' ...
-The algorithm of this page's action is relatively complex. For every requested table we should 
-recursively get lists of dependent tables. As result of this procedure we will get new (probably 
-greater) ordered list of requested tables. Having this list we can convert tables to plain isql 
+The algorithm of this page's action is relatively complex. For every requested table we should
+recursively get lists of dependent tables. As result of this procedure we will get new (probably
+greater) ordered list of requested tables. Having this list we can convert tables to plain isql
 output through 4 passes:
 	- drops in back order
 	- creations in normal order
 	- rows of data in normal order
 	- triggers creations in any order
-The result of conversion piece by piece will be sent to isql and common error output will be 
+The result of conversion piece by piece will be sent to isql and common error output will be
 returned to http client. Here we should outline two moments of data transmission via 'isql'.
-	- blobs: as we remember, short strings was inlined in 'data.xxxx'-file and should be 
-	  printed as normal strings. For long blobs the situation is more complex: in output 
+	- blobs: as we remember, short strings was inlined in 'data.xxxx'-file and should be
+	  printed as normal strings. For long blobs the situation is more complex: in output
 	  will be printed bif-function 'blob_to_string_output' with parameters: file name
-	  (full name in this case due to multi-layer process of restoring), offset in file 
+	  (full name in this case due to multi-layer process of restoring), offset in file
 	  and blob length in bytes.
-	- wide strings: there is no correct way to represent general unicode string and so we 
-	  will convert unicode string to UTF-8 form and convert them back by bif-function 
+	- wide strings: there is no correct way to represent general unicode string and so we
+	  will convert unicode string to UTF-8 form and convert them back by bif-function
 	  'charset_recode' with parameters utf-8 sting, 'UTF-8'  and '_WIDE_'.
 
-'Debug' (debug.vsp) - this page is useful (and this is reflected in its name) to switch 
+'Debug' (debug.vsp) - this page is useful (and this is reflected in its name) to switch
 'debug_in_footer' flag which allows to print the current context in footer of every page.
 
 
 	3.	DBPUMP's context
 
-This context consists of the set of named and internally registered character values. 
-Internally each component can get a value of every such value and use its value by any way. 
-There exists the only parameter with pre-defined name 'all_together_now' and trying to obtain its 
-value you'll get the serialization of all other parameters. Symmetrically, an attempt to set 
-value of this parameter will yield to deserialization of previously saved state. Consequently 
-every VSP-page should have hidden input element with such name. Because of every VSP page in 
-first steps runs 'retrieve_oper_pars' (or its relative) which returns deserialization of all 
+This context consists of the set of named and internally registered character values.
+Internally each component can get a value of every such value and use its value by any way.
+There exists the only parameter with pre-defined name 'all_together_now' and trying to obtain its
+value you'll get the serialization of all other parameters. Symmetrically, an attempt to set
+value of this parameter will yield to deserialization of previously saved state. Consequently
+every VSP-page should have hidden input element with such name. Because of every VSP page in
+first steps runs 'retrieve_oper_pars' (or its relative) which returns deserialization of all
 parameters including that (without recursion, sure). So if we have synonymous hidden field,
-at html form submission its value will be posted and values of all (not only existing in 
-current form) parameters will be restored. So if html form has input elements with registered 
-in DBPUMP names, values of this parameters will be also accepted by DBPUMP and serialized in 
+at html form submission its value will be posted and values of all (not only existing in
+current form) parameters will be restored. So if html form has input elements with registered
+in DBPUMP names, values of this parameters will be also accepted by DBPUMP and serialized in
 the next iteration of 'all_together_now'.
-	
+
 
 	4.	DBPUMP's command line
 DBPUMP has different variants of execution:
-	- normal. Command line syntax is: 
+	- normal. Command line syntax is:
 	  dbpump component-name [ component-arg [ output-file ] ] [par1=value1]...[parN=valueN]
-	- via CGI, all the same but by urlified  way i.e. environment variable QUERY_STRING should 
+	- via CGI, all the same but by urlified  way i.e. environment variable QUERY_STRING should
 	  contain component-name&component-arg&output-file-name&oper-par1-name=oper-par1-value...
 	- via file: dbpump @file-name
 	  and in this file we should store all arguments in the first(normal) form
-	  'component-name' is one of the set of internally registered components names, 
+	  'component-name' is one of the set of internally registered components names,
 	  if this name is unknown result will be void.
-Some components have arguments, some not. Extra argument can not break something  and if 
-component doesn't require argument but you are interested in file output, you can freely pass as 
-argument whatever you want. All parameters have names consisting only from printable chars but 
-in value of parameter there can be placed any string. Due to this, values of parameters should be 
+Some components have arguments, some not. Extra argument can not break something  and if
+component doesn't require argument but you are interested in file output, you can freely pass as
+argument whatever you want. All parameters have names consisting only from printable chars but
+in value of parameter there can be placed any string. Due to this, values of parameters should be
 passed in urlified form (i.e. ' '='+', printable chars as is, other in form '%xx').
 
 	5.	DBPUMP's components
-DBPUMP doesn't have own behavior, all what it can is to construct operational parameters pool, 
+DBPUMP doesn't have own behavior, all what it can is to construct operational parameters pool,
 run required component, pass to it argument and print out component's messages.
 In fact DBPUMP is a set of independent mini-programs under one roof. Such components are:
-	- 'retrieve_oper_pars' - we have already talked about it. 
+	- 'retrieve_oper_pars' - we have already talked about it.
 	  This component just prints all not-empty parameters in form:
 	  par1-name=par1-urlified-value&par2-name=par2-urlified-value&...
-	  Used operational parameters: all or required 
+	  Used operational parameters: all or required
 	  Argument: '*' for all or list of parameters with delimiter '@'
 
-	- 'select_datasources' - when on WIN32 DBPUMP was not linked with native odbc32.lib 
+	- 'select_datasources' - when on WIN32 DBPUMP was not linked with native odbc32.lib
 	  this returns a list of available datasources in form:
 	  dsn1-name=dsn1-description&dsn2-name=dsn2-description&...
 	  In other cases this returns nothing.
-	  Used operational parameters: none 
+	  Used operational parameters: none
 	  Argument: none
 
 	- 'retrieve_tables' - this returns list of available tables in similar form:
@@ -235,24 +235,24 @@ In fact DBPUMP is a set of independent mini-programs under one roof. Such compon
 		- 'qualifier'
 	  Argument: none
 
-	- 'choice_tables' - this will give you the list of tables selected for dump 
+	- 'choice_tables' - this will give you the list of tables selected for dump
 	  in the same form as previous component.
 	  Used operational parameters:
 		- 'choice_sav' - summarization of all 'choice_tables' from listbox with such name
 	  Argument: none
 
-	- 'choice_rpath' - this component will give you the sub-tree of server filesystem. 
-	  This component will recursively fall into each subfolder (including symlinks, 
-	  this generates the problem of cycling, this situation yields to zero output after 
-	  maximal depth will be achieved). 
-	  The root folder of this sub-tree will be placed in  'ServerRoot' parameter of 
-	  section [HTTPServer] of Virtuoso config file. 
+	- 'choice_rpath' - this component will give you the sub-tree of server filesystem.
+	  This component will recursively fall into each subfolder (including symlinks,
+	  this generates the problem of cycling, this situation yields to zero output after
+	  maximal depth will be achieved).
+	  The root folder of this sub-tree will be placed in  'ServerRoot' parameter of
+	  section [HTTPServer] of Virtuoso config file.
 	  Each subfolder will occupy one pair of output:
 	  real_path1=indented-name1&real_path2=indented-name2&...
-	  Used operational parameters: none 
+	  Used operational parameters: none
 	  Argument: none
 
-	- 'choice_rdir' - returns the content of current folder. To do this it should descend 
+	- 'choice_rdir' - returns the content of current folder. To do this it should descend
 	  in all subfolders and try to find file 'data.0000'.
 	  If it exists, the header should be read and table name found. The result will be in form:
 	  table1-name=table1-name&table2-name=table2-name&...
@@ -260,9 +260,9 @@ In fact DBPUMP is a set of independent mini-programs under one roof. Such compon
 		- 'rpath' - selected row in corresponding listbox
 	  Argument: none
 
-	- 'dump_tables' this component will try to do the above described 
-	  procedure of tables dump, the error and info output of which 
-	  will be put into operational parameter 'result' and then all 
+	- 'dump_tables' this component will try to do the above described
+	  procedure of tables dump, the error and info output of which
+	  will be put into operational parameter 'result' and then all
 	  parameters will be output as in 'retrieve_oper_pars'.
 	  This component is called from 'dump_tables_itself.vsp'
 	  Used operational parameters:
@@ -303,22 +303,22 @@ In fact DBPUMP is a set of independent mini-programs under one roof. Such compon
 		- 'dump_name' remote path, similar with 'rpath' but can be entered by hands
 	  Argument: '*' for all or list of parameters with delimiter '@'
 
-	- 'get_schema_comment' - this will try to find file 'schema.sql' in current folder and if 
+	- 'get_schema_comment' - this will try to find file 'schema.sql' in current folder and if
 	  such file exists the comment will be extracted,
-	  placed into 'comment' operational parameter and then all 
+	  placed into 'comment' operational parameter and then all
 	  parameters will be output as in 'retrieve_oper_pars'.
-	  Used operational parameters: all or required 
+	  Used operational parameters: all or required
 	  Argument: '*' for all or list of parameters with delimiter '@'
-	
+
 
 	6.	DBPUMP's todo.
 
-As we can see, DBPUMP represents very simple, flexible  and scalable paradigm of behavior. 
-It seems to be useful to separate DBPUMP's framework for work with operational parameters 
-and components loading from one side and components themselves from other one. By so means 
-we will need single description of all components with indications to necessary shared libraries. 
-In this case main program in the moment of arguments parsing can load additionally necessary 
-library and call required procedure. And we will have an open environment for dbpump-like 
+As we can see, DBPUMP represents very simple, flexible  and scalable paradigm of behavior.
+It seems to be useful to separate DBPUMP's framework for work with operational parameters
+and components loading from one side and components themselves from other one. By so means
+we will need single description of all components with indications to necessary shared libraries.
+In this case main program in the moment of arguments parsing can load additionally necessary
+library and call required procedure. And we will have an open environment for dbpump-like
 utilities(packages) with single style, administering and behavior.
 
 
