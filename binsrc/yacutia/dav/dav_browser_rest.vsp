@@ -166,13 +166,69 @@
     http_header ('Access-Control-Allow-Origin: *\r\n');
     http (WEBDAV.DBA.obj2json (_list, 5));
   }
+  else if (action = 'driveBuckets')
+  {
+    declare _list any;
+    declare _drive any;
+
+    _list := null;
+    _drive := get_keyword ('drive', params);
+    if (__proc_exists ('DB.DBA.' || _drive || '__driveBuckets') is null)
+      goto _exit_2;
+
+    _list := call ('DB.DBA.' || _drive || '__driveBuckets') (params);
+
+  _exit_2:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http (WEBDAV.DBA.obj2json (_list, 5));
+  }
+  else if (action = 'driveFolders')
+  {
+    declare _list any;
+    declare _drive, _driveParams, _drivePath, _driveSid any;
+
+    _list := null;
+    _drive := get_keyword ('drive', params);
+    if (__proc_exists ('DB.DBA.' || _drive || '__driveFolders') is null)
+      goto _exit_3;
+
+    _list := vector ();
+    _driveSid := get_keyword ('sid', params);
+    if (_driveSid is not null)
+    {
+      _driveParams := vector ('access_timestamp', datestring (now ()), 'sid', _driveSid);
+      for (select cs_token, cs_refresh_token, cs_expire_time from OAUTH.DBA.CLI_SESSIONS where cs_sid = _driveSid) do
+      {
+        if (not isnull (cs_token))
+          _driveParams := vector_concat (_driveParams, vector ('access_token', cs_token));
+
+        if (not isnull (cs_refresh_token))
+          _driveParams := vector_concat (_driveParams, vector ('refresh_token', cs_refresh_token));
+
+        if (not isnull (cs_expire_time))
+          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curdatetime(), cs_expire_time)));
+      }
+    }
+    else
+    {
+      _drivePath := get_keyword ('path', params);
+      _driveParams := call ('DB.DBA.' || _drive || '__params') (DB.DBA.DAV_SEARCH_ID (_drivePath, 'C'));
+    }
+    _list := call ('DB.DBA.' || _drive || '__driveFolders') (_driveParams);
+
+  _exit_3:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http (WEBDAV.DBA.obj2json (_list, 5));
+  }
   else if (action = 'webdavVerify')
   {
     declare _error, _server, _params, _password, _oauthSid any;
     declare exit handler for SQLSTATE '*'
     {
       _error := __SQL_MESSAGE;
-      goto _exit_2;
+      goto _exit_4;
     };
 
     _server     := get_keyword ('server', params, '');
@@ -198,7 +254,7 @@
     }
     _error      := DB.DBA.WebDAV__verify (_server, _params);
 
-  _exit_2:;
+  _exit_4:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
     http_header ('Content-Type: text/plain\r\n');
@@ -325,7 +381,7 @@
     declare exit handler for sqlstate '37000' {
       returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
 
-      goto _exit_3;
+      goto _exit_5;
     };
 
     returnData := vector ();
@@ -337,7 +393,7 @@
       _dictionary := dict_new ();
       DB.DBA.RDF_TTL_LOAD_DICT (_content, _graph, _graph, _dictionary);
 
-      goto _exit_3;
+      goto _exit_5;
     }
   _again:;
     _ns := string_output ();
@@ -355,7 +411,7 @@
     -- returnData := vector ('prefixes', split_and_decode (string_output_string(_ns), 0, '\0\0\n'));
     returnData := vector ('prefixes', string_output_string(_ns));
 
-  _exit_3:;
+  _exit_5:;
     SPARQL clear graph ?:_graph;
 
     http_rewrite ();
@@ -369,7 +425,7 @@
     declare exit handler for sqlstate '37000' {
       returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
 
-      goto _exit_4;
+      goto _exit_6;
     };
 
     returnData := vector ();
@@ -377,7 +433,7 @@
     _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
     DB.DBA.TTLP (_content, _graph, _graph, 255);
 
-  _exit_4:;
+  _exit_6:;
     SPARQL clear graph ?:_graph;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');

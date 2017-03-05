@@ -827,6 +827,24 @@ WEBDAV.updateRdfGraph = function ()
   $('dav_name_save').value = escape($v('dav_name'));
 }
 
+WEBDAV.comboListPath = function (element, name, val)
+{
+  var fld = new OAT.Combolist([], val);
+  fld.input.name = name;
+  fld.input.id = name;
+  fld.input.className = 'field-text';
+  fld.input.value = val;
+  fld.input.comboList = fld;
+  fld.list.style.width = '500px';
+
+  fld.throbler = OAT.Dom.create("img", {display: "none"});
+  fld.throbler.src = OAT.AJAX.imagePath+"Ajax_throbber.gif";
+  fld.div.appendChild(fld.throbler);
+  OAT.Dom.hide(fld.img);
+
+  $(element).appendChild(fld.div);
+}
+
 WEBDAV.oauthParams = function (drive, oauth)
 {
   var params = null;
@@ -837,7 +855,8 @@ WEBDAV.oauthParams = function (drive, oauth)
   if (!params || params.error) {
     alert ('Bad authentication!');
     fld.value = '';
-  } else {
+  }
+  else {
     var d = new Date();
     d = new Date(d.valueOf() + d.getTimezoneOffset() * 60000)
     params.access_timestamp = d.format('Y-m-d H:i');
@@ -855,11 +874,11 @@ WEBDAV.oauthParams = function (drive, oauth)
       $('td_dav_'+drive+'_email').innerHTML = params.email;
     }
 
-    if ($('tr_dav_'+drive+'_path')) {
+    if ($('tr_dav_'+drive+'_path'))
       OAT.Dom.show('tr_dav_'+drive+'_path');
-    }
 
     $('dav_'+drive+'_authenticate').value = 'Re-Authenticate';
+    WEBDAV.loadDriveFolders(drive);
   }
   OAT.Dom.hide('dav_'+drive+'_throbber');
 }
@@ -1069,6 +1088,137 @@ WEBDAV.loadIMAPFolders = function ()
       OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
     }
   }
+
+WEBDAV.dav_DET_seqNo = 0;
+WEBDAV.loadDriveFolders = function (drive, fields)
+{
+  var x = function(seqNo, drive, data) {
+    if (seqNo < WEBDAV.dav_DET_seqNo)
+      return;
+
+    var dav_DET_path = $('dav_'+drive+'_path');
+    var cl = dav_DET_path.comboList;
+    if (cl) {
+      cl.clearOpts();
+      if (data !== 'null') {
+        var o = OAT.JSON.parse(data);
+        var founded = false;
+        for (var i = 0; i < o.length; i++) {
+          cl.addOption(o[i]);
+          if (o[i] == dav_DET_path.value)
+            founded = true;
+        }
+        if (!founded) {
+          dav_DET_path.value = '';
+        }
+        if (o.length)
+          OAT.Dom.show(cl.img);
+      }
+    }
+    OAT.Dom.hide(cl.throbler);
+  }
+  var params = '&drive='+drive;
+  if (fields) {
+    for (var i = 0; i < fields.length; i++) {
+      params  += '&'+fields[i]+'=' + $v('dav_'+drive+'_' + fields[i]).trim();
+    }
+  }
+  if ($('item_path'))
+    params  += '&path=' + $v('item_path');
+
+  var txt = $v('dav_'+drive+'_JSON');
+  if (txt) {
+    var json = OAT.JSON.deserialize(txt);
+    params += '&sid='+json.sid;
+  }
+
+  var dav_DET_path = $('dav_'+drive+'_path');
+  var cl = dav_DET_path.comboList;
+  if (cl) {
+    OAT.Dom.hide(cl.img);
+    OAT.Dom.show(cl.throbler);
+  }
+
+  WEBDAV.dav_DET_seqNo += 1;
+  var seqNo = WEBDAV.dav_DET_seqNo;
+  OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=driveFolders'+params, '', function(data){x(seqNo, drive, data);});
+}
+
+
+WEBDAV.dav_DET_seqNo = 0;
+WEBDAV.loadDriveBuckets = function (drive, bucketName, fields)
+{
+  var needLoad = false;
+  for (var i = 0; i < fields.length; i++) {
+    if (!WEBDAV["dav_"+fields[i]] || (WEBDAV["dav_"+fields[i]] != $v('dav_'+drive+'_' + fields[i]).trim())) {
+      WEBDAV["dav_"+fields[i]] = $v('dav_'+drive+'_' + fields[i]).trim();
+      needLoad = true;
+
+      break;
+    }
+  }
+  if (!needLoad) {
+    for (var i = 0; i < fields.length; i++) {
+      if (!WEBDAV["dav_"+fields[i]]) {
+        break;
+      }
+    }
+  }
+  if (needLoad) {
+    var x = function(seqNo, drive, data) {
+      if (seqNo < WEBDAV.dav_DET_seqNo)
+        return;
+
+      var dav_DET_BucketName = $('dav_'+drive+'_'+bucketName);
+      var cl = dav_DET_BucketName.comboList;
+      if (cl) {
+        cl.clearOpts();
+        if (data !== 'null') {
+          var o = OAT.JSON.parse(data);
+          var founded = false;
+          for (var i = 0; i < o.length; i++) {
+            cl.addOption(o[i]);
+            if (o[i] == dav_DET_BucketName.value)
+              founded = true;
+          }
+          if (!founded) {
+            dav_DET_BucketName.value = '';
+          }
+          if (o.length)
+            OAT.Dom.show(cl.img);
+
+          // load folders
+          fields.push(bucketName);
+          WEBDAV.loadDriveFolders(drive, fields);
+        }
+      }
+      OAT.Dom.hide(cl.throbler);
+    }
+    var params = '&drive='+drive;
+    for (var i = 0; i < fields.length; i++) {
+      params  += '&'+fields[i]+'=' + $v('dav_'+drive+'_' + fields[i]).trim();
+    }
+    if ($('item_path'))
+      params  += '&path=' + $v('item_path');
+
+    var txt = $v('dav_'+drive+'_JSON');
+    if (txt) {
+      var json = OAT.JSON.deserialize(txt);
+      params += '&sid='+json.sid;
+    }
+
+    var dav_DET_BucketName = $('dav_'+drive+'_'+bucketName);
+    var cl = dav_DET_BucketName.comboList;
+    if (cl) {
+      OAT.Dom.hide(cl.img);
+      OAT.Dom.show(cl.throbler);
+    }
+
+    WEBDAV.dav_DET_seqNo += 1;
+    var seqNo = WEBDAV.dav_DET_seqNo;
+    OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=driveBuckets'+params, '', function(data){x(seqNo, drive, data);});
+  }
+}
 
 
 WEBDAV.prefixDialog = function ()

@@ -2097,6 +2097,8 @@
                     if (not isnull (self.dav_vector[6]))
                       WEBDAV.DBA.DAV_PROP_SET (self.dav_vector[0], 'redirectref', self.dav_vector[6]);
 
+                    commit work;
+
                     if (self.mode = 'webdav')
                     {
                       self.webdav_redirect (WEBDAV.DBA.path_parent (self.dav_vector[0], 1), '');
@@ -5493,36 +5495,10 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_S3_BucketName" value="Bucket Name" />
-          </th>
-          <td>
-            <v:text name="dav_S3_BucketName" xhtml_id="dav_S3_BucketName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_S3_BucketName', self.dav_path, 'virt:S3-BucketName', '');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
-        <tr id="tr_dav_S3_path">
-          <th>Root Path</th>
-          <td id="td_dav_S3_path">
-            <v:text name="dav_S3_path" xhtml_id="dav_S3_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_S3_path', self.dav_path, 'virt:S3-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
-        <tr>
-          <th>
             <v:label for="dav_S3_AccessKey" value="Access Key ID (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_AccessKeyID', self.dav_path, 'virt:S3-AccessKeyID', '');
@@ -5536,13 +5512,46 @@
             <v:label for="dav_S3_SecretKey" value="Secret Key (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_SecretKey', self.dav_path, 'virt:S3-SecretKey', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <v:label for="dav_S3_BucketName" value="Bucket Name" />
+          </th>
+          <td id="td_dav_S3_BucketName">
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_S3_BucketName', 'dav_S3_BucketName', "<?V self.get_fieldProperty ('dav_S3_BucketName', self.dav_path, 'virt:S3-BucketName', '/') ?>");
+                    WEBDAV.loadDriveBuckets('S3', 'BucketName', ['AccessKeyID', 'SecretKey']);
+                  }
+                );
+              ]]>
+            </script>
+          </td>
+        </tr>
+        <tr id="tr_dav_S3_path">
+          <th>Root Folder Path</th>
+          <td id="td_dav_S3_path">
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_S3_path', 'dav_S3_path', "<?V self.get_fieldProperty ('dav_S3_path', self.dav_path, 'virt:S3-path', '/') ?>");
+                  }
+                );
+              ]]>
+            </script>
           </td>
         </tr>
         <?vsp
@@ -6191,30 +6200,18 @@
         </tr>
         <tr>
           <th>
-            <vm:label for="dav_IMAP_folder" value="Folder Path" />
+            <vm:label for="dav_IMAP_folder" value="Root Folder Path" />
           </th>
           <td id="td_dav_IMAP_folder">
             <script type="text/javascript">
               <![CDATA[
-                function dav_IMAP_folderInit ()
-                {
-                  var fld = new OAT.Combolist([], "<?V self.get_fieldProperty ('dav_IMAP_folder', self.dav_path, 'virt:IMAP-folder', '') ?>");
-                  fld.input.name = 'dav_IMAP_folder';
-                  fld.input.id = 'dav_IMAP_folder';
-                  fld.input.className = 'field-short';
-                  fld.input.comboList = fld;
-                  fld.list.style.width = '250px';
-
-                  fld.throbler = OAT.Dom.create("img", {display: "none"});
-                  fld.throbler.src = OAT.AJAX.imagePath+"Ajax_throbber.gif";
-                  fld.div.appendChild(fld.throbler);
-                  OAT.Dom.hide(fld.img);
-
-                  $("td_dav_IMAP_folder").appendChild(fld.div);
-
-                  WEBDAV.loadIMAPFolders();
-                }
-                OAT.Loader.load(["ajax", "json", "drag", "combolist"], dav_IMAP_folderInit);
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_IMAP_folder', 'dav_IMAP_folder', "<?V self.get_fieldProperty ('dav_IMAP_folder', self.dav_path, 'virt:IMAP-folder', '') ?>");
+                    WEBDAV.loadIMAPFolders();
+                  }
+                );
               ]]>
             </script>
           </td>
@@ -6287,15 +6284,22 @@
           </td>
         </tr>
         <tr id="tr_dav_GDrive_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>Root Path</th>
+          <th>
+            <vm:label for="dav_GDrive_folder" value="Root Folder Path" />
+          </th>
           <td id="td_dav_GDrive_path">
-            <v:text name="dav_GDrive_path" xhtml_id="dav_GDrive_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_GDrive_path', self.dav_path, 'virt:GDrive-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_GDrive_path', 'dav_GDrive_path', "<?V self.get_fieldProperty ('dav_GDrive_path', self.dav_path, 'virt:GDrive-path', '/') ?>");
+                    if ('<?V _value ?>' === 'Yes')
+                      WEBDAV.loadDriveFolders('GDrive');
+                  }
+                );
+              ]]>
+            </script>
           </td>
         </tr>
       </table>
@@ -6357,15 +6361,20 @@
           </td>
         </tr>
         <tr id="tr_dav_Dropbox_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>Root Path</th>
+          <th>Root Folder Path</th>
           <td id="td_dav_Dropbox_path">
-            <v:text name="dav_Dropbox_path" xhtml_id="dav_Dropbox_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_Dropbox_path', self.dav_path, 'virt:Dropbox-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_Dropbox_path', 'dav_Dropbox_path', "<?V self.get_fieldProperty ('dav_Dropbox_path', self.dav_path, 'virt:Dropbox-path', '/') ?>");
+                    if ('<?V _value ?>' === 'Yes')
+                      WEBDAV.loadDriveFolders('Dropbox');
+                  }
+                );
+              ]]>
+            </script>
           </td>
         </tr>
       </table>
@@ -6427,15 +6436,20 @@
           </td>
         </tr>
         <tr id="tr_dav_SkyDrive_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>Root Path</th>
+          <th>Root Folder Path</th>
           <td id="td_dav_SkyDrive_path">
-            <v:text name="dav_SkyDrive_path" xhtml_id="dav_SkyDrive_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_SkyDrive_path', self.dav_path, 'virt:SkyDrive-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_SkyDrive_path', 'dav_SkyDrive_path', "<?V self.get_fieldProperty ('dav_SkyDrive_path', self.dav_path, 'virt:SkyDrive-path', '/') ?>");
+                    if ('<?V _value ?>' === 'Yes')
+                      WEBDAV.loadDriveFolders('SkyDrive');
+                  }
+                );
+              ]]>
+            </script>
           </td>
         </tr>
       </table>
@@ -6497,15 +6511,20 @@
           </td>
         </tr>
         <tr id="tr_dav_Box_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
-          <th>Root Path</th>
+          <th>Root Folder Path</th>
           <td id="td_dav_Box_path">
-            <v:text name="dav_Box_path" xhtml_id="dav_Box_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_Box_path', self.dav_path, 'virt:Box-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_Box_path', 'dav_Box_path', "<?V self.get_fieldProperty ('dav_Box_path', self.dav_path, 'virt:Box-path', '/') ?>");
+                    if ('<?V _value ?>' === 'Yes')
+                      WEBDAV.loadDriveFolders('Box');
+                  }
+                );
+              ]]>
+            </script>
           </td>
         </tr>
       </table>
@@ -6768,7 +6787,7 @@
             <v:label for="dav_RACKSPACE_API_Key" value="API Key (*)" />
           </th>
           <td>
-            <v:text name="dav_RACKSPACE_API_Key" xhtml_id="dav_RACKSPACE_API_Key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+            <v:text name="dav_RACKSPACE_API_Key" xhtml_id="dav_RACKSPACE_API_Key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'RACKSPACE\', \'Container\', [\'Type\', \'User\', \'Container\', \'API_Key\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_API_Key', self.dav_path, 'virt:RACKSPACE-API_Key', '');
@@ -6781,26 +6800,33 @@
           <th>
             <v:label for="dav_RACKSPACE_Container" value="Container Name" />
           </th>
-          <td>
-            <v:text name="dav_RACKSPACE_Container" xhtml_id="dav_RACKSPACE_Container" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_Container', self.dav_path, 'virt:RACKSPACE-Container', '');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
+          <td id="td_dav_RACKSPACE_Container">
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_RACKSPACE_Container', 'dav_RACKSPACE_Container', "<?V self.get_fieldProperty ('dav_RACKSPACE_Container', self.dav_path, 'virt:RACKSPACE-Container', '/') ?>");
+                    WEBDAV.loadDriveBuckets('RACKSPACE', 'Container', ['Type', 'User', 'Container', 'API_Key']);
+                  }
+                );
+              ]]>
+            </script>
           </td>
         </tr>
         <tr id="tr_dav_RACKSPACE_path">
-          <th>Root Path</th>
+          <th>Root Folder Path</th>
           <td id="td_dav_RACKSPACE_path">
-            <v:text name="dav_RACKSPACE_path" xhtml_id="dav_RACKSPACE_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_path', self.dav_path, 'virt:RACKSPACE-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_RACKSPACE_path', 'dav_RACKSPACE_path', "<?V self.get_fieldProperty ('dav_RACKSPACE_path', self.dav_path, 'virt:RACKSPACE-path', '/') ?>");
+                  }
+                );
+              ]]>
+            </script>
           </td>
         </tr>
         <?vsp
