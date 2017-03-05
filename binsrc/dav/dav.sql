@@ -2444,17 +2444,17 @@ create procedure WS.WS.GET (
   full_path := http_physical_path ();
   if (full_path = '')
     full_path := '/';
+
   full_path := WS.WS.DAV_REMOVE_ASMX (full_path);
-  -- dbg_obj_princ ('logical path is "', http_path(), '".');
-  -- dbg_obj_princ ('physical path is "', full_path, '".');
+
 again:
   _col_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (DAV_CONCAT_PATH ('/', full_path), '/'), 'C'));
   _res_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH ('/', full_path), 'R'));
   if (strchr (full_path, '*') is not null and _res_id is null and _col_id is null)
-    {
-      _col_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (DAV_CONCAT_PATH ('/', full_path), '/'), 'P'));
-      is_pattern := 1;
-    }
+  {
+    _col_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (DAV_CONCAT_PATH ('/', full_path), '/'), 'P'));
+    is_pattern := 1;
+  }
   exec_safety_level := 0;
 
   if (_res_id is null and _col_id is null)
@@ -2484,22 +2484,23 @@ again:
     }
     else
     {
-    declare procname varchar;
-    -- dbg_obj_princ ('full_path=', full_path);
-    procname := sprintf ('%s.%s.%s',
-    http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
+      declare procname varchar;
+      -- dbg_obj_princ ('full_path=', full_path);
+      procname := sprintf ('%s.%s.%s',
+      http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
 
-   if ( __proc_exists (procname) and
-      (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
-      (http_map_get ('noinherit') = 1))
-   {
-     commit work;
-     __set_user_id (http_map_get ('vsp_uid'));
-     call (procname)(path, params, lines);
-     __pop_user_id ();
-     return;
-   }
-    _404:
+      if ( __proc_exists (procname) and
+         (cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
+         (http_map_get ('noinherit') = 1))
+      {
+        commit work;
+        __set_user_id (http_map_get ('vsp_uid'));
+        call (procname)(path, params, lines);
+        __pop_user_id ();
+        return;
+      }
+
+   _404:
       DB.DBA.DAV_SET_HTTP_STATUS (404);
     }
     return;
@@ -2509,6 +2510,7 @@ again:
     if (http_path () not like '%/') -- This is for default pages that refer to css in same directory and the like.
     {
       declare url_pars varchar;
+
       url_pars := http_request_get ('QUERY_STRING');
       if (length (url_pars))
         url_pars := '?' || url_pars;
@@ -2517,6 +2519,7 @@ again:
       http_header (sprintf ('Location: %s/%s\r\n', http_path (), url_pars));
       return (0);
     }
+
     def_page := WS.WS.GET_DAV_DEFAULT_PAGE (path);
     if (def_page is null)
       return;
@@ -2532,11 +2535,12 @@ again:
   }
 
   if (not (http_map_get ('executable')
-           --and WS.WS.IS_ACTIVE_CONTENT (http_path ())
+     --and WS.WS.IS_ACTIVE_CONTENT (http_path ())
      ))
   {
     declare tgt_type, tgt_perms varchar;
     declare tgt_id integer;
+
     -- dbg_obj_princ ('this is not executable');
     uname := null;
     upwd := null;
@@ -2570,6 +2574,7 @@ again:
     {
       if (uid = http_nobody_uid () and gid = http_nogroup_gid ())
         uid := null;
+
       rc := DAV_AUTHENTICATE_HTTP (tgt_id, tgt_type, '1_1', 0, lines, uname, upwd, uid, gid, perms);
       if (rc >= 0)
         exec_safety_level := 1;
@@ -2581,13 +2586,18 @@ again:
   auth_opts := http_map_get ('auth_opts');
 
   if (isvector (auth_opts) and mod (length (auth_opts), 2) = 0)
+  {
     webid_check := atoi (get_keyword ('webid_check', auth_opts, '0'));
+  }
   else
+  {
     webid_check := 0;
+  }
   webid_check_rc := 1;
   if (is_https_ctx () and webid_check and http_map_get ('executable'))
   {
     declare gid_, perms_, _check_id, _check_type any;
+
     uid := null;
     if (isinteger (_res_id))
     {
@@ -2618,9 +2628,13 @@ again:
     http_request_status ('HTTP/1.1 302 Found');
     host1 := http_request_header (lines, 'Host', NULL, NULL);
     if (host1 is not null and location not like '%://%')
+    {
       host1 := concat ('http://', host1);
+    }
     else
+    {
       host1 := '';
+    }
 
     http_header (sprintf ('Location: %s%s\r\n', host1, location));
     return (0);
@@ -2649,9 +2663,9 @@ again:
   if ((_col_id is not null) or ((_res_id is not null) and (get_keyword ('a', params) in ('update', 'edit'))))
   {
     declare dir_ret any;
-	--this is for DAV folder
+  --this is for DAV folder
 
-	if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
+    if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
       return;
 
     if (0 = http_map_get ('browseable'))
@@ -2663,7 +2677,7 @@ again:
     if (DAV_HIDE_ERROR (dir_ret))
     {
       DB.DBA.DAV_SET_HTTP_STATUS (
-		500,
+        500,
         'HTTP/1.1 500 Internal Server Error or Misconfiguration',
         '500 Internal Server Error or Misconfiguration',
         sprintf ('Failed to return the directory index in this location: %V<br />%s',  http_path (), DAV_PERROR (dir_ret)),
@@ -2674,6 +2688,7 @@ again:
     server_etag := WS.WS.ETAG_BY_ID (_col_id, 'C');
     if (server_etag is not null)
       http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
+
     return;
   }
 
@@ -2730,6 +2745,7 @@ again:
   -- special extensions can be executed if special flag is set
   if ((http_map_get ('executable') and webid_check_rc >= 0) or (exec_safety_level and is_admin_owned_res))
     exec_safety_level := 2;
+
   -- dbg_obj_princ ('exec_safety_level is ', exec_safety_level);
   -- when directory is executable set the owner for execution to the resource owner
   -- this would apply to the included files etc.
@@ -2750,6 +2766,7 @@ again:
   {
     declare incstat any;
     declare pname varchar;
+
     pname := sprintf ('%s.%s.%s', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
     if (__proc_exists (pname) and not WS.WS.DAV_VSP_INCLUDES_CHANGED (full_path, http_map_get ('vsp_proc_owner')))
     {
@@ -2813,8 +2830,9 @@ again:
       signal (stat, msg);
     }
     else
+    {
       registry_set (concat ('__depend_', http_map_get ('vsp_proc_owner'), '_', full_path), serialize(incstat));
-
+    }
     return;
   }
   else if ((exec_safety_level > 1) and full_path like '%.vspx')
@@ -2913,7 +2931,9 @@ again:
         fext := ws_get_ftext (_name, dot);
 
         if (__proc_exists (fext, 2))
+        {
           is_exist := 1;
+        }
         else
         {
           fext := concat ('WS.WS.', fext);
@@ -2979,8 +2999,9 @@ again:
           hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
           if (strcasestr (hdr_str, 'Content-Type:') is null)
             hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
-	  if (modt is not null and strcasestr (hdr_str, 'Last-Modified:') is null)
-	    hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', soap_print_box (modt, '', 1));
+
+          if (modt is not null and strcasestr (hdr_str, 'Last-Modified:') is null)
+            hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', soap_print_box (modt, '', 1));
 
           hdr_path := DAV_CONCAT_PATH ('/', full_path);
           if (hdr_path not like '%,meta')
@@ -3002,7 +3023,9 @@ again:
           http_header (hdr_str);
         }
         else
+        {
           http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
+        }
       }
     }
 --      else
@@ -3023,6 +3046,7 @@ again:
         declare meta_data varchar;
         declare delim1, delim2 integer;
         declare zero integer;
+
         ondemand_data := string_output_string (content);
         delim1 := locate('{view_name}\n',ondemand_data);
         delim2 := locate('{meta_mode}\n',ondemand_data);
@@ -3031,7 +3055,9 @@ again:
           view_name := ondemand_data;
           meta_mode := 0;
           meta_data := '';
-        } else {
+        }
+        else
+        {
           view_name := substring(ondemand_data, 1, delim1-1);
           delim1 := delim1 + length('{view_name}\n');
           meta_mode := cast(substring(ondemand_data, delim1, delim2-delim1) as integer);
@@ -3165,16 +3191,16 @@ again:
           }
           else
           {
-	    if (cont_type <> 'text/turtle' or _accept = 'application/ld+json')
-	      {
-		if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
-		  return;
-	      }
+            if (cont_type <> 'text/turtle' or _accept = 'application/ld+json')
+            {
+              if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
+                return;
+            }
             if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
-	      {
-		commit work;
-		http_flush (1);
-	      }
+            {
+              commit work;
+              http_flush (1);
+            }
 
 
             http (content);
@@ -3212,21 +3238,29 @@ again:
           }
           xml_mime_type := DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'xml-sql-mime-type', 0), 'text/xml');
           if (_xslt_sheet <> '')
+          {
             http_xslt (_xslt_sheet);
+          }
           else if (length (content) = 0)
+          {
             http_header (http_header_get () || sprintf ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\nExpires: %s\r\nContent-Type: %s\r\n', soap_print_box (now (), '', 1), xml_mime_type));
+          }
           else
+          {
             http_header (http_header_get () || sprintf ('Content-Type: %s\r\nETag: "%s"\r\n', xml_mime_type, _server_etag));
+          }
         }
       }
-		else
-		{
-			if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
-				return;
-		}
+      else
+      {
+        if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
+          return;
+      }
     }
     else
+    {
       http_request_status ('HTTP/1.1 304 Not Modified');
+    }
   }
 err_end:
   return;
@@ -3291,7 +3325,14 @@ DB.DBA.EXEC_STMT ('grant execute on DB.DBA.dynamic_host_name to SPARQL_SELECT', 
 ;
 
 -- /* LDP extension for GET (http://www.w3.org/TR/ldp/#http-get) */
-create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout params any, in client_etag varchar, in full_path varchar, in _res_id int, in _col_id int)
+create procedure WS.WS.GET_EXT_DAV_LDP (
+  inout path any,
+  inout lines any,
+  inout params any,
+  in client_etag varchar,
+  in full_path varchar,
+  in _res_id int,
+  in _col_id int)
 {
   declare accept, accept_full, name_ varchar;
   declare mod_time datetime;
