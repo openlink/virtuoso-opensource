@@ -1639,6 +1639,8 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/java-ser
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/json','json')
 ;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/ld+json','jsonld')
+;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/lost+xml','lostxml')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/marc','mrc')
