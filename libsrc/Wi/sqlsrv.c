@@ -1138,6 +1138,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
     {
       caddr_t err;
       client_connection_free (cli);
+      sqlc_set_client (NULL);
       DKS_DB_DATA (client) = NULL;
       dk_free_box (cli_ver);
       if (!user || !sec_user_has_group (0, user->usr_g_id))
