@@ -2663,9 +2663,9 @@ again:
   if ((_col_id is not null) or ((_res_id is not null) and (get_keyword ('a', params) in ('update', 'edit'))))
   {
     declare dir_ret any;
-  --this is for DAV folder
+    -- this is for DAV folder
 
-    if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
+    if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
       return;
 
     if (0 = http_map_get ('browseable'))
@@ -2734,7 +2734,7 @@ again:
   if (resource_owner = http_dav_uid ())
     is_admin_owned_res := 1;
 
-  if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
+  if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
     return;
 	
   --for select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = _col do
@@ -3193,7 +3193,7 @@ again:
           {
             if (cont_type <> 'text/turtle' or _accept = 'application/ld+json')
             {
-              if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
+              if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
                 return;
             }
             if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
@@ -3341,7 +3341,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   declare pref_mime varchar;
 
   -- LDPR request
-  pref_mime := case when isinteger (_res_id) then (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = _res_id) else null end;
+  pref_mime := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (_res_id));
 
   accept_full := http_request_header_full (lines, 'Accept', '*/*');
   accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept_full, pref_mime);
@@ -3423,7 +3423,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
 
     if (not (exists (sparql define input:storage "" select (1) where { graph `iri(?:gr)` { ?s ?p ?o }})))
     {
-      if (isinteger (_res_id) and (pref_mime not in ('text/turtle', 'application/ld+json')))
+      if (isinteger (DB.DBA.DAV_DET_DAV_ID (_res_id)) and (pref_mime not in ('text/turtle')))
 	{
         declare i integer;
         declare tmp, V any;
@@ -3437,6 +3437,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
         }
       }
       http_request_status ('HTTP/1.1 404 Not Found');
+
       return 1;
 		}
     cnt := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
