@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,9 +19,9 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -35,11 +33,14 @@
       <v:variable name="dsn_to_connect" type="varchar" default="null" param-name="dsn"/>
       <v:variable name="ret_bmk" type="varchar" default="null" param-name="bmk"/>
     </vm:variables>
+
     <vm:menu>
       <vm:menuitem value="External Data Sources"/>
     </vm:menu>
+
     <vm:header caption="External Data Sources">
     </vm:header>
+
     <vm:pagebody vdb_check="1">
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
@@ -48,104 +49,88 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">Data Sources</td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Data Sources</td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <!-- MAIN -->
+                        <v:form name="dsn_cred_form" type="simple" method="POST" action="">
+                          <table class="ctl_grp">
+                            <tr class="ctl_grp_title">
+                              <td colspan="2"><h3>Please enter valid access credentials</h3></td>
+                            </tr>
                             <tr>
-                              <td width="100%" >
+                              <th>Data Source Name</th>
+                              <td><v:label name="ldsn_1" value="--self.dsn_to_connect"/></td>
+                            </tr>
+                            <tr>
+                              <th>User<span class="attention_marker">*</span></th>
+                              <td><v:text name="user_name"/></td>
+                            </tr>
+                            <tr>
+                              <th>Password<span class="attention_marker">*</span></th>
+                              <td><v:text name="new_pass" type="password"/></td>
+                            </tr>
+                            <tr align="center">
+                              <td colspan="2">
+                                <v:button action="simple" name="dsn_cread_cancel" value="Cancel">
+                                  <v:on-post>
+                                    self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
+                                  </v:on-post>
+                                </v:button>
+
+                                <v:button action="simple" name="save" value="Connect">
+                                  <v:on-post>
+                                    <v:script>
+                                      <![CDATA[
+                                        declare ds_login, ds_pwdo, ds_pwdn, dsn_name varchar;
+
+                                        dsn_name := self.dsn_to_connect;
+                                        ds_login := self.user_name.ufl_value;
+                                        ds_pwdn :=  self.new_pass.ufl_value;
+
+                                        if (exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = dsn_name and DS_UID = ds_login))
+                                        {
+                                          vdd_disconnect_data_source (dsn_name);
+                                        }
+
+                                        {
+                                          declare exit handler for sqlstate '*'
+                                          {
+                                            self.vc_error_message := __SQL_MESSAGE;
+                                            self.vc_is_valid := 0;
+                                            return;
+                                          };
+                                          vd_remote_data_source (dsn_name, '', ds_login, ds_pwdn);
+                                        }
+                                       self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
+                                      ]]>
+                                    </v:script>
+                                  </v:on-post>
+                                </v:button>
                               </td>
                             </tr>
                           </table>
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-		      <td valign="top">
-			<!-- MAIN -->
-        <v:form name="dsn_cred_form" type="simple" method="POST" action="">
-          <table class="ctl_grp">
-            <tr class="ctl_grp_title">
-              <td colspan="2"> Please enter valid access credentials </td>
-	    </tr>
-            <tr>
-	      <td>Data Source Name</td>
-	      <td>
-		<table>
-		  <tr>
-		    <td><v:label name="ldsn_1" value="--self.dsn_to_connect"/></td>
-		  </tr>
-		</table>
-	      </td>
-            </tr>
-            <tr>
-              <td>User<span class="attention_marker">*</span></td>
-              <td><v:text name="user_name"/></td>
-            </tr>
-            <tr>
-              <td>Password<span class="attention_marker">*</span></td>
-              <td><v:text name="new_pass" type="password"/></td>
-            </tr>
-            <tr align="center">
-              <td colspan="2">
-                <v:button action="simple" name="dsn_cread_cancel" value="Cancel">
-                  <v:on-post>
-		     self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
-                  </v:on-post>
-                </v:button>
-                <v:button action="simple" name="save" value="Connect">
-                  <v:on-post>
-                    <v:script>
-                      <![CDATA[
-                        declare i, cnt, len integer;
-                        declare tmp_list, tmp_vec any;
-			declare ds_login, ds_pwdo, ds_pwdn, dsn_name varchar;
-
-			dsn_name := self.dsn_to_connect;
-
-                        ds_login := self.user_name.ufl_value;
-                        ds_pwdn :=  self.new_pass.ufl_value;
-
-			if (exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = dsn_name
-			    and DS_UID = ds_login))
-                        {
-                            vdd_disconnect_data_source (dsn_name);
-                        }
-
-                        {
-                          declare exit handler for sqlstate '*'
-                            {
-			      self.vc_error_message := __SQL_MESSAGE;
-			      self.vc_is_valid := 0;
-                              return;
-                            };
-                          vd_remote_data_source (dsn_name, '', ds_login, ds_pwdn);
-                        }
-  		     self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
-                      ]]>
-                    </v:script>
-                  </v:on-post>
-                </v:button>
-              </td>
-            </tr>
-          </table>
-        </v:form>
-			<!-- END -->
+                        </v:form>
+                        <!-- END -->
                       </td>
                     </tr>
                   </table>

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,9 +19,9 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -49,197 +47,199 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">Data Sources</td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Data Sources</td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">
                     <tr>
-		      <td valign="top">
-		      <!-- MAIN -->
-        <v:template name="main_conn_tmpl" type="simple">
-	<v:before-data-bind><![CDATA[
-	      if (self.dsn_list is not null)
-	        return;
+                      <td valign="top">
+                        <!-- MAIN -->
+                        <v:template name="main_conn_tmpl" type="simple">
+                          <v:before-data-bind>
+                            <![CDATA[
+                              if (self.dsn_list is not null)
+                                return;
 
-	      declare dsn_list, connected_dsn_list, u_dsn, s_dsn, f_dsn any;
-	      declare i int;
+                              declare dsn_list, connected_dsn_list, u_dsn, s_dsn, f_dsn any;
+                              declare i int;
 
-	      u_dsn := sql_data_sources (1, 'user');
-	      s_dsn := sql_data_sources (1, 'system');
-	      f_dsn := y_get_file_dsns ();
+                              u_dsn := sql_data_sources (1, 'user');
+                              s_dsn := sql_data_sources (1, 'system');
+                              f_dsn := y_get_file_dsns ();
 
-	      dsn_list := make_array (length(u_dsn) + length(s_dsn) + length(f_dsn), 'any');
+                              dsn_list := make_array (length(u_dsn) + length(s_dsn) + length(f_dsn), 'any');
 
-	      i := 0;
-	      foreach (any elm in u_dsn) do
-	        {
-		  elm := vector_concat (elm, vector('user'));
-		  dsn_list[i] := elm;
-		  i := i + 1;
-		}
-	      foreach (any elm in s_dsn) do
-	        {
-		  elm := vector_concat (elm, vector('system'));
-		  dsn_list[i] := elm;
-		  i := i + 1;
-		}
-	      foreach (any elm in f_dsn) do
-	        {
-		  elm := vector_concat (elm, vector('file'));
-		  dsn_list[i] := elm;
-		  i := i + 1;
-		}
+                              i := 0;
+                              foreach (any elm in u_dsn) do
+                              {
+                                elm := vector_concat (elm, vector('user'));
+                                dsn_list[i] := elm;
+                                i := i + 1;
+                              }
+                              foreach (any elm in s_dsn) do
+                              {
+                                elm := vector_concat (elm, vector('system'));
+                                dsn_list[i] := elm;
+                                i := i + 1;
+                              }
+                              foreach (any elm in f_dsn) do
+                              {
+                                elm := vector_concat (elm, vector('file'));
+                                dsn_list[i] := elm;
+                                i := i + 1;
+                              }
 
-	      connected_dsn_list := vector ();
-	      for select DS_DSN from DB.DBA.SYS_DATA_SOURCE order by 1 do
-	        {
-	          connected_dsn_list := vector_concat (connected_dsn_list, vector (DS_DSN));
-		      }
+                              connected_dsn_list := vector ();
+                              for select DS_DSN from DB.DBA.SYS_DATA_SOURCE order by 1 do
+                              {
+                                connected_dsn_list := vector_concat (connected_dsn_list, vector (DS_DSN));
+                              }
 
-	      self.dsn_list := dsn_list;
-	      self.connected_dsn_list := connected_dsn_list;
-	]]></v:before-data-bind>
-      <div class="scroll_area">
-      <table class="listing">
-          <v:data-set name="ds"
-                      data="--self.dsn_list"
-                      meta="--vector (vector ('callret',182,0,256,1,0,1,0,0,0,0,0))"
-                      nrows="1000"
-                      scrollable="1"
-                      edit="0"
-                      width="80">
-		<v:template name="dsn_lst_h_tmpl" type="simple">
-                <thead>
-                  <tr class="listing_header_row">
-                    <th/>
-	             <v:button name="refresh1" style="image" action="simple"
-		       value="images/icons/ref_16.png"
-                              xhtml_alt="Refresh page"
-			      xhtml_title="Refresh page"
-			      url="vdb_conn_dsn.vspx">
-		    </v:button>
-                    <th>DSN</th>
-                    <th>Type</th>
-                    <th>Driver</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-            </v:template>
-            <v:template name="template2" type="repeat">
-              <v:template name="template7" type="if-not-exists">
-                  <tr>
-                    <td align="center" colspan="11">
-                      <b>No data sources available</b>
-                    </td>
-                  </tr>
-              </v:template>
-	      <v:template name="dsn_list_tmpl" type="browse">
-		  <tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-                  <td>
-          	       <?vsp
-          	         http(sprintf('<a name="bmk_%s"/>',control.vc_get_name()));
-          	       ?>
-                    <img class="icon" src="images/icons/database_16.png" alt="database"/>
-                  </td>
-                  <td>
-                    <v:label name="dsn_l"
-                             value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
-                             format="%s"
-                             />
-                  </td>
-                  <td>
-                    <v:label name="type_l"
-                             value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
-                             format="%s"
-                             />
-                  </td>
-                  <td>
-                    <v:label name="descr_l"
-                             value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[1], '')"
-                             format="%s"
-                             />
-                  </td>
-                  <td  class="listing_col_action">
-		    <v:button action="simple" style="image" name="bt_add1"
-		      value="images/icons/connect_16.png"
-		      xhtml_alt="Connect"
-		      xhtml_title="Connect"
-		      text="&nbsp;Connect"
-		      url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=add_cred&dsn=%U&bmk=%s',
-		      (control.vc_parent as vspx_row_template).te_rowset[0],
-		      'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
-		      )"
-		      enabled="--equ(position(((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list),0)"/>
+                              self.dsn_list := dsn_list;
+                              self.connected_dsn_list := connected_dsn_list;
+                            ]]>
+                          </v:before-data-bind>
+                          <div class="scroll_area">
+                            <table class="listing">
+                              <v:data-set name="ds"
+                                          data="--self.dsn_list"
+                                          meta="--vector (vector ('callret',182,0,256,1,0,1,0,0,0,0,0))"
+                                          nrows="1000"
+                                          scrollable="1"
+                                          edit="0"
+                                          width="80">
 
-		    <v:button action="simple" style="image" name="label6D"
-		      value="images/icons/link_16.png"
-		      xhtml_alt="Link objects"
-		      xhtml_title="Link objects"
-		      text="&nbsp;Link objects"
-		      url="--sprintf ('vdb_obj_link.vspx?mode=edit_cred&dsn=%s&desc=%s&bmk=%s',
-		      (control.vc_parent as vspx_row_template).te_rowset[0],
-		      (control.vc_parent as vspx_row_template).te_rowset[1],
-		      'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
-		      )"
-		      enabled="--position (((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list)"/>
-		    <v:button name="acc_cred_cmd_l" style="image" action="simple"
-		      value="images/icons/edit_16.png"
-		      xhtml_alt="Change Credentials"
-		      xhtml_title="Change Credentials"
-		      text="&nbsp;Change Credentials"
-		      url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=edit_cred&dsn=%s&bmk=%s',
-		      		(control.vc_parent as vspx_row_template).te_rowset[0],
-		      		'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
-		      		)"
-		      enabled="--position (((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list)"/>
-		    <v:button action="simple" style="image" name="bt_del1"
-		      value="images/icons/disconnect_16.png"
-		      xhtml_alt="Disconnect"
-		      xhtml_title="Disconnect"
-		      text="&nbsp;Disconnect"
-		      url="--sprintf ('vdb_conn_dsn_del.vspx?dsn=%U&bmk=%s',
-    		      (control.vc_parent as vspx_row_template).te_rowset[0],
-		      		'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
-		      )"
-		      enabled="--position (((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list)"/>
-                  </td>
-		</tr>
-              </v:template>
-            </v:template>
-            <v:template name="dsn_list_ftr_tmpl" type="simple">
-                <tr>
-                  <td align="center"  class="listing_col_action">
-		    <vm:ds-navigation data-set="ds"/>
-                  </td>
-                </tr>
-            </v:template>
-	  </v:data-set>
-	</table>
-      </div>
-	</v:template>
-			<!-- END -->
+                                <v:template name="dsn_lst_h_tmpl" type="simple">
+                                  <thead>
+                                    <tr class="listing_header_row">
+                                      <th width="1px">
+                                        <v:button name="refresh1"
+                                                  style="image"
+                                                  action="simple"
+                                                  value="images/icons/ref_16.png"
+                                                  xhtml_alt="Refresh page"
+                                                  xhtml_title="Refresh page"
+                                                  url="vdb_conn_dsn.vspx"/>
+                                      </th>
+                                      <th width="40%">DSN</th>
+                                      <th width="20%">Type</th>
+                                      <th width="40%">Driver</th>
+                                      <th class="action">Action</th>
+                                    </tr>
+                                  </thead>
+                                </v:template>
+
+                                <v:template name="template2" type="repeat">
+                                  <v:template name="template7" type="if-not-exists">
+                                    <tr>
+                                      <td align="center" colspan="5">
+                                        <b>No data sources available</b>
+                                      </td>
+                                    </tr>
+                                  </v:template>
+
+                                  <v:template name="dsn_list_tmpl" type="browse">
+                                    <tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                      <td>
+                                        <?vsp
+                                          http(sprintf('<a name="bmk_%s"/>',control.vc_get_name()));
+                                        ?>
+                                        <img class="icon" src="images/icons/database_16.png" alt="database"/>
+                                      </td>
+                                      <td>
+                                        <v:label name="dsn_l" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                      </td>
+                                      <td>
+                                        <v:label name="type_l" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/>
+                                      </td>
+                                      <td>
+                                        <v:label name="descr_l" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[1], '')" format="%s"/>
+                                      </td>
+                                      <td class="action">
+                                        <v:button action="simple"
+                                          style="image"
+                                          name="bt_add1"
+                                          value="images/icons/connect_16.png"
+                                          xhtml_alt="Connect"
+                                          xhtml_title="Connect"
+                                          text="&nbsp;Connect"
+                                          url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=add_cred&dsn=%U&bmk=%s',
+                                            (control.vc_parent as vspx_row_template).te_rowset[0],
+                                            'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
+                                          )"
+                                          enabled="--equ(position(((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list),0)"/>
+
+                                        <v:button action="simple"
+                                          style="image"
+                                          name="label6D"
+                                          value="images/icons/link_16.png"
+                                          xhtml_alt="Link objects"
+                                          xhtml_title="Link objects"
+                                          text="&nbsp;Link objects"
+                                          url="--sprintf ('vdb_obj_link.vspx?mode=edit_cred&dsn=%s&desc=%s&bmk=%s',
+                                            (control.vc_parent as vspx_row_template).te_rowset[0],
+                                            (control.vc_parent as vspx_row_template).te_rowset[1],
+                                            'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
+                                          )"
+                                          enabled="--position (((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list)"/>
+                                        <v:button name="acc_cred_cmd_l"
+                                          style="image"
+                                          action="simple"
+                                          value="images/icons/edit_16.png"
+                                          xhtml_alt="Change Credentials"
+                                          xhtml_title="Change Credentials"
+                                          text="&nbsp;Change Credentials"
+                                          url="--sprintf ('vdb_conn_dsn_edit.vspx?mode=edit_cred&dsn=%s&bmk=%s',
+                                            (control.vc_parent as vspx_row_template).te_rowset[0],
+                                            'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
+                                          )"
+                                          enabled="--position (((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list)"/>
+                                        <v:button action="simple"
+                                          style="image"
+                                          name="bt_del1"
+                                          value="images/icons/disconnect_16.png"
+                                          xhtml_alt="Disconnect"
+                                          xhtml_title="Disconnect"
+                                          text="&nbsp;Disconnect"
+                                          url="--sprintf ('vdb_conn_dsn_del.vspx?dsn=%U&bmk=%s',
+                                            (control.vc_parent as vspx_row_template).te_rowset[0],
+                                            'bmk_'||(control.vc_parent as vspx_row_template).vc_get_name()
+                                          )"
+                                          enabled="--position (((control.vc_parent as vspx_row_template).te_rowset[0]), self.connected_dsn_list)"/>
+                                      </td>
+                                    </tr>
+                                  </v:template>
+
+                                </v:template>
+
+                                <v:template name="dsn_list_ftr_tmpl" type="simple">
+                                  <tr>
+                                    <td align="center" colspan="5" class="listing_col_action">
+                                      <vm:ds-navigation data-set="ds"/>
+                                    </td>
+                                  </tr>
+                                </v:template>
+                              </v:data-set>
+                            </table>
+                          </div>
+                        </v:template>
+
+                      <!-- END -->
                       </td>
                     </tr>
                   </table>

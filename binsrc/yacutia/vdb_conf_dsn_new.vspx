@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,9 +19,9 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -47,90 +45,77 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">Configure Data Sources</td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Configure Data Sources</td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">
                     <tr>
-		      <td valign="top">
-			<!-- MAIN -->
-			<v:form name="dsn_new" method="POST" type="simple">
-			  <v:before-data-bind>
-			    if (self.dsn_type is null and not self.vc_is_postback)
-			      {
-			        -- these are button names from vdb_config_dsn.vspx
-				if (get_keyword ('add_system', e.ve_params) is not null)
-				  self.dsn_type := 'system';
-				else if (
-				  get_keyword ('add_user', e.ve_params) is not null or
-				  get_keyword ('add_user_dsn', e.ve_params) is not null
-				  )
-				  self.dsn_type := 'user';
-				else if (get_keyword ('add_file', e.ve_params) is not null)
-				  self.dsn_type := 'file';
-				else
-				  self.dsn_type := 'user';
-		              }
-			  </v:before-data-bind>
-			  <div class="scroll_area">
-			  <table class="listing">
-			    <tr class="listing_header_row">
-			      <th>Driver</th>
-			      <th>Action</th>
-			    </tr>
-			    <?vsp
-			      declare arr, i any;
-			      arr :=  sql_get_installed_drivers ();
-			      i := 0;
-			      foreach (any elm in arr) do
-			        {
-				if (self.dsn_type <> 'file' or (elm like '%irtuoso%' or
-				    (strcasestr (elm, 'penLink') and (strcasestr (elm, 'Virtuoso') is null))))
-				    {
-			    ?>
-			    <tr class="<?V case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-				<td><?V elm ?></td>
-				<td class="listing_col_action">
-		      <a href="<?V sprintf ('vdb_conf_dsn_edit.vspx?driver=%U&type=%U&sid=%s&realm=%s', elm, self.dsn_type, self.sid, self.realm) ?>"><img src="images/icons/add_16.png" alt="Add" title="Add" border="0" />&nbsp;Add</a>
-				</td>
-			      </tr>
-			    <?vsp
-			          i := i + 1;
-				    }
-			        }
-			    ?>
-			  </table>
-			</div>
-			    <v:button action="simple" name="unlink_cancel" value="Cancel">
-			      <v:on-post>
-				self.vc_redirect ('vdb_config_dsn.vspx');
-			      </v:on-post>
-			    </v:button>
-			</v:form>
-			<!-- END -->
+                      <td valign="top">
+                      <!-- MAIN -->
+                        <v:form name="dsn_new" method="POST" type="simple">
+                          <v:before-data-bind>
+                            if (self.dsn_type is null and not self.vc_is_postback)
+                            {
+                              -- these are button names from vdb_config_dsn.vspx
+                              if (get_keyword ('add_system', e.ve_params) is not null)
+                                self.dsn_type := 'system';
+                              else if (get_keyword ('add_file', e.ve_params) is not null)
+                                self.dsn_type := 'file';
+                              else
+                                self.dsn_type := 'user';
+                            }
+                          </v:before-data-bind>
+                          <div class="scroll_area">
+                            <table class="listing">
+                              <tr class="listing_header_row">
+                                <th>Driver</th>
+                                <th class="action">Action</th>
+                              </tr>
+                              <tbody>
+                              <?vsp
+                                declare arr any;
+
+                                arr := sql_get_installed_drivers ();
+                                foreach (any elm in arr) do
+                                {
+                                  if (self.dsn_type <> 'file' or (elm like '%irtuoso%' or (strcasestr (elm, 'penLink') and (strcasestr (elm, 'Virtuoso') is null))))
+                                  {
+                              ?>
+                              <tr>
+                                <td><?V elm ?></td>
+                                <td class="action">
+                                  <a href="<?V sprintf ('vdb_conf_dsn_edit.vspx?driver=%U&type=%U&sid=%s&realm=%s', elm, self.dsn_type, self.sid, self.realm) ?>"><img src="images/icons/add_16.png" alt="Add" title="Add" border="0" />&amp;nbsp;Add</a>
+                                </td>
+                              </tr>
+                              <?vsp
+                                  }
+                                }
+                              ?>
+                              </tbody>
+                            </table>
+                          </div>
+                          <v:button action="simple" name="unlink_cancel" value="Cancel">
+                            <v:on-post>
+                              self.vc_redirect ('vdb_config_dsn.vspx');
+                            </v:on-post>
+                          </v:button>
+                        </v:form>
+                        <!-- END -->
                       </td>
                     </tr>
                   </table>

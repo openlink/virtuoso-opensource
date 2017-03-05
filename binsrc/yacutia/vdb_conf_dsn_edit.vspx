@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -22,7 +20,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -39,169 +38,179 @@
       <v:variable name="is_win" persist="temp" type="int" default="0" />
       <v:variable name="gen_set" persist="0" type="any" default="null" />
     </vm:variables>
+
     <vm:menu>
       <vm:menuitem value="External Data Sources"/>
     </vm:menu>
+
     <vm:header caption="External Data Sources">
     </vm:header>
+
     <vm:rawheader>
       <v:template name="succ_tmpl" enabled="0" type="simple">
-	<div>Connected successfully</div>
+        <div>Connected successfully</div>
       </v:template>
     </vm:rawheader>
+
     <vm:pagebody vdb_check="1">
       <v:on-init>
-	if ((sys_stat('st_build_opsys_id') = 'Win32'))
-	  self.is_win := 1;
+        if ((sys_stat('st_build_opsys_id') = 'Win32'))
+          self.is_win := 1;
       </v:on-init>
+
       <v:method name="get_domains" arglist="">
-	return vector (
-	    'DB2',
-	    'Informix 5',
-	    'Informix 6',
-	    'Informix 7.1',
-	    'Informix 7.2',
-	    'Informix 7.3',
-	    'Informix 2000',
-	    'Informix 10',
-	    'Ingres 6.4',
-	    'Ingres II',
-	    'Jdbc 1.1',
-	    'Jdbc 1.2',
-	    'Jdbc 1.3',
-	    'Jdbc 1.4',
-	    'Jdbc 1.5',
-	    'Jdbc 1.6',
-	    'MySQL 3.x',
-	    'MySQL 4.x',
-	    'MySQL 5.x',
-	    'Odbc',
-	    'OpenIngres 1.x',
-	    'Oracle 6',
-	    'Oracle 7',
-	    'Oracle 8.0.x',
-	    'Oracle 8.1.x',
-	    'Oracle 9.x',
-	    'Oracle 10.x',
-	    'PostgreSQL',
-	    'Progress 63C',
-	    'Progress 63E',
-	    'Progress 63F',
-	    'Progress 72D',
-	    'Progress 73A',
-	    'Progress 73C',
-	    'Progress 73D',
-	    'Progress 73E',
-	    'Progress 81A',
-	    'Progress 81AS',
-	    'Progress 82A',
-	    'Progress 82AS',
-	    'Progress 82C',
-	    'Progress 82CS',
-	    'Progress 83A',
-	    'Progress 83AS',
-	    'Progress 83B',
-	    'Progress 83BS',
-	    'Progress 83D',
-	    'Progress 83DS',
-	    'Progress 83E',
-	    'Progress 83ES',
-	    'Progress 8S',
-	    'Progress 90A',
-	    'Progress 90AS',
-	    'Progress 90B',
-	    'Progress 90BS',
-	    'Progress 91A',
-	    'Progress 91AS',
-	    'Progress 91B',
-	    'Progress 91BS',
-	    'Progress 91C',
-	    'Progress 91CS',
-	    'Progress 91D',
-	    'Progress 91DS',
-	    'Progress 91E',
-	    'Progress 91ES',
-	    'Progress 91SQL',
-	    'Progress 100A',
-	    'Progress 100SQL',
-	    'Proxy',
-	    'SQLServer 4',
-	    'SQLServer 6',
-	    'SQLServer 7',
-	    'SQLServer 2000',
-	    'SQLServer 2005',
-	    'Solid',
-	    'Sybase 4.2',
-	    'Sybase 10',
-	    'Sybase 11',
-	    'Sybase 12',
-	    'Sybase',
-	    'Unify 2000',
-	    'Velocis',
-	    'Virtuoso');
+        return vector (
+            'DB2',
+            'Informix 5',
+            'Informix 6',
+            'Informix 7.1',
+            'Informix 7.2',
+            'Informix 7.3',
+            'Informix 2000',
+            'Informix 10',
+            'Ingres 6.4',
+            'Ingres II',
+            'Jdbc 1.1',
+            'Jdbc 1.2',
+            'Jdbc 1.3',
+            'Jdbc 1.4',
+            'Jdbc 1.5',
+            'Jdbc 1.6',
+            'MySQL 3.x',
+            'MySQL 4.x',
+            'MySQL 5.x',
+            'Odbc',
+            'OpenIngres 1.x',
+            'Oracle 6',
+            'Oracle 7',
+            'Oracle 8.0.x',
+            'Oracle 8.1.x',
+            'Oracle 9.x',
+            'Oracle 10.x',
+            'PostgreSQL',
+            'Progress 63C',
+            'Progress 63E',
+            'Progress 63F',
+            'Progress 72D',
+            'Progress 73A',
+            'Progress 73C',
+            'Progress 73D',
+            'Progress 73E',
+            'Progress 81A',
+            'Progress 81AS',
+            'Progress 82A',
+            'Progress 82AS',
+            'Progress 82C',
+            'Progress 82CS',
+            'Progress 83A',
+            'Progress 83AS',
+            'Progress 83B',
+            'Progress 83BS',
+            'Progress 83D',
+            'Progress 83DS',
+            'Progress 83E',
+            'Progress 83ES',
+            'Progress 8S',
+            'Progress 90A',
+            'Progress 90AS',
+            'Progress 90B',
+            'Progress 90BS',
+            'Progress 91A',
+            'Progress 91AS',
+            'Progress 91B',
+            'Progress 91BS',
+            'Progress 91C',
+            'Progress 91CS',
+            'Progress 91D',
+            'Progress 91DS',
+            'Progress 91E',
+            'Progress 91ES',
+            'Progress 91SQL',
+            'Progress 100A',
+            'Progress 100SQL',
+            'Proxy',
+            'SQLServer 4',
+            'SQLServer 6',
+            'SQLServer 7',
+            'SQLServer 2000',
+            'SQLServer 2005',
+            'Solid',
+            'Sybase 4.2',
+            'Sybase 10',
+            'Sybase 11',
+            'Sybase 12',
+            'Sybase',
+            'Unify 2000',
+            'Velocis',
+            'Virtuoso');
+      </v:method>
 
-	  </v:method>
-	  <v:method name="add_str_par" arglist="inout conn any, in par varchar, inout ctr vspx_field">
-	    if (length (ctr.ufl_value))
-	      conn := conn || sprintf ('%s=%s;', par, ctr.ufl_value);
-	  </v:method>
-	  <v:method name="add_bool_par" arglist="inout conn any, in par varchar, inout ctr vspx_check_box">
-	    if (ctr.ufl_selected)
-	      conn := conn || sprintf ('%s=Yes;', par);
-	    else
-	      conn := conn || sprintf ('%s=No;', par);
-	  </v:method>
-	  <v:method name="make_virt_dsn" arglist="in dstp varchar">
-	      declare conn varchar;
+      <v:method name="add_str_par" arglist="inout conn any, in par varchar, inout ctr vspx_field">
+        if (length (ctr.ufl_value))
+          conn := conn || sprintf ('%s=%s;', par, ctr.ufl_value);
+      </v:method>
 
-	      conn := 'DSN=' || self.virt_dsn.ufl_value || ';';
-	      conn := conn || 'Description=' || self.description.ufl_value || ';';
-	      conn := conn || 'Address=' || self.server.ufl_value || ':' || self.port.ufl_value || ';';
-	      if (self.is_win)
-	        conn := conn || 'Host=' || self.server.ufl_value || ':' || self.port.ufl_value || ';';
-	      if (length (self.uid.ufl_value))
-		conn := conn || 'UserName=' || self.uid.ufl_value || ';';
-	      if (length (self.database.ufl_value))
-		conn := conn || 'Database=' || self.database.ufl_value || ';';
-	      if (self.ssl.ufl_selected)
-		conn := conn || 'Encrypt=' || self.ssl.ufl_value || ';';
-	      if (self.daylight.ufl_selected)
-		conn := conn || 'Daylight=' || self.daylight.ufl_value || ';';
+      <v:method name="add_bool_par" arglist="inout conn any, in par varchar, inout ctr vspx_check_box">
+        if (ctr.ufl_selected)
+          conn := conn || sprintf ('%s=Yes;', par);
+        else
+          conn := conn || sprintf ('%s=No;', par);
+      </v:method>
 
-	      if (dstp = 'file')
-	        {
-	          conn := replace (conn, ';', '\n');
-		  conn := '[ODBC]\nDRIVER=' || self.driver || '\n' || conn;
-	        }
+      <v:method name="make_virt_dsn" arglist="in dstp varchar">
+        declare conn varchar;
 
-              return conn;
-	  </v:method>
-	  <v:method name="make_opl_dsn" arglist="inout dstp varchar">
-	    declare conn varchar;
-	    conn := 'DSN=' || self.opl_dsn_name.ufl_value || ';';
-	    conn := conn || 'Description=' || self.opl_comment.ufl_value || ';';
+        conn := 'DSN=' || self.virt_dsn.ufl_value || ';';
+        conn := conn || 'Description=' || self.description.ufl_value || ';';
+        conn := conn || 'Address=' || self.server.ufl_value || ':' || self.port.ufl_value || ';';
+        if (self.is_win)
+          conn := conn || 'Host=' || self.server.ufl_value || ':' || self.port.ufl_value || ';';
+        if (length (self.uid.ufl_value))
+          conn := conn || 'UserName=' || self.uid.ufl_value || ';';
+        if (length (self.database.ufl_value))
+          conn := conn || 'Database=' || self.database.ufl_value || ';';
+        if (self.ssl.ufl_selected)
+          conn := conn || 'Encrypt=' || self.ssl.ufl_value || ';';
+        if (self.daylight.ufl_selected)
+          conn := conn || 'Daylight=' || self.daylight.ufl_value || ';';
 
-	    self.add_str_par (conn, 'UserName', self.opl_uid);
-	    self.add_str_par (conn, 'Password', self.opl_pwd);
+        if (dstp = 'file')
+        {
+          conn := replace (conn, ';', '\n');
+          conn := '[ODBC]\nDRIVER=' || self.driver || '\n' || conn;
+        }
 
-	    self.add_str_par (conn, 'Options', self.opl_srv_opts);
-	    self.add_str_par (conn, 'Host', self.opl_host);
-	    self.add_str_par (conn, 'Database', self.opl_db_name);
-	    conn := conn || 'Protocol=TCP/IP;';
-	    self.add_str_par (conn, 'ServerType', self.opl_domain);
-	    self.add_str_par (conn, 'FetchBufferSize', self.opl_row_buf_sz);
+        return conn;
+      </v:method>
 
-	    self.add_bool_par (conn, 'ReadOnly', self.opl_ro);
-	    self.add_bool_par (conn, 'DeferLongFetch', self.opl_defer_fetch);
-	    self.add_bool_par (conn, 'NoLoginBox', self.opl_no_login);
+      <v:method name="make_opl_dsn" arglist="inout dstp varchar">
+        declare conn varchar;
 
-	    if (dstp = 'file')
-	      {
-	          conn := replace (conn, ';', '\n');
-		  conn := '[ODBC]\nDRIVER=' || self.driver || '\n' || conn;
-	      }
-	    return conn;
-	  </v:method>
+        conn := 'DSN=' || self.opl_dsn_name.ufl_value || ';';
+        conn := conn || 'Description=' || self.opl_comment.ufl_value || ';';
+
+        self.add_str_par (conn, 'UserName', self.opl_uid);
+        self.add_str_par (conn, 'Password', self.opl_pwd);
+
+        self.add_str_par (conn, 'Options', self.opl_srv_opts);
+        self.add_str_par (conn, 'Host', self.opl_host);
+        self.add_str_par (conn, 'Database', self.opl_db_name);
+        conn := conn || 'Protocol=TCP/IP;';
+        self.add_str_par (conn, 'ServerType', self.opl_domain);
+        self.add_str_par (conn, 'FetchBufferSize', self.opl_row_buf_sz);
+
+        self.add_bool_par (conn, 'ReadOnly', self.opl_ro);
+        self.add_bool_par (conn, 'DeferLongFetch', self.opl_defer_fetch);
+        self.add_bool_par (conn, 'NoLoginBox', self.opl_no_login);
+
+        if (dstp = 'file')
+        {
+          conn := replace (conn, ';', '\n');
+          conn := '[ODBC]\nDRIVER=' || self.driver || '\n' || conn;
+        }
+        return conn;
+      </v:method>
+
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -209,630 +218,686 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">Configure Data Sources</td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Configure Data Sources</td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
                     </tr>
                   </table>
+
                   <table class="tab_page">
                     <tr>
-		      <td valign="top">
-			<!-- MAIN AREA -->
-			<!-- Generic Template -->
-			<v:template name="generic" type="simple"
-			  instantiate="--case when
-			  lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%virtuoso%' and
-			  not (lower(get_keyword ('driver', self.vc_event.ve_params, '')) like '%openlink%' and
-			  lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%lite%')
-			  then 1 else 0 end">
-			  <v:after-data-bind><![CDATA[
-			   if (e.ve_is_post)
-			     return;
+                      <td valign="top">
+                        <!-- MAIN AREA -->
+                        <!-- Generic Template -->
+                        <v:template name="generic" type="simple"
+                          instantiate="--case when
+                            lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%virtuoso%' and
+                            not (lower(get_keyword ('driver', self.vc_event.ve_params, '')) like '%openlink%' and
+                            lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%lite%')
+                            then 1 else 0 end">
+                          <v:after-data-bind>
+                            <![CDATA[
+                              if (e.ve_is_post)
+                                return;
 
-			   declare pars, txt, dsns, genopt any;
-			   txt := '';
-			   pars := vector ();
-			   genopt := vector ();
+                              declare pars, txt, dsns, genopt any;
+                              txt := '';
+                              pars := vector ();
+                              genopt := vector ();
 
-			   if (self.dsn = '')
-			     {
-			       dsns := sql_data_sources(1, self.dsn_type);
-			       foreach (any elm in dsns) do
-			         {
-				   if (elm[1] = self.driver)
-				     {
-				       pars := sql_get_private_profile_string (elm[0], self.dsn_type);
-				     }
-				 }
-			     }
-			   else if (self.dsn_type = 'file')
-			     {
-			       txt := file_to_string (self.dsn);
-			       goto done;
-			     }
-			   else
-                             {
-			       pars := sql_get_private_profile_string (self.dsn, self.dsn_type);
-			     }
-			   foreach (any elm in pars) do
-			     {
-			       if (lower(elm[0]) = 'driver')
-			         self.drv_lib := elm[1];
-			       else if (elm[0] = 'Description')
-			         {
-				   if (self.dsn <> '')
-			             self.gen_desc.ufl_value := elm[1];
-				 }
-			       else if (self.dsn = '')
-			         {
-				   genopt := vector_concat (genopt, vector(elm));
-				 }
-			       else
-			         {
-			           txt := txt || elm[0] ||'='||elm[1]|| ';\r\n';
-				 }
-			     }
-			  self.gen_set := genopt;
-			  if (self.dsn = '')
-			    {
-			      self.ds.vc_data_bind (e);
-			      self.gen_opts.vc_data_bind (e);
-			    }
-			  done:
-		          self.gen_opts.ufl_value := txt;
-			 ]]></v:after-data-bind>
-			<table>
-			  <v:form method="POST" type="simple" name="edit_gen_dsn">
-			    <input type="hidden" name="driver" value="<?V self.driver ?>"/>
-			    <tr>
-			      <td>DSN</td>
-			      <td>
-				<v:text name="gen_dsn" value="--self.dsn" xhtml_size="40" error-glyph="*">
-				  <v:validator test="length" min="1" max="2048" message="The DSN name can not be empty"/>
-				  <v:after-data-bind>
-				    if (length (self.dsn))
-				      control.vc_add_attribute ('readonly', '1');
-				  </v:after-data-bind>
-				</v:text>
-			      </td>
-			    </tr>
-			    <?vsp if (not (self.dsn_type = 'file')) { ?>
-			    <tr>
-			      <td>Description</td>
-			      <td><v:text name="gen_desc" value="" xhtml_size="40"/></td>
-			    </tr>
-			    <tr>
-			      <td>Driver</td>
-			      <td><v:label name="gen_drv" value="--self.drv_lib"/></td>
-			    </tr>
-			    <?vsp } ?>
-				<v:data-set name="ds"
-				  	    data="--self.gen_set"
-					    meta="--vector ()"
-				  edit="1" scrollable="0" nrows="-1"
-				  enabled="--(case when self.dsn = '' then 1 else 0 end)"
-			         >
-				  <v:template name="ds_t1" type="repeat">
-				    <v:template name="ds_t2" type="browse">
-				      <tr>
-					<td><v:label name="ds_l1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/></td>
-					<td><v:text name="ds_l2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/></td>
-				      </tr>
-				    </v:template>
-				  </v:template>
-				</v:data-set>
-			    <tr>
-			      <td colspan="2">
-				<v:textarea name="gen_opts" value="" xhtml_cols="60"
-				  xhtml_rows="--case when length (self.gen_set) > 3 then 5 else 15 end"/>
-			      </td>
-			    </tr>
-			    <tr><td colspan="2" align="right">
-				<v:button action="simple" name="upd_gen" value="Update">
-				  <v:after-data-bind>
-				    if (not length (self.dsn))
-				      control.ufl_value := 'Add';
-				    if (control.vc_focus and self.ds.vc_enabled)
-				      {
-				        self.ds.vc_focus := 1;
-					self.ds.vc_set_childs_focus (1, e);
-				      }
-				  </v:after-data-bind>
-				  <v:on-post>
-				  if (not self.vc_is_valid)
-				    return;
-				  declare conn, txt any;
+                              if (self.dsn = '')
+                              {
+                                dsns := sql_data_sources(1, self.dsn_type);
+                                foreach (any elm in dsns) do
+                                {
+                                  if (elm[1] = self.driver)
+                                  {
+                                    pars := sql_get_private_profile_string (elm[0], self.dsn_type);
+                                  }
+                                }
+                              }
+                              else if (self.dsn_type = 'file')
+                              {
+                                txt := file_to_string (self.dsn);
+                                goto done;
+                              }
+                              else
+                              {
+                                pars := sql_get_private_profile_string (self.dsn, self.dsn_type);
+                              }
+                              foreach (any elm in pars) do
+                              {
+                                if (lower(elm[0]) = 'driver')
+                                  self.drv_lib := elm[1];
+                                else if (elm[0] = 'Description')
+                                {
+                                  if (self.dsn <> '')
+                                    self.gen_desc.ufl_value := elm[1];
+                                }
+                                else if (self.dsn = '')
+                                {
+                                  genopt := vector_concat (genopt, vector(elm));
+                                }
+                                else
+                                {
+                                  txt := txt || elm[0] ||'='||elm[1]|| ';\r\n';
+                                }
+                              }
+                              self.gen_set := genopt;
+                              if (self.dsn = '')
+                              {
+                                self.ds.vc_data_bind (e);
+                                self.gen_opts.vc_data_bind (e);
+                              }
 
-				  conn := sprintf ('DSN=%s;Description=%s;',
-				  self.gen_dsn.ufl_value, self.gen_desc.ufl_value);
+                            done:
+                              self.gen_opts.ufl_value := txt;
+                            ]]>
+                          </v:after-data-bind>
+                          <table>
+                            <v:form method="POST" type="simple" name="edit_gen_dsn">
+                              <input type="hidden" name="driver" value="<?V self.driver ?>"/>
+                              <tr>
+                                <th>DSN</th>
+                                <td>
+                                  <v:text name="gen_dsn" value="--self.dsn" xhtml_size="40" error-glyph="*">
+                                    <v:validator test="length" min="1" max="2048" message="The DSN name can not be empty"/>
+                                    <v:after-data-bind>
+                                      if (length (self.dsn))
+                                        control.vc_add_attribute ('readonly', '1');
+                                    </v:after-data-bind>
+                                  </v:text>
+                                </td>
+                              </tr>
+                            <?vsp if (not (self.dsn_type = 'file')) { ?>
+                              <tr>
+                                <th>Description</th>
+                                <td><v:text name="gen_desc" value="" xhtml_size="40"/></td>
+                              </tr>
+                              <tr>
+                                <th>Driver</th>
+                                <td><v:label name="gen_drv" value="--self.drv_lib"/></td>
+                              </tr>
+                            <?vsp } ?>
+                              <v:data-set name="ds"
+                                          data="--self.gen_set"
+                                          meta="--vector ()"
+                                          edit="1"
+                                          scrollable="0"
+                                          nrows="-1"
+                                          enabled="--(case when self.dsn = '' then 1 else 0 end)"
+                              >
+                                <v:template name="ds_t1" type="repeat">
+                                  <v:template name="ds_t2" type="browse">
+                                    <tr>
+                                      <td><v:label name="ds_l1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/></td>
+                                      <td><v:text name="ds_l2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/></td>
+                                    </tr>
+                                  </v:template>
+                                </v:template>
+                              </v:data-set>
+                              <tr>
+                                <th valign="top">Options</th>
+                                <td >
+                                  <v:textarea name="gen_opts" value="" xhtml_cols="60"
+                                    xhtml_rows="--case when length (self.gen_set) > 3 then 5 else 15 end"/>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td colspan="2" align="right">
+                                  <v:button action="simple" name="upd_gen" value="Update">
+                                    <v:after-data-bind>
+                                      if (not length (self.dsn))
+                                        control.ufl_value := 'Add';
+                                      if (control.vc_focus and self.ds.vc_enabled)
+                                      {
+                                        self.ds.vc_focus := 1;
+                                        self.ds.vc_set_childs_focus (1, e);
+                                      }
+                                    </v:after-data-bind>
+                                  <v:on-post>
+                                    if (not self.vc_is_valid)
+                                      return;
 
-				  if (self.dsn = '')
-				    {
-				      declare ds vspx_data_set;
-				      declare rw vspx_row_template;
-				      declare fld vspx_field;
-				      declare inx int;
-				      inx := 0;
-				      ds := self.ds;
+                                    declare conn, txt any;
 
-				      while ((rw := ds.ds_iterate_rows (inx)) is not null)
-				        {
-					  fld := rw.vc_find_control ('ds_l2');
-					  conn := conn || rw.te_rowset[0] || '=' || fld.ufl_value || ';';
-					}
-				    }
-				  else if (self.dsn_type = 'file')
-				    {
-				      string_to_file (self.dsn, self.gen_opts.ufl_value, -2);
-				      goto done;
-				    }
+                                    conn := sprintf ('DSN=%s;Description=%s;', self.gen_dsn.ufl_value, self.gen_desc.ufl_value);
+                                    if (self.dsn = '')
+                                    {
+                                      declare ds vspx_data_set;
+                                      declare rw vspx_row_template;
+                                      declare fld vspx_field;
+                                      declare inx int;
+                                      inx := 0;
+                                      ds := self.ds;
 
-				  txt := self.gen_opts.ufl_value;
+                                      while ((rw := ds.ds_iterate_rows (inx)) is not null)
+                                      {
+                                        fld := rw.vc_find_control ('ds_l2');
+                                        conn := conn || rw.te_rowset[0] || '=' || fld.ufl_value || ';';
+                                      }
+                                    }
+                                    else if (self.dsn_type = 'file')
+                                    {
+                                      string_to_file (self.dsn, self.gen_opts.ufl_value, -2);
+                                      goto done;
+                                    }
 
-				  txt := replace (txt, chr (10), ';');
-				  txt := replace (txt, chr (13), '');
-				  txt := replace (txt, ';;', ';');
+                                    txt := self.gen_opts.ufl_value;
+                                    txt := replace (txt, chr (10), ';');
+                                    txt := replace (txt, chr (13), '');
+                                    txt := replace (txt, ';;', ';');
 
-				  conn := conn || txt;
+                                    conn := conn || txt;
 
-				  sql_remove_dsn_from_ini (self.gen_dsn.ufl_value, self.dsn_type);
-				  {
-				    declare exit handler for sqlstate '*'
-				    {
-				      self.vc_is_valid := 0;
-				      self.vc_error_message := __SQL_MESSAGE;
-				      return;
-				    };
-				    sql_config_data_sources (self.driver, self.dsn_type, conn);
-				  }
-				  done:
-				  self.vc_redirect ('vdb_config_dsn.vspx');
-				  </v:on-post>
-				</v:button>
-				<v:button action="simple" name="gen_def" value="Default"
-				  enabled="--(case when self.dsn = '' then 1 else 0 end)">
-				  <v:on-post>
-				    self.gen_set := vector ();
-				    self.gen_opts.vc_data_bind (e);
-				    self.vc_is_valid := 1;
-				    self.gen_dsn.ufl_failed := 0;
-				    self.ds.vc_enabled := 0;
-				  </v:on-post>
-				</v:button>
-				<v:button action="simple" name="gen_cancel" value="Cancel">
-				  <v:on-post>
-				    self.vc_redirect ('vdb_config_dsn.vspx');
-				  </v:on-post>
-				</v:button>
-			    </td></tr>
-			  </v:form>
-			</table>
-			</v:template>
-			<!-- OpenLink Driver -->
-			<v:template name="opl_dsn" type="simple"
-			  instantiate="--case when
-			  lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%virtuoso%' and
-			  lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%lite%' and
-			  lower(get_keyword ('driver', self.vc_event.ve_params, '')) like '%openlink%'
-			  then 1 else 0 end">
-			  <v:after-data-bind>
-			        if (e.ve_is_post)
-			          return;
+                                    sql_remove_dsn_from_ini (self.gen_dsn.ufl_value, self.dsn_type);
+                                    {
+                                      declare exit handler for sqlstate '*'
+                                      {
+                                        self.vc_is_valid := 0;
+                                        self.vc_error_message := __SQL_MESSAGE;
+                                        return;
+                                      };
+                                      sql_config_data_sources (self.driver, self.dsn_type, conn);
+                                    }
 
-			        declare prof any;
-				prof := sql_get_private_profile_string (self.dsn, self.dsn_type);
-				foreach (any par in prof) do
-				  {
-				    declare nam, val any;
-				    nam := par[0];
-				    val := par[1];
-				    if (nam = 'Description')
-				      self.opl_comment.ufl_value := val;
-				    else if (nam = 'Host')
-				      self.opl_host.ufl_value := val;
-				    else if (nam = 'LastUser')
-				      self.opl_uid.ufl_value := val;
-				    else if (nam = 'UserName')
-				      self.opl_uid.ufl_value := val;
-				    else if (nam = 'Database')
-				      self.opl_db_name.ufl_value := val;
-				    else if (nam = 'Password')
-				      self.opl_pwd.ufl_value := val;
-				    else if (nam = 'FetchBufferSize')
-				      self.opl_row_buf_sz.ufl_value := val;
-				    else if (nam = 'Options')
-				      self.opl_srv_opts.ufl_value := val;
-				    else if (nam = 'ServerType')
-				      {
-				        self.opl_domain.ufl_value := val;
-				        self.opl_domain.vs_set_selected ();
-			              }
-				    else if (nam = 'NoLoginBox' and val = 'Yes')
-				      self.opl_no_login.ufl_selected := 1;
-				    else if (nam = 'DeferLongFetch' and val = 'Yes')
-				      self.opl_defer_fetch.ufl_selected := 1;
-				    else if (nam = 'ReadOnly' and val = 'Yes')
-				      self.opl_ro.ufl_selected := 1;
-				  }
-			  </v:after-data-bind>
-			  <v:form method="POST" type="simple" name="edit_opl_dsn">
-			  <input type="hidden" name="driver" value="<?V self.driver ?>"/>
-			  <table border="0" cellspacing="0" cellpadding="5">
-			    <tr>
-			      <td colspan="3" align="middle">
-				<p class="copyright_noalign"><?V self.driver ?><br />
-				  <small>Copyright 1998-2017 OpenLink Software</small><br />
-				  <small>All rights reserved</small></p></td></tr>
-			    <tr><td rowspan="4" valign="top"><img src="images/opl.jpg" border="1" /></td>
-			      <td valign="top">
+                                  done:
+                                    self.vc_redirect ('vdb_config_dsn.vspx');
+                                  </v:on-post>
+                                </v:button>
 
-				<table border="0" cellpadding="0" width="250">
-				  <tr><th class="genhead" colspan="2">Data Source</th></tr>
-				  <tr>
-				    <td class="genlisthead">Name</td>
-				    <td><v:text name="opl_dsn_name" value="--self.dsn" xhtml_size="20" error-glyph="*">
-				           <v:validator test="length" min="1" max="2048" message="The DSN name can not be empty"/>
-					   <v:after-data-bind>
-					     if (length (self.dsn))
-					       control.vc_add_attribute ('readonly', '1');
-					   </v:after-data-bind>
-					 </v:text>
-				    </td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Comment</td>
-				    <td><v:text name="opl_comment" value="" xhtml_size="20"/></td>
-				  </tr>
-				  <tr><th class="genhead" colspan="2">OpenLink Server</th></tr>
-				  <tr>
-				    <td class="genlisthead">Domain</td>
-				    <td>
-				      <v:select-list name="opl_domain">
-					<v:before-data-bind>
-					  declare dom any;
-					  dom := self.get_domains ();
-					  control.vsl_items := dom;
-					  control.vsl_item_values := dom;
-					</v:before-data-bind>
-				      </v:select-list>
-				    </td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Protocol</td>
-				    <td><v:text name="opl_proto" value="TCP/IP" xhtml_disabled="1" xhtml_size="20"/></td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Hostname</td>
-				    <td><v:text name="opl_host" value="" xhtml_size="20"/></td>
-				  </tr>
-				  <tr><th class="genhead" colspan="2">Database</th></tr>
-				  <tr>
-				    <td class="genlisthead">Name</td>
-				    <td><v:text name="opl_db_name" value="" xhtml_size="20"/></td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Server Options</td>
-				    <td><v:text name="opl_srv_opts" value="" xhtml_size="20"/></td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Username</td>
-				    <td><v:text name="opl_uid" value="" xhtml_size="20"/></td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Password</td>
-				    <td><v:text name="opl_pwd" type="password" value="" xhtml_size="20"/></td>
-				  </tr>
+                                <v:button action="simple" name="gen_def" value="Default"
+                                  enabled="--(case when self.dsn = '' then 1 else 0 end)">
+                                  <v:on-post>
+                                    self.gen_set := vector ();
+                                    self.gen_opts.vc_data_bind (e);
+                                    self.vc_is_valid := 1;
+                                    self.gen_dsn.ufl_failed := 0;
+                                    self.ds.vc_enabled := 0;
+                                  </v:on-post>
+                                </v:button>
 
-				  <tr><th class="genhead" colspan="2">Other Options</th></tr>
-				  <tr>
-				    <td class="genlisthead">Read-only connection</td>
-				    <td><v:check-box name="opl_ro" value="Yes" /></td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">No login dialog box</td>
-				    <td><v:check-box name="opl_no_login" value="Yes" /></td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Defer fetching of long data</td>
-				    <td><v:check-box name="opl_defer_fetch" value="Yes"/></td>
-				  </tr>
-				  <tr>
-				    <td class="genlisthead">Row buffer size</td>
-				    <td><v:text name="opl_row_buf_sz" default_value="99" value="" xhtml_size="2"/></td>
-				  </tr>
-				</table>
+                                <v:button action="simple" name="gen_cancel" value="Cancel">
+                                  <v:on-post>
+                                    self.vc_redirect ('vdb_config_dsn.vspx');
+                                  </v:on-post>
+                                </v:button>
 
-			      </td>
-			    </tr>
-			    <tr><td colspan="2" align="right">
-				<v:button action="simple" name="opl_test" value="Update and test">
-				  <v:after-data-bind>
-				    if (not length (self.dsn))
-				      control.ufl_value := 'Test';
-				    if (self.dsn_type = 'file')
-				      control.vc_enabled := 0;
-				  </v:after-data-bind>
-				  <v:on-post>
-				  if (not self.vc_is_valid)
-				    return;
-				  declare conn varchar;
+                              </td></tr>
+                            </v:form>
+                          </table>
+                        </v:template>
 
-				  conn := self.make_opl_dsn (self.dsn_type);
-				  declare exit handler for sqlstate '*'
-				    {
-				      self.vc_is_valid := 0;
-				      self.edit_opl_dsn.vc_error_message := __SQL_MESSAGE;
-				      if (not length (self.dsn))
-				        sql_remove_dsn_from_ini (self.opl_dsn_name.ufl_value, self.dsn_type);
-				      return;
-				    };
-				  sql_config_data_sources (self.driver, self.dsn_type, conn);
+                        <!-- OpenLink Driver -->
+                        <v:template name="opl_dsn" type="simple"
+                          instantiate="--case when
+                          lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%virtuoso%' and
+                          lower(get_keyword ('driver', self.vc_event.ve_params, '')) not like '%lite%' and
+                          lower(get_keyword ('driver', self.vc_event.ve_params, '')) like '%openlink%'
+                          then 1 else 0 end">
+                          <v:after-data-bind>
+                            if (e.ve_is_post)
+                              return;
 
-				  conn := 'DSN=' || self.opl_dsn_name.ufl_value || ';';
-				  conn := conn || 'UID=' || self.opl_uid.ufl_value || ';';
-				  conn := conn || 'PWD=' || self.opl_pwd.ufl_value || ';';
-				  if (length (self.opl_db_name.ufl_value))
-				    conn := conn || 'DATABASE=' || self.opl_db_name.ufl_value || ';';
-				  if (length (self.opl_domain.ufl_value))
-				    conn := conn || 'SVT=' || self.opl_domain.ufl_value || ';';
+                            declare prof any;
 
-				  if (self.opl_ro.ufl_selected)
-				    conn := conn || 'READONLY=1;';
-				  else
-				    conn := conn || 'READONLY=0;';
+                            prof := sql_get_private_profile_string (self.dsn, self.dsn_type);
+                            foreach (any par in prof) do
+                            {
+                              declare nam, val any;
+                              nam := par[0];
+                              val := par[1];
+                              if (nam = 'Description')
+                                self.opl_comment.ufl_value := val;
+                              else if (nam = 'Host')
+                                self.opl_host.ufl_value := val;
+                              else if (nam = 'LastUser')
+                                self.opl_uid.ufl_value := val;
+                              else if (nam = 'UserName')
+                                self.opl_uid.ufl_value := val;
+                              else if (nam = 'Database')
+                                self.opl_db_name.ufl_value := val;
+                              else if (nam = 'Password')
+                                self.opl_pwd.ufl_value := val;
+                              else if (nam = 'FetchBufferSize')
+                                self.opl_row_buf_sz.ufl_value := val;
+                              else if (nam = 'Options')
+                                self.opl_srv_opts.ufl_value := val;
+                              else if (nam = 'ServerType')
+                              {
+                                self.opl_domain.ufl_value := val;
+                                self.opl_domain.vs_set_selected ();
+                              }
+                              else if (nam = 'NoLoginBox' and val = 'Yes')
+                                self.opl_no_login.ufl_selected := 1;
+                              else if (nam = 'DeferLongFetch' and val = 'Yes')
+                                self.opl_defer_fetch.ufl_selected := 1;
+                              else if (nam = 'ReadOnly' and val = 'Yes')
+                                self.opl_ro.ufl_selected := 1;
+                            }
+                          </v:after-data-bind>
 
+                          <v:form method="POST" type="simple" name="edit_opl_dsn">
+                            <input type="hidden" name="driver" value="<?V self.driver ?>"/>
+                            <table border="0" cellspacing="0" cellpadding="5">
+                              <tr>
+                                <td colspan="3" align="middle">
+                                  <p class="copyright_noalign"><?V self.driver ?><br />
+                                    <small>Copyright 1998-2016 OpenLink Software</small><br />
+                                    <small>All rights reserved</small>
+                                  </p>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td rowspan="4" valign="top"><img src="images/opl.jpg" border="1" /></td>
+                                <td valign="top">
+                                  <table border="0" cellpadding="0" width="250">
+                                    <tr>
+                                      <th class="genhead" colspan="2">Data Source</th>
+                                    </tr>
+                                    <tr>
+                                      <th class="genlisthead">Name</th>
+                                      <td>
+                                        <v:text name="opl_dsn_name" value="--self.dsn" xhtml_size="20" error-glyph="*">
+                                          <v:validator test="length" min="1" max="2048" message="The DSN name can not be empty"/>
+                                          <v:after-data-bind>
+                                            if (length (self.dsn))
+                                              control.vc_add_attribute ('readonly', '1');
+                                          </v:after-data-bind>
+                                        </v:text>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Comment</td>
+                                      <td><v:text name="opl_comment" value="" xhtml_size="20"/></td>
+                                    </tr>
+                                    <tr>
+                                      <th class="genhead" colspan="2">OpenLink Server</th>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Domain</td>
+                                      <td>
+                                        <v:select-list name="opl_domain">
+                                          <v:before-data-bind>
+                                            declare dom any;
+                                            dom := self.get_domains ();
+                                            control.vsl_items := dom;
+                                            control.vsl_item_values := dom;
+                                          </v:before-data-bind>
+                                        </v:select-list>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Protocol</td>
+                                      <td><v:text name="opl_proto" value="TCP/IP" xhtml_disabled="1" xhtml_size="20"/></td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Hostname</td>
+                                      <td><v:text name="opl_host" value="" xhtml_size="20"/></td>
+                                    </tr>
+                                    <tr>
+                                      <th class="genhead" colspan="2">Database</th>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Name</td>
+                                      <td><v:text name="opl_db_name" value="" xhtml_size="20"/></td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Server Options</td>
+                                      <td><v:text name="opl_srv_opts" value="" xhtml_size="20"/></td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Username</td>
+                                      <td><v:text name="opl_uid" value="" xhtml_size="20"/></td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Password</td>
+                                      <td><v:text name="opl_pwd" type="password" value="" xhtml_size="20"/></td>
+                                    </tr>
+                                    <tr>
+                                      <th class="genhead" colspan="2">Other Options</th>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Read-only connection</td>
+                                      <td><v:check-box name="opl_ro" value="Yes" /></td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">No login dialog box</td>
+                                      <td><v:check-box name="opl_no_login" value="Yes" /></td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Defer fetching of long data</td>
+                                      <td><v:check-box name="opl_defer_fetch" value="Yes"/></td>
+                                    </tr>
+                                    <tr>
+                                      <td class="genlisthead">Row buffer size</td>
+                                      <td><v:text name="opl_row_buf_sz" default_value="99" value="" xhtml_size="2"/></td>
+                                    </tr>
+                                  </table>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td colspan="2" align="right">
+                                  <v:button action="simple" name="opl_test" value="Update and test">
+                                    <v:after-data-bind>
+                                      if (not length (self.dsn))
+                                        control.ufl_value := 'Test';
+                                      if (self.dsn_type = 'file')
+                                        control.vc_enabled := 0;
+                                    </v:after-data-bind>
 
-				    sql_driver_connect (conn);
-				    self.succ_tmpl.vc_enabled := 1;
+                                    <v:on-post>
+                                      if (not self.vc_is_valid)
+                                        return;
 
-				  if (not length (self.dsn))
-				    sql_remove_dsn_from_ini (self.opl_dsn_name.ufl_value, self.dsn_type);
+                                      declare conn varchar;
 
-				  </v:on-post>
-				</v:button>
-				<v:button action="simple" name="upd_opl" value="Update">
-				  <v:after-data-bind>
-				    if (not length (self.dsn))
-				      control.ufl_value := 'Add';
-				  </v:after-data-bind>
-				  <v:on-post>
-				  if (not self.vc_is_valid)
-				    return;
+                                      conn := self.make_opl_dsn (self.dsn_type);
+                                      declare exit handler for sqlstate '*'
+                                      {
+                                        self.vc_is_valid := 0;
+                                        self.edit_opl_dsn.vc_error_message := __SQL_MESSAGE;
+                                        if (not length (self.dsn))
+                                          sql_remove_dsn_from_ini (self.opl_dsn_name.ufl_value, self.dsn_type);
 
-				  declare conn any;
-				  conn := self.make_opl_dsn (self.dsn_type);
+                                        return;
+                                      };
+                                      sql_config_data_sources (self.driver, self.dsn_type, conn);
 
-				  if (self.dsn_type = 'file')
-				    {
-				      declare f any;
-				      f := concat (self.opl_dsn_name.ufl_value, '.dsn');
-				      declare exit handler for sqlstate '*'
-					{
-					  self.vc_is_valid := 0;
-					  self.vc_error_message := __SQL_MESSAGE;
-					  return;
-					};
-				      string_to_file (f, conn, -2);
-				    }
-				  else
-				    {
-				      sql_remove_dsn_from_ini (self.opl_dsn_name.ufl_value, self.dsn_type);
-				      {
-					declare exit handler for sqlstate '*'
-					{
-					  self.vc_is_valid := 0;
-					  self.vc_error_message := __SQL_MESSAGE;
-					  return;
-					};
-					sql_config_data_sources (self.driver, self.dsn_type, conn);
-				      }
-				    }
-				  self.vc_redirect ('vdb_config_dsn.vspx');
-				  </v:on-post>
-				</v:button>
-				<v:button action="simple" name="opl_cancel" value="Cancel">
-				  <v:on-post>
-				    self.vc_redirect ('vdb_config_dsn.vspx');
-				  </v:on-post>
-				</v:button>
-			    </td></tr>
-			  </table>
-			</v:form>
-			</v:template>
-			<!-- Virtuoso Driver -->
-			<v:template name="virt_dsn_tmpl" type="simple"
-			  instantiate="--case when
-			  lower(get_keyword ('driver', self.vc_event.ve_params, '')) like '%virtuoso%'
-			  then 1 else 0 end">
-			  <v:after-data-bind><![CDATA[
-			    if (not e.ve_is_post)
-			      {
-			        declare prof any;
-				prof := sql_get_private_profile_string (self.dsn, self.dsn_type);
-				foreach (any par in prof) do
-				  {
-				    declare nam, val any;
-				    nam := par[0];
-				    val := par[1];
-				    if (nam = 'Description')
-				      self.description.ufl_value := val;
-				    else if (nam = 'Address')
-				      {
-				        declare host, port, pos any;
-				        host := val;
-					pos := strstr (host, ':');
-					if (pos > 0)
-					{
-					  port := subseq (host, pos + 1);
-					  host := "LEFT" (host, pos);
-					}
-				        self.server.ufl_value := host;
-				        self.port.ufl_value := port;
-			              }
-				    else if (nam = 'LastUser')
-				      self.uid.ufl_value := val;
-				    else if (nam = 'UserName')
-				      self.uid.ufl_value := val;
-				    else if (nam = 'Database')
-				      self.database.ufl_value := val;
-				    else if (nam = 'Daylight' and val = 'Yes')
-				      self.daylight.ufl_selected := 1;
-				    else if (nam = 'Encrypt' and val <> '' and val <> '0')
-				      self.ssl.ufl_selected := 1;
-				  }
-			      }
-			      ]]></v:after-data-bind>
-			<table>
-			  <v:form method="POST" type="simple" name="edit_dsn">
-			  <input type="hidden" name="driver" value="<?V self.driver ?>"/>
-			    <tr>
-			      <td rowspan="10" align="bottom">
-				<img src="images/virt.gif"/>
-			      </td>
-			    </tr>
+                                      conn := 'DSN=' || self.opl_dsn_name.ufl_value || ';';
+                                      conn := conn || 'UID=' || self.opl_uid.ufl_value || ';';
+                                      conn := conn || 'PWD=' || self.opl_pwd.ufl_value || ';';
+                                      if (length (self.opl_db_name.ufl_value))
+                                        conn := conn || 'DATABASE=' || self.opl_db_name.ufl_value || ';';
+                                      if (length (self.opl_domain.ufl_value))
+                                        conn := conn || 'SVT=' || self.opl_domain.ufl_value || ';';
 
-			    <tr><td class="genlisthead">DSN</td><td>
-				<v:text name="virt_dsn" value="--self.dsn" xhtml_size="25" error-glyph="*">
-				  <v:validator test="length" min="1" max="2048" message="The DSN name can not be empty"/>
-				  <v:after-data-bind>
-				    if (length (self.dsn))
-				    control.vc_add_attribute ('readonly', '1');
-				  </v:after-data-bind>
-				</v:text>
-			      </td>
-			    </tr>
-			    <tr><td class="genlisthead">Description</td><td>
-				<v:text name="description" value="" xhtml_size="25"/>
-			      </td>
-			    </tr>
-			    <tr><td class="genlisthead">Server</td><td>
-				<v:text name="server" xhtml_size="25" value=""/></td></tr>
-			    <tr><td class="genlisthead">Port</td><td>
-				<v:text name="port"  xhtml_size="4" value=""/></td></tr>
-			    <tr><td class="genlisthead">User</td><td>
-				<v:text name="uid" xhtml_size="25" value=""/></td></tr>
-			    <tr><td class="genlisthead">Password</td><td>
-				<v:text type="password" name="pass"  value="" xhtml_size="25"/></td></tr>
-			    <tr><td class="genlisthead">Database</td><td>
-				<v:text name="database" value="" xhtml_size="25"/></td></tr>
-			    <tr><td class="genlisthead">Automatically adjust clock<br />
-				for daylight saving changes</td><td>
-				<v:check-box name="daylight" value="Yes"/>
-			      </td>
-			    </tr>
-			    <tr><td class="genlisthead">Encrypted</td><td>
-				<v:check-box name="ssl" value="1"/>
-			    </td></tr>
-			    <tr><td colspan="2" align="right">
-				<v:button action="simple" name="test_bt" value="Update and test">
-				  <v:after-data-bind>
-				    if (not length (self.dsn))
-				      control.ufl_value := 'Test';
-				    if (self.dsn_type = 'file')
-				      control.vc_enabled := 0;
-				  </v:after-data-bind>
-				  <v:on-post>
-				  if (not self.vc_is_valid)
-				    return;
-				  declare conn varchar;
+                                      if (self.opl_ro.ufl_selected)
+                                        conn := conn || 'READONLY=1;';
+                                      else
+                                        conn := conn || 'READONLY=0;';
 
-				  conn := self.make_virt_dsn (self.dsn_type);
-				  declare exit handler for sqlstate '*'
-				    {
-				      self.vc_is_valid := 0;
-				      self.vc_error_message := __SQL_MESSAGE;
-				      if (not length (self.dsn))
-				        sql_remove_dsn_from_ini (self.virt_dsn.ufl_value, self.dsn_type);
-				      return;
-				    };
-				  sql_config_data_sources (self.driver, self.dsn_type, conn);
+                                      sql_driver_connect (conn);
+                                      self.succ_tmpl.vc_enabled := 1;
 
-				  conn := 'DSN=' || self.virt_dsn.ufl_value || ';';
-				  conn := conn || 'HOST=' || self.server.ufl_value || ':'
-				  				|| self.port.ufl_value || ';';
-				  conn := conn || 'UID=' || self.uid.ufl_value || ';';
-				  conn := conn || 'PWD=' || self.pass.ufl_value || ';';
-				  conn := conn || 'DATABASE=' || self.database.ufl_value || ';';
-				  if (self.ssl.ufl_selected)
-				    conn := conn || 'Encrypt=' || self.ssl.ufl_value || ';';
+                                      if (not length (self.dsn))
+                                        sql_remove_dsn_from_ini (self.opl_dsn_name.ufl_value, self.dsn_type);
 
-				    sql_driver_connect (conn);
-				    self.succ_tmpl.vc_enabled := 1;
+                                    </v:on-post>
+                                  </v:button>
+                                  <v:button action="simple" name="upd_opl" value="Update">
+                                    <v:after-data-bind>
+                                      if (not length (self.dsn))
+                                        control.ufl_value := 'Add';
+                                    </v:after-data-bind>
+                                    <v:on-post>
+                                    if (not self.vc_is_valid)
+                                      return;
 
-				  if (not length (self.dsn))
-				    sql_remove_dsn_from_ini (self.virt_dsn.ufl_value, self.dsn_type);
+                                    declare conn any;
+                                    conn := self.make_opl_dsn (self.dsn_type);
 
-				</v:on-post>
-				</v:button>
-				<v:button action="simple" name="upd_virt" value="Update">
-				  <v:after-data-bind>
-				    if (not length (self.dsn))
-				      control.ufl_value := 'Add';
-				  </v:after-data-bind>
-				  <v:on-post>
-				  if (not self.vc_is_valid)
-				    return;
-				  declare conn varchar;
-				  conn := self.make_virt_dsn (self.dsn_type);
-				  if (self.dsn_type = 'file')
-				    {
-				      declare f any;
-				      f := concat (self.virt_dsn.ufl_value, '.dsn');
-				      declare exit handler for sqlstate '*'
-					{
-					  self.vc_is_valid := 0;
-					  self.vc_error_message := __SQL_MESSAGE;
-					  return;
-					};
-				      string_to_file (f, conn, -2);
-				    }
-				  else
-				    {
-				       sql_remove_dsn_from_ini (self.virt_dsn.ufl_value, self.dsn_type);
-					{
-					  declare exit handler for sqlstate '*'
-					  {
-					    self.vc_is_valid := 0;
-					    self.vc_error_message := __SQL_MESSAGE;
-					    return;
-					  };
-					  sql_config_data_sources (self.driver, self.dsn_type, conn);
-					}
-				    }
-				  self.vc_redirect ('vdb_config_dsn.vspx');
-				</v:on-post>
-				</v:button>
-				<v:button action="simple" name="cancel" value="Cancel">
-				  <v:on-post>
-				    self.vc_redirect ('vdb_config_dsn.vspx');
-				  </v:on-post>
-				</v:button>
-			    </td></tr>
-			  </v:form>
-			</table>
-		      </v:template>
-			<!-- END -->
+                                    if (self.dsn_type = 'file')
+                                      {
+                                        declare f any;
+                                        f := concat (self.opl_dsn_name.ufl_value, '.dsn');
+                                        declare exit handler for sqlstate '*'
+                                    {
+                                      self.vc_is_valid := 0;
+                                      self.vc_error_message := __SQL_MESSAGE;
+                                      return;
+                                    };
+                                        string_to_file (f, conn, -2);
+                                      }
+                                    else
+                                      {
+                                        sql_remove_dsn_from_ini (self.opl_dsn_name.ufl_value, self.dsn_type);
+                                        {
+                                    declare exit handler for sqlstate '*'
+                                    {
+                                      self.vc_is_valid := 0;
+                                      self.vc_error_message := __SQL_MESSAGE;
+                                      return;
+                                    };
+                                    sql_config_data_sources (self.driver, self.dsn_type, conn);
+                                        }
+                                      }
+                                    self.vc_redirect ('vdb_config_dsn.vspx');
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <v:button action="simple" name="opl_cancel" value="Cancel">
+                                    <v:on-post>
+                                      self.vc_redirect ('vdb_config_dsn.vspx');
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              </tr>
+                            </table>
+                          </v:form>
+                        </v:template>
+
+                        <!-- Virtuoso Driver -->
+                        <v:template name="virt_dsn_tmpl" type="simple"
+                          instantiate="--case when
+                          lower(get_keyword ('driver', self.vc_event.ve_params, '')) like '%virtuoso%'
+                          then 1 else 0 end">
+                          <v:after-data-bind>
+                            <![CDATA[
+                              if (not e.ve_is_post)
+                              {
+                                declare prof any;
+
+                                prof := sql_get_private_profile_string (self.dsn, self.dsn_type);
+                                foreach (any par in prof) do
+                                {
+                                  declare nam, val any;
+                                  nam := par[0];
+                                  val := par[1];
+                                  if (nam = 'Description')
+                                    self.description.ufl_value := val;
+                                  else if (nam = 'Address')
+                                  {
+                                    declare host, port, pos any;
+                                    host := val;
+                                    pos := strstr (host, ':');
+                                    if (pos > 0)
+                                    {
+                                      port := subseq (host, pos + 1);
+                                      host := "LEFT" (host, pos);
+                                    }
+                                    self.server.ufl_value := host;
+                                    self.port.ufl_value := port;
+                                  }
+                                  else if (nam = 'LastUser')
+                                    self.uid.ufl_value := val;
+                                  else if (nam = 'UserName')
+                                    self.uid.ufl_value := val;
+                                  else if (nam = 'Database')
+                                    self.database.ufl_value := val;
+                                  else if (nam = 'Daylight' and val = 'Yes')
+                                    self.daylight.ufl_selected := 1;
+                                  else if (nam = 'Encrypt' and val <> '' and val <> '0')
+                                    self.ssl.ufl_selected := 1;
+                                }
+                              }
+                            ]]>
+                          </v:after-data-bind>
+
+                          <table>
+                            <v:form method="POST" type="simple" name="edit_dsn">
+                              <input type="hidden" name="driver" value="<?V self.driver ?>"/>
+                              <tr>
+                                <td rowspan="10" align="bottom">
+                                  <img src="images/virt.gif"/>
+                                </td>
+                              </tr>
+
+                              <tr>
+                                <td class="genlisthead">DSN</td>
+                                <td>
+                                  <v:text name="virt_dsn" value="--self.dsn" xhtml_size="25" error-glyph="*">
+                                    <v:validator test="length" min="1" max="2048" message="The DSN name can not be empty"/>
+                                    <v:after-data-bind>
+                                      if (length (self.dsn))
+                                      control.vc_add_attribute ('readonly', '1');
+                                    </v:after-data-bind>
+                                  </v:text>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td class="genlisthead">Description</td>
+                                <td>
+                                    <v:text name="description" value="" xhtml_size="25"/>
+                                </td>
+                              </tr>
+                              <tr>
+                                <td class="genlisthead">Server</td>
+                                <td>
+                                  <v:text name="server" xhtml_size="25" value=""/></td>
+                                </tr>
+                              <tr>
+                                <td class="genlisthead">Port</td>
+                                <td>
+                                  <v:text name="port" xhtml_size="4" value=""/></td>
+                                </tr>
+                                <tr>
+                                  <td class="genlisthead">User</td>
+                                  <td>
+                                    <v:text name="uid" xhtml_size="25" value=""/></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="genlisthead">Password</td>
+                                    <td>
+                                      <v:text type="password" name="pass"  value="" xhtml_size="25"/>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="genlisthead">Database</td>
+                                    <td>
+                                      <v:text name="database" value="" xhtml_size="25"/></td>
+                                  </tr>
+                                  <tr>
+                                    <td class="genlisthead">
+                                      Automatically adjust clock<br />for daylight saving changes</td><td>
+                                      <v:check-box name="daylight" value="Yes"/>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td class="genlisthead">Encrypted</td>
+                                    <td>
+                                      <v:check-box name="ssl" value="1"/>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <td colspan="2" align="right">
+                                      <v:button action="simple" name="test_bt" value="Update and test">
+                                        <v:after-data-bind>
+                                          if (not length (self.dsn))
+                                            control.ufl_value := 'Test';
+                                          if (self.dsn_type = 'file')
+                                            control.vc_enabled := 0;
+                                        </v:after-data-bind>
+                                        <v:on-post>
+                                          if (not self.vc_is_valid)
+                                            return;
+
+                                          declare conn varchar;
+
+                                          conn := self.make_virt_dsn (self.dsn_type);
+                                          declare exit handler for sqlstate '*'
+                                          {
+                                            self.vc_is_valid := 0;
+                                            self.vc_error_message := __SQL_MESSAGE;
+                                            if (not length (self.dsn))
+                                              sql_remove_dsn_from_ini (self.virt_dsn.ufl_value, self.dsn_type);
+
+                                            return;
+                                          };
+                                          sql_config_data_sources (self.driver, self.dsn_type, conn);
+
+                                      conn := 'DSN=' || self.virt_dsn.ufl_value || ';';
+                                      conn := conn || 'HOST=' || self.server.ufl_value || ':'
+                                              || self.port.ufl_value || ';';
+                                      conn := conn || 'UID=' || self.uid.ufl_value || ';';
+                                      conn := conn || 'PWD=' || self.pass.ufl_value || ';';
+                                      conn := conn || 'DATABASE=' || self.database.ufl_value || ';';
+                                      if (self.ssl.ufl_selected)
+                                        conn := conn || 'Encrypt=' || self.ssl.ufl_value || ';';
+
+                                      sql_driver_connect (conn);
+                                      self.succ_tmpl.vc_enabled := 1;
+
+                                      if (not length (self.dsn))
+                                        sql_remove_dsn_from_ini (self.virt_dsn.ufl_value, self.dsn_type);
+
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <v:button action="simple" name="upd_virt" value="Update">
+                                    <v:after-data-bind>
+                                      if (not length (self.dsn))
+                                        control.ufl_value := 'Add';
+                                    </v:after-data-bind>
+
+                                    <v:on-post>
+                                      if (not self.vc_is_valid)
+                                        return;
+                                      declare conn varchar;
+                                      conn := self.make_virt_dsn (self.dsn_type);
+                                      if (self.dsn_type = 'file')
+                                      {
+                                        declare f any;
+                                        f := concat (self.virt_dsn.ufl_value, '.dsn');
+                                        declare exit handler for sqlstate '*'
+                                        {
+                                          self.vc_is_valid := 0;
+                                          self.vc_error_message := __SQL_MESSAGE;
+                                          return;
+                                        };
+                                        string_to_file (f, conn, -2);
+                                      }
+                                      else
+                                      {
+                                        sql_remove_dsn_from_ini (self.virt_dsn.ufl_value, self.dsn_type);
+                                        {
+                                          declare exit handler for sqlstate '*'
+                                          {
+                                            self.vc_is_valid := 0;
+                                            self.vc_error_message := __SQL_MESSAGE;
+                                            return;
+                                          };
+                                          sql_config_data_sources (self.driver, self.dsn_type, conn);
+                                        }
+                                      }
+                                      self.vc_redirect ('vdb_config_dsn.vspx');
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <v:button action="simple" name="cancel" value="Cancel">
+                                    <v:on-post>
+                                      self.vc_redirect ('vdb_config_dsn.vspx');
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              </tr>
+                            </v:form>
+                          </table>
+                        </v:template>
+                        <!-- END -->
                       </td>
                     </tr>
                   </table>
