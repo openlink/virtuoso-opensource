@@ -1251,10 +1251,13 @@ dc_elt_size (data_col_t * dc)
   if (!IS_BOX_POINTER (box) || sizeof (int64) != box_length (box))	\
     { dk_free_tree (box); box = inst[box_index] = dk_alloc_box (sizeof (int64), dtp);} \
   if (val_dc->dc_nulls && DC_IS_NULL(val_dc, row_no)) \
-    { box_tag_modify (box, DV_DB_NULL); }	      \
+    { \
+      box_tag_modify (box, DV_DB_NULL); \
+      memzero(box, box_length(box)); \
+    }  \
   else \
     { \
-      box_tag_modify (box, dtp);		      \
+      box_tag_modify (box, dtp); \
       *(int64*)box = ((int64*)val_dc->dc_values)[row_no]; \
     }\
   return box; \

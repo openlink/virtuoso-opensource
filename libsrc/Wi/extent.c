@@ -1549,7 +1549,11 @@ em_compact (extent_map_t * em, int free_em)
 	      target = target->bd_next;
 	      target_fill = 0;
 	    }
+#ifndef VALGRIND
 	  *(extent_t*) (target->bd_buffer + DP_DATA +  target_fill) = *ext;
+#else
+	  memmove ((extent_t*) (target->bd_buffer + DP_DATA +  target_fill), ext, sizeof (extent_t));
+#endif
 	  sethash (DP_ADDR2VOID (ext->ext_dp), em->em_dp_to_ext,
 		   (void*) (target->bd_buffer + DP_DATA + target_fill));
 	  target_fill += sizeof (extent_t);
