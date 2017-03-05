@@ -345,10 +345,14 @@ echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is
 echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
+echo "      if ($ISDAV = 1) " >> $STICKER
+echo "      { " >> $STICKER
 echo "      for (select RES_FULL_PATH as X from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/conductor/%.xsl') do " >> $STICKER
 echo "      { " >> $STICKER
+echo "     		  DB.DBA.DAV_PROP_SET_INT (X, ':getlastmodified', now (), null, null, 0, auth_uid=>http_dav_uid ()); " >> $STICKER
 echo "     		xslt_stale ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || X); " >> $STICKER
-echo "     	}; " >> $STICKER
+echo "     	  } " >> $STICKER
+echo "      } " >> $STICKER
 echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-uninstall\">" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER
