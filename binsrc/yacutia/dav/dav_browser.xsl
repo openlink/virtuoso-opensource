@@ -1535,10 +1535,12 @@
                     http (         '<div style="float:right;">');
                     http (sprintf ('  <span class="toolbar" style="width:auto;text-align:right;padding:10px;"><b>Logged in as</b><br/><span style="font-weight:normal;">%s</span></span>', serviceIdHtml));
                     http (sprintf ('  <img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
-                    http (         '  <span id="tb_logout" class="toolbar" style="cursor: pointer;">');
-                    http (sprintf ('    <a href="/val/logout.vsp?returnto=%U">', HTTP_REQUESTED_URL()));
-                    http (sprintf ('      <img src="%s" border="0" alt="Logout" /><br /><span class="toolbarLabel">Logout</span>', self.image_src ('dav/image/logout_32.png')));
-                    http (         '    </a>');
+                    http (         '  <span class="toolbar" style="cursor: pointer;">');
+                    http (sprintf ('    <a href="/val/authenticate.vsp?res=%U&action=login"><b>Change Login</b></a>', HTTP_REQUESTED_URL()));
+                    http (         '  </span>');
+                    http (sprintf ('  <img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+                    http (         '  <span class="toolbar" style="cursor: pointer;">');
+                    http (sprintf ('    <a href="/val/logout.vsp?returnto=%U"><b>Logout</b></a>', HTTP_REQUESTED_URL()));
                     http (         '  </span>');
                     http (         '</div>');
                   }
