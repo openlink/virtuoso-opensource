@@ -2650,6 +2650,7 @@ again:
   {
     declare dir_ret any;
 	--this is for DAV folder
+
 	if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
       return;
 
@@ -2717,6 +2718,7 @@ again:
   }
   if (resource_owner = http_dav_uid ())
     is_admin_owned_res := 1;
+
   if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
     return;
 	
@@ -3291,100 +3293,127 @@ DB.DBA.EXEC_STMT ('grant execute on DB.DBA.dynamic_host_name to SPARQL_SELECT', 
 -- /* LDP extension for GET (http://www.w3.org/TR/ldp/#http-get) */
 create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout params any, in client_etag varchar, in full_path varchar, in _res_id int, in _col_id int)
 {
-    declare accept, name_ varchar;
-	declare mod_time datetime;
-	declare gr any;
-	declare id_ integer;
-    declare pref_mime varchar;
+  declare accept, accept_full, name_ varchar;
+  declare mod_time datetime;
+  declare gr any;
+  declare id_ integer;
+  declare pref_mime varchar;
 
-	-- LDPR request
-	accept := http_request_header_full (lines, 'Accept', '*/*');
-    if (isinteger (_res_id))
-      pref_mime := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = _res_id);
-    else
-      pref_mime := null;
-    accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept, pref_mime);
-    if (accept = '*/*' and isinteger (_res_id) and (pref_mime = 'text/turtle'))
+  -- LDPR request
+  pref_mime := case when isinteger (_res_id) then (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = _res_id) else null end;
+
+  accept_full := http_request_header_full (lines, 'Accept', '*/*');
+  accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept_full, pref_mime);
+  if (accept = '*/*' and isinteger (_res_id))
+  {
+    if (pref_mime = 'text/turtle')
+    {
+      accept := 'text/turtle';
+    }
+    else if (pref_mime = 'application/ld+json')
+    {
+      accept := 'application/ld+json';
+    }
+  }
+  if (accept in ('text/turtle', 'application/ld+json'))
+  {
+    declare fmt, etag, qr any;
+    declare page, cnt, last, n_per_page, is_col int;
+
+    n_per_page := 10000;
+    page := atoi (get_keyword ('p', params, '1'));
+    fmt := accept;
+    is_col := 0;
+    if (fmt = 'text/turtle')
+      fmt := 'application/x-nice-turtle';
+
+    gr := WS.WS.DAV_IRI (full_path);
+    if (strchr (gr, '*') is not null)
+    {
+      declare grs any;
+      declare dir, pwd, auid, cid, ppath, mask any;
+
+      grs := string_output ();
+      pwd := null;
+      auid := http_dav_uid ();
+      cid := DAV_SEARCH_ID (full_path, 'P');
+      ppath := DAV_SEARCH_PATH (cid, 'C');
+      if (length (full_path) > length (ppath))
+        mask := subseq (full_path, length (ppath));
+
+      dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, mask, 'dba', pwd, auid);
+      foreach (any x in dir) do
       {
-	accept := 'text/turtle';
+        http (sprintf ('<%s>,', WS.WS.DAV_IRI (x[0])), grs);
       }
-	if (accept = 'text/turtle' or accept = 'application/ld+json')
-	{
-	declare fmt, etag, qr any;
-	declare page, cnt, last, n_per_page, is_col int;
+      grs := string_output_string (grs);
+      grs := rtrim (grs, ',');
+      qr := sprintf ('define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` } where { graph ?g { ?s ?p ?o } filter (?g in (%s)) }', grs);
 
-	n_per_page := 10000;
-	page := atoi (get_keyword ('p', params, '1'));
-	fmt := accept;
-	is_col := 0;
-	if (fmt = 'text/turtle')
-	  fmt := 'application/x-nice-turtle';
-		gr := WS.WS.DAV_IRI (full_path);
-	if (strchr (gr, '*') is not null)
-          {
-	    declare grs any;
-	    declare dir, pwd, auid, cid, ppath, mask any;
-	    grs := string_output ();
-	    pwd := null;
-	    auid := http_dav_uid ();
-	    cid := DAV_SEARCH_ID (full_path, 'P');
-	    ppath := DAV_SEARCH_PATH (cid, 'C');
-	    if (length (full_path) > length (ppath))
-	      mask := subseq (full_path, length (ppath));
-	    dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, mask, 'dba', pwd, auid); 
-	    foreach (any x in dir) do
-	      {
-	        http (sprintf ('<%s>,', WS.WS.DAV_IRI (x[0])), grs);
-	      }
-	    grs := string_output_string (grs);
-	    grs := rtrim (grs, ',');
-	    qr := sprintf ('define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` } where { graph ?g { ?s ?p ?o } filter (?g in (%s)) }', grs);
-	    goto execqr;
-	  }
-	if (isvector (_res_id) or isvector (_col_id))
-	  {
-	    id_ := coalesce (_res_id, _col_id);
-	    if (_col_id is null)
-	      _col_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_res_id, 'R'), 'P');
-	    name_ := ''; mod_time := now ();
-	  }
-	else if (_res_id is not null)
-			{
-	    select RES_COL, RES_NAME, RES_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
-	    _col_id := id_;
-			}
-	else if (_col_id is not null)
-			{
-	    select COL_ID, COL_NAME, COL_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
-	    is_col := 1;
+      goto execqr;
+    }
+    if (isvector (_res_id) or isvector (_col_id))
+    {
+      id_ := coalesce (_res_id, _col_id);
+      if (_col_id is null)
+        _col_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_res_id, 'R'), 'P');
+
+      name_ := '';
+      mod_time := now ();
+    }
+    else if (_res_id is not null)
+    {
+      select RES_COL, RES_NAME, RES_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
+      _col_id := id_;
+    }
+    else if (_col_id is not null)
+    {
+      select COL_ID, COL_NAME, COL_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
+      is_col := 1;
+    }
+    else
+    {
+      signal ('LDP00', 'Invalid request');
+    }
+
+    etag := WS.WS.ETAG (name_, id_, mod_time);
+    if (LDP_ENABLED (_col_id) = 0)
+      return 0;
+
+    if (not (exists (sparql define input:storage "" select (1) where { graph `iri(?:gr)` { ?s ?p ?o }})))
+    {
+      if (isinteger (_res_id) and (pref_mime not in ('text/turtle', 'application/ld+json')))
+	{
+        declare i integer;
+        declare tmp, V any;
+
+        V := split_and_decode (accept_full, 0, '\0\0,;');
+        for (i := 0; i < length (V); i := i + 2)
+        {
+          tmp := replace (trim (V[i]), '*', '%');
+          if (pref_mime like tmp)
+            return 0;
+        }
+      }
+      http_request_status ('HTTP/1.1 404 Not Found');
+      return 1;
 		}
-	else
-	  signal ('LDP00', 'Invalid request');
-	etag := WS.WS.ETAG (name_, id_, mod_time);
-	if (LDP_ENABLED (_col_id) = 0)
-	  return 0;
-			if (not (exists (sparql define input:storage "" select (1) where { graph `iri(?:gr)` { ?s ?p ?o }})))
-			{
-				http_request_status ('HTTP/1.1 404 Not Found');
-				return 1;
-			}
-	cnt := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
-	last := (cnt / n_per_page) + 1;
-	http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, page, last, full_path)));
-	if (isstring (etag))
-	  http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
-	qr := sprintf ('define sql:select-option "order" define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d',
-				  		n_per_page, n_per_page * (page - 1));
-execqr:						
-	connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
-			WS.WS."/!sparql/" (path,
-				vector_concat (
-				  vector ('default-graph-uri', gr, 'format', fmt, 'query', qr),
-				  params), lines);
-        http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE',
-	'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK', 'PATCH');
-			return 1;
-		}
+    cnt := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
+    last := (cnt / n_per_page) + 1;
+    http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, page, last, full_path)));
+    if (isstring (etag))
+      http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
+
+    qr := sprintf ('define sql:select-option "order" define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d', n_per_page, n_per_page * (page - 1));
+  execqr:
+    connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
+    WS.WS."/!sparql/" (
+      path,
+      vector_concat (vector ('default-graph-uri', gr, 'format', fmt, 'query', qr), params),
+      lines);
+      http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK', 'PATCH');
+    return 1;
+  }
 	  return 0;
 }
 ;
