@@ -499,13 +499,18 @@ memdbg_abort (void)
 #endif
 }
 
+unsigned long dbg_malloc_magic_of_data (void *data) { return ((malhdr_t *) ((u_char *) data - sizeof (malhdr_t)))->magic; }
+void *dbg_mp_of_data (void *data) { return ((malhdr_t *) ((u_char *) data - sizeof (malhdr_t)))->pool; }
+
 #if 0
 #define ERROR_FOUND(err) return NULL;
 #else
 #define ERROR_FOUND(err) { sprintf err; return buf; }
 #endif
 
-const char *dbg_find_allocation_error (void *data, void *expected_pool)
+#undef dbg_find_allocation_error
+const char *
+dbg_find_allocation_error (void *data, void *expected_pool)
 {
   static char buf[0x100];
   malhdr_t *mhdr;

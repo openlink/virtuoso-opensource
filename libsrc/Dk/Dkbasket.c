@@ -514,7 +514,8 @@ rbuf_append (rbuf_t * dest, rbuf_t * src)
 
 
 
-void rbuf_rewrite (rbuf_t * rb)
+void
+rbuf_rewrite (rbuf_t * rb)
 {
   rb->rb_rewrite_last = rb->rb_first;
   rb->rb_rewrite = rb->rb_first->rbe_read;

@@ -70,6 +70,9 @@
 /* Dkalloc.c */
 void dk_memory_initialize (int do_malloc_cache);
 int dk_is_alloc_cache (size_t sz);
+void dk_alloc_cache_status (void *cache);
+size_t dk_alloc_cache_total (void *cache);
+size_t dk_alloc_global_cache_total (void);
 void dk_cache_allocs (size_t sz, size_t cache_sz);
 EXE_EXPORT (void *, dk_alloc, (size_t c));
 EXE_EXPORT (void *, dk_try_alloc, (size_t c));
@@ -79,6 +82,8 @@ void dk_check_end_marks (void);
 void dk_mem_stat (char *out, int max);
 void thr_free_alloc_cache (thread_t * thr);
 void malloc_cache_clear (void);
+void thr_alloc_cache_clear (thread_t * thr);
+
 
 #ifdef MALLOC_DEBUG
 # include <util/dbgmal.h>

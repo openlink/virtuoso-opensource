@@ -14607,7 +14607,7 @@ bif_rdtsc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
-void dk_alloc_cache_status (resource_t ** cache);
+void dk_alloc_cache_status (void * cache);
 
 caddr_t
 bif_alloc_cache_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
