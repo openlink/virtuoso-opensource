@@ -123,7 +123,7 @@ xqi_check_slots (xp_instance_t * xqi)
 #ifdef XTREE_DEBUG
 
 void
-xte_tree_check_iter (box_t box, box_t parent, dk_hash_t *known)
+xte_tree_check_iter (box_t box, box_t parent, dk_hash_t **known_ptr)
 {
   dtp_t tag;
   if (!IS_BOX_POINTER (box))
@@ -178,7 +178,7 @@ xte_tree_check_iter (box_t box, box_t parent, dk_hash_t *known)
 	      if ((DV_STRING == expected_type) &&
 	        ((DV_XPATH_QUERY == strg_type) || (DV_UNAME == strg_type) || (' ' == head[idx-1][0])) )
 	        {
-	          dk_check_tree_iter (strg, parent, known);
+	          dk_check_tree_iter (strg, parent, known_ptr);
 	          continue;
 	        }
 	      GPF_T1 ("XML Tree head contains an item of wrong type");

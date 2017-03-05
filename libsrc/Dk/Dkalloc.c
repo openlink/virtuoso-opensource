@@ -941,6 +941,25 @@ dk_alloc_assert (void *ptr)
     GPF_T1 (err);
 }
 
+void
+dk_alloc_assert_mp_or_plain (void *ptr)
+{
+  const char *err;
+  if (ptr == NULL)
+    GPF_T1("NULL pointer");
+  if (!_dbgmal_enabled)
+    return;
+  if (MALPMAGIC_OK == dbg_malloc_magic_of_data (ptr))
+    err = dbg_find_allocation_error (ptr, dbg_mp_of_data (ptr));
+  else
+    err = dbg_find_allocation_error (ptr, NULL);
+  if (err)
+    GPF_T1 (err);
+}
+
+
+
+
 
 void
 dk_memory_initialize (int do_malloc_cache)

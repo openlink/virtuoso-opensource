@@ -370,7 +370,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   len = ALIGN_4 (len1 + 4);
 #endif
 #if defined (MALLOC_DEBUG)
-  new_alloc = dbg_mallocp (file, line, len, mp);
+  new_alloc = (dtp_t *)dbg_mallocp (file, line, len, mp);
 #else
   new_alloc = DK_ALLOC (len);
 #endif

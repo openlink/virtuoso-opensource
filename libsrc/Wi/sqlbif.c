@@ -138,12 +138,17 @@ dk_hash_t *name_to_bif_sparql_only_metadata_hash = NULL;
 
 #define bif_arg_nochecks(qst,args,nth) QST_GET ((qst), (args)[(nth)])
 
+#define BIF_ARG_CHECK_FUEL 100
+
 caddr_t
 bif_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
+  caddr_t arg;
   if (((uint32) nth) >= BOX_ELEMENTS (args))
     sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int)(BOX_ELEMENTS (args)), func);
-  return bif_arg_nochecks(qst,args,nth);
+  arg = bif_arg_nochecks(qst,args,nth);
+  dk_check_tree_mp_or_plain (arg, BIF_ARG_CHECK_FUEL);
+  return arg;
 }
 
 caddr_t
@@ -153,6 +158,7 @@ bif_arg_unrdf (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   if (((uint32) nth) >= BOX_ELEMENTS (args))
     sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int)(BOX_ELEMENTS (args)), func);
   arg = bif_arg_nochecks(qst,args,nth);
+  dk_check_tree_mp_or_plain (arg, BIF_ARG_CHECK_FUEL);
   if (DV_RDF != DV_TYPE_OF (arg))
     return arg;
   if (!((rdf_box_t *)arg)->rb_is_complete)
@@ -167,6 +173,7 @@ bif_arg_unrdf_ext (caddr_t * qst, state_slot_t ** args, int nth, const char *fun
   if (((uint32) nth) >= BOX_ELEMENTS (args))
     sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int)(BOX_ELEMENTS (args)), func);
   ret_orig[0] = arg = bif_arg_nochecks(qst,args,nth);
+  dk_check_tree_mp_or_plain (arg, BIF_ARG_CHECK_FUEL);
   if (DV_RDF != DV_TYPE_OF (arg))
     return arg;
   if (!((rdf_box_t *)arg)->rb_is_complete)

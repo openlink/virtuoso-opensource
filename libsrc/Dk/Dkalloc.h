@@ -98,9 +98,13 @@ void thr_alloc_cache_clear (thread_t * thr);
 
 #endif
 #endif
-void dk_alloc_assert (void *ptr);
+extern void dk_alloc_assert (void *ptr);
+extern void dk_alloc_assert_mp_or_plain (void *ptr);
 #else
 # define dk_alloc_assert(ptr) ;
+# define dk_alloc_assert_mp_or_plain(ptr) 	;
+# define dbg_find_allocation_error(p, mp)	NULL
+# define dbg_freep(f,l,b,n)			free(b)
 #endif
 
 #ifdef MALLOC_DEBUG
