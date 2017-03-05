@@ -5464,7 +5464,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_S3_activity', self.dav_path, 'virt:S3-activity', 'off');
+              S := self.get_fieldProperty ('dav_S3_activity', self.dav_path, 'virt:S3-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_S3_activity" id="dav_S3_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6092,7 +6092,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_IMAP_activity', self.dav_path, 'virt:IMAP-activity', 'off');
+              S := self.get_fieldProperty ('dav_IMAP_activity', self.dav_path, 'virt:IMAP-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_IMAP_activity" id="dav_IMAP_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6237,7 +6237,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_GDrive_activity', self.dav_path, 'virt:GDrive-activity', 'off');
+              S := self.get_fieldProperty ('dav_GDrive_activity', self.dav_path, 'virt:GDrive-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_GDrive_activity" id="dav_GDrive_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6314,7 +6314,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_Dropbox_activity', self.dav_path, 'virt:Dropbox-activity', 'off');
+              S := self.get_fieldProperty ('dav_Dropbox_activity', self.dav_path, 'virt:Dropbox-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_Dropbox_activity" id="dav_Dropbox_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6389,7 +6389,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_SkyDrive_activity', self.dav_path, 'virt:SkyDrive-activity', 'off');
+              S := self.get_fieldProperty ('dav_SkyDrive_activity', self.dav_path, 'virt:SkyDrive-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_SkyDrive_activity" id="dav_SkyDrive_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6464,7 +6464,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_Box_activity', self.dav_path, 'virt:Box-activity', 'off');
+              S := self.get_fieldProperty ('dav_Box_activity', self.dav_path, 'virt:Box-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_Box_activity" id="dav_Box_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6539,7 +6539,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_WebDAV_activity', self.dav_path, 'virt:WebDAV-activity', 'off');
+              S := self.get_fieldProperty ('dav_WebDAV_activity', self.dav_path, 'virt:WebDAV-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_WebDAV_activity" id="dav_WebDAV_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6723,7 +6723,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_RACKSPACE_activity', self.dav_path, 'virt:RACKSPACE-activity', 'off');
+              S := self.get_fieldProperty ('dav_RACKSPACE_activity', self.dav_path, 'virt:RACKSPACE-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_RACKSPACE_activity" id="dav_RACKSPACE_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
@@ -6849,7 +6849,7 @@
             <?vsp
               declare S varchar;
 
-              S := self.get_fieldProperty ('dav_FTP_activity', self.dav_path, 'virt:FTP-activity', 'off');
+              S := self.get_fieldProperty ('dav_FTP_activity', self.dav_path, 'virt:FTP-activity', 'on');
               http (sprintf ('<input type="checkbox" name="dav_FTP_activity" id="dav_FTP_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
             ?>
           </td>
