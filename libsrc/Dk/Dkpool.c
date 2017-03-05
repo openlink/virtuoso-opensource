@@ -333,10 +333,36 @@ size_t mp_large_min = 80000;
 caddr_t
 DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
 {
+  dtp_t *new_alloc;
   dtp_t *ptr;
-  size_t len, hlen;
+  size_t len;
+#ifndef LACERATED_POOL
+  size_t hlen;
   int bh_len;
-  caddr_t new_alloc;
+  mem_block_t *mb = NULL, *f;
+  if (DV_NON_BOX  == dtp && len1 > mp_large_min && len1 > mp->mp_block_size / 2)
+    return (caddr_t)mp_large_alloc (mp, len1);
+  else if (len1 > mp_large_min  && len1 > mp->mp_block_size / 2)
+    {
+      ptr = (dtp_t*) mp_large_alloc (mp, len1 + 8);
+      ptr += 4;
+      WRITE_BOX_HEADER (ptr, len1, dtp);
+      memzero (ptr, len1);
+      return (caddr_t)ptr;
+    }
+#elif 0
+
+  if (len1 > mp_large_min)
+    {
+      if (DV_NON_BOX == dtp)
+        return (caddr_t)mp_large_alloc (mp, len1);
+      ptr = (caddr_t)mp_large_alloc (mp, len1 + 8);
+      ptr += 4;
+      WRITE_BOX_HEADER (ptr, len1, dtp);
+      memzero (ptr, len1);
+      return (caddr_t)ptr;
+    }
+#endif
 #ifdef LACERATED_POOL
 #ifdef DOUBLE_ALIGN
   len = ALIGN_8 (len1 + 8);
@@ -366,7 +392,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   ptr = new_alloc;
 #endif
 #else
-  mem_block_t *mb = NULL, *f;
+#if 0
   if (len1 > mp_large_min && len1 > mp->mp_block_size / 2)
     {
       if (DV_NON_BOX == dtp)
@@ -377,6 +403,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
       memzero (ptr, len1);
       return (caddr_t)ptr;
     }
+#endif
   bh_len = (dtp != DV_NON_BOX ? 8 : 0);
   len = ALIGN_8 (len1 + bh_len);
   mb = NULL;
@@ -1555,7 +1582,7 @@ mp_by_address (uint64 ptr)
 	  int64 start = (int64) rc->rc_items[inx2];
 	  if (ptr >= start && ptr < start + mm_sizes[inx])
 	    {
-	      printf ("Address %x is %Ld bytes indes arc cached block start %p size %Ld\n", (void*)ptr, ptr - start, (void*)start, (long long)(mm_sizes[inx]));
+	      printf ("Address %p is %Ld bytes indes arc cached block start %p size %Ld\n", (void*)ptr, (long long)(ptr - start), (void*)start, (long long)(mm_sizes[inx]));
 	      return;
 	    }
 	}
@@ -1938,7 +1965,9 @@ mp_large_report ()
 	    min_age = age;
 	  age_sum += age;
 	}
-      printf ("size %d fill %d max %d  gets %d stores %d full %d empty %d ages %d/%d/%d\n", mm_sizes[inx], rc->rc_fill, rc->rc_size, rc->rc_gets, rc->rc_stores, rc->rc_n_full, rc->rc_n_empty,
+      printf ("size %lu fill %lu max %lu  gets %lu stores %lu full %lu empty %lu ages %d/%d/%d\n",
+        (unsigned long)(mm_sizes[inx]), (unsigned long)(rc->rc_fill), (unsigned long)(rc->rc_size),
+        (unsigned long)(rc->rc_gets), (unsigned long)(rc->rc_stores), (unsigned long)(rc->rc_n_full), (unsigned long)(rc->rc_n_empty),
 	      fill ? min_age : 0, fill ? age_sum / fill : 0, max_age);
       bytes += mm_sizes[inx] * rc->rc_fill;
     }
@@ -1951,7 +1980,7 @@ mp_reuse_large (mem_pool_t * mp, void * ptr)
 {
   int nth = -1;
   size_t sz = (size_t)gethash (ptr, &mp->mp_large);
-  if (!sz)
+  if (!sz || !mp_local_rc_sz)
     return 0;
   mm_next_size (sz, &nth);
   if (-1 == nth || nth >= mm_n_large_sizes)

@@ -1265,9 +1265,9 @@ tlsf_summary (FILE * out)
       mapped += tlsf->tlsf_total_mapped;
       used += tlsf->used_size;
       max += tlsf->max_size;
-      fprintf (out, "%luK %s %lu used %lu max used %p id %d\n", tlsf->tlsf_total_mapped >> 10, tlsf->tlsf_comment ? tlsf->tlsf_comment : "-", tlsf->used_size >> 10, tlsf->max_size >> 10, tlsf, tlsf->tlsf_id);
+      fprintf (out, "%luKb mapped, %luKb used, %luKb max --- in tlsf %p with id %d '%s'\n", tlsf->tlsf_total_mapped >> 10, tlsf->used_size >> 10, tlsf->max_size >> 10, tlsf, tlsf->tlsf_id, tlsf->tlsf_comment ? tlsf->tlsf_comment : "-");
     }
-  fprintf (out, "Total %lu %lu used %lu max\n", mapped >> 10, used >> 10, max >> 10);
+  fprintf (out, "%luKb mapped, %luKb used, %luKb max\n", (unsigned long)(mapped >> 10), (unsigned long)(used >> 10), (unsigned long)(max >> 10));
 
 }
 

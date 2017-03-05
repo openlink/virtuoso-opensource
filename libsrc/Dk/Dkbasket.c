@@ -417,7 +417,7 @@ void
 rbuf_test ()
 {
   rbuf_t rb;
-  int inx, ctr;
+  ptrlong inx, ctr;
   int xx = 0;
   memset (&rb, 0, sizeof (rb));
   for (inx = 0; inx < 1000000; inx++)
@@ -446,7 +446,7 @@ rbuf_test ()
     }
   rbuf_delete_all (&rb);
   for (inx = 1; inx < 100000; inx++)
-    rbuf_add (&rb, (void*)(ptrlong)inx);
+    rbuf_add (&rb, (void*)inx);
   rbuf_rewrite (&rb);
   DO_RBUF (ptrlong, x, rbe, rbe_inx, &rb)
     {

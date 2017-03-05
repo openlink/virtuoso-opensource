@@ -593,7 +593,9 @@ dk_memory_initialize (int do_malloc_cache)
   /* This is a global flag. In a DLL all users get to
      share the same cached resources */
   static int is_mem_init = 0;
+#ifdef CACHE_MALLOC
   int s;
+#endif
   if (is_mem_init)
     return;
   dk_cpu_init ();
@@ -716,10 +718,8 @@ dk_cache_allocs (size_t sz, size_t cache_sz)
 void *
 dk_alloc (size_t c)
 {
-  thread_t *thr = NULL;
   void *thing = NULL;
   size_t align_sz;
-  int nth_sz;
 #ifndef CACHE_MALLOC
   align_sz = ALIGN_8 (c);
   thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
@@ -736,6 +736,8 @@ dk_alloc (size_t c)
   av_s_list_t *av1;
   if (c <= MAX_CACHED_MALLOC_SIZE)
     {
+      int nth_sz;
+      thread_t *thr = NULL;
       ALIGN_A (align_sz, nth_sz, c);
       THREAD_ALLOC_LOOKUP (thr, thing, nth_sz);
 
@@ -992,12 +994,12 @@ thr_alloc_cache_clear (thread_t * thr)
 
 
 void
-dk_alloc_cache_status (resource_t ** cache)
+dk_alloc_cache_status (void * cache)
 {
+#ifdef CACHE_MALLOC
   int inx;
   size_t bs = 0;
   printf ("\n--------- dk_alloc cache\n");
-#ifdef CACHE_MALLOC
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
       int way;
@@ -1009,15 +1011,17 @@ dk_alloc_cache_status (resource_t ** cache)
       bs += n * inx * 8;
     }
   printf ("%Ld total\n", bs);
+#else
+  printf ("\n dk_alloc cache is off, because CACHE_MALLOC is not defined\n");
 #endif
 }
 
 size_t
 dk_alloc_global_cache_total ()
 {
-  int inx;
   size_t bs = 0;
 #ifdef CACHE_MALLOC
+  int inx;
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
       int way;
@@ -1034,9 +1038,9 @@ dk_alloc_global_cache_total ()
 size_t
 dk_alloc_cache_total (void * cache)
 {
-  int inx;
   size_t bs = 0;
 #ifdef CACHE_MALLOC
+  int inx;
   av_list_t * av = cache;
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
@@ -1049,6 +1053,21 @@ dk_alloc_cache_total (void * cache)
   return bs;
 }
 
+#ifndef MALLOC_DEBUG
+int
+all_allocs_at_line (const char *file, int line)
+{
+  printf ("\nall_allocs_at_line () requires MALLOC_DEBUG and slow_malloc_debug set to 1\n");
+  return 0;
+}
+
+int
+new_allocs_after (int res_no)
+{
+  printf ("\nnew_allocs_after () requires MALLOC_DEBUG and slow_malloc_debug set to 1\n");
+  return 0;
+}
+#endif
 
 #ifdef MALLOC_DEBUG
 #undef dk_alloc
