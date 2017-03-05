@@ -424,7 +424,7 @@ spar_error (sparp_t *sparp, const char *format, ...)
   sqlr_resignal (err);
 }
 
-int
+void
 spar_audit_error (sparp_t *sparp, const char *format, ...)
 {
 #ifdef SPAR_ERROR_DEBUG
@@ -438,15 +438,13 @@ spar_audit_error (sparp_t *sparp, const char *format, ...)
 #ifdef SPAR_ERROR_DEBUG
   txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
   printf ("Internal SPARQL audit error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
-#endif
-#ifdef DEBUG
+
   if (sparp->sparp_internal_error_runs_audit)
-    return 1;
+    return;
 #endif
   sqlr_new_error ("37000", "SP039",
     "%.400s: Internal error (reported by audit): %.1500s",
     ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
-  return 1; /* Never reached */
 }
 
 
