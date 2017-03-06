@@ -45,7 +45,7 @@
     <sql purpose="post-install"></sql>
   </procedures>
   <ddls>
-    <sql purpose="pre-install">if (lt (sys_stat ('st_dbms_ver'), '06.01.3127')) { result ('ERROR', 'The RDB2RDF package requires server version 06.01.3127 or greater'); signal ('FATAL', 'The conductor package requires server version 06.01.3127 or greater'); } </sql>
+    <sql purpose="pre-install">if (lt (sys_stat ('st_dbms_ver'), '07.02.3218')) { result ('ERROR', 'The RDB2RDF package requires server version 07.02.3218 or greater'); signal ('FATAL', 'The conductor package requires server version 07.02.3218 or greater'); } </sql>
     <sql purpose="post-install">
       "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/ovl.sql', 1, 'report', 1);
       "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/r2rml.sql', 1, 'report', 1);
