@@ -299,6 +299,7 @@ struct query_s
     bitf_t		qr_vec_opt_done:1;
     bitf_t		qr_need_enlist:1; /* in cluster, if run in read committed, still need enlist because of unknown function calls  which may update */
     bitf_t		qr_is_mt_insert:1;
+    bitf_t              qr_proc_grants_is_reused:1;
     char			qr_hidden_columns;
     char			qr_n_stages; /* if represents distr frag */
     /* The query state array's description */
