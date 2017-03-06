@@ -636,7 +636,7 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
 {
   foreach (varchar dflttt in vector ('http://www.w3.org/ns/r2rml#IRI', 'http://www.w3.org/ns/r2rml#Literal')) do
     {
-      for (sparql define input:storage ""
+      for (sparql define input:storage "" define output:valmode "LONG"
         select ?triplesmap ?fldmap ?template ?termtype ?dt ?lang
         where { graph `iri(?:self.graph_iid)` {
                 ?triplesmap a rr:TriplesMap .
@@ -657,10 +657,10 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
         order by asc(str(?template)) asc(str(?dt)) asc(str(?lang)) asc(str(?triplesmap)) asc(str(?fldmap))
         ) do
         {
-          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, iri_to_id ("triplesmap"), "template", coalesce (cast ("termtype" as varchar), dflttt), iri_to_id ("dt"), "lang");
+          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", __ro2sq ("template"), coalesce (__id2i ("termtype"), dflttt), "dt", __ro2sq ("lang"));
         }
     }
-  for (sparql define input:storage ""
+  for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype
     where { graph `iri(?:self.graph_iid)` {
             ?triplesmap a rr:TriplesMap .
@@ -675,9 +675,9 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:termType ?termtype . }
           } } ) do
     {
-      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, iri_to_id ("triplesmap"), '{' || DB.DBA.R2RML_UNQUOTE_NAME ("col") || '}', coalesce (cast ("termtype" as varchar), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
+      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
     }
-  for (sparql define input:storage ""
+  for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype ?dt ?lang
     where { graph `iri(?:self.graph_iid)` {
             ?triplesmap a rr:TriplesMap .
@@ -687,8 +687,8 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:datatype ?dt . }
             optional { ?fldmap rr:language ?lang . } } } ) do
     {
-      if ((("termtype" is not null) and ("termtype" <> 'http://www.w3.org/ns/r2rml#Literal')) or ("dt" is not null) or ("lang" is not null))
-        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, iri_to_id ("triplesmap"), '{' || DB.DBA.R2RML_UNQUOTE_NAME ("col") || '}', coalesce ("termtype", 'http://www.w3.org/ns/r2rml#Literal'), iri_to_id ("dt"), "lang");
+      if ((("termtype" is not null) and (__id2i ("termtype") <> 'http://www.w3.org/ns/r2rml#Literal')) or ("dt" is not null) or ("lang" is not null))
+        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#Literal'), "dt", __ro2sq ("lang"));
     }
 }
 ;
