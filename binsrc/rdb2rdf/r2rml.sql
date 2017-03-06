@@ -546,11 +546,12 @@ create_iol_class:
       for (argctr := 0; argctr < argcount; argctr := argctr + 1)
         {
           declare argdtp integer;
-          declare argname varchar;
+          declare raw_argname, argname varchar;
           argdtp := argtypes[argctr][0];
-          argname := format_parts[argctr * 2 + 1];
-          if (argname <> sprintf ('%U', argname))
-            argname := sprintf ('%s_n%d', replace (replace (sprintf ('%U', argname), '+', '_'), '%', '__'), argctr);
+          raw_argname := format_parts[argctr * 2 + 1];
+          argname := replace (sprintf ('%U', raw_argname), '-', '_');
+          if (raw_argname <> argname)
+            argname := sprintf ('%s_n%d', replace (replace (argname, '+', '_'), '%', '__'), argctr);
           if (argctr > 0)
             http (', ', self.codegen_ses);
           http ('in ' || argname || ' ' ||
