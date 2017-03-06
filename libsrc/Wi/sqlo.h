@@ -680,6 +680,8 @@ df_elt_t * sqlo_layout_copy_1 (sqlo_t * so, df_elt_t * dfe, df_elt_t * parent);
 
 void sqlo_dt_unplace (sqlo_t * so, df_elt_t * tb_dfe);
 void sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe);
+float itc_row_selectivity (it_cursor_t * itc, int64 inx_est);
+int pred_const_rhs (df_elt_t * pred);
 float sqlo_score (df_elt_t * dfe, float in_arity);
 int dfe_try_ordered_key (df_elt_t * prev_tb, df_elt_t * dfe);
 df_elt_t * dfe_prev_tb (df_elt_t * dfe, float * card_between_ret, int stop_on_new_order);

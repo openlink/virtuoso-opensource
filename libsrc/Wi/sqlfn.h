@@ -348,6 +348,7 @@ void ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state);
 void read_proc_and_trigger_tables (int remotes);
 void read_utd_method_tables (void);
 void ddl_read_constraints (char *spec_tb_name, caddr_t *qst);
+void ddl_redo_undefined_triggers (void);
 
 void ddl_init_schema (void);
 
@@ -1472,7 +1473,10 @@ void itc_fetch_col (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, 
 #define FC_APPEND -1
 #define FC_APPEND_PRESENT -2
 #define FC_FROM_CEIC -3 /* the ceic contains updates to the page for itc_fetch_col.  If a col is updated in the ceic, use that instead of the value on the page. */
+
 void itc_col_search (it_cursor_t * itc, buffer_desc_t * buf);
+void dc_wide_tags (data_col_t * dc, int from);
+void dc_xml_entities (it_cursor_t * itc, dbe_col_loc_t * cl, data_col_t * dc, int from);
 void key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins);
 int ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, caddr_t value);
 int itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);

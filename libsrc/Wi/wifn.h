@@ -117,6 +117,7 @@ int itc_next_set (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 int64 itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, int angle);
 int64 itc_sample (it_cursor_t * it);
 int64 itc_local_sample (it_cursor_t * it);
+float itc_row_selectivity (it_cursor_t * itc, int64 inx_est);
 unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
 void itc_col_stat_free (it_cursor_t * itc, int upd_col, float est);
 void cs_new_page (dk_hash_t * cols);
@@ -430,6 +431,7 @@ void dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp);
 buffer_desc_t * dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag);
 void bp_write_dirty (buffer_pool_t * bp, int force, int is_in_page_map, int n_oldest);
 
+void wi_close(void);
 void dbs_sync_disks (dbe_storage_t * dbs);
 
 extern int n_oldest_flushable;
@@ -623,6 +625,7 @@ void pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
 #define PAGE_WRITE_ORG 1
 #define PAGE_WRITE_COPY 2
 int page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int page_compress);
+void page_after_read (buffer_desc_t * buf);
 
 int page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t value);
 #define page_col_cmp(buf, row, cl, val) \
@@ -916,6 +919,7 @@ int dbs_dirty_count ();
 void buf_cancel_write (buffer_desc_t * buf);
 void buf_release_read_waits (buffer_desc_t * buf, int itc_state);
 void mt_write_start (int n_oldest);
+void dbs_mtwrite_init (dbe_storage_t * dbs);
 void mt_write_init (void);
 io_queue_t * db_io_queue (dbe_storage_t * dbs, dp_addr_t dp);
 extern dk_mutex_t * mt_write_mtx;
@@ -1390,6 +1394,7 @@ void em_free (extent_map_t * em);
 void em_rename (extent_map_t * em, char * name);
 void it_rename_col_ems (index_tree_t * it, char * key_name);
 void dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd);
+dp_addr_t em_free_count (extent_map_t * em, int type);
 void dbs_ec_enter (dbe_storage_t * dbs);
 void dbs_ec_leave (dbe_storage_t * dbs);
 void clear_old_root_images  ();

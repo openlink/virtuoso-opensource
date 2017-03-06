@@ -3656,8 +3656,9 @@ dbs_open_disks (dbe_storage_t * dbs)
 }
 
 
+
 void
-wi_close()
+wi_close(void)
 {
   int inx;
 

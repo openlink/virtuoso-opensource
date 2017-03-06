@@ -54,6 +54,7 @@ int ymd_valid_p (int year, int month, int day);
 int date2weekday (int year, int month, int day);
 void dt_now (caddr_t dt);
 void dt_now_tz (caddr_t dt);
+void dt_now_GMT (caddr_t dt);
 void time_t_to_dt (time_t tim, long fraction, char *dt);
 #if defined (WIN32) && (defined (_AMD64_) || defined (_FORCE_WIN32_FILE_TIME))
 int file_mtime_to_dt (const char * name, char *dt);

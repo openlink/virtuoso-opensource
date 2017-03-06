@@ -4611,7 +4611,7 @@ ddl_read_constraints (char *spec_tb_name, caddr_t *qst)
 dk_set_t triggers_to_redo = NULL;
 
 void
-ddl_redo_undefined_triggers ()
+ddl_redo_undefined_triggers (void)
 {
   caddr_t * trigs;
   user_t *org_user = bootstrap_cli->cli_user;
