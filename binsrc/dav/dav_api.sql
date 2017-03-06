@@ -2586,6 +2586,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     {
       ; -- do nothing.
     }
+
   par := split_and_decode (path, 0, '\0\0/');
   if (aref (par, 0) <> '' or aref (par, length (par) - 1) = '')
     {
@@ -2737,106 +2738,107 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
             _rowguid := __rowguid;
         }
     }
+
   if (DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (par, vector ('')), 'C')) is not null)
-    {
-      -- dbg_obj_princ ('conflict');
-      return -26;
-    }
+  {
+    -- dbg_obj_princ ('conflict');
+    return -26;
+  }
+
   if (mod_time is null)
     mod_time := now();
+
   if (type = '')
     type := http_mime_type (path);
-  --dbg_printf ('path [%s], type [%s], op [%s], perms [%s], rowguid [%s]',
-  --    path, type, op, permissions, _rowguid);
-  if (type = 'text/xml'
-    and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = pid and PROP_TYPE = 'C'
-                      and PROP_NAME = 'xper'))
-    {
-      insert soft WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
-      values (WS.WS.GETID ('P'), 'xper', 'R', id, '');
-      _is_xper_res := 1;
-    }
-  else if (rc <> 0)
-    {
-      delete from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xper' and PROP_TYPE = 'R' and PROP_PARENT_ID = id;
-      _is_xper_res := 0;
-    }
 
+  --dbg_printf ('path [%s], type [%s], op [%s], perms [%s], rowguid [%s]', path, type, op, permissions, _rowguid);
+  if (type = 'text/xml' and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = pid and PROP_TYPE = 'C' and PROP_NAME = 'xper'))
+  {
+    insert soft WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+      values (WS.WS.GETID ('P'), 'xper', 'R', id, '');
+    _is_xper_res := 1;
+  }
+  else if (rc <> 0)
+  {
+    delete from WS.WS.SYS_DAV_PROP where PROP_NAME = 'xper' and PROP_TYPE = 'R' and PROP_PARENT_ID = id;
+    _is_xper_res := 0;
+  }
 
   whenever sqlstate '*' goto unhappy_upload;
 
   if (op = 'i')
-    {
-      -- dbg_obj_princ ('INSERT ', name);
-      insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL,
-                                     RES_OWNER, RES_GROUP, RES_PERMS,
-                                     RES_CR_TIME, RES_MOD_TIME,
-                                     RES_TYPE, RES_CONTENT, ROWGUID, RES_FULL_PATH)
-          values (rc, name, pid, ouid, ogid, permissions, cr_time, mod_time, type, content, _rowguid, path);
-      if (_is_xper_res)
-        update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where RES_ID = id;
-    }
-  else
-    {
-      if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (id, 'R', 'DAV:checked-in', 0)) is not null)
-        {
-           if (auto_version = 'DAV:checkout-checkin')
-             {
-               ;
-             }
-           else if ( (locked and (auto_version = 'DAV:checkout-unlocked-checkin')) or
-                   (auto_version = 'DAV:checkout') or
-                   (locked and (auto_version = 'DAV:locked-checkout')) )
-             return "Versioning_CHECKOUT_INT" (id, content, type, permissions, ouid, ogid);
-           else if (locked or
-               (auto_version is null) or
-               ((auto_version <> 'DAV:checkout-unlocked-checkin') and
-               (auto_version <> 'DAV:checkout-checkin')))
-             return -38;
-        }
-       -- dbg_obj_princ ('UPDATE ', name);
-      if (sys_stat ('cl_run_local_only') = 1)
-	{
-	  update WS.WS.SYS_DAV_RES
-	     set RES_OWNER = ouid,
-		 RES_GROUP = ogid,
-		 RES_PERMS = permissions,
-		 RES_CR_TIME = cr_time,
-		 RES_MOD_TIME = mod_time,
-		 RES_TYPE = type,
-		 RES_CONTENT = content,
-		 ROWGUID = _rowguid,
-		 RES_SIZE = null
-	   where current of res_cr;
-	}
-      else -- when it is cluster do it by PK for now
-	{
-	  update WS.WS.SYS_DAV_RES
-	     set RES_OWNER = ouid,
-		 RES_GROUP = ogid,
-		 RES_PERMS = permissions,
-		 RES_CR_TIME = cr_time,
-		 RES_MOD_TIME = mod_time,
-		 RES_TYPE = type,
-		 RES_CONTENT = content,
-		 ROWGUID = _rowguid,
-		 RES_SIZE = null
-	  where RES_ID = id;
-	}
-      if (_is_xper_res)
-        update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where current of res_cr;
-    }
-    -- dbg_obj_princ ('fine, DAV_RES_UPLOAD_STRSES_INT returns ', rc, ' for ', path);
+  {
+    dbg_obj_princ ('INSERT ', name);
+    insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT, ROWGUID, RES_FULL_PATH)
+      values (rc, name, pid, ouid, ogid, permissions, cr_time, mod_time, type, content, _rowguid, path);
 
+    if (_is_xper_res)
+      update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where RES_ID = id;
+  }
+  else
+  {
+    if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (id, 'R', 'DAV:checked-in', 0)) is not null)
+    {
+      if (auto_version = 'DAV:checkout-checkin')
+      {
+        ;
+      }
+      else if ((locked and (auto_version = 'DAV:checkout-unlocked-checkin')) or (auto_version = 'DAV:checkout') or (locked and (auto_version = 'DAV:locked-checkout')))
+      {
+        return "Versioning_CHECKOUT_INT" (id, content, type, permissions, ouid, ogid);
+      }
+      else if (locked or (auto_version is null) or ((auto_version <> 'DAV:checkout-unlocked-checkin') and (auto_version <> 'DAV:checkout-checkin')))
+      {
+        return -38;
+      }
+    }
+    -- dbg_obj_princ ('UPDATE ', name);
+    if (sys_stat ('cl_run_local_only') = 1)
+    {
+      if (length (content) > 10485760)  -- 10MB
+        log_enable (0, 1);
+
+      update WS.WS.SYS_DAV_RES
+         set RES_OWNER = ouid,
+             RES_GROUP = ogid,
+             RES_PERMS = permissions,
+             RES_CR_TIME = cr_time,
+             RES_MOD_TIME = mod_time,
+             RES_TYPE = type,
+             RES_CONTENT = content,
+             ROWGUID = _rowguid,
+             RES_SIZE = null
+       where current of res_cr;
+    }
+    else -- when it is cluster do it by PK for now
+    {
+      update WS.WS.SYS_DAV_RES
+         set RES_OWNER = ouid,
+             RES_GROUP = ogid,
+             RES_PERMS = permissions,
+             RES_CR_TIME = cr_time,
+             RES_MOD_TIME = mod_time,
+             RES_TYPE = type,
+             RES_CONTENT = content,
+             ROWGUID = _rowguid,
+             RES_SIZE = null
+       where RES_ID = id;
+    }
+    if (_is_xper_res)
+      update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where current of res_cr;
+  }
   return rc;
 
 unhappy_upload:
   if (__SQL_STATE = 'HT507')
     return -41;
+
   if (__SQL_STATE = 'HT508')
     return -42;
+
   if (__SQL_STATE = 'HT509')
     return -43;
+
   return -29;
 }
 ;
