@@ -169,6 +169,7 @@ typedef struct sparp_equiv_s
 #ifdef DEBUG
     ptrlong e_dbg_merge_dest;	/*!< After the merge of equiv into some destination equiv, \c e_dbg_merge_dest keeps destination */
     SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to save the pointer after \c e_gp is set to NULL */
+    sparp_t *e_dbg_allocator;	/*!< The sparp where the equiv is created. This is to differentiate equivs with same gp selids from, e.g., three different variants of grabbing query */
 #endif
   } sparp_equiv_t;
 
