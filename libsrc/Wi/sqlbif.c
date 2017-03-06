@@ -830,6 +830,25 @@ bif_array_or_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const cha
 }
 
 caddr_t
+bif_array_or_strses_ro_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg_orig;
+  caddr_t arg = bif_arg_unrdf_ext (qst, args, nth, func, &arg_orig);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_UNAME
+    || IS_NONLEAF_DTP(dtp)
+    || dtp == DV_ARRAY_OF_LONG || dtp == DV_ARRAY_OF_FLOAT
+    || dtp == DV_ARRAY_OF_DOUBLE || IS_WIDE_STRING_DTP (dtp)
+    || dtp == DV_STRING_SESSION)
+  return (arg);
+  sqlr_new_error ("22023", "SR012",
+    "Function %s needs a string or an array as argument %d, "
+    "not an arg of type %s (%d)",
+    func, nth + 1, dv_type_title (DV_TYPE_OF (arg_orig)), DV_TYPE_OF (arg_orig));
+  NO_CADDR_T;
+}
+
+caddr_t
 bif_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
@@ -2129,7 +2148,7 @@ strses_aref (caddr_t ses1, int idx)
 caddr_t
 bif_aref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arr = bif_array_or_strses_arg (qst, args, 0, "aref");
+  caddr_t arr = bif_array_or_strses_ro_arg (qst, args, 0, "aref");
   int inx, n_elems;
   dtp_t dtp;
   int idxcount = BOX_ELEMENTS (args) - 1;
