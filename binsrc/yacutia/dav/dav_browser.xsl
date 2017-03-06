@@ -1498,6 +1498,18 @@
             ]]>
           </v:before-data-bind>
 
+          <v:after-data-bind>
+            <![CDATA[
+              declare tmp any;
+
+              tmp := get_keyword ('error.msg', self.vc_page.vc_event.ve_params, '');
+              if (tmp <> '')
+              {
+                self.vc_error_message := VALIDATE.DBA.clear (tmp);
+                self.vc_is_valid := 0;
+              }
+            ]]>
+          </v:after-data-bind>
           <?vsp
             http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo));
             http (sprintf ('<input type="hidden" name="retname" id="retname" value="%s" />', self.returnName));
