@@ -30,8 +30,8 @@ then
 fi
 TEST_DIR_SUFFIXES="ro co clro clco"
 
-tlist=`ls -d *.ro *.co *.clro *.clco 2>/dev/null | cut -d "." -f 1,2 --output-delimiter="-" | sort`
-rtlist=`ps -A -F | grep "\.\/test_run.sh" | awk 'BEGIN{FS="test_run.sh ";}{ print $NF }' | awk '{ print $2 "-" $1 }' | sort`
+tlist=`ls -1d *.ro *.co *.clro *.clco 2>/dev/null | sort`
+rtlist=`ps -ef | grep "\.\/test_run.sh" | awk 'BEGIN{FS="test_run.sh ";}{ print $NF }' | awk '{ print $2 "-" $1 }' | sort`
 ftlist=`echo $rtlist $rtlist $tlist | tr -s '[:blank:]' '\n' | sort | uniq -u`
 
 if [ -n "$rtlist" ]
@@ -45,14 +45,15 @@ fi
 if [ -n "$ftlist" ]
 then
     logs=`find . -type f -name "*.output" | grep -v testall`
+
     echo "FINISHED tests:"
     echo "-------------------"
     echo $ftlist
     echo "-------------------"
 
-    passed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^PASSED" | wc -l`
-    failed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?FAILED" | wc -l`
-    aborted=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?ABORTED" | wc -l`
+    passed=`echo $logs | xargs  egrep "^PASSED" | wc -l`
+    failed=`echo $logs | xargs  egrep "^\*\*\* ?FAILED" | wc -l`
+    aborted=`echo $logs | xargs egrep "^\*\*\* ?ABORTED" | wc -l`
 
     if [ $failed -gt 0 ]
     then
@@ -82,17 +83,17 @@ then
 	then
     	    echo "-------------------"
 	    echo "Aborted tests:"
-    	    find . -mindepth 1 -type f -name "core*" -print0 | xargs -0 -I "{}" echo "Got a core: {}"
-    	    find . -mindepth 1 -type f -name "*.output" -print0 | xargs -0 grep -EnH "^\*\*\* ?ABORTED"
+    	    find . -type f -name "core*" -print | xargs -I "{}" echo "Got a core: {}"
+    	    echo $logs | xargs egrep  "^\*\*\* ?ABORTED"
 	    echo "-------------------"
     	    echo "Failed tests:"
 	    echo "-------------------"
-    	    find . -mindepth 1 -type f -name "*.output" -print0 | xargs -0 grep -EnH "^\*\*\* ?FAILED"
+    	    echo $logs | xargs egrep  "^\*\*\* ?FAILED"
 	fi
     else
 	echo all FAILED and ABORTED tests:
 	echo "-------------------"
-	for f in `egrep -ls "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" *.test/*.output *.ro/*.output *.co/*.output *.clro/*.output *.clco/*.output` 
+	for f in `egrep -ls "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" $logs 2>/dev/null` 
 	do 
 	    #basename $f .output 
 	    echo $f

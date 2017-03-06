@@ -49,9 +49,11 @@ HOST_OS=`uname -s | grep WIN`
 case $SERVER in
           *java*)
 	  if [ "x$HOST_OS" = "x" ] ; then
-	  	export CLASSPATH="$CLASSPATH:classlib"
+	  	CLASSPATH="$CLASSPATH:classlib"
+		export CLASSPATH
 	  else
-	  	export CLASSPATH="$CLASSPATH;classlib"
+	  	CLASSPATH="$CLASSPATH;classlib"
+		export CLASSPATH
 	  fi
 	  echo "CLASSPATH: $CLASSPATH"
 ;;
