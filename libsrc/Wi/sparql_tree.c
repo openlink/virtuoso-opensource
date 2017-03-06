@@ -1084,12 +1084,24 @@ sparp_equiv_alloc (sparp_t *sparp)
       sparp->sparp_sg->sg_removed_equivs = removed_eqs = new_removed_eqs;
 #endif
     }
+#ifdef SPARQL_DEBUG
+  for (eqctr = 0; eqctr < eqcount; eqctr++)
+    {
+      SPART *old_gp;
+      if (NULL == eqs[eqctr])
+        continue;
+      old_gp = eqs[eqctr]->e_gp;
+      if ((old_gp != gp) && (eqs[eqctr]->e_dbg_allocator == sparp) && (SPAR_GP == SPART_TYPE (gp)) && (SPAR_GP == SPART_TYPE (old_gp)) && spar_name_same (gp->_.gp.selid, old_gp->_.gp.selid))
+        spar_internal_error (sparp, "sparp_" "equiv_alloc(): different gps with same selid");
+    }
+#endif
   res->e_own_idx = eqcount;
 #ifdef DEBUG
   res->e_clone_idx = (SPART_BAD_EQUIV_IDX-1);
 #endif
 #ifdef SPARQL_DEBUG
   res->e_dbg_merge_dest = SPART_BAD_EQUIV_IDX;
+  res->e_dbg_allocator = sparp;
 #endif
   res->e_external_src_idx = SPART_BAD_EQUIV_IDX;
   eqs[eqcount++] = res;
