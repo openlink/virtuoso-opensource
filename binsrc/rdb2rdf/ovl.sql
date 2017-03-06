@@ -72,7 +72,7 @@ create function DB.DBA.OVL_EXEC_SPARQL (in source_g_iri varchar, in extras_g_iri
   declare full_qry, state, msg varchar;
   declare qry_params, rset, metas any;
   state := '00000';
-  full_qry := concat ('sparql define input:storage "" define input:default-graph-uri <', source_g_iri, '> define input:default-graph-uri <', extras_g_iri, '> define input:named-graph-uri <', rules_g_iri, '> ', qry);
+  full_qry := concat ('sparql define input:storage "" define input:default-graph-uri <', source_g_iri, '> define input:default-graph-uri <', extras_g_iri, '> define input:named-graph-uri <', rules_g_iri, '> ', ' prefix OVL: <http://www.openlinksw.com/schemas/OVL#> ', qry);
   qry_params := vector (':source_g_iri', source_g_iri, ':extras_g_iri', extras_g_iri, ':rules_g_iri', rules_g_iri);
   -- dbg_obj_princ ('DB.DBA.OVL_EXEC_SPARQL () executes ', full_qry, ' with params ', qry_params);
   exec (full_qry, state, msg, qry_params, 1000, metas, rset);
@@ -104,17 +104,24 @@ create function DB.DBA.OVL_EXEC_SPARQL (in source_g_iri varchar, in extras_g_iri
 
 create function DB.DBA.OVL_DERIVE_EXTRAS (in source_g_iri varchar, in extras_g_iri varchar, in rules_g_iri varchar) returns any
 {
+#pragma prefix OVL: <http://www.openlinksw.com/schemas/OVL#>
   declare baserules, err_agg any;
   declare old_extras_count, new_extras_count integer;
   vectorbld_init (err_agg);
   baserules := vector (
-    ' select ?s, ("Error") as ?severity,
-        bif:concat ("Nothing to validate, graph <", ?::source_g_iri, "> is totally empty") as ?message
-      where { filter not exists { ?s ?p ?o . } } limit 1',
-    ' select ?s, ("Error") as ?severity,
-        bif:concat ("No graph with validation data, graph <", ?::rules_g_iri, "> is totally empty") as ?message
-      where {
-          filter not exists { graph `iri(?::rules_g_iri)` { ?s ?p ?o . } } } limit 1',
+--    ' select ?s, ("Error") as ?severity,
+--        bif:concat ("Nothing to validate, graph <", ?::source_g_iri, "> is totally empty") as ?message
+--      where { filter not exists { ?s ?p ?o . } } limit 1',
+--    ' select ?s, ("Error") as ?severity,
+--        bif:concat ("No graph with validation data, graph <", ?::rules_g_iri, "> is totally empty") as ?message
+--      where {
+--          filter not exists { graph `iri(?::rules_g_iri)` { ?s ?p ?o . } } } limit 1',
+    ' select sample (?s), (if (count (1), "Info", "Error")) as ?severity,
+        bif:concat ("Graph <", ?::source_g_iri, "> contains ", count (1), " triples") as ?message
+      where { ?s ?p ?o } limit 1',
+    ' select sample (?s), (if (count (1), "Info", "Error")) as ?severity,
+        bif:concat ("Graph <", ?::rules_g_iri, "> with validation data contains ", count (1), " triples") as ?message
+      where { graph `iri(?::rules_g_iri)` { ?s ?p ?o . } } limit 1',
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> is obsolete. ", bif:coalesce(str(?prop_cmt), ""))) as ?message
       where {
@@ -203,6 +210,7 @@ no_more_rounds:
 
 create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras_g_iri varchar, in rules_g_iri varchar) returns any
 {
+#pragma prefix OVL: <http://www.openlinksw.com/schemas/OVL#>
   declare baserules, err_agg any;
   if (extras_g_iri is null)
     extras_g_iri := 'http://virtuoso.openlinksw.com/tmp/OVL/' || DB.DBA.R2RML_MD5_IRI (vector (source_g_iri, rules_g_iri));
@@ -324,6 +332,7 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
 
 create procedure DB.DBA.OVL_VALIDATE (in source_g_iri varchar, in rules_g_iri varchar)
 {
+#pragma prefix OVL: <http://www.openlinksw.com/schemas/OVL#>
   declare extras_g_iri varchar;
   declare err_agg, res any;
   declare SUBJ, SEVERITY, MESSAGE varchar;
