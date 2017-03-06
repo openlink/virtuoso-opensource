@@ -1126,6 +1126,10 @@ create procedure
 RDF_VIEW_CHECK_SYNC_TB (in tb varchar)
 {
   declare tree, tbname any;
+--                       0         1
+--                       012345678901234
+  if ("LEFT" (tb, 14) = '/*[sqlquery[*/')
+    return 0;
   tree := sql_parse (sprintf ('SELECT 1 from %s', tb));
   tbname := tree [4][1][0][1][1];
   tbname := complete_table_name (tbname, 1);

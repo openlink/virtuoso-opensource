@@ -444,7 +444,7 @@ create function DB.DBA.R2RML_XSD_TYPE_OF_DTP (in dtp integer)
   if (__tag of date = dtp) return 'http://www.w3.org/2001/XMLSchema#date';
   if (__tag of time = dtp) return 'http://www.w3.org/2001/XMLSchema#time';
   if (dtp in (__tag of varchar, __tag of nvarchar, __tag of long varchar, __tag of long nvarchar)) return NULL;
-  if (__tag of integer = dtp) return 'http://www.w3.org/2001/XMLSchema#integer';
+  if (dtp in (__tag of integer, __tag of smallint, __tag of bigint)) return 'http://www.w3.org/2001/XMLSchema#integer';
   if (__tag of double precision = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of numeric = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of real = dtp) return 'http://www.w3.org/2001/XMLSchema#float';
@@ -518,6 +518,7 @@ create method R2RML_GEN_CREATE_IOL_CLASS_OR_REF (in fld_idx integer, in mode int
       col_fmt := case
         when (coltype[1] in (__tag of date, __tag of datetime, __tag of datetime)) then '%D'
         when (coltype[1] in (__tag of integer, __tag of smallint)) then '%d'
+        when (coltype[1] in (__tag of bigint)) then '%ld'
         when (coltype[1] in (__tag of real, __tag of double precision, __tag of numeric)) then '%g'
         when (coltype[1] in (__tag of varchar, __tag of nvarchar)) then
           case (termtype) when 'http://www.w3.org/ns/r2rml#Literal' then '%s' else '%U' end
@@ -558,6 +559,8 @@ create_iol_class:
               when __tag of time then 'time'
               when __tag of datetime then 'datetime'
               when __tag of integer then 'integer'
+              when __tag of smallint then 'integer'
+              when __tag of bigint then 'integer'
               when __tag of real then 'real'
               when __tag of double precision then 'double precision'
               when __tag of numeric then 'numeric'

@@ -12429,6 +12429,8 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           type_name := lower (arglist[argctr][2]);
           dtp := case (type_name)
             when 'integer' then __tag of integer
+            when 'smallint' then __tag of integer
+            when 'bigint' then __tag of integer
             when 'varchar' then __tag of varchar
             when 'date' then __tag of date
             when 'datetime' then __tag of datetime
@@ -12801,6 +12803,8 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
           type_name := lower (arglist[argctr][2]);
           dtp := case (type_name)
             when 'integer' then __tag of integer
+            when 'smallint' then __tag of integer
+            when 'bigint' then __tag of integer
             when 'varchar' then __tag of varchar
             when 'date' then __tag of date
             when 'datetime' then __tag of datetime
@@ -13678,8 +13682,9 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when __tag of time then 'time'
         when __tag of long varbinary then 'longvarbinary'
         when __tag of varbinary then 'longvarbinary'
-        when 188 then 'integer'
         when __tag of integer then 'integer'
+        when __tag of smallint then 'integer'
+        when __tag of smallint then 'integer'
         when __tag of varchar then 'varchar'
         when __tag of real then 'double precision' -- actually single precision float
         when __tag of double precision then 'double precision'
