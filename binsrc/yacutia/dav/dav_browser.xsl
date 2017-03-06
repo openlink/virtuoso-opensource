@@ -2258,7 +2258,7 @@
              <div id="c1">
               <div class="tabs">
                 <vm:tabCaption tab="1"   tabs="20" caption="Main" />
-                <v:template name="tform_5" type="simple" enabled="-- case when (self.viewField ('acl') or self.viewField ('aci')) and (self.command_mode = 10) then 1 else 0 end">
+                <v:template name="tform_5" type="simple" enabled="-- case when (self.viewField ('acl') or self.viewField ('aci')) then 1 else 0 end">
                 <vm:tabCaption tab="2"   tabs="20" caption="Sharing" />
                 </v:template>
                 <v:template name="tform_7" type="simple" enabled="-- case when self.viewField ('version') and (self.command_mode = 10) and (self.dav_type = 'R') and not self.dav_is_redirect and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,acl') and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,meta') then 1 else 0 end">
@@ -3009,8 +3009,8 @@
                   </table>
                 </div>
 
-                <v:template name="tform_20" type="simple" enabled="-- gte(self.command_mode, 10)">
-                  <div id="2" class="tabContent">
+                <v:template name="tform_20" type="simple">
+                  <div id="2" class="tabContent" style="display: none;">
                     <vm:if test='self.viewField (&apos;acl&apos;)'>
                       <fieldset>
                         <legend><b>ODS users/groups</b></legend>
@@ -3069,6 +3069,7 @@
                         </table>
                       </fieldset>
                     </vm:if>
+
                     <vm:if test="self.viewField ('aci')">
                       <fieldset>
                         <legend><b>WebID users</b></legend>
@@ -3574,7 +3575,6 @@
                           WEBDAV.DBA.DAV_SET (self.dav_path, 'mimeType', dav_mime);
 
                       _exec_2:;
-
                         if (not self.editField ('permissions'))
                           goto _exec_3;
 
@@ -3596,31 +3596,6 @@
                           WEBDAV.DBA.DAV_SET (self.dav_path, 'groupID', dav_group);
 
                       _exec_5:;
-                        if (not self.editField ('acl'))
-                          goto _exec_6;
-
-                        -- ACL
-                        dav_acl := WEBDAV.DBA.DAV_GET (self.dav_item, 'acl');
-                        self.dav_acl := WEBDAV.DBA.acl_params (params, dav_acl);
-                        if ((dav_acl <> self.dav_acl) or dav_encryption_state)
-                        {
-                          if (not WEBDAV.DBA.DAV_ERROR (WEBDAV.DBA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
-                            WEBDAV.DBA.acl_send_mail (self.account_id, self.dav_path, dav_acl, self.dav_acl, dav_encryption_state);
-                        }
-
-                      _exec_6:;
-                        if (not self.editField ('aci'))
-                          goto _exec_7;
-
-                        -- ACI (Web Access)
-                        old_dav_aci := WEBDAV.DBA.aci_load (self.dav_path);
-                        if ((not WEBDAV.DBA.aci_compare (old_dav_aci, dav_aci)) or dav_encryption_state)
-                        {
-                          WEBDAV.DBA.aci_save (self.dav_path, dav_aci);
-                          WEBDAV.DBA.aci_send_mail (self.account_id, self.dav_path, old_dav_aci, dav_aci, dav_encryption_state);
-                        }
-
-                      _exec_7:;
                       }
 
                       -- Folder
@@ -3654,7 +3629,7 @@
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'permissions-inheritance', get_keyword ('dav_permissions_inheritance', params, 'N'));
 
                         if (not self.editField ('name'))
-                          goto _exec_8;
+                          goto _exec_6;
 
                         -- set new properties
                         detParams := null;
@@ -3739,10 +3714,10 @@
                           if (WEBDAV.DBA.DAV_ERROR (tmp))
                             signal('TEST', tmp);
                         }
-                      _exec_8:;
+                      _exec_6:;
                         -- LDP
                         if (not self.editField ('ldp'))
-                          goto _exec_85;
+                          goto _exec_65;
 
                         dav_ldp := get_keyword ('dav_ldp', params, '');
                         tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'LDP', '');
@@ -3759,9 +3734,9 @@
                           }
                         }
 
-                      _exec_85:;
+                      _exec_65:;
                         if (not self.editField ('turtleRedirect'))
-                          goto _exec_9;
+                          goto _exec_7;
 
                         dav_turtleRedirect := get_keyword ('dav_turtleRedirect', params, 'no');
                         tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:turtleRedirect', '');
@@ -3776,7 +3751,7 @@
                           WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:turtleRedirectParams', dav_turtleRedirectParams);
                         }
 
-                      _exec_9:;
+                      _exec_7:;
                       }
 
                       -- File
@@ -3840,21 +3815,21 @@
                         }
 
                         if (not self.editField ('publicTags'))
-                          goto _exec_10;
+                          goto _exec_8;
 
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'publictags', self.dav_tags_public);
 
-                      _exec_10:;
+                      _exec_8:;
                         if (not self.editField ('privateTags'))
-                          goto _exec_11;
+                          goto _exec_9;
 
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'privatetags', self.dav_tags_private);
 
-                      _exec_11:;
+                      _exec_9:;
                       }
 
                       if (not self.editField ('expireDate'))
-                        goto _exec_12;
+                        goto _exec_10;
 
                       dav_expireDate := cast (dav_expireDate as varchar);
                       tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:expireDate', '');
@@ -3870,10 +3845,10 @@
                         }
                       }
 
-                    _exec_12:;
+                    _exec_10:;
                       -- properties
                       if (not self.editField ('properties'))
-                        goto _exec_13;
+                        goto _exec_11;
 
                       properties := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, '%', vector ('redirectref', 'LDP', 'virt:%', 'DAV:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
                       for (N := 0; N < length (properties); N := N + 1)
@@ -3885,12 +3860,37 @@
                         WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, c_properties[N][0], c_properties[N][1]);
                       }
 
-                    _exec_13:;
+                    _exec_11:;
                       -- symbolic link
                       if (not self.editField ('link') or not self.dav_is_redirect)
-                        goto _exec_14;
+                        goto _exec_12;
 
                       WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'redirectref', dav_link);
+
+                    _exec_12:;
+                      if (not self.editField ('acl'))
+                        goto _exec_13;
+
+                      -- ACL
+                      dav_acl := WEBDAV.DBA.DAV_GET (self.dav_item, 'acl');
+                      self.dav_acl := WEBDAV.DBA.acl_params (params, dav_acl);
+                      if ((dav_acl <> self.dav_acl) or dav_encryption_state)
+                      {
+                        if (not WEBDAV.DBA.DAV_ERROR (WEBDAV.DBA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
+                          WEBDAV.DBA.acl_send_mail (self.account_id, self.dav_path, dav_acl, self.dav_acl, dav_encryption_state);
+                      }
+
+                    _exec_13:;
+                      if (not self.editField ('aci'))
+                        goto _exec_14;
+
+                      -- ACI (Web Access)
+                      old_dav_aci := WEBDAV.DBA.aci_load (self.dav_path);
+                      if ((not WEBDAV.DBA.aci_compare (old_dav_aci, dav_aci)) or dav_encryption_state)
+                      {
+                        WEBDAV.DBA.aci_save (self.dav_path, dav_aci);
+                        WEBDAV.DBA.aci_send_mail (self.account_id, self.dav_path, old_dav_aci, dav_aci, dav_encryption_state);
+                      }
 
                     _exec_14:;
                       -- Auto versioning
@@ -3905,6 +3905,8 @@
                             WEBDAV.DBA.DAV_REMOVE_VERSION_CONTROL (dav_fullPath);
                         }
                       }
+
+
                     }
                     commit work;
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
@@ -4868,36 +4870,48 @@
                   <![CDATA[
                     self.sortChange (get_keyword ('sortColumn', self.vc_page.vc_event.ve_params, ''));
                     control.ds_parameters := null;
+                    -- Path
                     control.add_parameter(self.dir_path);
+
+                    -- Directory mode
                     if ((self.returnName <> '') and (self.returnType in ('col')))
                     {
+                      -- directory selection popUp
                       control.add_parameter(4);
                     }
                     else
                     {
-                    control.add_parameter(self.command_mode);
+                      control.add_parameter(self.command_mode);
                     }
+
+                    -- Directory params
                     if (self.command_mode = 1)
                     {
+                      -- filter
                       control.add_parameter (self.search_filter);
                     }
                     else if (self.command_mode = 2)
                     {
+                      -- simple search (by name)
                       control.add_parameter (self.search_simple);
                     }
                     else if (self.command_mode = 3)
                     {
+                      -- advanced search
                       control.add_parameter (self.search_advanced);
                     }
                     else
                     {
                       control.add_parameter (null);
                     }
+
+                    -- Directory hiddens parameter as vector of prefixes
                     control.add_parameter (WEBDAV.DBA.settings_hiddens (self.settings));
 
-                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
-                    -- control.ds_sql := concat(control.ds_sql, ' order by c1');
+                    -- Account id
+                    control.add_parameter (self.account_id);
 
+                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
                     if (self.dir_details = 0)
                     {
                       declare dir_order, dir_grouping any;
@@ -4966,13 +4980,17 @@
                     declare row_data any;
 
                     row_data := control.ds_row_data;
+                    self.vc_is_valid := 1;
+                    self.vc_error_message := null;
                     if ((length(row_data) = 1) and (row_data[0][1] <> 'R') and (row_data[0][1] <> 'C'))
                     {
                       if (row_data[0][0] = '37000')
                       {
                         self.vc_error_message := 'Text search expression syntax error!';
-                      } else {
-                        self.vc_error_message := sprintf ('Search error: %s!', row_data[0][0]);
+                      }
+                      else
+                      {
+                        self.vc_error_message := sprintf ('Command error: %s!', row_data[0][1]);
                       }
                       self.vc_is_valid := 0;
                     }
@@ -5364,6 +5382,7 @@
       </xsl:otherwise>
     </xsl:choose>
   </xsl:template>
+
   <!--=========================================================================-->
   <xsl:template match="vm:search-dc-template4">
     <div id="4" class="tabContent" style="display: none;">
