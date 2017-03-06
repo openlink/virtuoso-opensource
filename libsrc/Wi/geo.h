@@ -307,7 +307,7 @@ EXE_EXPORT (void, geo_print_as_dxf_entity, (geo_t *g, caddr_t *attrs, dk_session
 
 extern int geo_calc_length_of_serialization (geo_t *g, int is_topmost);
 extern int geo_serial_length (geo_t *g);
-extern int geo_looks_fine (geo_t * geo);
+extern int geo_looks_fine_or_null (geo_t * geo);
 
 /* EWKT Reader */
 

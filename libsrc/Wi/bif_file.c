@@ -2321,7 +2321,7 @@ get_random_info (unsigned char seed[16])
     char hostname[MAX_COMPUTERNAME_LENGTH + 1];
   } r;
 
-  memset (&c, 0, sizeof (MD5_CTX));
+  memset (&r, 0, sizeof (r));
   MD5Init (&c);			/* memory usage stats */
   GlobalMemoryStatus (&r.m);	/* random system stats */
   GetSystemInfo (&r.s);		/* 100ns resolution (nominally) time of day */
@@ -2357,15 +2357,16 @@ get_random_info (unsigned char seed[16])
   struct
   {
     pid_t pid;
-    struct timeval t;
+    struct timeval tv;
     char hostname[257];
   } r;
 
-  memset (&c, 0, sizeof (MD5_CTX));
-  MD5Init (&c);
+  memset (&r, 0, sizeof (r));
   r.pid = getpid ();
-  gettimeofday (&r.t, (struct timezone *) 0);
+  gettimeofday (&r.tv, (struct timezone *) 0);
   gethostname (r.hostname, 256);
+
+  MD5Init (&c);
   MD5Update (&c, (unsigned char *) &r, sizeof (r));
   MD5Final (seed, &c);
 }

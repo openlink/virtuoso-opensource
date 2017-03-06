@@ -381,7 +381,13 @@ void mp_check_tree (mem_pool_t * mp, box_t box);
 
 #ifdef _DKSYSTEM_H
 caddr_t t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail);
+caddr_t t_box_vsprintf_uname (size_t buflen_eval, const char *format, va_list tail);
 caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
+caddr_t t_box_sprintf_uname (size_t buflen_eval, const char *format, ...)
 #ifdef __GNUC__
                 __attribute__ ((format (printf, 2, 3)))
 #endif
@@ -508,7 +514,8 @@ if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 
 
 int mp_reuse_large (mem_pool_t * mp, void * ptr);
 int mp_reserve (mem_pool_t * mp, size_t inc);
-void mp_comment (mem_pool_t * mp, char * str1, char * str2);
+void mp_comment (mem_pool_t * mp, const char * str1, const char * str2);
 size_t  mp_block_size_sc (size_t sz);
+void * mp_mmap (size_t sz);
 
 #endif /* ifdef __DKPOOL_H */

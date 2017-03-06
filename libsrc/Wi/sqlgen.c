@@ -5096,7 +5096,7 @@ sqlg_handle_select_list (sqlo_t *so, df_elt_t * dfe, data_source_t ** head,
   sqlc_select_strip_as ((ST **) selection, (caddr_t***) &as_temp, 0);
   sc->sc_select_as_list = (ST**) t_box_copy_tree ((caddr_t) as_temp);
   if (target_names && BOX_ELEMENTS (selection) != BOX_ELEMENTS (target_names))
-    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ142", "Different number of expected and generated columns in a select");
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ142", "Different number of expected and generated columns in a select (%d vs %d)", BOX_ELEMENTS(selection), BOX_ELEMENTS(target_names));
 
   DO_BOX (ST *, exp, inx, tree->_.select_stmt.selection)
     {

@@ -292,7 +292,7 @@ ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 #if 0
       sqlr_new_error ("42000", "SR184", "Vectored Built-in function is not allowed");
 #else
-      ins_tmp = *ins;
+      memcpy (&ins_tmp, ins, INS_LEN (ins));
       ins_to_use = &ins_tmp;
       ins_tmp._.bif.bif = bif_find (ins->_.bif.proc);
 #endif
@@ -3504,7 +3504,7 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 		ins_call_bif_vec ((instruction_t *) ins, qst, code_vec, &use_scalar);
 		if (use_scalar)
 		  {
-		    ins_tmp = *ins;
+		    memcpy (&ins_tmp, ins, INS_LEN (ins));
 		    ins_to_use = &ins_tmp;
 		    ins_tmp._.bif.bif = bif_find (ins->_.bif.proc);
 		    goto scalar_case;

@@ -534,6 +534,8 @@ qr_free (query_t * qr)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
     static_qr_dllist_remove (qr);
 #endif
+  if ((NULL != qr->qr_proc_grants) && !qr->qr_proc_grants_is_reused)
+    hash_table_free (qr->qr_proc_grants);
   if (!qr->qr_text_is_constant)
     dk_free_box (qr->qr_text);
   qr->qr_nodes = (dk_set_t)-1;
@@ -2152,6 +2154,9 @@ upd_free (update_node_t * upd)
   dk_free_box ((caddr_t) upd->upd_var_cl);
   dk_free_box ((caddr_t) upd->upd_trigger_args);
   dk_free_box ((caddr_t) upd->upd_fixed_cl);
+  dk_free_box ((caddr_t) upd->upd_vec_cast);
+  dk_free_box ((caddr_t) upd->upd_vec_source);
+  dk_free_box ((caddr_t) upd->upd_vec_cast_cl);
   ik_array_free (upd->upd_keys);
   qr_free (upd->upd_policy_qr);
 }

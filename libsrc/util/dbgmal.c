@@ -25,11 +25,27 @@
  *  
  */
 
+#ifdef MALLOC_DEBUG
+#define MALLOC_DEBUG_2
+#endif
+
 #undef MALLOC_DEBUG
 
 #include "libutil.h"
 #include "util/dyntab.h"
 #include "util/dbgmal.h"
+
+#if 1 /* switch to 0 for permanently slow debug */
+#define SLOW_MALLOC_DEBUG slow_malloc_debug
+#define SLOW_MALLOC_DEBUG_PERMANENT 0
+#else
+#define SLOW_MALLOC_DEBUG 1
+#define SLOW_MALLOC_DEBUG_PERMANENT 1
+#endif
+
+long slow_malloc_debug = SLOW_MALLOC_DEBUG_PERMANENT;
+int slow_malloc_debug_uses = 0;
+
 
 #ifdef USE_KILL_RINGBUF
 #define KILL_RINGBUF_SIZE 0x1FF0
@@ -50,8 +66,12 @@ void **kill_ringbuf_curr = kill_ringbuf;
 #define FREE_WITH_DELAY(ptr) free(ptr)
 #endif
 
+#ifdef MALLOC_DEBUG_2
+#define AAAL_BUCKETS_COUNT 43 /* should be a prime */
+#endif
+
 #define MALREC_FNAME_BUFLEN 32
-struct malrec_s
+typedef struct malrec_s
   {
     char fname[MALREC_FNAME_BUFLEN];
     u_int linenum;
@@ -59,26 +79,31 @@ struct malrec_s
     long prevalloc;
     long numfree;
     long prevfree;
+#ifdef MALLOC_DEBUG_2
+    void *aaal_malhdrs[AAAL_BUCKETS_COUNT];
+    long aaal_count;
+#endif
     size_t totalsize;
     size_t prevsize;
-  };
-typedef struct malrec_s malrec_t;
+  } malrec_t;
 
-struct malhdr_s
+typedef struct malhdr_s
   {
     uint32 magic;
+#ifdef MALLOC_DEBUG_2
+    void *next_malhdr;
+#endif
     malrec_t *origin;
     size_t size;
     void *pool;
-  };
-typedef struct malhdr_s malhdr_t;
+  } malhdr_t;
 
+int		_dbgmal_enabled;
 dk_mutex_t *		_dbgmal_mtx;
 static dyntable_t	_dbgtab;
 static size_t		_totalmem;
 static uint32		_free_nulls;
 static uint32		_free_invalid;
-static int		_dbgmal_enabled;
 
 void memdbg_abort (void);
 
@@ -292,6 +317,10 @@ mal_register (const char *name, u_int line)
       r->numalloc = r->prevalloc = 0;
       r->numfree = r->prevfree = 0;
       r->totalsize = r->prevsize = 0;
+#ifdef MALLOC_DEBUG_2
+      memset (r->aaal_malhdrs, 0, sizeof (r->aaal_malhdrs));
+      r->aaal_count = 0;
+#endif
       dtab_add_record ((htrecord_t) r);
     }
 
@@ -368,10 +397,52 @@ void dbg_malloc_enable(void)
       goto err; \
     }
 #else
-#define DBG_MALLOC_HARD_LIMIT_CHECK ;
-#define DBG_MALLOC_HIT_LIMIT_CHECK ;
+#define DBG_MALLOC_HARD_LIMIT_CHECK do { ; } while (0)
+#define DBG_MALLOC_HIT_LIMIT_CHECK do { ; } while (0)
 #endif
 
+#ifdef MALLOC_DEBUG_2
+#define DBG_MALLOC_ADD_TO_CHAIN(rec,data) do { \
+    if (SLOW_MALLOC_DEBUG) \
+      { \
+        void **last_ptr = rec->aaal_malhdrs + ((ptrlong)(data) % AAAL_BUCKETS_COUNT); \
+        data->next_malhdr = last_ptr[0]; last_ptr[0] = data; \
+        rec->aaal_count++; \
+        slow_malloc_debug_uses++; \
+      } \
+  } while (0)
+
+/* In the absence of slow_malloc_debug */
+#define DBG_MALLOC_REMOVE_FROM_CHAIN(rec,data) do { \
+    if (SLOW_MALLOC_DEBUG) \
+      { \
+        void **ptr_to_update = rec->aaal_malhdrs + ((ptrlong)(data) % AAAL_BUCKETS_COUNT); \
+        malhdr_t *iter = ptr_to_update[0]; \
+        for (;;) \
+          { \
+            if (NULL == iter) \
+              { \
+                if (SLOW_MALLOC_DEBUG_PERMANENT) \
+                  fprintf (stderr, "\nWARNING: corrupted MALLOC_DEBUG_2 data for allocations at line %u of %s\n", \
+                    rec->linenum, rec->fname ); \
+                break; \
+              } \
+            if (iter == data) \
+              { \
+                ptr_to_update[0] = data->next_malhdr; \
+                rec->aaal_count--; \
+                break; \
+              } \
+            ptr_to_update = &(iter->next_malhdr); \
+            iter = iter->next_malhdr; \
+          } \
+      } \
+  } while (0)
+
+#else
+#define DBG_MALLOC_ADD_TO_CHAIN(rec,data) do { ; } while (0)
+#define DBG_MALLOC_REMOVE_FROM_CHAIN(rec,data) do { ; } while (0)
+#endif
 
 #define DBG_MALLOC_IMPL(RAW_MALLOC,MAGIC,POOL,MEMSET)  \
 do { \
@@ -402,6 +473,7 @@ do { \
   data->pool = POOL; \
   data->origin->totalsize += size; \
   data->origin->numalloc++; \
+  DBG_MALLOC_ADD_TO_CHAIN(rec,data) ; \
   mutex_leave (_dbgmal_mtx); \
   user = (u_char *) data + sizeof (malhdr_t); \
   MEMSET; \
@@ -499,13 +571,18 @@ memdbg_abort (void)
 #endif
 }
 
+unsigned long dbg_malloc_magic_of_data (void *data) { return ((malhdr_t *) ((u_char *) data - sizeof (malhdr_t)))->magic; }
+void *dbg_mp_of_data (void *data) { return ((malhdr_t *) ((u_char *) data - sizeof (malhdr_t)))->pool; }
+
 #if 0
 #define ERROR_FOUND(err) return NULL;
 #else
 #define ERROR_FOUND(err) { sprintf err; return buf; }
 #endif
 
-const char *dbg_find_allocation_error (void *data, void *expected_pool)
+#undef dbg_find_allocation_error
+const char *
+dbg_find_allocation_error (void *data, void *expected_pool)
 {
   static char buf[0x100];
   malhdr_t *mhdr;
@@ -600,6 +677,7 @@ dbg_free (const char *file, u_int line, void *data)
     }
   _totalmem -= mhdr->size;
   r = mhdr->origin;
+  DBG_MALLOC_REMOVE_FROM_CHAIN(r,mhdr);
   r->totalsize -= mhdr->size;
   r->numfree++;
 
@@ -655,7 +733,7 @@ dbg_free_sized (const char *file, u_int line, void *data, size_t sz)
       mutex_leave (_dbgmal_mtx);
       return;
     }
-  if ((sz != ((size_t)-1)) && ((size_t)(mhdr->size) != sz))
+  if ((sz != ((size_t)-1)) && sz != 0x1000000 && ((size_t)(mhdr->size) != sz))
     {
       fprintf (stderr, "WARNING: free of area of actual size %ld with declared size %ld in %s (%u)\n",
         (long)(mhdr->size), (long)sz,
@@ -667,6 +745,7 @@ dbg_free_sized (const char *file, u_int line, void *data, size_t sz)
     }
   _totalmem -= mhdr->size;
   r = mhdr->origin;
+  DBG_MALLOC_REMOVE_FROM_CHAIN(r,mhdr);
   r->totalsize -= mhdr->size;
   r->numfree++;
 
@@ -679,6 +758,7 @@ dbg_free_sized (const char *file, u_int line, void *data, size_t sz)
 }
 
 
+#undef dbg_freep
 void
 dbg_freep (const char *file, u_int line, void *data, void *pool)
 {
@@ -728,6 +808,7 @@ dbg_freep (const char *file, u_int line, void *data, void *pool)
     }
   _totalmem -= mhdr->size;
   r = mhdr->origin;
+  DBG_MALLOC_REMOVE_FROM_CHAIN(r,mhdr);
   r->totalsize -= mhdr->size;
   r->numfree++;
 
@@ -834,3 +915,201 @@ void dbg_dump_mem()
   fclose (file);
 }
 
+#ifdef MALLOC_DEBUG_2
+
+typedef struct aaal_saved_item_s {
+    malhdr_t *malhdr;
+#if 0
+    unsigned char data_begin[16];
+    size_t size;
+    void *pool;
+#endif
+  } aaal_saved_item_t;
+
+
+typedef struct aaal_res_s {
+  malrec_t *rec;
+  int alloc_count;
+  int free_count;
+  size_t total_size;
+  struct aaal_res_s *prev_res;
+  long aaal_count;
+  aaal_saved_item_t *saved;
+  long saved_part_sums[AAAL_BUCKETS_COUNT];
+} aaal_res_t;
+
+aaal_res_t *aaal_res_stack = NULL;
+int aaal_res_count = 0;
+
+aaal_res_t *
+make_aaal_res (malrec_t *r)
+{
+  int b_ctr;
+  long saved_ctr;
+  aaal_res_t *res;
+  res = dbg_malloc (__FILE__, __LINE__, sizeof (aaal_res_t));
+  res->rec = r;
+  res->alloc_count = r->numalloc;
+  res->free_count =  r->numfree;
+  res->total_size = r->totalsize;
+  res->aaal_count = r->aaal_count;
+  res->saved = dbg_calloc (__FILE__, __LINE__, 1, sizeof (aaal_saved_item_t) * r->aaal_count);
+  saved_ctr = 0;
+  for (b_ctr = 0; b_ctr < AAAL_BUCKETS_COUNT; b_ctr++)
+    {
+      malhdr_t *iter;
+      for (iter = r->aaal_malhdrs[b_ctr]; NULL != iter; iter = iter->next_malhdr)
+        {
+          aaal_saved_item_t *sav = res->saved + saved_ctr++;
+          sav->malhdr = iter;
+#if 0
+          memcpy (sav->data_begin, iter + sizeof (malhdr_t), sizeof (sav->data_begin));
+          sav->size = iter->size;
+          sav->pool = iter->pool;
+#endif
+        }
+      res->saved_part_sums[b_ctr] = saved_ctr;
+    }
+  if (saved_ctr != r->aaal_count)
+    GPF_T1 ("corrupted aaal_malhdrs");
+  return res;
+}
+
+void
+dbg_print_block (malhdr_t *hdr)
+{
+  int l, ctr;
+  printf ("Block at %p length %d memory pool %p |", hdr+1, (int)(hdr->size), hdr->pool);
+  l = 16;
+  if (l < hdr->size)
+    l = hdr->size;
+  for (ctr = 0; ctr < l; ctr++)
+    printf (" %02x", (int)(((unsigned char *)hdr)[sizeof (malhdr_t) + ctr]));
+  printf ((l < hdr->size) ? " ...\n" : "\n");
+}
+
+int
+all_allocs_at_line (const char *file, int line)
+{
+  int b_ctr, sample_ctr = 0, sample_count = 10;
+  aaal_res_t *res;
+  malrec_t xrec, *r;
+  strncpy (xrec.fname, file, MALREC_FNAME_BUFLEN);
+  xrec.fname[MALREC_FNAME_BUFLEN-1] = 0;
+  xrec.linenum = line;
+  r = (malrec_t *) dtab_find_record (_dbgtab, 1, (htrecord_t) &xrec);
+  if (0 == slow_malloc_debug_uses)
+    {
+      printf ("The system parameter slow_malloc_debug was never set to 1 so there are no recorded memory allocations\n");
+      return 0;
+    }
+  if (NULL == r)
+    {
+      printf ("There are no known memory allocations at line %d of file %s\n", line, file);
+      return 0;
+    }
+  printf ("%ld bytes in %ld blocks are allocated at line %d of File %s\n", (long)(r->totalsize), (long)(r->numalloc - r->numfree), line, file);
+  if (r->numalloc == r->numfree)
+    return 0;
+  printf ("There were %ld alloc-s and only %ld free-s,%s %ld recorded allocated blocks are\n",
+    (long)(r->numalloc), (long)(r->numfree), ((r->numalloc - r->numfree > r->aaal_count) ? " not all were recorded," : ""), (long)(r->aaal_count) );
+  for (b_ctr = 0; (b_ctr < AAAL_BUCKETS_COUNT) && (sample_ctr < sample_count); b_ctr++)
+    {
+      if (NULL != r->aaal_malhdrs[b_ctr])
+        {
+          dbg_print_block (r->aaal_malhdrs[b_ctr]);
+          sample_ctr++;
+        }
+    }
+  for (b_ctr = 0; (b_ctr < AAAL_BUCKETS_COUNT) && (sample_ctr < sample_count); b_ctr++)
+    {
+      malhdr_t *iter = r->aaal_malhdrs[b_ctr];
+      if (NULL != iter)
+        {
+          while ((NULL != (iter = iter->next_malhdr)) && (sample_ctr < sample_count))
+            {
+              dbg_print_block (iter);
+              sample_ctr++;
+            }
+        }
+    }
+  res = make_aaal_res (r);
+  res->prev_res = aaal_res_stack;
+  aaal_res_stack = res;
+  aaal_res_count++;
+  printf ("The full set of allocated blocks is saved as #%d\n", aaal_res_count);
+  return aaal_res_count;
+}
+
+aaal_res_t *
+aaal_get_saved (int res_no)
+{
+  aaal_res_t *res;
+  int ctr;
+  if (0 == slow_malloc_debug_uses)
+    {
+      printf ("The system parameter slow_malloc_debug was never set to 1 so there are no recorded memory allocations\n");
+      return NULL;
+    }
+  if (res_no > aaal_res_count)
+    {
+      printf ("The are only %d saved sets of allocated blocks, there is no set #%d\n", aaal_res_count, res_no);
+      return NULL;
+    }
+  if (res_no < 0)
+    {
+      printf ("There is no set #%d, valid numbers are 1 to %d\n", res_no, aaal_res_count);
+      return NULL;
+    }
+  res = aaal_res_stack;
+  ctr = aaal_res_count;
+  while (ctr > res_no) {ctr--; res = res->prev_res; }
+  return res;
+}
+
+int
+new_allocs_after (int res_no)
+{
+  int b_ctr;
+  int sample_ctr = 0, sample_count = 10;
+  aaal_res_t *old_res, *new_res;
+  old_res = aaal_get_saved (res_no);
+  if (NULL == old_res)
+    return 0;
+  new_res = make_aaal_res (old_res->rec);
+  printf ("%ld bytes in %ld blocks were allocated before at line %d of File %s\n",
+    (long)(old_res->total_size), (long)(old_res->alloc_count - old_res->free_count), old_res->rec->linenum, old_res->rec->fname );
+  printf ("Now it is %ld bytes in %ld blocks\n",
+    (long)(new_res->total_size), (long)(new_res->alloc_count - new_res->free_count) );
+  for (b_ctr = 0; (b_ctr < AAAL_BUCKETS_COUNT) && (sample_ctr < sample_count); b_ctr++)
+    {
+      int old_scan_begin = ((b_ctr > 0) ? old_res->saved_part_sums[b_ctr-1] : 0);
+      int new_scan_begin = ((b_ctr > 0) ? new_res->saved_part_sums[b_ctr-1] : 0);
+      int old_scan_end = old_res->saved_part_sums[b_ctr];
+      int new_scan_end = new_res->saved_part_sums[b_ctr];
+      int ctr_in_old, ctr_in_new;
+      for (ctr_in_new = new_scan_begin; ctr_in_new < new_scan_end; ctr_in_new++)
+        {
+          aaal_saved_item_t *new_saved = new_res->saved + ctr_in_new;
+          for (ctr_in_old = old_scan_begin; ctr_in_old < old_scan_end; ctr_in_old++)
+            {
+              aaal_saved_item_t *old_saved = old_res->saved + ctr_in_old;
+              if (new_saved->malhdr == old_saved->malhdr)
+                goto found_on_old; /* see below */
+            }
+          dbg_print_block (new_saved->malhdr);
+          sample_ctr++;
+          if (sample_ctr >= sample_count)
+            goto enough; /* see below */
+found_on_old: ;
+        }
+    }
+enough: ;
+  new_res->prev_res = aaal_res_stack;
+  aaal_res_stack = new_res;
+  aaal_res_count++;
+  printf ("The full set of allocated blocks is saved as #%d\n", aaal_res_count);
+  return aaal_res_count;
+}
+
+#endif

@@ -787,8 +787,10 @@ EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 
 #ifdef MALLOC_DEBUG
 void dk_alloc_box_assert (box_t box);
+void dk_alloc_box_assert_mp_or_plain (box_t box);
 #else
-#define dk_alloc_box_assert(box)	;
+#define dk_alloc_box_assert(box)		;
+#define dk_alloc_box_assert_mp_or_plain(box)	;
 #endif
 
 EXE_EXPORT (int, dk_free_box, (box_t box));
@@ -796,10 +798,12 @@ EXE_EXPORT (int, dk_free_box, (box_t box));
 extern void dk_check_tree (box_t box);
 extern void dk_check_tree_heads (box_t box, int count_of_sample_children);
 extern void dk_check_domain_of_connectivity (box_t box);
+extern void dk_check_tree_mp_or_plain (box_t box, int max_fuel); /* fuel is a max total count of descendants to check */
 #else
 #define dk_check_tree(box)
-#define dk_check_tree_heads (box, n)
+#define dk_check_tree_heads(box,n)
 #define dk_check_domain_of_connectivity(box)
+#define dk_check_tree_mp_or_plain(box,fuel)
 #endif
 EXE_EXPORT (int, dk_free_tree, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_numbers, (box_t box));

@@ -1118,7 +1118,7 @@ dks_array_head (dk_session_t * session, long n_elements, dtp_t type)
 int (*box_flags_serial_test_hook) (dk_session_t * ses);
 
 void
-print_string (char *string, dk_session_t * session)
+print_string (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   uint32 flags = box_flags (string);
@@ -1142,7 +1142,7 @@ print_string (char *string, dk_session_t * session)
 }
 
 void
-print_uname (char *string, dk_session_t * session)
+print_uname (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   uint32 flags = box_flags (string) | BF_IRI | BF_UNAME_AS_STRING;
@@ -1166,7 +1166,7 @@ print_uname (char *string, dk_session_t * session)
 }
 
 void
-print_ref_box (char *string, dk_session_t * session)
+print_ref_box (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   size_t length = box_length (string);
@@ -1192,7 +1192,7 @@ print_ref_box (char *string, dk_session_t * session)
  */
 
 void
-print_object2 (void *object, dk_session_t * session)
+print_object2 (const void *object, dk_session_t * session)
 {
   if (object == NULL)
     session_buffered_write_char (DV_NULL, session);

@@ -2227,6 +2227,9 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   dbe_storage_t * dbs = buf->bd_storage;
   OFF_T rc;
   OFF_T off;
+#ifdef VALGRIND
+  memzero (c_buf, sizeof(c_buf));
+#endif
   dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
   if (buf->bd_tree && buf->bd_tree->it_key)
     buf->bd_tree->it_key->key_write++;

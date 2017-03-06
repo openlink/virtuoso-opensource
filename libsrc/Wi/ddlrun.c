@@ -5173,12 +5173,15 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	  if (!err)
 	    {
 	      /* find a new qr corresponding to old by name
-	       * and set grants; match the requested qr and set return value
-	       * no need to set qr_proc_grants as it's not freed by qr_free */
+	       * and set grants; match the requested qr and set return value */
 	      query_t *new_mod_qr = sch_proc_def (sc, old_mod_qr->qr_proc_name);
 	      if (new_mod_qr)
 		{
-		  new_mod_qr->qr_proc_grants = old_mod_qr->qr_proc_grants;
+		  if  (new_mod_qr != old_mod_qr)
+		    {
+		      new_mod_qr->qr_proc_grants = old_mod_qr->qr_proc_grants;
+		      old_mod_qr->qr_proc_grants_is_reused = 1;
+		    }
 		  if (old_mod_qr == qr)
 		    new_qr = new_mod_qr;
 		}
@@ -5193,13 +5196,23 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       dk_set_free (old_qr_set);
       if (new_qr)
 	{
-	  new_qr->qr_module->qr_proc_grants = qr->qr_module->qr_proc_grants;
+         if (new_qr->qr_module != qr->qr_module)
+           {
+             new_qr->qr_module->qr_proc_grants = qr->qr_module->qr_proc_grants;
+             qr->qr_module->qr_proc_grants_is_reused = 1;
+           }
 	  /*sch_set_module_def (sc, new_qr->qr_module->qr_proc_name, new_qr->qr_module);*/
 	}
     }
 
   if (!err && !QR_IS_MODULE_PROC (qr))
-    new_qr->qr_proc_grants = qr->qr_proc_grants;
+    {
+      if (new_qr != qr)
+        {
+          new_qr->qr_proc_grants = qr->qr_proc_grants;
+          qr->qr_proc_grants_is_reused = 1;
+        }
+    }
 
   qr_recompile_leave (&is_entered, err_ret);
   if (err)

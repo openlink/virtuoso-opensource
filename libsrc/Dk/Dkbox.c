@@ -839,7 +839,7 @@ box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
 
 #ifdef DK_ALLOC_BOX_DEBUG
 void
-dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
+dk_check_tree_iter (box_t box, box_t parent, dk_hash_t **known_ptr)
 {
   uint32 count;
   dtp_t tag;
@@ -853,30 +853,102 @@ dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
-  if (known && !box_can_appear_twice_in_tree[tag])
+  if (known_ptr && !box_can_appear_twice_in_tree[tag])
     {
-      box_t other_parent = gethash (box, known);
+      box_t other_parent;
+      if (NULL == known_ptr[0])
+        known_ptr[0] = hash_table_allocate (4096);
+      other_parent = (box_t) gethash (box, known_ptr[0]);
       if (NULL != other_parent)
 	GPF_T;
-      sethash (box, known, parent);
+      sethash (box, known_ptr[0], parent);
     }
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
       int len = box_length (box) / sizeof (box_t);
       for (count = 0; count < len; count++)
-	dk_check_tree_iter (obj[count], box, known);
+        dk_check_tree_iter (obj[count], box, known_ptr);
     }
   return;
 }
 
-
 void
 dk_check_tree (box_t box)
 {
-  dk_hash_t *known = hash_table_allocate (4096);
-  dk_check_tree_iter (box, BADBEEF_BOX, known);
-  hash_table_free (known);
+  dk_hash_t *known = NULL;
+  dk_check_tree_iter (box, BADBEEF_BOX, &known);
+  if (NULL != known)
+    hash_table_free (known);
+}
+
+void
+dk_check_tree_mp_or_plain_iter (box_t box, box_t parent, dk_hash_t ** known_ptr, int *fuel_ptr)
+{
+  uint32 count;
+  dtp_t tag;
+  if (!IS_BOX_POINTER (box))
+    return;
+  dk_alloc_box_assert_mp_or_plain (box);
+  tag = box_tag (box);
+  if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
+    return;
+  if (TAG_FREE == tag)
+    GPF_T1 ("Tree contains a pointer to a freed box");
+  if (TAG_BAD == tag)
+    GPF_T1 ("Tree contains a pointer to a box marked bad");
+  if (known_ptr && !box_can_appear_twice_in_tree[tag] && !(box_flags (box) & BF_VALID_JSO))
+    {
+      box_t other_parent;
+      if (NULL == known_ptr[0])
+        known_ptr[0] = hash_table_allocate (MIN(fuel_ptr[0], 4096));
+      other_parent = (box_t)gethash (box, known_ptr[0]);
+      if (NULL != other_parent)
+        GPF_T;
+      sethash (box, known_ptr[0], parent);
+    }
+  if (IS_NONLEAF_DTP (tag))
+    {
+      box_t *obj = (box_t *) box;
+      int len = box_length_inline (box) / sizeof (box_t);
+      dk_hash_t ** sub_known_ptr = ((box_flags (box) & BF_VALID_JSO) ? NULL : known_ptr);
+      for (count = 0; count < len; count++)
+        {
+          fuel_ptr[0]--;
+          if (0 >= fuel_ptr[0])
+            return;
+          dk_check_tree_mp_or_plain_iter (obj[count], box, sub_known_ptr, fuel_ptr);
+        }
+    }
+#ifdef VALGRIND
+  else
+    {
+      int badbeefcount = 0;
+      box_t *obj = (box_t *) box;
+      int len = box_length_inline (box) / sizeof (box_t);
+      dk_hash_t ** sub_known_ptr = ((box_flags (box) & BF_VALID_JSO) ? NULL : known_ptr);
+      for (count = 0; count < len; count++)
+        {
+          if (obj[count] == BADBEEF_BOX)
+            badbeefcount++;
+        }
+      if (badbeefcount)
+        GPF_T1 ("BADBEEF in data");
+    }
+#endif
+  return;
+}
+
+void
+dk_check_tree_mp_or_plain (box_t box, int max_fuel)
+{
+  dk_hash_t *known = NULL;
+  int fuel = max_fuel;
+  if (!IS_BOX_POINTER (box))
+    return;
+  dk_check_tree_mp_or_plain_iter (box, BADBEEF_BOX, &known, &fuel);
+  if (NULL != known)
+    hash_table_free (known);
 }
 
 void
@@ -898,7 +970,7 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
     GPF_T1 ("Tree contains a pointer to a Box with weird tag");
   if (!box_can_appear_twice_in_tree[tag])
     {
-      box_t other_parent = gethash (box, known);
+      box_t other_parent = (box_t)gethash (box, known);
       if (NULL != other_parent)
 	GPF_T;
       sethash (box, known, parent);
@@ -917,13 +989,16 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
 
 void dk_check_tree_heads (box_t box, int count_of_sample_children)
 {
-  dk_hash_t *known = hash_table_allocate (4096);
+  dk_hash_t *known;
+  if (!IS_BOX_POINTER (box))
+    return;
+  known = hash_table_allocate (4096);
   dk_check_tree_heads_iter (box, BADBEEF_BOX, known, count_of_sample_children);
   hash_table_free (known);
 }
 
 void
-dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known)
+dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t ** known_ptr)
 {
   uint32 count;
   dtp_t tag;
@@ -941,22 +1016,24 @@ dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
-      for (count = box_length (box) / sizeof (box_t); count; count--)
-	dk_check_domain_of_connectivity_iter (*obj++, box, known);
+      for (count = box_length_inline (box) / sizeof (box_t); count; count--)
+	dk_check_domain_of_connectivity_iter (*obj++, box, known_ptr);
     }
-  other_parent = gethash (box, known);
+  if (NULL == known_ptr[0])
+    known_ptr[0] = hash_table_allocate (4096);
+  other_parent = (box_t)gethash (box, known_ptr[0]);
   if (NULL != other_parent)
     return;
-  sethash (box, known, parent);
+  sethash (box, known_ptr[0], parent);
   return;
 }
-
 
 void
 dk_check_domain_of_connectivity (box_t box)
 {
-  dk_hash_t *known = hash_table_allocate (4096);
-  dk_check_domain_of_connectivity_iter (box, BADBEEF_BOX, known);
+  dk_hash_t *known = NULL;
+  dk_check_domain_of_connectivity_iter (box, BADBEEF_BOX, &known);
+  if (NULL != known)
   hash_table_free (known);
 }
 #endif
@@ -1177,7 +1254,7 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 	    if (blk->unb_data_ptr == box)
 	      {
 		mutex_leave (uname_mutex);
-		return box;
+		return (box_t) box;
 	      }
 	  }
 #ifdef DV_UNAME_UNIT_DEBUG
@@ -1196,7 +1273,7 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 	      }
 	    box_dv_uname_audit_one (hash);
 	    mutex_leave (uname_mutex);
-	    return box;
+	    return (box_t) box;
 	  }
 	GPF_T1 ("Can't copy broken UNAME");
 #else
@@ -2016,6 +2093,20 @@ dk_alloc_box_assert (box_t box)
 #endif
 }
 
+#ifdef dk_alloc_box_assert_mp_or_plain
+#undef dk_alloc_box_assert_mp_or_plain
+#endif
+void
+dk_alloc_box_assert_mp_or_plain (box_t box)
+{
+  if (TAG_FREE == box_tag (box))
+    GPF_T1 ("Tree contains a pointer to a freed box");
+#ifdef DOUBLE_ALIGN
+  dk_alloc_assert_mp_or_plain (((char *) (box)) - 8);
+#else
+  dk_alloc_assert_mp_or_plain (((char *) (box)) - 4);
+#endif
+}
 
 char *
 DBG_NAME (box_dv_ubuf) (DBG_PARAMS size_t buf_strlen)

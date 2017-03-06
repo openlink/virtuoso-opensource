@@ -460,10 +460,13 @@ extern void spar_error (sparp_t *sparp, const char *format, ...)
                 __attribute__ ((format (printf, 2, 3)))
 #endif
 ;
-extern void spar_internal_error (sparp_t *sparp, const char *strg);
-extern int spar_audit_error (sparp_t *sparp, const char *format, ...) /* returns fake 1 as a value for return */
+extern void spar_internal_error (sparp_t *sparp, const char *strg) NORETURN;
+extern void spar_audit_error (sparp_t *sparp, const char *format, ...) /* returns fake 1 as a value for return */
 #ifdef __GNUC__
                 __attribute__ ((format (printf, 2, 3)))
+#ifndef DEBUG
+		NORETURN
+#endif
 #endif
 ;
 extern caddr_t spar_source_place (sparp_t *sparp, char *raw_text);

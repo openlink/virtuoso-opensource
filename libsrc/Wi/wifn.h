@@ -136,12 +136,12 @@ buffer_desc_t * itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl);
 
 void itc_sqlr_error (it_cursor_t * itc, buffer_desc_t * buf, const char * code, const char * msg, ...)
 #ifdef __GNUC__
-                __attribute__ ((format (printf, 4, 5)))
+                __attribute__ ((format (printf, 4, 5))) NORETURN
 #endif
 ;
 void itc_sqlr_new_error (it_cursor_t * itc, buffer_desc_t * buf, const char * code, const char *virt_code, const char * msg, ...)
 #ifdef __GNUC__
-                __attribute__ ((format (printf, 5, 6)))
+                __attribute__ ((format (printf, 5, 6))) NORETURN
 #endif
 ;
 

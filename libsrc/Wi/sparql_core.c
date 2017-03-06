@@ -424,7 +424,7 @@ spar_error (sparp_t *sparp, const char *format, ...)
   sqlr_resignal (err);
 }
 
-int
+void
 spar_audit_error (sparp_t *sparp, const char *format, ...)
 {
 #ifdef SPAR_ERROR_DEBUG
@@ -438,15 +438,13 @@ spar_audit_error (sparp_t *sparp, const char *format, ...)
 #ifdef SPAR_ERROR_DEBUG
   txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
   printf ("Internal SPARQL audit error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
-#endif
-#ifdef DEBUG
+
   if (sparp->sparp_internal_error_runs_audit)
-    return 1;
+    return;
 #endif
   sqlr_new_error ("37000", "SP039",
     "%.400s: Internal error (reported by audit): %.1500s",
     ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
-  return 1; /* Never reached */
 }
 
 
@@ -5795,7 +5793,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   comp_context_t cc;
   sql_comp_t sc;
   SPARP_SAVED_MP_SIZE_CAP;
-  caddr_t str = strses_string (sparqre->sparqre_src->sif_skipped_part);
+  caddr_t str = t_strses_string (sparqre->sparqre_src->sif_skipped_part);
   caddr_t res;
 #ifdef SPARQL_DEBUG
   printf ("\nsparp_compile_subselect() input:\n%s\n", str);
@@ -5806,7 +5804,6 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
   SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,sparqre);
   sparp = sparp_query_parse (str, sparqre, 1);
-  dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     {
 #ifdef SPARQL_DEBUG

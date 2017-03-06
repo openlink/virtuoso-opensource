@@ -3310,9 +3310,9 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
   search_stream_t * sst = (search_stream_t *) qst_get (qst, txs->txs_sst);
   d_id_t d_id;
   int score_limit = txs->txs_score_limit ? (int) unbox (qst_get (qst, txs->txs_score_limit)) : 0;
-  d_id_set_box (&d_id, qst_get (qst, txs->txs_d_id));
   if (!txs->txs_is_driving)
     {
+      d_id_set_box (&d_id, qst_get (qst, txs->txs_d_id));
       if (D_AT_END (&d_id))
 	return ((caddr_t) SQL_NO_DATA_FOUND);
       sst_next (sst, &d_id, 1);

@@ -38,7 +38,9 @@
 #include "date.h"
 #include "sqlparext.h"
 
-
+#ifdef NDEBUG
+#undef DC_DEBUG
+#endif
 
 extern int32 enable_qp;
 int enable_split_range = 1;
@@ -323,107 +325,91 @@ long tc_dc_default_alloc;
 long tc_dc_alloc;
 long tc_dc_size;
 
-
-data_col_t *
-mp_data_col_large (mem_pool_t * mp, state_slot_t * ssl, int n_sets)
-{
-  sql_type_t *sqt = &ssl->ssl_sqt;
-  int len = sqt_fixed_length (sqt);
-  data_col_t *dc;
-  int is_box = vec_box_dtps[ssl->ssl_dtp] | vec_box_dtps[ssl->ssl_dc_dtp];
-  if ((-1 == len || DV_ANY == ssl->ssl_dc_dtp) && !is_box)
-    {
-      dc = (data_col_t *) mp_alloc_box_ni (mp, sizeof (data_col_t), DV_DATA);
-      memset (dc, 0, sizeof (data_col_t));
-      dc->dc_mp = mp;
-      dc->dc_values = (db_buf_t) mp_alloc_box (mp, 8 + (n_sets * sizeof (caddr_t)), DV_NON_BOX);
-      dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
-      dc->dc_buf_len = 0x10000;
-      dc->dc_buffer = (db_buf_t) mp_alloc_box (mp, 0x10000, DV_BIN);
-      dc->dc_sort_cmp = dc_any_cmp;
-      mp_set_push (dc->dc_mp, &dc->dc_buffers, (void *) dc->dc_buffer);
-    }
-  else
-    {
-      if (len < 0)
-	len = sizeof (caddr_t);
-      if (len < sizeof (boxint))
-	len = sizeof (boxint);
-      dc = (data_col_t *) mp_alloc_box_ni (mp, sizeof (data_col_t), DV_DATA);
-      memset (dc, 0, sizeof (data_col_t));
-      dc->dc_mp = mp;
-      dc_set_flags (dc, sqt, ssl->ssl_dc_dtp);
-      dc->dc_values = (db_buf_t) mp_alloc_box (mp, 8 + (n_sets * len), DV_NON_BOX);
-      dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
-    }
-  if (ssl->ssl_dc_dtp)
-    dc->dc_dtp = ssl->ssl_dc_dtp;
-  else
-    dc->dc_dtp = ssl->ssl_sqt.sqt_dtp;
-  dc->dc_dtp = dtp_canonical[dc->dc_dtp];
-  if (ssl->ssl_sqt.sqt_col_dtp)
-    dc->dc_sqt.sqt_col_dtp = ssl->ssl_sqt.sqt_col_dtp;
-  dc->dc_n_places = n_sets;
-  return dc;
-}
-
-
 data_col_t *
 mp_data_col (mem_pool_t * mp, state_slot_t * ssl, int n_sets)
 {
   sql_type_t *sqt = &ssl->ssl_sqt;
-  int len = sqt_fixed_length (sqt);
+  int single_value_len = sqt_fixed_length (sqt);
   data_col_t *dc;
+  dtp_t dc_canonical_dtp;
   int is_box = vec_box_dtps[ssl->ssl_dtp] | vec_box_dtps[ssl->ssl_dc_dtp];
+  int is_large = (n_sets > 20000);
+  int values_bytes, bytes;
   tc_dc_alloc++;
   tc_dc_size += n_sets;
   if (n_sets == dc_batch_sz)
     TC (tc_dc_default_alloc);
   if (n_sets == dc_max_batch_sz)
     TC (tc_dc_max_alloc);
-  if (n_sets > 20000)
-    return mp_data_col_large (mp, ssl, n_sets);
-  if ((-1 == len || DV_ANY == ssl->ssl_dc_dtp) && !is_box)
+  if (ssl->ssl_dc_dtp)
+    dc_canonical_dtp = dtp_canonical[ssl->ssl_dc_dtp];
+  else
+    dc_canonical_dtp = dtp_canonical[ssl->ssl_sqt.sqt_dtp];
+  if ((-1 == single_value_len || DV_ANY == ssl->ssl_dc_dtp) && !is_box)
     {
-      db_buf_t ptr;
-      int bytes = ALIGN_8 (sizeof (data_col_t)) + sizeof (caddr_t) * n_sets
-	+ n_sets * dc_default_var_len + 16;
-      dc = (data_col_t *) mp_alloc_box_ni (mp, bytes, DV_DATA);
-      memset (dc, 0, sizeof (data_col_t));
+      values_bytes = n_sets * sizeof (caddr_t);
+      if (is_large)
+	{
+	  dc = (data_col_t *) mp_alloc_box_ni (mp, sizeof (data_col_t), DV_DATA);
+	  memset (dc, 0, sizeof (data_col_t));
+	  bytes = values_bytes + 16;
+	  dc->dc_values = (db_buf_t) mp_alloc_box (mp, bytes, DV_NON_BOX);
+	  dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
+	  dc->dc_buffer = (db_buf_t) mp_alloc_box (mp, 0x10000, DV_BIN);
+	  dc->dc_buf_len = 0x10000;
+	}
+      else
+	{
+	  db_buf_t ptr;
+	  int bytes = ALIGN_8 (sizeof (data_col_t)) + values_bytes + n_sets * dc_default_var_len + 16;
+	  dc = (data_col_t *) mp_alloc_box_ni (mp, bytes, DV_DATA);
+	  memset (dc, 0, sizeof (data_col_t));
+	  dc->dc_values = ((db_buf_t) dc) + ALIGN_8 (sizeof (data_col_t));
+	  dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
+	  dc->dc_buffer = dc->dc_values + values_bytes + 8;
+	  dc->dc_buf_len = n_sets * dc_default_var_len;
+	  ptr = dc->dc_buffer - 4;
+	  WRITE_BOX_HEADER (ptr, n_sets * dc_default_var_len, DV_STRING);
+	}
       dc->dc_mp = mp;
-      dc->dc_values = ((db_buf_t) dc) + ALIGN_8 (sizeof (data_col_t));
-      dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
-      dc->dc_buf_len = n_sets * dc_default_var_len;
-      dc->dc_buffer = dc->dc_values + sizeof (caddr_t) * n_sets + 8;
       dc->dc_sort_cmp = dc_any_cmp;
-      ptr = dc->dc_buffer - 4;
-      WRITE_BOX_HEADER (ptr, n_sets * dc_default_var_len, DV_STRING);
       mp_set_push (dc->dc_mp, &dc->dc_buffers, (void *) dc->dc_buffer);
     }
   else
     {
       int bytes;
-      if (len < 0)
-	len = sizeof (caddr_t);
-      if (len < sizeof (boxint))
-	len = sizeof (boxint);
-      bytes = 16 + ALIGN_8 (sizeof (data_col_t)) + len * n_sets;
-      dc = (data_col_t *) mp_alloc_box_ni (mp, bytes, DV_DATA);
-      memset (dc, 0, sizeof (data_col_t));
+      if (single_value_len < 0)
+	single_value_len = sizeof (caddr_t);
+      if (single_value_len < sizeof (boxint))
+	single_value_len = sizeof (boxint);
+      values_bytes = n_sets * single_value_len;
+      if (is_large)
+	{
+	  dc = (data_col_t *) mp_alloc_box_ni (mp, sizeof (data_col_t), DV_DATA);
+	  memset (dc, 0, sizeof (data_col_t));
+	  bytes = 16 + values_bytes;
+	  dc->dc_values = (db_buf_t) mp_alloc_box (mp, bytes, DV_NON_BOX);
+	}
+      else
+	{
+	  bytes = 16 + ALIGN_8 (sizeof (data_col_t)) + values_bytes;
+	  dc = (data_col_t *) mp_alloc_box_ni (mp, bytes, DV_DATA);
+	  memset (dc, 0, sizeof (data_col_t));
+	  dc->dc_values = ((db_buf_t) dc) + ALIGN_8 (sizeof (data_col_t));
+	}
+      dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
       dc->dc_mp = mp;
       dc_set_flags (dc, sqt, ssl->ssl_dc_dtp);
-      dc->dc_values = ((db_buf_t) dc) + ALIGN_8 (sizeof (data_col_t));
-      dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
     }
-  if (ssl->ssl_dc_dtp)
-    dc->dc_dtp = ssl->ssl_dc_dtp;
-  else
-    dc->dc_dtp = ssl->ssl_sqt.sqt_dtp;
-  dc->dc_dtp = dtp_canonical[dc->dc_dtp];
+#ifndef DC_DEBUG
+  memset (dc->dc_values, 0, values_bytes);
+#endif
+  dc->dc_dtp = dc_canonical_dtp;
   if (ssl->ssl_sqt.sqt_col_dtp)
     dc->dc_sqt.sqt_col_dtp = ssl->ssl_sqt.sqt_col_dtp;
   dc->dc_n_places = n_sets;
-  if (DV_STRING == dc->dc_dtp) GPF_T1 ("no dv string here");
+  if (DV_STRING == dc->dc_dtp)
+    GPF_T1 ("no dv string here");
   return dc;
 }
 

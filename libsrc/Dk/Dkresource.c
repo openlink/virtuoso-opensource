@@ -406,7 +406,6 @@ resource_store_timed (resource_t * rc, void *item)
 	}
       if (rc_mtx)
 	mutex_leave (rc_mtx);
-      return 0;
       if (rc->rc_destructor)
 	(*rc->rc_destructor) (item);
       return 0;

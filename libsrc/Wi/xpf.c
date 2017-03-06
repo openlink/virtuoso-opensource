@@ -4724,7 +4724,7 @@ bif_xpf_extension (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!is_define)
     {
-      caddr_t err = NULL;
+      caddr_t err;
       query_instance_t *qi = (query_instance_t *)qst;
       if (!xpf_store_query)
 	xpf_store_query = sql_compile (
@@ -4733,6 +4733,8 @@ bif_xpf_extension (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       err = qr_rec_exec (xpf_store_query, qi->qi_client, NULL, qi, NULL, 2,
 	  ":0", f, QRP_STR,
 	  ":1", pname, QRP_STR);
+      if (NULL != err)
+        sqlr_resignal (err);
     }
 
   return (box_num (0));
@@ -4757,7 +4759,7 @@ bif_xpf_extension_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   place = (caddr_t *) id_hash_get (xp_ext_funcs, (caddr_t) &f);
   if (place)
     {
-      caddr_t err = NULL;
+      caddr_t err;
       query_instance_t *qi = (query_instance_t *)qst;
 
       id_hash_remove (xp_ext_funcs, (caddr_t) &f);
@@ -4767,6 +4769,8 @@ bif_xpf_extension_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	xpf_remove_query = sql_compile ("DELETE FROM DB.DBA.SYS_XPF_EXTENSIONS WHERE XPE_NAME = ?",
 	    bootstrap_cli, NULL, SQLC_DEFAULT);
       err = qr_rec_exec (xpf_remove_query, qi->qi_client, NULL, qi, NULL, 1, ":0", f, QRP_STR);
+      if (NULL != err)
+        sqlr_resignal (err);
     }
 
   return (box_num (0));

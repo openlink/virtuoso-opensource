@@ -164,9 +164,9 @@ void bif_result_inside_bif (int n, ...);
 
 
 caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
-void sqlr_error (const char *code, const char *msg,...);
-void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...);
-void sqlr_resignal (caddr_t err);
+void sqlr_error (const char *code, const char *msg,...) NORETURN;
+void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...) NORETURN;
+void sqlr_resignal (caddr_t err) NORETURN;
 
 query_t * sql_compile (char *string2, client_connection_t * cli, caddr_t * err,
     int store_procs);
@@ -420,10 +420,10 @@ struct mutex_s
 
 #ifdef MTX_DEBUG
     thread_t *		mtx_owner;
-    char *	mtx_entry_file;
-    int		mtx_entry_line;
-    char *	mtx_leave_file;
-    int		mtx_leave_line;
+    const char *	mtx_entry_file;
+    int			mtx_entry_line;
+    const char *	mtx_leave_file;
+    int			mtx_leave_line;
     mtx_entry_check_t	mtx_entry_check;
     void *		mtx_entry_check_cd;
 #endif

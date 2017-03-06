@@ -560,7 +560,11 @@ sparp_rewrite_retvals (sparp_t *sparp, SPART *req_top, int safely_copy_retvals)
   if (safely_copy_retvals)
     req_top->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, req_top->_.req_top.retvals, req_top->_.req_top.pattern);
   else
-    req_top->_.req_top.expanded_orig_retvals = (SPART **)t_box_copy ((caddr_t)(req_top->_.req_top.retvals));
+    {
+      req_top->_.req_top.expanded_orig_retvals = (SPART **)t_box_copy ((caddr_t)(req_top->_.req_top.retvals));
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (req_top->_.req_top.retvals))
+        box_tag_modify (req_top->_.req_top.retvals, DV_ARRAY_OF_LONG);
+    }
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */

@@ -4016,6 +4016,7 @@ bif_iri_cache_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   nic_clear (iri_name_cache);
   nic_clear (iri_prefix_cache);
+  return NULL;
 }
 
 

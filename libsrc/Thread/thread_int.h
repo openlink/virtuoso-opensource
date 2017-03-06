@@ -229,10 +229,10 @@ struct mutex_s
 
 #ifdef MTX_DEBUG
     thread_t *		mtx_owner;
-    char *	mtx_entry_file;
-    int		mtx_entry_line;
-    char *	mtx_leave_file;
-    int		mtx_leave_line;
+    const char *	mtx_entry_file;
+    int			mtx_entry_line;
+    const char *	mtx_leave_file;
+    int			mtx_leave_line;
     mtx_entry_check_t	mtx_entry_check;
     void *		mtx_entry_check_cd;
 #endif

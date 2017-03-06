@@ -1612,6 +1612,7 @@ ac_aq_func (caddr_t av, caddr_t * err_ret)
   *err_ret = NULL;
   dk_free_tree ((caddr_t)args);
   ITC_INIT (itc, NULL, NULL);
+  itc->itc_n_reads = 0;
   itc_from_it (itc, it);
   is_col = itc->itc_insert_key->key_is_col;
   itc->itc_ac_non_leaf_splits = NULL;
