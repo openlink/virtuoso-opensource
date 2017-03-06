@@ -23,8 +23,6 @@ noinst_SCRIPTS	= cache_gen.sh
 BUILT_SOURCES	= cached_resources.c
 DISTCLEANFILES  = cached_resources.c
 
-GEN=$(SHELL) ${top_srcdir}/bin/generate
-
 DEPS	= \
 	$(srcdir)/Makefile.am \
 	$(srcdir)/cache_gen.sh \
@@ -38,7 +36,7 @@ all: cached_resources.c
 
 cached_resources.c:FORCE $(DEPS)
 	@echo Generating cached_resources.c 
-	@$(GEN) --stdout $(srcdir)/cache_gen.sh > cached_resources.c.tmp
+	@$(SHELL) $(srcdir)/cache_gen.sh > cached_resources.c.tmp
 	@cmp cached_resources.c cached_resources.c.tmp >/dev/null 2>/dev/null || mv cached_resources.c.tmp cached_resources.c
 	@rm -f *.tmp
 
