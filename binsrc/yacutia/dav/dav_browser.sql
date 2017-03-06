@@ -3610,8 +3610,8 @@ create procedure WEBDAV.DBA.DAV_OWNER_ID (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.DAV_API_PARAMS (
-  in uid integer,
-  in gid integer,
+  in uid any,
+  in gid any,
   out uname varchar,
   out gname varchar,
   out auth_name varchar,
@@ -3805,8 +3805,8 @@ create procedure WEBDAV.DBA.DAV_RES_UPLOAD (
   inout content any,
   in type varchar := '',
   in permissions varchar := '110100000R',
-  in uid integer := null,
-  in gid integer := null,
+  in uid any := null,
+  in gid any := null,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
@@ -3850,6 +3850,7 @@ create procedure WEBDAV.DBA.DAV_RES_CONTENT (
   retValue := DB.DBA.DAV_RES_CONTENT (path, content, contentType, auth_name, auth_pwd);
   if (retValue >= 0)
     return content;
+
   return retValue;
 }
 ;
@@ -3875,8 +3876,8 @@ create procedure WEBDAV.DBA.content_excerpt (
 create procedure WEBDAV.DBA.DAV_COL_CREATE (
   in path varchar,
   in permissions varchar := '110100000R',
-  in uid integer,
-  in gid integer,
+  in uid any,
+  in gid any,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {

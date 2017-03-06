@@ -97,7 +97,6 @@
           <v:variable name="command_save" persist="0" type="integer" default="0" />
           <v:variable name="source" persist="0" type="varchar" default="''" />
           <v:variable name="items" persist="0" type="any" default="null" />
-          <v:variable name="need_overwrite" persist="0" type="integer" default="0" />
           <v:variable name="dir_spath" persist="1" type="varchar" default="'__root__'" />
           <v:variable name="dir_path" persist="0" type="varchar" default="'__root__'" />
           <v:variable name="dir_right" persist="0" type="varchar" default="''" />
@@ -267,7 +266,7 @@
               self.command_mode := command_mode;
               if (self.command = 0)
               {
-                self.need_overwrite := 0;
+                -- self.need_overwrite := 0;
                 self.items := vector ();
                 if (self.command_mode <> 1)
                 {
@@ -2088,6 +2087,20 @@
                 <v:on-post>
                   <![CDATA[
                     declare retValue integer;
+                    declare dav_tempPath, dav_tempUser, dav_tempPassword varchar;
+                    declare dav_file, dav_type any;
+
+                    dav_tempPath := self.dav_vector[1];
+                    dav_tempUser := WEBDAV.DBA.account_name (http_dav_uid ());
+                    dav_tempPassword := WEBDAV.DBA.account_password (http_dav_uid ());
+                    retValue := DB.DBA.DAV_RES_CONTENT (dav_tempPath, dav_file, dav_type, dav_tempUser, dav_tempPassword);
+                    if (WEBDAV.DBA.DAV_ERROR (retValue))
+                    {
+                      self.vc_error_message := WEBDAV.DBA.DAV_PERROR (retValue);
+                      self.vc_is_valid := 0;
+                      self.vc_data_bind (self.vc_page.vc_event);
+                      return;
+                    }
 
                     WEBDAV.DBA.DAV_PROP_REMOVE (self.dav_vector[0], 'redirectref');
                     if (get_keyword('save_perms', self.vc_page.vc_event.ve_params) = '1')
@@ -2095,15 +2108,15 @@
                       declare old_vector any;
 
                       old_vector := WEBDAV.DBA.DAV_INIT (self.dav_vector[0]);
-                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.dav_vector[0], self.dav_vector[1], WEBDAV.DBA.dav_get (old_vector, 'mimeType'), WEBDAV.DBA.dav_get (old_vector, 'permissions'), WEBDAV.DBA.dav_get (old_vector, 'ownerID'), WEBDAV.DBA.dav_get (old_vector, 'groupID'));
+                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.dav_vector[0], dav_file, WEBDAV.DBA.dav_get (old_vector, 'mimeType'), WEBDAV.DBA.dav_get (old_vector, 'permissions'), WEBDAV.DBA.dav_get (old_vector, 'ownerID'), WEBDAV.DBA.dav_get (old_vector, 'groupID'));
                     }
                     else
                     {
-                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.dav_vector[0], self.dav_vector[1], self.dav_vector[2], self.dav_vector[3], self.dav_vector[4], self.dav_vector[5]);
+                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.dav_vector[0], dav_file, self.dav_vector[2], self.dav_vector[3], self.dav_vector[4], self.dav_vector[5]);
                     }
-                    if (WEBDAV.DBA.DAV_ERROR(retValue))
+                    if (WEBDAV.DBA.DAV_ERROR (retValue))
                     {
-                      self.vc_error_message := WEBDAV.DBA.DAV_PERROR(retValue);
+                      self.vc_error_message := WEBDAV.DBA.DAV_PERROR (retValue);
                       self.vc_is_valid := 0;
                       self.vc_data_bind (self.vc_page.vc_event);
                       return;
@@ -2111,6 +2124,7 @@
                     if (not isnull (self.dav_vector[6]))
                       WEBDAV.DBA.DAV_PROP_SET (self.dav_vector[0], 'redirectref', self.dav_vector[6]);
 
+                    DB.DBA.DAV_DELETE (dav_tempPath, 1, dav_tempUser, dav_tempPassword);
                     commit work;
 
                     if (self.mode = 'webdav')
@@ -2126,6 +2140,13 @@
               <v:button action="simple" name="rCancel" value="Cancel">
                 <v:on-post>
                   <![CDATA[
+                    declare dav_tempPath, dav_tempUser, dav_tempPassword varchar;
+
+                    dav_tempPath := self.dav_vector[1];
+                    dav_tempUser := WEBDAV.DBA.account_name (http_dav_uid ());
+                    dav_tempPassword := WEBDAV.DBA.account_password (http_dav_uid ());
+                    DB.DBA.DAV_DELETE (dav_tempPath, 1, dav_tempUser, dav_tempPassword);
+
                     self.command_pop (null);
                     self.vc_data_bind (self.vc_page.vc_event);
                   ]]>
@@ -2480,6 +2501,7 @@
                         <td>
                           <select name="dav_det" id="dav_det" onchange="javascript: updateLabel (this.options[this.selectedIndex].value);" disabled="disabled" class="<?V case when self.dav_enable and not self.editField ('owner') then ' disabled' else '' end ?>">
                             <?vsp
+
                               if    (self.command_mode = 1)
                               {
                                 http (self.option_prepare('ResFilter', 'Smart Folder', 'ResFilter'));
@@ -3791,7 +3813,16 @@
                           retValue := DB.DBA.DAV_SEARCH_ID (dav_fullPath, self.dav_type);
                           if (not WEBDAV.DBA.DAV_ERROR (retValue))
                           {
-                            self.dav_vector := vector (dav_fullPath, dav_file, dav_mime, dav_perms, dav_owner, dav_group, case when (self.dav_is_redirect) then dav_link else null end);
+                            declare dav_tempPath, dav_tempUser, dav_tempPassword varchar;
+
+                            dav_tempPath := '/DAV/temp/' || md5 (uuid ());
+                            dav_tempUser := WEBDAV.DBA.account_name (http_dav_uid ());
+                            dav_tempPassword := WEBDAV.DBA.account_password (http_dav_uid ());
+                            DB.DBA.DAV_DELETE (dav_tempPath, 1, dav_tempUser, dav_tempPassword);
+                            DB.DBA.DAV_COL_CREATE ('/DAV/temp/', '110110000NN', 'dav', 'administrators', dav_tempUser, dav_tempPassword);
+                            DB.DBA.DAV_RES_UPLOAD (dav_tempPath, dav_file, dav_mime, '110110000NN', 'dav', 'administrators', dav_tempUser, dav_tempPassword);
+
+                            self.dav_vector := vector (dav_fullPath, dav_tempPath, dav_mime, dav_perms, dav_owner, dav_group, case when (self.dav_is_redirect) then dav_link else null end);
                             self.command := 14;
                             self.vc_data_bind(e);
                             return;
@@ -3906,18 +3937,18 @@
 
                     _exec_14:;
                       -- Auto versioning
-                      if ((self.dav_type = 'C') or (self.command_mode <> 10))
+                      if ((self.dav_type = 'C') and (self.command_mode <> 10))
                       {
                         if (WEBDAV.DBA.DAV_GET_AUTOVERSION (dav_fullPath) <> get_keyword ('dav_autoversion', params, ''))
                         {
                           retValue := WEBDAV.DBA.DAV_SET (dav_fullPath, 'autoversion', get_keyword ('dav_autoversion', params, ''));
                           if (WEBDAV.DBA.DAV_ERROR (retValue))
                             signal ('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
+
                           if ((self.dav_type = 'R') and (WEBDAV.DBA.DAV_GET_AUTOVERSION (dav_fullPath) = ''))
                             WEBDAV.DBA.DAV_REMOVE_VERSION_CONTROL (dav_fullPath);
                         }
                       }
-
 
                     }
                     commit work;
@@ -4018,7 +4049,9 @@
                 <?vsp
                   if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30))
                   {
-                    http (sprintf ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">%V</textarea>', get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar)))));
+                    http ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">');
+                    http (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http ('</textarea>');
                 ?>
                     <![CDATA[
                       <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
@@ -5107,7 +5140,7 @@
                                   if (self.dir_path <> '')
                                   {
                                     http (         '<td class="checkbox">');
-                                    if ((path not like '%,acl') and (path not like '%,meta'))
+                                    if ((path not like '%,acl') and (path not like '%,meta') and (rowset[0] not in ('.', '..')))
                                       http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', WEBDAV.DBA.utf2wide (path)));
                                     http (         '</td>');
                                   }
