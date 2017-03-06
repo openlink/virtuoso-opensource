@@ -2768,7 +2768,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
 
   if (op = 'i')
   {
-    dbg_obj_princ ('INSERT ', name);
+    -- dbg_obj_princ ('INSERT ', name);
     insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT, ROWGUID, RES_FULL_PATH)
       values (rc, name, pid, ouid, ogid, permissions, cr_time, mod_time, type, content, _rowguid, path);
 
