@@ -3334,11 +3334,15 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   in _res_id int,
   in _col_id int)
 {
+  -- dbg_obj_princ ('WS.WS.GET_EXT_DAV_LDP (', _res_id, _col_id, ')');
   declare accept, accept_full, name_ varchar;
   declare mod_time datetime;
   declare gr any;
   declare id_ integer;
   declare pref_mime varchar;
+
+  if (isarray (_res_id) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_res_id)))
+    return 0;
 
   -- LDPR request
   pref_mime := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (_res_id));
