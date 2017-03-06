@@ -20,11 +20,14 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="db_backup_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
-   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-   xmlns:vm="http://www.openlinksw.com/vspx/macro"
-   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="db_backup_page"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
 
   <script language="JavaScript">
     <![CDATA[
@@ -71,89 +74,135 @@
       <!--img src="images/icons/backup_database_32.png" alt="Database backup"/-->
     </vm:header>
     <vm:pagebody>
+
+    <v:method name="file_check" arglist="in path varchar">
+      <![CDATA[
+        if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
+        {
+          if (cl_exec ('select case when isstring (file_stat (?)) then 1 else 0 end', vector (path)))
+            return 1;
+        }
+        else if (isstring (file_stat (path)))
+        {
+          return 1;
+        }
+        return 0;
+      ]]>
+    </v:method>
+
+    <v:method name="file_exists" arglist="in prefix varchar">
+      <![CDATA[
+        declare noDirs integer;
+        declare fname varchar;
+
+        noDirs := 1;
+        fname := prefix || '1.bp';
+        for (select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id) do
+        {
+          noDirs := 0;
+          if (self.file_check (bd_dir || '/' || fname))
+            return 1;
+        }
+        if (noDirs and self.file_check ('./' || fname))
+          return 1;
+
+        return 0;
+      ]]>
+    </v:method>
+
+
       <v:template name="vm_pagebody_local" type="simple">
         <v:before-data-bind>
-          <v:script><![CDATA[
-          self.prefix := backup_context_info_get('prefix');
-          if(backup_context_info_get('run') = 1)
-            self.p_mode := '2';
-          if(self.p_mode <> '1' and self.p_mode <> '2')
-            self.p_mode := '1';
+          <![CDATA[
+            self.prefix := backup_context_info_get('prefix');
+            if (backup_context_info_get('run') = 1)
+              self.p_mode := '2';
 
-          declare patha any;
-          patha := null;
-	  for select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id do
-	  {
+            if (self.p_mode <> '1' and self.p_mode <> '2')
+              self.p_mode := '1';
+
+            declare patha any;
+            patha := null;
+            for select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id do
+            {
+              if (patha is null)
+                patha := vector (bd_dir);
+              else
+                patha := vector_concat (patha, vector (bd_dir));
+            }
+            self.max_id := (select max(bd_id) as bd_max_id from DB.DBA.SYS_BACKUP_DIRS);
+            if (self.max_id is null)
+              self.max_id := 0;
+
             if (patha is null)
-              patha := vector (bd_dir);
-            else
-              patha := vector_concat (patha, vector (bd_dir));
-          }
-          self.max_id := (select max(bd_id) as bd_max_id from DB.DBA.SYS_BACKUP_DIRS);
-          if (self.max_id is null)
-            self.max_id := 0;
-          if (patha is null)
-            patha := vector ('.');
-          self.backup_patha := patha;
-          if (self.p_mode = '2')
+              patha := vector ('.');
+
+            self.backup_patha := patha;
+            if (self.p_mode = '2')
             {
               declare _header, _line varchar;
+
               _header := http_header_get();
               _line := sprintf('Refresh: %d; URL=db_backup.vspx?sid=%s&realm=%s\r\n', self.refresh, self.sid ,self.realm);
               if (self.refresh < 16)
                 self.refresh := self.refresh * 2;
-              if(_header is null)
-                {
-                  _header := _line;
-                }
+
+              if (_header is null)
+              {
+                _header := _line;
+              }
               else
-                {
-                  _header := concat(_header, _line);
-                }
+              {
+                _header := concat(_header, _line);
+              }
               http_header(_header);
             }
-          else
-            self.refresh := 2;
-          declare sched_info any;
-          sched_info := "BackupSchedInfo" ();
-          if (sched_info is null)
+            else
             {
-              self.sched_start := now();
+              self.refresh := 2;
+            }
+            declare sched_info any;
+
+            sched_info := BackupSchedInfo ();
+            if (sched_info is null)
+            {
+              self.sched_start := now ();
               self.sched_interval := null;
               self.sched_last := NULL;
               self.sched_full := 1;
               self.sched_prefix := '';
               self.sched_npages := 10000;
             }
-          else
+            else
             {
               declare regexp, sql_str varchar;
-              self.sched_start := aref (sched_info, 0);
-              self.sched_interval := aref (sched_info, 1);
-              self.sched_last := aref (sched_info, 2);
-	      regexp := 'BACKUP_MAKE(_CL)? *\\(\'(.*)\',(.*),(.*)\\)';
-	      sql_str := sched_info[3];
+
+              self.sched_start := sched_info[0];
+              self.sched_interval := sched_info[1];
+              self.sched_last := sched_info[2];
+              regexp := 'BACKUP_MAKE(_CL)? *\\(\'(.*)\',(.*),(.*)\\)';
+              sql_str := sched_info[3];
               self.sched_prefix := regexp_substr(regexp,sql_str, 2);
-              self.sched_npages := cast(regexp_substr(regexp, sql_str, 3) as integer);
-              self.sched_full   := cast(regexp_substr(regexp, sql_str, 4) as integer);
+              self.sched_npages := cast (regexp_substr (regexp, sql_str, 3) as integer);
+              self.sched_full   := cast (regexp_substr (regexp, sql_str, 4) as integer);
 
               self.prefix := self.sched_prefix;
             }
-          ]]></v:script>
+          ]]>
         </v:before-data-bind>
 
         <v:template name="mode_temp4" type="simple" enabled="-- equ(self.p_mode, '2')">
           <v:form name="form4" type="simple" method="POST" action="db_backup.vspx">
-            <table class="ctl_grp">
+            <table class="ctl_grp" style="min-width: 540px;">
               <tr>
-		<td>
-		  <img src="images/vgress.gif" border="0" />
+                <td>
+                  <img src="images/vgress.gif" border="0" />
                   <?vsp
                     declare res any;
+
                     res := backup_report();
-                    http (sprintf ('Backup is running (%d of %d is completed), please wait ...',
-                      aref (res, 3), aref (res, 5)));
-                                      self.p_mode := '1';
+                    http (sprintf ('Backup is running (%d of %d is completed), please wait ...', res[3], res[5]));
+                    self.p_mode := '1';
                   ?>
                 </td>
               </tr>
@@ -162,7 +211,7 @@
         </v:template>
         <v:template name="mode_temp3" type="simple" enabled="-- equ(self.p_mode, '1')">
           <?vsp
-            if(backup_context_info_get('errorc') is not null)
+            if (backup_context_info_get('errorc') is not null)
             {
               http ('<table class="warning"><tr>');
               http ('<td colspan="2">Last backup execution returned:</td></tr><tr>');
@@ -172,31 +221,38 @@
             }
           ?>
           <v:form name="form3" type="simple" method="POST" action="db_backup.vspx">
-	      <v:on-post><![CDATA[
-		  if (e.ve_is_post and e.ve_initiator = self.cl_bkp)
-		    {
-		      self.cl_op := self.cl_bkp.ufl_selected;
-		    }
-		  ]]></v:on-post>
+            <v:on-post>
+              <![CDATA[
+                if (e.ve_is_post and e.ve_initiator = self.cl_bkp)
+                {
+                  self.cl_op := self.cl_bkp.ufl_selected;
+                }
+              ]]>
+            </v:on-post>
             <table>
               <tr valign="top">
                 <td>
-		    <div>
-			<?vsp if (sys_stat ('cl_run_local_only') <> 1) { ?>
-			<v:check-box name="cl_bkp" value="1" initial-checked="-- case when sys_stat ('cl_run_local_only') <> 1 and cl_this_host () = 1 then 1 else 0 end" auto-submit="1"/>
-			&nbsp; Cluster Operation
-			<?vsp } ?>
-		    </div>
-                  <table class="ctl_grp" border="0" cellspacing="0" cellpadding="3">
+                  <div>
+                    <?vsp
+                    if (sys_stat ('cl_run_local_only') <> 1)
+                    {
+                    ?>
+                    <v:check-box name="cl_bkp" value="1" initial-checked="-- case when sys_stat ('cl_run_local_only') <> 1 and cl_this_host () = 1 then 1 else 0 end" auto-submit="1"/>
+                    &nbsp; Cluster Operation
+                    <?vsp
+                    }
+                    ?>
+                  </div>
+                  <table class="ctl_grp" border="0" cellspacing="0" cellpadding="3" style="min-width: 400px;">
                     <tr class="ctl_grp_title">
                       <th colspan="2">Current Backup Info</th>
                     </tr>
-                    <v:template name="t_sched_info_nobk" type="simple" enabled="-- isnull(backup_context_info_get('prefix'))">
+                    <v:template name="t_sched_info_nobk" type="simple" enabled="--isnull(backup_context_info_get('prefix'))">
                       <tr>
                         <td>No Backup</td>
                       </tr>
                     </v:template>
-                    <v:template name="t_sched_info_bk" type="simple" enabled="-- case when not(isnull(backup_context_info_get('prefix'))) then 1 else 0 end">
+                    <v:template name="t_sched_info_bk" type="simple" enabled="--case when not(isnull(backup_context_info_get('prefix'))) then 1 else 0 end">
                       <tr>
                         <td>Prefix</td>
                         <td><v:label name="t_cur_backup_prefix2" value="--backup_context_info_get('prefix')" format="%s"/></td>
@@ -223,17 +279,19 @@
                   </table>
                 </td>
                 <td>
-                  <v:template name="t_sched_info" type="simple" enabled="-- either(isnull(BackupSchedInfo()),0,1)">
-                    <table class="ctl_grp" border="0" cellspacing="0" cellpadding="3">
+                  <v:template name="t_sched_info" type="simple" enabled="-- either (isnull (BackupSchedInfo ()), 0, 1)">
+                    <table class="ctl_grp" border="0" cellspacing="0" cellpadding="3" style="min-width: 400px;">
                       <tr>
                         <th>Active Schedule</th>
                         <td>
                           <v:button name="sched_clear" action="simple" value="Clear">
-                            <v:on-post><v:script><![CDATA[
-                                DELETE FROM DB.DBA.SYS_SCHEDULED_EVENT  WHERE SE_NAME = DB.DBA.BACKUP_SCHED_NAME();
+                            <v:on-post>
+                              <![CDATA[
+                                delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = DB.DBA.BACKUP_SCHED_NAME();
                                 self.p_mode := '1';
                                 self.vc_data_bind(e);
-                            ]]></v:script></v:on-post>
+                              ]]>
+                            </v:on-post>
                           </v:button>
                         </td>
                       </tr>
@@ -273,204 +331,256 @@
               </tr>
             </table>
             <h3>Backup Directories</h3>
-            <v:data-set name="db_dirs" nrows="15" scrollable="1" width="80"
-                  sql="select bd_id, bd_dir from
-                  DB.DBA.SYS_BACKUP_DIRS order by bd_id">
+            <v:data-set name="db_dirs" nrows="15" scrollable="1" width="80" sql="select bd_id, bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id">
+
               <v:template name="header1" type="simple" name-to-remove="table" set-to-remove="bottom">
                 <table class="listing" rules="groups">
-                  <colgroup/><colgroup/><colgroup/>
                   <thead>
                     <tr class="listing_header_row">
-                      <th></th><th>Directory</th><th>Action</th>
+                      <th>Directory</th><th>Action</th>
                     </tr>
                   </thead>
                 </table>
               </v:template>
+
               <v:template name="rows" type="repeat">
                 <v:template name="temp_db_dirs_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
+                  <tr>
                     <td class="listing_col">
-                      <img src="images/dav_browser/foldr_16.png" alt="folder"/>
-                    </td>
-                    <td class="listing_col">
+                      <img src="dav/image/dav/foldr_16.png" alt="folder"/>
+                      &amp;nbsp;
                       <v:label name="l_db_dir_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
                     </td>
                     <td>
-                      <v:button name="db_dir_remove" value="remove" action="simple">
+                      <v:button name="db_dir_remove" value="Remove" action="simple">
                         <v:on-post>
-                          <v:script><![CDATA[
+                          <![CDATA[
                             delete from DB.DBA.SYS_BACKUP_DIRS where bd_id = (control.vc_parent as vspx_row_template).te_rowset[0];
 
                             self.vc_data_bind(e);
-                          ]]></v:script>
+                          ]]>
                         </v:on-post>
                       </v:button>
                     </td>
-                  <?vsp http ('</tr>'); ?>
+                  </tr>
                 </v:template>
+
                 <v:template name="no_dirs" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                   <table>
                     <tr>
-                      <td colspan="3" class="emphasize">No backup directories specified.  Backup will  go to server's working directory.</td>
+                      <td colspan="2" class="attention_marker">No backup directories specified. Backup will go to server's working directory.</td>
                     </tr>
                   </table>
                 </v:template>
+
                 <v:template name="temp_db_dir_add" type="add" name-to-remove="" set-to-remove="">
                   <v:form name="_add_dir" type="update">
                     <v:on-post>
-                      <v:script><![CDATA[
-			declare dir1 any;
-			if (not self.vc_is_valid)
-			  return;
-			-- clsuter operation
-			if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
+                      <![CDATA[
+                        declare dir1 any;
+
+                        if (not self.vc_is_valid)
+                          return;
+
+                        -- clsuter operation
+                        if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
+                        {
+                          declare exit handler for sqlstate '22023'
                           {
-			     declare exit handler for sqlstate '22023' {
-			        self.vc_error_message :=
-			     	   sprintf ('The directory %s does not exists on all cluster nodes, please select correct path.', self.t_dir.ufl_value);
-				self.vc_is_valid := 0;
-				return;
-			     };
-			     cl_exec ('select case when file_stat (?) = 0 then signal (\'22023\', \'No such directory\') else \'\' end',
-			     	vector (self.t_dir.ufl_value));
-			  }
-			if (not isstring (file_stat (self.t_dir.ufl_value)))
-			  {
-			    self.vc_error_message := 'Non-existing directory, please select correct path.';
-			    self.vc_is_valid := 0;
-			    return;
-			  }
-			dir1 := trim(self.t_dir.ufl_value,' /');
-			if (exists (select 1 from DB.DBA.SYS_BACKUP_DIRS where bd_dir = dir1))
-			  {
-			    self.vc_error_message := 'The directory is already added, please select another path.';
-			    self.vc_is_valid := 0;
-			    return;
-			  }
+                            self.vc_error_message := sprintf ('The directory %s does not exists on all cluster nodes, please select correct path.', self.t_dir.ufl_value);
+                            self.vc_is_valid := 0;
+                            return;
+                          };
+                          cl_exec ('select case when file_stat (?) = 0 then signal (\'22023\', \'No such directory\') else \'\' end', vector (self.t_dir.ufl_value));
+                        }
+
+                        if (not isstring (file_stat (self.t_dir.ufl_value)))
+                        {
+                          self.vc_error_message := 'Non-existing directory, please select correct path.';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+
+                        dir1 := trim (self.t_dir.ufl_value,' /');
+                        if (exists (select 1 from DB.DBA.SYS_BACKUP_DIRS where bd_dir = dir1))
+                        {
+                          self.vc_error_message := 'The directory is already added, please select another path.';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
                         insert into DB.DBA.SYS_BACKUP_DIRS values (self.max_id + 1, dir1);
                         self.vc_data_bind(e);
-                      ]]></v:script>
+                      ]]>
                     </v:on-post>
                     <tr>
-                      <td></td>
-                      <td>
-			<v:text name="t_dir" error-glyph="*">
-			  <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please select a directory"/>
+                      <td colspan="2">
+                        <br />
+                        <v:text name="t_dir" error-glyph="*">
+                          <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please select a directory"/>
                         </v:text>
-                <input type="button" name="browsepath" value="Browse..."
-                onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
-
-                      </td>
-                      <td>
-                        <v:button name="dir_add" action="simple" value="Add">
-                        </v:button>
+                        <input type="button" name="browsepath" value="Browse..." onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
+                        <v:button name="dir_add" action="simple" value="Add" />
+                        <br /><br />
                       </td>
                     </tr>
                   </v:form>
                 </v:template>
               </v:template>
-	    </v:data-set>
-	    <v:form type="simple" method="POST" name="bkp_f">
-            <table class="ctl_grp">
-              <tr class="ctl_grp_title">
-                <th colspan="2">Run <v:label name="incr" value="Incremental" format="%s" enabled="--case when isnull(backup_context_info_get('prefix')) then 0 else 1 end" /> Backup</th>
-              </tr>
-              <tr>
-                <td>Backup File Prefix<span class="attention_marker">*</span></td>
-                <td>
-		  <v:text name="t_backup_prefix" value="--self.prefix" format="%s" xhtml_disabled="--case when isnull(self.prefix) then '@@hidden@@' else 'disabled' end" error-glyph="*">
-		    <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please enter a non-empty prefix"/>
-		  </v:text>
-                </td>
-              </tr>
-              <tr>
-                <td>Number of pages per backup file (approx 3K per page)<span class="attention_marker">*</span></td>
-                <td><v:text name="t_npages" value="--'10000'" /></td>
-              </tr>
-              <tr>
-                <th>Scheduling</th>
-              </tr>
-              <tr>
-                <td>First Backup Date:</td>
-                <td>
-		  <v:text name="t_sched_start" default_value="--substring(cast (now() as varchar), 1, 19)" format="%s"  />
-                </td>
-              </tr>
-              <tr>
-                <td>Backup Interval:</td>
-                <td>
-		  <v:text name="t_sched_interval" value="--self.sched_interval / 60" format="%d" error-glyph="*">
-		    <v:validator test="regexp" regexp="^[0-9]+$" message="Interval is a number" empty-allowed="1"/>
-		  </v:text>
-                  hours
-                </td>
-              </tr>
-              <tr class="form_cmd_row">
-                <td colspan="2">
-                  <v:button name="b_newset2" action="simple" value="--concat('Run ',case when isnull(backup_context_info_get('prefix')) then 'Full' else 'Incremental' end,' Backup')">
-                    <v:on-post>
-                      <v:script><![CDATA[
-                        declare prefix varchar;
-                        declare npages,  timeout integer;
-                        prefix := backup_context_info_get('prefix');
-                        if(isnull(prefix)) prefix := self.t_backup_prefix.ufl_value;
-                        npages := atoi( self.t_npages.ufl_value );
-                        timeout := 0;
-                        if( npages <= 0 ) npages := 10000;
-                        declare exit handler for sqlstate '*' {
-                          control.vc_parent.vc_error_message := __SQL_MESSAGE;
-                          self.vc_is_valid := 0;
-                          return;
-                        };
+            </v:data-set>
 
-                        commit work;
-                        exec( 'checkpoint' );
+            <v:form type="simple" method="POST" name="bkp_f">
+              <table class="ctl_grp" style="min-width: 540px;">
+                <tr class="ctl_grp_title">
+                  <th colspan="2">Run <v:label name="incr" value="Incremental" format="%s" enabled="--case when isnull(backup_context_info_get('prefix')) then 0 else 1 end" /> Backup</th>
+                </tr>
+                <tr>
+                  <td>Backup File Prefix<span class="attention_marker">*</span></td>
+                  <td>
+                    <v:text name="t_backup_prefix" value="--self.prefix" format="%s" xhtml_disabled="--case when isnull(self.prefix) then '@@hidden@@' else 'disabled' end" error-glyph="*">
+                      <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please enter a non-empty prefix"/>
+                    </v:text>
+                  </td>
+                </tr>
+                <tr>
+                  <td>Number of pages per backup file (approx 3K per page)<span class="attention_marker">*</span></td>
+                  <td>
+                    <v:text name="t_npages" value="--'10000'" xhtml_size="5" />
+                  </td>
+                </tr>
+                <tr>
+                  <th>Scheduling</th>
+                </tr>
+                <tr>
+                  <td>First Backup Date:</td>
+                  <td>
+                    <v:text name="t_sched_start" default_value="--substring(cast (now() as varchar), 1, 19)" format="%s"  />
+                  </td>
+                </tr>
+                <tr>
+                  <td>Backup Interval:</td>
+                  <td>
+                    <v:text name="t_sched_interval" value="--self.sched_interval / 60" format="%d" error-glyph="*" xhtml_size="5">
+                      <v:validator test="regexp" regexp="^[0-9]+$" message="Interval is a number" empty-allowed="1"/>
+                    </v:text>
+                    hours
+                  </td>
+                </tr>
+                <tr class="form_cmd_row">
+                  <td colspan="2" align="center">
+                    <br />
+                    <?vsp
+                      declare prefix varchar;
 
-                        http_request_status('HTTP/1.1 302 Found');
-                        http_header(sprintf('Location: db_backup.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
-                        http_flush();
-                        self.p_mode := '1';
+                      prefix := backup_context_info_get ('prefix');
+                      if (not isnull (prefix) and (self.file_exists (prefix) = 0))
+                      {
+                        http ('<span class="attention_marker">No backup files founded from a previous execution.</span><br /><br />');
+                      }
+                    ?>
+                    <v:button name="b_newset2" action="simple" value="--'Run'">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          declare prefix varchar;
 
-			if (self.cl_op)
-			  {
-			    cl_exec ('backup_online (?, ?, ?, ?)', vector ( prefix, npages, 0, self.backup_patha ));
-			    self.npages := npages;
-			  }
-			else
-			  self.npages := backup_online( prefix, npages, 0, self.backup_patha );
-                        self.vc_data_bind(e);
-                      ]]></v:script>
-                    </v:on-post>
-                  </v:button>
-                  <v:button name="sched_set" action="simple" value="Set Schedule">
-                    <v:on-post><v:script><![CDATA[
-                        declare _sql, pname varchar;
-			if (not self.vc_is_valid)
-			  return;
-                        pname := 'DB.DBA.BACKUP_MAKE';
-			if (self.cl_op)
-			  pname := 'DB.DBA.BACKUP_MAKE_CL';
-                        _sql := sprintf ('%s (''%s'', %d, %d)', pname, self.t_backup_prefix.ufl_value, cast(self.t_npages.ufl_value as integer),0);
+                          prefix := backup_context_info_get ('prefix');
+                          if (not isnull (prefix) and (self.file_exists (prefix) = 0))
+                          {
+                            control.vc_enabled := 0;
+                          }
+                          control.ufl_value := 'Run ' || case when isnull (prefix) then 'Full' else 'Incremental' end || ' Backup';
+                        ]]>
+                      </v:after-data-bind>
+                      <v:on-post>
+                        <![CDATA[
+                          declare prefix varchar;
+                          declare npages, timeout integer;
+                          declare exit handler for sqlstate '*'
+                          {
+                            control.vc_parent.vc_error_message := __SQL_MESSAGE;
+                            self.vc_is_valid := 0;
+                            return;
+                          };
 
-                        INSERT REPLACING DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME,SE_START,SE_INTERVAL,SE_SQL)
-                          VALUES (DB.DBA.BACKUP_SCHED_NAME(),self.t_sched_start.ufl_value,cast(self.t_sched_interval.ufl_value as integer) * 60,_sql);
-                        self.p_mode := '1';
-                        self.vc_data_bind(e);
-                    ]]></v:script></v:on-post>
-                  </v:button>
-                  <v:button name="dirs_clear" action="simple" value="Clear Backup">
-                    <v:on-post>
-                      <v:script><![CDATA[
-		        self.vc_redirect (sprintf ('db_backup_clear.vspx?pref=%U&cl_op=%d', self.prefix, self.cl_op));
-                      ]]></v:script>
-                    </v:on-post>
-                  </v:button>
-                </td>
-              </tr>
-	    </table>
-	  </v:form>
+                          prefix := backup_context_info_get ('prefix');
+                          if (isnull(prefix))
+                            prefix := self.t_backup_prefix.ufl_value;
+
+                          npages := atoi( self.t_npages.ufl_value );
+                          timeout := 0;
+                          if( npages <= 0 )
+                            npages := 10000;
+
+                          commit work;
+                          exec ('checkpoint');
+                          http_request_status ('HTTP/1.1 302 Found');
+                          http_header (sprintf ('Location: db_backup.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                          http_flush();
+                          self.p_mode := '1';
+
+                          if (self.cl_op)
+                          {
+                            cl_exec ('backup_online (?, ?, ?, ?)', vector (prefix, npages, 0, self.backup_patha ));
+                            self.npages := npages;
+                          }
+                          else
+                          {
+                            self.npages := backup_online (prefix, npages, 0, self.backup_patha );
+                          }
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+
+                    <v:button name="sched_set" action="simple" value="Set Schedule">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          declare prefix varchar;
+
+                          prefix := backup_context_info_get ('prefix');
+                          if (not isnull (prefix) and (self.file_exists (prefix) = 0))
+                          {
+                            control.vc_enabled := 0;
+                          }
+                        ]]>
+                      </v:after-data-bind>
+                      <v:on-post>
+                        <![CDATA[
+                          declare _sql, pname varchar;
+
+                          if (not self.vc_is_valid)
+                            return;
+
+                          pname := 'DB.DBA.BACKUP_MAKE';
+                          if (self.cl_op)
+                            pname := 'DB.DBA.BACKUP_MAKE_CL';
+
+                          _sql := sprintf ('%s (''%s'', %d, %d)', pname, self.t_backup_prefix.ufl_value, cast(self.t_npages.ufl_value as integer),0);
+
+                          insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME,SE_START,SE_INTERVAL,SE_SQL)
+                            values (DB.DBA.BACKUP_SCHED_NAME(),self.t_sched_start.ufl_value,cast(self.t_sched_interval.ufl_value as integer) * 60,_sql);
+
+                          self.p_mode := '1';
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+
+                    <v:button name="dirs_clear" action="simple" value="Clear Backup">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          control.vc_enabled := case when (not isnull (backup_context_info_get ('prefix'))) then 1 else 0 end;
+                        ]]>
+                      </v:after-data-bind>
+                      <v:on-post>
+                        <![CDATA[
+                          self.vc_redirect (sprintf ('db_backup_clear.vspx?pref=%U&cl_op=%d', self.prefix, self.cl_op));
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:form>
           </v:form>
         </v:template>
       </v:template>
