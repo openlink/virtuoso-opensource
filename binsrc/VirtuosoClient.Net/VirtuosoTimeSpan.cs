@@ -297,6 +297,7 @@ namespace OpenLink.Data.Virtuoso
 			return value.ToString();
 		}
 
+#if ADONET3
 		public string ToString(String format)
 		{
 			return value.ToString(format);
@@ -306,12 +307,17 @@ namespace OpenLink.Data.Virtuoso
 		{
 			return value.ToString(format, formatProvider);
 		}
+#endif
 
 		public string ToXSD_String()
 		{
 			String timeZoneString = null;
 			StringBuilder sb = new StringBuilder();
+#if ADONET3
 			sb.Append(value.ToString("hh\\:mm\\:ss\\.fff"));
+#else
+			sb.AppendFormat("{0:D2}:{1:D2}:{2:D2}.{3:D3}", value.Hours, value.Minutes, value.Seconds, value.Milliseconds);
+#endif
 
 			if (tz == 0)
 			{
