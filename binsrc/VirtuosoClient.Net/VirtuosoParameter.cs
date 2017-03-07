@@ -177,7 +177,7 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
-#if ADONET2
+#if ADONET3
 		public override byte Precision
 #else
 		public byte Precision
@@ -187,7 +187,7 @@ namespace OpenLink.Data.Virtuoso
 			set	{ precision = value; }
 		}
 
-#if ADONET2
+#if ADONET3
 		public override byte Scale
 #else
 		public byte Scale
