@@ -331,7 +331,7 @@ namespace OpenLink.Data.Virtuoso
 			if ( v == null)
 				return 1;
 
-			if (!(v is System.DateTimeOffset) || !(v is VirtuosoDateTimeOffset))
+			if (!(v is System.DateTimeOffset) && !(v is VirtuosoDateTimeOffset))
 				throw new ArgumentException ("Value is not a System.DateTimeOffset or VirtuosoDateTimeOffset");
 
 			if (v is VirtuosoDateTimeOffset)
@@ -342,9 +342,6 @@ namespace OpenLink.Data.Virtuoso
 
 		public int CompareTo (VirtuosoDateTimeOffset v)
 		{
-			if (!(v is VirtuosoDateTimeOffset))
-				throw new ArgumentException ("Value is not a VirtuosoDateTimeOffset");
-
 			return DateTimeOffset.Compare (value, (DateTimeOffset) v.value);
 		}
 

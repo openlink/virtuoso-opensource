@@ -354,7 +354,7 @@ namespace OpenLink.Data.Virtuoso
 			if ( v == null)
 				return 1;
 
-			if (!(v is System.DateTime) || !(v is VirtuosoDateTime))
+			if (!(v is System.DateTime) && !(v is VirtuosoDateTime))
 				throw new ArgumentException ("Value is not a System.DateTime or VirtuosoDateTime");
 
 			if (v is VirtuosoDateTime)
@@ -365,9 +365,6 @@ namespace OpenLink.Data.Virtuoso
 
 		public int CompareTo (VirtuosoDateTime v)
 		{
-			if (!(v is VirtuosoDateTime))
-				throw new ArgumentException ("Value is not a VirtuosoDateTime");
-
 			return DateTime.Compare (value, (DateTime) v.value);
 		}
 

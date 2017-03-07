@@ -206,7 +206,7 @@ namespace OpenLink.Data.Virtuoso
 			if (val == null)
 				return 1;
 
-			if (!(val is TimeSpan) || !(val is VirtuosoTimeSpan)) {
+			if (!(val is TimeSpan) && !(val is VirtuosoTimeSpan)) {
 				throw new ArgumentException ("Argument has to be a TimeSpan.", "value");
 			}
 
@@ -292,9 +292,19 @@ namespace OpenLink.Data.Virtuoso
 		        return new VirtuosoTimeSpan(value.Subtract(ts).Ticks);
 		}
 
-		public override string ToString ()
+		public override string ToString()
 		{
-		        return value.ToString();
+			return value.ToString();
+		}
+
+		public string ToString(String format)
+		{
+			return value.ToString(format);
+		}
+
+		public string ToString(String format, IFormatProvider formatProvider)
+		{
+			return value.ToString(format, formatProvider);
 		}
 
 		public string ToXSD_String()
