@@ -27,7 +27,7 @@ endif
 cli_SCRIPTS	= $(TARGET)
 CLEANFILES	= $(TARGET)
 
-MCS_FLAGS = -sdk:2 /optimize+ /d:MONO /d:ADONET2
+MCS_FLAGS = /sdk:2 /optimize+ /d:MONO /d:ADONET2
 
 SOURCES = \
 	$(srcdir)/ArrayOfLongPacked.cs \
