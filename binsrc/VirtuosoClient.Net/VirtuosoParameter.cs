@@ -177,21 +177,13 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
-#if ADONET3
-		public override byte Precision
-#else
 		public byte Precision
-#endif
 		{
 			get	{ return precision; }
 			set	{ precision = value; }
 		}
 
-#if ADONET3
-		public override byte Scale
-#else
 		public byte Scale
-#endif
 		{
 			get	{ return scale;	}
 			set	{ scale = value; }
