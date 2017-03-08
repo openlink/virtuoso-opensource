@@ -213,7 +213,7 @@ namespace OpenLink.Data.Virtuoso
 			{
 				if (rc != CLI.ReturnCode.SQL_SUCCESS_WITH_INFO)
 				{
-				pendingFuture = null;
+				    pendingFuture = null;
 					connection.futures.Remove(future);
 				}
 				Diagnostics.HandleResult (rc, this, connection.OuterConnection);
@@ -283,9 +283,10 @@ namespace OpenLink.Data.Virtuoso
 				if ((prefetchedRows == prefetchSize || isLastInBatch)
 					&& queryType == QueryType.QT_SELECT)
 				{
-					Future future = new Future (Service.Fetch, id, pendingFuture.RequestNo);
-					future.SendRequest (connection.Session, timeout);
+					Future future = new Future(Service.Fetch, id, pendingFuture.RequestNo);
+					future.SendRequest(connection.Session, timeout);
 					prefetchedRows = 0;
+					isLastInBatch = false;
 				}
 
 				CLI.ReturnCode rc = ProcessResult (true);
@@ -298,7 +299,7 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
-		public bool GetNextResult ()
+		public bool GetNextResult()
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.GetNextResult ()");
 
@@ -615,14 +616,14 @@ namespace OpenLink.Data.Virtuoso
 			options[RpcMessageLayout.SO_IsAsync] = 0;
 			options[RpcMessageLayout.SO_MaxRows] = 0;
 			options[RpcMessageLayout.SO_Timeout] = 0;
-			//options[RpcMessageLayout.SO_Prefetch] = Values.SELECT_PREFETCH_QUOTA;
+			options[RpcMessageLayout.SO_Prefetch] = Values.SELECT_PREFETCH_QUOTA;
 			//options[RpcMessageLayout.SO_AutoCommit] = (int) CLI.AutoCommit.SQL_AUTOCOMMIT_ON;
 			//options[RpcMessageLayout.SO_RpcTimeout] = 0;
 			options[RpcMessageLayout.SO_CursorType] = (int) CLI.CursorType.SQL_CURSOR_FORWARD_ONLY;
 			options[RpcMessageLayout.SO_KeysetSize] = 0;
 			options[RpcMessageLayout.SO_UseBookmarks] = 0;
 			//options[RpcMessageLayout.SO_Isolation] = (int) CLI.IsolationLevel.SQL_TXN_READ_COMMITED;
-			options[RpcMessageLayout.SO_PrefetchBytes] = 0;
+			//options[RpcMessageLayout.SO_PrefetchBytes] = 0;
 			//options[RpcMessageLayout.SO_UniqueRows] = 0;
 		}
 
