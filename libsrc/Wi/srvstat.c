@@ -1204,6 +1204,7 @@ st_collect_ps_info (dk_set_t * arr)
 	}
     }
   END_DO_SET ();
+  dk_set_free (clients);
   mutex_leave (thread_mtx);
   semaphore_leave (ps_sem);
 }
