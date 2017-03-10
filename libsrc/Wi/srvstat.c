@@ -746,8 +746,11 @@ dbms_status_report (void)
   rep_printf ("Clients: %ld connects, max %ld concurrent\n",
       srv_connect_ctr, srv_max_clients);
   rep_printf ("%s %s\n", rpc, mem);
+
+  mutex_enter (thread_mtx);
   dk_free_box (st_rpc_stat);
   st_rpc_stat = box_dv_short_string (rpc);
+  mutex_leave (thread_mtx);
 }
 
 
