@@ -644,6 +644,9 @@
                     </tr>
                   </table>
                 </td>
+                  <td style="white-space: nowrap; vertical-align: top;">
+                    <img border="0" title="Add Condition" alt="Add Condition" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 55, tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, fld_2: {mode: 56, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}, fld_3: {mode: 57, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}, btn_1: {mode: 55}});" class="button pointer" src="images/icons/add_16.png" />
+                  </td>
               </tr>
             </table>
           </td>
