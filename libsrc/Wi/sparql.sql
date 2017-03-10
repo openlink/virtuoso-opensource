@@ -8974,7 +8974,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
       else
         _env := dict_new (31);
       if (0 < length (stats))
-        DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vector(), vector(), use_dict_limit);
+        DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vars, vector(), use_dict_limit);
     }
   blank_ids := 0;
   for (triple_ctr := length (opcodes) - 1; triple_ctr >= 0; triple_ctr := triple_ctr-1)
