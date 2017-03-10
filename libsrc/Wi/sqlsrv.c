@@ -738,33 +738,64 @@ itc_flush_client (it_cursor_t * itc)
 
 
 long dbev_enable = 1;
+long fastdown_in_progress = 0;
 
 void
-dbev_disconnect (client_connection_t * cli)
+dbev_exec_action (client_connection_t * cli, const char *proc_name, int disconnect)
 {
   caddr_t err;
-  caddr_t * params;
-  query_t * proc;
-  if (!dbev_enable)
-    return;
-  proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_DISCONNECT");
+  caddr_t *params;
+  query_t *proc;
+
+  proc = sch_proc_exact_def (wi_inst.wi_schema, proc_name);
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling %s(): %s %s", proc_name, ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (0);
   lt_enter_anyway (cli->cli_trx);
-  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   IN_TXN;
   lt_commit (cli->cli_trx, TRX_CONT);
   lt_leave (cli->cli_trx);
   LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in DBEV_DISCONNECT: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    {
+      log_error ("Error executing %s(): %s %s", proc_name, ERR_STATE (err), ERR_MESSAGE (err));
+
+      if (disconnect)
+        PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
+
+      dk_free_tree (err);
+
+      if (disconnect)
+        PrpcDisconnect (cli->cli_session);
+    }
 }
 
+void
+dbev_disconnect (client_connection_t * cli)
+{
+  if (fastdown_in_progress)
+    return;
+
+  if (dbev_enable)
+    dbev_exec_action (cli, "DB.DBA.DBEV_DISCONNECT", 0);
+}
 
 void
 cli_clear_globals (client_connection_t * cli)
@@ -985,32 +1016,8 @@ srv_client_session_died (dk_session_t * ses)
 void
 dbev_connect (client_connection_t * cli)
 {
-  caddr_t err;
-  /*DELME: stmt_options_t * opts; */
-  caddr_t * params;
-  query_t * proc;
-  if (!dbev_enable)
-    return;
-  proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_CONNECT");
-  if (!proc)
-    return;
-  if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
-  params = (caddr_t *) list (0);
-  lt_enter_anyway (cli->cli_trx);
-  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
-  dk_free_box ((caddr_t) params);
-  IN_TXN;
-  lt_commit (cli->cli_trx, TRX_CONT);
-  lt_leave (cli->cli_trx);
-  LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    {
-      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
-      dk_free_tree (err);
-      PrpcDisconnect (cli->cli_session);
-    }
+  if (dbev_enable)
+    dbev_exec_action (cli, "DB.DBA.DBEV_CONNECT", 1);
 }
 
 caddr_t *
@@ -2789,28 +2796,51 @@ cov_store (void)
   query_t * proc;
   if (!(pl_debug_all & 2) || !pl_debug_cov_file)
     return;
+
   proc = sch_proc_def (wi_inst.wi_schema, "DB.DBA.COV_STORE");
   if (!proc)
     return;
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.COV_STORE(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   lt_enter (bootstrap_cli->cli_trx);
   IN_TXN;
   lt_threads_set_inner (bootstrap_cli->cli_trx, 1);
   lt_rollback (bootstrap_cli->cli_trx, TRX_CONT);
   LEAVE_TXN;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.COV_STORE(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (2, box_dv_short_string (pl_debug_cov_file), box_num(0));
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
   IN_TXN;
   lt_leave (bootstrap_cli->cli_trx);
   LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in COV_STORE: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    log_error ("Error executing DB.DBA.COV_STORE(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 #endif
 
@@ -2820,26 +2850,40 @@ dbev_shutdown (void)
   caddr_t err;
   caddr_t * params;
   query_t * proc;
+
   proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_SHUTDOWN");
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.DBEV_SHUTDOWN(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   lt_enter (bootstrap_cli->cli_trx);
   IN_TXN;
   lt_threads_set_inner (bootstrap_cli->cli_trx, 1);
   lt_rollback (bootstrap_cli->cli_trx, TRX_CONT);
   LEAVE_TXN;
+
   params = (caddr_t *) list (0);
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
   IN_TXN;
   lt_leave (bootstrap_cli->cli_trx);
   LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in DBEV_SHUTDOWN: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    log_error ("Error executing DB.DBA.DBEV_SHUTDOWN(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 
 
@@ -2848,6 +2892,7 @@ sf_fastdown (lock_trx_t * trx)
 {
   long ena = dbev_enable;
   dbev_enable = 0;
+  fastdown_in_progress = 1;
   PrpcDisconnectAll ();
 #ifdef PLDBG
   cov_store ();
@@ -3435,20 +3480,34 @@ dbev_startup (void)
   caddr_t err;
   caddr_t * params;
   query_t * proc;
+
   if (!dbev_enable)
     return;
+
   proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_STARTUP");
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.DBEV_STARTUP(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (0);
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in DBEV_startup: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    log_error ("Error executing DB.DBA.DBEV_STARTUP(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 
 #ifdef PLDBG
@@ -3460,18 +3519,30 @@ cov_load (void)
   query_t * proc;
   if (!(pl_debug_all & 2) || !pl_debug_cov_file)
     return;
+
   proc = sch_proc_def (wi_inst.wi_schema, "DB.DBA.COV_LOAD");
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.COV_LOAD(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (1, box_dv_short_string (pl_debug_cov_file));
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in COV_LOAD: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+  if (err)
+    log_error ("Error executing DB.DBA.COV_LOAD(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 #endif
 
