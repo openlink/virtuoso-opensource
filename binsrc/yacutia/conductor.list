@@ -389,6 +389,7 @@ conductor/rdf_import.vspx
 conductor/rdf_psh_subs.vspx
 conductor/rdf_schemas.vspx
 conductor/rdf_void.vspx
+conductor/registries.vspx
 conductor/robot_control.vspx
 conductor/robot_edit.vspx
 conductor/robot_export.vspx
