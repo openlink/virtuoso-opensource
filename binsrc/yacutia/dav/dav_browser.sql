@@ -2456,12 +2456,19 @@ create procedure WEBDAV.DBA.settings (
 {
   declare retValue, V any;
 
+  if (account_id = http_nobody_uid ())
+  {
+    V := vector ();
+  }
+  else
+  {
   retValue := WEBDAV.DBA.exec ('select USER_SETTINGS from ODRIVE.WA.SETTINGS where USER_ID = ?', vector (account_id));
   if (not WEBDAV.DBA.isVector (retValue) or (length (retValue) = 0) or (length (retValue[0]) = 0) or isnull (retValue[0][0]))
   {
     V := vector ();
   } else {
     V := deserialize (blob_to_string (retValue[0][0]));
+  }
   }
   return WEBDAV.DBA.settings_init (V);
 }
@@ -2473,6 +2480,9 @@ create procedure WEBDAV.DBA.settings_save (
   in account_id integer,
   in settings any)
 {
+  if (account_id = http_nobody_uid ())
+    return;
+
   WEBDAV.DBA.exec ('insert replacing ODRIVE.WA.SETTINGS (USER_ID, USER_SETTINGS) values (?, serialize (?))', vector (account_id, settings));
 }
 ;

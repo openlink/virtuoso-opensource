@@ -3576,14 +3576,20 @@
                         signal('TEST', 'The expression contains no valid tag(s)!<>');
 
                     _test_13:;
-                      if ((self.command_mode = 10) and not self.editField ('aci'))
+                      if ((self.command_mode = 10) and not self.editField ('expireDate'))
                         goto _test_14;
+
+                      dav_expireDate := WEBDAV.DBA.test (get_keyword ('dav_expireDate', params), vector('name', 'Expire date', 'class', 'date-yyyy.mm.dd', 'canEmpty', 1));
+
+                    _test_14:;
+                      if ((self.command_mode = 10) and not self.editField ('aci'))
+                        goto _test_15;
 
                         -- ACI (Web Access)
                       dav_aci := WEBDAV.DBA.aci_params (params);
-                      --DB.DBA.ACL_VALIDATE (dav_aci);
+                      DB.DBA.ACL_VALIDATE (dav_aci);
 
-                    _test_14:;
+                    _test_15:;
 
                       -- Action execute
                       -- Update
@@ -4064,7 +4070,9 @@
                   }
                   else
                   {
-                  http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar)))));
+                    http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>', case when self.command = 30 then 'disabled="disabled"' else '' end));
+                    http (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http ('</textarea>');
                   }
                 ?>
               </div>
