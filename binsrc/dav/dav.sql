@@ -1616,7 +1616,6 @@ del_col_end:
 }
 ;
 
-
 create procedure WS.WS."DELETE" (in path varchar, inout params varchar, in lines varchar)
 {
   declare depth, len integer;
@@ -1801,6 +1800,7 @@ create procedure WS.WS.PUT (
   ses := aref_set_0 (params, 1);
   if (ses = 0 or length (ses) = 0) -- POST w/ special content, read here
     ses := http_body_read ();
+
   _atomPub := 0;
   content_type := http_request_header (lines, 'Content-Type', null, '');
   content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
@@ -1815,6 +1815,7 @@ create procedure WS.WS.PUT (
     _xtree := xml_tree_doc (ses);
     ses := xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/content)', _xtree, 1);
   }
+
   if (content_type = 'multipart/related')
   {
     -- AtomPub: POST and PUT methods
@@ -1853,6 +1854,7 @@ create procedure WS.WS.PUT (
       ses := subseq (blob_to_string (_content), _parts[1][1][0], _parts[1][1][1]);
     }
   }
+
   if (_atomPub)
   {
     _name := serialize_to_UTF8_xml (xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/title)', _xtree, 1));
@@ -1923,7 +1925,9 @@ create procedure WS.WS.PUT (
     {
        --dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
     if (_col is not null) -- SPARQL query on container
+    {
       rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    }
     else if (res_id_ is not null)
     {
       rc := DAV_AUTHENTICATE_HTTP (res_id_, 'R', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
@@ -1931,7 +1935,9 @@ create procedure WS.WS.PUT (
         rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
     }
     else
+    {
     rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    }
     --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, auth_name, auth_pwd, uid, gid, _perms);
       if (rc < 0)
         goto error_ret;
@@ -1941,11 +1947,13 @@ create procedure WS.WS.PUT (
     DB.DBA.DAV_SET_HTTP_STATUS (409);
       return;
     }
+
   if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, uid))
     {
     DB.DBA.DAV_SET_HTTP_STATUS (423);
       return;
     }
+
   if (content_type = '')
   {
     content_type := http_mime_type (full_path);
@@ -1995,15 +2003,22 @@ create procedure WS.WS.PUT (
       return;
     }
 
+  -- clear previous uploaded data
+  if ((content_type <> 'text/turtle') and (res_id_ is not null))
+    WS.WS.TTL_QUERY_POST_CLEAR (full_path);
+
   if (content_type = 'application/sparql-query')
     {
       http_status_set (200);
       if (_method = 'PUT')
+    {
         WS.WS.SPARQL_QUERY_POST (full_path, ses, uid, 1);
+    }
       else -- POST
 	{
 	  if (_col is not null)
 	    full_path := DAV_CONCAT_PATH (full_path, '/');
+
 	  WS.WS.SPARQL_QUERY_GET (ses, full_path, path, lines);
 	  return;
 	}
@@ -2011,6 +2026,7 @@ create procedure WS.WS.PUT (
   else if (content_type = 'text/turtle')
     {
       declare gr, newg, newpath, link, arr, is_container any;
+
       newpath := DAV_CONCAT_PATH (full_path, '/');
       is_container := 0;
       link := http_request_header (lines, 'Link', null, null);
@@ -2020,11 +2036,13 @@ create procedure WS.WS.PUT (
 	  is_container := 1;
 	  if (length (ses) = 0)
 	    http ('<> a <http://www.w3.org/ns/ldp#BasicContainer>. ', ses);
+
 	  full_path := newpath;
 	}
       rc := WS.WS.TTL_QUERY_POST (full_path, ses, case when _col is not null or is_container then 0 else 1 end);
       if (DAV_HIDE_ERROR (rc) is null)
 	goto error_ret;
+
       gr := iri_to_id (WS.WS.DAV_IRI (full_path));
       if (is_container or (sparql define input:inference "ldp" ask where { graph ?:gr { ?:gr a <http://www.w3.org/ns/ldp#Container> }}))
 	{
@@ -2035,11 +2053,16 @@ create procedure WS.WS.PUT (
 	    }
 	  rc_type := 'C';
 	  if (_col is null)
+      {
 	    rc := DAV_COL_CREATE_INT (newpath, _perms, null, null, null, null, 1, 0, 1, uid, gid);
+      }
 	  else
+      {
 	    rc := _col;
+      }
 	  http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (DAV_CONCAT_PATH (full_path, '/'))));
 	  http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, full_path)); 
+
 	  goto rcck;
 	}
        http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (full_path)));
@@ -2056,7 +2079,6 @@ create procedure WS.WS.PUT (
   if (_atomPub and (_method = 'PUT') and not is_empty_or_null (_name) and (_name <> _oldName))
   {
     -- rename
-
     _destination := concat (left (full_path, strrchr (rtrim (full_path, '/'), '/')), '/', _name, either (equ (right (full_path, 1), '/'), '/', ''));
     rc := DB.DBA.DAV_MOVE_INT (full_path, _destination, 0, null, null, 0);
   }
@@ -2095,6 +2117,7 @@ create procedure WS.WS.PUT (
     }
       return;
     }
+
 error_ret:
    -- dbg_obj_princ ('PUT get error: ', __SQL_STATE, __SQL_MESSAGE);
 
@@ -3353,6 +3376,9 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
 
   accept_full := http_request_header_full (lines, 'Accept', '*/*');
   accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept_full, pref_mime);
+  if ((pref_mime = 'application/ld+json') and (accept not in ('*/*', 'application/ld+json')))
+    return 0;
+
   if (accept = '*/*' and isinteger (_res_id))
   {
     if (pref_mime = 'text/turtle')
@@ -3364,6 +3390,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
       accept := 'application/ld+json';
     }
   }
+
   if (accept in ('text/turtle', 'application/ld+json'))
   {
     declare fmt, etag, qr any;
@@ -3499,11 +3526,7 @@ create procedure WS.WS.POST (
   {
     WS.WS.PUT (path, params, lines);
   }
-  else if (_content_type = 'application/ld+json')
-  {
-    WS.WS.PUT (path, params, lines);
-  }
-  else if (_content_type = 'text/turtle' or length (slug) > 0)
+  else if ((_content_type in ('text/turtle', 'application/ld+json')) or (length (slug) > 0))
   {
     declare cid integer;
 
@@ -3654,6 +3677,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   inout ses varchar,
   in is_res integer := 0)
 {
+  -- dbg_obj_princ ('WS.WS.TTL_QUERY_POST (', path, ')');
   declare ns, def_gr, giid, dict, triples, prefixes, flags any;
 	declare exit handler for sqlstate '*'
 	{
@@ -3662,6 +3686,7 @@ create procedure WS.WS.TTL_QUERY_POST (
 	  connection_set ('__sql_message', __SQL_MESSAGE);
 	  return -44;
 	};
+
   set_user_id ('dba');
   flags := 255;
   def_gr := WS.WS.DAV_IRI (path);
@@ -3669,17 +3694,18 @@ create procedure WS.WS.TTL_QUERY_POST (
   log_enable (3);
   if (is_res)
 	{
-      sparql clear graph ?:def_gr;
+    WS.WS.TTL_QUERY_POST_CLEAR (path);
       DB.DBA.TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', def_gr), '', def_gr);
 	 }
   else
     {
-      sparql delete from graph ?:giid { ?s ?p ?o }
-      	where { graph ?:giid { ?s ?p ?o .
+    sparql delete from graph ?:giid { ?s ?p ?o } where { graph ?:giid { ?s ?p ?o .
       filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
     }
+
   {
-    declare exit handler for sqlstate '37000' {
+    declare exit handler for sqlstate '37000'
+  {
       if (connection_get ('__WebDAV_ttl_prefixes__') = 'yes')
         goto _again;
 
@@ -3750,6 +3776,18 @@ _exit:;
   log_enable (3);
 
   return 0;
+}
+;
+
+create procedure WS.WS.TTL_QUERY_POST_CLEAR (
+  in path varchar)
+{
+  -- dbg_obj_princ ('WS.WS.TTL_QUERY_POST_CLEAR (', path, ')');
+  declare dav_graph varchar;
+
+  set_user_id ('dba');
+  dav_graph := WS.WS.DAV_IRI (path);
+  sparql clear graph ?:dav_graph;
 }
 ;
 

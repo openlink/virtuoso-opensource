@@ -2520,7 +2520,12 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   in dav_call integer := 0
     )
 {
-  declare rc, old_log_mode, new_log_mode any;
+  declare id, rc, old_log_mode, new_log_mode any;
+
+  -- clear previous uploaded data
+  id := DAV_SEARCH_ID (path, 'R');
+  if (not isnull (DAV_HIDE_ERROR (id)) and ('text/turtle' = (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))))
+    WS.WS.TTL_QUERY_POST_CLEAR (path);
 
   if (0 = dav_call)
     {
@@ -2531,7 +2536,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
       else if (type = 'text/turtle')
 	{
 	  rc := WS.WS.TTL_QUERY_POST (path, content, 1);
-	  if (DAV_HIDE_ERROR (rc) is null)
+      if (isnull (DAV_HIDE_ERROR (rc)))
 	    return rc;
 	}
     }
@@ -2589,9 +2594,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
 
   par := split_and_decode (path, 0, '\0\0/');
   if (aref (par, 0) <> '' or aref (par, length (par) - 1) = '')
-    {
       return -1;
-    }
+
   locked := 0;
   op := 'i';
   rc := 0;
@@ -2622,51 +2626,58 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
         }
       DAV_SEARCH_ID_OR_DET (par, 'R', det, detcol_id, detcol_path, unreached_path);
       rc := call (cast (det as varchar) || '_DAV_RES_UPLOAD') (detcol_id, unreached_path, content, type, permissions, ouid, ogid, auth_uid);
-      -- dbg_obj_princ ('det_DAV_RES_UPLOAD (', detcol_id, unreached_path, content, type, permissions, ouid, ogid, auth_uid, ') returns ', rc);
+
       return rc;
     }
+
   if (0 > id)
     {
       pid := DAV_SEARCH_ID (path, 'P');
       if (isarray (pid))
+    {
         det := pid[0];
+    }
       else if (pid > 0)
+    {
         det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid and connection_get ('dav_store') is null), NULL);
+    }
       else
         {
           -- dbg_obj_princ ('no parent, DAV_RES_UPLOAD_STRSES_INT returns ', pid);
           return pid;
         }
+
       if (extern)
         {
           -- dbg_obj_princ ('will authenticate collection id', pid);
           auth_uid := DAV_AUTHENTICATE (pid, 'C', '11_', auth_uname, auth_pwd);
           if (auth_uid < 0)
-            {
-              -- dbg_obj_princ ('failed auth on parent, DAV_RES_UPLOAD_STRSES_INT returns ', auth_uid);
               return auth_uid;
             }
-        }
       else
+    {
         auth_uid := ouid;
+    }
+
       if (check_locks)
         {
           rc := DAV_IS_LOCKED (pid , 'C', check_locks);
           if (0 <> rc)
             return rc;
         }
+
       set isolation='committed';
       if ( auth_uid <> http_nobody_uid() and
         (http_dav_uid () <> coalesce (connection_get ('DAVBillingUserID'), -12)) and
-        exists (select top 1 1 from SYS_USERS
-          where U_ID = auth_uid and U_ACCOUNT_DISABLED = 1 ) )
+        exists (select top 1 1 from SYS_USERS where U_ID = auth_uid and U_ACCOUNT_DISABLED = 1 ))
         return -42;
+
       set isolation='serializable';
       if (det is not null)
         {
           DAV_SEARCH_ID_OR_DET (par, 'R', det, detcol_id, detcol_path, unreached_path);
           rc := call (cast (det as varchar) || '_DAV_RES_UPLOAD') (detcol_id, unreached_path, content, type, permissions, ouid, ogid, auth_uid);
-          -- dbg_obj_princ ('det_DAV_RES_UPLOAD (', detcol_id, unreached_path, content, type, permissions, ouid, ogid, auth_uid, ') returns ', rc);
+
           return rc;
         }
       name := aref (par, length (par) - 1);
@@ -2684,56 +2695,50 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
           -- dbg_obj_princ ('will authenticate resource id', id);
           auth_uid := DAV_AUTHENTICATE (id, 'R', '11_', auth_uname, auth_pwd);
           if (auth_uid < 0)
-            {
-              -- dbg_obj_princ ('failed auth, DAV_RES_UPLOAD_STRSES_INT returns ', auth_uid);
               return auth_uid;
-            }
+
           pid := DAV_SEARCH_ID (path, 'P');
           -- dbg_obj_princ ('will authenticate collection id', pid);
           auth_uid := DAV_AUTHENTICATE (pid, 'C', '1__', auth_uname, auth_pwd);
           if (auth_uid < 0)
-            {
-              -- dbg_obj_princ ('failed auth on parent, DAV_RES_UPLOAD_STRSES_INT returns ', auth_uid);
               return auth_uid;
             }
-        }
       else
+    {
         auth_uid := ouid;
+    }
       auto_version := DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT(DAV_SEARCH_ID (path, 'R'), 'R', 'DAV:auto-version', 0));
       if (check_locks)
         {
           rc := DAV_IS_LOCKED (id , 'R', check_locks);
-          if (rc < 0)
-            locked := 1;
-          else
-            locked := 0;
+      locked := case when (rc < 0) then 1 else 0 end;
           if (auto_version is not null)
             {
               declare vanilla_rc int;
+
               vanilla_rc := DAV_IS_LOCKED (id , 'R', 1);
               if (vanilla_rc < 0)
                 locked := 1;
+
               if (vanilla_rc = -8 and (auto_version = 'DAV:checkout-unlocked-checkin'))
                 rc := 0;
               else if (vanilla_rc = -8 and (auto_version = 'DAV:locked-checkout'))
                 rc := 0;
             }
           if (0 <> rc)
-            {
-              -- dbg_obj_princ ('locked id', id, rc);
               return rc;
             }
-        }
       rc := id;
       op := 'u';
       if (cr_time is null or _rowguid is null)
         {
           declare _cr_time datetime;
           declare __rowguid varchar;
-          select RES_CR_TIME, ROWGUID into _cr_time, __rowguid
-              from WS.WS.SYS_DAV_RES where RES_ID = id;
+
+      select RES_CR_TIME, ROWGUID into _cr_time, __rowguid from WS.WS.SYS_DAV_RES where RES_ID = id;
           if (cr_time is null)
             cr_time := _cr_time;
+
           if (_rowguid is null)
             _rowguid := __rowguid;
         }
