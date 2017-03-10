@@ -1464,6 +1464,29 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE_AQ (
 }
 ;
 
+create function DB.DBA.DAV_DET_COL_DET (
+  in _id integer,
+  in _mode integer := 1)
+{
+  declare _det varchar;
+  declare tmp any;
+
+  if (_mode)
+  {
+    _det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = _id), '');
+    if (_det <> '')
+      goto _exit;
+  }
+
+  tmp := DB.DBA.DAV_PROP_GET_INT (_id, 'C', 'virt:rdfSink-rdf', 0);
+  if (DB.DBA.DAV_HIDE_ERROR (tmp) is not null)
+    _det := 'rdfSink';
+
+_exit:;
+  return _det;
+}
+;
+
 create function DB.DBA.DAV_DET_COL_RDF_PARAMS (
   in _id integer,
   out _det varchar,
@@ -1472,7 +1495,7 @@ create function DB.DBA.DAV_DET_COL_RDF_PARAMS (
   declare _prop_name, _prop_value, V any;
   declare exit handler for not found { return; };
 
-  _det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = _id), '');
+  _det := DB.DBA.DAV_DET_COL_DET (_id);
   if (_det = '')
     return 0;
 
@@ -1485,7 +1508,7 @@ create function DB.DBA.DAV_DET_COL_RDF_PARAMS (
 ;
 
 create function DB.DBA.DAV_DET_COL_FIELDS (
-  in id integer,
+  in _id integer,
   out _det varchar,
   out _owner integer,
   out _group integer,
@@ -1503,7 +1526,10 @@ create function DB.DBA.DAV_DET_COL_FIELDS (
         _permissions,
         _acl
    from WS.WS.SYS_DAV_COL
-  where COL_ID = id;
+  where COL_ID = _id;
+
+  if (coalesce (_det, '') = '')
+    _det := DB.DBA.DAV_DET_COL_DET (_id, 0);
 
   _acl := vector (_acl);
 }
