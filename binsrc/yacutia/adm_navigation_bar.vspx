@@ -30,25 +30,24 @@
   <v:variable name="nav_pos_fixed" type="int" default="0" />
   <v:variable name="nav_top" type="int" default="0"/>
   <v:variable name="nav_tip" type="varchar" default="''"/>
+
   <v:method name="set_pmembers" arglist="">
     <![CDATA[
-
   udt_set (self.vc_parent.vc_page, 'nav_pos_fixed', self.nav_pos_fixed);
   udt_set (self.vc_parent.vc_page, 'nav_top', self.nav_top);
   udt_set (self.vc_parent.vc_page, 'nav_tip', self.nav_tip);
-
     ]]>
   </v:method>
+
   <v:form name="nav_bar_form" method="POST"  type="simple">
     <v:before-data-bind>
       <![CDATA[
-
   self.vc_authenticated := self.vc_parent.vc_page.vc_authenticated;
   self.sid := udt_get (self.vc_parent.vc_page, 'sid');
   self.realm := udt_get (self.vc_parent.vc_page, 'realm');
-
       ]]>
     </v:before-data-bind>
+
       <v:tree name="nav_bar"
               show-root="0"
               multi-branch="0"
@@ -58,14 +57,14 @@
               child-function="adm_navigation_child">
         <v:before-data-bind>
           <![CDATA[
-
   declare page_name any;
+
   page_name := adm_get_page_name ();
   -- config pages are special case
   if (page_name = '' and http_path () like '%/vad_%_config.vspx')
     page_name := 'vad.vspx';
-  self.nav_pos_fixed := 0;
 
+          self.nav_pos_fixed := 0;
   if (page_name = 'error.vspx')
     {
       self.nav_pos_fixed := 1;
@@ -74,19 +73,19 @@
     {
       declare grp varchar;
       declare xe any;
+
       xe := xml_tree_doc (adm_menu_tree());
       grp := xpath_eval (sprintf ('/adm_menu_tree/node[.//*[@url = "%s"]]/@allowed', page_name), xe, 1);
       grp := cast (grp as varchar);
-
       if (check_grants (connection_get ('vspx_user'), grp))
         self.nav_pos_fixed := 1;
+
         control.vc_open_at (sprintf ('//*[@url = "%s"]', page_name));
     }
-
   self.set_pmembers ();
-
           ]]>
         </v:before-data-bind>
+
         <v:node-template name="nav_bar_node">
 	    <td nowrap="1" class="<?V case when control.tn_open then 'sel' else '' end ?>">
             <v:button name="nav_bar_toggle"
@@ -96,30 +95,29 @@
                       value="--(control.vc_parent as vspx_tree_node).tn_value">
               <v:after-data-bind>
 	            <![CDATA[
-
   if (not self.vc_authenticated)
     {
       (control.vc_parent as vspx_tree_node).tn_open := 0;
       control.ufl_active := 0;
     }
+                else if ((control.vc_parent as vspx_tree_node).tn_open = 1)
+                {
+                  control.ufl_active := 0;
+                }
   else
     {
       declare grp varchar;
       grp :=  xpath_eval('/node/@allowed', (control.vc_parent as vspx_tree_node).tn_element, 1);
       grp := cast (grp as varchar);
-      if ((control.vc_parent as vspx_tree_node).tn_open = 1)
-        control.ufl_active := 0;
-      else
         control.ufl_active := check_grants(connection_get('vspx_user'), grp);
     }
-
                     ]]>
                   </v:after-data-bind>
               <v:on-post>
                     <![CDATA[
-
   declare node vspx_tree_node;
   declare tree vspx_control;
+
   self.nav_tip := xpath_eval('/node/@tip', (control.vc_parent as vspx_tree_node).tn_element, 1);
   self.nav_pos_fixed := 0;
   node := control.vc_parent;
@@ -128,21 +126,22 @@
   self.nav_top := 1;
   tree.vc_data_bind (e);
   self.set_pmembers ();
-
                     ]]>
 		</v:on-post>
 	    </v:button>
           </td>
         </v:node-template>
+
         <v:leaf-template name="nav_bar_leaf">
           <td nowrap="1" class="<?V case when control.tn_open then 'sel' else '' end ?>">
             <v:button action="simple"
                       name="nav_bar_toggle1"
                       style="url"
-		      xhtml_class="--(case when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' when (control.vc_parent as vspx_tree_node).tn_level then 'les' else '' end)"
+                    xhtml_class="--(case when (control.vc_parent as vspx_tree_node).tn_open = 1 and (control.vc_parent as vspx_tree_node).tn_level then '' when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' when (control.vc_parent as vspx_tree_node).tn_level then 'les' else '' end)"
                       value="--(control.vc_parent as vspx_tree_node).tn_value" />
           </td>
       </v:leaf-template>
+
       <v:horizontal-template name="ht">
 	  <table id="nav_bar" cellspacing="0" cellpadding="0">
 	      <tr>
@@ -159,6 +158,8 @@
 	  </table>
 	  <?vsp } ?>
       </v:horizontal-template>
+
       </v:tree>
+
   </v:form>
 </v:page>

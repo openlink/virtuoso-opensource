@@ -1187,10 +1187,6 @@ tr.resrowodd
   color: #000000;
 }
 
-#nav_bar td.sel2 {
-  color: #000000;
-}
-
 #nav_bar td
 {
   background: #ddd;
@@ -1222,11 +1218,6 @@ tr.resrowodd
 {
   background: #B0CDE4;
   background-image: url(images/sel_nav_grad2.gif);
-}
-
-#nav_bar a.les2 {
-  background: #B0CDE4;
-  background-image: url(images/sel_nav2_grad2.gif);
 }
 
 #nav_bar a.les:hover
