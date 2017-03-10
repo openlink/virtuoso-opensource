@@ -2941,7 +2941,7 @@ again:
             is_exist := 1;
         }
 
-        if (is_exist and exec_safety_level > 0)
+        if (is_exist and (exec_safety_level > 0) and ((cont_type <> 'application/sparql-query')))
         {
           -- handler string input
           declare stream_params any;
@@ -3122,7 +3122,11 @@ again:
       }
       else if (cont_type = 'application/sparql-query')
       {
-        WS.WS.SPARQL_QUERY_GET (content, full_path, path, lines);
+        declare execPermission integer;
+
+        execPermission := DAV_AUTHENTICATE_HTTP (_res_id, 'R', '__1', 1, lines, uname, upwd, uid, gid, perms);
+        if (not WS.WS.SPARQL_QUERY_GET (content, full_path, path, lines, execPermission))
+          return;
       }
       else if (not isnull (content))
       {
@@ -3755,13 +3759,31 @@ create procedure WS.WS.TTL_REDIRECT_ENABLED ()
 }
 ;
 
-create procedure WS.WS.SPARQL_QUERY_GET (in content any, in full_path varchar, in path any, inout lines any)
+create procedure WS.WS.SPARQL_QUERY_GET (in content any, in full_path varchar, in path any, inout lines any, inout execPermission integer := 1)
 {
   declare pars, def_gr any;
+
   def_gr := WS.WS.DAV_IRI (full_path);
+  if (execPermission > 0)
+  {
   connection_set ('SPARQLUserId', 'SPARQL');
   pars := vector ('query', string_output_string (content), 'default-graph-uri', def_gr);
   WS.WS."/!sparql/" (path, pars, lines);
+
+    return 1;
+  }
+  else
+  {
+    declare host varchar;
+
+    host := http_request_header (lines, 'Host', NULL, NULL);
+    http_rewrite ();
+    http_request_status ('HTTP/1.1 301 Moved Permanently');
+    http_header (sprintf ('Location: http://%s/sparql?qtxt=%U&default-graph-uri=%U\r\n', host, string_output_string (content), def_gr));
+		http_flush ();
+
+    return 0;
+  }
 }
 ;
 
