@@ -48,14 +48,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                         <td class="page_tab" align="center">
                           <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
@@ -85,19 +77,20 @@
                   <table class="tab_page">
                     <tr>
 		      <td valign="top">
-			<b><v:label name="mm" value="--''" render-only="0">
+                        <b>
+                          <v:label name="mm" value="--''" render-only="0">
 			  <v:before-render>
 			    ;
 			  </v:before-render>
-		      </v:label></b>
+                          </v:label>
+                        </b>
       <v:form type="simple" name="ldsf1" method="POST" >
 	<table class="ctl_grp">
 	  <tr>
-	    <td CLASS="genlisthead">Host name</td>
-	    <td CLASS="geninput">
+                              <td class="genlisthead">Host name</td>
+                              <td class="geninput">
 	      <v:text xhtml_size="55" name="host" value="" >
-		  <v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name"
-		  runat="client"/>
+                                  <v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name" runat="client"/>
 		<v:before-render>
 		  if (self.mode = 'edit')
 		    control.vc_add_attribute ('disabled', '1');
@@ -106,8 +99,8 @@
 	    </td>
 	  </tr>
 	  <tr>
-	    <td CLASS="genlisthead">Port</td>
-	    <td CLASS="geninput">
+                              <td class="genlisthead">Port</td>
+                              <td class="geninput">
 	      <v:text xhtml_size="5" name="port" value="389">
 		<v:before-render>
 		  if (self.mode = 'edit')
@@ -117,44 +110,44 @@
 	    </td>
 	  </tr>
 	  <tr>
-	      <td CLASS="geninput">
+                              <td class="geninput">
 		<v:check-box name="ssl" value="1" xhtml_id="ssl"/>
 	      </td>
-	      <td CLASS="genlisthead"><label for="ssl">Try TLS</label></td>
+                              <td class="genlisthead"><label for="ssl">Try TLS</label></td>
 	    </tr>
 	  <tr>
-	    <td CLASS="genlisthead">Base</td>
-	    <td CLASS="geninput">
+                              <td class="genlisthead">Base</td>
+                              <td class="geninput">
 	      <v:text xhtml_size="55" name="base" value=""/>
 	    </td>
 	  </tr>
 	  <tr>
-	    <td CLASS="genlisthead">Bind DN</td>
-	    <td CLASS="geninput">
+                              <td class="genlisthead">Bind DN</td>
+                              <td class="geninput">
 	      <v:text xhtml_size="55" name="bind" value=""/>
 	      </td>
 	    </tr>
 	    <tr>
-	      <td CLASS="genlisthead">UID field</td>
-	      <td CLASS="geninput">
+                              <td class="genlisthead">UID field</td>
+                              <td class="geninput">
 		<v:text xhtml_size="55" name="uidf" value="" />
 	      </td>
 	    </tr>
 	    <tr>
-	      <td CLASS="genlisthead">Account</td>
-	      <td CLASS="geninput">
+                              <td class="genlisthead">Account</td>
+                              <td class="geninput">
 		<v:text xhtml_size="55" name="uid" value="" />
 	      </td>
 	    </tr>
 	    <tr>
-	      <td CLASS="genlisthead">Password</td>
-	      <td CLASS="geninput">
+                              <td class="genlisthead">Password</td>
+                              <td class="geninput">
 		<v:text xhtml_size="55" name="pwd" value="" type="password"/>
 	      </td>
 	    </tr>
 	    <tr>
-	      <td CLASS="genlisthead">LDAP Version</td>
-	      <td CLASS="geninput">
+                              <td class="genlisthead">LDAP Version</td>
+                              <td class="geninput">
 		<v:select-list name="lver">
 		  <v:item value="2" name="2"/>
 		  <v:item value="3" name="3"/>
@@ -162,7 +155,7 @@
 	      </td>
 	    </tr>
 	    <tr>
-	      <td colspan="2" CLASS="genlisthead">
+                              <td colspan="2" class="genlisthead">
 		<v:button action="simple" name="tst" value="Test">
 		  <v:on-post>
 		    declare addr any;
@@ -172,17 +165,21 @@
 		      self.vc_is_valid := 0;
 		      self.vc_error_message := __SQL_MESSAGE;
 		      return;
-		    }
-		    ;
+                                    };
 
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
 		    if (self.host.ufl_value not like 'ldap%://%')
 		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
 		    else
 		      addr := self.host.ufl_value||':'||self.port.ufl_value;
-		    ldap_search (addr, self.ssl.ufl_selected, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
+                                    ldap_search (
+                                      addr,
+                                      self.ssl.ufl_selected,
+                                      self.base.ufl_value,
+                                      sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
-		    self.pwd.ufl_value);
+                                      self.pwd.ufl_value
+                                    );
 
 		    self.mm.ufl_value := 'Connection successful.';
 		  </v:on-post>
@@ -196,36 +193,32 @@
 		      self.vc_is_valid := 0;
 		      self.vc_error_message := __SQL_MESSAGE;
 		      return;
-		    }
-		    ;
+                                    };
 
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
 		    if (self.host.ufl_value not like 'ldap%://%')
 		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
 		    else
 		      addr := self.host.ufl_value||':'||self.port.ufl_value;
-		    ldap_search (addr, self.ssl.ufl_selected, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
+                                    ldap_search (
+                                      addr,
+                                      self.ssl.ufl_selected,
+                                      self.base.ufl_value,
+                                      sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
 		    self.pwd.ufl_value);
 		    ssl := self.ssl.ufl_selected;
-
 		    if (self.mode = 'edit')
 		    {
 		      pwd := pwd_magic_calc (self.uid.ufl_value, self.pwd.ufl_value, 0);  
-		      insert replacing SYS_LDAP_SERVERS
-			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
-			  values
-			  (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value),
-			  self.uid.ufl_value, pwd, ssl);
+                                      insert replacing SYS_LDAP_SERVERS (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
+                                        values (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value), self.uid.ufl_value, pwd, ssl);
 		    }
 		    else
 		    {
 		      pwd := pwd_magic_calc (self.uid.ufl_value, self.pwd.ufl_value, 0);  
-		      insert soft SYS_LDAP_SERVERS
-			  (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
-			  values
-			  (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value),
-			  self.uid.ufl_value, pwd, ssl);
+                                      insert soft SYS_LDAP_SERVERS (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
+                                        values (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value), self.uid.ufl_value, pwd, ssl);
 		      if (not row_count())
 			{
 			  self.vc_is_valid := 0;
@@ -265,7 +258,7 @@
 	    <th>
 	      LDAP version
 	    </th>
-	    <th>
+                            <th class="action">
 	      Action
 	    </th>
 	  </tr>
@@ -274,26 +267,22 @@
 	    select LS_ADDRESS, LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, pwd_magic_calc (LS_ACCOUNT, LS_PASSWORD, 1) as LS_PASSWORD, LS_TRY_SSL from SYS_LDAP_SERVERS
 	  </v:sql>
 	  <v:template type="repeat" name="ldst1">
+
 	    <v:template type="browse" name="ldst2">
 	      <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
 		<td>
-                       <v:label name="lb1"
-                                value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
-                                format="%s"/>
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
 		</td>
 		<td>
-                       <v:label name="lb1"
-                                value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                                format="%s"/>
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" />
 		</td>
 		<td>
-                       <v:label name="lb1"
-                                value="--(control.vc_parent as vspx_row_template).te_rowset[2]"
-                                format="%d"/>
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%d" />
 			    </td>
-			    <td class="listing_col_action">
+                                  <td class="action">
 			      <v:button name="edit1" value="Edit" style="url" action="simple">
-				<v:on-post><![CDATA[
+                                      <v:on-post>
+                                        <![CDATA[
 				  declare hf, arr, host, port any;
 
 				  hf := WS.WS.PARSE_URI ((control.vc_parent as vspx_row_template).te_rowset[0]);
@@ -312,12 +301,12 @@
 				  self.pwd.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[6];
 				  self.mode := 'edit';
 				  self.get.vc_data_bind (e);
-				  ]]></v:on-post>
+                                        ]]>
+                                      </v:on-post>
 			      </v:button>
 			      <v:button name="del1" value="Delete" style="url" action="simple">
 				<v:on-post>
-				  delete from SYS_LDAP_SERVERS where LS_ADDRESS =
-				  	(control.vc_parent as vspx_row_template).te_rowset[0];
+                                        delete from SYS_LDAP_SERVERS where LS_ADDRESS = (control.vc_parent as vspx_row_template).te_rowset[0];
 			          self.lds.vc_data_bind (e);
 				</v:on-post>
 			      </v:button>
