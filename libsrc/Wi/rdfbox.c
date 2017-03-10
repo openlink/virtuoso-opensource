@@ -4410,6 +4410,7 @@ bif_http_sparql_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   obj_dtp = DV_TYPE_OF (obj);
   switch (obj_dtp)
     {
+    case DV_DB_NULL: session_buffered_write (ses, "UNDEF", 5); return NULL;
     case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
     case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
     default: obj_is_iri = 0; break;
