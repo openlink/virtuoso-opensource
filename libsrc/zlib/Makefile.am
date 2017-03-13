@@ -68,25 +68,22 @@ libz_la_LDFLAGS = -prefer-pic
 EXTRA_DIST = \
 	*.txt \
 	*.xml \
-	ChangeLog \
-	FAQ \
-	INDEX \
-	README \
-	configure \
-	make_vms.com \
-	minigzip.c \
-	zconf.h.cmakein \
-	zconf.h.in \
-	zlib.3 \
-	zlib.3.pdf \
-	zlib.map \
-	zlib.pc.in \
-	zlib2ansi \
 	amiga/Makefile.pup \
 	amiga/Makefile.sas \
+	ChangeLog \
+	configure \
+	configure.log \
 	contrib/ada/*.txt \
-	contrib/ada/*.adb \
-	contrib/ada/*.ads \
+	contrib/ada/buffer_demo.adb \
+	contrib/ada/mtest.adb \
+	contrib/ada/read.adb \
+	contrib/ada/test.adb \
+	contrib/ada/zlib-streams.adb \
+	contrib/ada/zlib-streams.ads \
+	contrib/ada/zlib-thin.adb \
+	contrib/ada/zlib-thin.ads \
+	contrib/ada/zlib.adb \
+	contrib/ada/zlib.ads \
 	contrib/ada/zlib.gpr \
 	contrib/amd64/*.S \
 	contrib/asm686/*.S \
@@ -135,8 +132,13 @@ EXTRA_DIST = \
 	contrib/minizip/*.c \
 	contrib/minizip/*.h \
 	contrib/minizip/*.txt \
+	contrib/minizip/configure.ac \
 	contrib/minizip/Makefile \
+	contrib/minizip/Makefile.am \
 	contrib/minizip/make_vms.com \
+	contrib/minizip/miniunzip.1 \
+	contrib/minizip/minizip.1 \
+	contrib/minizip/minizip.pc.in \
 	contrib/pascal/*.txt \
 	contrib/pascal/example.pas \
 	contrib/pascal/zlibd32.mak \
@@ -155,25 +157,46 @@ EXTRA_DIST = \
 	contrib/vstudio/*.txt \
 	contrib/vstudio/vc10/miniunz.vcxproj \
 	contrib/vstudio/vc10/miniunz.vcxproj.filters \
-	contrib/vstudio/vc10/miniunz.vcxproj.user \
 	contrib/vstudio/vc10/minizip.vcxproj \
 	contrib/vstudio/vc10/minizip.vcxproj.filters \
-	contrib/vstudio/vc10/minizip.vcxproj.user \
 	contrib/vstudio/vc10/testzlib.vcxproj \
 	contrib/vstudio/vc10/testzlib.vcxproj.filters \
-	contrib/vstudio/vc10/testzlib.vcxproj.user \
 	contrib/vstudio/vc10/testzlibdll.vcxproj \
 	contrib/vstudio/vc10/testzlibdll.vcxproj.filters \
-	contrib/vstudio/vc10/testzlibdll.vcxproj.user \
 	contrib/vstudio/vc10/zlib.rc \
 	contrib/vstudio/vc10/zlibstat.vcxproj \
 	contrib/vstudio/vc10/zlibstat.vcxproj.filters \
-	contrib/vstudio/vc10/zlibstat.vcxproj.user \
 	contrib/vstudio/vc10/zlibvc.def \
 	contrib/vstudio/vc10/zlibvc.sln \
 	contrib/vstudio/vc10/zlibvc.vcxproj \
 	contrib/vstudio/vc10/zlibvc.vcxproj.filters \
-	contrib/vstudio/vc10/zlibvc.vcxproj.user \
+	contrib/vstudio/vc11/miniunz.vcxproj \
+	contrib/vstudio/vc11/minizip.vcxproj \
+	contrib/vstudio/vc11/testzlib.vcxproj \
+	contrib/vstudio/vc11/testzlibdll.vcxproj \
+	contrib/vstudio/vc11/zlib.rc \
+	contrib/vstudio/vc11/zlibstat.vcxproj \
+	contrib/vstudio/vc11/zlibvc.def \
+	contrib/vstudio/vc11/zlibvc.sln \
+	contrib/vstudio/vc11/zlibvc.vcxproj \
+	contrib/vstudio/vc12/miniunz.vcxproj \
+	contrib/vstudio/vc12/minizip.vcxproj \
+	contrib/vstudio/vc12/testzlib.vcxproj \
+	contrib/vstudio/vc12/testzlibdll.vcxproj \
+	contrib/vstudio/vc12/zlib.rc \
+	contrib/vstudio/vc12/zlibstat.vcxproj \
+	contrib/vstudio/vc12/zlibvc.def \
+	contrib/vstudio/vc12/zlibvc.sln \
+	contrib/vstudio/vc12/zlibvc.vcxproj \
+	contrib/vstudio/vc14/miniunz.vcxproj \
+	contrib/vstudio/vc14/minizip.vcxproj \
+	contrib/vstudio/vc14/testzlib.vcxproj \
+	contrib/vstudio/vc14/testzlibdll.vcxproj \
+	contrib/vstudio/vc14/zlib.rc \
+	contrib/vstudio/vc14/zlibstat.vcxproj \
+	contrib/vstudio/vc14/zlibvc.def \
+	contrib/vstudio/vc14/zlibvc.sln \
+	contrib/vstudio/vc14/zlibvc.vcxproj \
 	contrib/vstudio/vc9/miniunz.vcproj \
 	contrib/vstudio/vc9/minizip.vcproj \
 	contrib/vstudio/vc9/testzlib.vcproj \
@@ -184,11 +207,13 @@ EXTRA_DIST = \
 	contrib/vstudio/vc9/zlibvc.sln \
 	contrib/vstudio/vc9/zlibvc.vcproj \
 	doc/*.txt \
-	example.c \
 	examples/*.c \
 	examples/*.h \
 	examples/*.html \
 	examples/README.examples \
+	FAQ \
+	INDEX \
+	make_vms.com \
 	msdos/Makefile.bor \
 	msdos/Makefile.dj2 \
 	msdos/Makefile.emx \
@@ -197,27 +222,33 @@ EXTRA_DIST = \
 	nintendods/Makefile \
 	nintendods/README \
 	old/*.txt \
-	old/as400/*.txt \
-	old/as400/bndsrc \
-	old/as400/compile.clp \
-	old/as400/zlib.inc \
 	old/descrip.mms \
+	old/Makefile.emx \
 	old/Makefile.riscos \
 	old/os2/Makefile.os2 \
 	old/os2/zlib.def \
 	old/README \
-	old/visualc6/*.txt \
-	old/visualc6/example.dsp \
-	old/visualc6/minigzip.dsp \
-	old/visualc6/zlib.dsp \
-	old/visualc6/zlib.dsw \
+	os400/bndsrc \
+	os400/make.sh \
+	os400/README400 \
+	os400/zlib.inc \
 	qnx/package.qpg \
+	README \
+	test/*.c \
 	watcom/watcom_f.mak \
 	watcom/watcom_l.mak \
 	win32/*.txt \
 	win32/Makefile.bor \
-	win32/Makefile.emx \
 	win32/Makefile.gcc \
 	win32/Makefile.msc \
 	win32/zlib.def \
-	win32/zlib1.rc
+	win32/zlib1.rc \
+	zconf.h.cmakein \
+	zconf.h.in \
+	zlib.3 \
+	zlib.3.pdf \
+	zlib.map \
+	zlib.pc \
+	zlib.pc.cmakein \
+	zlib.pc.in \
+	zlib2ansi
