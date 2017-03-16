@@ -195,14 +195,25 @@
     <![CDATA[
       if (self.vc_authenticated and self.sid is not null and self.requested_url is not null)
       {
+        declare _pos integer;
+        declare _params varchar;
+
+        _params := '';
+        _pos := position ('?', self.requested_url);
+        if (_pos)
+        {
+          _params := '&' || subseq (self.requested_url, _pos);
+          self.requested_url := left (self.requested_url, _pos-1);
+        }
         http_request_status ('HTTP/1.1 302 Found');
-        http_header (sprintf ('Location: %s?sid=%s&realm=%s\r\n', trim (self.requested_url, '?'), self.sid, self.realm ));
+        http_header (sprintf ('Location: %s?sid=%s&realm=%s%s\r\n', self.requested_url, self.sid, self.realm, _params));
         return;
       }
 
-    declare cook_str, expire varchar;
     if (self.vc_authenticated and self.sid is not null and self.cb_remember_me.ufl_selected)
       {
+        declare cook_str, expire varchar;
+
 	expire := date_rfc1123 (dateadd ('hour', 1, now()));
 	cook_str := sprintf ('Set-Cookie: sid=%s; path=%s; expires=%s;\r\n', self.sid, http_map_get ('domain'), expire);
 	cook_str := concat (http_header_get (), cook_str);

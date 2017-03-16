@@ -1606,19 +1606,25 @@ create procedure "PUMP"."DBA"."DBPUMP_CHOICE_RSCHEMA" ( in path varchar := './ba
 }
 ;
 
-create procedure check_grants(in user_name  varchar, in role_name varchar) {
-  declare user_id, group_id, role_id, sql_enabled, dav_enabled integer;
+create procedure check_grants(in user_name  varchar, in role_name varchar)
+{
+  declare user_id, group_id, role_id integer;
   whenever not found goto nf;
-  if (user_name='') return 0;
+
+  if (DB.DBA.is_empty_or_null (user_name))
+    return 0;
+
   select U_ID, U_GROUP into user_id, group_id from SYS_USERS where U_NAME=user_name;
-  if (user_id = 0 OR group_id = 0)
+  if (user_id = 0 or group_id = 0)
     return 1;
+
   if (role_name is null or role_name = '')
     return 0;
 
   select U_ID into role_id from SYS_USERS where U_NAME=role_name;
   if (exists(select 1 from SYS_ROLE_GRANTS where GI_SUPER=user_id and GI_SUB=role_id))
-      return 1;
+    return 1;
+
 nf:
   return 0;
 }
@@ -5118,7 +5124,7 @@ create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar
   h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH
   	where HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
   upd_vd := 0;
-  if (not isarray (h_opts))
+  if (not isvector (h_opts))
     {
       h_opts := vector ('url_rewrite', rulelist);
       upd_vd := 1;
