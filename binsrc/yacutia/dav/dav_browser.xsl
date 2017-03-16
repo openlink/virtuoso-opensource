@@ -2501,7 +2501,6 @@
                         <td>
                           <select name="dav_det" id="dav_det" onchange="javascript: updateLabel (this.options[this.selectedIndex].value);" disabled="disabled" class="<?V case when self.dav_enable and not self.editField ('owner') then ' disabled' else '' end ?>">
                             <?vsp
-
                               if    (self.command_mode = 1)
                               {
                                 http (self.option_prepare('ResFilter', 'Smart Folder', 'ResFilter'));
@@ -5300,9 +5299,12 @@
                                            or rowset[0] like '%.txt'
                                            or rowset[0] like '%.html'
                                            or rowset[0] like '%.htm'
+                                           or rowset[0] like '%.xhtml'
                                            or rowset[0] like '%.sql'
                                            or rowset[0] like '%.ini'
                                            or rowset[4] like 'text/%'
+                                           or rowset[4] = 'application/ld+json'
+                                           or rowset[4] = 'application/sparql-query'
                                          )
                                          and
                                          not DB.DBA.IS_REDIRECT_REF (path)
