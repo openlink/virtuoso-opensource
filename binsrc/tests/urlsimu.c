@@ -228,13 +228,12 @@ l_usage (char *fname)
 
 }
 
-
 static void
 l_handle_file (FILE * fp)
 {
   static int nth_url = 1;
   char line[MAX_URL_SIZE];
-  char post[65535];
+  char *post;
   int post_repeat = 1;
   int cursor = 0;
   char host[40], str_port[40];
@@ -243,6 +242,17 @@ l_handle_file (FILE * fp)
   const int GET = 1;
   const int ANY = 2;
   int STATE = -1;
+  size_t size;
+
+  fseek(fp, 0, SEEK_END);
+  size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  if ((post = malloc (size + 1024)) == NULL)
+    {
+      fprintf (stderr, "File too big\n");
+      exit(1);
+    }
 
   if (fgets (line, sizeof (line), fp) != NULL)
     {
@@ -373,6 +383,7 @@ l_handle_file (FILE * fp)
 	    }
 	}
     }
+  free (post);
   ta_print_out (stdout, &global_times);
 }
 
