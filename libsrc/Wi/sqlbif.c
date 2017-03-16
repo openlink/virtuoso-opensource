@@ -7714,7 +7714,7 @@ connection_set (client_connection_t *cli, caddr_t name, caddr_t val)
 client_connection_t *
 cli_aqr_ancestor (client_connection_t *cli, int level)
 {
-  while ((0 != level) && (NULL != cli->cli_aqr))
+  while ((level >= 0) && (NULL != cli->cli_aqr))
     {
       client_connection_t *parent_cli = cli->cli_aqr->aqr_aq->aq_creator_cli;
       if ((NULL == parent_cli) || (cli == parent_cli))
