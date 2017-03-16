@@ -4055,7 +4055,7 @@
                   if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30))
                   {
                     http ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">');
-                    http (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http_value (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
                     http ('</textarea>');
                 ?>
                     <![CDATA[
@@ -4070,7 +4070,7 @@
                   else
                   {
                     http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>', case when self.command = 30 then 'disabled="disabled"' else '' end));
-                    http (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http_value (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
                     http ('</textarea>');
                   }
                 ?>
