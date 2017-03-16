@@ -32,6 +32,8 @@
 #define AES_ENC_ENABLE
 #endif
 
+#define OPENSSL_DISABLE_OLD_DES_SUPPORT
+
 #include <openssl/evp.h>
 #include <openssl/dsa.h>
 #include <openssl/rsa.h>
@@ -312,15 +314,15 @@ struct xenc_key_s
     } dsa;
     struct dsig_des3_keyinfo_s
     {
-      des_cblock k1;
-      des_cblock k2;
-      des_cblock k3;
+      DES_cblock k1;
+      DES_cblock k2;
+      DES_cblock k3;
 
-      des_key_schedule ks1;/* key schedule */
-      des_key_schedule ks2;/* key schedule (for ede) */
-      des_key_schedule ks3;/* key schedule (for ede3) */
+      DES_key_schedule ks1;/* key schedule */
+      DES_key_schedule ks2;/* key schedule (for ede) */
+      DES_key_schedule ks3;/* key schedule (for ede3) */
 
-      des_cblock iv;
+      DES_cblock iv;
 #define PKCS5_SALT_LEN			8
       unsigned char salt[PKCS5_SALT_LEN];
     } triple_des;
