@@ -351,13 +351,13 @@ create procedure dbp_ldd_type (in gr varchar, in subj varchar, out url varchar, 
 
       langs := dbp_ldd_get_default_lang_acc (lines);
 
-      exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { <%S> <http://dbpedia.org/ontology/type>  ?tp . optional { ?tp rdfs:label ?l } }', langs, gr, subj), null, null, vector (), 0, meta, data);
+      exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` <http://dbpedia.org/ontology/type>  ?tp . optional { ?tp rdfs:label ?l } }', langs, gr), null, null, vector (subj), 0, meta, data);
       if (not length (data))
-        exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { <%S> a ?tp . optional { ?tp rdfs:label ?l } filter (?tp like <http://dbpedia.org/ontology/%%>) }', langs, gr, subj),
-	  null, null, vector (), 0, meta, data);
+        exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` a ?tp . optional { ?tp rdfs:label ?l } filter (?tp like <http://dbpedia.org/ontology/%%>) }', langs, gr),
+	  null, null, vector ( subj), 0, meta, data);
       if (not length (data))
-        exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', langs, gr, subj),
-	  null, null, vector (), 0, meta, data);
+        exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` a ?tp . optional { ?tp rdfs:label ?l } }', langs, gr),
+	  null, null, vector (subj), 0, meta, data);
       if (length (data))
 	{
 	  if (data[0][0] is not null and data[0][0] <> 0)
@@ -405,14 +405,14 @@ create procedure dbp_ldd_subject (in _S any, in _G varchar, in lines any := null
   langs := dbp_ldd_get_default_lang_acc (lines);
 
   best_str := '';
-  exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'en\')) ?tp where { graph <%S> { <%S> dbp:comment_live ?l } }',
-	langs, _G, _S), null, null, vector (), 0, meta, data);
+  exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'en\')) where { graph `iri(??)` { `iri(??)` dbp:comment_live ?l } }',
+	langs), null, null, vector (_G, _S), 0, meta, data);
   if (length (data) and data[0][0] is not null and data[0][0] <> 0)
     best_str := data[0][0];
   else
     {
-      exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'en\')) ?tp where { graph <%S> { <%S> rdfs:comment ?l } }',
-	    langs, _G, _S), null, null, vector (), 0, meta, data);
+      exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'en\')) where { graph `iri(??)` { `iri(??)` rdfs:comment ?l } }',
+	    langs), null, null, vector (_G, _S), 0, meta, data);
       if (length (data) and data[0][0] is not null and data[0][0] <> 0)
 	best_str := data[0][0];
     }
@@ -781,8 +781,7 @@ create procedure dbp_wikipedia_cc_by_sa (in _S any, in _G any)
   if (__tag of IRI_ID = __tag (_G))
     _G := id_to_iri (_G);
 
-  exec (sprintf ('sparql  '||
-  'select ?o where { graph <%S> { <%S> foaf:isPrimaryTopicOf ?o } } LIMIT 1', _G, _S), null, null, vector (), 0, meta, data);
+  exec ('sparql select ?o where { graph `iri(??)` { `iri(??)` foaf:isPrimaryTopicOf ?o } } LIMIT 1', null, null, vector (_G, _S), 0, meta, data);
 
   if (length (data))
     wiki_link := charset_recode (data[0][0], 'UTF-8', '_WIDE_');
