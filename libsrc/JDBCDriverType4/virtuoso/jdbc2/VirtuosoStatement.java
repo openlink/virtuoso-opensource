@@ -503,8 +503,12 @@ public class VirtuosoStatement implements Statement
 	       try
 	       {
 		   // First of all, check if there's at least the first result set
-		   if(vresultSet == null || vresultSet.isLastResult)
+		   if(vresultSet == null || vresultSet.isLastResult) {
+		       if (vresultSet.isLastResult)
+		         vresultSet = null;
+
 		       return false;
+		   }
 		   // Send the fetch query
 		   Object[] args = new Object[2];
 		   args[0] = statid;
@@ -553,7 +557,7 @@ public class VirtuosoStatement implements Statement
     */
    public ResultSet getResultSet() throws VirtuosoException
    {
-      return (vresultSet.kindop() != VirtuosoTypes.QT_UPDATE)?vresultSet:null;
+      return (vresultSet!=null && vresultSet.kindop() != VirtuosoTypes.QT_UPDATE)?vresultSet:null;
    }
 
    /**
