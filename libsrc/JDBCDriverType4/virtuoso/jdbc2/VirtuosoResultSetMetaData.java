@@ -419,9 +419,17 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
             return "VARBINARY";
          case Types.VARCHAR:
             return "VARCHAR";
+#if JDK_VER >= 16
+         case Types.NVARCHAR:
+#else
 	 case -9:
+#endif
 	    return "NVARCHAR";
-	 case -10:
+#if JDK_VER >= 16
+         case Types.LONGNVARCHAR:
+#else
+	 case -16:
+#endif
 	    return "LONG NVARCHAR";
       }
       ;
