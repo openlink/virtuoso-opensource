@@ -460,10 +460,20 @@ public class VirtuosoConnection implements Connection
       }
 
       // Set database with statement
-      if(db!=null) new VirtuosoStatement(this).executeQuery("use "+db);
+      if(db!=null) 
+        try {
+          new VirtuosoStatement(this).executeQuery("use "+db);
+        } catch (VirtuosoException ve) {
+          throw new VirtuosoException(ve, "Could not execute 'use "+db+"'", VirtuosoException.SQLERROR);
+        }
+
       //System.out.println  ("log enable="+log_enable);
       if (log_enable >= 0 && log_enable <= 3)
-        new VirtuosoStatement(this).executeQuery("log_enable ("+log_enable+")");
+        try {
+          new VirtuosoStatement(this).executeQuery("log_enable ("+log_enable+")");
+        } catch (VirtuosoException ve) {
+          throw new VirtuosoException(ve, "Could not execute 'log_enable("+log_enable+")'", VirtuosoException.SQLERROR);
+        }
    }
 
 
@@ -2176,7 +2186,7 @@ public class VirtuosoConnection implements Connection
 
       if (elements == null)
           return null;
-      return new VirtuosoArray(typeName, elements);
+      return new VirtuosoArray(this, typeName, elements);
   }
 
 /**

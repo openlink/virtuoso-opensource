@@ -149,7 +149,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        {
 	 Object[] args = new Object[6];
 	 openlink.util.Vector vect = new openlink.util.Vector(1);
-         if (future != null) 
+         if (future != null)
            {
              connection.removeFuture(future);
              future = null;
@@ -265,7 +265,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	 args[4] = null;
 	 try
 	   {
-             if (future != null) 
+             if (future != null)
                {
 	         connection.removeFuture(future);
 	         future = null;
@@ -829,8 +829,17 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       x = VirtuosoTypes.mapJavaTypeToSqlType (x, targetSqlType, scale);
       if (x instanceof java.io.Serializable)
 	{
-	  //System.err.println ("setObject2 (" + parameterIndex + ", " + x + ", " + targetSqlType + ", " + scale);
-	  objparams.setElementAt (x, parameterIndex - 1);
+	  if (x instanceof String && parameters != null 
+	       && parameters.elementAt(parameterIndex - 1) instanceof openlink.util.Vector)
+	    {
+	      openlink.util.Vector pd = (openlink.util.Vector)parameters.elementAt(parameterIndex - 1);
+	      int dtp = ((Number)pd.elementAt (0)).intValue();
+	      VirtuosoExplicitString ret;
+	      ret = new VirtuosoExplicitString ((String)x, dtp, connection);
+	      objparams.setElementAt (ret, parameterIndex - 1);
+	    }
+	  else
+	    objparams.setElementAt (x, parameterIndex - 1);
 	}
       else
 	throw new VirtuosoException ("Object " + x.getClass().getName() + " not serializable", "22023",
@@ -885,9 +894,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	    }
 	  else
 	    {
-	    objparams.setElementAt(x,parameterIndex - 1);
+	      objparams.setElementAt(x,parameterIndex - 1);
 	    }
-        }
+	}
    }
 
    protected void setString(int parameterIndex, VirtuosoExplicitString x) throws VirtuosoException

@@ -148,6 +148,15 @@ public class VirtuosoException extends SQLException
       super(data,"42000",vendor);
    }
 
+   public VirtuosoException(Exception e, String data, int vendor)
+   {
+      super(data,"42000",vendor);
+#if JDK_VER >= 14
+      initCause (e);
+#endif
+
+   }
+
    /**
     * Constructs a VirtuosoException based on an error occurred from Virtuoso
     * and an SQL state.
