@@ -3735,6 +3735,10 @@
                         {
                           detParams := self.detParamsPrepare (dav_detType, 19);
                         }
+                        else if (dav_detType in ('Blog', 'Calendar', 'CalDAV', 'CardDAV', 'News3'))
+                        {
+                          detParams := vector ();
+                        }
                         if (not isnull (detParams))
                         {
                           tmp := null;

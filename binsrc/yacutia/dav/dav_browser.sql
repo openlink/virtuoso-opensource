@@ -5514,6 +5514,10 @@ create procedure WEBDAV.DBA.ldp_recovery (
   in path varchar)
 {
   declare aq any;
+  declare exit handler for SQLSTATE '*'
+  {
+    return WEBDAV.DBA.ldp_recovery_aq (path);
+  };
 
   aq := async_queue (1, 4);
   aq_request (aq, 'WEBDAV.DBA.ldp_recovery_aq', vector (path));
@@ -5536,7 +5540,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
   {
     uri := WS.WS.DAV_IRI (path);
     TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
-    for (select RES_CONTENT, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id and RES_TYPE = 'text/turtle') do
+    for (select RES_CONTENT, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id and RES_TYPE in ('text/turtle', 'application/ld+json')) do
 	  {
 	    ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
 	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
