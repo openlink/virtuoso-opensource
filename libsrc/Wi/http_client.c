@@ -921,6 +921,27 @@ http_cli_connect (http_cli_ctx * ctx)
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
 	  if (ctx->hcctx_timeout > 0)
 	    to.to_sec = ctx->hcctx_timeout;
+
+#ifndef OPENSSL_NO_TLSEXT
+	  {
+	    char sni_host[1024];
+	    char *p;
+
+	    /* Remove :PORT from host */
+	    strncpy (sni_host, ctx->hcctx_host, sizeof (sni_host));
+	    sni_host[1023] = '\0';
+	    if ((p = strrchr (sni_host, ':')) != NULL)
+	      *p = '\0';
+
+	    /* Set hostname in TLSext SNI */
+	    if ((ssl_err = SSL_set_tlsext_host_name (ctx->hcctx_ssl, sni_host)) != 1)
+	      {
+		ctx->hcctx_err = srv_make_new_error ("22023", "HTS04", "Unable to set TLSext Server Name Indication");
+		goto error_in_ssl;
+	      }
+	  }
+#endif
+
 	  session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
 	  SSL_set_fd (ctx->hcctx_ssl, dst);
 
