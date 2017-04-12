@@ -24,6 +24,7 @@
 
 #egrep "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" *.test/*.output
 detailed=0
+head_n=5
 if [ "$1" = -d ]
 then
     detailed=1
@@ -46,6 +47,7 @@ if [ -n "$ftlist" ]
 then
     logs=`find . -type f -name "*.output" | grep -v testall`
 
+    echo
     echo "FINISHED tests:"
     echo "-------------------"
     echo $ftlist
@@ -57,22 +59,25 @@ then
 
     if [ $failed -gt 0 ]
     then
-	echo "    some of failed:"
+        echo
+	echo "FAILED tests (top $head_n)"
 	echo "-------------------"
-	egrep "^(\*\*\*.*FAILED)" $logs | head -n 5
+	egrep "^(\*\*\*.*FAILED)" $logs | head -$head_n
 	echo "-------------------"
     fi
     if [ $aborted -gt 0 ]
     then
-	echo "    some of aborted:"
+        echo
+	echo "ABORTED tests (top $head_n)"
 	echo "-------------------"
-	egrep "^(\*\*\*.*ABORTED)" $logs | head -n 5
+	egrep "^(\*\*\*.*ABORTED)" $logs | head -$head_n
 	echo "-------------------"
     fi
 fi
 
 if [ -n "$tlist" -a -z "$rtlist" ]
 then 
+    echo 
     echo "Total PASSED  : $passed"
     echo "Total FAILED  : $failed"
     echo "Total ABORTED : $aborted"
@@ -81,16 +86,21 @@ then
     then
 	if (expr $failed + $aborted \> 0 > /dev/null)
 	then
+	    echo
+	    echo "ABORTED tests:"
     	    echo "-------------------"
-	    echo "Aborted tests:"
     	    find . -type f -name "core*" -print | xargs -I "{}" echo "Got a core: {}"
     	    echo $logs | xargs egrep  "^\*\*\* ?ABORTED"
 	    echo "-------------------"
-    	    echo "Failed tests:"
+
+	    echo
+    	    echo "FAILED tests:"
 	    echo "-------------------"
     	    echo $logs | xargs egrep  "^\*\*\* ?FAILED"
+	    echo "-------------------"
 	fi
     else
+	echo
 	echo all FAILED and ABORTED tests:
 	echo "-------------------"
 	for f in `egrep -ls "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" $logs 2>/dev/null` 
@@ -98,6 +108,7 @@ then
 	    #basename $f .output 
 	    echo $f
 	done
+        echo "-------------------"
     fi
 fi
 

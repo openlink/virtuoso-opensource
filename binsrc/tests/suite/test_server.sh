@@ -229,7 +229,7 @@ else
 fi
 if [ "$VIRTUOSO_VDB" = "default" ]
 then
-    if grep -q VDB $VIRTUOSO_TEST/ident.txt
+    if grep VDB $VIRTUOSO_TEST/ident.txt >/dev/null
     then 
         VIRTUOSO_VDB=1
     else

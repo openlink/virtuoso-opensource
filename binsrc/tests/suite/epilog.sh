@@ -48,7 +48,7 @@ KILL_TEST_INSTANCES
 
 logs=`find . -type f -name "*.output" | grep -v testall`
 #logs=`ls *.{test,ro,co,clro,clco}/*.output | grep -v testall`
-if egrep -q "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" $logs
+if egrep "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" $logs >/dev/null
 then
     ECHO ""
     LINE
