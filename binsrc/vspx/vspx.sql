@@ -2242,8 +2242,11 @@ vspx_result_tbl_hdrs (in m_dta any)
 ;
 
 
-create procedure
-vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset varchar := 'UTF-8')
+create procedure vspx_result_row_render (
+  in result any,
+  in m_dta any,
+  in inx int := 0,
+  in cset varchar := 'UTF-8')
 {
   declare jnx integer;
   declare res_row varchar;
@@ -2256,58 +2259,66 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
   n_cols := length (aref (m_dta, 0));
   dt_nfo := aref(m_dta, 0);
 
-      http (sprintf ('<tr class="%s">', case when mod(inx, 2) then 'resrowodd' else 'resroweven' end));
+  http (sprintf ('<tr class="%s">', case when mod(inx, 2) then 'resrowodd' else 'resroweven' end));
 
-      res_row := result;
-      res_cols := length (res_row);
+  res_row := result;
+  res_cols := length (res_row);
+  jnx := 0;
+  while (jnx < res_cols)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      http ('Can''t display result');
+      goto next;
+    };
 
-      jnx := 0;
+    http ('<td class="resdata"> &nbsp;');
+    res_col := aref (res_row, jnx);
+    col_type := aref (aref (dt_nfo, jnx), 1);
 
+  again:
+    if (__tag (res_col) = 193)
+    {
+      http_value (concat ('(', vector_print (res_col), ')'));
+    }
+    else if (__tag (res_col) = 230 and res_col is not null)
+    {
+      declare ses any;
+      ses := string_output ();
+      http_value (res_col, NULL, ses);
+      http_value (string_output_string (ses));
+    }
+    else if (__tag (res_col) = 246 and res_col is not null)
+    {
+      declare dat any;
+      dat := __rdf_sqlval_of_obj (res_col, 1);
+      res_col := dat;
+      goto again;
+    }
+    else
+    {
+      declare res any;
 
-      while (jnx < res_cols)
-	{
-	  declare exit handler for sqlstate '*'
-	    {
-	      http ('Can\'t display result');
-	      goto next;
-	    };
-	  http ('<td class="resdata"> &nbsp;');
-	  res_col := aref (res_row, jnx);
-	  col_type := aref (aref (dt_nfo, jnx), 1);
-	  again:
-	  if (__tag (res_col) = 193)
-	    http_value (concat ('(', vector_print (res_col), ')'));
-	  else if (__tag (res_col) = 230 and res_col is not null)
-	    {
-	      declare ses any;
-	      ses := string_output ();
-	      http_value (res_col, NULL, ses);
-	      http_value (string_output_string (ses));
-	    }
-	  else if (__tag (res_col) = 246 and res_col is not null)
-	    {
-	      declare dat any;
-	      dat := __rdf_sqlval_of_obj (res_col, 1);
-	      res_col := dat;
-	      goto again;
-	    }
-	  else
-	    {
-	      declare res any;
-	      res := 0;
-	      if (__tag (res_col) = 182 and cset is not null)
-		res := charset_recode (res_col, cset, '_WIDE_');
-              if (res <> 0)
-	        res_col := res;
-	      http_value (coalesce (res_col, '<DB NULL>'));
-	    }
-	  next:
-	  http ('</td>');
-	  jnx := jnx + 1;
-	}
-      http ('</tr>\n');
+      res := 0;
+      if (__tag (res_col) = 225)
+        res_col := cast (res_col as varchar);
+
+      if (__tag (res_col) = 182 and cset is not null)
+        res := charset_recode (res_col, cset, '_WIDE_');
+
+      if (res <> 0)
+        res_col := res;
+
+      http_value (coalesce (res_col, '<DB NULL>'));
+    }
+  next:
+    http ('</td>');
+    jnx := jnx + 1;
+  }
+  http ('</tr>\n');
 }
 ;
+
 
 create constructor method vspx_field_value (in name varchar, inout parent vspx_control) for vspx_field_value
 {

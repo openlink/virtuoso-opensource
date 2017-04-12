@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <html>
@@ -42,7 +39,8 @@
           <v:variable name="is_popup" persist="0" type="integer" default="1" />
         </vm:variables>
 <?vsp http('<script type="text/javascript" src="md5.js"></script>\n'); ?>
-<script type="text/javascript"><![CDATA[
+        <script type="text/javascript">
+          <![CDATA[
   function adm_post (f, btn)
   {
     var s = f.password_plain.value;
@@ -53,7 +51,8 @@
     f.submit ();
     f.password_plain.value = s;
   }
-  ]]></script>
+          ]]>
+        </script>
         <h1 class="page_title">Interactive SQL</h1>
 	<div class="lc_box">
         <v:login name="admin_login_isql" realm="virtuoso_admin"
@@ -68,20 +67,23 @@
 		   password-title="pass"
 		   submit-title="Login">
 		   <table class="login_fm_ctr">
-		     <tr><th colspan="2">Login into Database</th></tr>
+                <tr>
+                  <th colspan="2">Login into Database</th>
+                </tr>
 		     <tr>
 		       <td colspan="2">
 			 <v:template type="simple" name="login_not_valid" enabled="1">
-			   <v:after-data-bind><![CDATA[
-			     if (
-			     e.ve_is_post and
+                      <v:after-data-bind>
+                        <![CDATA[
+                          if (e.ve_is_post and
 			     e.ve_button is not null and
 			     e.ve_button.vc_name = 'login'
 			     )
 			     control.vc_enabled := 1;
 			     else
 			     control.vc_enabled := 0;
-			     ]]></v:after-data-bind>
+                        ]]>
+                      </v:after-data-bind>
 			   <div class="error_msg">Invalid credentials</div>
 			 </v:template>
 		       </td>
@@ -110,8 +112,7 @@
 			   value=""
 			   type="password"
 			   xhtml_id="t_login_pwd"/>
-			 <v:text name="password" value=""
-			   type="hidden" />
+                    <v:text name="password" value="" type="hidden" />
 		       </td>
 		     </tr>
 		     <tr>
@@ -131,8 +132,7 @@
 	     <v:template name="template_auth"
 	       type="simple"
 	       enabled="-- case when (self.sid is not null) then 1 else 0 end">
-	       <v:template type="simple"
-		 condition="not self.vc_is_valid">
+          <v:template type="simple" condition="not self.vc_is_valid">
 		 <div class="warning">
 		   <v:error-summary/>
 		 </div>
