@@ -2717,7 +2717,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'IMAP',       'IMAP Mail Account',
     'FTP',        'FTP Client');
 
-  return get_keyword (det_type, det_names, '');
+  return get_keyword_ucase (det_type, det_names, '');
 }
 ;
 

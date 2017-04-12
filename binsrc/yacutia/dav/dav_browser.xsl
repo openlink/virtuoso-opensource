@@ -2537,7 +2537,7 @@
                                               1, 'CardDAV',    'CardDAV',
                                               1, 'Blog',       'Blog',
                                               1, 'Bookmark',   'Bookmark',
-                                              1, 'calendar',   'Calendar',
+                                              1, 'Calendar',   'Calendar',
                                               1, 'CalDAV',     'CalDAV',
                                               1, 'News3',      'Feed Subscriptions',
                                               1, 'oMail',      'WebMail',
@@ -3735,7 +3735,7 @@
                         {
                           detParams := self.detParamsPrepare (dav_detType, 19);
                         }
-                        else if (dav_detType in ('Blog', 'Calendar', 'CalDAV', 'CardDAV', 'News3'))
+                        else if (dav_detType in ('Blog', 'Bookmark', 'Calendar', 'CalDAV', 'CardDAV', 'News3'))
                         {
                           detParams := vector ();
                         }
