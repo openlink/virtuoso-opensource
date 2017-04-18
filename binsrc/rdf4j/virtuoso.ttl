@@ -20,4 +20,6 @@
       vr:insertBNodeAsVirtuosoIRI {%Insert BNode as Virtuoso IRI|false|true%} ;
       vr:fetchSize {%Buffer fetch size|100%} ;
       vr:ruleSet "{%Inference RuleSet name|null%}"
+      vr:macroLib "{%Inference MacroLib name|null%}"
+      vr:concurrency {%ConcurrencyMode|0%} ;
    ].

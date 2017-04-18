@@ -172,6 +172,27 @@
 						</td>
 						<td></td>
 					</tr>
+					<tr>
+						<th>
+						        Inference MacroLib name
+						</th>
+						<td>
+							<input type="text" id="macroLib"
+								name="Inference MacroLib name" size="48" value="null" />
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<th>
+						        Concurrency Mode
+						</th>
+						<td>
+							<input type="text" id="concurrency"
+								name="Concurrency Mode" size="4" value="0" />
+						</td>
+						<td></td>
+					</tr>
+
 
 					<tr>
 						<td></td>
