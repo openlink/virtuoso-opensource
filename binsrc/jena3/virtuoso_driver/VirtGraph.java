@@ -609,10 +609,10 @@ public class VirtGraph extends GraphBase {
 
 
     protected void appendSparqlPrefixes(StringBuilder sb, boolean isSelect) {
-        if (isSelect && ruleSet != null)
+        if (ruleSet != null)
           sb.append(" define input:inference '" + ruleSet + "'\n ");
 
-        if (isSelect && macroLib != null)
+        if (macroLib != null)
           sb.append(" define input:macro-lib <" + macroLib + ">\n ");
 
         if (sparqlPrefix != null) {
