@@ -702,7 +702,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         verifyIsOpen();
         flushDelayAdd();
 
-//??todo fixme for ruleSet & macroLib
         contexts = checkContext(contexts);
         StringBuilder query = new StringBuilder("select count(*) from (sparql define input:storage \"\" select * ");
 
@@ -740,7 +739,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         verifyIsOpen();
         flushDelayAdd();
         boolean result;
-//?? fixme for ruleSet and macroLib
         String query = "sparql define input:storage \"\" select * where {?s ?o ?p} limit 1";
         try {
             java.sql.Statement stmt = createStatement(-1, false);
@@ -2226,10 +2224,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         if (baseURI!=null && baseURI.length()>0)
             ret.append(" define input:graph-base <" + baseURI + "> \n");
 
-        if (includeInferred && !isSPARUL && ruleSet!=null && ruleSet.length() > 0)
+        if (includeInferred && ruleSet!=null && ruleSet.length() > 0)
             ret.append("define input:inference '"+ruleSet+"'\n ");
 
-        if (includeInferred && !isSPARUL && macroLib!=null && macroLib.length() > 0)
+        if (includeInferred && macroLib!=null && macroLib.length() > 0)
             ret.append("define input:macro-lib <"+macroLib+">\n ");
 
         if (dataset != null)
