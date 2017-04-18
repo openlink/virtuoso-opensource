@@ -252,9 +252,9 @@ public class VirtGraph extends GraphBase {
                 }
                 if (url.toLowerCase().indexOf("log_enable=") == -1) {
                     if (url.charAt(url.length() - 1) != '/')
-                        url = url + "/log_enable=2";
+                        url = url + "/log_enable=1";
                     else
-                        url = url + "log_enable=2";
+                        url = url + "log_enable=1";
                 }
                 Class.forName("virtuoso.jdbc4.Driver");
                 connection = DriverManager.getConnection(url, user, password);
