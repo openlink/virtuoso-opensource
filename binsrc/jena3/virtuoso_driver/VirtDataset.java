@@ -139,7 +139,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
         checkOpen();
         try {
-            java.sql.PreparedStatement ps = prepareStatement(query);
+            java.sql.PreparedStatement ps = prepareStatement(query, false);
             ps.setString(1, name);
             rs = ps.executeQuery();
             if (rs.next())
@@ -163,7 +163,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
         checkOpen();
         if (checkExists) {
             try {
-                java.sql.PreparedStatement ps = prepareStatement(query);
+                java.sql.PreparedStatement ps = prepareStatement(query, false);
                 ps.setString(1, name);
                 rs = ps.executeQuery();
                 if (rs.next())
@@ -197,7 +197,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
         checkOpen();
         try {
-            java.sql.Statement stmt = createStatement();
+            java.sql.Statement stmt = createStatement(true);
             stmt.executeQuery(exec_text);
             stmt.close();
         } catch (Exception e) {
@@ -229,7 +229,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
         try {
             List<String> names = new LinkedList<String>();
 
-            java.sql.Statement stmt = createStatement();
+            java.sql.Statement stmt = createStatement(false);
             rs = stmt.executeQuery(exec_text);
             while (rs.next())
                 names.add(rs.getString(1));
@@ -275,8 +275,8 @@ public class VirtDataset extends VirtGraph implements Dataset {
      * Start either a READ or WRITE transaction
      */
     public void begin(ReadWrite readWrite) {
-        TransactionHandler handler = getTransactionHandler();
-        handler.begin();
+        VirtTransactionHandler handler = getTransactionHandler();
+        handler.begin(readWrite);
     }
 
 
@@ -364,7 +364,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             try {
                 List<Node> names = new LinkedList<Node>();
 
-                java.sql.Statement stmt = vd.createStatement();
+                java.sql.Statement stmt = vd.createStatement(false);
                 rs = stmt.executeQuery(exec_text);
                 while (rs.next())
                     names.add(NodeFactory.createURI(rs.getString(1))); //NodeFactory.createURI()
@@ -479,7 +479,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 vd.checkOpen();
                 try {
 
-                    stmt = vd.createStatement();
+                    stmt = vd.createStatement(false);
                     rs = stmt.executeQuery(exec_text);
                     while (rs.next())
                         vd.delete_match(rs.getString(1), t);
@@ -509,7 +509,6 @@ public class VirtDataset extends VirtGraph implements Dataset {
         /**
          * Find matching quads in the dataset - may include wildcards, Node.ANY or null
          *
-         * @see Graph#find(TripleMatch)
          */
         public Iterator<Quad> find(Quad quad) {
             return find(quad.getGraph(), quad.getSubject(), quad.getPredicate(), quad.getObject());

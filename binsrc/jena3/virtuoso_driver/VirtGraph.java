@@ -30,7 +30,9 @@ import java.text.SimpleDateFormat;
 import javax.sql.*;
 import javax.transaction.xa.*;
 
+import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Statement;
+import virtuoso.jdbc4.*;
 import virtuoso.sql.*;
 
 import org.apache.jena.graph.*;
@@ -41,18 +43,16 @@ import org.apache.jena.datatypes.*;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.*;
 
-import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
-import virtuoso.jdbc4.VirtuosoDataSource;
-import virtuoso.jdbc4.VirtuosoXADataSource;
-import virtuoso.jdbc4.VirtuosoDate;
-import virtuoso.jdbc4.VirtuosoTime;
-import virtuoso.jdbc4.VirtuosoTimestamp;
-
 
 public class VirtGraph extends GraphBase {
     static {
         VirtuosoQueryEngine.register();
     }
+
+    public static final int CONCUR_DEFAULT = 0;
+    public static final int CONCUR_PESSIMISTIC = 1;
+    public static final int CONCUR_OPTIMISTIC = 2;
+
 
     static final String xsd_string = "http://www.w3.org/2001/XMLSchema#string";
     static final protected String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
@@ -80,6 +80,7 @@ public class VirtGraph extends GraphBase {
     protected int batchSize = BATCH_SIZE;
     protected Connection connection = null;
     protected String ruleSet = null;
+    protected String macroLib = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
     protected boolean useReprepare = true;
@@ -88,6 +89,7 @@ public class VirtGraph extends GraphBase {
     protected boolean resetBNodesDictAfterCall = false;
     protected boolean resetBNodesDictAfterCommit = true;
     protected boolean insertStringLiteralAsSimple = false;
+    protected int concurencyMode = CONCUR_DEFAULT;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
@@ -137,6 +139,7 @@ public class VirtGraph extends GraphBase {
         try {
             connection = _ds.getConnection();
             ds = _ds;
+
             ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
             TypeMapper tm = TypeMapper.getInstance();
 
@@ -167,7 +170,9 @@ public class VirtGraph extends GraphBase {
 
         try {
             connection = _ds.getPooledConnection().getConnection();
+
             ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
+
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
@@ -200,6 +205,7 @@ public class VirtGraph extends GraphBase {
             xa_connection = _ds.getXAConnection();
             connection = xa_connection.getConnection();
             isXA = true;
+
             ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
             TypeMapper tm = TypeMapper.getInstance();
 
@@ -363,8 +369,8 @@ public class VirtGraph extends GraphBase {
     }
 
     /**
-     * Set the insertBNodeAsURI state for connection(default false) 
-     * 
+     * Set the insertBNodeAsURI state for connection(default false)
+     *
      * @param v
      *        true - insert BNode as Virtuoso IRI
      *        false - insert BNode as Virtuoso Native BNode
@@ -384,8 +390,8 @@ public class VirtGraph extends GraphBase {
     /**
      * Set the resetBNodesDictAfterCall (reset server side BNodes Dictionary,
      * that is used for map between Jena Bnodes and Virtuoso BNodes, after each
-     * add call). The default state for connection is false 
-     * 
+     * add call). The default state for connection is false
+     *
      * @param v
      *        true  - reset BNodes Dictionary after each add(add batch) call
      *        false - not reset BNode Dictionary after each add(add batch) call
@@ -404,10 +410,10 @@ public class VirtGraph extends GraphBase {
 
     /**
      * Set the resetBNodesDictAfterCommit (reset server side BNodes Dictionary,
-     * that is used for map between Jena Bnodes and Virtuoso BNodes, 
+     * that is used for map between Jena Bnodes and Virtuoso BNodes,
      * after commit/rollback).
-     * The default state for connection is true 
-     * 
+     * The default state for connection is true
+     *
      * @param v
      *        true  - reset BNodes Dictionary after each commit/rollack
      *        false - not reset BNode Dictionary after each commit/rollback
@@ -426,14 +432,38 @@ public class VirtGraph extends GraphBase {
     }
 
     /**
-     * Set the insertStringLiteralAsSimple state for connection(default false) 
-     * 
+     * Set the insertStringLiteralAsSimple state for connection(default false)
+     *
      * @param v
      *        true - insert String Literals as Simple Literals
      *        false - insert String Literals as is
      */
     public void setInsertStringLiteralAsSimple(boolean v) {
         this.insertStringLiteralAsSimple = v;
+    }
+
+
+    /**
+     * Set the concurrency mode for Insert/Update/Delete operations and SPARUL queries
+     *
+     * @param mode
+     *        Concurrency mode
+     */
+    public void setConcurrencyMode(int mode) throws JenaException
+    {
+        if (mode != CONCUR_DEFAULT && mode != CONCUR_OPTIMISTIC && mode != CONCUR_PESSIMISTIC)
+            throw new IllegalArgumentException("Unsupported concurrency mode: "+mode);
+
+        this.concurencyMode = mode;
+    }
+
+    /**
+     * Get the concurrency mode for Insert/Update/Delete operations and SPARUL queries
+     *
+     * @return concurrency mode
+     */
+    public int getConcurrencyMode() {
+        return this.concurencyMode;
     }
 
 
@@ -469,6 +499,14 @@ public class VirtGraph extends GraphBase {
         ruleSet = _ruleSet;
     }
 
+    public String getMacroLib() {
+        return macroLib;
+    }
+
+    public void setMacroLib(String _macroLib) {
+        ruleSet = _macroLib;
+    }
+
     public boolean getSameAs() {
         return useSameAs;
     }
@@ -482,7 +520,7 @@ public class VirtGraph extends GraphBase {
         checkOpen();
 
         try {
-            java.sql.Statement st = createStatement();
+            java.sql.Statement st = createStatement(false);
             st.execute("rdfs_rule_set('" + ruleSetName + "', '" + uriGraphRuleSet + "')");
             st.close();
         } catch (Exception e) {
@@ -495,7 +533,7 @@ public class VirtGraph extends GraphBase {
         checkOpen();
 
         try {
-            java.sql.Statement st = createStatement();
+            java.sql.Statement st = createStatement(false);
             st.execute("rdfs_rule_set('" + ruleSetName + "', '" + uriGraphRuleSet + "', 1)");
             st.close();
         } catch (Exception e) {
@@ -510,7 +548,6 @@ public class VirtGraph extends GraphBase {
 
         for (int i = 0; i < slen; i++) {
             char c = s.charAt(i);
-            int cInt = c;
 
             if (c == '\\') {
                 sb.append("\\\\");
@@ -523,15 +560,15 @@ public class VirtGraph extends GraphBase {
             } else if (c == '\t') {
                 sb.append("\\t");
             } else if (
-                    cInt >= 0x0 && cInt <= 0x8 ||
-                            cInt == 0xB || cInt == 0xC ||
-                            cInt >= 0xE && cInt <= 0x1F ||
-                            cInt >= 0x7F && cInt <= 0xFFFF) {
+                    (int) c >= 0x0 && (int) c <= 0x8 ||
+                            (int) c == 0xB || (int) c == 0xC ||
+                            (int) c >= 0xE && (int) c <= 0x1F ||
+                            (int) c >= 0x7F && (int) c <= 0xFFFF) {
                 sb.append("\\u");
-                sb.append(toHexString(cInt, 4));
-            } else if (cInt >= 0x10000 && cInt <= 0x10FFFF) {
+                sb.append(toHexString((int) c, 4));
+            } else if ((int) c >= 0x10000 && (int) c <= 0x10FFFF) {
                 sb.append("\\U");
-                sb.append(toHexString(cInt, 8));
+                sb.append(toHexString((int) c, 8));
             } else {
                 sb.append(c);
             }
@@ -552,18 +589,18 @@ public class VirtGraph extends GraphBase {
     }
 
 
-    protected java.sql.Statement createStatement() throws SQLException {
+    protected java.sql.Statement createStatement(boolean isIUD) throws SQLException {
         checkOpen();
-        java.sql.Statement st = connection.createStatement();
+        java.sql.Statement st = connection.createStatement(ResultSet.TYPE_FORWARD_ONLY, getJdbcConcurrency(isIUD));
         if (queryTimeout > 0)
             st.setQueryTimeout(queryTimeout);
         st.setFetchSize(prefetchSize);
         return st;
     }
 
-    protected java.sql.PreparedStatement prepareStatement(String sql) throws SQLException {
+    protected java.sql.PreparedStatement prepareStatement(String sql, boolean isIUD) throws SQLException {
         checkOpen();
-        java.sql.PreparedStatement st = connection.prepareStatement(sql);
+        java.sql.PreparedStatement st = connection.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, getJdbcConcurrency(isIUD));
         if (queryTimeout > 0)
             st.setQueryTimeout(queryTimeout);
         st.setFetchSize(prefetchSize);
@@ -571,9 +608,12 @@ public class VirtGraph extends GraphBase {
     }
 
 
-    protected void appendSparqlPrefixes(StringBuilder sb) {
-        if (ruleSet != null)
-            sb.append(" define input:inference '" + ruleSet + "'\n ");
+    protected void appendSparqlPrefixes(StringBuilder sb, boolean isSelect) {
+        if (isSelect && ruleSet != null)
+          sb.append(" define input:inference '" + ruleSet + "'\n ");
+
+        if (isSelect && macroLib != null)
+          sb.append(" define input:macro-lib <" + macroLib + ">\n ");
 
         if (sparqlPrefix != null) {
             sb.append(sparqlPrefix);
@@ -583,6 +623,21 @@ public class VirtGraph extends GraphBase {
         if (useSameAs)
             sb.append(" define input:same-as \"yes\"\n ");
         sb.append('\n');
+    }
+
+
+    protected int getJdbcConcurrency(boolean isIUD) {
+        if (isIUD)
+            switch(this.concurencyMode) {
+                case CONCUR_PESSIMISTIC:
+                    return VirtuosoResultSet.CONCUR_UPDATABLE;
+                case CONCUR_OPTIMISTIC:
+                    return VirtuosoResultSet.CONCUR_VALUES;
+                default:
+                    return VirtuosoResultSet.CONCUR_READ_ONLY;
+            }
+        else
+            return VirtuosoResultSet.CONCUR_READ_ONLY;
     }
 
 
@@ -608,7 +663,7 @@ public class VirtGraph extends GraphBase {
             if (ns.startsWith("nodeID://"))
                 return "`iri('"+ns+"')`";
             else
-                return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n)); 
+                return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n));
         } else if (n.isLiteral()) {
             String s, llang, ltype;
             boolean llang_exists = false;
@@ -727,7 +782,7 @@ public class VirtGraph extends GraphBase {
                     ps.setInt(col, 3);
                     ps.setString(col + 1, n.getLiteralLexicalForm());
                     ps.setNull(col + 2, java.sql.Types.VARCHAR);
-                } 
+                }
             } else {
                 ps.setInt(col, 3);
                 ps.setString(col + 1, n.getLiteralLexicalForm());
@@ -768,11 +823,11 @@ public class VirtGraph extends GraphBase {
             } else {
                 boolean isAutocommit = connection.getAutoCommit();
 
-                if (insertBNodeAsVirtuosoIRI 
+                if (insertBNodeAsVirtuosoIRI
                     || resetBNodesDictAfterCall
-                    || isAutocommit) 
+                    || isAutocommit)
                 {
-                    java.sql.Statement st = createStatement();
+                    java.sql.Statement st = createStatement(true);
 
                     StringBuilder data = new StringBuilder(1024);
                     data.append("sparql insert into <");
@@ -784,13 +839,14 @@ public class VirtGraph extends GraphBase {
                     data.append(' ');
                     data.append(Node2Str_add(nO));
                     data.append(" .}");
+
                     st.execute(data.toString());
                     st.close();
-                } 
-                else 
+                }
+                else
                 {
                    createBNodesDict();
-                   PreparedStatement ps = prepareStatement(S_BATCH_INSERT);
+                   PreparedStatement ps = prepareStatement(S_BATCH_INSERT, true);
                    bindBatchParams(ps, nS, nP, nO, _gName);
                    ps.execute();
                    ps.close();
@@ -812,7 +868,7 @@ public class VirtGraph extends GraphBase {
         java.sql.PreparedStatement ps;
 
         try {
-            ps = prepareStatement(sdelete);
+            ps = prepareStatement(sdelete, true);
             ps.setString(1, (_gName != null ? _gName : this.graphName));
             bindSubject(ps, 2, s);
             bindPredicate(ps, 3, p);
@@ -833,7 +889,7 @@ public class VirtGraph extends GraphBase {
     protected int graphBaseSize() {
         StringBuilder sb = new StringBuilder("select count(*) from (sparql define input:storage \"\" ");
 
-        appendSparqlPrefixes(sb);
+        appendSparqlPrefixes(sb, true);
 
         if (readFromAllGraphs)
             sb.append(" select * where {?s ?p ?o })f");
@@ -846,7 +902,7 @@ public class VirtGraph extends GraphBase {
         checkOpen();
 
         try {
-            java.sql.PreparedStatement ps = prepareStatement(sb.toString());
+            java.sql.PreparedStatement ps = prepareStatement(sb.toString(), false);
 
             if (!readFromAllGraphs)
                 ps.setString(1, graphName);
@@ -878,7 +934,7 @@ public class VirtGraph extends GraphBase {
         Node nS, nP, nO;
 
         checkOpen();
-        appendSparqlPrefixes(sb);
+        appendSparqlPrefixes(sb, true);
 
         if (readFromAllGraphs && _gName == null)
             sb.append(" select * where { ");
@@ -913,7 +969,7 @@ public class VirtGraph extends GraphBase {
         sb.append(" } limit 1");
 
         try {
-            java.sql.PreparedStatement ps = prepareStatement(sb.toString());
+            java.sql.PreparedStatement ps = prepareStatement(sb.toString(), false);
             int col = 1;
 
             if (!Node.ANY.equals(nS))
@@ -947,7 +1003,7 @@ public class VirtGraph extends GraphBase {
 
         checkOpen();
 
-        appendSparqlPrefixes(sb);
+        appendSparqlPrefixes(sb, true);
 
 
         if (readFromAllGraphs && _gName == null)
@@ -983,7 +1039,7 @@ public class VirtGraph extends GraphBase {
         sb.append(" }");
 
         try {
-            java.sql.PreparedStatement ps = prepareStatement(sb.toString());
+            java.sql.PreparedStatement ps = prepareStatement(sb.toString(), false);
             int col = 1;
 
             if (nS != null)
@@ -1030,7 +1086,7 @@ public class VirtGraph extends GraphBase {
                 for (int i = 0; i < graphs.length; i++)
                     graphNames[i] = graphs[i].toString();
 
-                java.sql.PreparedStatement ps = prepareStatement(S_CLEAR_GRAPH);
+                java.sql.PreparedStatement ps = prepareStatement(S_CLEAR_GRAPH, true);
 
                 Array gArray = connection.createArrayOf("VARCHAR", graphNames);
                 ps.setArray(1, gArray);
@@ -1046,13 +1102,13 @@ public class VirtGraph extends GraphBase {
     public void read(String url, String type) {
         StringBuilder sb = new StringBuilder("sparql \n");
 
-        appendSparqlPrefixes(sb);
+        appendSparqlPrefixes(sb, false);
 
         sb.append("load \"" + url + "\" into graph <" + graphName + ">");
 
         checkOpen();
         try {
-            java.sql.Statement stmt = createStatement();
+            java.sql.Statement stmt = createStatement(true);
             stmt.execute(sb.toString());
             stmt.close();
         } catch (Exception e) {
@@ -1070,7 +1126,7 @@ public class VirtGraph extends GraphBase {
 
                 if (!insertBNodeAsVirtuosoIRI) {
                     if (stInsert_Cmd == null)
-                        stInsert_Cmd = createStatement();
+                        stInsert_Cmd = createStatement(false);
                     stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
                     isBNodesDictCreated = true;
                 }
@@ -1087,7 +1143,7 @@ public class VirtGraph extends GraphBase {
                   return;
 
                 if (stInsert_Cmd == null)
-                    stInsert_Cmd = createStatement();
+                    stInsert_Cmd = createStatement(false);
                 stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
                 isBNodesDictCreated = false;
             } catch (SQLException e) {
@@ -1148,7 +1204,7 @@ public class VirtGraph extends GraphBase {
     {
         try {
             if (ps == null)
-                ps = prepareStatement(S_BATCH_INSERT);
+                ps = prepareStatement(S_BATCH_INSERT, true);
             bindBatchParams(ps, subject, predicate, object, _gName);
             ps.addBatch();
         } catch (Exception e) {
@@ -1281,14 +1337,14 @@ public class VirtGraph extends GraphBase {
     /***
 /// disabled, because there is issue in DB.DBA.rdf_delete_triple_c
 
-    void delete(Iterator<Triple> it, List<Triple> list) 
+    void delete(Iterator<Triple> it, List<Triple> list)
     {
       PreparedStatement ps = null;
       try {
         ps = prepareStatement(S_BATCH_DELETE);
 
         int count = 0;
-	    
+
         while (it.hasNext())
         {
           Triple t = (Triple) it.next();
@@ -1315,7 +1371,7 @@ public class VirtGraph extends GraphBase {
           }
         }
 
-        if (count > 0) 
+        if (count > 0)
         {
 	  ps.executeBatch();
 	  ps.clearBatch();
@@ -1333,17 +1389,19 @@ public class VirtGraph extends GraphBase {
 ***/
     void delete(Iterator<Triple> it, List<Triple> list)
     {
-        String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+        String del_start;
         java.sql.Statement stmt = null;
         int count = 0;
         StringBuilder data = new StringBuilder(256);
+
+        del_start = "sparql DELETE FROM <";
 
         data.append(del_start);
         data.append(this.graphName);
         data.append("> { ");
 
         try {
-            stmt = createStatement();
+            stmt = createStatement(true);
 
             while (it.hasNext()) {
                 Triple t = (Triple) it.next();
@@ -1361,6 +1419,7 @@ public class VirtGraph extends GraphBase {
 
                 if (count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
                     data.append(" }");
+
                     stmt.execute(data.toString());
 
                     data.setLength(0);
@@ -1376,6 +1435,7 @@ public class VirtGraph extends GraphBase {
 
             if (count > 0) {
                 data.append(" }");
+
                 stmt.execute(data.toString());
             }
 
@@ -1393,17 +1453,19 @@ public class VirtGraph extends GraphBase {
 
     protected void delete(String _gName, Iterator<Statement> it)
     {
-        String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+        String del_start;
         java.sql.Statement stmt = null;
         int count = 0;
         StringBuilder data = new StringBuilder(256);
+
+        del_start = "sparql DELETE FROM <";
 
         data.append(del_start);
         data.append(_gName);
         data.append("> { ");
 
         try {
-            stmt = createStatement();
+            stmt = createStatement(true);
 
             while (it.hasNext()) {
                 Statement t = it.next();
@@ -1418,6 +1480,7 @@ public class VirtGraph extends GraphBase {
 
                 if (count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
                     data.append(" }");
+
                     stmt.execute(data.toString());
 
                     data.setLength(0);
@@ -1433,6 +1496,7 @@ public class VirtGraph extends GraphBase {
 
             if (count > 0) {
                 data.append(" }");
+
                 stmt.execute(data.toString());
             }
 
@@ -1536,9 +1600,9 @@ public class VirtGraph extends GraphBase {
         }
 
         if (bnodes!=null)
-          del_start = "sparql define output:format '_JAVA_' DELETE WHERE { GRAPH <";
+            del_start = "sparql DELETE WHERE { GRAPH <";
         else
-          del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+            del_start = "sparql DELETE FROM <";
 
         java.sql.Statement stmt = null;
         int count = 0;
@@ -1549,7 +1613,7 @@ public class VirtGraph extends GraphBase {
         data.append("> { ");
 
         try {
-            stmt = createStatement();
+            stmt = createStatement(true);
 
             for(DelItem it : cmd) {
                 StringBuilder row = new StringBuilder(256);
@@ -1697,7 +1761,8 @@ public class VirtGraph extends GraphBase {
             } else if (nS != null && nP != null && nO != null) {
                 java.sql.PreparedStatement ps;
 
-                ps = prepareStatement(sdelete);
+                ps = prepareStatement(sdelete, true);
+
                 ps.setString(1, (_gName != null ? _gName : this.graphName));
                 bindSubject(ps, 2, nS);
                 bindPredicate(ps, 3, nP);
@@ -1730,9 +1795,10 @@ public class VirtGraph extends GraphBase {
                 else
                     stm.append("?o");
 
-                StringBuilder sb = new StringBuilder("sparql ");
+                StringBuilder sb = new StringBuilder();
 
-                appendSparqlPrefixes(sb);
+                sb.append("sparql ");
+                appendSparqlPrefixes(sb, false);
                 sb.append("delete from <");
                 sb.append((_gName != null ? _gName : this.graphName));
                 sb.append("> { ");
@@ -1743,7 +1809,7 @@ public class VirtGraph extends GraphBase {
 
                 sb.append(" }");
 
-                ps = prepareStatement(sb.toString());
+                ps = prepareStatement(sb.toString(), true);
                 int col = 1;
 
                 if (nS != null)
@@ -1829,9 +1895,9 @@ public class VirtGraph extends GraphBase {
 
             if (rb_type != null) {
                 dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
-            
+
                 if (rb_val.length()==1 && (rb_val.charAt(0)=='1' || rb_val.charAt(0)=='0')) {
-                  if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean")) 
+                  if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean"))
                     return NodeFactory.createLiteral(rb_val.charAt(0)=='1'?"true":"false", rb.getLang(), dt);
                 }
             }
@@ -1984,4 +2050,3 @@ public class VirtGraph extends GraphBase {
 
 
 }
-

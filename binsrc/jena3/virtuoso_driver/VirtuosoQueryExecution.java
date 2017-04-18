@@ -96,7 +96,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
         ResultSet ret = null;
 
         try {
-            stmt = graph.createStatement();
+            stmt = graph.createStatement(false);
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
@@ -136,7 +136,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
         return mj_query;
     }
 
-    
+
     /**
      * Execute a CONSTRUCT query, returning the results as an iterator of {@link Quad}.
      * <p>
@@ -151,7 +151,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
      */
     public Iterator<Quad> execConstructQuads() {
         throw new JenaException("execConstructQuads isn't supported.");
-//??todo 
+//??todo
 /*** we don't support return Quad else
         try {
             stmt = graph.createStatement();
@@ -168,28 +168,28 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
 
     /** Execute a CONSTRUCT query, putting the statements into 'dataset'.
-     *  This maybe an exetended synatx query (if supported).   
+     *  This maybe an exetended synatx query (if supported).
      */
     public Dataset execConstructDataset() {
         return execConstructDataset(DatasetFactory.create()) ;
     }
 
     /** Execute a CONSTRUCT query, putting the statements into 'dataset'.
-     *  This maybe an exetended synatx query (if supported).   
+     *  This maybe an exetended synatx query (if supported).
      */
     public Dataset execConstructDataset(Dataset dataset) {
 //??todo
 /***** we don't support return Quad else
-        DatasetGraph dsg = dataset.asDatasetGraph() ; 
+        DatasetGraph dsg = dataset.asDatasetGraph() ;
         try {
             execConstructQuads().forEachRemaining(dsg::add);
 //??todo            insertPrefixesInto(dataset);
         } finally {
             this.close();
         }
-        return dataset ; 
+        return dataset ;
 *****/
-        DatasetGraph dsg = dataset.asDatasetGraph() ; 
+        DatasetGraph dsg = dataset.asDatasetGraph() ;
         Graph g = dsg.getDefaultGraph();
         try {
             for(Iterator<Triple> it = execConstructTriples(); it.hasNext(); )
@@ -197,11 +197,11 @@ public class VirtuosoQueryExecution implements QueryExecution {
         } finally {
             this.close();
         }
-        return dataset ; 
+        return dataset ;
     }
 
-    
-    
+
+
     public Model execConstruct() {
         return execConstruct(ModelFactory.createDefaultModel());
     }
@@ -209,7 +209,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
     public Model execConstruct(Model model) {
         try {
-            stmt = graph.createStatement();
+            stmt = graph.createStatement(false);
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
@@ -243,7 +243,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
      */
     public Iterator<Triple> execConstructTriples() {
         try {
-            stmt = graph.createStatement();
+            stmt = graph.createStatement(false);
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
@@ -261,7 +261,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
     public Model execDescribe(Model model) {
         try {
-            stmt = graph.createStatement();
+            stmt = graph.createStatement(false);
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
@@ -295,7 +295,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
      */
     public Iterator<Triple> execDescribeTriples() {
         try {
-            stmt = graph.createStatement();
+            stmt = graph.createStatement(false);
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
@@ -311,7 +311,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
         boolean ret = false;
 
         try {
-            stmt = graph.createStatement();
+            stmt = graph.createStatement(false);
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
@@ -464,7 +464,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
     private String getVosQuery() {
         StringBuilder sb = new StringBuilder("sparql\n ");
 
-        graph.appendSparqlPrefixes(sb);
+        graph.appendSparqlPrefixes(sb, true);
 
         if (!graph.getReadFromAllGraphs())
             sb.append(" define input:default-graph-uri <" + graph.getGraphName() + "> \n");
