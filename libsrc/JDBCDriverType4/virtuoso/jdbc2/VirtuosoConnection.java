@@ -791,9 +791,13 @@ public class VirtuosoConnection implements Connection
       {
          throw new VirtuosoException("Class not found: " + e.getMessage(),VirtuosoException.MISCERROR);
       }
+      catch(FileNotFoundException e)
+      {
+         throw new VirtuosoException("Connection failed: "+ e.getMessage(),VirtuosoException.IOERROR);
+      }
       catch(IOException e)
       {
-         throw new VirtuosoException("Connection failed: " + e.getMessage(),VirtuosoException.IOERROR);
+         throw new VirtuosoException("Connection failed: ["+(fname!=null?fname:"")+"] "+e.getMessage(),VirtuosoException.IOERROR);
       }
 #ifdef SSL
       catch(ClassNotFoundException e)
@@ -826,7 +830,7 @@ public class VirtuosoConnection implements Connection
       }
       catch(UnrecoverableKeyException e)
       {
-         throw new VirtuosoException("Encryption failed: " + e.getMessage(),VirtuosoException.MISCERROR);
+         throw new VirtuosoException("Encryption failed: ["+(fname!=null?fname:"") +"]" + e.getMessage(),VirtuosoException.MISCERROR);
       }
 #endif
    }
