@@ -23,20 +23,20 @@
 package virtuoso.rdf4j.driver;
 
 import org.eclipse.rdf4j.model.Value;
-import org.eclipse.rdf4j.query.BindingSet;
-import org.eclipse.rdf4j.query.Dataset;
-import org.eclipse.rdf4j.query.Query;
+import org.eclipse.rdf4j.query.*;
 
 public class VirtuosoQuery extends VirtuosoOperation implements Query {
     /**
-     * Specifies the maximum time that a query is allowed to run. The query will
-     * be interrupted when it exceeds the time limit. Any consecutive requests to
-     * fetch query results will result in {@link QueryInterruptedException}s.
+     * Specifies the maximum time that a query is allowed to run. The query will be interrupted when it
+     * exceeds the time limit. Any consecutive requests to fetch query results will result in
+     * {@link QueryInterruptedException}s.
      *
      * @param maxQueryTime
-     *        The maximum query time, measured in seconds. A negative or zero
-     *        value indicates an unlimited query time (which is the default).
+     *        The maximum query time, measured in seconds. A negative or zero value indicates an unlimited
+     *        query time (which is the default).
+     * @deprecated since 2.8.0. Use {@link Operation#setMaxExecutionTime(int)} instead.
      */
+    @Deprecated
     public void setMaxQueryTime(int maxQueryTime)
     {
         setMaxExecutionTime(maxQueryTime);
@@ -46,8 +46,10 @@ public class VirtuosoQuery extends VirtuosoOperation implements Query {
      * Returns the maximum query evaluation time.
      *
      * @return The maximum query evaluation time, measured in seconds.
-     * @see #maxQueryTime
+     * @see #setMaxQueryTime(int)
+     * @deprecated since 2.8.0. Use {@link Operation#getMaxExecutionTime()} instead.
      */
+    @Deprecated
     public int getMaxQueryTime()
     {
         return getMaxExecutionTime();

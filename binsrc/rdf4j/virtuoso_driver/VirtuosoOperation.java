@@ -26,6 +26,7 @@ import org.eclipse.rdf4j.model.Value;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.Dataset;
 import org.eclipse.rdf4j.query.Operation;
+import org.eclipse.rdf4j.query.QueryInterruptedException;
 import org.eclipse.rdf4j.query.impl.MapBindingSet;
 
 public class VirtuosoOperation implements Operation {
@@ -121,7 +122,7 @@ public class VirtuosoOperation implements Operation {
      * Specifies the maximum time that an operation is allowed to run. The
      * operation will be interrupted when it exceeds the time limit. Any
      * consecutive requests to fetch query results will result in
-     * {@link QueryInterruptedException}s or {@link UpdateInterruptedException}s
+     * {@link QueryInterruptedException}s
      * (depending on whether the operation is a query or an update).
      *
      * @param maxExecTime

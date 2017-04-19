@@ -28,7 +28,11 @@ import org.eclipse.rdf4j.model.util.ModelException;
 import org.eclipse.rdf4j.model.util.Models;
 import org.eclipse.rdf4j.repository.config.AbstractRepositoryImplConfig;
 import org.eclipse.rdf4j.repository.config.RepositoryConfigException;
+import virtuoso.rdf4j.driver.VirtuosoRepository;
 
+import static virtuoso.rdf4j.driver.VirtuosoRepository.CONCUR_DEFAULT;
+import static virtuoso.rdf4j.driver.VirtuosoRepository.CONCUR_OPTIMISTIC;
+import static virtuoso.rdf4j.driver.VirtuosoRepository.CONCUR_PESSIMISTIC;
 import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.PASSWORD;
 import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.HOSTLIST;
 import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.USERNAME;
@@ -39,6 +43,9 @@ import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.ROUNDROBIN;
 import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.RULESET;
 import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
 import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
+import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.MACROLIB;
+import static virtuoso.rdf4j.driver.config.VirtuosoRepositorySchema.CONCURRENCY;
+
 
 public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     private String hostlist;
@@ -51,6 +58,8 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     private String ruleSet;
     private int batchSize = 5000;
     private boolean insertBNodeAsVirtuosoIRI = false;
+    private int concurrencyMode = CONCUR_DEFAULT;
+    private String macroLib;
 
     public VirtuosoRepositoryConfig() {
         super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -150,6 +159,27 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     }
 
 
+    public void setConcurrencyMode(int mode) {
+        if (mode != CONCUR_DEFAULT && mode != CONCUR_OPTIMISTIC && mode != CONCUR_PESSIMISTIC)
+            return;
+        this.concurrencyMode = mode;
+    }
+
+    public int getConcurrencyMode() {
+        return this.concurrencyMode;
+    }
+
+    public void setMacroLib(String name) {
+        if (name!=null && name.equals("null"))
+            this.macroLib = null;
+        else
+            this.macroLib = name;
+    }
+
+    public String getMacroLib() {
+        return this.macroLib;
+    }
+
     @Override
     public void validate()
             throws RepositoryConfigException
@@ -194,6 +224,12 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
 
         model.add(implNode, INSERTBNodeAsVirtuosoIRI, vf.createLiteral(insertBNodeAsVirtuosoIRI));
 
+        if (macroLib != null && macroLib.length() > 0 && !macroLib.equals("null")) {
+            model.add(implNode, MACROLIB, vf.createLiteral(macroLib));
+        }
+
+        model.add(implNode, CONCURRENCY, vf.createLiteral(Integer.toString(concurrencyMode,10)));
+
         return implNode;
     }
 
@@ -233,6 +269,13 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
 
             Models.objectLiteral(model.filter(implNode, INSERTBNodeAsVirtuosoIRI, null)).ifPresent(
                     lit -> setInsertBNodeAsVirtuosoIRI(lit.booleanValue()));
+
+            Models.objectLiteral(model.filter(implNode, MACROLIB, null)).ifPresent(
+                    lit -> setMacroLib(lit.getLabel()));
+
+            Models.objectLiteral(model.filter(implNode, CONCURRENCY, null)).ifPresent(
+                    lit -> setConcurrencyMode(lit.intValue()));
+
         }
         catch (ModelException e) {
             throw new RepositoryConfigException(e.getMessage(), e);

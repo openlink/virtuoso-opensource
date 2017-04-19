@@ -64,6 +64,12 @@ public class VirtuosoRepositorySchema {
     /** <tt>http://www.openrdf.org/config/repository/virtuoso#insertBNodeAsVirtuosoIRI</tt> */
     public final static IRI INSERTBNodeAsVirtuosoIRI;
 
+    /** <tt>http://www.openrdf.org/config/repository/virtuoso#macroLib</tt> */
+    public final static IRI MACROLIB;
+
+    /** <tt>http://www.openrdf.org/config/repository/virtuoso#concurrency</tt> */
+    public final static IRI CONCURRENCY;
+
     static {
         ValueFactory factory = SimpleValueFactory.getInstance();
         HOSTLIST   = factory.createIRI(NAMESPACE, "hostList");
@@ -76,5 +82,8 @@ public class VirtuosoRepositorySchema {
         RULESET    = factory.createIRI(NAMESPACE, "ruleSet");
         BATCHSIZE  = factory.createIRI(NAMESPACE, "batchSize");
         INSERTBNodeAsVirtuosoIRI  = factory.createIRI(NAMESPACE, "insertBNodeAsVirtuosoIRI");
+        MACROLIB    = factory.createIRI(NAMESPACE, "macroLib");
+        CONCURRENCY    = factory.createIRI(NAMESPACE, "concurrency");
+
     }
 }
