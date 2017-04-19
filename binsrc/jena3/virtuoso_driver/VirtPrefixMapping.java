@@ -53,7 +53,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
         String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
         Statement stmt = null;
         try {
-            stmt = m_graph.createStatement();
+            stmt = m_graph.createStatement(false);
             ResultSet rs = stmt.executeQuery(query);
 
             while (rs.next()) {
@@ -79,7 +79,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
         super.removeNsPrefix(prefix);
 
         try {
-            PreparedStatement ps = m_graph.prepareStatement(query);
+            PreparedStatement ps = m_graph.prepareStatement(query, false);
             ps.setString(1, prefix);
             ps.execute();
             ps.close();
@@ -104,7 +104,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
         // (the addPrefix call will overwrite any existing mapping with the same prefix
         // so it matches the behaviour of the prefixMappingImpl).
         try {
-            PreparedStatement ps = m_graph.prepareStatement(query);
+            PreparedStatement ps = m_graph.prepareStatement(query, false);
             ps.setString(1, prefix);
             ps.setString(2, uri);
             ps.execute();

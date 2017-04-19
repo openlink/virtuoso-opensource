@@ -55,16 +55,18 @@ public class VirtuosoUpdateRequest {
 
     public void exec() {
         try {
-            stmt = graph.createStatement();
-
-            for (Iterator iter = requests.iterator(); iter.hasNext(); ) {
-                StringBuilder sb = new StringBuilder("sparql\n");
-                graph.appendSparqlPrefixes(sb);
+            stmt = graph.createStatement(true);
+            for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
+            {
+                StringBuilder sb = new StringBuilder();
+                sb.append("sparql\n");
+                graph.appendSparqlPrefixes(sb, false);
                 sb.append((String) iter.next());
                 stmt.addBatch(sb.toString());
             }
             stmt.executeBatch();
             stmt.clearBatch();
+
             requests.clear();
             stmt.close();
             stmt = null;

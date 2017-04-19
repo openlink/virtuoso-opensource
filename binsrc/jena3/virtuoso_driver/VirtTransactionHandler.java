@@ -28,13 +28,18 @@ import java.sql.*;
 import javax.transaction.xa.*;
 
 import org.apache.jena.graph.impl.*;
+import org.apache.jena.query.ReadWrite;
 import org.apache.jena.shared.*;
 
 public class VirtTransactionHandler extends TransactionHandlerBase implements XAResource {
 
     private VirtGraph graph = null;
     private Boolean m_transactionsSupported = null;
+    private ReadWrite readWrite;
 
+    protected ReadWrite getReadWrite() {
+        return this.readWrite;
+    }
 
     public VirtTransactionHandler(VirtGraph _graph) {
         super();
@@ -147,6 +152,27 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
                 if (c.getAutoCommit()) {
                     c.setAutoCommit(false);
                 }
+                this.readWrite = ReadWrite.READ;
+            } catch (SQLException e) {
+                throw new JenaException("Transaction begin failed: ", e);
+            }
+        } else {
+            notSupported("begin transaction");
+        }
+    }
+
+    public void begin(ReadWrite _readWrite) {
+        checkNotXA("begin");
+        if (transactionsSupported()) {
+            try {
+                Connection c = graph.getConnection();
+                if (c.getTransactionIsolation() != Connection.TRANSACTION_READ_COMMITTED) {
+                    c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+                }
+                if (c.getAutoCommit()) {
+                    c.setAutoCommit(false);
+                }
+                this.readWrite = _readWrite;
             } catch (SQLException e) {
                 throw new JenaException("Transaction begin failed: ", e);
             }
