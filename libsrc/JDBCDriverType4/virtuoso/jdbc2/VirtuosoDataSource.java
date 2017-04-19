@@ -42,6 +42,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     protected String databaseName;
     protected String user = "dba";
     protected String password = "dba";
+    protected String delegate;
 
     protected String charSet;
     protected int loginTimeout = 0;
@@ -79,6 +80,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_databaseName = "databaseName";
     final static String n_user = "user";
     final static String n_password = "password";
+    final static String n_delegate = "delegate";
 
     final static String n_charset = "charset";
     final static String n_charSet = "charSet";
@@ -131,6 +133,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
       ref.add(new StringRefAddr(VirtuosoDataSource.n_user, user));
     if (password != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_password, password));
+    if (delegate != null)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_delegate, delegate));
 
     if (loginTimeout != 0)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_loginTimeout, String.valueOf(loginTimeout)));
@@ -216,6 +220,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
     if (user != null)      prop.setProperty("user", user);
     if (password != null)  prop.setProperty("password", password);
+    if (delegate != null)  prop.setProperty("delegate", delegate);
 
     if (loginTimeout != 0)  prop.setProperty("timeout", String.valueOf(loginTimeout));
 
@@ -420,6 +425,15 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
   public String getPassword ()
   {
     return this.password;
+  }
+
+  public void setDelegate (String delgate)
+  {
+    this.delegate = delegate;
+  }
+  public String getDelgate ()
+  {
+    return this.delegate;
   }
 
   public void setDatabaseName (String name)
