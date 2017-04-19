@@ -177,6 +177,8 @@ public class VirtuosoResultSet implements ResultSet
     */
    public static final int CONCUR_UPDATABLE = 1008;
 
+   public static final int CONCUR_VALUES = 1009;
+
    /**
     * Constructs a new VirtuosoResultSet.
     *

@@ -149,7 +149,7 @@ public class VirtuosoStatement implements Statement
          this.type = type;
       else
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
-      if(concurrency == VirtuosoResultSet.CONCUR_READ_ONLY || concurrency == VirtuosoResultSet.CONCUR_UPDATABLE)
+      if(concurrency == VirtuosoResultSet.CONCUR_READ_ONLY || concurrency == VirtuosoResultSet.CONCUR_UPDATABLE || concurrency == VirtuosoResultSet.CONCUR_VALUES)
          this.concurrency = concurrency;
       else
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
@@ -163,11 +163,16 @@ public class VirtuosoStatement implements Statement
      {
        // Set the concurrency type
        Long[] arrLong = new Long[11];
-       if (connection.isReadOnly ())
+       if (connection.isReadOnly ()) {
          arrLong[0] = new Long (VirtuosoTypes.SQL_CONCUR_ROWVER);
+       }
+       else {
+         if (concurrency == VirtuosoResultSet.CONCUR_VALUES)
+           arrLong[0] = new Long(VirtuosoTypes.SQL_CONCUR_VALUES);
        else
 	 arrLong[0] = new Long(concurrency == VirtuosoResultSet.CONCUR_READ_ONLY ?
 		VirtuosoTypes.SQL_CONCUR_READ_ONLY : VirtuosoTypes.SQL_CONCUR_LOCK);
+       }
        arrLong[1] = new Long(0);
        arrLong[2] = new Long(maxRows);
 #if JDK_VER >= 14

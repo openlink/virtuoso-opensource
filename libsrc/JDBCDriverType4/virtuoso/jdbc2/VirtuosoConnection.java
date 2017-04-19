@@ -123,6 +123,7 @@ public class VirtuosoConnection implements Connection
    private String ssl_provider;
    private boolean use_ssl;
 #endif
+   private String con_delegate;
 
    // The transaction isolation
    private int trxisolation = Connection.TRANSACTION_REPEATABLE_READ;
@@ -334,6 +335,7 @@ public class VirtuosoConnection implements Connection
       cert_alias = (String)prop.get("cert");
       use_ssl = getBoolAttr(prop, "ssl", false);
 #endif
+      con_delegate = (String)prop.get("delegate");
       if(pwdclear == null)
          pwdclear = "0";
       //System.err.println ("4PwdClear is " + pwdclear);
@@ -505,7 +507,8 @@ public class VirtuosoConnection implements Connection
        ret[3] = System.getProperty("os.name");
        ret[4] = new String ("");
        ret[5] = new Integer (0);
-       ret[6] = new String ("");
+       //System.out.println (con_delegate);
+       ret[6] = new String (con_delegate != null ? con_delegate : "");
        return ret;
    }
 
@@ -791,9 +794,13 @@ public class VirtuosoConnection implements Connection
       {
          throw new VirtuosoException("Class not found: " + e.getMessage(),VirtuosoException.MISCERROR);
       }
+      catch(FileNotFoundException e)
+      {
+         throw new VirtuosoException("Connection failed: "+ e.getMessage(),VirtuosoException.IOERROR);
+      }
       catch(IOException e)
       {
-         throw new VirtuosoException("Connection failed: " + e.getMessage(),VirtuosoException.IOERROR);
+         throw new VirtuosoException("Connection failed: ["+(fname!=null?fname:"")+"] "+e.getMessage(),VirtuosoException.IOERROR);
       }
 #ifdef SSL
       catch(ClassNotFoundException e)
@@ -826,7 +833,7 @@ public class VirtuosoConnection implements Connection
       }
       catch(UnrecoverableKeyException e)
       {
-         throw new VirtuosoException("Encryption failed: " + e.getMessage(),VirtuosoException.MISCERROR);
+         throw new VirtuosoException("Encryption failed: ["+(fname!=null?fname:"") +"]" + e.getMessage(),VirtuosoException.MISCERROR);
       }
 #endif
    }

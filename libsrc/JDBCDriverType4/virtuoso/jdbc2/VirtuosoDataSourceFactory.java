@@ -98,6 +98,9 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_password)) != null)
           ((VirtuosoDataSource) ds).setPassword((String)refS.getContent());
 
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_delegate)) != null)
+          ((VirtuosoDataSource) ds).setDelegate((String)refS.getContent());
+
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_loginTimeout)) != null)
           ((VirtuosoDataSource) ds).setLoginTimeout(Integer.parseInt((String)refS.getContent()));
 
