@@ -50,11 +50,13 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
 #ifdef SSL
     protected String certificate;
-    protected String certificatepass;
     protected String keystorepass;
     protected String keystorepath;
     protected String provider;
+    protected String truststorepass;
+    protected String truststorepath;
 #endif
+    protected boolean ssl = false;
     protected int fbs = 0;
     protected int sendbs = 0;
     protected int recvbs = 0;
@@ -86,10 +88,12 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
 #ifdef SSL
     final static String n_certificate = "certificate";
-    final static String n_certificatepass = "certificatepass";
     final static String n_keystorepass = "keystorepass";
     final static String n_keystorepath = "keystorepath";
     final static String n_provider = "provider";
+    final static String n_truststorepass = "truststorepass";
+    final static String n_truststorepath = "truststorepath";
+    final static String n_ssl = "ssl";
 #endif
 
     final static String n_fbs = "fbs";
@@ -144,9 +148,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     if (certificate != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_certificate, certificate));
 
-    if (certificatepass != null)
-      ref.add(new StringRefAddr(VirtuosoDataSource.n_certificatepass, certificatepass));
-
     if (keystorepass != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_keystorepass, keystorepass));
 
@@ -156,6 +157,13 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     if (provider != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_provider, provider));
 
+    if (truststorepass != null)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_truststorepass, truststorepass));
+
+    if (truststorepath != null)
+      ref.add(new StringRefAddr(VirtuosoDataSource.n_truststorepath, truststorepath));
+
+    ref.add(new StringRefAddr(VirtuosoDataSource.n_ssl, String.valueOf(ssl)));
 #endif
 
     if (fbs != 0)
@@ -218,10 +226,12 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
 #ifdef SSL
     if (certificate!=null)      prop.setProperty("certificate", certificate);
-    if (certificatepass!=null)  prop.setProperty("certificatepass", certificatepass);
     if (keystorepass!=null)  prop.setProperty("keystorepass", keystorepass);
     if (keystorepath!=null)  prop.setProperty("keystorepath", keystorepath);
     if (provider!=null)  prop.setProperty("provider", provider);
+    if (truststorepass!=null)  prop.setProperty("truststorepass", truststorepass);
+    if (truststorepath!=null)  prop.setProperty("truststorepath", truststorepath);
+    if (ssl)  prop.setProperty("ssl", "1");
 #endif
 
     if (fbs != 0)  prop.setProperty("fbs", String.valueOf(fbs));
@@ -462,15 +472,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return this.certificate;
   }
 
-  public void setCertificatepass (String value)
-  {
-    this.certificatepass = value;
-  }
-  public String getCertificatepass ()
-  {
-    return this.certificatepass;
-  }
-
   public void setKeystorepass (String value)
   {
     this.keystorepass = value;
@@ -497,6 +498,34 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
   {
     return this.provider;
   }
+
+  public void setTruststorepass (String value)
+  {
+    this.truststorepass = value;
+  }
+  public String getTruststorepass ()
+  {
+    return this.truststorepass;
+  }
+
+  public void setTruststorepath (String value)
+  {
+    this.truststorepath = value;
+  }
+  public String getTruststorepath ()
+  {
+    return this.truststorepath;
+  }
+
+  public void setSsl (boolean value)
+  {
+    this.ssl = value;
+  }
+  public boolean getSsl ()
+  {
+    return this.ssl;
+  }
+
 #endif
 
   public void setFbs (int value)
