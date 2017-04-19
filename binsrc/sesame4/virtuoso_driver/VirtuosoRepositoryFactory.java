@@ -69,6 +69,8 @@ public class VirtuosoRepositoryFactory implements RepositoryFactory {
             result.setRuleSet(vConfig.getRuleSet());
             result.setBatchSize(vConfig.getBatchSize());
             result.setInsertBNodeAsVirtuosoIRI(vConfig.getInsertBNodeAsVirtuosoIRI());
+            result.setMacroLib(vConfig.getMacroLib());
+            result.setConcurrencyMode(vConfig.getConcurrencyMode());
         }
         else {
             throw new RepositoryConfigException("Invalid configuration class: " + config.getClass());
