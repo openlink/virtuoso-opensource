@@ -1,5 +1,4 @@
 /*
- *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
@@ -807,10 +806,16 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) throws VirtuosoException
    {
+      if(x == null) { 
+          this.setNull(parameterIndex, Types.OTHER);
+          return;
+      }
+
       //System.err.println ("setObject (" + parameterIndex + ", " + x + ", " + targetSqlType + ", " + scale);
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
+
       if (x instanceof VirtuosoExplicitString)
 	{
 	  objparams.setElementAt(x, parameterIndex - 1);
@@ -825,7 +830,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
          return;
       }
       // Else create a Blob
-      if(x == null) this.setNull(parameterIndex, Types.OTHER);
       x = VirtuosoTypes.mapJavaTypeToSqlType (x, targetSqlType, scale);
       if (x instanceof java.io.Serializable)
 	{
