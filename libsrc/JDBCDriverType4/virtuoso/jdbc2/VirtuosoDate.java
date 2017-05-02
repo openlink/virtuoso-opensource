@@ -67,12 +67,22 @@ public class VirtuosoDate extends java.sql.Date
     public String toXSD_String ()
     {
         StringBuilder sb = new StringBuilder();
-        DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd");
+        DateFormat formatter;
         String timeZoneString = null;
+        java.util.Calendar cal = new java.util.GregorianCalendar ();
+
+        cal.setTime(this);
+
+        if (cal.get(Calendar.ERA) == GregorianCalendar.BC) {
+            sb.append('-');
+            formatter = new SimpleDateFormat("yyy-MM-dd");
+        }
+        else
+            formatter = new SimpleDateFormat("yyyy-MM-dd");
 
         if (with_timezone)
         {
-            StringBuffer s = new StringBuffer();
+            StringBuilder s = new StringBuilder();
             s.append(timezone>0?'+':'-');
 
             int tz = Math.abs(timezone);
