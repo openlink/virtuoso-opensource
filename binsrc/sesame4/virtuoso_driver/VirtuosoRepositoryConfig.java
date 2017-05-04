@@ -44,6 +44,7 @@ import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.MACROLIB;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.CONCURRENCY;
+import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.USE_DEF_GRAPH_FOR_QUERIES;
 
 
 public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
@@ -59,6 +60,7 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     private boolean insertBNodeAsVirtuosoIRI = false;
     private int concurrencyMode = CONCUR_DEFAULT;
     private String macroLib;
+    private boolean useDefGraphForQueries = false;
 
     public VirtuosoRepositoryConfig() {
         super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -179,6 +181,16 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
         return this.macroLib;
     }
 
+
+    public void setUseDefGraphForQueries(boolean v) {
+	this.useDefGraphForQueries = v;
+    }
+
+    public boolean getUseDefGraphForQueries() {
+	return this.useDefGraphForQueries;
+    }
+	
+
     @Override
     public void validate()
             throws RepositoryConfigException
@@ -229,6 +241,8 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
 
         model.add(implNode, CONCURRENCY, vf.createLiteral(Integer.toString(concurrencyMode,10)));
 
+	model.add(implNode, USE_DEF_GRAPH_FOR_QUERIES, vf.createLiteral(useDefGraphForQueries));
+
         return implNode;
     }
 
@@ -274,6 +288,9 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
 
             Models.objectLiteral(model.filter(implNode, CONCURRENCY, null)).ifPresent(
                     lit -> setConcurrencyMode(lit.intValue()));
+
+            Models.objectLiteral(model.filter(implNode, USE_DEF_GRAPH_FOR_QUERIES, null)).ifPresent(
+                    lit -> setUseDefGraphForQueries(lit.booleanValue()));
         }
         catch (ModelException e) {
             throw new RepositoryConfigException(e.getMessage(), e);

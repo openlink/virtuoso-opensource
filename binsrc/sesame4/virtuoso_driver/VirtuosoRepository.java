@@ -81,6 +81,7 @@ public class VirtuosoRepository implements Repository {
     String ruleSet;
     String macroLib;
     int concurencyMode = CONCUR_DEFAULT;
+    boolean useDefGraphForQueries = false;
 
 
     public VirtuosoRepository(ConnectionPoolDataSource ds, String defGraph, boolean useLazyAdd) {
@@ -528,6 +529,24 @@ public class VirtuosoRepository implements Repository {
     public int getConcurrencyMode() {
         return this.concurencyMode;
     }
+
+    /**
+     * Use defGraph with SPARQL queries, if query default graph wasn't set (default false) 
+     * @param v
+     *        true - useDefGraphForQueries
+     */
+    public void setUseDefGraphForQueries(boolean v) {
+	this.useDefGraphForQueries = v;
+    }
+
+    /**
+     * Get the UseDefGraphForQueries state for connection
+     */
+    public boolean getUseDefGraphForQueries() {
+	return this.useDefGraphForQueries;
+    }
+
+
 
     /**
      * Get the directory where data and logging for this repository is stored.
