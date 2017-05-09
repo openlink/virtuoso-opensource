@@ -19,5 +19,6 @@
       vr:roundRobin {%Use RoundRobin for connection|false|true%} ;
       vr:insertBNodeAsVirtuosoIRI {%Insert BNode as Virtuoso IRI|false|true%} ;
       vr:fetchSize {%Buffer fetch size|100%} ;
-      vr:ruleSet "{%Inference RuleSet name|null%}"
+      vr:ruleSet "{%Inference RuleSet name|null%}";
+      vr:useDefGraphForQueries {%Use defGraph with SPARQL queries, if query default graph wasn't set|true|false%} 
    ].

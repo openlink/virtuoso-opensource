@@ -75,6 +75,7 @@ public class VirtuosoRepository implements Repository {
 	int batchSize = 5000;
 	int queryTimeout = 0;
 	String ruleSet;
+	boolean useDefGraphForQueries = false;
 	
 	public VirtuosoRepository(ConnectionPoolDataSource ds, String defGraph, boolean useLazyAdd) {
 	        super();
@@ -238,7 +239,7 @@ public class VirtuosoRepository implements Repository {
 		     return new VirtuosoRepositoryConnection(this, connection);
 		   }
 		   catch (Exception e) {
-		     System.out.println("Connection to " + url_hostlist + " is FAILED.");
+		     System.out.println("Connection has FAILED.");
 		     throw new RepositoryException(e);
 		   }
 	        }
@@ -249,7 +250,7 @@ public class VirtuosoRepository implements Repository {
 		     return new VirtuosoRepositoryConnection(this, connection);
 		   }
 		   catch (Exception e) {
-		     System.out.println("Connection to " + url_hostlist + " is FAILED.");
+		     System.out.println("Connection has FAILED.");
 		     throw new RepositoryException(e);
 		   }
 	        }
@@ -259,7 +260,7 @@ public class VirtuosoRepository implements Repository {
 		     return new VirtuosoRepositoryConnection(this, connection);
 		   }
 		   catch (Exception e) {
-		     System.out.println("Connection to " + url_hostlist + " is FAILED.");
+		     System.out.println("Connection has FAILED.");
 		     throw new RepositoryException(e);
 		   }
 	        }
@@ -292,7 +293,7 @@ public class VirtuosoRepository implements Repository {
 				return new VirtuosoRepositoryConnection(this, connection);
 			}
 			catch (Exception e) {
-				System.out.println("Connection to " + url_hostlist + " is FAILED.");
+				System.out.println("Connection to " + url_hostlist + " has FAILED.");
 				throw new RepositoryException(e);
 			}
 		}
@@ -308,7 +309,7 @@ public class VirtuosoRepository implements Repository {
 				return new VirtuosoRepositoryConnection(this, connection);
 			}
 			catch (Exception e) {
-				System.out.println("Connection to " + url_hostlist + " is FAILED.");
+				System.out.println("Connection to " + url_hostlist + " has FAILED.");
 				throw new RepositoryException(e);
 			}
 		}	
@@ -441,6 +442,24 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	
+	/**
+	 * Use defGraph with SPARQL queries, if query default graph wasn't set (default false) 
+	 * @param v
+	 *        true - useDefGraphForQueries
+	 */
+	public void setUseDefGraphForQueries(boolean v) {
+		this.useDefGraphForQueries = v;
+	}
+
+	/**
+	 * Get the UseDefGraphForQueries state for connection
+	 */
+	public boolean getUseDefGraphForQueries() {
+		return this.useDefGraphForQueries;
+	}
+
+
+
 	/**
 	 * Get the directory where data and logging for this repository is stored.
 	 * 
