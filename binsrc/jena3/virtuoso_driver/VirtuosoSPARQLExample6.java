@@ -44,6 +44,8 @@ public class VirtuosoSPARQLExample6
 	else
 	    url = args[0];
 
+        url += "/log_enable=0";
+
 	Node foo1 = NodeFactory.createURI("http://example.org/#foo1");
 	Node bar1 = NodeFactory.createURI("http://example.org/#bar1");
 	Node baz1 = NodeFactory.createURI("http://example.org/#baz1");

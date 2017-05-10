@@ -45,6 +45,11 @@ public class VirtuosoSPARQLExample10 {
 		VirtGraph set = new VirtGraph ("gr", url, "dba", "dba");
 
 /*			STEP 2			*/
+		set.clear ();
+
+		System.out.print ("Begin read from 'http://www.w3.org/People/Berners-Lee/card#i'  ");
+		set.read("http://www.w3.org/People/Berners-Lee/card#i", "RDF/XML");
+		System.out.println ("\t\t\t Done.");
 
 
 /*			STEP 3			*/
