@@ -48,6 +48,7 @@ namespace OpenLink.Data.Virtuoso
 	{
 		private DateTime value;
 		private int tz;
+		private Era era;
 		private TimeSpan offset;
 		private DateTimeType dt_Type;
 
@@ -55,32 +56,36 @@ namespace OpenLink.Data.Virtuoso
 		{
 			this.value = val;
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTime (long ticks)
 		{
 			this.value = new DateTime(ticks);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day)
 		{
 			this.value = new DateTime(year, month, day);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTime(int year, int month, int day, int hour, int minute, int second, long microsecond)
@@ -93,11 +98,12 @@ namespace OpenLink.Data.Virtuoso
 			long dateTick = (long)(t.Ticks + microsecond * 10);
 			this.value = new DateTime(dateTick);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
-		internal VirtuosoDateTime(int year, int month, int day, int hour, int minute, int second, long microsecond, int tz, DateTimeType type)
+		internal VirtuosoDateTime(Era era, int year, int month, int day, int hour, int minute, int second, long microsecond, int tz, DateTimeType type)
 		{
 			if (microsecond < 0 || microsecond > 999999)
 				throw new ArgumentOutOfRangeException("Microsecond parameters describe an " +
@@ -107,6 +113,7 @@ namespace OpenLink.Data.Virtuoso
 			long dateTick = (long)(t.Ticks + microsecond * 10);
 			this.dt_Type = type;
 			this.tz = tz;
+			this.era = era;
 			this.offset = new TimeSpan(0, tz, 0);
 			this.value = new DateTime(dateTick).Add(offset);
 		}
@@ -115,16 +122,18 @@ namespace OpenLink.Data.Virtuoso
 		{
 			this.value = new DateTime(year, month, day, calendar);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 		
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, Calendar calendar)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, calendar);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, long microsecond, Calendar calendar)
@@ -137,8 +146,9 @@ namespace OpenLink.Data.Virtuoso
 			long dateTick = (long) (t.Ticks + microsecond * 10);
 			this.value = new DateTime (dateTick);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 
@@ -146,32 +156,36 @@ namespace OpenLink.Data.Virtuoso
 		{
 			this.value = new DateTime(ticks, kind);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, DateTimeKind kind)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, kind);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTime (int year, int month, int day, int hour, int minute, int second, int millisecond, DateTimeKind kind)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, millisecond, kind);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
         public VirtuosoDateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
 		{
 			this.value = new DateTime(year, month, day, hour, minute, second, millisecond, calendar, kind);
 			this.dt_Type = DateTimeType.DT_TYPE_DATETIME;
-			this.tz = 0;
 			this.offset = TimeSpan.Zero;
+			this.tz = 0;
+			this.era = Era.AD;
 		}			
 
 
@@ -301,6 +315,13 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
+		public Era Era
+		{
+			get
+			{
+				return this.era;
+			}
+		}
 
 		/* methods */
 
@@ -351,21 +372,34 @@ namespace OpenLink.Data.Virtuoso
 
 		public int CompareTo (object v)
 		{
-			if ( v == null)
+			int rc;
+			Era v_era = Era.AD;
+
+			if (v == null)
 				return 1;
 
 			if (!(v is System.DateTime) && !(v is VirtuosoDateTime))
 				throw new ArgumentException ("Value is not a System.DateTime or VirtuosoDateTime");
 
 			if (v is VirtuosoDateTime)
-			  return DateTime.Compare (value, ((VirtuosoDateTime) v).value);
+			{
+				rc = DateTime.Compare(value, ((VirtuosoDateTime)v).value);
+				v_era = ((VirtuosoDateTime)v).Era;
+			}
 			else
-			  return DateTime.Compare (value, (DateTime) v);
+				rc = DateTime.Compare(value, (DateTime)v);
+
+			if (this.Era == Era.BC && v_era == Era.AD)
+				return -1;
+			else if (this.Era == Era.AD && v_era == Era.BC)
+				return 1;
+			else //this.Era == v_era
+				return rc;
 		}
 
 		public int CompareTo (VirtuosoDateTime v)
 		{
-			return DateTime.Compare (value, (DateTime) v.value);
+			return this.CompareTo((object)v);
 		}
 
 		public bool IsDaylightSavingTime ()
@@ -375,28 +409,38 @@ namespace OpenLink.Data.Virtuoso
 
 		public int CompareTo (DateTime value)
 		{
-			return value.CompareTo (value);
+			return this.CompareTo((object)value);
 		}
 
 		public bool Equals (DateTime value)
 		{
-			return value.Equals(value);
+			return this.Equals((object)value);
 		}
 
-		public bool Equals (VirtuosoDateTime val)
+		public bool Equals (VirtuosoDateTime value)
 		{
-			return value.Equals(val.value);
+			return this.Equals((object)value);
 		}
 
 		public override bool Equals (object o)
 		{
+			Era v_era = Era.AD;
+
 			if (!(o is System.DateTime) && !(o is VirtuosoDateTime))
 				return false;
 
-                        if (o is VirtuosoDateTime)
-			   return ((VirtuosoDateTime) o).Ticks == Ticks;
+			if (o is VirtuosoDateTime)
+				v_era = ((VirtuosoDateTime)o).Era;
+
+			if (this.Era == v_era)
+			{
+				if (o is VirtuosoDateTime)
+					return ((VirtuosoDateTime)o).Ticks == Ticks;
+				else
+					return ((DateTime)o).Ticks == Ticks;
+			}
 			else
-			   return ((DateTime) o).Ticks == Ticks;
+				return false;
 		}
 
 
@@ -510,11 +554,17 @@ namespace OpenLink.Data.Virtuoso
 			StringBuilder sb = new StringBuilder();
 			if (dt_Type == DateTimeType.DT_TYPE_DATE)
 			{
-				sb.Append(value.ToString("yyyy\\-MM\\-dd"));   //1999-05-31
+			    if (era == Era.BC)
+				  sb.Append(value.ToString("-yyy\\-MM\\-dd"));   //1999-05-31
+			    else
+				  sb.Append(value.ToString("yyyy\\-MM\\-dd"));   //1999-05-31
 			}
 			else
 			{
-				sb.Append(value.ToString("yyyy\\-MM\\-dd\\THH\\:mm\\:ss\\.FFF"));
+			    if (era == Era.BC)
+				  sb.Append(value.ToString("-yyy\\-MM\\-dd\\THH\\:mm\\:ss\\.FFF"));
+				else
+				  sb.Append(value.ToString("yyyy\\-MM\\-dd\\THH\\:mm\\:ss\\.FFF"));
 
 				if (tz == 0)
 				{

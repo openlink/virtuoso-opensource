@@ -18,6 +18,7 @@ SOURCES1= \
 	DateTimeMarshaler.cs \
 	Diagnostics.cs \
 	DTC.cs \
+	Era.cs \
 	ExplicitString.cs \
 	Future.cs \
 	FutureList.cs \

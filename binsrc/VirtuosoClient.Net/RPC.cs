@@ -32,6 +32,13 @@ namespace OpenLink.Data.VirtuosoClient
 namespace OpenLink.Data.Virtuoso
 #endif
 {
+        public enum CommandConcurrency
+        {
+		CONCUR_DEFAULT = 1007,     //CONCUR_READ_ONLY
+		CONCUR_PESSIMISTIC = 1008, //CONCUR_LOCK
+		CONCUR_OPTIMISTIC = 1009   //CONCUR_VALUES
+        }
+
 	internal enum BoxTag
 	{
 		DV_NULL = 180,

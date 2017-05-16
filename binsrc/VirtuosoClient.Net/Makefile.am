@@ -42,6 +42,7 @@ SOURCES = \
 	$(srcdir)/DateTimeMarshaler.cs \
 	$(srcdir)/Diagnostics.cs \
 	$(srcdir)/DTC.cs \
+	$(srcdir)/Era.cs \
 	$(srcdir)/ExplicitString.cs \
 	$(srcdir)/Future.cs \
 	$(srcdir)/FutureList.cs \

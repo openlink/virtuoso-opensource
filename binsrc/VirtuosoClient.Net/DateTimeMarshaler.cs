@@ -261,6 +261,8 @@ namespace OpenLink.Data.Virtuoso
 			int tz_interm;
 			int tzless = hour >> 7;
 
+			days = (int) (((uint)days) | ((bytes[0] & 0x80)!=0 ? 0xff000000 : 0));
+
 			hour &= 0x1F;
 
 			tz_bytes[0] = bytes[8];
@@ -294,9 +296,10 @@ namespace OpenLink.Data.Virtuoso
 			else if (type == DateTimeType.DT_TYPE_DATETIME)
 			{
 				int year, month, day_of_month;
-				GetDate(days, out year, out month, out day_of_month);
+				Era era;
+				GetDate(days, out year, out month, out day_of_month, out era);
 
-				VirtuosoDateTimeOffset dt = new VirtuosoDateTimeOffset(year, month, day_of_month, hour, minute, second, fraction, tz_offset_minutes);
+				VirtuosoDateTimeOffset dt = new VirtuosoDateTimeOffset(era, year, month, day_of_month, hour, minute, second, fraction, tz_offset_minutes);
 
 				Debug.WriteLineIf(Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
 				return dt;
@@ -304,9 +307,10 @@ namespace OpenLink.Data.Virtuoso
 			else if (type == DateTimeType.DT_TYPE_DATE)
 			{
 				int year, month, day_of_month;
-				GetDate(days, out year, out month, out day_of_month);
+				Era era;
+				GetDate(days, out year, out month, out day_of_month, out era);
 
-				VirtuosoDateTime dt = new VirtuosoDateTime(year, month, day_of_month, hour, minute, second, fraction, tz_offset_minutes, type);
+				VirtuosoDateTime dt = new VirtuosoDateTime(era, year, month, day_of_month, hour, minute, second, fraction, tz_offset_minutes, type);
 				Debug.WriteLineIf(Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
 				return dt;
 			}
@@ -314,9 +318,10 @@ namespace OpenLink.Data.Virtuoso
 			else if (type == DateTimeType.DT_TYPE_DATETIME || type == DateTimeType.DT_TYPE_DATE)
 			{
 				int year, month, day_of_month;
-				GetDate(days, out year, out month, out day_of_month);
+				Era era;
+				GetDate(days, out year, out month, out day_of_month, out era);
 
-				VirtuosoDateTime dt = new VirtuosoDateTime(year, month, day_of_month, hour, minute, second, fraction, tz_offset_minutes, type);
+				VirtuosoDateTime dt = new VirtuosoDateTime(era, year, month, day_of_month, hour, minute, second, fraction, tz_offset_minutes, type);
 				Debug.WriteLineIf(Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
 				return dt;
 			}
@@ -343,48 +348,62 @@ namespace OpenLink.Data.Virtuoso
 			return days;
 		}
 
-		private static void GetDate(int days, out int year, out int month, out int day_of_month)
+		private static void GetDate(int days, out int year, out int month, out int day_of_month, out Era era)
 		{
-			if (days <= 0)
+			long y_civ, m_civ, d_civ;
+			long midhignt_jdn;
+			long mj, g, dg, c, dc, b, db, a, da, y, m, d;
+			long e;
+			
+			midhignt_jdn = days + 1721423;
+
+			if (2299161 <= midhignt_jdn)
 			{
-				year = month = day_of_month = 0;
-				return;
+				mj = midhignt_jdn + 32044;
+				g = mj / 146097;
+				dg = mj % 146097;
+				c = (dg / 36524 + 1) * 3 / 4;
+				dc = dg - c * 36524;
+				b = dc / 1461;
+				db = dc % 1461;
+				a = (db / 365 + 1) * 3 / 4;
+				da = db - a * 365;
+				y = g * 400 + c * 100 + b * 4 + a;
+				m = (da * 5 + 308) / 153 - 2;
+				d = da - (m + 4) * 153 / 5 + 122;
+				y_civ = y - 4800 + (m + 2) / 12;
+				m_civ = (m + 2) % 12 + 1;
+				d_civ = d + 1;
 			}
-
-			int prev_year;
-			if (days > Values.GREG_JDAYS)
+			else if (1722884 == midhignt_jdn)
 			{
-				days -= NicaeaShift;
-
-				days *= 4;
-				int century = (days - 1) / (365 * 400 + 97);
-				days -= century * (365 * 400 + 97);
-				days = ((days + 3) / 4) * 4;
-				int century_year = (days - 1) / (365 * 4 + 1);
-				prev_year = century * 100 + century_year;
-				days -= century_year * (365 * 4 + 1);
-				days = (days + 3) / 4;
+				d_civ = m_civ = 1; y_civ = 5;
 			}
 			else
 			{
-				prev_year = (days * 4 - 1) / (365 * 4 + 1);
-				days -= prev_year * 365 + prev_year / 4;
+				c = midhignt_jdn + 32082;
+				d = (4 * c + 3) / 1461;
+				e = c - (1461 * d) / 4;
+				m = (5 * e + 2) / 153;
+				d_civ = e - (153 * m + 2) / 5 + 1;
+				m_civ = m + 3 - 12 * (m / 10);
+				y_civ = d - 4800 + m / 10;
+				if (y_civ < 0)
+					y_civ--;
 			}
-			year = prev_year + 1;
-
-			int[] mdays = IsLeapYear(year) ? to_month_days_leap : to_month_days;
-			for (int i = 1; i < 12; i++)
+			if (y_civ < 0)
 			{
-				if (days <= mdays[i])
-				{
-					month = i;
-					day_of_month = days - mdays[i - 1];
-					return;
-				}
+				era = Era.BC;
+				year = (int)-y_civ;
+			}
+			else
+			{
+				era = Era.AD;
+				year = (int)y_civ;
 			}
 
-			month = 12;
-			day_of_month = days - mdays[11];
+			month = (int)m_civ;
+			day_of_month = (int)d_civ;
 		}
 
 		private static bool IsLeapYear(int year)

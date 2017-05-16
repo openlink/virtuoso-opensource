@@ -85,6 +85,26 @@ namespace OpenLink.Data.Virtuoso
 			GC.KeepAlive (this);
 		}
 
+		public void SetConcurrencyMode(CommandConcurrency concurrency)
+		{
+			int mode = CLI.Concurrency.SQL_CONCUR_READ_ONLY;
+
+			if (concurrency == CommandConcurrency.CONCUR_PESSIMISTIC)
+			   mode = CLI.Concurrency.SQL_CONCUR_LOCK;
+			else if (concurrency == CommandConcurrency.CONCUR_OPTIMISTIC)
+			   mode = CLI.Concurrency.SQL_CONCUR_VALUES;
+
+			CLI.ReturnCode rc = (CLI.ReturnCode) CLI.SQLSetStmtAttr (
+				hstmt,
+				(int) CLI.StatementAttribute.SQL_ATTR_CONCURRENCY,
+				(IntPtr) mode,
+				(int) CLI.LengthCode.SQL_IS_SMALLINT);
+			if (rc != CLI.ReturnCode.SQL_SUCCESS)
+				Diagnostics.HandleResult (rc, this, outerCommand.Connection);
+			GC.KeepAlive (this);
+
+		}
+
 		public void SetCommandBehavior (CommandBehavior behavior)
 		{
 			int unique_rows = 0;

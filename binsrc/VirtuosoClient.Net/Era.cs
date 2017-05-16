@@ -23,7 +23,6 @@
 //
 
 using System;
-using System.Data;
 
 #if ODBC_CLIENT
 namespace OpenLink.Data.VirtuosoOdbcClient
@@ -33,35 +32,9 @@ namespace OpenLink.Data.VirtuosoClient
 namespace OpenLink.Data.Virtuoso
 #endif
 {
-	interface IInnerCommand : IDisposable
+	public enum Era
 	{
-		void Cancel ();
-
-		void SetTimeout (int timeout);
-		void SetConcurrencyMode(CommandConcurrency concurrency);
-
-		void SetCommandBehavior (CommandBehavior behavior);
-
-		void SetParameters (VirtuosoParameterCollection parameters);
-		void GetParameters ();
-
-		void Execute (string query);
-		void Prepare (string query);
-		void Execute ();
-		bool Fetch ();
-		bool GetNextResult ();
-		void CloseCursor (bool isExecuted);
-
-		int GetRowCount ();
-		ColumnData[] GetColumnMetaData ();
-		object GetColumnData (int i, ColumnData[] columns);
-
-		bool IsDBNull (int i, ColumnData[] columns);
-		long GetChars (int i, ColumnData[] columns, long fieldOffset,
-			char[] buffer, int bufferOffset, int length);
-		long GetBytes (int i, ColumnData[] columns, long fieldOffset,
-			byte[] buffer, int bufferOffset, int length);
-
-		void GetProcedureColumns (string text);
+		AD,
+		BC
 	}
 }

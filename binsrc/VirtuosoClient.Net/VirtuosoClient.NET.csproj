@@ -149,6 +149,11 @@
                     BuildAction = "Compile"
                 />
                 <File
+                    RelPath = "Era.cs"
+                    SubType = "Code"
+                    BuildAction = "Compile"
+                />
+                <File
                     RelPath = "ExplicitString.cs"
                     SubType = "Code"
                     BuildAction = "Compile"
@@ -361,4 +366,3 @@
         </Files>
     </CSHARP>
 </VisualStudioProject>
-

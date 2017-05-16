@@ -48,6 +48,7 @@ namespace OpenLink.Data.Virtuoso
 
 		private int timeout = 0;
 		private int prefetchSize = Values.SELECT_PREFETCH_QUOTA;
+		private CommandConcurrency concurrency = CommandConcurrency.CONCUR_DEFAULT;
 		private bool uniqueRows = false;
 		private ArrayOfLongPacked options = null;
 
@@ -107,6 +108,11 @@ namespace OpenLink.Data.Virtuoso
 			if (timeout > (int.MaxValue / Values.MillisPerSec))
 				timeout = int.MaxValue / Values.MillisPerSec;
 			this.timeout = timeout;
+		}
+
+		public void SetConcurrencyMode(CommandConcurrency mode)
+		{
+			this.concurrency = mode;
 		}
 
 		public void SetCommandBehavior (CommandBehavior behavior)
@@ -356,7 +362,7 @@ namespace OpenLink.Data.Virtuoso
 
 		public object GetColumnData (int i, ColumnData[] columns)
 		{
-		        Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.GetColumnData"); 
+		    Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.GetColumnData"); 
 			Debug.Assert (currentRow != null);
 			ColumnData column = columns[i];
 			object data = currentRow[i + 1];
@@ -612,7 +618,14 @@ namespace OpenLink.Data.Virtuoso
 		private void InitializeOptions ()
 		{
 			Debug.Assert (options != null);
-			options[RpcMessageLayout.SO_Concurrency] = (int) CLI.Concurrency.SQL_CONCUR_READ_ONLY;
+
+			if (concurrency == CommandConcurrency.CONCUR_PESSIMISTIC)
+				options[RpcMessageLayout.SO_Concurrency] = (int)CLI.Concurrency.SQL_CONCUR_LOCK;
+			else if (concurrency == CommandConcurrency.CONCUR_OPTIMISTIC)
+				options[RpcMessageLayout.SO_Concurrency] = (int)CLI.Concurrency.SQL_CONCUR_VALUES;
+			else
+				options[RpcMessageLayout.SO_Concurrency] = (int)CLI.Concurrency.SQL_CONCUR_READ_ONLY;
+
 			options[RpcMessageLayout.SO_IsAsync] = 0;
 			options[RpcMessageLayout.SO_MaxRows] = 0;
 			options[RpcMessageLayout.SO_Timeout] = 0;
