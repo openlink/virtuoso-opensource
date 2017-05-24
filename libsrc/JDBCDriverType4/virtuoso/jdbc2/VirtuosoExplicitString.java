@@ -223,7 +223,7 @@ public class VirtuosoExplicitString
 	      if (b == null)
 		{
 		  strbuf.append ("\\x");
-		  strbuf.append (Integer.toString (ch.charValue(), 16));
+                  strbuf.append (String.format("%04x", (int) ch.charValue()));
 		}
 	      else
 		{
@@ -232,10 +232,10 @@ public class VirtuosoExplicitString
 	    }
 	  else
 	    {
-	      if (((int)curr) > 256)
+	      if (((int)curr) > 255)
 		{
 		  strbuf.append ("\\x");
-		  strbuf.append (Integer.toString ((int) curr, 16));
+		  strbuf.append (String.format("%04x", (int) curr));
 		}
 	      else
 		strbuf.append (curr);
