@@ -70,6 +70,9 @@ public class VirtuosoRepositorySchema {
     /** <tt>http://www.openrdf.org/config/repository/virtuoso#concurrency</tt> */
     public final static IRI CONCURRENCY;
 
+    /** <tt>http://www.openrdf.org/config/repository/virtuoso#useDefGraphForQueries</tt> */
+    public final static IRI USE_DEF_GRAPH_FOR_QUERIES;
+
     static {
         ValueFactory factory = SimpleValueFactory.getInstance();
         HOSTLIST   = factory.createIRI(NAMESPACE, "hostList");
@@ -84,6 +87,7 @@ public class VirtuosoRepositorySchema {
         INSERTBNodeAsVirtuosoIRI  = factory.createIRI(NAMESPACE, "insertBNodeAsVirtuosoIRI");
         MACROLIB    = factory.createIRI(NAMESPACE, "macroLib");
         CONCURRENCY    = factory.createIRI(NAMESPACE, "concurrency");
+	USE_DEF_GRAPH_FOR_QUERIES = factory.createIRI(NAMESPACE, "useDefGraphForQueries");
 
     }
 }

@@ -127,6 +127,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     private String ruleSet;    
     private String macroLib;
     private String defGraph;
+    private boolean useDefGraphForQueries;
 
     private volatile ParserConfig parserConfig = new ParserConfig();
     private IsolationLevel isolationLevel;
@@ -146,6 +147,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         this.ruleSet = repository.getRuleSet();
         this.macroLib = repository.getMacroLib();
         this.defGraph = repository.defGraph;
+	this.useDefGraphForQueries = repository.useDefGraphForQueries;
         this.trn_concurrencyMode = this.concurencyMode = repository.concurencyMode;
         this.nilContext = valueFactory.createIRI(repository.defGraph);
         this.repository.initialize();
@@ -2190,7 +2192,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
     private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings, List<Value> pstmtParams, String baseURI)  throws RepositoryException
     {
-        boolean use_def_graph = true;
+        boolean added_def_graph = false;
         Set <IRI> list;
         String removeGraph = null;
         String insertGraph = null;
@@ -2240,7 +2242,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 {
                     IRI v = it.next();
                     ret.append(" define input:default-graph-uri <" + v.toString() + "> \n");
-                    use_def_graph = false;
+                    added_def_graph = true;
                 }
             }
 
@@ -2256,7 +2258,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             }
         }
 
-        if (use_def_graph)
+	if (!added_def_graph && useDefGraphForQueries)
             ret.append(" define input:default-graph-uri <" + defGraph + "> \n");
 
         ret.append(substBindings(query, bindings, pstmtParams, isSPARUL));
