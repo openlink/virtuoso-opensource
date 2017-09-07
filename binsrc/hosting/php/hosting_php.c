@@ -60,6 +60,12 @@
 #error You need to compile PHP with ZTS support
 #endif
 
+#if PHP_VERSION_ID < 50500
+#define PHP_PG_SAFE_MODE	(PG (safe_mode))
+#else
+#define PHP_PG_SAFE_MODE	0
+#endif
+
 /****************************************************************************/
 
 typedef struct
@@ -673,7 +679,7 @@ PHP_MINFO_FUNCTION (virtuoso)
   php_info_print_table_header (2, "Variable", "Value");
   for (i = 0; i < r->n_options; i += 2)
     {
-      if (PG (safe_mode) && !strcasecmp (r->options[i], "AUTHORIZATION"))
+      if (!strcasecmp (r->options[i], "AUTHORIZATION"))
 	continue;
       php_info_print_table_row (2, r->options[i], r->options[i + 1]);
     }
@@ -690,7 +696,7 @@ PHP_MINFO_FUNCTION (virtuoso)
       char *p = strdup (r->lines[i]);
       char *q = strchr (p, ':');
       if (q && q[1] == ' ' &&
-	  (!PG (safe_mode) || (PG (safe_mode) && strcasecmp (q, "Authorization"))))
+	  (!PHP_PG_SAFE_MODE || (PHP_PG_SAFE_MODE && strcasecmp (q, "Authorization"))))
 	{
 	  char *r = strchr (q, '\r');
 	  *q = 0;
