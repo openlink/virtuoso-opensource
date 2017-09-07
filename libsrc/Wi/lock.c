@@ -619,9 +619,12 @@ lt_done (lock_trx_t * lt)
   ASSERT_IN_TXN;
   if (lt->lt_waits_for || lt->lt_waiting_for_this || lt->lt_lock.ht_count)
     GPF_T1 ("lt done called with waiting, waits for or locks in lt");
-  if (wi_inst.wi_checkpoint_atomic) lt_weird ();
+  if (wi_inst.wi_checkpoint_atomic)
+    lt_weird ();
   remhash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx);
-#if defined (VALGRIND) || defined (MALLOC_DEBUG)
+
+   /* This is obsolete due to new debugging of resource_get() / resource_store() */
+#if 0	/* defined (VALGRIND) || defined (MALLOC_DEBUG) */
   lt_free (lt);
 #else
   lt->lt_threads = 0;
@@ -634,7 +637,8 @@ lt_done (lock_trx_t * lt)
     if (plt)
       GPF_T1 ("lt in id to trx  at lt_done");
     for (inx = 0; inx < trx_rc->rc_fill; inx++)
-      if (trx_rc->rc_items[inx] == (void*)lt) GPF_T1 ("double lt_done");
+      if (trx_rc->rc_items[inx] == (void *) lt)
+	GPF_T1 ("double lt_done");
   }
 #endif
   lt->lt_trx_no = lt->lt_w_id = LT_ID_FREE;
