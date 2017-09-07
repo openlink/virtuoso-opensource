@@ -1095,6 +1095,28 @@ done_iid: ;
   return NULL;
 }
 
+caddr_t
+bif_dk_check_tree (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#ifdef DK_ALLOC_BOX_DEBUG
+  if (0 == BOX_ELEMENTS (args))
+    {
+      dk_check_trees_of_qi((query_instance_t *)qst);
+      return NULL;
+    }
+  int ctr;
+  dk_hash_t *known = NULL;
+  DO_BOX_FAST (state_slot_t *, arg, ctr, args)
+    {
+      caddr_t arg_value = QST_GET (qst, arg);
+      dk_check_tree_iter (arg_value, BADBEEF_BOX, &known);
+    }
+  END_DO_BOX_FAST;
+  if (NULL != known)
+    hash_table_free (known);
+#endif
+  return NULL;
+}
 
 caddr_t
 bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16360,6 +16382,7 @@ sql_bif_init (void)
   bif_define_ex ("dbg_obj_princ"	, bif_dbg_obj_princ, BMD_ALIAS, "dbg_obj_prin1", BMD_USES_INDEX, BMD_DONE);
   bif_define ("dbg_obj_print_vars", bif_dbg_obj_print_vars);
   bif_define ("dbg_user_dump", bif_dbg_user_dump);
+  bif_define_ex ("__dk_check_tree"	, bif_dk_check_tree, BMD_DONE);
   bif_define ("__cache_check", bif_cache_check);
   bif_define ("__autocompact", bif_autocompact);
   bif_define ("__flush", bif_flush);
