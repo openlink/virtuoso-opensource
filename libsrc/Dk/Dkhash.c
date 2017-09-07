@@ -311,7 +311,7 @@ DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
     }
 #endif
   {
-    hash_elt_t *new_elt = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t));
+    hash_elt_t *new_elt = (hash_elt_t *) DBG_NAME(ht_alloc) (ht, sizeof (hash_elt_t));
     new_elt->key = key;
     new_elt->data = data;
     new_elt->next = ht->ht_elements[inx].next;
@@ -643,7 +643,7 @@ DBG_NAME (dk_rehash) (DBG_PARAMS dk_hash_t * ht, uint32 new_sz)
   new_ht.ht_rehash_threshold = ht->ht_rehash_threshold;
   new_ht.ht_tlsf_id = ht->ht_tlsf_id;
   new_ht.ht_actual_size = new_sz;
-  new_ht.ht_elements = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t) * new_sz);
+  new_ht.ht_elements = (hash_elt_t *) DBG_NAME(ht_alloc) (ht, sizeof (hash_elt_t) * new_sz);
   memset (new_ht.ht_elements, 0xff, sizeof (hash_elt_t) * new_sz);
 #ifdef MTX_DEBUG
   new_ht.ht_required_mtx = ht->ht_required_mtx;
@@ -695,3 +695,47 @@ dk_hash_set_rehash (dk_hash_t * ht, uint32 ov_per_bucket)
 {
   ht->ht_rehash_threshold = ov_per_bucket;
 }
+
+#ifdef MALLOC_DEBUG
+#undef hash_table_allocate
+dk_hash_t * hash_table_allocate (uint32 size)
+{
+   return DBG_NAME(hash_table_allocate) (__FILE__, __LINE__, size);
+}
+
+#undef hash_table_init
+void hash_table_init (dk_hash_t * ht, int size)
+{
+  DBG_NAME(hash_table_init) (__FILE__, __LINE__, ht, size);
+}
+
+#undef hash_table_free
+void hash_table_free (dk_hash_t * table)
+{
+  DBG_NAME(hash_table_free) (__FILE__, __LINE__, table);
+}
+
+#undef sethash
+void * sethash (const void *key, dk_hash_t * ht, void *data)
+{
+  return DBG_NAME(sethash) (__FILE__, __LINE__, key, ht, data);
+}
+
+#undef remhash
+int remhash (const void *key, dk_hash_t * ht)
+{
+  return DBG_NAME(remhash) (__FILE__, __LINE__, key, ht);
+}
+
+#undef clrhash
+void clrhash (dk_hash_t * table)
+{
+  DBG_NAME(clrhash) (__FILE__, __LINE__, table);
+}
+
+#undef dk_rehash
+void dk_rehash (dk_hash_t * ht, uint32 new_sz)
+{
+  DBG_NAME(dk_rehash) (__FILE__, __LINE__, ht, new_sz);
+}
+#endif

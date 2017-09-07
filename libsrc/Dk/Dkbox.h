@@ -294,6 +294,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 
 #define ALIGN_LIKE_BOX(x)		ALIGN_8(x)
 #define STATIC_DV_NULL 			{0,0,0,0,0,0,0,(char)DV_DB_NULL}
+#define BOX_HEADER_OVERHEAD 		8
 #define BOX_AUTO_OVERHEAD 		8
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) (~((ptrlong)7) & (ptrlong)(area))) + BOX_AUTO_OVERHEAD)
 
@@ -301,6 +302,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 
 #define ALIGN_LIKE_BOX(x)		ALIGN_4(x)
 #define STATIC_DV_NULL 			{0,0,0,(char)DV_DB_NULL}
+#define BOX_HEADER_OVERHEAD 		4
 #define BOX_AUTO_OVERHEAD 		4
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) area) + BOX_AUTO_OVERHEAD)
 
