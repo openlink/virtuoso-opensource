@@ -1151,6 +1151,21 @@ unbox_int64 (ccaddr_t box)
   return (ptrlong) box;
 }
 
+box_t
+DBG_NAME (dk_realloc_list) (DBG_PARAMS caddr_t ptr, int new_elements)
+{
+  int old_elements;
+  caddr_t res;
+  if (NULL == ptr)
+    return DBG_NAME (dk_alloc_box_zero) (DBG_ARGS new_elements * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  old_elements = BOX_ELEMENTS (ptr);
+  if (old_elements == new_elements)
+    return ptr;
+  res = DBG_NAME (dk_alloc_box_zero) (DBG_ARGS new_elements * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  memcpy (res, ptr, ((new_elements < old_elements) ? new_elements : old_elements) * sizeof (caddr_t));
+  dk_free_box (ptr);
+  return (box_t) res;
+}
 
 box_t
 DBG_NAME (box_num) (DBG_PARAMS boxint n)
