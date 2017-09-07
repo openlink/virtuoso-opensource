@@ -69,6 +69,8 @@
 
 /* Dkalloc.c */
 void dk_memory_initialize (int do_malloc_cache);
+extern void dk_memory_finalize (void);
+
 int dk_is_alloc_cache (size_t sz);
 void dk_alloc_cache_status (void *cache);
 size_t dk_alloc_cache_total (void *cache);
@@ -95,7 +97,8 @@ void thr_alloc_cache_clear (thread_t * thr);
 # define dk_alloc(sz)		dbg_malloc (__FILE__, __LINE__, (sz))
 # define dk_try_alloc(sz)	dbg_malloc (__FILE__, __LINE__, (sz))
 # define dk_free(ptr, sz)	dbg_free_sized (__FILE__, __LINE__, (ptr), (sz))
-
+# define dk_freep(b,n)			dbg_freep(__FILE__, __LINE__, b, n)
+# define dk_find_alloc_error(p, mp)	dbg_find_allocation_error(p, mp)
 #endif
 #endif
 extern void dk_alloc_assert (void *ptr);
@@ -103,8 +106,8 @@ extern void dk_alloc_assert_mp_or_plain (void *ptr);
 #else
 # define dk_alloc_assert(ptr) ;
 # define dk_alloc_assert_mp_or_plain(ptr) 	;
-# define dbg_find_allocation_error(p, mp)	NULL
-# define dbg_freep(f,l,b,n)			free(b)
+# define dk_find_alloc_error(p, mp)		NULL
+# define dk_freep(b,n)				free(b)
 #endif
 
 #ifdef MALLOC_DEBUG

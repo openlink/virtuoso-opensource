@@ -98,7 +98,7 @@ typedef struct malhdr_s
     void *pool;
   } malhdr_t;
 
-int		_dbgmal_enabled;
+int			_dbgmal_enabled;
 dk_mutex_t *		_dbgmal_mtx;
 static dyntable_t	_dbgtab;
 static size_t		_totalmem;
@@ -571,20 +571,27 @@ memdbg_abort (void)
 #endif
 }
 
-unsigned long dbg_malloc_magic_of_data (void *data) { return ((malhdr_t *) ((u_char *) data - sizeof (malhdr_t)))->magic; }
-void *dbg_mp_of_data (void *data) { return ((malhdr_t *) ((u_char *) data - sizeof (malhdr_t)))->pool; }
+uint32
+dbg_malloc_magic_of_data (void *data)
+{
+  malhdr_t *mhdr = (malhdr_t *) ((u_char *) data - sizeof (malhdr_t));
+  return mhdr->magic;
+}
 
-#if 0
-#define ERROR_FOUND(err) return NULL;
-#else
-#define ERROR_FOUND(err) { sprintf err; return buf; }
-#endif
+void *
+dbg_mp_of_data (void *data)
+{
+  malhdr_t *mhdr = (malhdr_t *) ((u_char *) data - sizeof (malhdr_t));
+  return mhdr->pool;
+}
+
+#define ERROR_FOUND(err) { sprintf err; goto return_buf; }
 
 #undef dbg_find_allocation_error
 const char *
 dbg_find_allocation_error (void *data, void *expected_pool)
 {
-  static char buf[0x100];
+  static char buf[1000];
   malhdr_t *mhdr;
   u_char *cp;
   if (data == NULL)
@@ -626,6 +633,8 @@ dbg_find_allocation_error (void *data, void *expected_pool)
   if (cp[0] != 0xDE || cp[1] != 0xAD || cp[2] != 0xC0 || cp[3] != 0xDE)
     ERROR_FOUND((buf, "Area thrash detected past the end of buffer"))
   return NULL;
+return_buf:
+  return buf;
 }
 
 int dbg_allows_free_nulls = 0;

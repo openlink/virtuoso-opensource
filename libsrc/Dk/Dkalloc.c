@@ -936,7 +936,7 @@ dk_check_end_marks (void)
 void
 dk_alloc_assert (void *ptr)
 {
-  const char *err = dbg_find_allocation_error (ptr, NULL);
+  const char *err = dk_find_alloc_error (ptr, NULL);
   if (err)
     GPF_T1 (err);
 }
@@ -950,9 +950,9 @@ dk_alloc_assert_mp_or_plain (void *ptr)
   if (!_dbgmal_enabled)
     return;
   if (MALPMAGIC_OK == dbg_malloc_magic_of_data (ptr))
-    err = dbg_find_allocation_error (ptr, dbg_mp_of_data (ptr));
+    err = dk_find_alloc_error (ptr, dbg_mp_of_data (ptr));
   else
-    err = dbg_find_allocation_error (ptr, NULL);
+    err = dk_find_alloc_error (ptr, NULL);
   if (err)
     GPF_T1 (err);
 }

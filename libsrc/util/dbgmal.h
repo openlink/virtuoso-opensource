@@ -75,6 +75,7 @@ extern int dbg_allows_free_nulls;
 #define freep(X,P) free (X)
 #endif
 
+extern int _dbgmal_enabled;
 
 BEGIN_CPLUSPLUS
 
@@ -98,10 +99,9 @@ size_t  dbg_mal_count (const char *name, u_int line);
 
 void	 dbg_dump_mem(void);
 
-
-extern int _dbgmal_enabled;
-extern unsigned long dbg_malloc_magic_of_data (void *data);
+extern uint32 dbg_malloc_magic_of_data (void *data);
 extern void *dbg_mp_of_data (void *data);
+
 const char *dbg_find_allocation_error (void *data, void *expected_pool);
 
 size_t dbg_malloc_get_current_total (void);
