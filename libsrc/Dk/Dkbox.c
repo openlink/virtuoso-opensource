@@ -1788,7 +1788,7 @@ int
 box_equal (cbox_t b1, cbox_t b2)
 {
   uint32 l1, l2, bf1, bf2;
-  dtp_t b1_tag, b2_tag;
+  dtp_t b1_tag, b2_tag, nl1, nl2;
   boxint b1_long_val = 0, b2_long_val = 0;
 
   if (b1 == b2)
@@ -1831,8 +1831,13 @@ box_equal (cbox_t b1, cbox_t b2)
   l2 = box_length (b2);
   if (l1 != l2)
     return 0;
-
-  if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
+  if (DV_DB_NULL == b1_tag && DV_DB_NULL == b2_tag)
+    return 1;
+  if (DV_DB_NULL == b1_tag || DV_DB_NULL == b2_tag)
+    return 0;
+  nl1 = IS_NONLEAF_DTP (b1_tag);
+  nl2 = IS_NONLEAF_DTP (b2_tag);
+  if (nl1 && nl2)
     {
       uint32 inx;
       l1 /= sizeof (caddr_t);
@@ -1843,6 +1848,8 @@ box_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
+  if (nl1 || nl2)
+    return 0;
   memcmp_8 (b1, b2, l1, neq);
   bf1 = box_flags (b1);
   bf2 = box_flags (b2);
@@ -1872,7 +1879,7 @@ int
 box_strong_equal (cbox_t b1, cbox_t b2)
 {
   uint32 l1, l2, bf1, bf2;
-  dtp_t b1_tag, b2_tag;
+  dtp_t b1_tag, b2_tag, nl1, nl2;
   boxint b1_long_val = 0, b2_long_val = 0;
 
   if (b1 == b2)
@@ -1918,7 +1925,13 @@ box_strong_equal (cbox_t b1, cbox_t b2)
   l2 = box_length (b2);
   if (l1 != l2)
     return 0;
-  if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
+  if (DV_DB_NULL == b1_tag && DV_DB_NULL == b2_tag)
+    return 1;
+  if (DV_DB_NULL == b1_tag || DV_DB_NULL == b2_tag)
+    return 0;
+  nl1 = IS_NONLEAF_DTP (b1_tag);
+  nl2 = IS_NONLEAF_DTP (b2_tag);
+  if (nl1 && nl2)
     {
       uint32 inx;
       l1 /= sizeof (caddr_t);
@@ -1929,6 +1942,8 @@ box_strong_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
+  if (nl1 || nl2)
+    return 0;
   memcmp_8 (b1, b2, l1, neq);
   bf1 = box_flags (b1);
   bf2 = box_flags (b2);
