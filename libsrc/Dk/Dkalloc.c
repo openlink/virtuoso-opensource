@@ -46,6 +46,7 @@ dk_set_initial_mem (size_t sz)
 #define dk_tlsf_init()
 
 
+int enable_alloc_ctr;
 int64 dk_n_allocs;
 int64 dk_n_total;
 int64 dk_max_allocs;
@@ -306,11 +307,14 @@ av_clear (av_list_t * av, size_t sz)
     {
       next = *(caddr_t **) ptr;
       free (ptr);
-      CNT_ENTER;
-      dk_n_total --;
-      CNT_LEAVE;
-      dk_n_free ++;
-      dk_n_bytes -= sz;
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total --;
+	  CNT_LEAVE;
+	  dk_n_free ++;
+	  dk_n_bytes -= sz;
+	}
     }
   av->av_first = NULL;
   av->av_fill = 0;
@@ -770,11 +774,14 @@ dk_alloc (size_t c)
 	    }
 
 	  thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
-	  CNT_ENTER;
-	  dk_n_total ++;
-	  CNT_LEAVE;
-	  dk_n_allocs++;
-	  dk_n_bytes += align_sz;
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total ++;
+	      CNT_LEAVE;
+	      dk_n_allocs++;
+	      dk_n_bytes += align_sz;
+	    }
 	}
       AV_MARK_ALLOC (thing, align_sz);
     }
@@ -783,11 +790,14 @@ dk_alloc (size_t c)
       align_sz = _RNDUP_PWR2 (c, 4096);
       thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
       AV_MARK_ALLOC (thing, align_sz);
-      CNT_ENTER;
-      dk_n_total ++;
-      CNT_LEAVE;
-      dk_n_allocs++;
-      dk_n_bytes += align_sz;
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total ++;
+	  CNT_LEAVE;
+	  dk_n_allocs++;
+	  dk_n_bytes += align_sz;
+	}
     }
 #endif
   if (dk_n_allocs > dk_n_max_allocs)
@@ -886,11 +896,14 @@ dk_free (void *ptr, size_t sz)
 	  mutex_leave (&av->av_mtx);
 	full:
 	  FREE_IN_DK_FREE (ptr);
-	  CNT_ENTER;
-	  dk_n_total --;
-	  CNT_LEAVE;
-	  dk_n_bytes -= sz;
-	  dk_n_free ++;
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total --;
+	      CNT_LEAVE;
+	      dk_n_bytes -= sz;
+	      dk_n_free ++;
+	    }
 	  return;
 	}
     }
