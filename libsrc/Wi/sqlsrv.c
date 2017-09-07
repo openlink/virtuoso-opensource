@@ -58,6 +58,7 @@
 #include "shuric.h"
 #include "srvstat.h"
 #include "sqloinv.h"
+#include "ltrx.h"
 #include "uname_const_decl.h"
 
 #ifdef WIN32
@@ -527,20 +528,20 @@ cli_scrap_cached_statements (client_connection_t * cli)
 }
 
 lock_trx_t *
-cli_set_new_trx (client_connection_t *cli)
+DBG_NAME(cli_set_new_trx) (DBG_PARAMS  client_connection_t *cli)
 {
   if (!cli->cli_trx)
-    cli_set_trx (cli, lt_start ());
+    cli_set_trx (cli, DBG_NAME(lt_start) (DBG_ARGS_0));
   else
     cli_set_trx (cli, cli->cli_trx);
   return cli->cli_trx;
 }
 
 lock_trx_t *
-cli_set_new_trx_no_wait_cpt (client_connection_t *cli)
+DBG_NAME(cli_set_new_trx_no_wait_cpt) (DBG_PARAMS  client_connection_t *cli)
 {
   if (!cli->cli_trx)
-    cli_set_trx (cli, lt_start_inner (0));
+    cli_set_trx (cli, DBG_NAME(lt_start_inner) (DBG_ARGS  0));
   else
     cli_set_trx (cli, cli->cli_trx);
   return cli->cli_trx;

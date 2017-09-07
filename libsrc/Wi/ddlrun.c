@@ -4152,10 +4152,10 @@ const char *sys_users_dd_text =
 ;
 
 void
-local_start_trx (client_connection_t * cli)
+DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli)
 {
   IN_TXN;
-  cli_set_new_trx (cli);
+  DBG_NAME(cli_set_new_trx) (DBG_ARGS  cli);
   cli->cli_trx->lt_replicate = REPL_NO_LOG;
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
@@ -6944,3 +6944,12 @@ sch_create_table_as (query_instance_t *qi, ST * tree)
   if (err)
     sqlr_resignal (err);
 }
+
+#ifdef MALLOC_DEBUG
+#undef local_start_trx
+void
+local_start_trx (client_connection_t * cli)
+{
+  dbg_local_start_trx (__FILE__, __LINE__, cli);
+}
+#endif

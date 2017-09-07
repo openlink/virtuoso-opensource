@@ -30,6 +30,48 @@
 
 #ifdef MALLOC_DEBUG
 #define RC_DBG
+dk_hash_t *res_to_thing = NULL;
+dk_mutex_t *res_to_thing_mtx = NULL;
+
+malhdr_t *
+resource_find_malhdr (void *res)
+{
+  malhdr_t *thing;
+  if (NULL == res_to_thing)
+    {
+      res_to_thing_mtx = mutex_allocate ();
+      res_to_thing = hash_table_allocate (128047);
+      return NULL;
+    }
+  mutex_enter (res_to_thing_mtx);
+  thing = gethash (res, res_to_thing);
+  mutex_leave (res_to_thing_mtx);
+  return thing;
+}
+
+malhdr_t *
+resource_find_or_make_malhdr (void *res)
+{
+  malhdr_t *thing;
+  if (NULL == res_to_thing)
+    {
+      res_to_thing_mtx = mutex_allocate ();
+      res_to_thing = hash_table_allocate (128047);
+    }
+  mutex_enter (res_to_thing_mtx);
+  thing = gethash (res, res_to_thing);
+  mutex_leave (res_to_thing_mtx);
+  if (NULL == thing)
+    {
+      thing = (malhdr_t *)malloc (sizeof (malhdr_t));
+      thing->magic = 0;
+      mutex_enter (res_to_thing_mtx);
+      sethash (res, res_to_thing, thing);
+      mutex_leave (res_to_thing_mtx);
+    }
+  return thing;
+}
+
 #endif
 
 
@@ -63,14 +105,13 @@
  * Globals used :
  */
 resource_t *
-resource_allocate (uint32 sz, rc_constr_t constructor, rc_destr_t destructor, rc_destr_t clear_func, void *client_data)
+DBG_NAME(resource_allocate) (DBG_PARAMS  uint32 sz, rc_constr_t constructor, rc_destr_t destructor, rc_destr_t clear_func, void *client_data)
 {
   resource_t *rc;
-
-  rc = (resource_t *) malloc (sizeof (resource_t));
+  rc = (resource_t *) DBG_NAME(malloc) (DBG_ARGS  sizeof (resource_t));
   /* use malloc so as to be usable inside the dk_alloc cache system */
   memset (rc, 0, sizeof (resource_t));
-  rc->rc_items = (void **) malloc (sizeof (void *) * sz);
+  rc->rc_items = (void **) DBG_NAME(malloc) (DBG_ARGS  sizeof (void *) * sz);
   rc->rc_fill = 0;
   rc->rc_size = sz;
   rc->rc_constructor = constructor;
@@ -87,13 +128,12 @@ resource_allocate (uint32 sz, rc_constr_t constructor, rc_destr_t destructor, rc
 
 
 resource_t *
-resource_allocate_primitive (uint32 sz, int max_sz)
+DBG_NAME(resource_allocate_primitive) (DBG_PARAMS  uint32 sz, int max_sz)
 {
   resource_t *rc;
-
-  rc = (resource_t *) malloc (sizeof (resource_t));
+  rc = (resource_t *) DBG_NAME(malloc) (DBG_ARGS  sizeof (resource_t));
   memset (rc, 0, sizeof (resource_t));
-  rc->rc_items = (void **) malloc (sizeof (void *) * sz);
+  rc->rc_items = (void **) DBG_NAME(malloc) (DBG_ARGS  sizeof (void *) * sz);
   rc->rc_fill = 0;
   rc->rc_size = sz;
   rc->rc_max_size = max_sz;
@@ -113,7 +153,7 @@ resource_no_sem (resource_t * rc)
 
 
 void
-_resource_adjust (resource_t * rc)
+DBG_NAME(_resource_adjust) (DBG_PARAMS  resource_t * rc)
 {
   /* if there are over 5% underflows and the resource overflows at least half as
    * frequently as it underflows and it's not over max size, expand */
@@ -132,9 +172,10 @@ _resource_adjust (resource_t * rc)
     }
   if (rc->rc_n_empty > rc->rc_gets / 20 && rc->rc_n_full > rc->rc_n_empty / 2)
     {
-      void **arr = (void **) malloc (rc->rc_size * 2 * sizeof (void *));
-      rc->rc_size = rc->rc_size * 2;
-      free ((void *) rc->rc_items);
+      int new_rc_size = rc->rc_size * 2;
+      void **arr = (void **) DBG_NAME(malloc) (DBG_ARGS  new_rc_size * sizeof (void *));
+      rc->rc_size = new_rc_size;
+      DBG_NAME(free) (DBG_ARGS  (void *) rc->rc_items);
       rc->rc_items = arr;
       rc->rc_gets = 0;
       rc->rc_stores = 0;
@@ -142,7 +183,6 @@ _resource_adjust (resource_t * rc)
       rc->rc_n_full = 0;
     }
 }
-
 
 /*##**********************************************************************
  *
@@ -165,68 +205,64 @@ _resource_adjust (resource_t * rc)
  * Globals used :
  */
 void *
-resource_get_1 (resource_t * rc, int construct_new)
+DBG_NAME(resource_get_1) (DBG_PARAMS  resource_t * rc, int construct_new)
 {
   dk_mutex_t *rc_mtx = rc->rc_mtx;
-
+  void *res;
   if (rc_mtx)
     {
       mutex_enter (rc_mtx);
-
       ++rc->rc_gets;
       if (rc->rc_fill)
-	{
-	  void *val;
-
-	  val = (rc->rc_items[--(rc->rc_fill)]);
-
-	  mutex_leave (rc_mtx);
-	  return val;
-	}
-      else
-	{
-	  void *data;
-	  if (++rc->rc_n_empty % 1000 == 0)
-	    _resource_adjust (rc);
-	  mutex_leave (rc_mtx);
-	  if (rc->rc_constructor && construct_new)
-	    data = (*rc->rc_constructor) (rc->rc_client_data);
-	  else
-	    data = NULL;
-	  return data;
-	}
+        {
+          res = (rc->rc_items[--(rc->rc_fill)]);
+          mutex_leave (rc_mtx);
+          goto res_ready;
+        }
+      if (++rc->rc_n_empty % 1000 == 0)
+        _resource_adjust (rc);
+      mutex_leave (rc_mtx);
+      if (!construct_new)
+        return NULL;
+      if (NULL == rc->rc_constructor)
+        return NULL;
+      res = (*rc->rc_constructor) (rc->rc_client_data);
+      goto res_ready;
     }
   else
     {
       ++rc->rc_gets;
       if (rc->rc_fill)
-	{
-	  void *val;
-
-	  val = (rc->rc_items[--(rc->rc_fill)]);
-
-	  return val;
-	}
-      else
-	{
-	  void *data;
-	  if (++rc->rc_n_empty % 1000 == 0)
-	    _resource_adjust (rc);
-	  if (rc->rc_constructor && construct_new)
-	    data = (*rc->rc_constructor) (rc->rc_client_data);
-	  else
-	    data = NULL;
-
-	  return data;
-	}
+        {
+          res = (rc->rc_items[--(rc->rc_fill)]);
+          goto res_ready;
+        }
+      if (++rc->rc_n_empty % 1000 == 0)
+        _resource_adjust (rc);
+      if (!construct_new)
+        return NULL;
+      if (NULL == rc->rc_constructor)
+        return NULL;
+      res = (*rc->rc_constructor) (rc->rc_client_data);
+      goto res_ready;
     }
+res_ready:
+#ifdef MALLOC_DEBUG
+  {
+    malhdr_t *thing = resource_find_or_make_malhdr (res);
+    if (DBGMAL_MAGIC_COUNT_FREED == thing->magic)
+      thing->magic = 0;
+    dbg_count_like_malloc (DBG_ARGS  thing, 1000);
+  }
+#endif
+  return res;
 }
 
 
 void *
-resource_get (resource_t * rc)
+DBG_NAME(resource_get) (DBG_PARAMS  resource_t * rc)
 {
-  return resource_get_1 (rc, 1);
+  return DBG_NAME(resource_get_1) (DBG_ARGS  rc, 1);
 }
 
 
@@ -254,8 +290,11 @@ resource_get (resource_t * rc)
  */
 
 int
-resource_store (resource_t * rc, void *item)
+DBG_NAME(resource_store) (DBG_PARAMS  resource_t * rc, void *item)
 {
+#ifdef MALLOC_DEBUG
+  malhdr_t *thing = resource_find_malhdr (item);
+#endif
   dk_mutex_t *rc_mtx = rc->rc_mtx;
   if (rc_mtx)
     mutex_enter (rc_mtx);
@@ -270,7 +309,10 @@ resource_store (resource_t * rc, void *item)
 	}
   }
 #endif /* RC_DBG */
-
+#ifdef MALLOC_DEBUG
+  if (NULL != thing)
+    dbg_count_like_free (DBG_ARGS  thing);
+#endif
   rc->rc_stores++;
   if (rc->rc_fill < rc->rc_size)
     {
@@ -284,19 +326,28 @@ resource_store (resource_t * rc, void *item)
     }
   else
     {
+#ifdef MALLOC_DEBUG
+      mutex_enter (res_to_thing_mtx);
+      remhash (item, res_to_thing);
+      mutex_leave (res_to_thing_mtx);
+      free (thing);
+#endif
       rc->rc_n_full++;
       if (rc_mtx)
-	mutex_leave (rc_mtx);
+        mutex_leave (rc_mtx);
       if (rc->rc_destructor)
-	(*rc->rc_destructor) (item);
+        (*rc->rc_destructor) (item);
       return 0;
     }
 }
 
 
 int
-resource_store_fifo (resource_t * rc, void *item, int n_fifo)
+DBG_NAME(resource_store_fifo) (DBG_PARAMS  resource_t * rc, void *item, int n_fifo)
 {
+#ifdef MALLOC_DEBUG
+  malhdr_t *thing = resource_find_malhdr (item);
+#endif
   dk_mutex_t *rc_mtx = rc->rc_mtx;
   if (rc_mtx)
     mutex_enter (rc_mtx);
@@ -311,7 +362,10 @@ resource_store_fifo (resource_t * rc, void *item, int n_fifo)
 	}
   }
 #endif /* RC_DBG */
-
+#ifdef MALLOC_DEBUG
+  if (NULL != thing)
+    dbg_count_like_free (DBG_ARGS  thing);
+#endif
   rc->rc_stores++;
   if (rc->rc_fill < rc->rc_size)
     {
@@ -327,6 +381,12 @@ resource_store_fifo (resource_t * rc, void *item, int n_fifo)
     }
   else
     {
+#ifdef MALLOC_DEBUG
+      mutex_enter (res_to_thing_mtx);
+      remhash (item, res_to_thing);
+      mutex_leave (res_to_thing_mtx);
+      free (thing);
+#endif
       rc->rc_n_full++;
       if (rc_mtx)
 	mutex_leave (rc_mtx);
@@ -338,11 +398,11 @@ resource_store_fifo (resource_t * rc, void *item, int n_fifo)
 
 
 void
-rc_resize (resource_t * rc, int new_sz)
+DBG_NAME(rc_resize) (DBG_PARAMS  resource_t * rc, int new_sz)
 {
   void * new_items;
   void * new_time = NULL;
-  new_items = malloc (sizeof (void*) * new_sz);
+  new_items = DBG_NAME(malloc) (DBG_ARGS  sizeof (void*) * new_sz);
   if (rc->rc_item_time)
     {
       new_time = malloc (sizeof (int32) * new_sz);
@@ -351,7 +411,7 @@ rc_resize (resource_t * rc, int new_sz)
   memcpy (new_items, rc->rc_items, sizeof (void*) * rc->rc_fill);
   if (rc->rc_item_time)
     memcpy (new_time, rc->rc_item_time, sizeof (int32) * rc->rc_fill);
-  free (rc->rc_items);
+  DBG_NAME(free) (DBG_ARGS  rc->rc_items);
   if (rc->rc_item_time)
     free (rc->rc_item_time);
   rc->rc_items = (void**)new_items;
@@ -362,30 +422,34 @@ rc_resize (resource_t * rc, int new_sz)
 
 
 int
-resource_store_timed (resource_t * rc, void *item)
+DBG_NAME(resource_store_timed) (DBG_PARAMS  resource_t * rc, void *item)
 {
+#ifdef MALLOC_DEBUG
+  malhdr_t *thing = resource_find_malhdr (item);
+#endif
   dk_mutex_t *rc_mtx = rc->rc_mtx;
   uint32 time = approx_msec_real_time ();
   if (rc_mtx)
     mutex_enter (rc_mtx);
-
 #ifdef RC_DBG
   {
     uint32 inx;
     for (inx = 0; inx < rc->rc_fill; inx++)
       if (item == rc->rc_items[inx])
-	{
-	  GPF_T1 ("Duplicate resource free.");
-	}
+        {
+          GPF_T1 ("Duplicate resource free.");
+        }
   }
 #endif /* RC_DBG */
-
+#ifdef MALLOC_DEBUG
+  if (NULL != thing)
+    dbg_count_like_free (DBG_ARGS  thing);
+#endif
   rc->rc_stores++;
   if (rc->rc_fill < rc->rc_size)
     {
       if (rc->rc_clear_func)
 	(*rc->rc_clear_func) (item);
-
       rc->rc_item_time[rc->rc_fill] = time;
       rc->rc_items[(rc->rc_fill)++] = item;
       if (rc_mtx)
@@ -394,6 +458,12 @@ resource_store_timed (resource_t * rc, void *item)
     }
   else
     {
+#ifdef MALLOC_DEBUG
+      mutex_enter (res_to_thing_mtx);
+      remhash (item, res_to_thing);
+      mutex_leave (res_to_thing_mtx);
+      free (thing);
+#endif
       rc->rc_n_full++;
       if (rc->rc_item_time && rc->rc_size < rc->rc_max_size)
 	{
@@ -417,15 +487,22 @@ unsigned long
 resource_clear (resource_t * rc, rc_destr_t destruct)
 {
   unsigned long cnt = 0;
-  void *data = NULL;
+  void *item = NULL;
   if (!destruct && !rc->rc_destructor)
     GPF_T1 ("No destructor for a resource");
 
   if (!destruct)
     destruct = rc->rc_destructor;
-  while (NULL != (data = resource_get_1 (rc, 0)))
+  while (NULL != (item = resource_get_1 (rc, 0)))
     {
-      destruct (data);
+#ifdef MALLOC_DEBUG
+      malhdr_t *thing = resource_find_malhdr (item);
+      mutex_enter (res_to_thing_mtx);
+      remhash (item, res_to_thing);
+      mutex_leave (res_to_thing_mtx);
+      free (thing);
+#endif
+      destruct (item);
       cnt++;
     }
   return cnt;

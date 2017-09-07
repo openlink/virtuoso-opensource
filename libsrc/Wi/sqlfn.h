@@ -576,9 +576,12 @@ dk_set_t  upd_ha_pre (update_node_t * upd, query_instance_t * qi);
 void lt_hi_row_change (lock_trx_t * lt, key_id_t key, int log_op, db_buf_t log_entry);
 int  it_hi_done (index_tree_t * it);
 void cli_set_trx (client_connection_t * cli, lock_trx_t * trx);
-lock_trx_t * cli_set_new_trx (client_connection_t *cli);
-lock_trx_t * cli_set_new_trx_no_wait_cpt (client_connection_t *cli);
-
+lock_trx_t * DBG_NAME(cli_set_new_trx) (DBG_PARAMS  client_connection_t *cli);
+lock_trx_t * DBG_NAME(cli_set_new_trx_no_wait_cpt) (DBG_PARAMS  client_connection_t *cli);
+#ifdef MALLOC_DEBUG
+#define cli_set_new_trx(cli) dbg_cli_set_new_trx(__FILE__, __LINE__, (cli))
+#define cli_set_new_trx_no_wait_cpt(cli) dbg_cli_set_new_trx_no_wait_cpt(__FILE__, __LINE__, (cli))
+#endif
 
 void qr_free (query_t * qr);
 
@@ -778,6 +781,11 @@ EXE_EXPORT (void, local_commit, (client_connection_t * cli));
 EXE_EXPORT (void, local_start_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_commit_end_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_rollback_end_trx, (client_connection_t * cli));
+
+extern void DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli);
+#ifdef MALLOC_DEBUG
+#define local_start_trx(cli) dbg_local_start_trx (__FILE__, __LINE__, (cli))
+#endif
 
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)

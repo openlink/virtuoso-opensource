@@ -44,10 +44,12 @@
 #endif
 #endif
 
-#define MALMAGIC_OK	0xA110CA99
-#define MALMAGIC_FREED	0xA110CA98
-#define MALPMAGIC_OK	0xA110CA97
-#define MALPMAGIC_FREED	0xA110CA96
+#define DBGMAL_MAGIC_OK			0xA110CA99
+#define DBGMAL_MAGIC_FREED		0xA110CA98
+#define DBGMAL_MAGIC_POOL_OK		0xA110CA97
+#define DBGMAL_MAGIC_POOL_FREED		0xA110CA96
+#define DBGMAL_MAGIC_COUNT_OK		0xA110CA95
+#define DBGMAL_MAGIC_COUNT_FREED	0xA110CA94
 
 #ifdef MALLOC_DEBUG
 # define malloc(X)	dbg_malloc(__FILE__,__LINE__,X)
@@ -75,7 +77,33 @@ extern int dbg_allows_free_nulls;
 #define freep(X,P) free (X)
 #endif
 
-extern int _dbgmal_enabled;
+#define AAAL_BUCKETS_COUNT 43 /* should be a prime */
+
+typedef struct malrec_s
+{
+  const char *	mr_fname;
+  u_int		mr_linenum;
+  long		mr_numalloc;
+  long		mr_prevalloc;
+  long		mr_numfree;
+  long		mr_prevfree;
+  size_t	mr_totalsize;
+  size_t	mr_prevsize;
+  void *	mr_aaal_malhdrs[AAAL_BUCKETS_COUNT];
+  long		mr_aaal_count;
+} malrec_t;
+
+typedef struct malhdr_s
+{
+  uint32	magic;
+  malrec_t *	origin;
+  size_t	size;
+  void *	pool;
+  void *	next_malhdr;
+} malhdr_t;
+
+extern void * dbgmal_mtx;
+#define	dbgmal_is_enabled() (NULL != dbgmal_mtx)
 
 BEGIN_CPLUSPLUS
 
@@ -89,12 +117,14 @@ void *	dbg_mallocp (const char *file, u_int line, size_t size, void *pool);
 void *	dbg_callocp (const char *file, u_int line, size_t num, size_t size, void *pool);
 void	dbg_freep (const char *file, u_int line, void *data, void *pool);
 char *	dbg_strdup (const char *file, u_int line, const char *str);
+void	dbg_count_like_malloc (const char *file, u_int line, malhdr_t *thing, size_t size);
+void	dbg_count_like_free (const char *file, u_int line, malhdr_t *thing);
 #define DBG_MALSTATS_ALL 0
 #define DBG_MALSTATS_NEW 1
 #define DBG_MALSTATS_LEAKS 2
 void	dbg_malstats (FILE *, int mode);
-int	dbg_mark (char *name);
-int	dbg_unmark (char *name);
+int	dbg_mark (const char *name);
+int	dbg_unmark (const char *name);
 size_t  dbg_mal_count (const char *name, u_int line);
 
 void	 dbg_dump_mem(void);

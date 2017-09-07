@@ -386,25 +386,25 @@ lt_is_deadlock_old (lock_trx_t * before, lock_trx_t * after, int *n_deadlocks,
 #endif
 
 lock_trx_t *
-lt_start_outside_map ()
+DBG_NAME(lt_start_outside_map) (DBG_PARAMS_0)
 {
   lock_trx_t *lt;
   IN_TXN;
-  lt = lt_start ();
+  lt = DBG_NAME(lt_start_inner) (DBG_ARGS  1);
   LEAVE_TXN;
   return lt;
 }
 
 lock_trx_t *
-lt_start ()
+DBG_NAME(lt_start) (DBG_PARAMS_0)
 {
-  return lt_start_inner (1);
+  return DBG_NAME(lt_start_inner) (DBG_ARGS  1);
 }
 
 lock_trx_t *
-lt_start_inner (int cpt_wait)
+DBG_NAME(lt_start_inner) (DBG_PARAMS  int cpt_wait)
 {
-  lock_trx_t *lt = (lock_trx_t *) resource_get (trx_rc);
+  lock_trx_t *lt = (lock_trx_t *) DBG_NAME(resource_get) (DBG_ARGS  trx_rc);
   ASSERT_IN_TXN;
   LT_THREADS_REPORT(lt, "LT_START");
   if (cpt_wait)
@@ -2554,3 +2554,11 @@ int ltbing (int s)
 {
   return s;
 }
+
+#ifdef MALLOC_DEBUG
+#undef lt_start
+lock_trx_t * lt_start ()
+{
+  return dbg_lt_start (__FILE__, __LINE__);
+}
+#endif

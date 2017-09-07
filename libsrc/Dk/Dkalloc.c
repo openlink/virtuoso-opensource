@@ -960,9 +960,9 @@ dk_alloc_assert_mp_or_plain (void *ptr)
   const char *err;
   if (ptr == NULL)
     GPF_T1("NULL pointer");
-  if (!_dbgmal_enabled)
+  if (!dbgmal_is_enabled())
     return;
-  if (MALPMAGIC_OK == dbg_malloc_magic_of_data (ptr))
+  if (DBGMAL_MAGIC_POOL_OK == dbg_malloc_magic_of_data (ptr))
     err = dk_find_alloc_error (ptr, dbg_mp_of_data (ptr));
   else
     err = dk_find_alloc_error (ptr, NULL);
