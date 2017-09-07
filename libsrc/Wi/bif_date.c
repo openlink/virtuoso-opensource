@@ -47,7 +47,7 @@
 
 
 caddr_t
-bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func)
+bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
@@ -59,7 +59,7 @@ bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func)
 }
 
 caddr_t
-bif_date_arg_rb_type (caddr_t * qst, state_slot_t ** args, int nth, char *func, int *rb_type_ret)
+bif_date_arg_rb_type (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *rb_type_ret)
 {
   rdf_box_t *src_rdf_box;
   caddr_t arg = bif_arg_unrdf_ext (qst, args, nth, func, (caddr_t *)(&src_rdf_box));

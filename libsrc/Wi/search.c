@@ -3406,7 +3406,7 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
   int len_limit = -1, first_match = 0;
   if (!kv ||  KV_LEFT_DUMMY == kv)
     return;
-  ppos = itc->itc_page + (int64)itc->itc_map_pos << 32;
+  ppos = ((int64)(itc->itc_page) << 16) | itc->itc_map_pos;
   if (!itc->itc_st.visited)
     itc->itc_st.visited = hash_table_allocate (203);
   if (gethash ((void*)ppos, itc->itc_st.visited))

@@ -1892,7 +1892,7 @@ bif_ap_debug_langhandler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   caddr_t source_UTF8 = bif_string_arg (qst, args, 0, "ap_debug_langhandler");
   caddr_t lang_name = bif_string_arg (qst, args, 1, "ap_debug_langhandler");
   caddr_t *set_ids = (caddr_t *)bif_array_arg (qst, args, 2, "ap_debug_langhandler");
-  dk_session_t *out_ses = (dk_session_t *)bif_strses_arg (qst, args, 3, "ap_debug_langhandler");
+  dk_session_t *out_ses = bif_strses_arg (qst, args, 3, "ap_debug_langhandler");
   ap_set_t **sets;
   lang_handler_t *lh;
   ap_proc_inst_t *appi;

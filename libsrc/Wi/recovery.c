@@ -1514,7 +1514,7 @@ fds_same_file (int fd1, int fd2)
 static caddr_t
 bif_read_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "read_log");
+  dk_session_t * in = bif_strses_arg (qst, args, 0, "read_log");
   OFF_T off;
   int bytes;
   caddr_t *header;

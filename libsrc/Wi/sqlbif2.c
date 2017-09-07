@@ -766,7 +766,7 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (!stricmp ("connect_attrs", mode))
     {
       if (qi->qi_client->cli_info)
-	return box_copy_tree (qi->qi_client->cli_info);
+	return box_copy_tree ((caddr_t)(qi->qi_client->cli_info));
       else
 	return NEW_DB_NULL;
     }
@@ -1471,7 +1471,7 @@ static char restricted_xml_chars[0x80] = {
             }
           if (0 == weird_char_ctr)
             return NULL;
-          dest = dest_tail = dk_alloc_box ((sizeof (wchar_t) * 2 * weird_char_ctr) + src_box_length, src_dtp);
+          dest = dest_tail = (wchar_t *)dk_alloc_box ((sizeof (wchar_t) * 2 * weird_char_ctr) + src_box_length, src_dtp);
           dest_to_swap = (caddr_t) dest;
           for (tail = (wchar_t *)src; tail < end; tail++)
             {
@@ -1620,7 +1620,7 @@ bif_stop_cpt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char * me = "format_number";
+  const char * me = "format_number";
   NUMERIC_VAR (num_buf);
   numeric_t number = (numeric_t) num_buf;
   caddr_t number_box = bif_arg (qst, args, 0, me);

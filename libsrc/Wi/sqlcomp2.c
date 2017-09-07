@@ -2305,7 +2305,7 @@ sqlc_test (void)
 #ifdef MALLOC_DEBUG
 #undef sql_compile
 query_t *
-sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
+sql_compile (const char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
 {
   return dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
 }

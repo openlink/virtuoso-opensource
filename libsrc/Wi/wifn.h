@@ -1177,7 +1177,7 @@ void sched_set_thread_count (void);
 caddr_t box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
     dtp_t to_dtp, ptrlong prec, unsigned char scale, caddr_t *err_ret);
 
-caddr_t box_sprintf_escaped (caddr_t str, int is_id);
+caddr_t box_sprintf_escaped (ccaddr_t str, int is_id);
 
 void dp_set_backup_flag (dbe_storage_t * dbs, dp_addr_t page, int on);
 int dp_backup_flag (dbe_storage_t * dbs, dp_addr_t page);

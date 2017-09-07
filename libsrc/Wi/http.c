@@ -2938,7 +2938,7 @@ ws_file (ws_connection_t * ws)
   caddr_t etag_in = NULL;
   caddr_t fname = ws->ws_file;
   char *lfname = (char *) (ws->ws_path_string ? ws->ws_path_string : "/");
-  char * ctype;
+  const char * ctype;
   int fd;
   STAT_T st;
 
@@ -7381,8 +7381,8 @@ bif_string_output (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_output_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t strses = bif_strses_arg (qst, args, 0, "string_output_flush");
-  strses_flush ((dk_session_t *) strses);
+  dk_session_t *strses = bif_strses_arg (qst, args, 0, "string_output_flush");
+  strses_flush (strses);
   return (NULL);
 }
 
@@ -7402,14 +7402,14 @@ bif_http_output_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_output_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t strses = bif_strses_arg (qst, args, 0, "string_output_string");
-  if (!STRSES_CAN_BE_STRING ((dk_session_t *) strses))
+  dk_session_t * strses = bif_strses_arg (qst, args, 0, "string_output_string");
+  if (!STRSES_CAN_BE_STRING (strses))
     {
       *err_ret = STRSES_LENGTH_ERROR ("string_output_string");
       return NULL;
     }
 
-  return (strses_string ((dk_session_t *) strses));
+  return (strses_string (strses));
 }
 
 static caddr_t

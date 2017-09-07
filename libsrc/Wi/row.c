@@ -1439,7 +1439,7 @@ box_to_boxint (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key
 
 
 static double
-box_to_double (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key_t *key)
+box_to_double_col (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key_t *key)
 {
   switch (dtp)
     {
@@ -1624,14 +1624,14 @@ row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
 
 	  case DV_SINGLE_FLOAT:
 		{
-		  double df = box_to_double (data, dtp, col_id, err_ret, key);
+		  double df = box_to_double_col (data, dtp, col_id, err_ret, key);
 		  float ft = (float) df;
 		  res = box_float (ft);
 		  break;
 		}
 	  case DV_DOUBLE_FLOAT:
 		{
-		  double df = box_to_double (data, dtp, col_id, err_ret, key);
+		  double df = box_to_double_col (data, dtp, col_id, err_ret, key);
 		  res = box_double (df);
 		  break;
 		}
@@ -1957,7 +1957,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       break;
     case DV_SINGLE_FLOAT:
       {
-	double df = box_to_double (data, dtp, cl->cl_col_id, err_ret, key);
+	double df = box_to_double_col (data, dtp, cl->cl_col_id, err_ret, key);
 	float ft = (float) df;
 	if (ins_itc)
 	  {
@@ -1970,7 +1970,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
 
     case DV_DOUBLE_FLOAT:
       {
-	double df = box_to_double (data, dtp, cl->cl_col_id, err_ret, key);
+	double df = box_to_double_col (data, dtp, cl->cl_col_id, err_ret, key);
 	if (ins_itc)
 	  {
 	    caddr_t _box_double = box_double (df);

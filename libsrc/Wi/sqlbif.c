@@ -275,16 +275,15 @@ bif_string_or_wide_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, c
 }
 
 
-caddr_t
+dk_session_t *
 bif_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp != DV_STRING_SESSION)
-  sqlr_new_error ("22023", "SR002",
-  "Function %s needs a string output as argument %d, not an arg of type %s (%d)",
-  func, nth + 1, dv_type_title (dtp), dtp);
-  return arg;
+    sqlr_new_error ("22023", "SR002",
+	"Function %s needs a string output as argument %d, not an arg of type %s (%d)", func, nth + 1, dv_type_title (dtp), dtp);
+  return (dk_session_t *) arg;
 }
 
 dk_session_t *
@@ -888,7 +887,7 @@ bif_strict_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, cons
 
 
 dbe_key_t *
-bif_key_arg (caddr_t * qst, state_slot_t ** args, int n, char * fn)
+bif_key_arg (caddr_t * qst, state_slot_t ** args, int n, const char * fn)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   caddr_t tb_name = bif_string_arg (qst, args, n, fn);
@@ -1078,7 +1077,7 @@ bif_dbg_obj_princ (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
               }
             else
               {
-                caddr_t iri = dk_set_pop (&iri_labels);
+                caddr_t iri = (caddr_t)dk_set_pop (&iri_labels);
                 if (!iri)
                   goto done_iid; /* see below */
                 printf ("=<%s>", iri);
@@ -1124,10 +1123,10 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
   int n_args = qst ? BOX_ELEMENTS (args) : n_ext_args;
   int n_slots, ha_dtp_check_done = 0;
   char autonull[10];
-  caddr_t nullptr;
+  caddr_t db_null_ptr;
   caddr_t pvals_ptr;
   state_slot_t **pvals;
-  BOX_AUTO (nullptr,autonull, 0, DV_DB_NULL);
+  BOX_AUTO (db_null_ptr, autonull, 0, DV_DB_NULL);
 
   n_slots = ha && ha->ha_slots ? BOX_ELEMENTS (ha->ha_slots) : 0;
 
@@ -1201,7 +1200,7 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
     {
       state_slot_t *ssl = ha->ha_slots[inx];
       vals[inx + 1].ssl_type = SSL_CONSTANT;
-      vals[inx + 1].ssl_constant = nullptr;
+      vals[inx + 1].ssl_constant = db_null_ptr;
       if (ssl)
 	vals[inx].ssl_sqt = ssl->ssl_sqt;
       pvals[inx + 1] = &vals[inx + 1];
@@ -1230,7 +1229,7 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
     }
   END_QR_RESET;
   ha->ha_slots = saved_slots;
-  BOX_DONE (nullptr, autonull);
+  BOX_DONE (db_null_ptr, autonull);
   BOX_DONE (pvals_ptr, pvals_buf);
   return NULL;
 }
@@ -1642,7 +1641,7 @@ bif_define_int (caddr_t name, bif_t bif, bif_metadata_t *bmd)
 #endif
 	}
   id_hash_set (name_to_bif_metadata_idhash, (caddr_t)(&name), (caddr_t)(&bmd));
-  sethash (bif, bif_to_bif_metadata_hash, bmd);
+  sethash ((void *)bif, bif_to_bif_metadata_hash, bmd);
 }
 
 bif_metadata_t *
@@ -1713,9 +1712,9 @@ bif_define_ex (const char *raw_name, bif_t bif, ...)
             dk_set_push (&raw_alias_names, box_copy (alias_noupcase_name));
             break;
           }
-        case BMD_VECTOR_IMPL:		bmd->bmd_vector_impl = va_arg (tail, void *); break;
-        case BMD_SQL_OPTIMIZER_IMPL:	bmd->bmd_sql_optimizer_impl = va_arg (tail, void *); break;
-        case BMD_SPARQL_OPTIMIZER_IMPL:	bmd->bmd_sparql_optimizer_impl = va_arg (tail, void *); break;
+        case BMD_VECTOR_IMPL:		bmd->bmd_vector_impl = (bif_vec_t)va_arg (tail, void *); break;
+        case BMD_SQL_OPTIMIZER_IMPL:	bmd->bmd_sql_optimizer_impl = (bif_sql_optimizer_t *)va_arg (tail, void *); break;
+        case BMD_SPARQL_OPTIMIZER_IMPL:	bmd->bmd_sparql_optimizer_impl = (bif_sparql_optimizer_t *)va_arg (tail, void *); break;
         case BMD_RET_TYPE:		bmd->bmd_ret_type = va_arg (tail, bif_type_t *); break;
         case BMD_MIN_ARGCOUNT:		bmd->bmd_min_argcount = va_arg (tail, int); break;
         case BMD_ARGCOUNT_INC:		bmd->bmd_argcount_inc = va_arg (tail, int); break;
@@ -2918,7 +2917,7 @@ bif_space (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 /* These two functions are for the needs of ltrim, rtrim and trim */
 #define skip_any_of_these_func(type) \
 type * \
-type##_skip_any_of_these (type *str, type *skip_str, int len) \
+type##_skip_any_of_these (type *str, const type *skip_str, int len) \
 { \
   type *s = (( type *) str);  \
 \
@@ -2955,7 +2954,7 @@ skip_any_of_these_func (wchar_t)
    zero byte of the string in case there were nothing to trim.) */
 #define skip_from_right_any_of_these(type) \
 type * \
-type##_skip_from_right_any_of_these (type *str, type *skip_str, int len) \
+type##_skip_from_right_any_of_these (type *str, const type *skip_str, int len) \
 { \
   type *s; \
   s = ((( type *) str) + len - 1);  /* Pointer to the last char. */ \
@@ -3084,7 +3083,7 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int n_args = BOX_ELEMENTS (args);
   caddr_t str = bif_string_or_wide_or_null_arg (qst, args, 0, "trim");
   caddr_t skip_str_orig = NULL;
-  caddr_t skip_str = NULL;
+  const char *skip_str = NULL;
   long len;
   long from;
   long to;
@@ -3432,11 +3431,11 @@ typedef void * (* memmem_fun_t) (const void *needle, size_t needle_len, const vo
 caddr_t
 bif_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *me = "replace";
+  const char *me = "replace";
   int n_args = BOX_ELEMENTS (args);
-  caddr_t src_str = bif_string_or_wide_or_null_arg (qst, args, 0, me);
-  caddr_t from_str = bif_string_or_wide_or_null_arg (qst, args, 1, me);
-  caddr_t to_str = bif_string_or_wide_or_null_arg (qst, args, 2, me);
+  caddr_t src_str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, me);
+  caddr_t from_str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, me);
+  caddr_t to_str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 2, me);
   int only_n_flag = (n_args > 3);
   int only_n, src_bytes, from_bytes, to_bytes, difference, occurrences;
   int res_bytes, non_changed_bytes, n_changes;
@@ -3571,10 +3570,11 @@ bif_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-sprintf_escaped_id (caddr_t str, char *out, dk_session_t * ses)
+sprintf_escaped_id (ccaddr_t str, char *out, dk_session_t * ses)
 {
   int len = box_length (str) - 1;
-  char *sp, *dp;
+  const char *sp;
+  char *dp;
 
   for (sp = str, dp = out; *sp && sp - str < len && (ses || dp - out < SPRINTF_BUF_SPACE - 1);)
     {
@@ -3596,10 +3596,11 @@ sprintf_escaped_id (caddr_t str, char *out, dk_session_t * ses)
 
 
 void
-sprintf_escaped_str_literal (caddr_t str, char *out, dk_session_t * ses)
+sprintf_escaped_str_literal (const char *str, char *out, dk_session_t * ses)
 {
   int len = (int) strlen (str);
-  char *sp, *dp;
+  const char *sp;
+  char *dp;
 
   for (sp = str, dp = out; *sp && sp - str < len && (ses || dp - out < SPRINTF_BUF_SPACE - 1);)
     {
@@ -3660,7 +3661,7 @@ sprintf_escaped_table_name (char *out, char *name)
 
 
 caddr_t
-box_sprintf_escaped (caddr_t str, int is_id)
+box_sprintf_escaped (ccaddr_t str, int is_id)
 {
   char dest[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
   dest[SPRINTF_BUF_SPACE] = '\0';
@@ -4400,7 +4401,7 @@ retry_unrdf:
 
 			      dks_esc_write (ses, val_tail, val_end - val_tail, WS_CHARSET (ws, qst), default_charset, DKS_ESC_URI);
 			      converted = strses_string (ses);
-			      dk_free_box (ses);
+			      dk_free_box ((caddr_t)ses);
 
 			      if (NULL == connvar_valplace)
 				dk_free_box (connvar_value);
@@ -4921,7 +4922,7 @@ retry_unrdf:
     if (!hide_errors)
       {
 	while (NULL != res)
-	  dk_free_tree (dk_set_pop (&res));
+	  dk_free_tree ((caddr_t)dk_set_pop (&res));
         err_ret[0] = err;
         return NULL;
       }
@@ -4956,7 +4957,7 @@ format_mismatch:
 
     default:
       while (NULL != res)
-	dk_free_tree (dk_set_pop (&res));
+	dk_free_tree ((caddr_t)dk_set_pop (&res));
 
       return NEW_DB_NULL;
     }
@@ -5228,7 +5229,7 @@ bif_fix_identifier_case (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_locate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *me = "locate";
+  const char *me = "locate";
   int n_args = BOX_ELEMENTS (args);
   caddr_t str1 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, me);
   caddr_t str2 = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, me);
@@ -5513,7 +5514,6 @@ caddr_t
 bif_chr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   unsigned long n = (unsigned long) bif_long_arg (qst, args, 0, "chr");
-  caddr_t str;
   int i;
   char temp[5];
   for (i = 0; n && (i < 4); i++)
@@ -7158,8 +7158,8 @@ bif_mod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (NEW_DB_NULL);
   if (0 == long2)
   {
-    sqlr_new_error ("22012", "SR046", "Division by zero in mod(%ld,%ld)",
-    long1, long2);
+    sqlr_new_error ("22012", "SR046", "Division by zero in mod(" BOXINT_FMT "," BOXINT_FMT ")",
+      (boxint)long1, (boxint)long2);
   }
 
   return (box_num (long1 % long2));
@@ -7769,11 +7769,12 @@ bif_connection_swap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t * qi = (query_instance_t *)qst;
   client_connection_t * cli = qi->qi_client;
   caddr_t name = bif_string_or_uname_arg (qst, args, 0, "connection_swap");
-  caddr_t v = bif_arg (qst, args, 1, "connection_swap");
   caddr_t * place;
   int res;
   if (2 < BOX_ELEMENTS (args))
     cli = cli_aqr_ancestor (cli, bif_long_arg (qst, args, 2, "connection_swap"));
+  else
+    bif_arg (qst, args, 1, "connection_swap"); /* To signal an error if not enough arguments */
   place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name);
   if (!place)
     {
@@ -8253,7 +8254,7 @@ hexno (char c)
 caddr_t
 bif_split_and_decode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *me = "split_and_decode";
+  const char *me = "split_and_decode";
   int n_args = BOX_ELEMENTS (args);
   caddr_t inputs = bif_string_or_null_arg (qst, args, 0, me);
   long int convert_names_to /* 0=PrEsErVe, 1=UPPERCASE, 2=lowercase */
@@ -8739,7 +8740,7 @@ wrong_item_type:
 caddr_t
 bif_get_keyword (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *me = "get_keyword";
+  const char *me = "get_keyword";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_arg (qst, args, 0, me);
   caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
@@ -8833,7 +8834,7 @@ get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt)
 caddr_t
 bif_get_keyword_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *me = "get_keyword_ucase";
+  const char *me = "get_keyword_ucase";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_string_or_uname_arg (qst, args, 0, me);
   caddr_t arr = (caddr_t) bif_array_or_null_arg (qst, args, 1, me);
@@ -9044,7 +9045,7 @@ caddr_t
 bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int n_args = BOX_ELEMENTS (args);
-  char *me = "position";
+  const char *me = "position";
   caddr_t item = bif_arg (qst, args, 0, me);
   caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
   long int start = (long) ((n_args > 2) ? bif_long_arg (qst, args, 2, me) - 1 : 0);
@@ -12185,7 +12186,7 @@ bif_serialize_to_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t 
 static caddr_t
 bif_deserialize_from_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "deserialize");
+  dk_session_t * in = bif_strses_arg (qst, args, 0, "deserialize");
   caddr_t ret;
   ret = (caddr_t) read_object (in);
   return ret;
@@ -15492,6 +15493,7 @@ bif_asg_v (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+extern int rq_key_inited;
 
 caddr_t
 bif_rdf_rand_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -17046,7 +17048,7 @@ bif_set_vectored (bif_t bif, bif_vec_t vectored)
 }
 
 
-char * bpel_run_check_proc = "RESTART_ALL_BPEL_INSTANCES ()";
+const char * bpel_run_check_proc = "RESTART_ALL_BPEL_INSTANCES ()";
 
 #if 0
 #define CHECKP(x)  fprintf (stderr, x "." );  fflush (stderr)
