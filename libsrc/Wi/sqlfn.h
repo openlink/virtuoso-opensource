@@ -1427,7 +1427,7 @@ void itc_assert_no_reg (it_cursor_t * itc);
 void qn_result (data_source_t * qn, caddr_t * inst, int set_no);
 void ssl_result (state_slot_t * ssl, caddr_t * inst, int set_no);
 void itc_pop_last_out (it_cursor_t * itc, caddr_t * inst, v_out_map_t * om, buffer_desc_t * buf);
-void qi_vec_init (query_instance_t * qi, int n_sets);
+void DBG_NAME(qi_vec_init) (DBG_PARAMS  query_instance_t * qi, int n_sets);
 void itc_vec_new_results (it_cursor_t * itc);
 void ks_vec_new_results (key_source_t * ks, caddr_t * inst, it_cursor_t * itc);
 int qi_free_cb (caddr_t qi);
@@ -1456,7 +1456,11 @@ void select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * 
 void set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state);
 void ins_vec_exists (instruction_t * ins, caddr_t * inst, db_buf_t next_mask, int * n_true, int * n_false);
 void ins_vec_subq (instruction_t * ins, caddr_t * inst);
-int * qn_extend_sets (data_source_t * qn, caddr_t * inst, int n);
+int * DBG_NAME(qn_extend_sets) (DBG_PARAMS  data_source_t * qn, caddr_t * inst, int n);
+#ifdef MALLOC_DEBUG
+#define qi_vec_init(qi,n_sets) dbg_qi_vec_init (__FILE__, __LINE__, (qi), (n_sets))
+#define qn_extend_sets(qn,inst,n) dbg_qn_extend_sets (__FILE__, __LINE__, (qn), (inst), (n))
+#endif
 #define QN_CHECK_SETS(qn, inst, n) \
   if (box_length (QST_BOX (caddr_t, inst, ((data_source_t*)qn)->src_sets)) < n * sizeof (int)) \
     qn_extend_sets ((data_source_t*)qn, inst, n);

@@ -173,7 +173,7 @@ mem_pool_alloc (void)
   mp->mp_size = 0x100;
   mp->mp_allocs = (caddr_t *) DK_ALLOC (sizeof (caddr_t) * mp->mp_size);
   mp->mp_unames = hash_table_allocate (11);
-  hash_table_init (&mp->mp_large, 121);
+  DBG_NAME(hash_table_init) (DBG_ARGS  &mp->mp_large, 121);
   mp->mp_large.ht_rehash_threshold = 2;
   mp_register (mp);
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
@@ -273,7 +273,7 @@ mem_pool_alloc (void)
 {
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_block_size = ALIGN_8 ((mp_block_size));
-  hash_table_init (&mp->mp_large, 121);
+  DBG_NAME(hash_table_init) (DBG_ARGS  &mp->mp_large, 121);
   mp->mp_large.ht_rehash_threshold = 2;
   mp->mp_unames = DBG_NAME (hash_table_allocate) (DBG_ARGS 11);
   mp_register (mp);

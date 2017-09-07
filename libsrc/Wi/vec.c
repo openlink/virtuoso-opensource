@@ -914,7 +914,7 @@ dc_reset_array (caddr_t * inst, data_source_t * qn, state_slot_t ** ssls, int ne
 
 
 void
-dc_get_buffer (data_col_t * dc, int bytes)
+DBG_NAME (dc_get_buffer) (DBG_PARAMS data_col_t * dc, int bytes)
 {
   db_buf_t new_buf = NULL;
   DO_SET (db_buf_t, buf, &dc->dc_buffers)
@@ -933,7 +933,7 @@ dc_get_buffer (data_col_t * dc, int bytes)
   END_DO_SET ();
   if (!new_buf)
     {
-      new_buf = (db_buf_t) mp_alloc_box_ni (dc->dc_mp, MAX (bytes, 0xfff8), DV_CUSTOM);
+      new_buf = (db_buf_t) DBG_NAME (mp_alloc_box_ni) (DBG_ARGS dc->dc_mp, MAX (bytes, 0xfff8), DV_CUSTOM);
       mp_set_push (dc->dc_mp, &dc->dc_buffers, (void *) new_buf);
     }
   dc->dc_buffer = new_buf;
@@ -1172,7 +1172,7 @@ long tc_dc_extend;
 long tc_dc_extend_values;
 
 void
-dc_extend_2 (data_col_t * dc, int ninx)
+DBG_NAME(dc_extend_2) (DBG_PARAMS data_col_t * dc, int ninx)
 {
   int elt_sz = dc_elt_size (dc);
   db_buf_t vs = dc->dc_values;
@@ -1185,7 +1185,7 @@ dc_extend_2 (data_col_t * dc, int ninx)
     GPF_T1 ("extending dc past max batch size");
   if (next_len > dc_max_batch_sz)
     next_len = dc_max_batch_sz;
-  dc->dc_values = (db_buf_t) mp_alloc_box (dc->dc_mp, 8 + elt_sz * next_len, DV_NON_BOX);
+  dc->dc_values = (db_buf_t) DBG_NAME (mp_alloc_box) (DBG_ARGS dc->dc_mp, 8 + elt_sz * next_len, DV_NON_BOX);
   dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
   if (vs)
   memcpy_16 (dc->dc_values, vs, elt_sz * dc->dc_n_values);

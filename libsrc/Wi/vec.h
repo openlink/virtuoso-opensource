@@ -111,7 +111,10 @@ int vc_date_date (data_col_t * target, data_col_t * source, int row, caddr_t * e
 
 
 
-void dc_get_buffer (data_col_t * dc, int bytes);
+extern void DBG_NAME (dc_get_buffer) (DBG_PARAMS data_col_t * dc, int bytes);
+#ifdef MALLOC_DEBUG
+#define dc_get_buffer(dc,bytes) dbg_dc_get_buffer (__FILE__, __LINE__, (dc), (bytes))
+#endif
 void dc_reset (data_col_t * dc);
 void dc_append_bytes (data_col_t * dc, db_buf_t bytes, int len, db_buf_t pref, int pref_len);
 void dc_append_chars (data_col_t * dc, char *field, int field_lem);
@@ -194,7 +197,10 @@ void dc_set_double (data_col_t * dc, int set, double df);
 #define DC_CHECK_LEN(dc, l)					\
   {if (l >= dc->dc_n_places || !dc->dc_values) dc_extend_2 (dc, l);}
 
-void dc_extend_2 (data_col_t * dc, int l);
+void DBG_NAME(dc_extend_2) (DBG_PARAMS  data_col_t * dc, int l);
+#ifdef MALLOC_DEBUG
+#define dc_extend_2(dc,l) dbg_dc_extend_2 (__FILE__, __LINE__, (dc), (l))
+#endif
 void dc_pop_last (data_col_t * dc);
 int64 qst_vec_get_int64 (caddr_t * inst, state_slot_t * ssl, int row_no);
 void qst_set_all (caddr_t * inst, state_slot_t * ssl, caddr_t val);
