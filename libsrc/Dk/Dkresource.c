@@ -210,43 +210,26 @@ DBG_NAME(resource_get_1) (DBG_PARAMS  resource_t * rc, int construct_new)
   dk_mutex_t *rc_mtx = rc->rc_mtx;
   void *res;
   if (rc_mtx)
+    mutex_enter (rc_mtx);
+  ++rc->rc_gets;
+  if (rc->rc_fill)
     {
-      mutex_enter (rc_mtx);
-      ++rc->rc_gets;
-      if (rc->rc_fill)
-        {
-          res = (rc->rc_items[--(rc->rc_fill)]);
-          mutex_leave (rc_mtx);
-          goto res_ready;
-        }
-      if (++rc->rc_n_empty % 1000 == 0)
-        _resource_adjust (rc);
-      mutex_leave (rc_mtx);
-      if (!construct_new)
-        return NULL;
-      if (NULL == rc->rc_constructor)
-        return NULL;
-      res = (*rc->rc_constructor) (rc->rc_client_data);
-      goto res_ready;
+      res = (rc->rc_items[--(rc->rc_fill)]);
+      if (rc_mtx)
+        mutex_leave (rc_mtx);
     }
   else
     {
-      ++rc->rc_gets;
-      if (rc->rc_fill)
-        {
-          res = (rc->rc_items[--(rc->rc_fill)]);
-          goto res_ready;
-        }
       if (++rc->rc_n_empty % 1000 == 0)
         _resource_adjust (rc);
+      if (rc_mtx)
+        mutex_leave (rc_mtx);
       if (!construct_new)
         return NULL;
       if (NULL == rc->rc_constructor)
         return NULL;
       res = (*rc->rc_constructor) (rc->rc_client_data);
-      goto res_ready;
     }
-res_ready:
 #ifdef MALLOC_DEBUG
   {
     malhdr_t *thing = resource_find_or_make_malhdr (res);
@@ -256,6 +239,53 @@ res_ready:
   }
 #endif
   return res;
+}
+
+
+void
+DBG_NAME(resource_get_batch) (DBG_PARAMS  resource_t * rc, void **tgt_array, int batch_size, int construct_new)
+{
+  int res_count = 0;
+  dk_mutex_t *rc_mtx = rc->rc_mtx;
+  if (rc_mtx)
+    mutex_enter (rc_mtx);
+  while ((res_count < batch_size) && rc->rc_fill)
+    {
+      ++rc->rc_gets;
+      tgt_array[res_count++] = rc->rc_items[--(rc->rc_fill)];
+    }
+  if (res_count == batch_size)
+    {
+      if (rc_mtx)
+        mutex_leave (rc_mtx);
+    }
+  else
+    {
+      rc->rc_n_empty += (batch_size - res_count);
+      if ((0 == rc->rc_fill) && ((rc->rc_n_empty % 1000) < (batch_size - res_count)))
+        _resource_adjust (rc);
+      if (rc_mtx)
+        mutex_leave (rc_mtx);
+      if (!construct_new || (NULL == rc->rc_constructor))
+        memzero (tgt_array + res_count, (batch_size - res_count) * sizeof (void *));
+      else
+        {
+          while (res_count < batch_size)
+          tgt_array[res_count++] = (*rc->rc_constructor) (rc->rc_client_data);
+        }
+    }
+#ifdef MALLOC_DEBUG
+  {
+    int res_ctr;
+    for (res_ctr = res_count; res_ctr--; /* no step */)
+      {
+        malhdr_t *thing = resource_find_or_make_malhdr (tgt_array[res_ctr]);
+        if (DBGMAL_MAGIC_COUNT_FREED == thing->magic)
+          thing->magic = 0;
+        dbg_count_like_malloc (DBG_ARGS  thing, 1000);
+      }
+  }
+#endif
 }
 
 
@@ -484,19 +514,20 @@ DBG_NAME(resource_store_timed) (DBG_PARAMS  resource_t * rc, void *item)
 
 
 unsigned long
-resource_clear (resource_t * rc, rc_destr_t destruct)
+DBG_NAME(resource_clear) (DBG_PARAMS  resource_t * rc, rc_destr_t destruct)
 {
   unsigned long cnt = 0;
   void *item = NULL;
   if (!destruct && !rc->rc_destructor)
     GPF_T1 ("No destructor for a resource");
-
   if (!destruct)
     destruct = rc->rc_destructor;
-  while (NULL != (item = resource_get_1 (rc, 0)))
+  while (NULL != (item = DBG_NAME(resource_get_1) (DBG_ARGS  rc, 0)))
     {
 #ifdef MALLOC_DEBUG
       malhdr_t *thing = resource_find_malhdr (item);
+      if (NULL != thing)
+        dbg_count_like_free (DBG_ARGS  thing);
       mutex_enter (res_to_thing_mtx);
       remhash (item, res_to_thing);
       mutex_leave (res_to_thing_mtx);

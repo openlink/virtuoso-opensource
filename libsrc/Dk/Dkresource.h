@@ -57,10 +57,11 @@ extern resource_t *DBG_NAME(resource_allocate_primitive) (DBG_PARAMS  uint32 sz,
 extern void resource_no_sem (resource_t * rc);
 extern void * DBG_NAME(resource_get) (DBG_PARAMS  resource_t * rc);
 extern void * DBG_NAME(resource_get_1) (DBG_PARAMS  resource_t * rc, int make_new);
+extern void DBG_NAME(resource_get_batch) (DBG_PARAMS  resource_t * rc, void **tgt_array, int batch_size, int make_new);
 extern int DBG_NAME(resource_store) (DBG_PARAMS  resource_t * rc, void *item);
 extern int DBG_NAME(resource_store_fifo) (DBG_PARAMS  resource_t * rc, void *item, int n_fifo);
 extern int DBG_NAME(resource_store_timed) (DBG_PARAMS  resource_t * rc, void *item);
-extern unsigned long resource_clear (resource_t * rc, rc_destr_t destruct);
+extern unsigned long DBG_NAME(resource_clear) (DBG_PARAMS  resource_t * rc, rc_destr_t destruct);
 extern void DBG_NAME(_resource_adjust) (DBG_PARAMS  resource_t * rc);
 extern void DBG_NAME(rc_resize) (DBG_PARAMS  resource_t * rc, int new_sz);
 #ifdef MALLOC_DEBUG
@@ -68,9 +69,11 @@ extern void DBG_NAME(rc_resize) (DBG_PARAMS  resource_t * rc, int new_sz);
 #define resource_allocate_primitive(sz,max_sz)					dbg_resource_allocate_primitive (__FILE__,__LINE__,(sz),(max_sz))
 #define resource_get(rc)							dbg_resource_get(__FILE__,__LINE__,(rc))
 #define resource_get_1(rc,make_new)						dbg_resource_get_1(__FILE__,__LINE__,(rc),(make_new))
+#define resource_get_batch(rc,tgt_array,batch_size,make_new)			dbg_resource_get_batch (__FILE__,__LINE__,(rc),(tgt_array),(batch_size),(make_new))
 #define resource_store(rc,item)							dbg_resource_store(__FILE__,__LINE__,(rc),(item))
 #define resource_store_fifo(rc,item,n_fifo)					dbg_resource_store_fifo(__FILE__,__LINE__,(rc),(item),(n_fifo))
 #define resource_store_timed(rc,item)						dbg_resource_store_timed(__FILE__,__LINE__,(rc),(item))
+#define resource_clear(rc,destruct)						dbg_resource_clear(__FILE__,__LINE__,(rc),(destruct))
 #define _resource_adjust(rc)							dbg__resource_adjust(__FILE__,__LINE__,(rc))
 #define rc_resize(rc,new_sz)							dbg_rc_resize(__FILE__,__LINE__,(rc),(new_sz))
 #endif
