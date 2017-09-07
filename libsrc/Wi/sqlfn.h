@@ -451,6 +451,11 @@ EXE_EXPORT (int, lt_leave, (lock_trx_t * lt));
 #endif
 int lt_enter_anyway (lock_trx_t * lt);
 
+#ifdef DK_ALLOC_BOX_DEBUG
+extern void dk_check_trees_of_qi (query_instance_t *qi);
+#else
+#define dk_check_trees_of_qi(qi)
+#endif
 
 void qi_free (caddr_t * inst);
 void qi_inst_state_free_rsts (caddr_t *qi);

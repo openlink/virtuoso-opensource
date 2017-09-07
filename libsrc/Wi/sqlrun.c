@@ -449,6 +449,56 @@ sel_out_free (state_slot_t ** out_slots, caddr_t * qst)
   dk_free_box ((caddr_t) qst);
 }
 
+#ifdef DK_ALLOC_BOX_DEBUG
+void
+dk_check_trees_of_qi (query_instance_t *qi)
+{
+  dk_hash_t *known = NULL;
+  query_t *qr = qi->qi_query;
+  state_slot_t ** slots = qr->qr_freeable_slots;
+  int n = slots ? BOX_ELEMENTS (slots) : 0, freeable_idx_inx;
+  for (freeable_idx_inx = n; freeable_idx_inx--; /* no step */)
+    {
+      state_slot_t * volatile sl = slots[freeable_idx_inx];
+      caddr_t datum = ((caddr_t *)qi)[sl->ssl_index];
+      if (IS_BOX_POINTER (datum))
+        {
+          switch (sl->ssl_type)
+            {
+            case SSL_PARAMETER:
+            case SSL_REF_PARAMETER:
+            case SSL_REF_PARAMETER_OUT:
+            case SSL_VARIABLE:
+            case SSL_COLUMN:
+              if (IS_BOX_POINTER (datum))
+                dk_check_tree_iter (datum, (caddr_t )(((ptrlong)BADBEEF_BOX) & ~0xFFFL | sl->ssl_index), &known);
+              break;
+            case SSL_VEC:
+              {
+                QNCAST (data_col_t, dc, datum);
+                if (sl->ssl_box_index && ((caddr_t *)qi)[sl->ssl_box_index])
+                  dk_check_tree_iter (((caddr_t *)qi)[sl->ssl_box_index], (caddr_t )(((ptrlong)BADBEEF_BOX) & ~0xFFFL | 0x800L | sl->ssl_index), &known);
+                if (dc->dc_values && (DCT_BOXES & dc->dc_type))
+                  {
+                    /* Owns an array of allocd boxes, else they are from qi_mp */
+                    int val_inx;
+                    for (val_inx = 0; val_inx < dc->dc_n_values; val_inx++)
+                      {
+                        caddr_t val = ((caddr_t*)dc->dc_values)[val_inx];
+                        caddr_t fake_parent = (caddr_t)(0x1000 | sl->ssl_index);
+                        if (NULL != known && (SMALLEST_POSSIBLE_POINTER >= gethash (val, known))) /* This is to reflect the use of aliases */
+                          dk_check_tree_iter (val, fake_parent, &known);
+                      }
+                  }
+                break;
+              }
+            }
+        }
+    }
+  if (NULL != known)
+    hash_table_free (known);
+}
+#endif
 
 void
 qi_inst_state_free (caddr_t * qi_box)
@@ -462,6 +512,9 @@ qi_inst_state_free (caddr_t * qi_box)
     qi_qn_stat (qi);
   if (!qi->qi_is_branch && qi->qi_root_id)
     qi_root_done (qi);
+#ifdef DK_ALLOC_BOX_DEBUG
+  dk_check_trees_of_qi (qi);
+#endif
   for (inx = 0; inx < n; inx++)
     {
       state_slot_t * volatile sl = slots[inx];
