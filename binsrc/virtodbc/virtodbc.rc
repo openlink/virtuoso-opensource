@@ -157,25 +157,26 @@ FONT 8, "MS Sans Serif"
 BEGIN
     LTEXT           "How should the Virtuoso Server verify the authenticity of the login ID?",
                     IDC_STATIC,0,0,219,8
-    RTEXT           "&Authentication method:",IDC_STATIC,0,13,58,16
-    COMBOBOX        IDC_AUTHMETHOD,64,15,136,59,CBS_DROPDOWNLIST |
+    RTEXT           "&Authentication method:",IDC_STATIC,0,13,65,16
+    COMBOBOX        IDC_AUTHMETHOD,69,15,131,59,CBS_DROPDOWNLIST | 
                     CBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     CONTROL         "C&onnect to the Virtuoso Server to obtain default settings for the additional configuration options.",
-                    IDC_USEUID,"Button",BS_AUTOCHECKBOX | BS_MULTILINE |
+                    IDC_USEUID,"Button",BS_AUTOCHECKBOX | BS_MULTILINE | 
                     WS_TABSTOP,0,42,227,19
-    RTEXT           "&Login ID:",IDC_UIDLBL,0,67,58,8
-    EDITTEXT        IDC_UID,64,64,136,13,ES_AUTOHSCROLL
+    RTEXT           "&Login ID:",IDC_UIDLBL,0,67,65,8
+    EDITTEXT        IDC_UID,69,64,131,13,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSEUIDCERT,200,65,29,13
-    RTEXT           "&Password:",IDC_PWDLBL,0,83,58,8
-    EDITTEXT        IDC_PWD,64,80,136,13,ES_PASSWORD | ES_AUTOHSCROLL
-    CONTROL         "&Require the server to authenticate itself with this public key:",
+    RTEXT           "&Password:",IDC_PWDLBL,0,83,65,8
+    EDITTEXT        IDC_PWD,69,80,131,13,ES_PASSWORD | ES_AUTOHSCROLL
+    CONTROL         "&Identify documents that contains Certificate Trust Chain information.",
                     IDC_USESERVERCERT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
-                    0,107,203,10
-    RTEXT           "C&ertificate:",IDC_SERVERCERTLBL,10,122,48,8
-    EDITTEXT        IDC_SERVERCERT,64,119,136,13,ES_AUTOHSCROLL
+                    0,107,228,10
+    CONTROL         "&Trust chain PEM file:",IDC_SERVERCERTLBL,"Static",
+                    SS_LEFTNOWORDWRAP | WS_GROUP,0,122,65,8
+    EDITTEXT        IDC_SERVERCERT,69,119,131,13,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSESERVERCERT,200,119,29,13
     CONTROL         "&Disable interactive login",IDC_NOLOGINBOX,"Button",
-                    BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_DISABLED |
+                    BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_DISABLED | 
                     WS_TABSTOP,0,147,91,10
 END
 
@@ -229,8 +230,8 @@ BEGIN
     IDD_CONFIGPAGE2, DIALOG
     BEGIN
         VERTGUIDE, 10
-        VERTGUIDE, 58
-        VERTGUIDE, 64
+        VERTGUIDE, 65
+        VERTGUIDE, 69
         VERTGUIDE, 200
     END
 END
@@ -299,7 +300,7 @@ BEGIN
     IDS_DEFAULTDB           "<Server Default>"
     IDS_DEFAULTCS           "<Server Default>"
     IDS_UIDLBL              "&Login ID:"
-    IDS_PKCS12LBL           "&Certificate:"
+    IDS_PKCS12LBL           "&Key Store(.p12 file):"
     IDS_PKCS12BROWSE        "Personal Information Exchange (*.pfx;*.p12)|*.pfx;*.p12|PEM Encoded File (*.pem)|*.pem|All Files (*.*)|*.*|"
     IDS_ZCUNRESOLVED        "Unable to locate the Virtuoso server. Please use either <host>:<port> in the Server field, or select a configuration from the list."
     IDS_X509BROWSE          "X.509 Certificate (*.cer;*.crt;*.pem)|*.cer;*.crt;*.pem|All Files (*.*)|*.*|"
