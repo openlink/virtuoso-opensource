@@ -243,7 +243,7 @@
               if (isnull (f))
                 return 'null';
 
-              return sprintf('"%s"', f);
+              return sprintf ('"%s"', replace (f, '"', '\\"'));
             ]]>
           </v:method>
 
@@ -338,9 +338,11 @@
               {
                 if (not (self.command_mode in (0, 1)))
                   return 0;
-              }
 
-              if (cmd = 'up')
+                if (not writePermission)
+                  return 0;
+              }
+              else if (cmd = 'up')
               {
                 if (WEBDAV.DBA.check_admin (self.account_id))
                   return 1;
@@ -350,8 +352,7 @@
 
                 return 1;
               }
-
-              if (cmd in ('upload', 'create', 'link'))
+              else if (cmd in ('upload', 'create', 'link'))
               {
                 if (not (self.command_mode in (0, 1)))
                   return 0;
@@ -361,9 +362,6 @@
               }
 
               if (not self.checkAction (cmd))
-                return 0;
-
-              if ((cmd = 'new') and not writePermission)
                 return 0;
 
               return 1;
@@ -416,10 +414,13 @@
               dir_column := self.getColumn(columnId);
               if (is_empty_or_null(dir_column))
                 return 0;
+
               if (dir_column[0] = self.dir_grouping)
                 return 0;
+
               if (dir_column[5][self.dir_details] <> 1)
                 return 0;
+
               return 1;
             ]]>
           </v:method>
@@ -1011,7 +1012,7 @@
                 '      <table id="ca%d_tbl" class="WEBDAV_grid" cellspacing="0"> \n' ||
                 '        <thead> \n' ||
                 '          <tr> \n' ||
-                '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''ca%d_item'', true)" title="Select All" /></th> \n' ||
+                '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="WEBDAV.selectAllCheckboxes (this, ''ca%d_item'', true)" title="Select All" /></th> \n' ||
                 '            <th width="100%%">Cartridge</th> \n' ||
                 '          </tr> \n' ||
                 '        </thead> \n',
@@ -1071,7 +1072,7 @@
                   '      <table id="mca%d_tbl" class="WEBDAV_grid" cellspacing="0"> \n' ||
                   '        <thead> \n' ||
                   '          <tr> \n' ||
-                  '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th> \n' ||
+                  '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="WEBDAV.selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th> \n' ||
                   '            <th width="100%%">Meta Cartridge</th> \n' ||
                   '          </tr> \n' ||
                   '        </thead>',
@@ -4553,7 +4554,7 @@
                       <thead>
                         <tr>
                           <th class="checkbox">
-                            <input type="checkbox" onclick="selectAllCheckboxes(this, 'cb_item')" value="Select All" name="cb_all" />
+                            <input type="checkbox" onclick="WEBDAV.selectAllCheckboxes(this, 'cb_item')" value="Select All" name="cb_all" />
                           </th>
                           <th width="100%">Filter</th>
                           <th class="action">Action</th>
@@ -5085,7 +5086,7 @@
                                   if (self.dir_path <> '')
                                   {
                                     http ('<th class="checkbox">');
-                                      http ('<input type="checkbox" name="selectall" value="Select All" onclick="selectAllCheckboxes (this, \'cb_item\', true)" title="Select All" />');
+                                      http ('<input type="checkbox" name="selectall" value="Select All" onclick="WEBDAV.selectAllCheckboxes (this, \'cb_item\', true)" title="Select All" />');
                                     http ('</th>');
                                   }
                                 ?>
