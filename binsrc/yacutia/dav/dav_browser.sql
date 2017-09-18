@@ -5533,27 +5533,27 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
   declare uri, ruri any;
 
   id := DB.DBA.DAV_SEARCH_ID (path, 'C');
-  if (not DB.DBA.LDP_ENABLED (id))
-    return;
-
-  for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
+  if (DB.DBA.LDP_ENABLED (id))
   {
-    uri := WS.WS.DAV_IRI (path);
-    TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
-    for (select RES_CONTENT, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id and RES_TYPE in ('text/turtle', 'application/ld+json')) do
+    for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
 	  {
-	    ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
-	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
-      TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), uri, uri);
+      uri := WS.WS.DAV_IRI (path);
+      TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
+      for (select RES_CONTENT, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id and RES_TYPE in ('text/turtle', 'application/ld+json')) do
+      {
+        ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
+        TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
+        TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), uri, uri);
+        {
+          declare continue handler for sqlstate '*';
+          TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+        }
+      }
+      for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
 	    {
-	      declare continue handler for sqlstate '*';
-	      TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+        ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
+        TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
 	    }
-	  }
-    for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
-	  {
-	    ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
-	    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
 	  }
   }
   for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
