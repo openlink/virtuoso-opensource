@@ -103,13 +103,8 @@
                           <?vsp
                             }
                           ?>
-                          <td class="page_tab_empty" align="center" width="100%">
-                            <table cellpadding="0" cellspacing="0">
-                              <tr>
-                                <td width="100%">
-                              </td>
-                            </tr>
-                          </table>
+                          <td class="page_tab_empty" width="100%">
+                            &nbsp;
                         </td>
                       </tr>
                     </table>
