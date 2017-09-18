@@ -1280,8 +1280,6 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msexcel'
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msaccess','mdb')
 ;
-insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msexcel','csv')
-;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/vnd.oasis.opendocument.text','odt')
 ;
 insert replacing WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/vnd.oasis.opendocument.database','odb')
@@ -1571,6 +1569,8 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-msvideo','av
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-sgi-movie','movie')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('x-conference/x-cooltalk','ice')
+;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/csv','csv')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/html','htm')
 ;
@@ -2948,6 +2948,11 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-ms-wvx','wvx
 update WS.WS.SYS_DAV_RES_TYPES
    set T_TYPE = 'application/x-apple-diskimage'
  where T_TYPE = 'application/octet-stream' and T_EXT = 'dmg'
+;
+
+update WS.WS.SYS_DAV_RES_TYPES
+   set T_TYPE = 'text/csv'
+ where T_TYPE = 'application/msexcel' and T_EXT = 'csv'
 ;
 
 select count(*) from WS.WS.SYS_DAV_RES_TYPES where http_mime_type_add (T_EXT, T_TYPE)
