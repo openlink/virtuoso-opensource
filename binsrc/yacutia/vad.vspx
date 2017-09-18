@@ -56,23 +56,17 @@
             pos := position ('package_path1', params);
             if (pos)
             {
-              declare i, ret integer;
-              declare tmp_name, path varchar;
+              declare ret integer;
+              declare path varchar;
 
               ses := aref_set_0 (params, pos);
-              tmp_name := '';
-              while (i < 20)
-              {
-                tmp_name := sprintf('%s%d', tmp_name, rnd(10));
-                i := i + 1;
-              }
-              path := concat('/DAV/temp/', tmp_name, '.vad');
+              path := concat('/DAV/temp/', md5 (uuid ()), '.vad');
               if (ses is not null and length (ses))
               {
                 set isolation='repeatable';
                 connection_set ('vspx_user', 'dav');
-                YACUTIA_DAV_COL_CREATE('/DAV/temp/', '111101101N', 'dav', 'administrators');
-                ret := DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, ses, '', '111101101N', 'dav', 'administrators', now(), now(), null);
+                YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110100100N', 'dav', 'administrators');
+                ret := DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, ses, '', '111101101N', 'dav', 'administrators', now (), now (), null);
                 connection_set ('vspx_user', null);
                 if (ret < 0)
                 {
@@ -226,27 +220,31 @@
                       xhtml_title="Configure"
                       text="&nbsp;Configure"
                       >
-                      <!--v:on-init>
-                        <![CDATA[
-                          if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 'Framework' or (control.vc_parent as vspx_row_template).te_rowset[2] is null)
-                            control.vc_enabled := 0;
-                        ]]>
-                      </v:on-init-->
                       <v:after-data-bind>
                         <![CDATA[
-                          if ((control.vc_parent as vspx_row_template).te_rowset[0] <> 'Framework' or (control.vc_parent as vspx_row_template).te_rowset[2] is null)
-                            control.vc_enabled := 0;
+                          declare _dav integer;
+                          declare _package any;
 
-                          declare pkg any;
-                          pkg := lower ((control.vc_parent as vspx_row_template).te_rowset[0]);
-                          if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/conductor/vad_' || pkg || '_config.vspx'))
+                          _package := lower ((control.vc_parent as vspx_row_template).te_rowset[0]);
+                          if (_package = 'framework')
+                            _package := 'wa';
+
+                          if ((select TOP 1 HP_STORE_AS_DAV from DB.DBA.HTTP_PATH where HP_LPATH = '/conductor') = 1)
                           {
-                            control.vc_enabled := 1;
-                            control.bt_url := 'vad_' || pkg || '_config.vspx';
+                            control.vc_enabled := (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/conductor/vad_' || _package || '_config.vspx');
+                          }
+                          else
+                          {
+                            control.vc_enabled := case when isstring (file_stat (http_root () || '/vad/vsp/conductor/vad_' || _package || '_config.vspx')) then 1 else 0 end;
+                          }
+                          if (control.vc_enabled)
+                          {
+                            control.bt_url := 'vad_' || _package || '_config.vspx';
                           }
                         ]]>
                       </v:after-data-bind>
                     </v:button>
+
                     <v:button action="simple" style="image" name="bt_ist1"
                       value="images/icons/add_16.png"
                       xhtml_alt="Install"
@@ -280,6 +278,7 @@
                         ]]>
                       </v:on-init>
                     </v:button>
+
                     <v:button action="simple" style="image" name="bt_rep1"
                       value="images/icons/edit_16.png"
                       xhtml_alt="Re-install"
@@ -501,15 +500,13 @@
               <v:button action="simple" value="Proceed" name="upl_btn">
                 <v:on-post>
                   <![CDATA[
-                    declare mode, path, tmp_name varchar;
-                    declare _file any;
-                    declare ret integer;
+                    declare mode, path varchar;
 
                     if (self.vc_is_valid = 0)
                       return;
 
                     path := '';
-                    mode := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+                    mode := atoi (get_keyword('choice_source', control.vc_page.vc_event.ve_params));
                     if (mode = 0)
                     {
                       if (self.upl_file is not null)
