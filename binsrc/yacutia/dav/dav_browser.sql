@@ -1498,14 +1498,14 @@ create procedure WEBDAV.DBA.proc (
   {
     dirFilter := vector ();
     WEBDAV.DBA.dc_subfilter(dirFilter, 'RES_NAME', 'like', dir_params);
-    dirList := DB.DBA.DAV_DIR_FILTER (path, 1, dirFilter, dir_account, WEBDAV.DBA.DAV_API_PWD(dir_account));
+    dirList := DB.DBA.DAV_DIR_FILTER (path, 1, dirFilter, dir_account, dir_password);
     dirFilter := '%';
   }
   else if (dir_mode = 11)
   {
     path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (dir_params, 'base', 'path', '/DAV/'));
     dirFilter := WEBDAV.DBA.dc_filter (dir_params);
-    dirList := DB.DBA.DAV_DIR_FILTER (path, 1, dirFilter, dir_account, WEBDAV.DBA.DAV_API_PWD(dir_account));
+    dirList := DB.DBA.DAV_DIR_FILTER (path, 1, dirFilter, dir_account, dir_password);
     dirFilter := '%';
   }
   else if (dir_mode = 20)
@@ -1534,7 +1534,7 @@ create procedure WEBDAV.DBA.proc (
      dir_account_name := WEBDAV.DBA.account_name (dir_account);
      path_home := '/DAV/home/' || dir_account_name || '/';
      path_parent := WEBDAV.DBA.path_parent (path, 1);
-     item := WEBDAV.DBA.DAV_INIT (path, dir_account_name, WEBDAV.DBA.DAV_API_PWD (dir_account_name));
+     item := WEBDAV.DBA.DAV_INIT (path, dir_account_name, dir_password);
      if (not WEBDAV.DBA.DAV_ERROR (item))
      {
        WEBDAV.DBA.proc_work (item, user_id, user_name, group_id, group_name, detCategory, dateAdded);
@@ -1542,7 +1542,7 @@ create procedure WEBDAV.DBA.proc (
      }
      if (path_parent <> '/')
      {
-       item := WEBDAV.DBA.DAV_INIT (path_parent, dir_account_name, WEBDAV.DBA.DAV_API_PWD (dir_account_name));
+       item := WEBDAV.DBA.DAV_INIT (path_parent, dir_account_name, dir_password);
        if (not WEBDAV.DBA.DAV_ERROR (item))
        {
          WEBDAV.DBA.proc_work (item, user_id, user_name, group_id, group_name, detCategory, dateAdded);

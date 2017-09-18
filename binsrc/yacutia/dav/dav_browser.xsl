@@ -1011,7 +1011,7 @@
                 '      <table id="ca%d_tbl" class="WEBDAV_grid" cellspacing="0"> \n' ||
                 '        <thead> \n' ||
                 '          <tr> \n' ||
-                '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="WEBDAV.selectAllCheckboxes (this, ''ca%d_item'', true)" title="Select All" /></th> \n' ||
+                '            <th><input type="checkbox" name="ca%d_select" value="Select All" onclick="WEBDAV.selectAllCheckboxes(this, ''ca%d_item'', true)" title="Select All" /></th> \n' ||
                 '            <th width="100%%">Cartridge</th> \n' ||
                 '          </tr> \n' ||
                 '        </thead> \n',
@@ -1071,7 +1071,7 @@
                   '      <table id="mca%d_tbl" class="WEBDAV_grid" cellspacing="0"> \n' ||
                   '        <thead> \n' ||
                   '          <tr> \n' ||
-                  '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="WEBDAV.selectAllCheckboxes (this, ''mca%d_item'', true)" title="Select All" /></th> \n' ||
+                  '            <th><input type="checkbox" name="mca%d_select" value="Select All" onclick="WEBDAV.selectAllCheckboxes(this, ''mca%d_item'', true)" title="Select All" /></th> \n' ||
                   '            <th width="100%%">Meta Cartridge</th> \n' ||
                   '          </tr> \n' ||
                   '        </thead>',
@@ -1946,9 +1946,9 @@
           <v:template name="template_03" type="simple" enabled="-- case when ((self.command = 0) and (self.command_mode = 3)) then 1 else 0 end">
             <div id="c1">
               <div class="tabs">
-                <vm:tabCaption tab="7" tabs="10" caption="Criteria" />
+                <vm:tabCaption2 tab="7" tabs="10" caption="Criteria" />
                 <span>
-                <vm:tabCaption tab="10" tabs="10" caption="Options" />
+                <vm:tabCaption2 tab="10" tabs="10" caption="Options" />
                 </span>
               </div>
               <div class="contents">
@@ -2023,7 +2023,7 @@
             </div>
             <script type="text/javascript">
               initDisabled();
-              initTab(10, 7);
+              WEBDAV.initTab(10, 7);
             </script>
           </v:template>
 
@@ -2290,32 +2290,32 @@
             </div>
              <div id="c1">
               <div class="tabs">
-                <vm:tabCaption tab="1"   tabs="20" caption="Main" />
+                <vm:tabCaption2 tab="1"   tabs="20" caption="Main" />
                 <v:template name="tform_5" type="simple" enabled="-- case when (self.viewField ('acl') or self.viewField ('aci')) then 1 else 0 end">
-                <vm:tabCaption tab="2"   tabs="20" caption="Sharing" />
+                <vm:tabCaption2 tab="2"   tabs="20" caption="Sharing" />
                 </v:template>
                 <v:template name="tform_7" type="simple" enabled="-- case when self.viewField ('version') and (self.command_mode = 10) and (self.dav_type = 'R') and not self.dav_is_redirect and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,acl') and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,meta') then 1 else 0 end">
-                <vm:tabCaption tab="9"   tabs="20" caption="Versions" />
+                <vm:tabCaption2 tab="9"   tabs="20" caption="Versions" />
                 </v:template>
                 <v:template name="tform_8" type="simple" enabled="-- equ (self.dav_type, 'C')">
-                <vm:tabCaption tab="4"   tabs="20" caption="WebMail" hide="1" />
-                <vm:tabCaption tab="5"   tabs="20" caption="Filter" hide="1" />
-                <vm:tabCaption tab="6"   tabs="20" caption="S3 Properties" hide="1" />
-                <vm:tabCaption tab="7"   tabs="20" caption="Criteria" hide="1" />
-                <vm:tabCaption tab="8"   tabs="20" caption="Linked Data Import" hide="1" />
+                <vm:tabCaption2 tab="4"   tabs="20" caption="WebMail" hide="1" />
+                <vm:tabCaption2 tab="5"   tabs="20" caption="Filter" hide="1" />
+                <vm:tabCaption2 tab="6"   tabs="20" caption="S3 Properties" hide="1" />
+                <vm:tabCaption2 tab="7"   tabs="20" caption="Criteria" hide="1" />
+                <vm:tabCaption2 tab="8"   tabs="20" caption="Linked Data Import" hide="1" />
                 <v:template name="tform_17" type="simple" enabled="-- case when (isstring (DB.DBA.vad_check_version ('SyncML'))) then 1 else 0 end">
-                <vm:tabCaption tab="10"  tabs="20" caption="SyncML" hide="1" />
+                <vm:tabCaption2 tab="10"  tabs="20" caption="SyncML" hide="1" />
                 </v:template>
-                <vm:tabCaption tab="11"  tabs="20" caption="IMAP Account" hide="1" />
+                <vm:tabCaption2 tab="11"  tabs="20" caption="IMAP Account" hide="1" />
                 <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
-                <vm:tabCaption tab="12"  tabs="20" caption="Google Drive" hide="1" />
-                <vm:tabCaption tab="13"  tabs="20" caption="Dropbox" hide="1" />
-                <vm:tabCaption tab="14"  tabs="20" caption="OneDrive" hide="1" />
-                <vm:tabCaption tab="15"  tabs="20" caption="Box Net" hide="1" />
-                <vm:tabCaption tab="16"  tabs="20" caption="WebDAV" hide="1" />
-                <vm:tabCaption tab="17"  tabs="20" caption="Rackspace" hide="1" />
-                <vm:tabCaption tab="18"  tabs="20" caption="Social Networks" hide="1" />
-                <vm:tabCaption tab="19"  tabs="20" caption="FTP" hide="1" />
+                <vm:tabCaption2 tab="12"  tabs="20" caption="Google Drive" hide="1" />
+                <vm:tabCaption2 tab="13"  tabs="20" caption="Dropbox" hide="1" />
+                <vm:tabCaption2 tab="14"  tabs="20" caption="OneDrive" hide="1" />
+                <vm:tabCaption2 tab="15"  tabs="20" caption="Box Net" hide="1" />
+                <vm:tabCaption2 tab="16"  tabs="20" caption="WebDAV" hide="1" />
+                <vm:tabCaption2 tab="17"  tabs="20" caption="Rackspace" hide="1" />
+                <vm:tabCaption2 tab="18"  tabs="20" caption="Social Networks" hide="1" />
+                <vm:tabCaption2 tab="19"  tabs="20" caption="FTP" hide="1" />
                 </v:template>
                 </v:template>
               </div>
@@ -2499,7 +2499,7 @@
                           <vm:label for="dav_det" value="--'Folder type'" />
                         </th>
                         <td>
-                          <select name="dav_det" id="dav_det" onchange="javascript: updateLabel (this.options[this.selectedIndex].value);" disabled="disabled" class="<?V case when self.dav_enable and not self.editField ('owner') then ' disabled' else '' end ?>">
+                          <select name="dav_det" id="dav_det" onchange="javascript: WEBDAV.updateLabel (this.options[this.selectedIndex].value);" disabled="disabled" class="<?V case when self.dav_enable and not self.editField ('owner') then ' disabled' else '' end ?>">
                             <?vsp
                               if    (self.command_mode = 1)
                               {
@@ -4006,9 +4006,9 @@
             </div>
             <script type="text/javascript">
               <![CDATA[
-                updateLabel($v('dav_det'));
+                WEBDAV.updateLabel($v('dav_det'));
                 initDisabled();
-                initTab(17, 1);
+                WEBDAV.initTab(17, 1);
               ]]>
             </script>
           </v:template>
@@ -4964,10 +4964,12 @@
                     -- Directory hiddens parameter as vector of prefixes
                     control.add_parameter (WEBDAV.DBA.settings_hiddens (self.settings));
 
-                    -- Account id
+                    -- Account id & password
                     control.add_parameter (self.account_id);
+                    control.add_parameter (WEBDAV.DBA.account_password (self.account_id));
 
-                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3, rs4)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ?';
+
+                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
                     if (self.dir_details = 0)
                     {
                       declare dir_order, dir_grouping any;
@@ -5083,7 +5085,7 @@
                                   if (self.dir_path <> '')
                                   {
                                     http ('<th class="checkbox">');
-                                      http ('<input type="checkbox" name="selectall" value="Select All" onclick="WEBDAV.selectAllCheckboxes (this, \'cb_item\', true)" title="Select All" />');
+                                      http ('<input type="checkbox" name="selectall" value="Select All" onclick="WEBDAV.selectAllCheckboxes(this, \'cb_item\', true)" title="Select All" />');
                                     http ('</th>');
                                   }
                                 ?>

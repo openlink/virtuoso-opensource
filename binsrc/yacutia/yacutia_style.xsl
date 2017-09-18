@@ -633,7 +633,7 @@ http(sprintf('<xsl:for-each select="text">
   </label>
 </xsl:template>
 
-<xsl:template match="vm:tabCaption">
+<xsl:template match="vm:tabCaption2">
   <div>
     <xsl:if test="@hide">
       <xsl:attribute name="style">display: none;</xsl:attribute>
