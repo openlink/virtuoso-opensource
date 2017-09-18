@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="event_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
@@ -74,11 +71,10 @@
           {
         ?>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/>
             <thead>
-              <tr>
-                <th/>
-                <th/>
+              <tr class="listing_header_row">
+                <th class="checkbox"/>
+                <th width="16px"/>
                 <th>Procedure</th>
                 <th>Order</th>
               </tr>
@@ -89,17 +85,16 @@
                 _count := _count + 1;
                 declare _cr_proc varchar;
                 _cr_proc := replace(cr_proc, '"', '');
-
-                http (sprintf ('<tr class="%s">', case when mod (_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
             ?>
+            <tr>
               <td class="listing_col"><input type="checkbox" name="CB_<?V cr_id ?>"/></td>
               <td class="listing_col">
                 <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
               </td>
               <td class="listing_col"><a href="db_repl_bi_cr_edit.vspx?item=<?V encode_base64(serialize(self._item)) ?>&item_type=<?V self._item_type ?>&proc=<?V encode_base64(serialize(_cr_proc)) ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>"><?V _cr_proc ?></a></td>
               <td class="listing_col_num"><?V cr_order ?></td>
+            </tr>
             <?vsp
-                http ('</tr>');
               }
               if (_count = 0)
               {
@@ -116,8 +111,8 @@
             <colgroup/><colgroup/><colgroup/><colgroup/>
             <thead>
               <tr class="listing_header_row">
-                <th/>
-                <th/>
+                <th class="checkbox"/>
+                <th width="16px"/>
                 <th>Type</th>
                 <th>Procedure</th>
                 <th>Order</th>
@@ -143,7 +138,7 @@
                   http ('</tr>');
                 }
                 if (_count = 0)
-                  http('<tr><td colspan="4" class="Attention">No conflict resolvers defined for this table</td></tr>');
+                  http('<tr><td colspan="5" class="Attention">No conflict resolvers defined for this table</td></tr>');
               ?>
             </table>
           <?vsp

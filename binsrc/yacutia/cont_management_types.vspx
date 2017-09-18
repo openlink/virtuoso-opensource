@@ -29,24 +29,25 @@
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
   doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
-  <v:variable persist="temp" name="r_count" type="integer" default="0"/>
   <v:variable name="acl_vec" type="any" default="null" persist="1"/>
-  <table width="100%">
-    <tr>
-      <td align="right">
-        <v:form name="event_form3" type="simple" method="POST" action="cont_type_edit.vspx">
-          <input type="hidden" name="mode" value="create"/>
-          <v:button action="simple" value="Create New Type" name="data_set1_cr"/>
-        </v:form>
-      </td>
-    </tr>
-  </table>
+  <div style="margin: 12px; text-align: right;">
+    <v:url name="ur2"
+           value='<img src="images/icons/add_16.png" hspace="3" border="0"/>Create New Type'
+           format="%s"
+           url="--'cont_type_edit.vspx?mode=create'"
+           xhtml_title="Create"
+           xhtml_alt="Create"
+           xhtml_class="img_button"
+           xhtml_style="font-size: 1.1em;"
+    />
+  </div>
   <div class="scroll_area">
     <v:data-set name="data_set1" sql="select T_TYPE, T_EXT, coalesce (T_DESCRIPTION,'') as T_DESCRIPTION from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE" nrows="1000" scrollable="1" cursor-type="keyset" edit="1">
       <input type="hidden" name="page" value="4"/>
       <v:column name="T_TYPE" />
       <v:column name="T_EXT" />
       <v:column name="T_DESCRIPTION" />
+
       <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
         <table class="listing">
           <tr class="listing_header_row">
@@ -57,22 +58,22 @@
           </tr>
         </table>
       </v:template>
+
       <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set1_repeat_template">
+
         <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
-          <table border="1" cellspacing="0" cellpadding="3">
+          <table>
             <tr>
-              <td align="center" colspan="6">
+              <td align="center" colspan="4">
                 <b>No rows selected</b>
               </td>
             </tr>
           </table>
         </v:template>
+
         <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
-          <table border="1" cellspacing="0" cellpadding="3">
-            <?vsp
-              self.r_count := self.r_count + 1;
-              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-            ?>
+          <table>
+            <tr>
               <td class="listing_col">
                 <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
               </td>
@@ -96,14 +97,14 @@
                   text="&nbsp;Delete"
                   url="--concat('cont_type_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[1])))"/>
               </td>
-            <?vsp
-              http('</tr>');
-            ?>
+            </tr>
           </table>
         </v:template>
+
       </v:template>
+
       <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
-        <table border="1" cellspacing="0" cellpadding="3">
+        <table>
           <tr class="browse_button_row">
             <td colspan="4" align="center"  class="listing_col_action">
               <vm:ds-navigation data-set="data_set1"/>
@@ -111,6 +112,7 @@
           </tr>
         </table>
       </v:template>
+
     </v:data-set>
   </div>
 </v:page>

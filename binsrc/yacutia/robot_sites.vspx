@@ -25,7 +25,6 @@
   <vm:pagewrapper>
     <vm:variables>
       <v:variable name="error_str" persist="1" type="varchar" default="''"/>
-      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -53,12 +52,7 @@
                         <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
+                        &nbsp;
                       </td>
                     </tr>
                   </table>
@@ -117,9 +111,8 @@
                                 idx := 1;
                                 select count (*) into _count from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_STAT = 'retrieved';
                                 select count (*) into _all from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT;
-                                self.r_count := self.r_count + 1;
-                                http ('<tr>');
                             ?>
+                              <tr>
                                 <td class="listing_col"><?V VS_DESCR ?></td>
                                 <td class="listing_col"><?V y_trunc_uri (VS_HOST || VS_URL) ?></td>
                                 <td class="listing_col_num"><?V cast(_count as varchar) ?>/<?V _all ?></td>
@@ -131,8 +124,8 @@
                                   ?>
                                   <v:url name="exp1" value="Export" url="--sprintf ('robot_export.vspx?host=%U&url=%U&root=%U', VS_HOST,VS_URL,VS_ROOT)" />
                                 </td>
+                              </tr>
                             <?vsp
-                                http ('</tr>');
                               }
                               if (idx = 0)
                               {

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="databases" decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
@@ -31,120 +28,58 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso Account Management</vm:pagetitle>
   <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="page" param-name="page" persist="0" type="varchar" default="'1'" />
+    </vm:variables>
     <vm:menu>
       <vm:menuitem value="User Accounts"/>
     </vm:menu>
     <vm:header caption="User Accounts">
     </vm:header>
     <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+            <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
-                    <tr>
-                      <v:template name="tabTemplate1" type="simple" enabled="-- case when( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null)  then 1 else 0 end">
-                        <td class="page_tab_selected" align="center">
-                          Users
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url12" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url13" value="--'Grants'" format="%s" url="--'accounts_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url15" value="LDAP Servers"  url="ldap_server.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate2" type="simple" enabled="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '2' )">
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url21" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">
-                          Roles
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url23" value="--'Grants'" format="%s" url="--'accounts_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url15" value="LDAP Servers"  url="ldap_server.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params),'3' )">
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">
-                          Grants
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url15" value="LDAP Servers"  url="ldap_server.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-                      <td valign="top">
-                        <v:template name="template1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null)  then 1 else 0 end">
-                          <v:include url="accounts.vspx"/>
-                        </v:template>
-                        <v:template name="template2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params),'2')">
-                          <v:include url="roles.vspx"/>
-                        </v:template>
-                        <v:template name="template3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
-                          <v:include url="capabilities.vspx"/>
-                        </v:template>
-                      </td>
-                    </tr>
-                  </table>
+                <td class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>" align="center">
+                  <v:url name="b_url21" value="Users" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
+                </td>
+                <td class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center">
+                  <v:url name="b_url12" value="Roles" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
+                </td>
+                <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center">
+                  <v:url name="b_url13" value="Grants" url="--'accounts_page.vspx?page=3'" xhtml_class="uddi"/>
+                </td>
+                <td class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>" align="center">
+                  <v:url name="b_url14" value="LDAP Import" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
+                </td>
+                <td class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>" align="center">
+                  <v:url name="b_url14" value="LDAP Servers" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <v:template name="template1" type="simple" enabled="--equ (self.page, '1')">
+                    <v:include url="accounts.vspx" />
+                  </v:template>
+                  <v:template name="template2" type="simple" enabled="--equ (self.page, '2')">
+                    <v:include url="roles.vspx" />
+                  </v:template>
+                  <v:template name="template3" type="simple" enabled="--equ (self.page, '3')">
+                    <v:include url="capabilities.vspx" />
+                  </v:template>
+                  <v:template name="template4" type="simple" enabled="--equ (self.page, '4')">
+                    <v:include url="ldap_import.vspx" />
+                  </v:template>
+                  <v:template name="template5" type="simple" enabled="--equ (self.page, '5')">
+                    <v:include url="ldap_server.vspx" />
+                  </v:template>
                 </td>
               </tr>
             </table>

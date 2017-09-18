@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="db_repl_pub_create_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
@@ -32,11 +29,6 @@
     <vm:header caption="Create new replication publication"/>
     <vm:pagebody vdb_check="1">
       <table class="form_layout">
-        <colgroup>
-          <col/>
-          <col/>
-          <col/>
-        </colgroup>
         <tr>
           <td class="page_tab_selected">
             Publications
@@ -53,13 +45,13 @@
       <v:form name="create_pub_frm" action="db_repl_pub_create.vspx" method="POST" type="simple">
         <table class="ctl_grp">
           <tr>
-            <td class="ctl_lbl_ctr">Name</td>
+                  <th class="ctl_lbl_ctr">Name</th>
             <td class="ctl_ctr">
               <v:text name="crpub_textfield" xhtml_rows="10"/>
             </td>
           </tr>
           <tr>
-            <td class="ctl_lbl_ctr">Sync user</td>
+                  <th class="ctl_lbl_ctr">Sync user</th>
             <td class="ctl_ctr">
               <select name="sync_user">
                 <?vsp
@@ -70,17 +62,16 @@
                       _sel := ' selected="true"';
                     else
                       _sel := '';
-                    http (sprintf ('<option value="%V"%V>%V</option>',
-                        U_NAME, _sel, U_NAME));
+                          http (sprintf ('<option value="%V"%V>%V</option>', U_NAME, _sel, U_NAME));
                   }
                 ?>
               </select>
             </td>
           </tr>
           <tr>
-            <td class="ctl_ctr" colspan="2">
-              <input type="checkbox" name="is_updateable" value="" id="is_updateable"/>
-              <label for="is_updateable">Updateable</label>
+                  <td />
+                  <td class="ctl_ctr">
+                    <label><input type="checkbox" name="is_updateable" value="" id="is_updateable"/>Updateable</label>
             </td>
           </tr>
           <tr class="form_cmd_row">
@@ -126,7 +117,8 @@
                       declare _sql_state, _sql_msg varchar;
                       _sql_state := '00000';
                       exec('REPL_PUBLISH(?, ?, ?, ?)', _sql_state, _sql_msg, vector(_acct, _log, _is_updateable, _sync_user)  );
-                      if ( _sql_state <> '00000') {
+                            if ( _sql_state <> '00000')
+                            {
                         self.vc_error_message := _sql_state || ': ' || _sql_msg;
                         self.vc_is_valid := 0;
                         return;

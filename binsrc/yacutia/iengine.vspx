@@ -72,14 +72,6 @@
                       <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center">
                         <v:url name="ie_page_3" value="Tables" url="iengine.vspx?p=3&ps="/>
                       </td>
-                      <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%">
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">

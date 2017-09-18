@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="db_repl_page"
@@ -61,44 +58,7 @@
     </vm:menu>
     <vm:header caption="Create Incremental Snapshot Replication"/>
     <vm:pagebody vdb_check="1">
-    <script language="JavaScript">
-      function selectAllCheckboxes (form, btn)
-      {
-        var i;
-        for (i =0; i &lt; form.elements.length; i++)
-        {
-          var contr = form.elements[i];
-          if (contr != null &amp;&amp; contr.type == "checkbox")
-          {
-            contr.focus();
-            if (contr != btn)
-              contr.checked = btn.checked;
-          }
-        }
-        btn.focus();
-      };
-      function dsns_chg(sel)
-      {
-        var i, _new, old;
-        if (sel.selectedIndex == -1)
-        {
-          document.link_form.dsn.value = '';
-          document.link_form.uid.value = '';
-          document.link_form.pwd.value = '';
-          return (0);
-        }
-        for (i = 0; i &lt; sel.length; i++)
-        {
-          if (sel.options[i].selected)
-          {
-            if (sel.options[i].text == document.link_form.dsn.value)
-              sel.options[i].selected = false;
-            else
-              document.link_form.dsn.value = sel.options[i].text;
-          }
-        }
-      };
-    </script>
+
     <v:on-init>
       if (self.repl_snap_tables is null)
         self.repl_snap_tables := vector ();
@@ -185,20 +145,17 @@
                 <!--<v:button action="simple" value="Create Snapshot" name="create_snap">-->
                 <v:button action="simple" value="Select Data Source" name="create_snap">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.repl_snap_dsn := get_keyword('dsns1', control.vc_page.vc_event.ve_params, '');
                         self.repl_snap_stage := 1;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
               <td>
                 <v:button action="simple" value="Save" name="dsn_save">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.repl_snap_stage := 0;
                         declare _uid, _pwd varchar;
@@ -217,7 +174,6 @@
                         }
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
@@ -267,17 +223,14 @@
               <td colspan="2">
                 <v:button action="simple" value="Clear" name="dsn_clr">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.repl_snap_stage := 0;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <v:button action="simple" value="Add Data Source" name="dsn_add">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.repl_snap_stage := 0;
                         declare _dsn, _uid, _pwd varchar;
@@ -297,7 +250,6 @@
                         }
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
@@ -312,7 +264,6 @@
         <h3>Step 2: Choose Source Tables</h3>
         <v:form name="db_filter_form" type="simple" method="POST" action="db_repl_snap_create.vspx">
           <v:on-post>
-            <v:script>
               <![CDATA[
               self.repl_snap_stage := 1;
 
@@ -329,7 +280,6 @@ self.ds_tables.vc_reset();
 self.ds_tables.vc_data_bind(e);
 self.vc_data_bind(e);
               ]]>
-            </v:script>
           </v:on-post>
           <table class="ctl_grp">
             <tr>
@@ -436,10 +386,10 @@ self.vc_data_bind(e);
                 <colgroup/><colgroup/>
                 <thead>
                   <tr class="listing_header_row">
-                     <th>
+                     <th class="checkbox">
                        <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>
                      </th>
-                     <th/>
+                     <th width="16px"/>
                      <th>Name</th>
                   </tr>
                 </thead>
@@ -665,18 +615,15 @@ self.vc_data_bind(e);
               <td colspan="2" align="center">
                 <v:button action="simple" value="Cancel" name="Cancel">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.repl_snap_stage := 1;
                         self.repl_snap_result_str := '';
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <v:button action="simple" value="Create" name="snap">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         declare _idx integer;
                         declare _tables any;
@@ -773,7 +720,6 @@ self.vc_data_bind(e);
                           self.vc_redirect('db_repl_snap_start.vspx');
                         };
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
@@ -825,11 +771,9 @@ self.vc_data_bind(e);
               Replication done.
               <v:button action="simple" value="OK" name="ok" enabled="-- equ(self.repl_snap_running , 0)">
                 <v:on-post>
-                  <v:script>
                     <![CDATA[
                       self.vc_redirect('db_repl_snap.vspx');
                     ]]>
-                  </v:script>
                 </v:on-post>
               </v:button>
             </v:template>
@@ -837,20 +781,16 @@ self.vc_data_bind(e);
                 autorefresh:
                 <v:select-list name="autorefresh_list" auto-submit="1">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.repl_snap_autorefresh := cast(control.ufl_value as integer);
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                   <v:after-data-bind>
-                    <v:script>
                       <![CDATA[
                         control.ufl_value := self.repl_snap_autorefresh;
                         control.vs_set_selected ();
                       ]]>
-                    </v:script>
                   </v:after-data-bind>
                   <v:item name="no refresh" value="0"/>
                   <v:item name="5" value="5"/>
@@ -862,10 +802,9 @@ self.vc_data_bind(e);
             </v:template>
           </div>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/>
           <thead>
-            <tr>
-              <th/>
+              <tr class="listing_header_row">
+                <th width="16px"/>
               <th>Source Table</th>
               <th>Destination Table</th>
               <th>State</th>
@@ -874,11 +813,13 @@ self.vc_data_bind(e);
             <?vsp
               declare _tables any;
               declare _state varchar;
-              _tables := self.repl_snap_tables;
 
-              if (_tables) {
-                for (declare _i any, _i := 0; _i < length(_tables) ; _i := _i + 1){
-                    http(sprintf ('<tr class="%s">', case when mod (_i, 2) then 'listing_row_odd' else 'listing_row_even' end));
+              _tables := self.repl_snap_tables;
+              if (_tables)
+              {
+                for (declare _i any, _i := 0; _i < length(_tables) ; _i := _i + 1)
+                {
+                  http('<tr>');
                     http('<td class="listing_col"><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
                     _state := cast(registry_get(sprintf('REPL_COUNT_%s_%s_%s',_tables[_i][1],_tables[_i][2],_tables[_i][3])) as varchar);
                     if (regexp_match('^[0-9]*$',_state))
@@ -887,22 +828,21 @@ self.vc_data_bind(e);
                     http(sprintf('<td>%V</td>', sprintf('%s.%s.%s',_tables[_i][1],_tables[_i][2],_tables[_i][3])));
                     http(sprintf('<td>%V</td>', _state));
                     http('</tr>');
-                };
-              } else {
-                http('No Tables in list.');
-              };
+                }
+              }
+              else
+              {
+                http ('<tr><td colspan="4">No Tables in list.</td></tr>');
+              }
             ?>
           </table>
 
         </v:form>
       </v:template>
-      <table>
-        <tr align="left">
-          <td class="SubInfo">
+      <div>
+        <hr />
 	    <vm:url name="db_repl_snap_ref" format="%s" value="Back to Snapshot Replication List" url="--'db_repl_snap.vspx'"/>
-          </td>
-        </tr>
-      </table>
+      </div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="databases" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
@@ -35,29 +32,6 @@
     </vm:menu>
     <vm:header caption="Bidirectional Snapshot Publications"/>
     <vm:pagebody vdb_check="1">
-    <script language="JavaScript">
-      function selectAllCheckboxes (form, btn)
-      {
-        var i;
-        for (i =0; i &lt; form.elements.length; i++)
-          {
-            var contr = form.elements[i];
-            if (contr != null &amp;&amp; contr.type == "checkbox")
-        {
-          contr.focus();
-          if (btn.value == 'Select All')
-            contr.checked = true;
-          else
-                  contr.checked = false;
-        }
-          }
-        if (btn.value == 'Select All')
-          btn.value = 'Unselect All';
-        else
-          btn.value = 'Select All';
-        btn.focus();
-      };
-    </script>
       <v:form name="event_form3" type="simple" method="POST" action="">
         <div class="listing_top_ctl_grp clear">
           <v:button action="simple" value="Add table" name="data_set1_cr">
@@ -86,20 +60,19 @@
         <v:column name="SP_TYPE" />
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
           <div><b>Published Items</b></div>
-	  <?vsp http('<div class="scroll_area">'); ?>
+    <?vsp http('<div class="scroll_area">'); ?>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/>
             <thead>
               <tr class="listing_header_row">
-                <th>
-                  <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>
+                <th class="checkbox">
+                  <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)"/>
                 </th>
-                <th/>
+                <th width="16px"/>
                 <th>Item Name</th>
                 <th>Item Type</th>
                 <th>Last Synchronization</th>
                 <th>Sync Interval</th>
-                <th>Action</th>
+                <th class="action">Action</th>
               </tr>
             </thead>
           </table>
@@ -108,7 +81,7 @@
           <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
             <table>
               <tr>
-                <td colspan="6" class="Attention">
+                <td colspan="7" class="Attention">
                   No rows selected
                 </td>
               </tr>
@@ -182,12 +155,12 @@
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
           <table>
             <tr>
-              <td colspan="6" align="center"  class="listing_col_action">
-		<vm:ds-navigation data-set="data_set1"/>
+              <td colspan="7" align="center"  class="listing_col_action">
+                <vm:ds-navigation data-set="data_set1"/>
               </td>
             </tr>
           </table>
-	  <?vsp http ('</div>'); ?>
+          <?vsp http ('</div>'); ?>
           <div class="listing_bot_ctl_grp">
             <label for="interval">Schedule Sync Interval</label>
             <input type="text" name="interval" value="10" size="5" id="interval"/>
@@ -220,9 +193,9 @@
                   <![CDATA[
                     declare idx, _cnt integer;
                     declare item_type integer;
-		    declare item, m_dta, _stat, _msg varchar;
-		    declare n_done int;
-		    n_done := 0;
+                    declare item, m_dta, _stat, _msg varchar;
+                    declare n_done int;
+                    n_done := 0;
 
                     while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
                     {
@@ -233,15 +206,15 @@
                       {
                         self.repl_bi_error_str := concat(self.repl_bi_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
                       };
-		      n_done := 1;
+                      n_done := 1;
                     }
-		    if (n_done = 0)
-		      {
-		        self.vc_is_valid := 0;
-			self.vc_error_message := 'There are no tables publications to perform synchronization.';
-	 	      }
-	            else
-		      self.data_set1.vc_data_bind(e);
+                    if (n_done = 0)
+                    {
+                      self.vc_is_valid := 0;
+                      self.vc_error_message := 'There are no tables publications to perform synchronization.';
+                    }
+                    else
+                      self.data_set1.vc_data_bind(e);
                   ]]>
                 </v:script>
               </v:on-post>

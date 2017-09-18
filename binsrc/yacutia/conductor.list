@@ -5,7 +5,6 @@
 ../../xddl_tables.xsd
 ../../xddl_views.xsd
 conductor/account_create.vspx
-conductor/account_remove_inc.vspx
 conductor/account_remove.vspx
 conductor/accounts_page.vspx
 conductor/accounts.vspx
@@ -106,6 +105,7 @@ conductor/dav/image/orderdown_16.png
 conductor/dav/image/orderup_16.png
 conductor/dav/image/pick_calendar.gif
 conductor/dav/image/prop_32.png
+conductor/dav/image/qr_thumb.png
 conductor/dav/image/ref_32.png
 conductor/dav/image/renm_32.png
 conductor/dav/image/rss_32.png
@@ -174,7 +174,6 @@ conductor/db_repl_snap.vspx
 conductor/db_repl_sub_create.vspx
 conductor/db_repl_sub_edit.vspx
 conductor/db_repl_sub_image.vspx
-conductor/db_repl_sub_new_inc.vspx
 conductor/db_repl_sub.vspx
 conductor/db_repl_trans.vspx
 conductor/ent.dtd
@@ -257,6 +256,7 @@ conductor/images/Folder-up.gif
 conductor/images/folder_up.gif
 conductor/images/icons/about_32.png
 conductor/images/icons/add_16.png
+conductor/images/icons/add_32.png
 conductor/images/icons/add_script_16.png
 conductor/images/icons/add_table_16.png
 conductor/images/icons/add_view_16.png
@@ -300,7 +300,6 @@ conductor/images/icons/skipf_16.png
 conductor/images/icons/smarrblk.gif
 conductor/images/icons/stop_16.png
 conductor/images/icons/stop_32.png
-conductor/images/icons/add_32.png
 conductor/images/icons/table_16.png
 conductor/images/icons/tour_16.png
 conductor/images/icons/trash_16.png
@@ -329,17 +328,11 @@ conductor/images/virtuosologo.png
 conductor/images/yac_banner.gif
 conductor/images/yac_banner.jpg
 conductor/images/yac_splash.jpg
-conductor/import_csv_1.vspx
-conductor/import_csv_2.vspx
-conductor/import_csv_3.vspx
-conductor/import_csv_opts.vspx
+conductor/import_csv.vspx
 conductor/inifile.vspx
 conductor/isql_main_inc.vspx
 conductor/isql_main.vspx
 conductor/isql.vspx
-conductor/ldap_import_1.vspx
-conductor/ldap_import_2.vspx
-conductor/ldap_import_3.vspx
 conductor/ldap_import.vspx
 conductor/ldap_server.vspx
 conductor/link_tables.js
@@ -399,9 +392,7 @@ conductor/robot_sched.vspx
 conductor/robot_sites.vspx
 conductor/robot_status.vspx
 conductor/robot_urls_list.vspx
-conductor/role_remove_inc.vspx
 conductor/role_remove.vspx
-conductor/roles_inc.vspx
 conductor/roles.vspx
 conductor/sec_acl_edit_sp.vspx
 conductor/sec_acl_edit.vspx
@@ -452,9 +443,8 @@ conductor/vad_remove_batch.vspx
 conductor/vad_remove.vspx
 conductor/vad_src.vspx
 conductor/vad_status.vspx
+conductor/vad_utils.sql
 conductor/vad.vspx
-conductor/vad_wa_config.vspx
-conductor/vad_wa_create.vspx
 conductor/vdb_conf_dsn_edit.vspx
 conductor/vdb_conf_dsn_new.vspx
 conductor/vdb_conf_dsn_remove.vspx

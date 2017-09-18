@@ -19,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="robot_queues_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso Crawler Status</vm:pagetitle>
@@ -53,12 +52,7 @@
                         <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
+                        &nbsp;
                       </td>
                     </tr>
                   </table>
@@ -78,7 +72,8 @@
                                       http_path (),
                                       get_keyword ('host', params, ''),
                                       get_keyword ('root', params, ''),
-                                      get_keyword ('url', params, ''));
+                                        get_keyword ('url', params, '')
+                                     );
                                     ]]>
                                   </v:before-render>
                                 </v:button>
@@ -93,25 +88,22 @@
                           </table>
                         </v:form>
                         <?vsp
+                          declare host, root varchar;
+
                           set isolation='uncommitted';
-                          declare host, root, url varchar;
 
                           host := get_keyword ('host', params, '');
                           root := get_keyword ('root', params, '');
-                          url := get_keyword ('url', params, '');
 
                           http(concat('<h4>Results for ', host,'</h4>'));
                           if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = root and VQ_HOST = host and VQ_STAT = 'pending'))
                           {
-                            declare idx int;
                             http('<table class="listing"><tr><td>Top pending URLs</td></tr><tr class="listing_header_row"><td>URL</td><td>Registered on</td><td>State</td></tr>');
-                            idx := 0;
                             for (select top 10 VQ_URL, VQ_TS, VQ_STAT
                                    from WS.WS.VFS_QUEUE
                                   where VQ_HOST = host and VQ_ROOT = root and VQ_STAT in ('waiting', 'pending')
                                   order by VQ_HOST, VQ_ROOT, VQ_TS) do
                            {
-                             idx := idx + 1;
                          ?>
                          <tr>
                            <td class="gendata"><?V VQ_URL ?></td>
@@ -129,21 +121,21 @@
 
                           http ('<table class="listing">');
                           http('<tr class="listing_header_row"><th>Status</th><th>Count</th></tr>');
-                          for select vq_stat, count(*) as cnt from  ws.ws.vfs_queue where vq_host = host and vq_root = root do
+                          for (select VQ_STAT, count(*) as cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root) do
                           {
                         ?>
-                        <tr><td><?V vq_stat ?></td><td><?V cnt ?></td></tr>
+                        <tr><td><?V VQ_STAT ?></td><td><?V cnt ?></td></tr>
                         <?vsp
                           }
                           http ('</table>');
                         }
                         else
                         {
-                          if (exists (select 1 from ws.ws.vfs_queue where vq_host = host and vq_root = root and vq_stat = 'error'))
+                          if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'error'))
                             http (concat ('<p>errors while retrieving target. Select "reset" to return initial state</p>'));
                         ?>
                         <p>
-                          Total URLs processed : <?V coalesce ((select count(*) as cnt from  ws.ws.vfs_queue where vq_host = host and vq_root = root), 0) ?>
+                          Total URLs processed : <?V coalesce ((select count(*) as cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root), 0) ?>
                         </p>
                         <p>
                           <b>Download finished</b>

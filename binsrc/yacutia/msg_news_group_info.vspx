@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:data-set fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" name="group_info" nrows="10" scrollable="1" cursor-type="keyset" edit="1">
@@ -352,7 +349,7 @@ else {
             <td align="right" nowrap="1" width="50%">
               <v:button xhtml_style="width:60px" style="button" action="submit" value="OK" width="42" height="24" name="group_info_update_btn" />
               <v:button active="--(1)" action="submit" value="Cancel" width="64" height="24" name="cancel_btn_" style="button" xhtml_style="width:60px">
-                <v:on-post width="0" height="16">
+                <v:on-post>
                   <v:script>
                     <![CDATA[
 self.group_info.vc_data_bind(e);

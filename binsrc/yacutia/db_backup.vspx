@@ -474,7 +474,7 @@
                       prefix := backup_context_info_get ('prefix');
                       if (not isnull (prefix) and (self.file_exists (prefix) = 0))
                       {
-                        http ('<span class="attention_marker">No backup files founded from a previous execution.</span><br /><br />');
+                        http ('<span class="attention_marker">No backup files found from a previous execution.</span><br /><br />');
                       }
                     ?>
                     <v:button name="b_newset2" action="simple" value="--'Run'">

@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
     <script language="JavaScript">
@@ -131,7 +128,7 @@ order by
 		      xhtml_title="Delete"
 		      text="&nbsp;Delete"
 		      >
-              <v:on-post width="0" height="16">
+              <v:on-post>
                 <v:script><![CDATA[
   declare ds vspx_data_set;
   DB.DBA.MSG_NEWS_CLEAR_MESSAGES(self.ns_id, self.news_groups.ds_current_row.te_rowset[0], 'clear all');

@@ -201,9 +201,9 @@
     </v:before-data-bind>
         <table class="SubData" border="0" cellpadding="3" cellspacing="0">
           <tr>
-        <td style="width: 20%;">
+        <th style="width: 20%;">
           Text Indexing
-        </td>
+        </th>
         <td width="1px">
               <v:radio-button name="persist_enable" value="0" group-name="choice_source" xhtml_id="choice_source1">
                 <v:before-data-bind>
@@ -242,9 +242,9 @@
         </td>
       </tr>
       <tr>
-        <td nowrap="nowrap" valign="top">
+        <th nowrap="nowrap" valign="top">
           Enable redirection for RDF-Turtle files
-        </td>
+        </th>
         <td colspan="2">
           <label>
             <v:check-box name="ttl_enable" value="1" xhtml_id="ttl_enable">
@@ -259,9 +259,9 @@
         </td>
       </tr>
       <tr>
-        <td nowrap="nowrap" valign="top">
+        <th nowrap="nowrap" valign="top">
           Enable adding automatically missed prefixes for RDF-Turtle files
-        </td>
+        </th>
         <td colspan="2">
           <label>
             <v:check-box name="ttl_prefixes_enable" value="1" xhtml_id="ttl_prefixes_enable">
@@ -276,9 +276,9 @@
         </td>
       </tr>
       <tr>
-        <td valign="top">
+        <th valign="top">
           Sponger options for RDF-Turtle redirection
-        </td>
+        </th>
         <td colspan="2">
           <label>
             <v:radio-button xhtml_id="ttl_sp_enable_0" name="ttl_sp_enable_0" value="no" group-name="ttl_sp_enable">
@@ -347,9 +347,9 @@
         {
       ?>
       <tr>
-        <td valign="top">
+        <th valign="top">
           Server side encryption
-        </td>
+        </th>
         <td colspan="2">
           <v:check-box name="sse_enable" value="1" xhtml_id="sse_enable">
             <v:before-data-bind>
@@ -374,9 +374,9 @@
         {
       ?>
       <tr>
-        <td>
+        <th>
           WebDAV Skin
-        </td>
+        </th>
         <td width="1px">
           <v:radio-button name="vspx_enable" value="1" group-name="choice_skin" xhtml_id="choice_skin1">
             <v:before-data-bind>

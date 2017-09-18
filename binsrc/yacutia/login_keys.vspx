@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id:$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -61,6 +59,7 @@
 			<v:on-init>
 				self.a_services := vector(
 					'MyOpenLink API',    'MyOpenLink',
+					'AngelList API',     'AngelList',
 					'Bitly API',         'Bitly',
 					'Box Net API',       'Box Net',
 					'Disqus API',        'Disqus',
@@ -210,8 +209,11 @@
 										self.a_name := self.serviceKey (get_keyword ('a_name', e.ve_params));
 										if (self.lk_edit is null)
 										{
-											insert into OAUTH..APP_REG (A_OWNER, A_NAME, A_KEY, A_SECRET)
-												values (0, self.a_name, self.a_key.ufl_value, self.a_secret.ufl_value);
+										  declare service_id varchar;
+
+										  service_id := case when (__proc_exists ('VAL.DBA.user_personal_uri') is not null) then VAL.DBA.user_personal_uri ('dba') else '' end;
+                      insert into OAUTH..APP_REG (A_OWNER, A_SERVICE_ID, A_NAME, A_KEY, A_SECRET)
+                        values (0, service_id, self.a_name, self.a_key.ufl_value, self.a_secret.ufl_value);
 										}
 										else
 										{

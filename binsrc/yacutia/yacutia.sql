@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2017 OpenLink Software
+--  Copyright (C) 1998-2016 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -233,11 +233,6 @@ create procedure adm_menu_tree ()
      <node name="Grants" url="capabilities.vspx" id="9" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="caps_browser.vspx" id="10" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="caps_cols_browser.vspx" id="11" place="1" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import.vspx" place="1" id="12" allowed="yacutia_accounts_page" />
-     <node name="LDAP Import" url="ldap_import_1.vspx" place="1" id="14" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import_2.vspx" place="1" id="15" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import_3.vspx" place="1" id="16" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Servers" url="ldap_server.vspx" id="179" place="1" allowed="yacutia_accounts_page"/>
    </node>
    <node name="Scheduler" url="sys_queues.vspx"  tip="Event Scheduling" id="17" allowed="yacutia_queues_page">
      <node name="Scheduler" url="sys_queues.vspx" id="18" place="1" allowed="yacutia_queues_page">
@@ -249,7 +244,6 @@ create procedure adm_menu_tree ()
    <node name="Parameters" url="inifile.vspx?page=Database" id="21" allowed="yacutia_params_page">
      <node name="Parameters" url="inifile.vspx" id="22" place="1" allowed="yacutia_params_page"/>
    </node>
-   <node name="Registry" url="registries.vspx" id="221" allowed="yacutia_registry_page" />
    <node name="Packages" url="vad.vspx" id="27" allowed="yacutia_vad_page">
      <node name="Packages" url="vad.vspx" id="28" place="1" allowed="yacutia_vad_page"/>
      <node name="Install packages" url="vad_install.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
@@ -326,11 +320,7 @@ create procedure adm_menu_tree ()
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
    </node>
-   <node name="Import" url="import_csv_1.vspx" id="271" allowed="cvs_import">
-   <node name="Import" url="import_csv_2.vspx" id="271" place="1" />
-   <node name="Import" url="import_csv_3.vspx" id="271" place="1" />
-   <node name="Import" url="import_csv_opts.vspx" id="271" place="1" />
-   </node>
+   <node name="Import" url="import_csv.vspx" id="271" allowed="cvs_import"/>
  </node>
  <node name="Replication" url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
    <node name="Basic" url="db_repl_basic.vspx" id="8001" >
@@ -1606,25 +1596,19 @@ create procedure "PUMP"."DBA"."DBPUMP_CHOICE_RSCHEMA" ( in path varchar := './ba
 }
 ;
 
-create procedure check_grants(in user_name  varchar, in role_name varchar)
-{
-  declare user_id, group_id, role_id integer;
+create procedure check_grants(in user_name  varchar, in role_name varchar) {
+  declare user_id, group_id, role_id, sql_enabled, dav_enabled integer;
   whenever not found goto nf;
-
-  if (DB.DBA.is_empty_or_null (user_name))
-    return 0;
-
+  if (user_name='') return 0;
   select U_ID, U_GROUP into user_id, group_id from SYS_USERS where U_NAME=user_name;
-  if (user_id = 0 or group_id = 0)
+  if (user_id = 0 OR group_id = 0)
     return 1;
-
   if (role_name is null or role_name = '')
     return 0;
 
   select U_ID into role_id from SYS_USERS where U_NAME=role_name;
   if (exists(select 1 from SYS_ROLE_GRANTS where GI_SUPER=user_id and GI_SUB=role_id))
-    return 1;
-
+      return 1;
 nf:
   return 0;
 }
@@ -3773,91 +3757,87 @@ get_sql_tables (in dsn varchar,
   declare key_list, cat_list, sch_list, tables_list any;
   declare i, len, j, lz, sz, n, is_found integer;
   declare c_cat, c_sch, m_mask, v varchar;
-
   cat_list := vector ();
   sch_list := vector ();
+
   if (cat ='%' or sch = '%')
-  {
-    key_list := sql_tables (dsn, null, null, null, null);
-  }
+    {
+       key_list := sql_tables (dsn, null, null, null, null);
+    }
 
   if (cat = '%')
-  {
-    len := length (key_list);
-    for (i:= 0; i < len; i := i + 1)
     {
-      v := key_list[i][0];
-  	  if (v is null)
-	      v := '%';
+      i:= 0; len :=  length (key_list);
 
-      if (not position (v, cat_list))
-        cat_list := vector_concat (cat_list, vector (v));
+      while (i < len)
+        {
+          v := aref (aref (key_list, i), 0);
+	  if (v is null)
+	    v := '%';
+          if (v is not null and not position (v, cat_list))
+            cat_list := vector_concat (cat_list, vector (v));
+          i := i + 1;
+        }
     }
-  }
   else
-  {
     cat_list := vector_concat (cat_list, vector(cat));
-  }
 
   if (sch = '%')
-  {
-    len :=  length (key_list);
-    for (i := 0; i < len; i := i + 1)
     {
-      v := key_list[i][1];
-  	  if (v is null)
-	      v := '%';
+      i := 0; len :=  length (key_list);
+      while (i < len)
+        {
+          v := aref (aref (key_list, i), 1);
+          if (v is not null and not position (v, sch_list))
+            sch_list := vector_concat (sch_list, vector (v));
 
-      if (v is not null and not position (v, sch_list))
-        sch_list := vector_concat (sch_list, vector (v));
+          i := i + 1;
+       }
     }
-  }
   else
-  {
     sch_list := vector_concat (sch_list, vector (sch));
-  }
 
    -- now  fetch all records
-  if (table_mask is not null)
-    m_mask := table_mask;
-  else
-    m_mask := '%';
 
-  tables_list := vector();
-  len := length (cat_list);
-  for (i := 0; i < len; i := i + 1)
-  {
-    c_cat := cat_list[i];
-    if (c_cat = '%')
-      c_cat := null;
+   if (table_mask is not null)
+     m_mask := table_mask;
+   else
+     m_mask := '%';
 
-    lz := length (sch_list);
-    for (j := 0; j < lz; j := j + 1)
-    {
-      declare tbls any;
+   tables_list := vector();
+   i := 0; len := length (cat_list);
 
-      c_sch := sch_list[j];
-      if (c_sch = '%')
-        c_sch := null;
+   while (i < len)
+     {
+       c_cat := aref (cat_list, i);
+       j := 0; lz := length (sch_list);
 
-	    tbls := sql_tables (dsn, c_cat, c_sch, null, obj_type);
-	    if (m_mask = '%')
-	    {
-	      tables_list := vector_concat (tables_list, tbls);
-	    }
-	    else
-	    {
-	      foreach (any tbl in tbls) do
-	      {
-	        if (length (tbl) > 1 and tbl[2] is not null and tbl[2] like m_mask)
-	        {
-	          tables_list := vector_concat (tables_list, vector (tbl));
-	        }
-	      }
-	    }
-	  }
-  }
-  return tables_list;
+       while (j < lz)
+         {
+	   declare tbls any;
+           c_sch := aref (sch_list, j);
+	   if (c_cat = '%')
+	     c_cat := null;
+	   tbls := sql_tables (dsn, c_cat, c_sch, null, obj_type);
+	   if (m_mask = '%')
+	     {
+	       tables_list := vector_concat (tables_list, tbls);
+	     }
+	   else
+	     {
+	       foreach (any tbl in tbls) do
+		 {
+		   if (length (tbl) > 1 and tbl[2] is not null and tbl[2] like m_mask)
+		     {
+		       tables_list := vector_concat (tables_list, vector (tbl));
+		     }
+		 }
+	     }
+           j := j + 1;
+         }
+       i:= i + 1;
+     }
+   return tables_list;
 }
 ;
 
@@ -5124,7 +5104,7 @@ create procedure URL_REWRITE_UPDATE_VHOST (in rulelist varchar, in lpath varchar
   h_opts := (select deserialize (HP_OPTIONS) from DB.DBA.HTTP_PATH
   	where HP_LPATH = lpath and HP_HOST = vhost and HP_LISTEN_HOST = lhost);
   upd_vd := 0;
-  if (not isvector (h_opts))
+  if (not isarray (h_opts))
     {
       h_opts := vector ('url_rewrite', rulelist);
       upd_vd := 1;
@@ -5492,20 +5472,15 @@ create procedure Y_SQL_ESC_NAME (in fn varchar)
 }
 ;
 
-create procedure y_trunc_uri (
-  in s varchar,
-  in maxlen int := 80)
+create procedure
+y_trunc_uri (in s varchar, in maxlen int := 80)
 {
   declare _s varchar;
   declare _h int;
 
-  _s := trim (s);
-  if ((s not like 'http://%') and (s not like 'https://%'))
-    s := 'http://' || s;
+  _s := trim(s);
 
-  if (length(_s) <= maxlen)
-    return _s;
-
+  if (length(_s) <= maxlen) return _s;
   _h := floor ((maxlen-3) / 2);
   _s := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
 
@@ -6101,28 +6076,5 @@ create procedure y_wide2utf (
       return retValue;
   }
   return charset_recode (S, null, 'UTF-8' );
-}
-;
-
-create procedure y_registries (
-  in _filter varchar := '')
-{
-  declare N integer;
-  declare V, v0, v1 any;
-  declare c0, c1 varchar;
-
-  result_names (c0, c1);
-
-  V := registry_get_all ();
-  for (N := 0; N < length (V); N := N + 2)
-  {
-    v0 := cast (V[N] as varchar);
-    v1 := V[N+1];
-    if ((_filter <> '') and (v0 not like _filter))
-      goto _skip;
-
-    result (v0, v1);
-  _skip:;
-  }
 }
 ;

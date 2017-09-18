@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,15 +19,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="vad_install_remove_page"
-  decor="yacutia_decor.vspx"
-  style="yacutia_style.xsl"
-  fast-render="1"
-  xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso Conductor: Package Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -42,68 +39,67 @@
     <vm:header caption="VAD package uninstallation"/>
     <vm:pagebody>
       <v:on-init>
-        <v:script>
-          <![CDATA[
-            if (get_keyword('name', self.vc_page.vc_event.ve_params) is not null)
-              self.pack_name := cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar);
-            if (left(self.pack_name, strchr(self.pack_name, '/')) = 'yacutia')
-              self.is_yacutia := 1;
-            else
-              self.is_yacutia := 0;
-          ]]>
-        </v:script>
+        <![CDATA[
+          if (get_keyword ('name', self.vc_page.vc_event.ve_params) is not null)
+            self.pack_name := cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar);
+
+          if (left(self.pack_name, strchr(self.pack_name, '/')) = 'yacutia')
+            self.is_yacutia := 1;
+          else
+            self.is_yacutia := 0;
+        ]]>
       </v:on-init>
       <v:form type="simple" method="POST" action="">
-      <table>
-        <v:template type="simple" enabled="--case when (self.is_yacutia = 0) then 1 else 0 end">
+        <table>
+          <v:template type="simple" enabled="--case when (self.is_yacutia = 0) then 1 else 0 end">
+            <tr>
+              <td>You are about to remove package. This operation cannot be undone.</td>
+            </tr>
+          </v:template>
+          <v:template type="simple" enabled="--case when (self.is_yacutia = 1) then 1 else 0 end">
+            <tr>
+              <td>Removal of the Virtuoso Conductor package can only be done from a command line SQL client,<br/>such as the isql command line tool included with the Virtuoso Universal Server distribution.</td>
+            </tr>
+          </v:template>
           <tr>
-            <td>You are about to remove package. This operation cannot be undone.</td>
+            <td>
+              Full package name is <b><?V self.pack_name ?></b>
+            </td>
           </tr>
-        </v:template>
-        <v:template type="simple" enabled="--case when (self.is_yacutia = 1) then 1 else 0 end">
           <tr>
-            <td>Removal of the Virtuoso Conductor package can only be done from a command line SQL client,<br/>such as the isql command line tool included with the Virtuoso Universal Server distribution.</td>
-          </tr>
-        </v:template>
-        <tr>
-          <td>
-            Full package name is <b><?V self.pack_name ?></b>
-          </td>
-        </tr>
-        <tr>
-          <td>
-            <v:template type="simple" enabled="--case when (self.is_yacutia = 0) then 1 else 0 end">
-              <v:button action="simple" value="Proceed">
+            <td>
+              <v:template type="simple" enabled="--case when (self.is_yacutia = 0) then 1 else 0 end">
+                <v:button action="simple" value="Proceed">
+                  <v:on-post>
+                    <![CDATA[
+                      declare state, msg varchar;
+                      declare exit handler for sqlstate '*', not found
+                      {
+                        state := __SQL_STATE;
+                        msg := __SQL_MESSAGE;
+                        self.vc_error_message := msg;
+                        self.vc_is_valid := 0;
+                        return;
+                      };
+                      DB.DBA.VAD_UNINSTALL(self.pack_name);
+                      set_qualifier ('DB');
+                      http_request_status('HTTP/1.1 302 Found');
+                      http_header(sprintf('Location: vad.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </v:template>
+              <v:button action="simple" value="Cancel">
                 <v:on-post>
                   <![CDATA[
-                    declare state, msg varchar;
-                    declare exit handler for sqlstate '*', not found
-                    {
-                      state := __SQL_STATE;
-                      msg := __SQL_MESSAGE;
-                      self.vc_error_message := msg;
-                      self.vc_is_valid := 0;
-                      return;
-                    };
-		    DB.DBA.VAD_UNINSTALL(self.pack_name);
-		    set_qualifier ('DB');
                     http_request_status('HTTP/1.1 302 Found');
                     http_header(sprintf('Location: vad.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
                   ]]>
                 </v:on-post>
               </v:button>
-            </v:template>
-            <v:button action="simple" value="Cancel">
-              <v:on-post>
-                <![CDATA[
-                  http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: vad.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
-                ]]>
-              </v:on-post>
-            </v:button>
-          </td>
-        </tr>
-      </table>
+            </td>
+          </tr>
+        </table>
       </v:form>
     </vm:pagebody>
   </vm:pagewrapper>

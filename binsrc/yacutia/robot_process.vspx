@@ -100,7 +100,9 @@
             http (concat ('<p>Errors while retrieving target. Wrong entries : ', cast (_err_cnt as varchar) ,'. Select "Stop" and "Reset" to return initial state</p>'), res_ses);
         }
         else if (_upd = 2)
+        {
           update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url;
+        }
         else if (_upd = 3)
         {
           delete from  WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL <> _url and VQ_STAT <> 'pending';

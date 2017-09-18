@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="repl_trans_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_trans_page" fast-render="1"  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
@@ -35,7 +32,6 @@
     <vm:header caption="Transactional Replication"/>
     <vm:pagebody vdb_check="1">
       <v:before-data-bind>
-        <v:script>
           <![CDATA[
             if (get_keyword('page', control.vc_page.vc_event.ve_params, '') <> '')
             {
@@ -43,14 +39,8 @@
               if (self.page <> 2) self.page := 1;
             }
           ]]>
-        </v:script>
       </v:before-data-bind>
       <table class="form_layout">
-        <colgroup>
-          <col/>
-          <col/>
-          <col/>
-        </colgroup>
         <tr>
         <v:template name="tabTemplate1" type="simple" enabled="--equ(self.page,1)">
           <td class="page_tab_selected">

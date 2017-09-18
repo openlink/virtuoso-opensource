@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,9 +19,9 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -31,6 +29,9 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>User Defined Types</vm:pagetitle>
   <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="page" param-name="page" persist="0" type="varchar" default="'1'" />
+    </vm:variables>
     <vm:menu>
       <vm:menuitem value="User Defined Types"/>
     </vm:menu>
@@ -44,83 +45,31 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                      <v:template name="tabTemplate1" type="simple" enabled="-- case when( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null)  then 1 else 0 end">
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Loaded Modules
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url12" value="--'Import Files'" format="%s" url="--'hosted_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url13" value="--'Modules Grant'" format="%s" url="--'hosted_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate2" type="simple" enabled="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params),'2' )">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url21" value="--'Loaded Modules'" format="%s" url="--'hosted_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Import Files
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url23" value="--'Modules Grant'" format="%s" url="--'hosted_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate3" type="simple" enabled="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params),'3' )">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url31" value="--'Loaded Modules'" format="%s" url="--'hosted_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url32" value="--'Import Files'" format="%s" url="--'hosted_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Modules Grant
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
+                      <td class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url11" value="--'Loaded Modules'" format="%s" url="--'hosted_page.vspx?page=1'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url12" value="--'Import Files'" format="%s" url="--'hosted_page.vspx?page=2'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url13" value="--'Modules Grant'" format="%s" url="--'hosted_page.vspx?page=3'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        &nbsp;
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">
                     <tr>
                       <td valign="top">
-                        <v:template name="template1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
+                        <v:template name="template1" type="simple" enabled="--equ (self.page, '1')">
                           <v:include url="hosted_modules.vspx"/>
                         </v:template>
-                        <v:template name="template2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params),'2')">
+                        <v:template name="template2" type="simple" enabled="--equ (self.page, '2')">
                           <v:include url="hosted_import.vspx"/>
                         </v:template>
-                        <v:template name="template3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params),'3')">
+                        <v:template name="template3" type="simple" enabled="--equ (self.page, '3')">
                           <v:include url="hosted_grant.vspx"/>
                         </v:template>
                       </td>

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="account_remove_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_accounts_page" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso system User Accounts</vm:pagetitle>
@@ -30,6 +27,63 @@
       <vm:menuitem value="Virtuoso Account Management"/>
     </vm:menu>
     <vm:header caption="Remove existing account"/>
-    <vm:pagebody url="account_remove_inc.vspx"/>
+    <vm:pagebody>
+      <v:form name="account_form" type="simple" method="POST" xmlns:v="http://www.openlinksw.com/vspx/">
+
+        <div class="confirm_dialog">
+
+          <div class="confirm_text">
+            <div><img src="images/icons/stop_32.png" alt="Stop" title="stop"/></div>
+            <div>
+              <br />
+              Remove all associated data?
+              <v:select-list name="drop_obj">
+                <v:item name="No" value="No" />
+                <v:item name="Yes" value="Yes" />
+              </v:select-list>
+            </div>
+            <div>
+              <br />
+              The account <?vsp http(sprintf('<b> %s </b>',get_keyword ('user_name', self.vc_page.vc_event.ve_params, ''))); ?> will be removed permanently and there is no way to restore it.
+              <br/>
+              Are you sure you want to remove this account?
+            </div>
+          </div>
+
+          <div class="dialog_buttons">
+            <input type="hidden" name="user_name" value="<?= get_keyword ('user_name', self.vc_page.vc_event.ve_params) ?>" />
+            <v:on-post>
+              <![CDATA[
+                declare user_name varchar;
+                declare u_ident integer;
+
+                user_name :=  get_keyword ('user_name', params, '');
+                if ( get_keyword ('remove', params, '') <> '' )
+                {
+                  declare home, rc, did any;
+                  select U_ID into u_ident from SYS_USERS where U_NAME = user_name and U_IS_ROLE = 0;
+                  home := USER_GET_OPTION (user_name, 'HOME');
+                  USER_DROP (user_name);
+                  delete from SYS_ROLE_GRANTS where GI_SUPER = u_ident;
+                  if (self.drop_obj.ufl_value = 'Yes')
+                  {
+                    did := DAV_SEARCH_ID (home, 'c');
+                    if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = did and COL_OWNER = u_ident))
+                    {
+                      rc := DB.DBA.DAV_DELETE_INT (home, 0, null, null, 0);
+                    }
+                  }
+                }
+                self.vc_redirect ('accounts_page.vspx?page=1');
+              ]]>
+            </v:on-post>
+            <v:button action="submit" name="remove" value="Yes"/>
+            <v:button action="submit" name="cancel" value="No"/>
+          </div>
+
+        </div>
+
+      </v:form>
+    </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

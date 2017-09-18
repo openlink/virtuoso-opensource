@@ -181,21 +181,6 @@ function checkNotEnter(e) {
   return true;
 }
 
-function selectAllCheckboxes (obj, prefix, toolbarsFlag) {
-  var objForm = obj.form;
-  for (var i = 0; i < objForm.elements.length; i++) {
-    var o = objForm.elements[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) == 0) {
-      o.checked = (obj.value == 'Select All');
-      coloriseRow(getParent(o, 'tr'), o.checked);
-    }
-  }
-  obj.value = (obj.value == 'Select All')? 'Unselect All': 'Select All';
-  if (toolbarsFlag)
-    WEBDAV.enableToolbars(objForm, prefix);
-  obj.focus();
-}
-
 function selectCheck(obj, prefix)
 {
   coloriseRow(getParent(obj, 'tr'), obj.checked);
@@ -453,6 +438,119 @@ var WEBDAV = new Object();
 
 WEBDAV.Preferences = {
   imagePath: "dav/image/"
+}
+
+WEBDAV.selectAllCheckboxes = function (obj, prefix, toolbarsFlag) {
+  var objForm = obj.form;
+  for (var i = 0; i < objForm.elements.length; i++) {
+    var o = objForm.elements[i];
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) == 0) {
+      o.checked = (obj.value == 'Select All');
+      coloriseRow(getParent(o, 'tr'), o.checked);
+    }
+  }
+  obj.value = (obj.value == 'Select All')? 'Unselect All': 'Select All';
+  if (toolbarsFlag)
+    WEBDAV.enableToolbars(objForm, prefix);
+  obj.focus();
+}
+
+WEBDAV.updateLabel = function(value)
+{
+  function showLabel(from, to)
+  {
+    for (var i = from; i <= to; i++)
+      OAT.Dom.show('tab_'+i);
+  }
+
+  function hideLabel(from, to)
+  {
+    for (var i = from; i <= to; i++)
+      OAT.Dom.hide('tab_'+i);
+  }
+
+  if (['', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'].indexOf(value) === -1) {
+    OAT.Dom.hide('tr_dav_ldp');
+  } else {
+    OAT.Dom.show('tr_dav_ldp');
+  }
+
+  if (!value)
+    return;
+
+  hideLabel(4, 19);
+  if (value == 'oMail')
+    showLabel(4, 4);
+  else if (value == 'PropFilter')
+    showLabel(5, 5);
+  else if (value == 'S3')
+    showLabel(6, 6);
+  else if (value == 'ResFilter')
+    showLabel(7, 7);
+  else if (value == 'CatFilter')
+    showLabel(7, 7);
+  else if (value == 'rdfSink')
+    showLabel(8, 8);
+  else if (value == 'SyncML')
+    showLabel(10, 10);
+  else if (value == 'IMAP')
+    showLabel(11, 11);
+  else if (value == 'GDrive')
+    showLabel(12, 12);
+  else if (value == 'Dropbox')
+    showLabel(13, 13);
+  else if (value == 'SkyDrive')
+    showLabel(14, 14);
+  else if (value == 'Box')
+    showLabel(15, 15);
+  else if (value == 'WebDAV')
+    showLabel(16, 16);
+  else if (value == 'RACKSPACE')
+    showLabel(17, 17);
+  else if (value == 'SN')
+    showLabel(18, 18);
+  else if (value == 'FTP')
+    showLabel(19, 19);
+
+  if (value == 'WebDAV')
+    OAT.Dom.show('cVerify');
+  else
+    OAT.Dom.hide('cVerify');
+}
+
+WEBDAV.showTab = function(tab, tabs)
+{
+  for (var i = 1; i <= tabs; i++) {
+    var div = document.getElementById(i);
+    if (div) {
+      var divTab = $('tab_'+i);
+      if (i == tab) {
+        var divNo = $('tabNo');
+        divNo.value = tab;
+        OAT.Dom.show(div);
+        if (divTab) {
+          OAT.Dom.addClass(divTab, "activeTab");
+          divTab.blur();
+        }
+      } else {
+        OAT.Dom.hide(div);
+        if (divTab)
+          OAT.Dom.removeClass(divTab, "activeTab");
+      }
+    }
+  }
+}
+
+WEBDAV.initTab = function (tabs, defaultNo)
+{
+  var divNo = $v('tabNo');
+  var tab = defaultNo;
+  if (divNo) {
+    var divTab = $v('tab_'+divNo);
+    if (divTab)
+      tab = divNo;
+  }
+  showTab(tab, tabs);
 }
 
 WEBDAV.toggleDavRows = function ()

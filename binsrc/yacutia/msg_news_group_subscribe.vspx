@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="msg_news_group_subscribe_page"
@@ -334,7 +331,7 @@ if(self.first = 0) {
 			      >
 			    </v:button>
                             <v:button name="clear_button" action="simple" value="Clear">
-                              <v:on-post width="0" height="0">
+                              <v:on-post>
                                 <v:script><![CDATA[
         -- settings
         self.search_text.ufl_value := '';
@@ -444,7 +441,7 @@ if(self.first = 0) {
                               </td>
                               <td align="right" nowrap="1" class="listing_col_action">
                                 <v:button active="--(1)" action="simple" value="Subscribe" width="64" height="24" name="groups_available_subscribe" style="url">
-                                  <v:on-post width="0" height="16">
+                                  <v:on-post>
                                     <v:script><![CDATA[
       declare _name any;
       _name := (control.vc_parent as vspx_row_template).te_rowset[0];

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -214,14 +212,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                       <td class="page_tab_selected" align="center">
                         <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
@@ -233,18 +223,13 @@
                         <v:url name="b_url14" value="Grants"  url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url15" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
+                        <v:url name="b_url15" value="--'LDAP Import'" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url15" value="LDAP Servers"  url="ldap_server.vspx" xhtml_class="uddi"/>
+                        <v:url name="b_url15" value="--'LDAP Servers'" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%">
-                            </td>
-                          </tr>
-                        </table>
+                        &nbsp;
                       </td>
                     </tr>
                   </table>

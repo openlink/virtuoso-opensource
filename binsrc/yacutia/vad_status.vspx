@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,20 +19,18 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="vad_install_status_page"
-  decor="yacutia_decor.vspx"
-  style="yacutia_style.xsl"
-  fast-render="1"
-  xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="vad_status_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso Conductor: Package Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
       <v:variable name="res" persist="0" type="any" default="null" />
-      <v:variable name="pack_ready" persist="0" type="varchar" default="''" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="Virtuoso Application Deployment"/>
@@ -42,35 +38,29 @@
     <vm:header caption="Installation Status"/>
     <vm:pagebody>
       <v:on-init>
-          <![CDATA[
-            if (get_keyword('res', self.vc_page.vc_event.ve_params) is not null)
-            {
-              self.res := get_keyword('res', self.vc_event.ve_params, '');
-            }
-          ]]>
+        <![CDATA[
+          self.res := get_keyword ('res', self.vc_event.ve_params, '');
+        ]]>
       </v:on-init>
       <v:form name="install_form2" type="simple" method="POST" action="">
-      <table>
-        <?vsp
- 	    http('<tr><td><pre>');
-	    if (isstring (self.res))
-              http(self.res);
-	    http('</pre></td></tr>');
-        ?>
-        <tr>
-          <td>
-            <v:button action="simple" value="Back to Packages">
-              <v:on-post>
-                <![CDATA[
-                  http_request_status('HTTP/1.1 302 Found');
-                  http_header(sprintf('Location: vad.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
-                  return;
-                ]]>
-              </v:on-post>
-            </v:button>
-          </td>
-        </tr>
-      </table>
+        <table>
+          <tr>
+            <td><pre><?V self.res ?></pre></td>
+          </tr>
+          <tr>
+            <td>
+              <v:button action="simple" value="Back to Packages">
+                <v:on-post>
+                  <![CDATA[
+                    http_request_status('HTTP/1.1 302 Found');
+                    http_header(sprintf('Location: vad.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+                    return;
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
       </v:form>
     </vm:pagebody>
   </vm:pagewrapper>

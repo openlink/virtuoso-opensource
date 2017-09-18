@@ -494,7 +494,7 @@
                             <input type="hidden" name="driver" value="<?V self.driver ?>"/>
                             <table border="0" cellspacing="0" cellpadding="5">
                               <tr>
-                                <td colspan="3" align="middle">
+                                <td colspan="2" align="middle">
                                   <p class="copyright_noalign"><?V self.driver ?><br />
                                     <small>Copyright 1998-2016 OpenLink Software</small><br />
                                     <small>All rights reserved</small>
@@ -502,7 +502,7 @@
                                 </td>
                               </tr>
                               <tr>
-                                <td rowspan="4" valign="top"><img src="images/opl.jpg" border="1" /></td>
+                                <td valign="top"><img src="images/opl.jpg" border="1" /></td>
                                 <td valign="top">
                                   <table border="0" cellpadding="0" width="250">
                                     <tr>
@@ -741,13 +741,13 @@
                             <v:form method="POST" type="simple" name="edit_dsn">
                               <input type="hidden" name="driver" value="<?V self.driver ?>"/>
                               <tr>
-                                <td rowspan="10" align="bottom">
+                                <td rowspan="10" valign="top">
                                   <img src="images/virt.gif"/>
                                 </td>
                               </tr>
 
                               <tr>
-                                <td class="genlisthead">DSN</td>
+                                <th class="genlisthead">DSN</th>
                                 <td>
                                   <v:text name="virt_dsn" value="--self.dsn" xhtml_size="25" error-glyph="*">
                                     <v:validator test="length" min="1" max="2048" message="The DSN name can not be empty"/>
@@ -759,55 +759,61 @@
                                 </td>
                               </tr>
                               <tr>
-                                <td class="genlisthead">Description</td>
+                                <th class="genlisthead">Description</th>
                                 <td>
                                     <v:text name="description" value="" xhtml_size="25"/>
                                 </td>
                               </tr>
                               <tr>
-                                <td class="genlisthead">Server</td>
+                                <th class="genlisthead">Server</th>
                                 <td>
-                                  <v:text name="server" xhtml_size="25" value=""/></td>
+                                  <v:text name="server" xhtml_size="25" value=""/>
+                                </td>
                                 </tr>
                               <tr>
-                                <td class="genlisthead">Port</td>
+                                <th class="genlisthead">Port</th>
                                 <td>
-                                  <v:text name="port" xhtml_size="4" value=""/></td>
+                                  <v:text name="port" xhtml_size="4" value=""/>
+                                </td>
                                 </tr>
                                 <tr>
-                                  <td class="genlisthead">User</td>
+                                <th class="genlisthead">User</th>
                                   <td>
-                                    <v:text name="uid" xhtml_size="25" value=""/></td>
+                                  <v:text name="uid" xhtml_size="25" value=""/>
+                                </td>
                                   </tr>
                                   <tr>
-                                    <td class="genlisthead">Password</td>
+                                <th class="genlisthead">Password</th>
                                     <td>
                                       <v:text type="password" name="pass"  value="" xhtml_size="25"/>
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td class="genlisthead">Database</td>
+                                <th class="genlisthead">Database</th>
                                     <td>
-                                      <v:text name="database" value="" xhtml_size="25"/></td>
+                                  <v:text name="database" value="" xhtml_size="25"/>
+                                </td>
                                   </tr>
                                   <tr>
-                                    <td class="genlisthead">
-                                      Automatically adjust clock<br />for daylight saving changes</td><td>
-                                      <v:check-box name="daylight" value="Yes"/>
+                                <td />
+                                <td>
+                                  <label><v:check-box name="daylight" value="Yes"/><strong>Automatically adjust clock for daylight saving changes</strong></label>
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td class="genlisthead">Encrypted</td>
+                                <td />
                                     <td>
-                                      <v:check-box name="ssl" value="1"/>
+                                  <label><v:check-box name="ssl" value="1"/><strong>Encrypted</strong></label>
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td colspan="2" align="right">
+                                <td />
+                                <td colspan="2">
                                       <v:button action="simple" name="test_bt" value="Update and test">
                                         <v:after-data-bind>
                                           if (not length (self.dsn))
                                             control.ufl_value := 'Test';
+
                                           if (self.dsn_type = 'file')
                                             control.vc_enabled := 0;
                                         </v:after-data-bind>

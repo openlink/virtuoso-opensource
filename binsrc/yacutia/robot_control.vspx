@@ -86,6 +86,7 @@
         <v:column name="VS_HOST" />
         <v:column name="VS_URL" />
         <v:column name="VS_ROOT" /-->
+
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set2_header_template">
           <table class="listing">
             <tr class="listing_header_row">
@@ -118,7 +119,9 @@
             </tr>
           </table>
         </v:template>
+
         <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set2_repeat_template">
+
           <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set2_if_not_exists_template">
             <table>
               <tr class="listing_count">
@@ -138,7 +141,7 @@
                   <v:label format="%s" name="data_set2_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
                 <td align="left">
-                  <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[1] || (control.vc_parent as vspx_row_template).te_rowset[2], 50)" />
+                  <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri (concat ((control.vc_parent as vspx_row_template).te_rowset[1],(control.vc_parent as vspx_row_template).te_rowset[2]), 50)" />
                 </td>
                 <td nowrap="0"  class="listing_col_action">
                   <v:button action="simple" style="image" name="url1"
@@ -146,14 +149,14 @@
                     xhtml_alt="Edit"
                     xhtml_title="Edit"
                     text="&nbsp;Edit"
-                    url="--concat('robot_edit.vspx?mode=edit&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
+                    url="--sprintf ('robot_edit.vspx?mode=edit&EDIT=%U&url=%U&root=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[3])"
                     />
                   <v:button action="simple" style="image" name="url3"
                     value="images/icons/copy_16.png"
                     xhtml_alt="Copy"
                     xhtml_title="Copy"
                     text="&nbsp;Copy"
-                    url="--concat('robot_edit.vspx?mode=copy&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
+                    url="--sprintf ('robot_edit.vspx?mode=copy&EDIT=%U&url=%U&root=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[3])"
                     />
                   <v:button action="simple" style="image" name="data_set2_delete"
                     value="images/icons/trash_16.png"
@@ -161,7 +164,7 @@
                     xhtml_title="Delete"
                     text="&nbsp;Delete"
                     >
-                    <v:on-post width="0" height="16">
+                    <v:on-post>
                       <![CDATA[
                         declare _root, _host varchar;
                         declare old_mode int;
@@ -199,6 +202,7 @@
             </tr>
           </table>
         </v:template>
+
       </v:data-set>
     </div>
     <div>

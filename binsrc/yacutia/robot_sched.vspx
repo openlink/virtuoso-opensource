@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,12 +19,12 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="event1_edit_page"
+<v:page name="robot_sched"
   decor="yacutia_decor.vspx"
   style="yacutia_style.xsl"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/macro"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
@@ -57,13 +55,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                         <td class="page_tab" align="center" nowrap="1">
                           <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
@@ -78,12 +69,7 @@
 			  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
+                        &nbsp;
                         </td>
                     </tr>
                   </table>
@@ -127,7 +113,8 @@
       <table width="98%" border="0" cellspacing="0" cellpadding="3" class="ctl_grp" xmlns:xhtml="http://www.w3.org/1999/xhtml">
         <v:form name="event_form" type="simple" method="POST" action="robot_sched.vspx">
           <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
-	  <v:before-data-bind><![CDATA[
+                            <v:before-data-bind>
+                              <![CDATA[
             declare _host, _root, _name, _store_type, store_prefix varchar;
 	    declare _udata any;
 	    if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edt')
@@ -139,7 +126,8 @@
               {
                 _host := self.host;
                 _root := self.root;
-	        declare exit handler for not found {
+                                  declare exit handler for not found
+                                  {
 	          signal ('.....', sprintf ('No such target'));
 	        };
                 select VS_DESCR, deserialize(VS_UDATA) into _name, _udata from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
@@ -147,9 +135,9 @@
 		store_prefix := case when _store_type = 'dav' then '/DAV/' else '' end;
                 self.ename := concat(_name, '(', _host,' in ',store_prefix,_root,')');
               }
-	    ]]></v:before-data-bind>
+                              ]]>
+                            </v:before-data-bind>
           <v:on-post>
-            <v:script>
               <![CDATA[
                 declare i, cnt, exist, u_ident, g_name, inter integer;
                 declare tmp, val, start_str varchar;
@@ -172,31 +160,35 @@
                     start_str := stringdate((control.vc_find_control('start_time') as vspx_field).ufl_value);
                 }
                 else
+                                {
                   start_str := cast(now() as varchar);
+                                }
                 inter := get_keyword('interval_value', e.ve_params, '10');
 		if (exists(select 1 from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = self.ename))
 		  {
                     update DB.DBA.SYS_SCHEDULED_EVENT set SE_START = start_str, SE_INTERVAL = inter where SE_NAME = self.ename;
 		  }
                 else
+                                {
                   insert into SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL) values(self.ename, start_str, inter, concat('WS.WS.SERV_QUEUE_TOP(\'',self.host,'\',\'',self.root,'\', 1, 0, null, null)'));
+                                }
+
 		commit work;
                 goto success;
               ]]>
-            </v:script>
           </v:on-post>
          <tr align="left">
-           <td width="20%" align="left" valign="left">Event Name</td>
+                              <th width="150px">Event Name</th>
            <td valign="left">
              <?V self.ename ?>
            </td>
          </tr>
          <tr align="left">
-           <td width="20%" align="left" valign="top">Start Time</td>
+                              <th valign="top">Start Time</th>
            <td valign="top">
              <v:text name="start_time" xhtml_style="width:400">
                <v:before-data-bind>
-                 <v:script><![CDATA[
+                                    <![CDATA[
                    declare start_time varchar;
                    if (get_keyword('mode', params) = 'edt')
                    {
@@ -218,19 +210,18 @@
                        control.vc_data_bound := 1;
                      }
                    }
-                 ]]></v:script>
+                                    ]]>
                </v:before-data-bind>
              </v:text>
            </td>
          </tr>
          <tr align="left">
-           <td width="20%" align="left" valign="top">Interval</td>
+                              <th valign="top">Interval</th>
            <td valign="top">
              <v:text name="interval_value" xhtml_style="width:400">
                <!-- v:validator name="interval_value_val1" min="1" max="999999999" empty-allowed="1" test="value" regexp="" message="Wrong value! " /-->
                <!-- v:validator name="interval_value_val2" min="0" max="0" empty-allowed="0" test="regexp" regexp="^[0-9]+$" message="Wrong value! must be a number" /-->
                <v:before-data-bind>
-                 <v:script>
                    <![CDATA[
                      declare ufn integer;
                      if (get_keyword('mode', params) = 'edt')
@@ -250,14 +241,13 @@
                        }
                      }
                    ]]>
-                 </v:script>
                </v:before-data-bind>
              </v:text>
            </td>
          </tr>
-         <tr align="left">
+                            <tr>
            <td/>
-           <td colspan="3">
+                              <td>
              <v:button action="submit" name="cancel" value="Cancel" />
              <?vsp
                if (get_keyword('mode', self.vc_page.vc_event.ve_params) is NULL or get_keyword('mode', self.vc_page.vc_event.ve_params) <> 'edit')
