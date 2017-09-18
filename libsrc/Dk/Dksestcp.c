@@ -1007,10 +1007,6 @@ tcpses_read (session_t * ses, char *buffer, int n_bytes)
   return (n_in);
 }
 
-
-extern char *build_thread_model;	/* from Thread */
-
-
 long read_block_usec;
 long write_block_usec;
 

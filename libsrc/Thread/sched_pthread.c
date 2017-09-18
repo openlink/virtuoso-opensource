@@ -33,7 +33,7 @@
 #define pthread_create gprof_pthread_create
 #endif
 
-char *build_thread_model = "-pthreads";
+const char *build_thread_model = "-pthreads";
 
 /* Indicate preemptive scheduling for this model */
 int _thread_sched_preempt = 1;

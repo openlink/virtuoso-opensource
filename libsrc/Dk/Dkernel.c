@@ -3731,10 +3731,6 @@ void PrpcRegisterServiceDescPostProcess (service_desc_t * desc, server_func f, p
 
 SERVICE_1 (s_caller_identification, _sci, "caller_identification", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER, DV_C_STRING, 1);
 
-#ifndef NO_THREAD
-extern char *build_thread_model;
-#endif
-
 void
 PrpcInitialize (void)
 {

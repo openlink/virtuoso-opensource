@@ -33,7 +33,7 @@
 #endif
 #include "Dk.h"
 
-char *build_thread_model = "-threads";
+const char *build_thread_model = "-threads";
 
 /* Indicate preemptive scheduling for this model */
 int _thread_sched_preempt = 1;

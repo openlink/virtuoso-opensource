@@ -28,26 +28,27 @@
 #include "sqlver.h"
 #include "wi.h"
 
-char *build_date = __DATE__;			/* eg. Jul 16 1996 */
+const char *build_date = __DATE__;		/* eg. Jul 16 1996 */
 
 /* IvAn/VC6port/000725 VC6 has a bug: you can't use /D NAME="\"string\"" cmd-line arg sometimes */
 #ifdef _MSC_VER
 #ifdef _WIN64
-char *build_host_id = "x86_64-generic-win-64";
-char *build_opsys_id = "Win64";
+const char *build_host_id = "x86_64-generic-win-64";
+const char *build_opsys_id = "Win64";
 #else
-char *build_host_id = "i686-generic-win-32";
-char *build_opsys_id = "Win32";
+const char *build_host_id = "i686-generic-win-32";
+const char *build_opsys_id = "Win32";
 #endif
 #else
-char *build_host_id = HOST;			/* eg. i586-pc-linux-gnu */
-char *build_opsys_id = OPSYS;			/* eg. Linux */
+const char *build_host_id = HOST;			/* eg. i586-pc-linux-gnu */
+const char *build_opsys_id = OPSYS;			/* eg. Linux */
 #endif
 
 const char *build_special_server_model = " "
 ; /* eg. empty or integration binaries */
+
 #if 0
-char *build_thread_model;			/* eg. Threads or Fibers */
+const char *build_thread_model;			/* eg. Threads or Fibers */
 #endif
 
 void
