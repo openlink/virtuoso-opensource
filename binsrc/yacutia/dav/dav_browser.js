@@ -181,21 +181,6 @@ function checkNotEnter(e) {
   return true;
 }
 
-function selectAllCheckboxes (obj, prefix, toolbarsFlag) {
-  var objForm = obj.form;
-  for (var i = 0; i < objForm.elements.length; i++) {
-    var o = objForm.elements[i];
-    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) == 0) {
-      o.checked = (obj.value == 'Select All');
-      coloriseRow(getParent(o, 'tr'), o.checked);
-    }
-  }
-  obj.value = (obj.value == 'Select All')? 'Unselect All': 'Select All';
-  if (toolbarsFlag)
-    WEBDAV.enableToolbars(objForm, prefix);
-  obj.focus();
-}
-
 function selectCheck(obj, prefix)
 {
   coloriseRow(getParent(obj, 'tr'), obj.checked);
@@ -453,6 +438,21 @@ var WEBDAV = new Object();
 
 WEBDAV.Preferences = {
   imagePath: "dav/image/"
+}
+
+WEBDAV.selectAllCheckboxes = function (obj, prefix, toolbarsFlag) {
+  var objForm = obj.form;
+  for (var i = 0; i < objForm.elements.length; i++) {
+    var o = objForm.elements[i];
+    if (o != null && o.type == "checkbox" && !o.disabled && o.name.indexOf (prefix) == 0) {
+      o.checked = (obj.value == 'Select All');
+      coloriseRow(getParent(o, 'tr'), o.checked);
+    }
+  }
+  obj.value = (obj.value == 'Select All')? 'Unselect All': 'Select All';
+  if (toolbarsFlag)
+    WEBDAV.enableToolbars(objForm, prefix);
+  obj.focus();
 }
 
 WEBDAV.toggleDavRows = function ()
