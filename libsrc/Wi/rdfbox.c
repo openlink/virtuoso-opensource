@@ -6312,7 +6312,7 @@ bif_rgs_impl_graph_set_userdetails (caddr_t * qst, state_slot_t ** args, const c
       switch (DV_TYPE_OF (user_and_cbk))
         {
         case DV_LONG_INT: ud_ret->ud_orig_id = unbox((void *)user_and_cbk); break;
-        case DV_STRING: ud_ret->ud_orig_name = (void *)user_and_cbk; break;
+        case DV_STRING: ud_ret->ud_orig_name = (caddr_t)user_and_cbk; break;
         }
     }
     }
@@ -6482,7 +6482,8 @@ bif_rgs_prepare_del_or_ins (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   data_to_drop = (caddr_t **)((void *)(list (5, NULL /* place for good_repl_idxs */, all_flds[0], all_flds[1], all_flds[2], all_flds[3])));
   for (quad_ctr = 0; quad_ctr < quad_count; quad_ctr++)
     {
-      caddr_t graph = quads[quad_ctr][3];
+      int quad_has_graph = (3 < BOX_ELEMENTS (quads[quad_ctr]));
+      caddr_t graph = (quad_has_graph ? quads[quad_ctr][3] : dflt_graph_boxed_iid);
       caddr_t graph_boxed_iid = ((DV_DB_NULL == DV_TYPE_OF (graph)) ? dflt_graph_boxed_iid : bif_rgs_impl_graph_boxed_iid (qst, graph, 1));
       caddr_t err;
       iri_id_t graph_iid;
@@ -6554,7 +6555,7 @@ bif_rgs_prepare_del_or_ins (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
           quads[quad_ctr][fldctr] = NULL;
         }
       all_flds[3][quad_ctr] = (graph_boxed_iid == dflt_graph_boxed_iid) ? box_copy (graph_boxed_iid) : graph_boxed_iid;
-      if (graph_boxed_iid == graph)
+      if (quad_has_graph && (all_flds[3][quad_ctr] == quads[quad_ctr][3]))
         quads[quad_ctr][3] = NULL;
       continue;
 
