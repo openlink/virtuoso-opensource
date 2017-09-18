@@ -153,7 +153,7 @@
                       </v:button>
                     </td>
                     <td>
-                      <?V control.te_rowset[1] ?>
+                      <?V y_utf2wide (control.te_rowset[1]) ?>
                     </td>
                   <td nowrap="nowrap">
                       <v:button name="delete" action="simple" style="url" value="''">
@@ -190,10 +190,10 @@
             <fieldset>
               <br />
               <label for="pref">Prefix</label>
-              <v:text name="pref" xhtml_id="pref" value="--self.c_pref" xhtml_size="10" />
+              <v:text name="pref" xhtml_id="pref" value="--y_utf2wide (self.c_pref)" format="%s" xhtml_size="10" />
         <br />
               <label for="uri">URI</label>
-              <v:text name="uri" xhtml_id="uri" value="--self.c_uri" xhtml_size="100" />
+              <v:text name="uri" xhtml_id="uri" value="--y_utf2wide (self.c_uri)" format="%s" xhtml_size="100" />
         <br />
         <br />
               <div style="margin-left: 180px; width: 100%">

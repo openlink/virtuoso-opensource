@@ -55,17 +55,19 @@
 
               to_del := get_keyword ('del', self.vc_event.ve_params, null);
               if (to_del is not null)
-                RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#schemas', to_del);
-
-              for select id_to_iri (RGGM_MEMBER_IID) as url from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas') do
+              {
+                to_del := iri_id_from_num (sprintf_inverse (to_del, '#i%d', 0)[0]);
+                RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#schemas', id_to_iri (to_del));
+              }
+              for select RGGM_MEMBER_IID as id, id_to_iri (RGGM_MEMBER_IID) as url from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas') do
               {
             ?>
             <tr>
-              <td><?V url ?></td>
+              <td><?V y_utf2wide (url) ?></td>
               <td nowrap="nowrap">
       			    <v:url name="u1" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
       			      format="%s"
-      			      url="--sprintf ('rdf_schemas.vspx?del=%U', url)"
+      			      url="--sprintf ('rdf_schemas.vspx?del=%U', cast (id as varchar))"
       			      render-only="1"
       			      xhtml_title="Delete"
       			      xhtml_alt="Delete"
@@ -78,29 +80,30 @@
           </tbody>
         </table>
         <br />
-        Schema IRI: <v:text name="imp" value="" xhtml_size="100" />
+        Schema IRI: <v:text name="imp" value="--y_utf2wide (self.graph_name)" format="%s" xhtml_size="100" />
         <br />
         <v:button action="simple" name="imp_bt" value="Import">
           <v:on-post>
             <![CDATA[
               declare stat, msg any;
 
-              self.imp.ufl_value := trim (self.imp.ufl_value);
-              if (length (self.imp.ufl_value) = 0)
+              self.graph_name := trim (self.imp.ufl_value);
+              if (length (self.graph_name) = 0)
               {
                 self.vc_is_valid := 0;
                 self.vc_error_message := 'No URL entered';
                 return;
               }
               stat := '00000';
-              exec (sprintf ('sparql load <%S> into graph <%S>', self.imp.ufl_value, self.imp.ufl_value), stat, msg, vector ());
+              exec (sprintf ('sparql load <%S> into graph <%S>', self.graph_name, self.graph_name), stat, msg, vector ());
               if (stat <> '00000')
               {
                 self.vc_is_valid := 0;
                 self.vc_error_message := 'Cannot import the ontology, please check URL.';
                 return;
               }
-              RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#schemas', self.imp.ufl_value);
+              RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#schemas', self.graph_name);
+              self.graph_name := '';
             ]]>
           </v:on-post>
         </v:button>
