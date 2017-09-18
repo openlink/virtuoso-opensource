@@ -1,0 +1,719 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2016 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="cvs_import"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+  <v:method name="csv_load" arglist="in mode integer, in path varchar">
+    <![CDATA[
+      declare ss, cn any;
+
+      if (mode = 0)
+      {
+        if (path like '%.gz')
+          ss := gz_file_open (path);
+        else
+          ss := file_open (path);
+      }
+      else
+      {
+        cn := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path);
+        if (isnull (cn))
+          return null;
+
+        ss := string_output ();
+        http (cn, ss);
+      }
+
+      return ss;
+    ]]>
+  </v:method>
+
+  <v:method name="csv_save" arglist="inout path varchar, in name varchar, in content any">
+    <![CDATA[
+      declare rc integer;
+
+      rc := 0;
+      if (name like '%.gz' and isstring (content))
+      {
+        name := regexp_replace (name, '\.gz\x24', '');
+        content := gzip_uncompress (content);
+      }
+      path := concat('/DAV/temp/', name);
+      if (content is not null and length (content))
+      {
+        set isolation='repeatable';
+        DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '111101101N', 'dav', 'administrators');
+        rc := DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, content, '', '111101101N', 'dav', 'administrators', now(), now(), null);
+      }
+
+      return rc;
+    ]]>
+  </v:method>
+
+  <vm:pagetitle>CSV Import</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+    </vm:menu>
+    <vm:variables>
+      <v:variable name="csv_step" type="varchar" default="'1'" />
+      <v:variable name="upl_file" type="varchar" default="null" />
+      <v:variable name="enc_file" type="varchar" default="null" />
+      <v:variable name="path" type="varchar" default="null" />
+      <v:variable name="mode" type="integer" default="0" />
+      <v:variable name="head" type="any" default="null" />
+      <v:variable name="v_delim" type="char" default="','" />
+      <v:variable name="v_quot" type="char" default='&apos;"&apos;' />
+      <v:variable name="v_hrow" type="int" default="0" />
+      <v:variable name="v_offs" type="int" default="1" />
+      <v:variable name="tname" type="varchar" default="''" />
+      <v:variable name="v_enc" type="varchar" default='null' />
+      <v:variable name="v_pmode" type="integer" default="1" />
+      <v:variable name="col_id" type="varchar" default="'ID'" />
+      <v:variable name="tb" type="varchar" default="null" />
+      <v:variable name="nrec" type="integer" default="0" />
+      <v:variable name="msg_path" type="varchar" default="null" />
+    </vm:variables>
+
+    <vm:header caption="CSV Import"/>
+    <vm:pagebody>
+
+      <v:template name="import_template1" type="simple" enabled="--case when (self.csv_step = '1') then 1 else 0 end ">
+        <v:form name="inx_form1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+          <table class="ctl_grp">
+            <tr class="ctl_grp_title">
+              <th colspan="2"><h3>Select Source</h3></th>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  <v:radio-button name="rb_fs" value="2" group-name="choice_source" auto-submit="1" initial-checked="1"/>
+                  Server-side file
+                </label>
+              </th>
+              <td>
+                <?vsp
+                  if (self.rb_fs.ufl_selected)
+                  {
+                ?>
+                <v:text name="fs_package_path" xhtml_size="70" />
+                <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv;*.csv.gz" path="DAV"
+                  browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
+                <?vsp
+                  }
+                ?>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  <v:radio-button name="rb_dav" value="1" group-name="choice_source" auto-submit="1" />
+                  DAV resource
+                </label>
+              </th>
+              <td>
+                <?vsp
+                  if (self.rb_dav.ufl_selected)
+                  {
+                ?>
+                <v:text name="package_path" xhtml_size="70"/>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv" path="DAV"
+                  browse_type="res" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="package_path"/>
+                <?vsp
+                  }
+                ?>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  <v:radio-button name="rb_upload" value="0" group-name="choice_source" auto-submit="1" />
+                  Upload file
+                </label>
+              </th>
+              <td>
+                <?vsp
+                  if (self.rb_upload.ufl_selected)
+                  {
+                ?>
+                <input type="file" name="package_path1" size="70" />
+                <?vsp
+                  }
+                ?>
+              </td>
+            </tr>
+            <tr>
+              <th>
+                <label>
+                  <v:radio-button name="rb_url" value="3" group-name="choice_source" auto-submit="1" />
+                  URL
+                </label>
+              </th>
+              <td>
+                <?vsp
+                  if (self.rb_url.ufl_selected)
+                  {
+                ?>
+                <v:text name="url_path" xhtml_size="70" />
+                <?vsp
+                  }
+                ?>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <br />
+                <v:button action="simple" value="Proceed" name="next1">
+                  <v:on-post>
+                    <![CDATA[
+                      declare tmp_name, path varchar;
+                      declare ret integer;
+                      declare ret, pos, mode integer;
+                      declare ses, tmp, arr, url, h any;
+                      declare params any;
+                      declare exit handler for sqlstate '*'
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := __SQL_MESSAGE;
+                        return;
+                      };
+
+                      if (self.vc_is_valid = 0)
+                        return;
+
+                      path := '';
+                      params := self.vc_event.ve_params;
+                      mode := atoi (get_keyword ('choice_source', params));
+                      if (mode = 0)
+                      {
+                        pos := position ('package_path1', params);
+                        if (pos)
+                        {
+                          ses := aref_set_0 (params, pos);
+                          tmp_name := get_keyword ('filename', get_keyword ('attr-package_path1', params, vector ()), '');
+                          if (tmp_name = '')
+                            tmp_name := concat (md5 (uuid ()), '.csv');
+
+                          ret := self.csv_save (path, tmp_name, ses);
+                          if (ret < 0)
+                          {
+                            rollback work;
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := DAV_PERROR (ret);
+                          }
+                        }
+                      }
+                      else if (mode = 1)
+                      {
+                        path := get_keyword('package_path', params);
+                      }
+                      else if (mode = 2)
+                      {
+                        path := get_keyword('fs_package_path', params);
+                      }
+                      else if (mode = 3)
+                      {
+                        url := get_keyword ('url_path', params, '');
+                        arr := WS.WS.PARSE_URI (url);
+                        tmp := split_and_decode (arr[2], 0, '\0\0/');
+                        if (length (tmp))
+                        {
+                          tmp_name := tmp[length (tmp) - 1];
+                        }
+                        else
+                        {
+                          tmp_name := concat (md5 (uuid ()), '.csv');
+                        }
+                        ses := http_client_ext (url, headers=>h);
+                        ret := self.csv_save (path, tmp_name, ses);
+                        if (ret < 0)
+                        {
+                          rollback work;
+                          self.vc_is_valid := 0;
+                          self.vc_error_message := DAV_PERROR (ret);
+                          return;
+                        }
+                        self.enc_file := http_request_header (h, 'Content-Type', 'charset', null);
+                      }
+                      if (path = '' or path is null)
+                      {
+                        self.vc_error_message := 'Please, enter correct path';
+                        self.vc_is_valid := 0;
+                        return;
+                      }
+                      self.path := path;
+                      self.mode := case when mode = 2 then 0 else 1 end;
+                      self.csv_step := '2';
+
+                      self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+
+      <v:template name="import_template2" type="simple" enabled="--case when (self.csv_step = '2') then 1 else 0 end ">
+        <v:form name="inx_form2" type="simple" method="POST" action="" >
+          <table class="ctl_grp">
+            <tr class="ctl_grp_title">
+              <th><h3>Select parse options</h3></th>
+            </tr>
+            <tr>
+              <th>Mode</th>
+              <td>
+                <v:select-list name="pmode">
+                  <v:item name="Strict" value='1'/>
+                  <v:item name="Lax" value='2'/>
+                </v:select-list>
+               </td>
+            </tr>
+            <tr>
+              <th>Delimiter</th>
+              <td>
+                <v:select-list name="delim">
+                  <v:item name="," value=','/>
+                  <v:item name="Tab" value='tab'/>
+                  <v:item name="Space" value='space'/>
+                  <v:item name=";" value=';'/>
+                  <v:item name=":" value=':'/>
+                  <v:item name="|" value='|'/>
+                </v:select-list>
+               </td>
+            </tr>
+            <tr>
+              <th>Quote</th>
+              <td>
+                <v:select-list name="quot">
+                  <v:item name="Double" value='"'/>
+                  <v:item name="Single" value="''"/>
+                </v:select-list>
+              </td>
+            </tr>
+            <tr>
+              <th>Encoding</th>
+              <td>
+                <v:select-list name="enc">
+                  <v:item name="Default" value='*default*'/>
+                  <v:item name="UTF-8" value="UTF-8"/>
+                  <v:item name="UTF-16LE" value="UTF-16LE"/>
+                  <v:item name="UTF-16BE" value="UTF-16BE"/>
+                  <v:after-data-bind>
+                    <![CDATA[
+                      declare ss, bom, enc any;
+
+                      if ((self.enc.ufl_value is null) and (self.csv_step = '2'))
+                      {
+                        ss := self.csv_load (self.mode, self.path);
+                        if (isnull (ss))
+                        {
+                          self.vc_error_message := 'Invalid path';
+                          self.vc_is_valid := 0;
+                          return 0;
+                        }
+                        bom := subseq (ss, 0, 2);
+                        enc := null;
+                        if (bom[0] = '\xff'[0] and bom[1] = '\xfe'[0])
+                          enc := 'UTF-16LE';
+                        else if (bom[0] = '\xfe'[0] and bom[1] = '\xff'[0])
+                          enc := 'UTF-16BE';
+
+                        if (self.enc.ufl_value is null)
+                          self.enc.ufl_value := enc;
+
+                        if (enc is null and length (self.enc_file))
+                          self.enc.ufl_value := self.enc_file;
+
+                        control.vs_set_selected ();
+                      }
+                    ]]>
+                  </v:after-data-bind>
+                </v:select-list>
+              </td>
+            </tr>
+            <tr>
+              <th>Header Row</th>
+              <td>
+                <v:text name="hrow" value="" default_value="1" xhtml_size="10" /><small> zero if no header </small>
+               </td>
+            </tr>
+            <tr>
+              <th>Import from line</th>
+              <td>
+                <v:text name="offs" value="" default_value="2" xhtml_size="10" />
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <h3>Sample Data</h3>
+                <table class="listing" width="100%">
+                <?vsp
+                  declare ss, cn, tmp, r, i, hi, offs, bom, enc, pmode any;
+
+                  ss := self.csv_load (self.mode, self.path);
+                  if (isnull (ss))
+                  {
+                    self.vc_error_message := 'Invalid path';
+                    self.vc_is_valid := 0;
+                    return 0;
+                  };
+
+                  if (self.enc.ufl_value = '*default*')
+                    enc := null;
+                  else
+                    enc := self.enc.ufl_value;
+
+                  i := 0;
+                  hi := atoi (coalesce (self.hrow.ufl_value, '1')) - 1;
+                  offs := atoi (coalesce (self.offs.ufl_value, '2')) - 1;
+                  pmode := atoi (coalesce (self.pmode.ufl_value, '1'));
+                  declare exit handler for sqlstate '*'
+                  {
+                    self.vc_error_message := __SQL_MESSAGE;
+                    self.vc_is_valid := 0;
+                    goto endp;
+                  };
+                  while (isvector (r := get_csv_row (ss, y_tab_or_space (self.delim.ufl_value), self.quot.ufl_value, enc, pmode)) and i < 10 + offs)
+                  {
+                    if ((i = 0 and hi < 0) or hi = i)
+                    {
+                      declare j int;
+
+                      http ('<tr class="listing_header_row"><td>Row No</td>');
+                      foreach (any c in r) do
+                      {
+                        if (hi < 0 or not isstring (r[j]))
+                          http_value (sprintf ('Column %02d', j), 'td');
+                        else
+                          http_value (SYS_ALFANUM_NAME (r[j]), 'td');
+                        j := j + 1;
+                      }
+                      http ('</tr>');
+                    }
+                    if (i >= offs)
+                    {
+                      http ('<tr>');
+                      http_value (i + 1, 'td');
+                      foreach (any c in r) do
+                      {
+                        if (not isinteger (c))
+                          c := charset_recode (c, enc, '_WIDE_');
+                        http_value (c, 'td');
+                      }
+                      http ('</tr>');
+                    }
+                    i := i + 1;
+                  }
+                endp:
+                  if (i = 0)
+                    http ('<tr><td>The file cannot be parsed</td></tr>');
+                ?>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <br />
+                <v:button action="simple" name="back1" value="Back">
+                  <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect ('import_csv.vspx');
+                    ]]>
+                  </v:on-post>
+                </v:button>
+
+                <v:button action="simple" name="reload" value="Refresh"/>
+                <?vsp
+                  if (i > 0)
+                  {
+                ?>
+                <v:button action="simple" value="Next" name="next2">
+                  <v:on-post>
+                    <![CDATA[
+                      declare i integer;
+                      declare ss, tmp any;
+
+                      if (self.quot.ufl_value = '')
+                        self.quot.ufl_value := '"';
+
+                      if (self.enc.ufl_value = '*default*')
+                        self.enc.ufl_value := '';
+
+                      self.v_delim := y_tab_or_space (self.delim.ufl_value);
+                      self.v_quot := self.quot.ufl_value;
+                      self.v_hrow := atoi(self.hrow.ufl_value) - 1;
+                      self.v_offs := atoi (self.offs.ufl_value) - 1;
+                      self.v_enc := self.enc.ufl_value;
+                      self.v_pmode := atoi (self.pmode.ufl_value);
+
+                      ss := self.csv_load (self.mode, self.path);
+                      if (isnull (ss))
+                      {
+                        self.vc_error_message := 'Invalid path';
+                        self.vc_is_valid := 0;
+                        return 0;
+                      }
+                      if (self.v_enc = '')
+                        self.v_enc := null;
+
+                      tmp := split_and_decode (self.path, 0, '\0\0/');
+                      self.tname := SYS_ALFANUM_NAME (tmp[length(tmp) - 1]);
+                      self.head := y_csv_get_cols (ss, self.v_hrow, self.v_offs, vector ('csv-delimiter', self.v_delim, 'csv-quote', self.v_quot, 'encoding', self.v_enc, 'mode', self.v_pmode));
+                      self.col_id := 'ID';
+                      for (i := 0; i < length (self.head); i := i + 1)
+                      {
+                        if (lcase (self.col_id) = lcase (self.head[i][0]))
+                        {
+                          self.col_id := 'ID_PK';
+                          goto _break;
+                        }
+                      }
+                    _break:;
+
+                      self.csv_step := '3';
+
+                      self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <?vsp
+                  }
+                ?>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+
+      <v:template name="import_template3" type="simple" enabled="--case when (self.csv_step = '3') then 1 else 0 end ">
+        <v:form name="inx_form3" type="simple" method="POST" action="" >
+          <table class="ctl_grp">
+            <tr class="ctl_grp_title">
+              <th colspan="2"><h3>Confirm Table details</h3></th>
+            </tr>
+            <tr>
+              <th>Table Qualifier</th>
+              <td>
+                <v:text name="tb_qual" value="" default_value="CSV" />
+              </td>
+            </tr>
+            <tr>
+              <th>Table Owner</th>
+              <td>
+                <v:text name="tb_own" value="" default_value="DBA" />
+              </td>
+            </tr>
+            <tr>
+              <th>Table Name</th>
+              <td>
+                <v:text name="tb_name" value="" default_value="--self.tname" />
+              </td>
+            </tr>
+            <tr>
+              <th colspan="2"><h3>Columns</h3></th>
+            </tr>
+            <?vsp
+              if (isvector (self.head))
+              {
+                declare inx integer;
+
+                inx := 0;
+              ?>
+            <tr>
+              <td>
+                <input type="text" name="col_id" value="<?V self.col_id ?>" />
+              </td>
+              <td>INTEGER IDENTITY PRIMARY KEY
+              </td>
+            </tr>
+            <?vsp
+                foreach (any _row in self.head) do
+                {
+            ?>
+            <tr>
+              <td>
+                <input type="text" name="<?V sprintf ('col_%d', inx) ?>" value="<?V _row[0] ?>" />
+              </td>
+              <td>
+                <select name="<?V sprintf ('col_%d_dt', inx) ?>">
+                <?vsp
+                   y_col_dts (_row[1]);
+                ?>
+                </select>
+              </td>
+            </tr>
+            <?vsp
+                inx := inx + 1;
+              }
+            }
+            ?>
+            <tr>
+              <td colspan="2">
+                <br />
+                <v:button action="simple" name="back3" value="Back">
+                  <v:on-post>
+                    <![CDATA[
+                      self.csv_step := '2';
+                      self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+
+                <v:button action="simple" value="Create Table &amp; Import Data" name="next3">
+                  <v:on-post>
+                    <![CDATA[
+                      declare ss, s, i, nrec, q, o, tb, tmp, err any;
+                      declare n, dt any;
+                      declare tb any;
+
+                      tb := SYS_ALFANUM_NAME (self.tb_name.ufl_value);
+                      q := self.tb_qual.ufl_value;
+                      o := self.tb_own.ufl_value;
+                      self.tb := sprintf ('%s.%s.%s', q, o, tb);
+
+                      ss := string_output ();
+                      http (sprintf ('create table "%I"."%I"."%I" ( \n', q, o, tb), ss);
+                      self.col_id := get_keyword ('col_id', params);
+                      if (not length (self.col_id))
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'Invalid column name';
+                        return 0;
+                      }
+                      http (sprintf ('"%I" INTEGER IDENTITY PRIMARY KEY, \n', self.col_id), ss);
+                      for (i := 0; i < length (self.head); i := i + 1)
+                      {
+                        n := get_keyword (sprintf ('col_%d', i), params);
+                        dt := get_keyword (sprintf ('col_%d_dt', i), params);
+                        if (not length (n) or not length (dt))
+                        {
+                          self.vc_is_valid := 0;
+                          self.vc_error_message := 'Invalid column name';
+                          return 0;
+                        }
+                        http (sprintf ('"%I" %s', n, dt), ss);
+                        if (i < length (self.head) - 1)
+                          http (', \n', ss);
+                      }
+                      http (')', ss);
+                      declare exit handler for sqlstate '*'
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := __SQL_MESSAGE;
+                        return 0;
+                      };
+                      exec (string_output_string (ss));
+                      commit work;
+
+                      s := self.csv_load (self.mode, self.path);
+                      if (isnull (ss))
+                      {
+                        self.vc_error_message := 'Invalid path';
+                        self.vc_is_valid := 0;
+                        return 0;
+                      }
+                      tmp := csv_load (s, self.v_offs, null, self.tb, 1, vector ('csv-delimiter', self.v_delim, 'csv-quote', self.v_quot, 'encoding', self.v_enc, 'mode', self.v_pmode, 'log', 1));
+                      if (isvector (tmp))
+                      {
+                        self.nrec := tmp[0];
+                        err := string_output_string (tmp[1]);
+                      }
+                      else
+                      {
+                        self.nrec := tmp;
+                      }
+                      if (length (err))
+                      {
+                        self.msg_path := sprintf ('/DAV/temp/%s.xml', xenc_rand_bytes (10, 1));
+                        YACUTIA_DAV_COL_CREATE('/DAV/temp/', '111101101N', 'dav', 'administrators');
+                        DB.DBA.YACUTIA_DAV_RES_UPLOAD (self.msg_path, err, '', '111101101N', 'dav', 'administrators', now(), now(), null);
+                      }
+                      else
+                      {
+                        self.msg_path := '';
+                      }
+
+                      self.csv_step := '4';
+                      self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+
+      <v:template name="import_template4" type="simple" enabled="--case when (self.csv_step = '4') then 1 else 0 end ">
+        <v:form name="inx_form4" type="simple" method="POST">
+          <div style="clear: both;">
+            <h3>Status</h3>
+            The data is imported in table <a href="#" onclick="javascript: window.open ('isql.vspx?sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>&amp;gen_table_sel=<?V self.tb ?>', 'isql', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800')"><?V self.tb ?></a>. <br/>
+            Total records imported <?V self.nrec ?>.
+          </div>
+          <div>
+          <?vsp
+            if (length (self.msg_path))
+            {
+              declare xt, xp, err_text any;
+              declare l, m any;
+
+              err_text := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.msg_path);
+              xt := xtree_doc (err_text);
+              delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = self.msg_path;
+              commit work;
+              xp := xpath_eval ('/error', xt, 0);
+              if (length (xp))
+                http_value ('Errors', 'div');
+
+              foreach (any x in xp) do
+              {
+                l := cast (xpath_eval ('@line', x) as varchar);
+                m := cast (xpath_eval ('string(.)', x) as varchar);
+                http (sprintf ('line: %s, %s <br />', l, m));
+              }
+            }
+          ?>
+          </div>
+          <br />
+          <div>
+            <v:button action="simple" name="back4" value="Start Over">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_redirect ('import_csv.vspx');
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+        </v:form>
+      </v:template>
+
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
