@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,16 +19,18 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="db_repl_pub"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
   <v:variable name="ordg" type="varchar" default="null" />
   <v:variable name="ordseqg" type="varchar" default="'asc'" />
-	  <v:method name="set_ordg" arglist="in x any, inout e vspx_event, inout ds vspx_control"><![CDATA[
+  <v:method name="set_ordg" arglist="in x any, inout e vspx_event, inout ds vspx_control">
+    <![CDATA[
 		if (self.ordg = x)
 		  {
 		    if (self.ordseqg = 'asc')
@@ -45,7 +45,9 @@
 		  }
 		if (ds is not null)
 		  ds.vc_data_bind (e);
-	      ]]></v:method>
+    ]]>
+  </v:method>
+
       <table class="listing_ctr">
         <tr>
           <td>
@@ -72,7 +74,8 @@
                   </td>
                   <td valign="center">
                     <v:button name="filter_submit" action="simple" value="Filter" width="90" height="24">
-                      <v:on-post><v:script><![CDATA[
+                  <v:on-post>
+                    <![CDATA[
                         {
                           declare str varchar;
 
@@ -90,12 +93,14 @@
                           self.ds1.vc_data_bind(e);
                           self.pattern_text1.vc_data_bind(e);
                         }
-                      ]]></v:script></v:on-post>
+                    ]]>
+                  </v:on-post>
                     </v:button>
                   </td>
                   <td valign="center">
                     <v:button name="filter_reset" action="simple" value="Reset" width="90" height="24">
-                      <v:on-post><v:script><![CDATA[
+                  <v:on-post>
+                    <![CDATA[
                         {
                           self.pattern_value := '';
                           self.search_mask := '%';
@@ -104,7 +109,8 @@
                           self.ds1.vc_enabled := 1;
                           self.ds1.vc_data_bind(e);
                         }
-                      ]]></v:script></v:on-post>
+                    ]]>
+                  </v:on-post>
                     </v:button>
                   </td>
                 </tr>
@@ -123,48 +129,56 @@
         <v:param name="filt_mask" value="self.search_mask"/>
         <v:template name="template1244" type="simple" name-to-remove="table" set-to-remove="bottom">
           <table class="listing">
+                <thead>
             <tr class="listing_header_row">
 	      <th>
 			      <v:button action="simple" name="name_ord9" value="Account Type" style="url">
-				  <v:on-post><![CDATA[
+                        <v:on-post>
+                          <![CDATA[
 				      self.set_ordg ('type', e, self.ds1);
-				      ]]></v:on-post>
+                          ]]>
+                        </v:on-post>
 			      </v:button>
 	      </th>
 	      <th>
 			      <v:button action="simple" name="name_ord10" value="Login" style="url">
-				  <v:on-post><![CDATA[
+                        <v:on-post>
+                          <![CDATA[
 				      self.set_ordg ('name', e, self.ds1);
-				      ]]></v:on-post>
+                          ]]>
+                        </v:on-post>
 			      </v:button>
 	      </th>
 	      <th>
 			      <v:button action="simple" name="name_ord11" value="Description" style="url">
-				  <v:on-post><![CDATA[
+                        <v:on-post>
+                          <![CDATA[
 				      self.set_ordg ('fullname', e, self.ds1);
-				      ]]></v:on-post>
+                          ]]>
+                        </v:on-post>
 			      </v:button>
 	      </th>
-	      <th>Action</th>
+                    <th class="action">Action</th>
             </tr>
+                </thead>
           </table>
         </v:template>
+
         <v:template name="template2224" type="repeat" name-to-remove="" set-to-remove="">
+
           <v:template name="template7224" type="if-not-exists" name-to-remove="table" set-to-remove="both">
             <table width="100%" border="2" cellspacing="0" cellpadding="0">
               <tr>
-                <td align="center" colspan="5">
+                    <td align="center" colspan="4">
                   <font color="red"><b>No user/group names match given pattern</b></font>
                 </td>
               </tr>
             </table>
           </v:template>
+
           <v:template name="template4224" type="browse" name-to-remove="table" set-to-remove="both">
             <table border="1" cellspacing="0" cellpadding="3">
-<?vsp
-              self.r_count := self.r_count + 1;
-              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-?>
+                  <tr>
                 <td class="listing_col">
                   <v:template type="simple" name="tpl_cowntype_1" condition="(control.vc_parent as vspx_row_template).te_rowset[2] = 1">
                     <img src="images/icons/group_16.png" alt="group" title="group"/>
@@ -181,15 +195,16 @@
                   <v:label name="label51" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
                 </td>
                 <td class="listing_col_action">
-		  <v:button action="simple" style="image"  name="edit1" value="images/icons/edit_16.png"
+                      <v:button action="simple"
+                                style="image"
+                                name="edit1"
+                                value="images/icons/edit_16.png"
 		    xhtml_alt="Edit Grants"
 		    xhtml_title="Edit Grants"
 		    text="&nbsp;Edit"
                     url="--concat('caps_browser.vspx?mode=edit&user_name=',(control.vc_parent as vspx_row_template).te_rowset[0])"/>
                 </td>
-<?vsp
-              http('</tr>');
-?>
+                  </tr>
             </table>
           </v:template>
         </v:template>
