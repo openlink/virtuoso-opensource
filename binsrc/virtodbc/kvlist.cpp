@@ -127,7 +127,7 @@ TKVList::Merge (TKVList &l)
 void
 TKVList::ReadODBCIni (LPCTSTR section, LPCTSTR names)
 {
-  TCHAR value[512];
+  TCHAR value[1024];
   LPCTSTR key;
 
   for (key = names; *key; key += _tcslen (key) + 1)
@@ -156,7 +156,7 @@ TKVList::WriteODBCIni (LPCTSTR section, LPCTSTR names)
 void
 TKVList::ReadFileDSN (LPCTSTR filename, LPCTSTR names)
 {
-  TCHAR value[512];
+  TCHAR value[1024];
   LPCTSTR key;
   WORD len;
 
@@ -273,7 +273,7 @@ TKVList::FromAttributes (LPCTSTR szIn)
   LPCTSTR cp;
   LPCTSTR tok;
   TCHAR keyBuf[128];
-  TCHAR valueBuf[128];
+  TCHAR valueBuf[1024];
   int count = 0;
 
   if ( *szIn != 0)
