@@ -1193,7 +1193,7 @@ aq_thr_mem_cache_clear ()
 void
 bif_aq_init ()
 {
-  dk_mem_hooks (DV_ASYNC_QUEUE, (box_copy_f) aq_copy, (box_destr_f) aq_free, 0);
+  dk_mem_hooks (DV_ASYNC_QUEUE, (box_copy_f) aq_copy, (box_destr_f) aq_free, 1);
   PrpcSetWriter (DV_ASYNC_QUEUE, (ses_write_func) aq_serialize);
   bif_define ("async_queue", bif_async_queue);
   bif_define ("aq_request", bif_aq_request);
