@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,19 +19,17 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_repl_pub"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro">
-    <v:variable name="vhost" persist="0" type="varchar" default="''" param-name="vhost"/>
-    <v:variable name="lhost" persist="0" type="varchar" default="''" param-name="lhost"/>
-    <v:variable name="lpath" persist="0" type="varchar" default="''" param-name="lpath"/>
-    <v:variable name="rule_list" persist="0" type="varchar" default="''" param-name="rule_list"/>
-    <pre><?vsp http_value (VHOST_DUMP_SQL (self.lpath, self.vhost, self.lhost)); ?>
-    </pre>
-    <pre><?vsp if (length (self.rule_list)) http_value (URLREWRITE_DUMP_RULELIST_SQL (self.rule_list)); ?>
-    </pre>
+<v:page name="vhost_export"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:variable name="vhost" persist="0" type="varchar" default="''" param-name="vhost"/>
+  <v:variable name="lhost" persist="0" type="varchar" default="''" param-name="lhost"/>
+  <v:variable name="lpath" persist="0" type="varchar" default="''" param-name="lpath"/>
+  <v:variable name="rule_list" persist="0" type="varchar" default="''" param-name="rule_list"/>
+  <pre><?vsp http_value (DB.DBA.VHOST_DUMP_SQL (self.lpath, self.vhost, self.lhost)); ?></pre>
+  <pre><?vsp if (length (self.rule_list)) http_value (DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (self.rule_list)); ?></pre>
 </v:page>
