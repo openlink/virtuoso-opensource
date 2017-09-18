@@ -137,6 +137,8 @@ typedef struct
 
 
 /* Dkhash.c */
+#define ht_max_sz 1971049	/*!< The biggest value \c hash_nextprime() may return */
+#define id_ht_max_sz 1045111	/*!< The biggest value valid for number of buckets of id_hash_t */
 extern uint32 hash_nextprime (uint32 n);
 
 EXE_EXPORT (dk_hash_t *,hash_table_allocate, (uint32 size));
