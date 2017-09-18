@@ -20,61 +20,25 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="ldap_import_directory"
+<v:page name="ldap_server"
   decor="yacutia_decor.vspx"
   style="yacutia_style.xsl"
   fast-render="1"
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/macro"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Virtuoso Account Management</vm:pagetitle>
 
-  <vm:pagewrapper>
-    <vm:variables>
       <v:variable name="mode" type="varchar" default="'add'" />
-    </vm:variables>
 
-    <vm:menu>
-      <vm:menuitem value="LDAP Servers"/>
-    </vm:menu>
-
-    <vm:header caption="LDAP Servers"/>
-
-    <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="Grants"  url="accounts_page.vspx?page=3" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url15" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">
-                          LDAP Servers
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
+  <script type="text/javascript">
+    <![CDATA[
+      function sslTypeChange ()
+      {
+        $('port').value = ($('ssl').checked)? '636' : '389';
+      }
+    ]]>
+  </script>
+  <table class="tab_page" style="border: 0px;">
                     <tr>
 		      <td valign="top">
                         <b>
@@ -87,10 +51,11 @@
       <v:form type="simple" name="ldsf1" method="POST" >
 	<table class="ctl_grp">
 	  <tr>
-                              <td class="genlisthead">Host name</td>
-                              <td class="geninput">
-	      <v:text xhtml_size="55" name="host" value="" >
-                                  <v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name" runat="client"/>
+              <th>Host name</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="host" value="" >
+                  <!--v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name" runat="client"/-->
+                  <v:validator test="regexp" regexp="^(ldap(s)?://)?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$" message="Invalid host name" runat="client"/>
 		<v:before-render>
 		  if (self.mode = 'edit')
 		    control.vc_add_attribute ('disabled', '1');
@@ -99,9 +64,9 @@
 	    </td>
 	  </tr>
 	  <tr>
-                              <td class="genlisthead">Port</td>
-                              <td class="geninput">
-	      <v:text xhtml_size="5" name="port" value="389">
+              <th>Port</th>
+              <td>
+                <v:text xhtml_size="2" name="port" value="389" xhtml_id="port">
 		<v:before-render>
 		  if (self.mode = 'edit')
 		    control.vc_add_attribute ('disabled', '1');
@@ -110,44 +75,42 @@
 	    </td>
 	  </tr>
 	  <tr>
-                              <td class="geninput">
-		<v:check-box name="ssl" value="1" xhtml_id="ssl"/>
-	      </td>
-                              <td class="genlisthead"><label for="ssl">Try TLS</label></td>
+              <td></td>
+              <th><label><v:check-box name="ssl" xhtml_id="ssl" value="1" xhtml_onchange="sslTypeChange();" /> Try TLS</label></th>
 	    </tr>
 	  <tr>
-                              <td class="genlisthead">Base</td>
-                              <td class="geninput">
-	      <v:text xhtml_size="55" name="base" value=""/>
+              <th>Base</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="base" value=""/>
 	    </td>
 	  </tr>
 	  <tr>
-                              <td class="genlisthead">Bind DN</td>
-                              <td class="geninput">
-	      <v:text xhtml_size="55" name="bind" value=""/>
+              <th>Bind DN</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="bind" value=""/>
 	      </td>
 	    </tr>
 	    <tr>
-                              <td class="genlisthead">UID field</td>
-                              <td class="geninput">
-		<v:text xhtml_size="55" name="uidf" value="" />
+              <th>UID field</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="uidf" value="" />
 	      </td>
 	    </tr>
 	    <tr>
-                              <td class="genlisthead">Account</td>
-                              <td class="geninput">
-		<v:text xhtml_size="55" name="uid" value="" />
+              <th>Account</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="uid" value="" />
 	      </td>
 	    </tr>
 	    <tr>
-                              <td class="genlisthead">Password</td>
-                              <td class="geninput">
-		<v:text xhtml_size="55" name="pwd" value="" type="password"/>
+              <th>Password</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="pwd" value="" type="password"/>
 	      </td>
 	    </tr>
 	    <tr>
-                              <td class="genlisthead">LDAP Version</td>
-                              <td class="geninput">
+              <th>LDAP Version</th>
+              <td>
 		<v:select-list name="lver">
 		  <v:item value="2" name="2"/>
 		  <v:item value="3" name="3"/>
@@ -155,7 +118,8 @@
 	      </td>
 	    </tr>
 	    <tr>
-                              <td colspan="2" class="genlisthead">
+              <th></th>
+              <td>
 		<v:button action="simple" name="tst" value="Test">
 		  <v:on-post>
 		    declare addr any;
@@ -168,10 +132,10 @@
                                     };
 
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
-		    if (self.host.ufl_value not like 'ldap%://%')
-		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
-		    else
 		      addr := self.host.ufl_value||':'||self.port.ufl_value;
+                    if (addr not like 'ldap%://%')
+                      addr := case when self.ssl.ufl_selected then 'ldaps://' else 'ldap://' end || addr;
+
                                     ldap_search (
                                       addr,
                                       self.ssl.ufl_selected,
@@ -196,18 +160,19 @@
                                     };
 
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
-		    if (self.host.ufl_value not like 'ldap%://%')
-		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
-		    else
 		      addr := self.host.ufl_value||':'||self.port.ufl_value;
+                    if (addr not like 'ldap%://%')
+                      addr := case when self.ssl.ufl_selected then 'ldaps://' else 'ldap://' end || addr;
+
+                    ssl := self.ssl.ufl_selected;
                                     ldap_search (
                                       addr,
-                                      self.ssl.ufl_selected,
+                      ssl,
                                       self.base.ufl_value,
                                       sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
-		    self.pwd.ufl_value);
-		    ssl := self.ssl.ufl_selected;
+                      self.pwd.ufl_value
+                    );
 		    if (self.mode = 'edit')
 		    {
 		      pwd := pwd_magic_calc (self.uid.ufl_value, self.pwd.ufl_value, 0);  
@@ -280,7 +245,13 @@
                                     <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%d" />
 			    </td>
                                   <td class="action">
-			      <v:button name="edit1" value="Edit" style="url" action="simple">
+                    <v:button action="simple"
+                              style="image"
+                              name="lds_edit"
+                              value="images/icons/edit_16.png"
+                              xhtml_alt="Edit"
+                              xhtml_title="Edit"
+                              text="&nbsp;Edit">
                                       <v:on-post>
                                         <![CDATA[
 				  declare hf, arr, host, port any;
@@ -288,10 +259,7 @@
 				  hf := WS.WS.PARSE_URI ((control.vc_parent as vspx_row_template).te_rowset[0]);
 				  arr := split_and_decode (hf[1], 0, '\0\0:');
 				  self.host.ufl_value := arr[0];
-				  if (length (arr) > 1)
-				    self.port.ufl_value := arr[1];
-				  else
-				    self.port.ufl_value := '389';
+                          self.port.ufl_value := case when (length (arr) > 1) then arr[1] else case when self.ssl.ufl_selected then '636' else '389' end end;
 				  self.base.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
 				  self.bind.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[3];
 				  self.uidf.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[4];
@@ -304,7 +272,13 @@
                                         ]]>
                                       </v:on-post>
 			      </v:button>
-			      <v:button name="del1" value="Delete" style="url" action="simple">
+                    <v:button action="simple"
+                              style="image"
+                              name="delete1"
+                              value="images/icons/trash_16.png"
+                              xhtml_alt="Delete"
+                              xhtml_title="Delete"
+                              text="&nbsp;Delete">
 				<v:on-post>
                                         delete from SYS_LDAP_SERVERS where LS_ADDRESS = (control.vc_parent as vspx_row_template).te_rowset[0];
 			          self.lds.vc_data_bind (e);
@@ -319,12 +293,4 @@
                       </td>
                     </tr>
                   </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-    </vm:pagebody>
-  </vm:pagewrapper>
 </v:page>
