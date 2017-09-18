@@ -41,6 +41,11 @@ table
     font-size: 10pt;
 }
 
+form
+{
+  margin-bottom: 0px;
+}
+
 input[type="text"], input[type="password"], select {
   box-sizing: border-box;
   -moz-box-sizing: border-box;
@@ -565,13 +570,6 @@ td.complex_selector_buttons
 
 button.form_complex_selector
 {
-
-}
-
-/* Label */
-
-label
-{
 }
 
 table.listing_ctr
@@ -620,18 +618,6 @@ table.listing tbody tr:hover {
 
 table.ODS_grid tbody tr.selected {
   background-color: #FFFFCC;
-}
-
-table.listing th.checkbox, table.listing td.checkbox {
-  width: 1px;
-  text-align: center;
-  margin: 0;
-  padding: 0.5px;
-}
-
-table.listing th.action, table.listing td.action {
-  width: 1px;
-  white-space: nowrap;
 }
 
 tr.listing_header_row
@@ -733,7 +719,8 @@ td.listing_col_action a
 /* accounts.vspx, sys_queues.vspx, etc. unhide the "Add New Item" */
 
 th.new_item
-{ }
+{
+}
 
 th.new_item img
 {
@@ -1565,6 +1552,7 @@ p.footnote
 
 div.validator_err_ctr
 {
+  clear: both;
   margin-left: 10px;
 }
 
