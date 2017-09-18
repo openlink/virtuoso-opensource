@@ -341,6 +341,7 @@
             -- Get all tabs
             declare tabs any;
             declare pos integer;
+
             tabs := vector();
             foreach (vspx_control c in self.tab1.vc_children) do
             {
