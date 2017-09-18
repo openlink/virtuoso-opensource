@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,85 +19,89 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="sparql_create_page"
+<v:page name="r2rml_validate"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         vm:owner="yacutia_sparql_page"
+        fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
- <vm:pagetitle>R2RML Validation</vm:pagetitle>
- <vm:pagewrapper>
+  <vm:pagetitle>R2RML Validation</vm:pagetitle>
+  <vm:pagewrapper>
     <vm:variables>
       <v:variable name="message" default="null" type="varchar" persist="0"/>
       <v:variable name="graph" default="null" type="varchar" persist="0" param-name="graph"/>
     </vm:variables>
-  <vm:menu>
-   <vm:menuitem value="Linked Data"/>
-  </vm:menu>
-  <vm:header caption="R2RML Validation"/>
-  <vm:pagebody>
-  <v:on-init>
-    <![CDATA[
-    set http_charset='utf-8';
-    ]]>
-  </v:on-init>
-	  <h2>Validation Status</h2>
-	  <div class="scroll_area">
-	  <table class="listing">
-	      <tr class="listing_header_row">
-		  <th>Subject</th>
-		  <th>Status</th>
-		  <th>Message</th>
-	      </tr>
-	      <?vsp
-	      declare stat, msg, data, meta any;
-	      stat := '00000';
-	      exec ('DB.DBA.OVL_VALIDATE (?, ''http://www.w3.org/ns/r2rml#OVL'')', stat, msg, vector (self.graph), 0, meta, data);
-	      if (stat <> '00000')
-	      	data := vector (vector ('', stat, msg));
-	      foreach (any _row in data) do
-                {
-	      ?>
-	      <tr>
-		  <td><?V _row[0] ?></td>
-		  <td><?V _row[1] ?></td>
-		  <td><?V _row[2] ?></td>
-	      </tr>
-	      <?vsp
-	        }
-	      ?>
-	  </table>
-          </div>
+    <vm:menu>
+      <vm:menuitem value="Linked Data"/>
+    </vm:menu>
+    <vm:header caption="R2RML Validation"/>
+    <vm:pagebody>
+      <v:on-init>
+        <![CDATA[
+          set http_charset='utf-8';
+        ]]>
+      </v:on-init>
+      <br style="clear: both;"/>
+      <h2>Validation Status</h2>
+      <div class="scroll_area">
+        <table class="listing">
+          <tr class="listing_header_row">
+            <th>Subject</th>
+            <th>Status</th>
+            <th>Message</th>
+          </tr>
+          <?vsp
+            declare stat, msg, data, meta any;
+
+            stat := '00000';
+            exec ('DB.DBA.OVL_VALIDATE (?, ''http://www.w3.org/ns/r2rml#OVL'')', stat, msg, vector (self.graph), 0, meta, data);
+            if (stat <> '00000')
+              data := vector (vector ('', stat, msg));
+
+            foreach (any _row in data) do
+            {
+          ?>
+          <tr>
+            <td><?V _row[0] ?></td>
+            <td><?V _row[1] ?></td>
+            <td><?V _row[2] ?></td>
+          </tr>
+          <?vsp
+            }
+          ?>
+        </table>
+      </div>
       <v:form name="form1" type="simple" method="POST" action="">
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-	    <td>
-		<div class="message"><v:label name="msg" value="--self.message" /> </div>
-	      <table border='0' width='100%'  class="ctl_grp">
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+          <tr valign='top'>
+            <td>
+              <div class="message"><v:label name="msg" value="--self.message" /> </div>
+              <table border='0' width='100%'  class="ctl_grp">
                 <tr align="center">
                   <td colspan="2">
-		      <v:button action="simple" name="cnl" value="Cancel">
-			  <v:on-post>
-			      self.vc_redirect ('r2rml_import.vspx');
-			  </v:on-post>
-		      </v:button>
+                    <v:button action="simple" name="cnl" value="Cancel">
+                      <v:on-post>
+                        self.vc_redirect ('r2rml_import.vspx');
+                      </v:on-post>
+                    </v:button>
+
                     <v:button action="simple" name="bt1" value="Generate">
                       <v:on-post>
-			<![CDATA[
-			self.vc_redirect (sprintf ('r2rml_gen.vspx?graph=%U', self.graph));
+                        <![CDATA[
+                          self.vc_redirect (sprintf ('r2rml_gen.vspx?graph=%U', self.graph));
                         ]]>
                       </v:on-post>
                     </v:button>
-		    </td>
-		    </tr>
-	      </table>
-	  </td>
-        </tr>
-      </table>
-  </v:form>
-  </vm:pagebody>
- </vm:pagewrapper>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
 </v:page>
