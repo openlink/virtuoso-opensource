@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,32 +19,32 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="db_repl_pub"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro">
-    <div id="monitor_tab">
-      <v:form name="profiling_form" type="simple" method="POST" action="logging_page.vspx?page=8" xhtml_showme="1">
-        <table border="0" cellspacing="0" cellpadding="5" class="ctl_ctr">
-          <vm:attrs border="0" class="ctl_ctr" width="70%" cellspacing="0" cellpadding="5" align="center"/>
-          <?vsp
-            if (sys_stat ('prof_on') = 0)
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <div id="monitor_tab">
+    <v:form name="profiling_form" type="simple" method="POST" action="logging_page.vspx?page=8" xhtml_showme="1">
+      <table border="0" cellspacing="0" cellpadding="5" class="ctl_ctr">
+        <vm:attrs border="0" class="ctl_ctr" width="70%" cellspacing="0" cellpadding="5" align="center"/>
+        <?vsp
+          if (sys_stat ('prof_on') = 0)
+          {
+            declare profiling_info, _stat, _msg varchar;
+            exec('select file_to_string (''virtprof.out'')', _stat, _msg, NULL, 1, NULL, profiling_info);
+            if (__tag (profiling_info) = 193)
             {
-              declare profiling_info, _stat, _msg varchar;
-              exec('select file_to_string (''virtprof.out'')', _stat, _msg, NULL, 1, NULL, profiling_info);
-              if (__tag (profiling_info) = 193)
-              {
+              profiling_info := aref (profiling_info, 0);
+              if (__tag(profiling_info) = 193)
                 profiling_info := aref (profiling_info, 0);
-                if (__tag(profiling_info) = 193)
-                  profiling_info := aref (profiling_info, 0);
-                else
-                  profiling_info := NULL;
-              }
               else
                 profiling_info := NULL;
+            }
+            else
+              profiling_info := NULL;
           ?>
           <tr>
             <td>Profiling is <span class="emphasize">OFF</span></td>
@@ -112,7 +110,7 @@
             <td>Profiling is ON for <?V time_on ?> <?V units ?></td>
             <td align="left">
               <v:button action="simple" value="Stop profiling" name="Stop">
-                <v:on-post width="0" height="16">
+                <v:on-post>
                   <v:script>
                     <![CDATA[
                       prof_enable (0, 1);
