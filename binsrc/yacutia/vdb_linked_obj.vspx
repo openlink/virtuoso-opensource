@@ -52,22 +52,6 @@
     <vm:header caption="External Data Sources">
     </vm:header>
     <vm:pagebody vdb_check="1">
-      <script language="JavaScript">
-        <![CDATA[
-          function selectAllCheckboxes (form, btn) {
-            var i;
-            for (i = 0; i < form.elements.length; i++) {
-              var contr = form.elements[i];
-              if ((contr != null) && (contr.type == "checkbox")) {
-                contr.focus();
-                contr.checked = (btn.value == 'Select All')
-              }
-            }
-            btn.value = (btn.value == 'Select All')? 'Unselect All':'Select All';
-            btn.focus();
-          }
-        ]]>
-      </script>
       <!--
       <vm:help id="vdb_linked_obj" sect=""/>
       -->
@@ -87,12 +71,7 @@
                         <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%">
-                            </td>
-                          </tr>
-                        </table>
+                        &nbsp;
                       </td>
                     </tr>
                   </table>

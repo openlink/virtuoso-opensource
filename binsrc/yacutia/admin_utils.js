@@ -22,8 +22,7 @@
 
 function selectAllCheckboxes (form, btn)
 {
-  var i;
-  for (i = 0;i < form.elements.length;i++)
+  for (var i = 0;i < form.elements.length;i++)
   {
       var contr = form.elements[i];
       if (contr != null && contr.type == "checkbox")
@@ -44,8 +43,7 @@ function selectAllCheckboxes (form, btn)
 
 function selectAllCheckboxes_mask (form, btn, txt)
 {
-  var i;
-  for (i = 0; i < form.elements.length; i++)
+  for (var i = 0; i < form.elements.length; i++)
     {
       var contr = form.elements[i];
       if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1)

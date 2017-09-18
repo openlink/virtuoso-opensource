@@ -23,14 +23,6 @@
  *
  */
 
-// Toggle control visibility
-
-var page_tainted;
-
-function y_tg_visible (c_id)
-  {
-  }
-
 // Toggle control enabled
 
 function y_tg_enabled (c_id)
@@ -42,4 +34,39 @@ function y_tg_enabled (c_id)
       c.disabled = false;
     else
       c.disabled = true;
+}
+
+function selectAllCheckboxes (form, btn)
+{
+  for (var i = 0; i < form.elements.length; i++) {
+    var contr = form.elements[i];
+    if ((contr != null) && (contr.type == "checkbox")) {
+      contr.focus();
+      contr.checked = (btn.value == 'Select All')
+    }
+  }
+  btn.value = (btn.value == 'Select All')? 'Unselect All':'Select All';
+  btn.focus();
+}
+
+function dsns_chg(sel)
+{
+  var i, _new, old;
+  if (sel.selectedIndex == -1)
+  {
+    document.link_form.dsn.value = '';
+    document.link_form.uid.value = '';
+    document.link_form.pwd.value = '';
+    return (0);
+  }
+  for (i = 0; i < sel.length; i++)
+  {
+    if (sel.options[i].selected)
+    {
+      if (sel.options[i].text == document.link_form.dsn.value)
+        sel.options[i].selected = false;
+      else
+        document.link_form.dsn.value = sel.options[i].text;
+    }
+  }
 }

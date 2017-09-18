@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="event_edit_page"
@@ -44,39 +41,14 @@
     </vm:menu>
     <vm:header caption="New Bidirectional Snapshot Subscription"/>
     <vm:pagebody vdb_check="1">
-      <script language="JavaScript">
-        function dsns_chg(sel)
-        {
-          var i, _new, old;
-          if (sel.selectedIndex == -1)
-          {
-            document.link_form.dsn.value = '';
-            document.link_form.uid.value = '';
-            document.link_form.pwd.value = '';
-            return (0);
-          }
-          for (i = 0; i &lt; sel.length; i++)
-          {
-            if (sel.options[i].selected)
-            {
-              if (sel.options[i].text == document.link_form.dsn.value)
-                sel.options[i].selected = false;
-              else
-                document.link_form.dsn.value = sel.options[i].text;
-            }
-          }
-        };
-      </script>
       <v:form name="link_form" action="db_repl_bi_add.vspx" method="POST" type="simple">
         <input type="hidden" name="item" value="<?V get_keyword('item', self.vc_page.vc_event.ve_params) ?>"/>
         <input type="hidden" name="item_type" value="<?V get_keyword('item_type', self.vc_page.vc_event.ve_params) ?>"/>
         <v:before-data-bind>
-          <v:script>
             <![CDATA[
               self._item := cast(deserialize(decode_base64(get_keyword('item', self.vc_page.vc_event.ve_params))) as varchar);
               self._item_type := atoi(get_keyword('item_type', self.vc_page.vc_event.ve_params, '0'));
             ]]>
-          </v:script>
         </v:before-data-bind>
         <table class="ctl_grp">
           <tr class="ctl_grp_title">
@@ -155,7 +127,6 @@
           <td>
             <v:button action="simple" value="Create Subscription" name="create_snap">
               <v:on-post>
-                <v:script>
                   <![CDATA[
                     if (self.dsn = '')
                     {
@@ -179,14 +150,12 @@
                     http_header(sprintf('Location: db_repl_bi_edit.vspx?sid=%s&realm=%s&item=%s&item_type=%s\r\n', self.sid, self.realm, encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
                     return;
                   ]]>
-                </v:script>
               </v:on-post>
             </v:button>
           </td>
           <td>
             <v:button action="simple" value="Save" name="dsn_save">
               <v:on-post>
-                <v:script>
                   <![CDATA[
                     declare _uid, _pwd varchar;
                     _uid := get_keyword('n_uid', control.vc_page.vc_event.ve_params, 'dba');
@@ -200,7 +169,6 @@
                         self.error_str198 := msg;
                     }
                   ]]>
-                </v:script>
               </v:on-post>
             </v:button>
           </td>
@@ -250,16 +218,13 @@
           <td colspan="2">
             <v:button action="simple" value="Clear" name="dsn_clr">
               <v:on-post>
-                <v:script>
                   <![CDATA[
                     ;
                   ]]>
-                </v:script>
               </v:on-post>
             </v:button>
             <v:button action="simple" value="Add Data Source" name="dsn_add">
               <v:on-post>
-                <v:script>
                   <![CDATA[
                     declare _dsn, _uid, _pwd varchar;
                     _dsn := get_keyword('dsn', control.vc_page.vc_event.ve_params, '');
@@ -274,7 +239,6 @@
                         self.error_str198 := msg;
                     }
                   ]]>
-                </v:script>
               </v:on-post>
             </v:button>
           </td>
