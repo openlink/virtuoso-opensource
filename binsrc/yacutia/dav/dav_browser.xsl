@@ -2068,12 +2068,12 @@
                 </tr>
                 <tr>
                   <td><?V WEBDAV.DBA.dav_get (old_vector, 'name') ?></td>
-                  <td><?vsp http (WEBDAV.DBA.ui_size (length (self.dav_vector [1]))); ?></td>
+                  <td><?vsp http (WEBDAV.DBA.ui_size (self.dav_vector [2])); ?></td>
                   <td><?vsp http (WEBDAV.DBA.ui_date (now())); ?></td>
-                  <td><?V self.dav_vector [2] ?></td>
-                  <td><?V WEBDAV.DBA.user_name (self.dav_vector [4]) ?></td>
+                  <td><?V self.dav_vector [3] ?></td>
                   <td><?V WEBDAV.DBA.user_name (self.dav_vector [5]) ?></td>
-                  <td><?V DB.DBA.DAV_PERM_D2U (self.dav_vector [3]) ?></td>
+                  <td><?V WEBDAV.DBA.user_name (self.dav_vector [6]) ?></td>
+                  <td><?V DB.DBA.DAV_PERM_D2U (self.dav_vector [4]) ?></td>
                 </tr>
                 <tr>
                   <td colspan="7">
@@ -2112,7 +2112,7 @@
                     }
                     else
                     {
-                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.dav_vector[0], dav_file, self.dav_vector[2], self.dav_vector[3], self.dav_vector[4], self.dav_vector[5]);
+                      retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.dav_vector[0], dav_file, self.dav_vector[3], self.dav_vector[4], self.dav_vector[5], self.dav_vector[6]);
                     }
                     if (WEBDAV.DBA.DAV_ERROR (retValue))
                     {
@@ -2121,8 +2121,8 @@
                       self.vc_data_bind (self.vc_page.vc_event);
                       return;
                     }
-                    if (not isnull (self.dav_vector[6]))
-                      WEBDAV.DBA.DAV_PROP_SET (self.dav_vector[0], 'redirectref', self.dav_vector[6]);
+                    if (not isnull (self.dav_vector[7]))
+                      WEBDAV.DBA.DAV_PROP_SET (self.dav_vector[0], 'redirectref', self.dav_vector[7]);
 
                     DB.DBA.DAV_DELETE (dav_tempPath, 1, dav_tempUser, dav_tempPassword);
                     commit work;
@@ -3831,7 +3831,7 @@
                             DB.DBA.DAV_COL_CREATE ('/DAV/temp/', '110110000NN', 'dav', 'administrators', dav_tempUser, dav_tempPassword);
                             DB.DBA.DAV_RES_UPLOAD (dav_tempPath, dav_file, dav_mime, '110110000NN', 'dav', 'administrators', dav_tempUser, dav_tempPassword);
 
-                            self.dav_vector := vector (dav_fullPath, dav_tempPath, dav_mime, dav_perms, dav_owner, dav_group, case when (self.dav_is_redirect) then dav_link else null end);
+                            self.dav_vector := vector (dav_fullPath, dav_tempPath, length (dav_file), dav_mime, dav_perms, dav_owner, dav_group, case when (self.dav_is_redirect) then dav_link else null end);
                             self.command := 14;
                             self.vc_data_bind(e);
                             return;
