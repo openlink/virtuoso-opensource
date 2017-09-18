@@ -1869,6 +1869,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
         {
           if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
           {
+            _perms := pperms;
             return a_uid;
           }
           if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
@@ -1900,15 +1901,26 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
     }
     else if (a_uid = http_dav_uid())
     {
+      a_gid := http_admin_gid ();
+      _perms := pperms;
       return a_uid;
     }
   }
   else
   {
-    a_uid := http_nobody_uid ();
-    a_gid := http_nogroup_gid ();
+    if (isnull (id))
+    {
+      a_uid := http_nobody_uid ();
+      a_gid := http_nogroup_gid ();
+    }
+    else
+    {
+      a_uid := puid;
+      a_gid := pgid;
+    }
     _perms := '110110110--';
   }
+
   set isolation='committed';
   if ('R' = what and
       puid <> http_nobody_uid() and
@@ -1920,6 +1932,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
   if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
   {
     -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns ', a_uid, ' (that is made by DAV_CHECK_PERM (', pperms, req, a_uid, a_gid, pgid, puid, ')');
+    _perms := pperms;
     return a_uid;
   }
   if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
