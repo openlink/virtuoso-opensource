@@ -64,7 +64,7 @@
         <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
           <table>
             <tr>
-              <td align="center" colspan="6">
+              <td align="center" colspan="4">
                 <b>No rows selected</b>
               </td>
             </tr>

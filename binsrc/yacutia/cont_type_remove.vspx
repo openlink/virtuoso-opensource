@@ -39,63 +39,50 @@
     </vm:menu>
     <vm:header caption="Remove MIME Type"/>
     <vm:pagebody>
-      <v:form name="event_form2" type="simple" method="POST" action="">
-        <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
-        <table>
-          <tr>
-            <td>Remove Confirmation of MIME Type for File Extension: </td>
-            <td>
-              <?vsp
-                http(cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar));
-              ?>
-            </td>
-          </tr>
-          <tr>
-            <td colspan="2" align="center">
-              <v:button action="simple" name="cancel1" value="Cancel">
-                <v:on-post>
-                  <![CDATA[
-                    http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
-                    return;
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" name="rem" value="Remove">
-                <v:on-post>
-                  <![CDATA[
-                    declare ename varchar;
+      <v:form name="event_form2" type="simple" method="POST" action="cont_type_remove.vspx">
+        <div class="confirm_dialog">
+          <div><img src="images/icons/stop_32.png" alt="Stop" title="stop"/></div>
+          <div class="confirm_text">
+            <br />
+            The MIME type <?vsp http(sprintf('<b> %s </b>', cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar))); ?> will be removed permanently and there is no way to restore it. <br/>
+            Are you sure you want to remove this MIME type?
+          </div>
 
-                    ename := cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar);
-                    if (ename <> '' and ename is not null)
+          <div class="dialog_buttons">
+            <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+            <v:on-post>
+              <![CDATA[
+                declare _name varchar;
+
+                if (get_keyword ('remove', params, '') <> '')
+                {
+                  _name := cast (deserialize (decode_base64 (get_keyword ('name', params))) as varchar);
+                  if (not DB.DBA.is_empty_or_null (_name))
+                  {
+                    declare state, msg varchar;
+
+                    state := '00000';
+                    exec ('delete from WS.WS.SYS_DAV_RES_TYPES where T_EXT = ?', state, msg, vector (_name));
+                    if (state <> '00000')
                     {
-                      declare state, msg, m_dta, res varchar;
-                      state := '00000';
-                      exec('delete from WS.WS.SYS_DAV_RES_TYPES where T_EXT = ?', state, msg, vector(ename), m_dta, res);
-                      if (state <> '00000')
-                      {
-                        self.error_str1 := 'Can not delete this MIME Type';
-                        return;
-                      }
-                    }
-                    else
-                    {
-                      self.error_str1 := 'File extension is empty';
+                      self.error_str1 := 'Can not delete this MIME Type';
                       return;
                     }
-                    http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </td>
-          </tr>
-        </table>
-        <?vsp
-          if (self.error_str1 <> '' and self.error_str1 is not null)
-            http(sprintf('<table class="Warning" border="1" align="center"><tr><td colspan="2">%s</td></tr>', self.error_str1));
-          self.error_str1 := '';
-        ?>
+                  }
+                  else
+                  {
+                    self.error_str1 := 'File extension is empty';
+                    return;
+                  }
+                }
+                self.vc_redirect ('cont_page.vspx?page=4');
+              ]]>
+            </v:on-post>
+            <v:button action="submit" name="remove" value="Yes"/>
+            <v:button action="submit" name="cancel" value="No"/>
+          </div>
+
+        </div>
       </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
