@@ -233,11 +233,6 @@ create procedure adm_menu_tree ()
      <node name="Grants" url="capabilities.vspx" id="9" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="caps_browser.vspx" id="10" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="caps_cols_browser.vspx" id="11" place="1" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import.vspx" place="1" id="12" allowed="yacutia_accounts_page" />
-     <node name="LDAP Import" url="ldap_import_1.vspx" place="1" id="14" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import_2.vspx" place="1" id="15" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import_3.vspx" place="1" id="16" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Servers" url="ldap_server.vspx" id="179" place="1" allowed="yacutia_accounts_page"/>
    </node>
    <node name="Scheduler" url="sys_queues.vspx"  tip="Event Scheduling" id="17" allowed="yacutia_queues_page">
      <node name="Scheduler" url="sys_queues.vspx" id="18" place="1" allowed="yacutia_queues_page">

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -41,25 +39,27 @@
       <vm:menuitem value="Virtuoso Account Management" />
     </vm:menu>
     <vm:rawheader>
-        <h1 class="page_title">Edit Grants of User <?V self.user_name ?></h1>
+      <h1 class="page_title">Edit Grants of User <?V self.user_name ?></h1>
     </vm:rawheader>
     <vm:pagebody>
-	  <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control"><![CDATA[
-		if (self.ord = x)
-		  {
-		    if (self.ordseq = 'asc')
-		      self.ordseq := 'desc';
-		    else
-		      self.ordseq := 'asc';
-		  }
-		else
-		  {
-		    self.ord := x;
-		    self.ordseq := 'asc';
-		  }
-		if (ds is not null)
-		  ds.vc_data_bind (e);
-	      ]]></v:method>
+      <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control">
+        <![CDATA[
+          if (self.ord = x)
+          {
+            if (self.ordseq = 'asc')
+              self.ordseq := 'desc';
+            else
+              self.ordseq := 'asc';
+          }
+          else
+          {
+            self.ord := x;
+            self.ordseq := 'asc';
+          }
+          if (ds is not null)
+            ds.vc_data_bind (e);
+        ]]>
+      </v:method>
       <v:before-data-bind>
         <![CDATA[
           if (not e.ve_is_post)
@@ -70,352 +70,351 @@
         ]]>
       </v:before-data-bind>
       <vm:help id="caps_browser" sect=""/>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+            <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
-                    <tr>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
+                <td class="page_tab" align="center">
+                  <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center">
+                  <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_selected" align="center">
+                  <v:url name="b_url14" value="--'Grants'" format="%s" url="--'accounts_page.vspx?page=3'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center">
+                  <v:url name="b_url15" value="--'LDAP Import'" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center">
+                  <v:url name="b_url15" value="--'LDAP Servers'" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <br />
+                  <v:form name="caps_filter_form" type="simple" method="POST" action="caps_browser.vspx">
+                    <v:on-post>
+                      <![CDATA[
+                        self.browse_cat := self.dl_catalog.ufl_value;
+                        self.show_all := cast(self.show_mode.ufl_value as integer);
+                        self.browse_table := self.tables_en.ufl_selected;
+                        self.browse_view := self.views_en.ufl_selected;
+                        self.browse_proc := self.procs_en.ufl_selected;
+                        --self.ds.vc_reset();
+                        --self.ds.vc_data_bind(e);
+                        self.user_caps := db.dba.yac_user_caps( self.user_name, self.browse_cat || '.%.%', self.show_all, self.browse_table, self.browse_view, self.browse_proc);
+                      ]]>
+                    </v:on-post>
+                    <table BORDER="0" CELLPADDING="2" CELLSPACING="0">
+                     <v:radio-group name="show_mode">
+                      <tr align="left">
+                        <td>
+                          Catalog
+                          <v:data-list name="dl_catalog"
+                                       sql="select distinct name_part (KEY_TABLE, 0) as cat_name  from DB.DBA.SYS_KEYS"
+                                       key-column="cat_name" value-column="cat_name" defvalue="--self.browse_cat"/>
                         </td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
+                        <td>
+                          <label>
+                            <v:check-box name="tables_en" initial-checked="--self.browse_table" />
+                            Show Tables
+                          </label>
                         </td>
-                        <td class="page_tab_selected" align="center">
-			  <v:url name="b_url14" value="Grants"  url="accounts_page.vspx?page=3" xhtml_class="uddi"/>
+                        <td>
+                          <label>
+                            <v:radio-button name="sel_all" value="1" group-name="show_mode" initial-checked="--case when self.show_all<>0 then 1 else 0 end" />
+                            Show All
+                          </label>
                         </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url15" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
+                        <td>
+                          <v:button action="simple" name="apply_filter" value="Update Display" />
                         </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url15" value="LDAP Servers"  url="ldap_server.vspx" xhtml_class="uddi"/>
+                      </tr>
+                      <tr align="left">
+                        <td/>
+                        <td>
+                          <label>
+                            <v:check-box name="views_en" initial-checked="--self.browse_view" />
+                            Show Views
+                          </label>
                         </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
+                        <td>
+                          <label>
+                            <v:radio-button name="sel_perm" value="0" group-name="show_mode" initial-checked="--case when self.show_all=0 then 1 else 0 end" />
+                            Show only permitted
+                          </label>
                         </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-                      <td valign="top">
-      <table BORDER="0" CELLPADDING="0" CELLSPACING="0" width="100%">
-        <tr>
-          <td align="left">
-            <v:form name="caps_filter_form" type="simple" method="POST" action="caps_browser.vspx">
-              <v:on-post>
-                <![CDATA[
-                  self.browse_cat := self.dl_catalog.ufl_value;
-                  self.show_all := cast(self.show_mode.ufl_value as integer);
-                  self.browse_table := self.tables_en.ufl_selected;
-                  self.browse_view := self.views_en.ufl_selected;
-                  self.browse_proc := self.procs_en.ufl_selected;
-                  --self.ds.vc_reset();
-                  --self.ds.vc_data_bind(e);
-                  self.user_caps := db.dba.yac_user_caps( self.user_name, self.browse_cat || '.%.%', self.show_all, self.browse_table, self.browse_view, self.browse_proc);
-                ]]>
-              </v:on-post>
-              <table BORDER="0" CELLPADDING="2" CELLSPACING="0">
-               <v:radio-group name="show_mode">
-                <tr align="left">
-                  <td>
-                    Catalog
-                    <v:data-list name="dl_catalog"
-                                 sql="select distinct name_part (KEY_TABLE, 0) as cat_name  from DB.DBA.SYS_KEYS"
-                                 key-column="cat_name" value-column="cat_name" defvalue="--self.browse_cat"/>
-                  </td>
-                  <td>
-                    <v:check-box name="tables_en" initial-checked="--self.browse_table" xhtml_id="tables_en"/>
-                    <label for="tables_en">Show Tables</label>
-                  </td>
-                  <td>
-                    <v:radio-button name="sel_all" value="1" group-name="show_mode" initial-checked="--case when self.show_all<>0 then 1 else 0 end">
-                    </v:radio-button>
-                    Show All
-                  </td>
-                  <td>
-                    <v:button action="simple" name="apply_filter" value="Update Display">
-                    </v:button>
-                  </td>
-                </tr>
-                <tr align="left">
-                  <td/>
-                  <td>
-                    <v:check-box name="views_en" initial-checked="--self.browse_view" xhtml_id="views_en"/>
-                    <label for="views_en">Show Views</label>
-                  </td>
-                  <td>
-                    <v:radio-button name="sel_perm" value="0" group-name="show_mode" initial-checked="--case when self.show_all=0 then 1 else 0 end">
-                    </v:radio-button>
-                    Show only permitted
-                  </td>
-                </tr>
-                <tr align="left">
-                  <td/>
-                  <td>
-                    <v:check-box name="procs_en" initial-checked="--self.browse_proc" xhtml_id="procs_en"/>
-                    <label for="procs_en">Show Procedures</label>
-                  </td>
-                  <td/>
-                </tr>
-               </v:radio-group>
-              </table>
-            </v:form>
-          </td>
-        </tr>
-        <tr>
-          <td align="left">
-          <script language="JavaScript" src="admin_utils.js">
-          </script>
-	    <v:form name="caps_rows_form" type="simple" method="POST" action="caps_browser.vspx">
-	      <div class="listing_top_ctl_grp">
-                    <v:button action="simple" name="cancel1" value="Cancel">
-                      <v:on-post>
-                        <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button action="simple" name="save1" value="Save Changes">
-                      <v:on-post>
-			<![CDATA[
-			self.save.vc_focus := 1;
-			self.save.vc_user_post (e);
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-	      </div>
-	      <div class="scroll_area">
-              <table class="listing" width="100%" BORDER="0" bordercolor="0" CELLPADDING="3" CELLSPACING="0" rules="groups">
-                <colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/>
-                <thead>
-                  <tr class="listing_header_row">
-		    <th>
-			      <v:button action="simple" name="name_ord1" value="Type" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('type', e, self);
-				      ]]></v:on-post>
-			      </v:button>
-		    </th>
-		    <th>
-			      <v:button action="simple" name="name_ord2" value="Name" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('name', e, self);
-				      ]]></v:on-post>
-			      </v:button>
-		    </th>
-		    <th>
-			      <v:button action="simple" name="name_ord3" value="Owner" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('owner', e, self);
-				      ]]></v:on-post>
-			      </v:button>
-		    </th>
-                    <!--th nowrap="1">
-                      Direct Permissions / (Effective Permissions)
-                    </th>
-                    <th/>
-                  </tr>
-                  <tr>
-                    <th colspan="5" nowrap="1">
-                      <span class="attention_text"> "P"-public item; "A"-user is admin; "+"-granted; "-"-not granted</span>
-                    </th>
-                  </tr>
-                  <tr-->
-                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_select_')"/>Select</th>
-                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_insert_')"/>Insert</th>
-                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_update_')"/>Update</th>
-                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_delete_')"/>Delete</th>
-                     <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_execute_')"/>Execute</th>
-		     <th>Action</th>
-                  </tr>
-                </thead>
-                <?vsp
-                  if( length(self.user_caps) = 0 ) {
-                ?>
-                <tr>
-                  <td align="center" colspan="9" class="Attention">
-                    <b>No items found</b>
-                  </td>
-                </tr>
-                <?vsp
-                  }
-                  else {
-		    declare i, l int;
-		    declare user_caps any;
-		    user_caps := self.user_caps;
-		    i := 0;
-		    l := length(user_caps);
-                    while( i < l ) {
-                ?>
-		<tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-                  <td align="left" nowrap="1">
-                    <?V case user_caps[i][0] when 1 then 'Table' when 2 then 'View' when 3 then 'Procedure' else 'Unknown' end ?>
-                  </td>
-                  <td align="left" nowrap="1">
-                    <?V user_caps[i][1] ?>
-                  </td>
-                  <td align="left" nowrap="1">
-                    <?V name_part(user_caps[i][1],1) ?>
-                  </td>
-                  <td align="left" nowrap="1">
-                    <?vsp if( user_caps[i][0] <> 3 ) {
-                       http( sprintf('<input type="checkbox" name="cb_perm_select_%s" value="1" %s/>',
-		         user_caps[i][1], case when 1 = bit_and(1, user_caps[i][2]) then 'checked="1"' else '' end ));
-		       if (chr(user_caps[i][3][0]) = 'P')
-                         http( sprintf('(%s)', chr(user_caps[i][3][0])));
-                     }
-                    ?>
-                  </td>
-                  <td align="left" nowrap="1">
-                    <?vsp if( user_caps[i][0] <> 3 ) {
-                       http( sprintf('<input type="checkbox" name="cb_perm_insert_%s" value="4" %s/>',
-                             user_caps[i][1], case when 4 = bit_and(4, user_caps[i][2]) then 'checked="1"' else '' end ));
-		       if (chr(user_caps[i][3][2]) = 'P')
-                         http( sprintf('(%s)', chr(user_caps[i][3][2])));
-                     }
-                    ?>
-                  </td>
-                  <td align="left" nowrap="1">
-                    <?vsp if( user_caps[i][0] <> 3 ) {
-                       http( sprintf('<input type="checkbox" name="cb_perm_update_%s" value="2" %s/>',
-                             user_caps[i][1], case when 2 = bit_and(2, user_caps[i][2]) then 'checked="1"' else '' end ));
-		       if (chr(user_caps[i][3][1]) = 'P')
-                         http( sprintf('(%s)', chr(user_caps[i][3][1])));
-                     }
-                    ?>
-                  </td>
-                  <td align="left" nowrap="1">
-                    <?vsp if( user_caps[i][0] <> 3 ) {
-                       http( sprintf('<input type="checkbox" name="cb_perm_delete_%s" value="8" %s/>',
-                             user_caps[i][1], case when 8 = bit_and(8, user_caps[i][2]) then 'checked="1"' else '' end ));
-		       if (chr(user_caps[i][3][3]) = 'P')
-                         http( sprintf('(%s)', chr(user_caps[i][3][3])));
-                     }
-                    ?>
-                  </td>
-                  <td align="left" nowrap="1">
-                    <?vsp if( user_caps[i][0] = 3 ) {
-                       http( sprintf('<input type="checkbox" name="cb_perm_execute_%s" value="32" %s/>',
-                             user_caps[i][1], case when 32 = bit_and(32, user_caps[i][2]) then 'checked="1"' else '' end ));
-		       if (chr(user_caps[i][3][5]) = 'P')
-                         http( sprintf('(%s)', chr(user_caps[i][3][5])));
-                     }
-                    ?>
-                  </td>
-                  <!--td align="center">
-                    <?vsp
-                     http( sprintf('<input type="checkbox" name="cb_perm_grant_%s" value="16" %s/>',
-                           user_caps[i][1], case when 16 = bit_and(16, user_caps[i][2]) then 'checked="1"' else '' end ));
-                     http( sprintf(' / ( %s )', chr(user_caps[i][3][4])));
-                    ?>
-                  </td-->
-                  <td align="center">
-                   <?vsp if( user_caps[i][0] <> 3 ) {
+                      </tr>
+                      <tr align="left">
+                        <td/>
+                        <td>
+                          <label>
+                            <v:check-box name="procs_en" initial-checked="--self.browse_proc" xhtml_id="procs_en"/>
+                            Show Procedures
+                          </label>
+                        </td>
+                        <td/>
+                      </tr>
+                     </v:radio-group>
+                    </table>
+                  </v:form>
+                </td>
+              </tr>
+              <tr>
+                <td align="left">
+                  <script language="JavaScript" src="admin_utils.js">
+                  </script>
 
-                       http( sprintf('<a href="caps_cols_browser.vspx?sid=%s&realm=%s&user_name=%s&table_name=%s">Columns</a>',
-                                      self.sid, self.realm, self.user_name, user_caps[i][1] ));
-                     }
-                   ?>
-                  </td>
-                </tr>
-                <?vsp
-                      i := i + 1;
-                    }
-                  }
-                ?>
-              </table>
-	    </div>
-            <div class="listing_bot_ctl_grp">
-                    <v:button action="simple" name="cancel" value="Cancel">
-                      <v:on-post>
-                        <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                    <v:button action="simple" name="save" value="Save Changes">
-                      <v:on-post>
-                        <![CDATA[
-			  declare i, l int;
-			  declare user_caps, params any;
-			  user_caps := self.user_caps;
-			  params := self.vc_event.ve_params;
-			  i := 0;
-			  l := length (user_caps);
-                          while( i < l ) {
-                            declare mtd, dta any;
-                            declare dg int;
-                            declare priv_grant, priv_revoke, obj varchar;
-                            priv_grant := ''; priv_revoke := '';
+                  <v:form name="caps_rows_form" type="simple" method="POST" action="caps_browser.vspx">
+                    <div class="listing_top_ctl_grp">
+                      <v:button action="simple" name="cancel1" value="Cancel">
+                        <v:on-post>
+                          <![CDATA[
+                            http_request_status ('HTTP/1.1 302 Found');
+                            http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                      <v:button action="simple" name="save1" value="Save Changes">
+                        <v:on-post>
+                          <![CDATA[
+                            self.save.vc_focus := 1;
+                            self.save.vc_user_post (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </div>
 
-                            dg := cast( get_keyword( 'cb_perm_select_'||user_caps[i][1], params, '0') as int);
-                            if( not bit_and(dg, user_caps[i][2]) and dg <> 0 )
-                              priv_grant := concat( priv_grant, 'SELECT,');
-                            else if( bit_and(1, user_caps[i][2]) and dg = 0 )
-                              priv_revoke := concat( priv_revoke, 'SELECT,');
-                            dg := cast( get_keyword( 'cb_perm_insert_'||user_caps[i][1], params, '0') as int);
-                            if( not bit_and(dg, user_caps[i][2]) and dg <> 0 )
-                              priv_grant := concat( priv_grant, 'INSERT,');
-                            else if( bit_and(4, user_caps[i][2]) and dg = 0 )
-                              priv_revoke := concat( priv_revoke, 'INSERT,');
-                            dg := cast( get_keyword( 'cb_perm_update_'||user_caps[i][1], params, '0') as int);
-                            if( not bit_and(dg, user_caps[i][2]) and dg <> 0 )
-                              priv_grant := concat( priv_grant, 'UPDATE,');
-                            else if( bit_and(2, user_caps[i][2]) and dg = 0 )
-                              priv_revoke := concat( priv_revoke, 'UPDATE,');
-                            dg := cast( get_keyword( 'cb_perm_delete_'||user_caps[i][1], params, '0') as int);
-                            if( not bit_and(dg, user_caps[i][2]) and dg <> 0 )
-                              priv_grant := concat( priv_grant, 'DELETE,');
-                            else if( bit_and(8, user_caps[i][2]) and dg = 0 )
-                              priv_revoke := concat( priv_revoke, 'DELETE,');
-                            dg := cast( get_keyword( 'cb_perm_execute_'||user_caps[i][1], params, '0') as int);
-                            if( not bit_and(dg, user_caps[i][2]) and dg <> 0 )
-                              priv_grant := concat( priv_grant, 'EXECUTE,');
-                            else if( bit_and(32, user_caps[i][2]) and dg = 0 )
-			      priv_revoke := concat( priv_revoke, 'EXECUTE,');
- 		     	    obj := user_caps[i][1];
-			    obj := sprintf ('"%I"."%I"."%I"', name_part (obj, 0), name_part (obj, 1), name_part (obj, 2));
-                            if( length(priv_revoke) > 0 ) {
-                              exec( 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || obj || ' FROM "' || self.user_name || '"',
-                                     null, null, vector(), 0, mtd, dta);
-                            }
-                            if( length(priv_grant) > 0 ) {
-                              exec( 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || obj || ' TO "' || self.user_name || '"',
-                                     null, null, vector(), 0, mtd, dta);
-                            }
-                            i := i + 1;
+                    <div class="scroll_area">
+                      <table class="listing" width="100%" BORDER="0" bordercolor="0" CELLPADDING="3" CELLSPACING="0" rules="groups">
+                        <thead>
+                          <tr class="listing_header_row">
+                            <th>
+                              <v:button action="simple" name="name_ord1" value="Type" style="url">
+                                <v:on-post>
+                                  <![CDATA[
+                                    self.set_ord ('type', e, self);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+                            </th>
+                            <th>
+                              <v:button action="simple" name="name_ord2" value="Name" style="url">
+                                <v:on-post>
+                                  <![CDATA[
+                                    self.set_ord ('name', e, self);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+                            </th>
+                            <th>
+                              <v:button action="simple" name="name_ord3" value="Owner" style="url">
+                                <v:on-post>
+                                  <![CDATA[
+                                    self.set_ord ('owner', e, self);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+                            </th>
+                            <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_select_')"/>Select</th>
+                            <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_insert_')"/>Insert</th>
+                            <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_update_')"/>Update</th>
+                            <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_delete_')"/>Delete</th>
+                            <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_execute_')"/>Execute</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <?vsp
+                          if (length(self.user_caps) = 0)
+                          {
+                        ?>
+                        <tr>
+                          <td align="center" colspan="9" class="Attention">
+                            <b>No items found</b>
+                          </td>
+                        </tr>
+                        <?vsp
                           }
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-              </div>
-            </v:form>
-          </td>
-        </tr>
-      </table>
-                      </td>
-                    </tr>
-                  </table>
+                          else
+                          {
+                            declare i, l int;
+                            declare user_caps any;
+
+                            user_caps := self.user_caps;
+                            i := 0;
+                            l := length (user_caps);
+                            while( i < l )
+                            {
+                        ?>
+                        <tr>
+                          <td align="left" nowrap="1">
+                            <?V case user_caps[i][0] when 1 then 'Table' when 2 then 'View' when 3 then 'Procedure' else 'Unknown' end ?>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <?V user_caps[i][1] ?>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <?V name_part(user_caps[i][1],1) ?>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <?vsp
+                              if (user_caps[i][0] <> 3 )
+                              {
+                                http (sprintf ('<input type="checkbox" name="cb_perm_select_%s" value="1" %s/>',
+                                  user_caps[i][1], case when 1 = bit_and(1, user_caps[i][2]) then 'checked="1"' else '' end ));
+                                if (chr(user_caps[i][3][0]) = 'P')
+                                  http (sprintf ('(%s)', chr(user_caps[i][3][0])));
+                              }
+                            ?>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <?vsp
+                              if (user_caps[i][0] <> 3 )
+                              {
+                                http (sprintf ('<input type="checkbox" name="cb_perm_insert_%s" value="4" %s/>',
+                                  user_caps[i][1], case when 4 = bit_and(4, user_caps[i][2]) then 'checked="1"' else '' end ));
+                                if (chr(user_caps[i][3][2]) = 'P')
+                                  http (sprintf ('(%s)', chr(user_caps[i][3][2])));
+                              }
+                            ?>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <?vsp
+                              if (user_caps[i][0] <> 3)
+                              {
+                                http (sprintf ('<input type="checkbox" name="cb_perm_update_%s" value="2" %s/>',
+                                  user_caps[i][1], case when 2 = bit_and(2, user_caps[i][2]) then 'checked="1"' else '' end ));
+                                if (chr(user_caps[i][3][1]) = 'P')
+                                  http (sprintf ('(%s)', chr(user_caps[i][3][1])));
+                              }
+                            ?>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <?vsp
+                              if (user_caps[i][0] <> 3)
+                              {
+                                http (sprintf ('<input type="checkbox" name="cb_perm_delete_%s" value="8" %s/>',
+                                  user_caps[i][1], case when 8 = bit_and(8, user_caps[i][2]) then 'checked="1"' else '' end ));
+                                if (chr(user_caps[i][3][3]) = 'P')
+                                  http (sprintf ('(%s)', chr(user_caps[i][3][3])));
+                              }
+                            ?>
+                          </td>
+                          <td align="left" nowrap="1">
+                            <?vsp
+                              if (user_caps[i][0] = 3)
+                              {
+                                http (sprintf ('<input type="checkbox" name="cb_perm_execute_%s" value="32" %s/>',
+                                  user_caps[i][1], case when 32 = bit_and(32, user_caps[i][2]) then 'checked="1"' else '' end ));
+                                if (chr(user_caps[i][3][5]) = 'P')
+                                  http (sprintf ('(%s)', chr(user_caps[i][3][5])));
+                              }
+                            ?>
+                          </td>
+                          <td align="center">
+                            <?vsp
+                              if (user_caps[i][0] <> 3)
+                              {
+                                http (sprintf ('<a href="caps_cols_browser.vspx?sid=%s&realm=%s&user_name=%s&table_name=%s">Columns</a>',
+                                  self.sid, self.realm, self.user_name, user_caps[i][1] ));
+                              }
+                            ?>
+                          </td>
+                        </tr>
+                        <?vsp
+                              i := i + 1;
+                            }
+                          }
+                        ?>
+                      </table>
+                    </div>
+
+                    <div class="listing_bot_ctl_grp">
+                      <v:button action="simple" name="cancel" value="Cancel">
+                        <v:on-post>
+                          <![CDATA[
+                            http_request_status ('HTTP/1.1 302 Found');
+                            http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+
+                      <v:button action="simple" name="save" value="Save Changes">
+                        <v:on-post>
+                          <![CDATA[
+                            declare i, l int;
+                            declare user_caps, params any;
+
+                            user_caps := self.user_caps;
+                            params := self.vc_event.ve_params;
+                            i := 0;
+                            l := length (user_caps);
+                            while( i < l )
+                            {
+                              declare mtd, dta any;
+                              declare dg int;
+                              declare priv_grant, priv_revoke, obj varchar;
+
+                              priv_grant := '';
+                              priv_revoke := '';
+                              dg := cast (get_keyword ('cb_perm_select_'||user_caps[i][1], params, '0') as int);
+                              if (not bit_and(dg, user_caps[i][2]) and dg <> 0 )
+                                priv_grant := concat (priv_grant, 'SELECT,');
+                              else if (bit_and(1, user_caps[i][2]) and dg = 0 )
+                                priv_revoke := concat (priv_revoke, 'SELECT,');
+
+                              dg := cast( get_keyword( 'cb_perm_insert_'||user_caps[i][1], params, '0') as int);
+                              if (not bit_and(dg, user_caps[i][2]) and dg <> 0 )
+                                priv_grant := concat( priv_grant, 'INSERT,');
+                              else if (bit_and(4, user_caps[i][2]) and dg = 0 )
+                                priv_revoke := concat( priv_revoke, 'INSERT,');
+
+                              dg := cast( get_keyword( 'cb_perm_update_'||user_caps[i][1], params, '0') as int);
+                              if (not bit_and(dg, user_caps[i][2]) and dg <> 0 )
+                                priv_grant := concat( priv_grant, 'UPDATE,');
+                              else if (bit_and(2, user_caps[i][2]) and dg = 0 )
+                                priv_revoke := concat( priv_revoke, 'UPDATE,');
+
+                              dg := cast (get_keyword( 'cb_perm_delete_'||user_caps[i][1], params, '0') as int);
+                              if (not bit_and (dg, user_caps[i][2]) and dg <> 0 )
+                                priv_grant := concat( priv_grant, 'DELETE,');
+                              else if (bit_and(8, user_caps[i][2]) and dg = 0 )
+                                priv_revoke := concat( priv_revoke, 'DELETE,');
+
+                              dg := cast (get_keyword( 'cb_perm_execute_'||user_caps[i][1], params, '0') as int);
+                              if (not bit_and(dg, user_caps[i][2]) and dg <> 0 )
+                                priv_grant := concat( priv_grant, 'EXECUTE,');
+                              else if (bit_and(32, user_caps[i][2]) and dg = 0 )
+                                priv_revoke := concat( priv_revoke, 'EXECUTE,');
+
+                              obj := user_caps[i][1];
+                              obj := sprintf ('"%I"."%I"."%I"', name_part (obj, 0), name_part (obj, 1), name_part (obj, 2));
+                              if (length (priv_revoke) > 0)
+                              {
+                                exec ('REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || obj || ' FROM "' || self.user_name || '"',
+                                       null, null, vector(), 0, mtd, dta);
+                              }
+                              if (length(priv_grant) > 0 )
+                              {
+                                exec ('GRANT ' || rtrim(priv_grant,',') || ' ON ' || obj || ' TO "' || self.user_name || '"',
+                                       null, null, vector(), 0, mtd, dta);
+                              }
+                              i := i + 1;
+                            }
+                            http_request_status ('HTTP/1.1 302 Found');
+                            http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </div>
+                  </v:form>
                 </td>
               </tr>
             </table>
