@@ -244,7 +244,6 @@ create procedure adm_menu_tree ()
    <node name="Parameters" url="inifile.vspx?page=Database" id="21" allowed="yacutia_params_page">
      <node name="Parameters" url="inifile.vspx" id="22" place="1" allowed="yacutia_params_page"/>
    </node>
-   <node name="Registry" url="registries.vspx" id="221" allowed="yacutia_registry_page" />
    <node name="Packages" url="vad.vspx" id="27" allowed="yacutia_vad_page">
      <node name="Packages" url="vad.vspx" id="28" place="1" allowed="yacutia_vad_page"/>
      <node name="Install packages" url="vad_install.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
@@ -255,8 +254,6 @@ create procedure adm_menu_tree ()
      <node name="Install packages" url="vad_install_batch.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
      <node name="Remove packages" url="vad_remove_batch.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
      <node name="Select VAD source" url="vad_src.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
-     <node name="WA Package" url="vad_wa_config.vspx" id="32" place="1" allowed="yacutia_vad_page"/>
-     <node name="WA Package" url="vad_wa_create.vspx" id="312" place="1" allowed="yacutia_vad_page"/>
    </node>
    <node name="Backup" url="db_backup.vspx" id="79" allowed="yacutia_backup_page">
      <node name="Backup" url="db_backup_clear.vspx" id="169" place="1" allowed="yacutia_backup_page"/>
