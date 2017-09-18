@@ -2026,23 +2026,49 @@ db.dba.dav_br_map_icon (in type varchar)
 -- XXX add weeks, months, years.
 --
 
-create procedure
-db.dba.yac_hum_min_to_dur (in mins integer)
+create procedure db.dba.yac_hum_plural_suffux (
+  in n integer)
 {
-  if (mins < 60) return sprintf ('%d minutes', mins);
-
-  if (mins < 1440)
-    return sprintf ('%dhrs,%dmin', mins/60, mod (mins, 60));
-
-  return (sprintf ('%dd,%dhrs,%dmin',
-                   mins/1440,
-                   mod (mins, 1440)/60,
-                   mod (mod (mins, 1440), 60)));
+  return case when (n = 1) then '' else 's' end;
 }
 ;
 
-create procedure
-db.dba.yac_hum_datefmt (in d datetime)
+create procedure db.dba.yac_hum_min_to_dur (
+  in mins integer)
+{
+  declare d, h, m any;
+  declare S varchar;
+
+  if (mins < 60)
+    return sprintf ('%d minute%s', mins, db.dba.yac_hum_plural_suffux (mins));
+
+  if (mins < 1440)
+  {
+    h := mins / 60;
+    m := mod (mins, 60);
+    S := sprintf ('%d hour%s', h, db.dba.yac_hum_plural_suffux (h));
+    if (m <> 0)
+      S := S || sprintf (', %d min%s', m, db.dba.yac_hum_plural_suffux (m));
+
+    return S;
+  }
+
+  d := mins / 1440;
+  h := mod (mins, 1440) / 60;
+  m := mod (mod (mins, 1440), 60);
+  S := sprintf ('%d day%s', d, db.dba.yac_hum_plural_suffux (d));
+  if (h <> 0)
+    S := S || sprintf (', %d hour%s', h, db.dba.yac_hum_plural_suffux (h));
+
+  if (m <> 0)
+    S := S || sprintf (', %d min%s', m, db.dba.yac_hum_plural_suffux (m));
+
+  return S;
+}
+;
+
+create procedure db.dba.yac_hum_datefmt (
+  in d datetime)
 {
 
   declare date_part varchar;
@@ -2051,32 +2077,27 @@ db.dba.yac_hum_datefmt (in d datetime)
   declare day_diff integer;
 
   if (isnull (d))
-    {
-      return ('Never');
-    }
+    return ('Never');
 
+  d := dateadd ('second', -30, d);
   day_diff := datediff ('day', d, now ());
   if (day_diff < 1)
-    {
-      min_diff := datediff ('minute', d, now ());
-      if (min_diff = 1)
-        {
-          return ('A minute ago');
-        }
-      else if (min_diff < 1)
-        {
-          return ('Less than a minute ago');
-        }
-      else if (min_diff < 60)
-        {
-          return (sprintf ('%d minutes ago', min_diff));
-        }
-      else return (sprintf ('Today at %02d:%02d', hour (d), minute (d)));
-    }
+  {
+    min_diff := datediff ('minute', d, now ());
+    if (min_diff = 1)
+      return ('A minute ago');
+
+    if (min_diff < 1)
+      return ('Less than a minute ago');
+
+    if (min_diff < 60)
+      return (sprintf ('%d minutes ago', min_diff));
+
+    return sprintf ('Today at %02d:%02d', hour (d), minute (d));
+  }
   if (day_diff < 2)
-    {
-      return (sprintf ('Yesterday at %02d:%02d', hour (d), minute (d)));
-    }
+    return (sprintf ('Yesterday at %02d:%02d', hour (d), minute (d)));
+
   return (sprintf ('%02d/%02d/%02d %02d:%02d',
                    year (d),
                    month (d),
