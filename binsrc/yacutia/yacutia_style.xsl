@@ -266,13 +266,13 @@
     </table> <!-- RC -->
   </td>
 </tr>
-      <tr>
+<tr id="FT">
 	<td id="copyright_ctr" colspan="2">
 	  <!-- Virtuoso Universal Server <?V sys_stat ('st_dbms_ver') ?> -->
 	  Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software
 	  &amp;nbsp;
 	</td>
-      </tr>
+</tr>
   </table> <!-- MT -->
 </xsl:template>
 

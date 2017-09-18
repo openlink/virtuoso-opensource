@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -22,8 +20,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page
-  name="cont_management"
+<v:page name="cont_management"
   fast-render="1"
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
@@ -38,46 +35,42 @@
     <v:variable name="account_id" type="integer" default="0" />
     <v:variable name="account_role" type="varchar" default="'W'" />
 
-    <v:login
-      name="admin_login_isql_browser"
-      realm="virtuoso_admin"
-      mode="url"
-      user-password="y_sql_user_password"
-      user-password-check="y_sql_user_password_check"
-      xmlns:v="http://www.openlinksw.com/vspx/"
-      xmlns:xhtml="http://www.w3.org/1999/xhtml">
-      <v:template name='inl_browser' type="if-no-login">
-        <P>You are not logged in</P>
-      </v:template>
-      <v:login-form name="loginf_browser"
-                    required="1"
-                    title="Login"
-                    user-title="User Name"
-                    password-title="Password"
-                    submit-title="Login"/>
-      <v:template name='il_browser' type="if-login">
-        <?vsp
-          connection_set ('ctr', coalesce (connection_get ('ctr'), 0) + 1);
-        ?>
-      </v:template>
-    </v:login>
-
     <v:before-data-bind>
       <![CDATA[
         declare vspx_user varchar;
 
         vspx_user := connection_get ('vspx_user');
-        if (isnull (vspx_user))
-        {
-          self.account_id := http_nobody_uid ();
-        } else {
-          self.account_id := WEBDAV.DBA.account_id (vspx_user);
-        }
+        self.account_id := case when (isnull (vspx_user)) then http_nobody_uid () else WEBDAV.DBA.account_id (vspx_user) end;
         self.owner_id := self.account_id;
         self.settings := WEBDAV.DBA.settings (self.account_id);
       ]]>
     </v:before-data-bind>
 	<vm:dav_browser />
+    <script type="text/javascript">
+      <![CDATA[
+        function setFooter() {
+          var content = $('dav_list');
+          if (content) {
+            var wDims = OAT.Dom.getViewport()
+            var hDims = OAT.Dom.getWH('FT')
+            var cPos = OAT.Dom.position(content)
+            $(content).style.height = (wDims[1] - hDims[1] - cPos[1] - 40) + 'px';
+          }
+          var lc = $('LC');
+          if (lc) {
+            var wDims = OAT.Dom.getViewport()
+            var hDims = OAT.Dom.getWH('FT')
+            var cPos = OAT.Dom.position(lc)
+            $(lc).style.height = (wDims[1] - hDims[1] - cPos[1] - 40) + 'px';
+          }
+        }
+
+        function init() {
+          setFooter();
+          window.onresize = function() {setFooter();}
+        }
+     ]]>
+    </script>
   </v:form>
 
 </v:page>

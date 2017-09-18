@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,9 +19,16 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="event_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page
+  name="cont_type_remove"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -49,41 +54,38 @@
             <td colspan="2" align="center">
               <v:button action="simple" name="cancel1" value="Cancel">
                 <v:on-post>
-                  <v:script>
-                    <![CDATA[
-                      http_request_status('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
-                      return;
-                    ]]>
-                  </v:script>
+                  <![CDATA[
+                    http_request_status('HTTP/1.1 302 Found');
+                    http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                    return;
+                  ]]>
                 </v:on-post>
               </v:button>
               <v:button action="simple" name="rem" value="Remove">
                 <v:on-post>
-                  <v:script>
-                    <![CDATA[
-                      declare ename varchar;
-                      ename := cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar);
-                      if (ename <> '' and ename is not null)
+                  <![CDATA[
+                    declare ename varchar;
+
+                    ename := cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar);
+                    if (ename <> '' and ename is not null)
+                    {
+                      declare state, msg, m_dta, res varchar;
+                      state := '00000';
+                      exec('delete from WS.WS.SYS_DAV_RES_TYPES where T_EXT = ?', state, msg, vector(ename), m_dta, res);
+                      if (state <> '00000')
                       {
-                        declare state, msg, m_dta, res varchar;
-                        state := '00000';
-                        exec('delete from WS.WS.SYS_DAV_RES_TYPES where T_EXT = ?', state, msg, vector(ename), m_dta, res);
-                        if (state <> '00000')
-                        {
-                          self.error_str1 := 'Can not delete this MIME Type';
-                          return;
-                        }
-                      }
-                      else
-                      {
-                        self.error_str1 := 'File extension is empty';
+                        self.error_str1 := 'Can not delete this MIME Type';
                         return;
                       }
-                      http_request_status('HTTP/1.1 302 Found');
-                      http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
-                    ]]>
-                  </v:script>
+                    }
+                    else
+                    {
+                      self.error_str1 := 'File extension is empty';
+                      return;
+                    }
+                    http_request_status('HTTP/1.1 302 Found');
+                    http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                  ]]>
                 </v:on-post>
               </v:button>
             </td>
