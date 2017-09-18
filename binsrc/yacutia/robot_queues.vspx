@@ -25,7 +25,6 @@
   <vm:pagewrapper>
     <vm:variables>
       <v:variable name="error_str" persist="1" type="varchar" default="''"/>
-      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -53,12 +52,7 @@
                         <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
+                        &nbsp;
                       </td>
                     </tr>
                   </table>
@@ -145,7 +139,7 @@
                                     <v:label format="%s" name="data_set2_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
                                   </td>
                                   <td class="listing_col" nowrap="1">
-                                    <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[1] || (control.vc_parent as vspx_row_template).te_rowset[4], 50)" />
+                                    <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri (concat ((control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[4]), 50)" />
                                   </td>
                                   <td class="listing_col" nowrap="1">
                                     <v:label format="%s" name="data_set2_browse_label_5" value="--WS.WS.VFS_STATUS_GET ((control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])" />
@@ -157,7 +151,7 @@
                                        xhtml_title="Run"
                                        text="&nbsp;Run"
                                     >
-                                      <v:on-post width="0" height="16">
+                                        <v:on-post>
                                         <![CDATA[
                                           declare _host, _root, _url varchar;
                                           declare update_flag integer;
@@ -165,10 +159,6 @@
                                           _host := (control.vc_parent as vspx_row_template).te_rowset[1];
                                           _root := (control.vc_parent as vspx_row_template).te_rowset[3];
                                           _url := (control.vc_parent as vspx_row_template).te_rowset[4];
-                                          if (WS.WS.VFS_STATUS_GET (_host, _root) = 'done')
-                                            update_flag := 1;
-                                          else
-                                            update_flag := 0;
 
                                           http_rewrite ();
                                           self.vc_redirect (sprintf ('robot_status.vspx?host=%U&root=%U&url=%U', _host, _root, _url));
@@ -176,6 +166,7 @@
                                           if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT = 'pending' ))
                                             return;
 
+                                            update_flag := case when (WS.WS.VFS_STATUS_GET (_host, _root) = 'done') then 1 else 0 end;
                                           WS.WS.SERV_QUEUE_TOP (_host, _root, update_flag, 3, null, null);
                                         ]]>
                                       </v:on-post>
@@ -185,15 +176,13 @@
                                       xhtml_alt="Schedule"
                                       xhtml_title="Schedule"
                                       text="&nbsp;Schedule"
-                                      url="--concat('robot_sched.vspx?mode=create&host=', (control.vc_parent as vspx_row_template).te_rowset[1], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
+                                        url="--sprintf ('robot_sched.vspx?mode=create&host=%U&root=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])"
                                       />
-                                    <v:button action="simple" value="Reset" width="64" height="24" name="data_set2_reset" style="url" >
-                                      <v:on-post width="0" height="16">
+                                      <v:button action="simple" value="Reset" xhtml_alt="Reset" xhtml_title="Reset" width="64" height="24" name="data_set2_reset" style="url">
+                                        <v:on-post>
                                         <![CDATA[
-                                          declare _host, _root, _url varchar;
-                                          declare old_mode int;
-                                          _host := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                          _root := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                            declare _host, _root varchar;
+                                            declare old_mode integer;
                                           declare exit handler for sqlstate '*'
                                           {
                                               log_enable (old_mode, 1);
@@ -201,6 +190,9 @@
                                             self.vc_error_message := __SQL_MESSAGE;
                                             return;
                                           };
+
+                                            _host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                            _root := (control.vc_parent as vspx_row_template).te_rowset[3];
                                                             commit work;
                                           WS.WS.VFS_STATUS_SET (_host, _root, 'stopped');
                                           old_mode := log_enable (3,1);
@@ -216,13 +208,10 @@
                                       xhtml_title="Stop"
                                       text="&nbsp;Stop"
                                       >
-                                      <v:on-post width="0" height="16">
+                                        <v:on-post>
                                         <![CDATA[
-                                          declare _host, _root, _url varchar;
+                                            declare _host, _root varchar;
                                           declare old_mode int;
-                                          _host := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                          _root := (control.vc_parent as vspx_row_template).te_rowset[3];
-                                          _url := (control.vc_parent as vspx_row_template).te_rowset[4];
                                           declare exit handler for sqlstate '*'
                                           {
                                               log_enable (old_mode, 1);
@@ -230,6 +219,9 @@
                                             self.vc_error_message := __SQL_MESSAGE;
                                             return;
                                           };
+
+                                            _host := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                            _root := (control.vc_parent as vspx_row_template).te_rowset[3];
                                           commit work;
                                           WS.WS.VFS_STATUS_SET (_host, _root, 'stopped');
                                         ]]>
@@ -258,6 +250,7 @@
                             <v:column name="SE_START" />
                             <v:column name="SE_INTERVAL" />
                             <v:column name="SE_LAST_COMPLETED" />
+
                             <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set3_header_template">
                               <table class="listing">
                                 <tr class="listing_header_row">
@@ -269,7 +262,9 @@
                                 </tr>
                               </table>
                             </v:template>
+
                             <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set3_repeat_template">
+
                               <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set3_if_not_exists_template">
                                 <table>
                                   <tr>
@@ -307,7 +302,7 @@
                                         xhtml_title="Delete"
                                         text="&nbsp;Delete"
                                         >
-                                        <v:on-post width="0" height="16">
+                                        <v:on-post>
                                           <![CDATA[
                                             declare descr varchar;
                                             declare ds vspx_data_set;
@@ -332,6 +327,7 @@
                                 </tr>
                               </table>
                             </v:template>
+
                           </v:data-set>
                         </div>
                       </td>
