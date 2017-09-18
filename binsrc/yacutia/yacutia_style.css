@@ -1042,22 +1042,10 @@ table.form_layout
   line-height: 1.5em;
 }
 
-.page_tab a
+.page_tab a, .page_tab_selected a
 {
   color: black;
   text-decoration: none;
-}
-
-.page_tab_selected a
-{
-  color: black;
-  text-decoration: none;
-}
-
-.page_tab a:hover
-{
-  color: black;
-  text-decoration: underline;
 }
 
 table.page_tab_row
