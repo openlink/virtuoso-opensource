@@ -1455,14 +1455,14 @@ create procedure WEBDAV.DBA.proc (
   {
     -- standard list
     path := WEBDAV.DBA.real_path (path);
-    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0);
+    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password);
     dirFilter := '%';
   }
   else if (dir_mode = 1)
   {
     -- standard list with filter
     path := WEBDAV.DBA.real_path (path);
-    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0);
+    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password);
     dirFilter := WEBDAV.DBA.dc_search_like_fix (dir_params);
   }
   else if (dir_mode = 2)
@@ -1485,7 +1485,7 @@ create procedure WEBDAV.DBA.proc (
   {
     -- directory selection
     path := WEBDAV.DBA.real_path (path);
-    dirListTmp := WEBDAV.DBA.DAV_DIR_LIST (path, 0);
+    dirListTmp := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password);
     foreach (any item in dirListTmp) do
     {
       if (item[1] = 'C')
@@ -1715,45 +1715,51 @@ create procedure WEBDAV.DBA.account () returns varchar
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.account_id (
-  in account_name varchar)
+  in account any)
 {
-  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = account_name), -1);
+  if (isinteger (account))
+    return account;
+
+  return coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = account), -1);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.account_name (
-  in account_id integer)
+  in account any)
 {
-  return (select U_NAME from DB.DBA.SYS_USERS where U_ID = account_id);
+  if (isstring (account))
+    return account;
+
+  return (select U_NAME from DB.DBA.SYS_USERS where U_ID = account);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.account_password (
-  in account_id integer)
+  in account any)
 {
-  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = account_id), '');
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = WEBDAV.DBA.account_id (account)), '');
 }
 ;
 
 ----------------------------------------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.account_fullName (
-  in account_id integer)
+  in account any)
 {
-  return coalesce ((select WEBDAV.DBA.user_showName (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return coalesce ((select WEBDAV.DBA.user_showName (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = WEBDAV.DBA.account_id (account)), '');
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.account_mail (
-  in account_id integer)
+  in account any)
 {
-  return coalesce ((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return coalesce ((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = WEBDAV.DBA.account_id (account)), '');
 }
 ;
 
@@ -1806,7 +1812,7 @@ create procedure WEBDAV.DBA.account_basicAuthorization (
 {
   declare account_password varchar;
 
-  account_password := WEBDAV.DBA.account_password (WEBDAV.DBA.account_id (account_name));
+  account_password := WEBDAV.DBA.account_password (account_name);
   return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
 }
 ;
@@ -3905,26 +3911,29 @@ create procedure WEBDAV.DBA.DAV_PROP_LIST (
   in propmask varchar := '%',
   in skips varchar := null,
   in auth_name varchar := null,
-  in auth_pwd varchar := null)
+  in auth_pwd varchar := null,
+  in error integer := 0)
 {
   declare uname, gname varchar;
   declare props any;
-
-  WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
-  props := DB.DBA.DAV_PROP_LIST (path, propmask, auth_name, auth_pwd);
-  if (WEBDAV.DBA.DAV_ERROR (props))
-    return vector ();
-  if (isnull (skips))
-    return props;
-
   declare remains any;
 
   remains := vector ();
+  WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
+  props := DB.DBA.DAV_PROP_LIST (path, propmask, auth_name, auth_pwd);
+  if (WEBDAV.DBA.DAV_ERROR (props))
+    return case when error then props else remains end;
+
+  if (isnull (skips))
+    return props;
+
   foreach (any prop in props) do
   {
     foreach (any skip in skips) do
+    {
       if (prop[0] like skip)
         goto _skip;
+    }
     remains := vector_concat (remains, vector (prop));
   _skip: ;
   }
