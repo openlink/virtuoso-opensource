@@ -1331,7 +1331,7 @@ safe_atoi (const char *data, caddr_t *err_ret)
 
 
 double
-safe_atof (const char *data, caddr_t *err_ret)
+safe_atof (const char *data, caddr_t *err_ret, int allow_non_finite)
 {
 #if 0
   char *end_ptr = NULL;
@@ -1367,7 +1367,8 @@ error:
 
   if (NUMERIC_STS_SUCCESS == numeric_from_string ((numeric_t)n, data))
     {
-      if (NUMERIC_STS_SUCCESS == numeric_to_double ((numeric_t) n, &ret))
+      int rc = numeric_to_double ((numeric_t) n, &ret);
+      if (allow_non_finite || (NUMERIC_STS_SUCCESS == rc))
 	return ret;
     }
 
@@ -1451,13 +1452,13 @@ box_to_double_col (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe
     case DV_DOUBLE_FLOAT:
       return (unbox_double (data));
     case DV_STRING:
-      return safe_atof (data, err_ret);
+      return safe_atof (data, err_ret, 0);
     case DV_WIDE:
     case DV_LONG_WIDE:
 	{
 	  char narrow [512];
 	  box_wide_string_as_narrow (data, narrow, 512, NULL);
-	  return safe_atof (narrow, err_ret);
+	  return safe_atof (narrow, err_ret, 0);
 	  break;
 	}
     case DV_NUMERIC:
