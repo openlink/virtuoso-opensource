@@ -431,7 +431,7 @@ typedef uLong FAR uLongf;
    typedef unsigned long z_crc_t;
 #endif
 
-#if 1    /* was set to #if 1 by ./configure */
+#ifndef _WIN32
 #  define Z_HAVE_UNISTD_H
 #endif
 
