@@ -28,7 +28,7 @@
 
 #include "Dk.h"
 
-char *build_thread_model = "-fibers";
+const char *build_thread_model = "-fibers";
 
 typedef char event_t;
 

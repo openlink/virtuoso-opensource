@@ -464,13 +464,15 @@ aio_fd_free (dk_hash_t * aio_ht)
   hash_table_free (aio_ht);
 }
 
-
+#if !defined (AIO_LISTIO_MAX)
 #define MAX_AIO_BATCH 200
+#else
+#define MAX_AIO_BATCH AIO_LISTIO_MAX
+#endif
 
 extern long read_cum_time;
 extern long disk_reads;
 extern long disk_writes;
-
 
 void
 iq_aio (io_queue_t * iq)
@@ -536,6 +538,24 @@ iq_aio (io_queue_t * iq)
 		  && !buf->bd_is_write
 		  && !buf->bd_write_waiting)
 		{
+		  db_buf_t out;
+		  int n_out = 0;
+		  if (dbs_cpt_recov_in_progress)
+		    out = buf->bd_buffer;
+		  else
+		    {
+		      dtp_t c_buf[PAGE_SZ + 512];
+		      db_buf_t copy;
+		      out = (db_buf_t)_RNDUP_PWR2  (((ptrlong)&c_buf), 512);
+		      buf->bd_is_write = 1;
+		      if (PAGE_WRITE_COPY == page_prepare_write (buf, &out, &n_out, c_compress_mode))
+			{
+			  copy = dk_alloc_box (PAGE_SZ, DV_BIN);
+			  memcpy (copy, out, PAGE_SZ);
+			  out = copy;
+			}
+		      buf->bd_is_write = 0;
+		    }
 		  /* If the buffer hasn't moved out of sort order and
 		     hasn't been flushed by a sync write */
 		  buf->bd_readers++;
@@ -554,7 +574,7 @@ iq_aio (io_queue_t * iq)
 		    cb[fill].aio_fildes = fd;
 		    cb[fill].aio_offset = off;
 		    cb[fill].aio_lio_opcode = LIO_WRITE;
-		    cb[fill].aio_buf = buf->bd_buffer;
+		    cb[fill].aio_buf = out;
 		    cb[fill].aio_nbytes = PAGE_SZ;
 		    list[fill] = &cb[fill];
 		    bufs[fill] = buf;
@@ -591,7 +611,7 @@ iq_aio (io_queue_t * iq)
       rc = lio_listio (LIO_NOWAIT, list, fill, NULL);
       if (rc)
 	{
-	  log_error ("lio_listion returns %d errno %d", rc, errno);
+	  log_error ("lio_listio returns %d errno %d %s", rc, errno, strerror (errno));
 	  GPF_T1 ("error in lio_listio");
 	}
     }
@@ -603,7 +623,9 @@ iq_aio (io_queue_t * iq)
 	{
 	  rc = aio_suspend (&list[inx], 1, NULL);
 	  if (rc) GPF_T1 ("aio_suspend returns error");
-	  /*printf ("aio done %d\n", buf->bd_physical_page);*/
+	  rc = aio_return (list[inx]);
+	  if (rc != PAGE_SZ) GPF_T1 ("aio_return error");
+	  /* printf ("aio done %d rc=%d\n", buf->bd_physical_page, rc);*/
 	}
 #if defined (linux) && defined (__GNUC__)
       if (cb[inx].__return_value != PAGE_SZ || cb[inx].__error_code)
@@ -611,7 +633,9 @@ iq_aio (io_queue_t * iq)
 #endif
       if (buf->bd_being_read)
 	{
-	  int flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
+	  int flags;
+	  page_after_read (buf);
+	  flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
 	  if (DPF_INDEX == flags)
 	    pg_make_map (buf);
 	  else if (DPF_COLUMN == flags)
@@ -625,6 +649,8 @@ iq_aio (io_queue_t * iq)
 	    TC(tc_blob_read);
 
 	}
+      if (list[inx]->aio_buf != buf->bd_buffer)
+	dk_free_box (list[inx]->aio_buf);
       mutex_enter (&itm->itm_mtx);
       if (buf->bd_being_read)
 	{

@@ -281,5 +281,5 @@ extern thread_queue_t _waitq;		/* simulated threads only */
 extern timer_queue_t *_timerq;		/* simulated threads only */
 extern int _num_runnables;		/* simulated threads only */
 
-extern char *build_thread_model;
+extern const char *build_thread_model;
 #endif

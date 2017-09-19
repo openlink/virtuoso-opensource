@@ -1524,7 +1524,7 @@ numeric_from_string (numeric_t n, const char *s)
   /* handles cases for numeric_from_double */
   if (!isdigit (cp[0]))
     {
-      if (!strcmp (cp, "Inf") || !strcmp (cp, "Infinity"))
+      if (!stricmp (cp, "INF") || !stricmp (cp, "Infinity"))
 	{
 	  _numeric_inf (n, neg);
 	  return NUMERIC_STS_SUCCESS;
@@ -1677,7 +1677,7 @@ numeric_from_string_is_ok (const char *s)
   while (isspace (cp[0]))
     cp++;
   /* handles cases for numeric_from_double */
-  if (!isdigit (cp[0]) && (!strcmp (cp, "Inf") || !strcmp (cp, "Infinity") || !strcmp (cp, "NaN")))
+  if (!isdigit (cp[0]) && (!stricmp (cp, "INF") || !stricmp (cp, "Infinity") || !stricmp (cp, "NaN")))
     return first_significant_char;
   while (isdigit (cp[0])) { plain_digits++; cp++; }
   if (cp[0] == '.')
@@ -1945,12 +1945,12 @@ _numeric_to_string (numeric_t n, char *str, size_t max_str, int new_prec, int ne
 	}
       else if (num_is_plus_inf (n))
 	{
-	  strcpy_size_ck (str, "Inf", max_str);
+	  strcpy_size_ck (str, "INF", max_str);
 	  return NUMERIC_STS_OVERFLOW;
 	}
       else
 	{
-	  strcpy_size_ck (str, "-Inf", max_str);
+	  strcpy_size_ck (str, "-INF", max_str);
 	  return NUMERIC_STS_UNDERFLOW;
 	}
     }
@@ -2112,13 +2112,14 @@ numeric_to_double (numeric_t n, double *pvalue)
   else
     {
       if ('I' == res[0])
-	*pvalue = 1e200 * 1e200;
+        *pvalue = DBL_POS_INF;
       else if ('-' == res[0] && 'I' == res[1])
-	*pvalue = -1e200 * 1e200;
+        *pvalue = DBL_NEG_INF;
+      else if ('N' == res[0])
+        *pvalue = DBL_NAN;
       else
-    *pvalue = 0.0;
+        *pvalue = 0.0;
     }
-
   return rc;
 }
 

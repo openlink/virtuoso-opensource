@@ -2412,7 +2412,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
                     double myNEGINF_d = -1.0/myZERO;
                     if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
                     else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
-                    else buffill = sprintf (tmpbuf, "cast ('nan'");
+                    else buffill = sprintf (tmpbuf, "cast ('NaN'");
                   }
                 else
                   {
@@ -2526,16 +2526,26 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
   BOX_DONE (tmpbuf, smallbuf);
 }
 
-void
-ssg_print_float_literal_as_original (spar_sqlgen_t *ssg, SPART *lit)
+int
+ssg_try_print_float_literal_as_original (spar_sqlgen_t *ssg, SPART *lit)
 {
-  ssg_putchar (' ');
-  ssg_puts (lit->_.lit.original_text);
+  char modif = '\0';
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (lit))
+    return 0;
+  if (NULL == lit->_.lit.original_text)
+    return 0;
   switch (DV_TYPE_OF (lit->_.lit.val))
     {
-    case DV_DOUBLE_FLOAT: ssg_putchar('D'); break;
-    case DV_SINGLE_FLOAT: ssg_putchar('R'); break;
+    case DV_DOUBLE_FLOAT: if (!isfinite (unbox_double (lit->_.lit.val))) return 0; modif = 'D'; break;
+    case DV_SINGLE_FLOAT: if (!isfinite (unbox_float (lit->_.lit.val))) return 0; modif = 'R'; break;
+    case DV_NUMERIC: break;
+    default: return 0;
     }
+  ssg_putchar (' ');
+  ssg_puts (lit->_.lit.original_text);
+  if ('\0' != modif)
+    ssg_putchar (modif);
+  return 1;
 }
 
 void
@@ -2549,11 +2559,8 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
-          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           dt = lit->_.lit.datatype;
           /* lang = lit->_.lit.language; */
         }
@@ -2602,11 +2609,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
-          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           dt = lit->_.lit.datatype;
           lang = lit->_.lit.language;
         }
@@ -2665,11 +2669,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       dk_free_box (dflt_xsd_type_of_box);
       if (box_is_plain_num)
         {
-          if ((DV_ARRAY_OF_POINTER == lit_dtp) && (NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;
         }
@@ -2721,11 +2722,8 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
-          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           datatype = lit->_.lit.datatype;
           language = lit->_.lit.language;
         }

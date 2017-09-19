@@ -88,7 +88,7 @@ BEGIN_CPLUSPLUS
 void openlog (const char *ident, int option, int facility);
 void syslog (int priority, const char *format, ...);
 void closelog (void);
-extern char *syslog_instance_name;
+extern const char *syslog_instance_name;
 #endif
 
 END_CPLUSPLUS

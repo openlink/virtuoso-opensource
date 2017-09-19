@@ -1208,7 +1208,7 @@ void db_replay_registry_setting (caddr_t ent, caddr_t *err_ret);
 dk_session_t * dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli);
 
 boxint safe_atoi (const char *data, caddr_t *err_ret);
-double safe_atof (const char *data, caddr_t *err_ret);
+double safe_atof (const char *data, caddr_t *err_ret, int allow_non_finite);
 double box_to_double (caddr_t data, dtp_t dtp);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
 caddr_t box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap, int ser_flags);

@@ -24,6 +24,8 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+#ifndef SQLVER_H
+#define SQLVER_H
 
 #define PRODUCT_COPYRIGHT	"Copyright (C) 1998-2017 OpenLink Software"
 #define PRODUCT_NAME		"OpenLink Virtuoso"
@@ -51,10 +53,20 @@
 
 #define ODBC_DRV_VER_G_NO(v)	atoi (&(v)[6])
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern char *build_date;
-extern char *build_host_id;
-extern char *build_opsys_id;
-extern char *build_thread_model;
+extern const char *build_date;
+extern const char *build_host_id;
+extern const char *build_opsys_id;
+extern const char *build_thread_model;
 extern const char *build_special_server_model;
+
 void build_set_special_server_model (const char *new_model);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

@@ -2057,10 +2057,10 @@ div_by_int:
 		dtp_t left_dtp = DV_TYPE_OF (left);
 		numeric_t n = numeric_allocate();
 		numeric_from_string (n,
-		    left_dtp == DV_LONG_INT ? ((unbox (left) < 0 ? "-Inf" : "Inf")) :
-		    (left_dtp == DV_SINGLE_FLOAT ? (unbox_float (left) < 0.0 ? "-Inf" : "Inf") :
-		    (left_dtp == DV_DOUBLE_FLOAT ? (unbox_double (left) < 0.0 ? "-Inf" : "Inf") :
-		    (left_dtp == DV_NUMERIC ? (numeric_sign ((numeric_t)left) ? "-Inf" : "Inf") : "Inf"))));
+		    left_dtp == DV_LONG_INT ? ((unbox (left) < 0 ? "-INF" : "INF")) :
+		    (left_dtp == DV_SINGLE_FLOAT ? (unbox_float (left) < 0.0 ? "-INF" : "INF") :
+		    (left_dtp == DV_DOUBLE_FLOAT ? (unbox_double (left) < 0.0 ? "-INF" : "INF") :
+		    (left_dtp == DV_NUMERIC ? (numeric_sign ((numeric_t)left) ? "-INF" : "INF") : "INF"))));
 		XQI_SET (xqi, tree->_.bin_exp.res, (caddr_t) n);
 		dk_free_tree (err);
 	      }

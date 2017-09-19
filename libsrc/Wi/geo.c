@@ -48,9 +48,6 @@
 #define RD_Y2 0
 #define RD_ID 4
 
-#define IS_OV(f) (NAN == (f) || -NAN == (f) || INFINITY == (f) || -INFINITY == (f))
-
-
 double
 unbox_coord (caddr_t x)
 {
@@ -439,8 +436,8 @@ itc_geo_write (it_cursor_t * itc, buffer_desc_t * buf, int irow, bbox_t * b)
   if (DV_SINGLE_FLOAT == dtp)
     {
       float f;
-      if (IS_OV (b->x) || IS_OV (b->y) || IS_OV (b->x2) || IS_OV (b->y2))
-	GPF_T1 ("writing nan into geo inx");
+      if (!isfinite (b->x) || !isfinite (b->y) || !isfinite (b->x2) || !isfinite (b->y2))
+	GPF_T1 ("writing NaN into geo index");
       ROW_FIXED_COL (buf, row, rv, key->key_key_fixed[RD_X], xx);
       f = b->x;
       FLOAT_TO_EXT (xx, &f);
@@ -499,8 +496,8 @@ itc_geo_leaf (it_cursor_t * itc, bbox_t * box, dp_addr_t dp, int pos)
   if (DV_SINGLE_FLOAT == dtp)
     {
       rd->rd_non_comp_len += 16;
-      if (IS_OV (box->x) || IS_OV (box->y) || IS_OV (box->x2) || IS_OV (box->y2)) 
-	GPF_T1 ("geo inx with nan or inf coord");
+      if (!isfinite (box->x) || !isfinite (box->y) || !isfinite (box->x2) || !isfinite (box->y2)) 
+	GPF_T1 ("geo index with NaN or Inf coordinate");
       rd->rd_values[RD_X] = box_float (box->x);
       rd->rd_values[RD_Y] = box_float (box->y);
       rd->rd_values[RD_X2] = box_float (box->x2);
@@ -1084,7 +1081,7 @@ geo_estimate (dbe_table_t * tb, geo_t * g, int op, double prec, slice_id_t slice
 int
 float_is_ov (float f)
 {
-  return IS_OV (f);
+  return !isfinite (f);
 }
 
 void
@@ -1112,7 +1109,7 @@ geo_insert (query_instance_t * qi, dbe_table_t * tb, caddr_t g, boxint id, int i
     memcpy (&box, g, sizeof (geo_t));
   if (DV_SINGLE_FLOAT == dtp)
     {
-      if (IS_OV ((float)box.XYbox.Xmin) || IS_OV ((float)box.XYbox.Xmax) || IS_OV ((float)box.XYbox.Ymin) || IS_OV ((float)box.XYbox.Ymax))
+      if (!isfinite ((float)box.XYbox.Xmin) || !isfinite ((float)box.XYbox.Xmax) || !isfinite ((float)box.XYbox.Ymin) || !isfinite ((float)box.XYbox.Ymax))
 	sqlr_new_error ("42000", "GEOOV", "inserting geometry with bounding box with NAN or INF coordinates");
       rd.rd_non_comp_len += 16;
       rd.rd_values[RD_X] = box_float (box.XYbox.Xmin);
@@ -1314,7 +1311,7 @@ bif_geo_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   geo_get_bounding_XYbox ((geo_t*)g, &box, 0, 0);
   if (DV_SINGLE_FLOAT == dtp)
     {
-      if (IS_OV ((float)box.XYbox.Xmin) || IS_OV ((float)box.XYbox.Xmax) || IS_OV ((float)box.XYbox.Ymin) || IS_OV ((float)box.XYbox.Ymax))
+      if (!isfinite ((float)box.XYbox.Xmin) || !isfinite ((float)box.XYbox.Xmax) || !isfinite ((float)box.XYbox.Ymin) || !isfinite ((float)box.XYbox.Ymax))
 	rc = 1;
     }
   return box_num (rc);

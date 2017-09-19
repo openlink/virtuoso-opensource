@@ -402,7 +402,7 @@ dv_to_double (db_buf_t dv, dtp_t * nf)
       return (double) INT64_REF (dv + 1);
     default:
       *nf = 1;
-      return NAN;
+      return DBL_NAN;
     }
 }
 

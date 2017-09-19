@@ -3782,23 +3782,13 @@ box_cast_to_UTF8_xsd (caddr_t *qst, caddr_t data)
     default: return box_cast_to_UTF8 (qst, data);
     }
 make_double:
+  if (!isfinite (boxdbl))
+    return box_dv_short_string (isnan (boxdbl) ? "NaN" : ((boxdbl > 0.0) ? "INF" : "-INF"));
   buffill = sprintf (tmpbuf, "%lg", boxdbl);
   if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
     {
-      if (isalpha(tmpbuf[1+1]))
-        {
-	  double myZERO = 0.0;
-          double myPOSINF_d = 1.0/myZERO;
-          double myNEGINF_d = -1.0/myZERO;
-          if (myPOSINF_d == boxdbl) return box_dv_short_string ("INF");
-          else if (myNEGINF_d == boxdbl) return box_dv_short_string ("-INF");
-          else return box_dv_short_string ("NAN");
-        }
-      else
-        {
-          strcpy (tmpbuf+buffill, ".0");
-          buffill += 2;
-        }
+      strcpy (tmpbuf+buffill, ".0");
+      buffill += 2;
     }
   return box_dv_short_nchars (tmpbuf, buffill);
 }

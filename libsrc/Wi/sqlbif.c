@@ -6431,32 +6431,13 @@ bif_isfinitenumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   case DV_SINGLE_FLOAT:
     {
       float val = unbox_float (arg1);
-#ifdef isfinite
       result = (isfinite(val) ? 1 : 0);
-#elif WIN32
-      result = _finite (val) ? 1 : 0;
-#else
-      float myNAN_f = 0.0/0.0;
-      float myPOSINF_f = 1.0/0.0;
-      float myNEGINF_f = -1.0/0.0;
-      result = (((val == myNAN_f) || (val == myPOSINF_f) || (val == myNEGINF_f)) ? 0 : 1);
-#endif
       break;
     }
   case DV_DOUBLE_FLOAT:
     {
       double val = unbox_double (arg1);
-#ifdef isfinite
       result = (isfinite(val) ? 1 : 0);
-#elif WIN32
-      result = _finite (val) ? 1 : 0;
-#else
-      double myNAN_d = 0.0/0.0;
-      double myNEGNAN_d = -0.0/0.0;
-      double myPOSINF_d = 1.0/0.0;
-      double myNEGINF_d = -1.0/0.0;
-      result = (((val == myNAN_d) || (val == myNEGNAN_d) || (val == myPOSINF_d) || (val == myNEGINF_d)) ? 0 : 1);
-#endif
       break;
     }
   case DV_NUMERIC:
@@ -10152,7 +10133,7 @@ do_single_float:
             {
 	      double d;
               err = NULL;
-              d = safe_atof (data, &err);
+              d = safe_atof (data, &err, 1);
               if (err)
                 goto inner_error;
               return (box_float ((float)d));
@@ -10170,7 +10151,7 @@ do_single_float:
 	      double d;
               err = NULL;
               box_wide_string_as_narrow (data, narrow, 512, qst ? QST_CHARSET (qst) : NULL);
-              d = safe_atof (narrow, &err);
+              d = safe_atof (narrow, &err, 1);
               if (err)
                 goto inner_error;
               return (box_float ((float)d));

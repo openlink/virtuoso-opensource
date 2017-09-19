@@ -28,7 +28,7 @@
 
 #include "Dk.h"
 
-char *build_thread_model = "-single";
+const char *build_thread_model = "-single";
 
 int _thread_sched_preempt = 0;
 
