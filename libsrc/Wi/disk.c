@@ -2227,10 +2227,10 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   dbe_storage_t * dbs = buf->bd_storage;
   OFF_T rc;
   OFF_T off;
+  dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
 #ifdef VALGRIND
   memzero (c_buf, sizeof(c_buf));
 #endif
-  dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
   if (buf->bd_tree && buf->bd_tree->it_key)
     buf->bd_tree->it_key->key_write++;
 #ifdef O_DIRECT
@@ -3752,7 +3752,6 @@ dbs_sync_disks (dbe_storage_t * dbs)
   if (!dst_sync_sem)
     dst_sync_sem = semaphore_allocate (0);
 #ifdef HAVE_FSYNC
-  int inx;
 
   if (dbf_fast_cpt)
     return;
@@ -3772,6 +3771,7 @@ dbs_sync_disks (dbe_storage_t * dbs)
     default:
       if (dbs->dbs_disks)
 	{
+	  int inx;
 	  dk_set_t iqs = NULL;
 	  dk_set_t args = NULL;
 	  DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
