@@ -1080,11 +1080,13 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "UseAIO", &c_c_use_aio) == -1)
     c_c_use_aio = 0;
 
+#if 0
   /* Disable AIO for now */
   if (c_c_use_aio) {
     log_warning ("Setting UseAIO = 1 is not supported in this build");
     c_c_use_aio = 0;
   }
+#endif
 
   if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
     c_aq_max_threads = 48;
