@@ -190,7 +190,7 @@ typedef long long 		int64;
 #endif
 #endif
 
-#ifdef WIN32
+#if defined(WIN32) || (defined(SOLARIS) && defined(__GNUC__))
 #define INFINITY (DBL_MAX+DBL_MAX)
 #define NAN (INFINITY-INFINITY)
 #endif

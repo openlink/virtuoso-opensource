@@ -308,7 +308,10 @@ sigh_set_notifiers ()
 	  i != SIGTERM &&
 	  i != SIGHUP  &&
 	  i != SIGQUIT &&
-	  i != SIGPIPE)
+	  i != SIGPIPE &&
+          i != SIGSEGV) /* if we handle SIGSEGV, then crash backtrace
+                           will point to us instead of to the real
+                           crash place */
 	{
 	  if (SIG_ERR == signal (i, sigh_report_and_forget))
 	    {
