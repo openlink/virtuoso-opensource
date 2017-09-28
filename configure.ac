@@ -1340,6 +1340,7 @@ AC_SUBST(HSL_LIBS)
 # ImageMagic                                                             #
 #                                                                        #
 ##########################################################################
+
 AC_ARG_ENABLE(imagemagick, [dnl
 AC_HELP_STRING([--enable-imagemagick(=DIR)], [enable the ImageMagick plugin (default)])
 AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
@@ -1347,38 +1348,38 @@ AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
      case "${enableval}" in
        yes)	with_im="yes" ;;
        no)	with_im="no" ;;
-       /*)	with_im="${enableval}" ;;
+       /*)	with_im="${enableval}"
+		PKG_CONFIG_PATH="${enableval}:$PKG_CONFIG_PATH"
+		export PKG_CONFIG_PATH
+		;;
        *)	AC_MSG_ERROR(bad value ${enableval} for --disable-imagemagick) ;;
      esac
   ],
   [ with_im="yes" ]
 )
 
-if test "x$with_im" != "xno"
-then
+PKG_CHECK_MODULES_STATIC(IM, MagickWand, [], [
     AC_PATH_PROG(IM_CONFIG, Wand-config, notfound, ["$with_im/bin:$PATH"])
-
-    if test "x$IM_CONFIG" = "xnotfound"
+    if test "x$IM_CONFIG" != "xnotfound"
     then
-       AC_MSG_WARN([The ImageMagick plugin will not be build])
-       with_im=no
+	IM_CFLAGS=`"$IM_CONFIG" --cflags`
+	IM_LIBS=`"$IM_CONFIG" --libs --static`
+    else
+	AC_MSG_WARN([The ImageMagick plugin will not be build])
+	with_im=no
     fi
-fi
+])
 
 if test "x$with_im" != "xno"
 then
     AC_MSG_CHECKING([ImageMagick library usability])
 
-    save_CPPFLAGS="$CPPFLAGS"
+    save_CFLAGS="$CFLAGS"
     save_LIBS="$LIBS"
     save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
-    IM_CPPFLAGS=`"$IM_CONFIG" --cppflags`
-    IM_LDFLAGS=`"$IM_CONFIG" --ldflags`
-    IM_LIBS=`"$IM_CONFIG" --libs`
-
-    CPPFLAGS="$CPPFLAGS $IM_CPPFLAGS"
-    LIBS="$LIBS $IM_LDFLAGS $IM_LIBS"
+    CFLAGS="$CFLAGS $IM_CFLAGS"
+    LIBS="$LIBS $IM_LIBS"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib"
     export LD_LIBRARY_PATH
@@ -1406,13 +1407,12 @@ main ()
 ])
 
     LIBS="$save_LIBS"
-    CPPFLAGS="$save_CPPFLAGS"
+    CFLAGS="$save_CFLAGS"
     LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
 fi
 
 AM_CONDITIONAL(WITH_IM, test "x$with_im" != "xno" )
-AC_SUBST(IM_CPPFLAGS)
-AC_SUBST(IM_LDFLAGS)
+AC_SUBST(IM_CFLAGS)
 AC_SUBST(IM_LIBS)
 
 
