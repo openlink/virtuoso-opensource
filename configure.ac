@@ -1321,7 +1321,7 @@ main ()
 [
   AC_MSG_RESULT([bad. Check config.log for details])
   with_hsl="no"
-  AC_MSG_WARN([The ImageMagick plugin will not be build])
+  AC_MSG_WARN([The hslookup plugin will not be build])
 ])
 
     LIBS="$save_LIBS"
