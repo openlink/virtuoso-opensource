@@ -504,7 +504,7 @@ public class VirtGraph extends GraphBase {
     }
 
     public void setMacroLib(String _macroLib) {
-        ruleSet = _macroLib;
+        macroLib = _macroLib;
     }
 
     public boolean getSameAs() {
