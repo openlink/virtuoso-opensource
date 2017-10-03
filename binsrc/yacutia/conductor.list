@@ -442,7 +442,6 @@ conductor/vad_remove_batch.vspx
 conductor/vad_remove.vspx
 conductor/vad_src.vspx
 conductor/vad_status.vspx
-conductor/vad_utils.sql
 conductor/vad.vspx
 conductor/vdb_conf_dsn_edit.vspx
 conductor/vdb_conf_dsn_new.vspx
