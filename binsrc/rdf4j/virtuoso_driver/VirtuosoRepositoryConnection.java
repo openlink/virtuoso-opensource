@@ -2485,6 +2485,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         if (!insertBNodeAsVirtuosoIRI && (object instanceof BNode))
             flags = 15;
 
+        flags |= (subject instanceof BNode) ?0x0100:0;
+        flags |= (object instanceof BNode) ?0x0200:0;
+
         ps.setString(1, subject.toString());
         ps.setString(2, predicate.toString());
 
@@ -2492,7 +2495,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         {
             ps.setString(3,  object.toString());
             ps.setNull(4, java.sql.Types.VARCHAR);
-            ps.setInt(5, flags);
         }
         else if (object instanceof Literal)
         {
@@ -2503,29 +2505,43 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             if (lang.isPresent())
             {
                 ps.setString(4, lang.get());
-                ps.setInt(5, 2);
+                flags |= 2;
+
             }
             else if (lit.getDatatype() != null)
             {
                 IRI ltype = lit.getDatatype();
-                if (!(insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING))) {
-                    ps.setString(4, ltype.toString());
-                    ps.setInt(5, 3);
-                } else {
+
+                if (insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING)) {
                     ps.setNull(4, java.sql.Types.VARCHAR);
-                    ps.setInt(5, 1);
+                    flags |= 1;
+                } else {
+                  ps.setString(4, ltype.toString());
+
+                  if (ltype.equals(XMLSchema.INTEGER))
+                    flags |= 5;
+                  else if (ltype.equals(XMLSchema.FLOAT))
+                    flags |= 6;
+                  else if (ltype.equals(XMLSchema.DOUBLE))
+                    flags |= 7;
+                  else if (ltype.equals(XMLSchema.DECIMAL))
+                    flags |= 8;
+                  else
+                    flags |= 3;
                 }
             }
             else
             {
                 ps.setNull(4, java.sql.Types.VARCHAR);
-                ps.setInt(5, 1);
+                flags |= 1;
             }
         }
         else
         {
             throw new RepositoryException("Unknown value type: " + object.getClass());
         }
+
+        ps.setInt(5, flags);
 
         ps.setString(6, context.toString());
     }
