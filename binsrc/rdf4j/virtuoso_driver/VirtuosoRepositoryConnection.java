@@ -127,6 +127,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     private String ruleSet;    
     private String macroLib;
     private String defGraph;
+    private boolean useDefGraphForQueries;
 
     private volatile ParserConfig parserConfig = new ParserConfig();
     private IsolationLevel isolationLevel;
@@ -146,6 +147,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         this.ruleSet = repository.getRuleSet();
         this.macroLib = repository.getMacroLib();
         this.defGraph = repository.defGraph;
+	this.useDefGraphForQueries = repository.useDefGraphForQueries;
         this.trn_concurrencyMode = this.concurencyMode = repository.concurencyMode;
         this.nilContext = valueFactory.createIRI(repository.defGraph);
         this.repository.initialize();
@@ -2190,7 +2192,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
     private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings, List<Value> pstmtParams, String baseURI)  throws RepositoryException
     {
-        boolean use_def_graph = true;
+        boolean added_def_graph = false;
         Set <IRI> list;
         String removeGraph = null;
         String insertGraph = null;
@@ -2240,7 +2242,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 {
                     IRI v = it.next();
                     ret.append(" define input:default-graph-uri <" + v.toString() + "> \n");
-                    use_def_graph = false;
+                    added_def_graph = true;
                 }
             }
 
@@ -2256,7 +2258,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             }
         }
 
-        if (use_def_graph)
+	if (!added_def_graph && useDefGraphForQueries)
             ret.append(" define input:default-graph-uri <" + defGraph + "> \n");
 
         ret.append(substBindings(query, bindings, pstmtParams, isSPARUL));
@@ -2483,6 +2485,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         if (!insertBNodeAsVirtuosoIRI && (object instanceof BNode))
             flags = 15;
 
+        flags |= (subject instanceof BNode) ?0x0100:0;
+        flags |= (object instanceof BNode) ?0x0200:0;
+
         ps.setString(1, subject.toString());
         ps.setString(2, predicate.toString());
 
@@ -2490,7 +2495,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         {
             ps.setString(3,  object.toString());
             ps.setNull(4, java.sql.Types.VARCHAR);
-            ps.setInt(5, flags);
         }
         else if (object instanceof Literal)
         {
@@ -2501,29 +2505,43 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             if (lang.isPresent())
             {
                 ps.setString(4, lang.get());
-                ps.setInt(5, 2);
+                flags |= 2;
+
             }
             else if (lit.getDatatype() != null)
             {
                 IRI ltype = lit.getDatatype();
-                if (!(insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING))) {
-                    ps.setString(4, ltype.toString());
-                    ps.setInt(5, 3);
-                } else {
+
+                if (insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING)) {
                     ps.setNull(4, java.sql.Types.VARCHAR);
-                    ps.setInt(5, 1);
+                    flags |= 1;
+                } else {
+                  ps.setString(4, ltype.toString());
+
+                  if (ltype.equals(XMLSchema.INTEGER))
+                    flags |= 5;
+                  else if (ltype.equals(XMLSchema.FLOAT))
+                    flags |= 6;
+                  else if (ltype.equals(XMLSchema.DOUBLE))
+                    flags |= 7;
+                  else if (ltype.equals(XMLSchema.DECIMAL))
+                    flags |= 8;
+                  else
+                    flags |= 3;
                 }
             }
             else
             {
                 ps.setNull(4, java.sql.Types.VARCHAR);
-                ps.setInt(5, 1);
+                flags |= 1;
             }
         }
         else
         {
             throw new RepositoryException("Unknown value type: " + object.getClass());
         }
+
+        ps.setInt(5, flags);
 
         ps.setString(6, context.toString());
     }

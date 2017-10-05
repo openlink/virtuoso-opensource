@@ -166,7 +166,7 @@
 							<input type="radio" id="insertBNodeAsVirtuosoIRI"
 								name="Insert BNode as Virtuoso IRI" size="48" value="true" />
 							<xsl:value-of select="$true.label" />
-							<input type="radio" id="insertBNodeAsURI"
+							<input type="radio" id="insertBNodeAsVirtuosoIRI"
 								name="Insert BNode as Virtuoso IRI" size="48" value="false" checked="true" />
 							<xsl:value-of select="$false.label" />
 						</td>
@@ -189,6 +189,20 @@
 						<td>
 							<input type="text" id="concurrency"
 								name="Concurrency Mode" size="4" value="0" />
+						</td>
+						<td></td>
+					</tr>
+					<tr>
+						<td>
+						        Use defGraph with SPARQL queries, if query default graphs weren't set
+						</td>
+						<td>
+							<input type="radio" id="useDefGraphForQueries"
+								name="Use defGraph for Queries" size="48" value="true" />
+							<xsl:value-of select="$true.label" />
+							<input type="radio" id="useDefGraphForQueries"
+								name="Use defGraph for Queries" size="48" value="false" checked="true" />
+							<xsl:value-of select="$false.label" />
 						</td>
 						<td></td>
 					</tr>
