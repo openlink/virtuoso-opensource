@@ -1690,46 +1690,75 @@ public class VirtGraph extends GraphBase {
     }
 
 
+/****
+0 - The o is a string representing a URI. o_type is ignored.
+1 - The string is an RDF  literal string without type or language tag.  o_type
+is ignored. 
+2 - The o is a literal string and o_type is its language tag.
+3 - The o is a literall string and the o_type is an RDF type URI for the
+literal.
+4 - The o is a well formed XML string to be stored as XML. o_type is ignored.
+5 - The o is a string representation of an integer. o_type is ignored.
+6 - The o is a string representation of a float. o_type is ignored.
+7 - The o is a string representation of a double. o_type is ignored.
+8 - The o is a string representation of a decimal. o_type is ignored.
+***/
     protected void bindBatchParams(PreparedStatement ps,
                                    Node subject,
                                    Node predicate,
                                    Node object,
                                    String _graphName) throws SQLException {
+        int flags = 0;
+
+        flags |= subject.isBlank()?0x0100:0;
+        flags |= object.isBlank() ?0x0200:0;
+
         ps.setString(1, subject.isBlank() ? BNode2String(subject) : subject.toString());
         ps.setString(2, predicate.toString());
 
         if (object.isURI()) {
             ps.setString(3, object.toString());
             ps.setNull(4, java.sql.Types.VARCHAR);
-            ps.setInt(5, 0);
         } else if (object.isBlank()) {
             ps.setString(3, BNode2String(object));
             ps.setNull(4, java.sql.Types.VARCHAR);
-            ps.setInt(5, 0);
         } else if (object.isLiteral()) {
             ps.setString(3, object.getLiteralLexicalForm());
             String s_lang = object.getLiteralLanguage();
             String s_type = object.getLiteralDatatypeURI();
             if (s_lang != null && s_lang.length() > 0) {
                 ps.setString(4, s_lang);
-                ps.setInt(5, 2);
+                flags |= 2;
             } else if (s_type != null && s_type.length() > 0) {
-                if (!(insertStringLiteralAsSimple && s_type.equals(xsd_string))) {
-                    ps.setString(4, s_type);
-                    ps.setInt(5, 3);
-                } else {
+                if (insertStringLiteralAsSimple && s_type.equals(xsd_string)) {
                     ps.setNull(4, java.sql.Types.VARCHAR);
-                    ps.setInt(5, 1);
+                    flags |= 1;
+                } else {
+                    ps.setString(4, s_type);
+                    if (s_type.equals("http://www.w3.org/2001/XMLSchema#integer"))
+                      flags |= 5;
+                    else if (s_type.equals("http://www.w3.org/2001/XMLSchema#float"))
+                      flags |= 6;
+                    else if (s_type.equals("http://www.w3.org/2001/XMLSchema#double"))
+                      flags |= 7;
+                    else if (s_type.equals("http://www.w3.org/2001/XMLSchema#decimal"))
+                      flags |= 8;
+                    else if (s_type.equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral"))
+                      flags |= 4;
+                    else
+                      flags |= 3;
                 }
+
             } else {
                 ps.setNull(4, java.sql.Types.VARCHAR);
-                ps.setInt(5, 1);
+                flags |= 1;
             }
         } else {
             ps.setString(3, object.toString());
             ps.setNull(4, java.sql.Types.VARCHAR);
-            ps.setInt(5, 0);
         }
+
+        ps.setInt(5, flags);
 
         ps.setString(6, _graphName);
     }
