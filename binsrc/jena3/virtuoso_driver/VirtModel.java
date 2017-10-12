@@ -41,8 +41,6 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.*;
 
 
-import virtuoso.jdbc4.VirtuosoDataSource;
-
 public class VirtModel extends ModelCom {
 
     private final Object lck_add = new Object();

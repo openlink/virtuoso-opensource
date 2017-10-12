@@ -40,8 +40,6 @@ import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.rdf.model.impl.*;
 
 
-import virtuoso.jdbc4.VirtuosoDataSource;
-
 public class VirtModel extends ModelCom {
 
     private final Object lck_add = new Object();
@@ -108,6 +106,10 @@ public class VirtModel extends ModelCom {
 
     public void setRuleSet(String _ruleSet) {
         ((VirtGraph) this.graph).setRuleSet(_ruleSet);
+    }
+
+    public void setMacroLib(String _macroLib) {
+        ((VirtGraph) this.graph).setMacroLib(_macroLib);
     }
 
     public void setSameAs(boolean _sameAs) {
