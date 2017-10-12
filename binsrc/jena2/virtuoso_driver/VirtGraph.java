@@ -79,7 +79,9 @@ public class VirtGraph extends GraphBase {
     protected int prefetchSize = 100;
     protected int batchSize = BATCH_SIZE;
     protected Connection connection = null;
+    protected VirtDataset parent_dataset = null;
     protected String ruleSet = null;
+    protected String macroLib = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
     protected boolean useReprepare = true;
@@ -103,6 +105,21 @@ public class VirtGraph extends GraphBase {
     java.sql.Statement stInsert_Cmd = null;
     int psInsert_Count = 0;
 
+
+    protected VirtGraph(String _graphName, VirtDataset ds) {
+        super();
+        this.graphName = _graphName == null ? DEFAULT : _graphName;
+        this.connection = ds.getConnection();
+        this.parent_dataset = ds;
+
+        this.url_hostlist = ds.getGraphUrl();
+        this.user = ds.getGraphUser();
+        this.password = ds.getGraphPassword();
+        this.roundrobin = ds.roundrobin;
+        setMacroLib(ds.getMacroLib());
+        setRuleSet(ds.getRuleSet());
+        setFetchSize(ds.getFetchSize());
+    }
 
     public VirtGraph() {
         this(null, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null, false);
@@ -468,6 +485,14 @@ public class VirtGraph extends GraphBase {
         ruleSet = _ruleSet;
     }
 
+    public String getMacroLib() {
+        return macroLib;
+    }
+
+    public void setMacroLib(String _macroLib) {
+        macroLib = _macroLib;
+    }
+
     public boolean getSameAs() {
         return useSameAs;
     }
@@ -573,6 +598,9 @@ public class VirtGraph extends GraphBase {
     protected void appendSparqlPrefixes(StringBuilder sb) {
         if (ruleSet != null)
             sb.append(" define input:inference '" + ruleSet + "'\n ");
+
+        if (macroLib != null)
+            sb.append(" define input:macro-lib '" + macroLib + "'\n ");
 
         if (sparqlPrefix != null) {
             sb.append(sparqlPrefix);
@@ -1004,8 +1032,12 @@ public class VirtGraph extends GraphBase {
     public void close() {
         try {
             super.close(); // will set closed = true
-            if (connection != null)
-                connection.close();
+            if (connection != null) {
+               if (parent_dataset!=null)
+                   parent_dataset.removeLink(this);
+               else
+                   connection.close();
+            }
             connection = null;
             xa_connection = null;
         } catch (Exception e) {
