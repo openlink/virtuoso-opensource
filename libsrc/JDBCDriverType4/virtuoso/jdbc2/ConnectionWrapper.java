@@ -89,7 +89,7 @@ public class ConnectionWrapper implements java.sql.Connection {
   }
 
   public void finalize () throws Throwable {
-      VirtuosoPooledConnnection pc = pconn;
+      VirtuosoPooledConnection pc = pconn;
       if (pc!=null) 
         pc.sendCloseEvent();
       pconn = null;
