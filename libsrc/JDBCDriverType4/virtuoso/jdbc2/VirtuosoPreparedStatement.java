@@ -322,6 +322,15 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       throw new VirtuosoException("Prepared statement closed",VirtuosoException.CLOSED);
    }
 
+
+   /**
+    * Method runs when the garbage collector want to erase the object
+    */
+   public void finalize() throws Throwable
+   {
+      close();
+   }
+
    /**
     * Releases this Statement object's database
     * and JDBC resources immediately instead of new wait for

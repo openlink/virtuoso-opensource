@@ -282,9 +282,6 @@ public class VirtuosoStatement implements Statement
    public void finalize() throws Throwable
    {
       close();
-      // Remove the metaData
-      if(metaData != null)
-         metaData.close();
    }
 
    // --------------------------- JDBC 1.0 ------------------------------
@@ -360,6 +357,7 @@ public class VirtuosoStatement implements Statement
 	     connection.removeFuture(future);
 	     future = null;
 	     result_opened = false;
+	     metaData = null;
 	   }
 	 catch(IOException e)
 	   {

@@ -104,13 +104,6 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
       }
    }
 
-   /**
-    * Method runs when the garbage collector want to erase the object
-    */
-   public void finalize() throws Throwable
-   {
-      close();
-   }
 
    // --------------------------- JDBC 1.0 ------------------------------
    /**

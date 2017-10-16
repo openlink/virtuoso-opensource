@@ -76,10 +76,7 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
 
 
   public synchronized void finalize () throws Throwable {
-    try {
-      close();
-    } catch(Exception e) { }
-    listeners.clear();
+    close();
   }
 
 

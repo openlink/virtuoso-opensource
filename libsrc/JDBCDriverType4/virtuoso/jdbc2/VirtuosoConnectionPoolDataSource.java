@@ -75,10 +75,6 @@ public class VirtuosoConnectionPoolDataSource
     private long  propEnforceTime = 0;
 
 
-  public synchronized void finalize () throws Throwable {
-    close ();
-  }
-
 
   public VirtuosoConnectionPoolDataSource() {
     dataSourceName = "VirtuosoConnectionPoolDataSourceName";
@@ -676,6 +672,11 @@ public class VirtuosoConnectionPoolDataSource
       in_Use = new ConcurrentHashMap<VirtuosoPooledConnection,VirtuosoPooledConnection>(32);
       cacheSize = new AtomicInteger(0);
       cpds = _cpds;
+    }
+
+
+    public void finalize () throws Throwable {
+      clear ();
     }
 
 
