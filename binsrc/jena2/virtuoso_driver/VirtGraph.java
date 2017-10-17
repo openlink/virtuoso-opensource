@@ -84,7 +84,7 @@ public class VirtGraph extends GraphBase {
     protected String macroLib = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
-    protected boolean useReprepare = true;
+    protected boolean useReprepare = false;
     protected String sparqlPrefix = null;
     protected boolean insertBNodeAsVirtuosoIRI = false;
     protected boolean resetBNodesDictAfterCall = false;
@@ -119,6 +119,14 @@ public class VirtGraph extends GraphBase {
         setMacroLib(ds.getMacroLib());
         setRuleSet(ds.getRuleSet());
         setFetchSize(ds.getFetchSize());
+
+        try {
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
+        } catch (Exception e) {
+            throw new JenaException(e);
+        }
     }
 
     public VirtGraph() {
@@ -158,8 +166,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -188,8 +196,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -221,8 +229,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -284,8 +292,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -1269,7 +1277,9 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                flushDelayAdd_batch(psInsert, psInsert_Count);
+                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
+                if (ps==null)
+                    psInsert_Count = 0;
 
             } catch (Exception e) {
                 throw new JenaException(e);
@@ -1299,7 +1309,9 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                flushDelayAdd_batch(psInsert, psInsert_Count);
+                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
+                if (ps==null)
+                    psInsert_Count = 0;
 
             } catch (Exception e) {
                 throw new JenaException(e);
