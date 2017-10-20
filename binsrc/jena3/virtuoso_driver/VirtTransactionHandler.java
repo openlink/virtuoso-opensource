@@ -31,6 +31,8 @@ import org.apache.jena.graph.impl.*;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.shared.*;
 
+import static virtuoso.jena.driver.VirtIsolationLevel.*;
+
 public class VirtTransactionHandler extends TransactionHandlerBase implements XAResource {
 
     private VirtGraph graph = null;
@@ -45,6 +47,43 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         super();
         this.graph = _graph;
     }
+
+    public VirtIsolationLevel getIsolationLevel() {
+        try {
+            Connection c = graph.getConnection();
+            int i = c.getTransactionIsolation();
+            switch (i){
+                case Connection.TRANSACTION_READ_UNCOMMITTED:  return READ_UNCOMMITTED;
+                case Connection.TRANSACTION_READ_COMMITTED:    return READ_COMMITTED;
+                case Connection.TRANSACTION_REPEATABLE_READ:   return REPEATABLE_READ;
+                case Connection.TRANSACTION_SERIALIZABLE:      return SERIALIZABLE;
+                default:
+                    return NONE;
+            }
+        } catch (SQLException e) {
+            throw new JenaException("getIsolationLevel failed: ", e);
+        }
+    }
+
+    public void setIsolationLevel(VirtIsolationLevel level) {
+        try {
+            Connection c = graph.getConnection();
+            if (level == NONE)
+                c.setTransactionIsolation(Connection.TRANSACTION_NONE);
+            else if (level == READ_UNCOMMITTED)
+                c.setTransactionIsolation(Connection.TRANSACTION_READ_UNCOMMITTED);
+            else if (level == READ_COMMITTED)
+                c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+            else if (level == REPEATABLE_READ)
+                c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+            else if (level == SERIALIZABLE)
+                c.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+
+        } catch (SQLException e) {
+            throw new JenaException("setIsolationLevel failed: ", e);
+        }
+    }
+
 
     public boolean transactionsSupported() {
         if (m_transactionsSupported != null) {
@@ -146,9 +185,6 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         if (transactionsSupported()) {
             try {
                 Connection c = graph.getConnection();
-                if (c.getTransactionIsolation() != Connection.TRANSACTION_READ_COMMITTED) {
-                    c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-                }
                 if (c.getAutoCommit()) {
                     c.setAutoCommit(false);
                 }
@@ -166,9 +202,6 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         if (transactionsSupported()) {
             try {
                 Connection c = graph.getConnection();
-                if (c.getTransactionIsolation() != Connection.TRANSACTION_READ_COMMITTED) {
-                    c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-                }
                 if (c.getAutoCommit()) {
                     c.setAutoCommit(false);
                 }

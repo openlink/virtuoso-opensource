@@ -314,6 +314,16 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
     }
 
+    public void setIsolationLevel(VirtIsolationLevel level){
+        VirtTransactionHandler handler = getTransactionHandler();
+        handler.setIsolationLevel(level);
+    }
+
+    public VirtIsolationLevel getIsolationLevel(){
+        VirtTransactionHandler handler = getTransactionHandler();
+        return handler.getIsolationLevel();
+    }
+
     /**
      * Finish the transaction - if a write transaction and commit() has not been called, then abort
      */
