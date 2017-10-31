@@ -41,7 +41,7 @@ void const_length_init (void);
 extern numeric_t num_int64_max;
 extern numeric_t num_int64_min;
 void db_buf_length  (unsigned char * buf, long * head_ret, long * len_ret);
-int box_serial_length (caddr_t box, dtp_t dtp);
+extern int box_serial_length (caddr_t box, dtp_t dtp);
 #define SERIAL_LENGTH_APPROX 1	/*!< A special fake dtp to indicate that box_serial_length() do not have to return an accurate value and some overestimated number is OK */
 int rb_serial_length (caddr_t x);
 

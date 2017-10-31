@@ -270,26 +270,72 @@ box_serial_length (caddr_t box, dtp_t dtp)
     dtp = DV_TYPE_OF (box);
   switch (dtp)
     {
+#ifdef SIGNAL_DEBUG
+    case DV_ERROR_REPORT:
+#endif
+    case DV_ARRAY_OF_POINTER:
+    case DV_LIST_OF_POINTER:
+    case DV_ARRAY_OF_XQVAL:
+    case DV_XTREE_HEAD:
+    case DV_XTREE_NODE:
+      {
+        int inx, elts = BOX_ELEMENTS (box);
+        int len = elts < 128 ? 3 : 6;
+        DO_BOX (caddr_t, v, inx, (caddr_t *)box)
+          {
+            len += box_serial_length (v, 0);
+          }
+        END_DO_BOX;
+        return len;
+      }
+    case DV_ARRAY_OF_LONG: /* _ROW */
+      {
+        int elts = box_length (box) / sizeof (ptrlong);
+        return (elts < 128 ? 3 : 6) + 4 * elts;
+      }
+    case DV_ARRAY_OF_LONG_PACKED: /* _ROW */
+      {
+        ptrlong *valptr = (ptrlong *) box;
+        int i, elts = box_length (box) / sizeof (ptrlong);
+        int len = elts < 128 ? 3 : 6;
+        for (i = elts; i--; /* no step */)
+          {
+            boxint n = valptr[i];
+            len += (((n > -128) && (n < 128)) ? 2 : ((n >= (int64) INT32_MIN && n <= (int64) INT32_MAX) ? 5 : 9));
+          }
+        return len;
+      }
+    case DV_ARRAY_OF_DOUBLE: /* _ROW */
+      {
+        int elts = BOX_ELEMENTS (box);
+        return (elts < 128 ? 3 : 6) + 8 * elts;
+      }
+    case DV_ARRAY_OF_FLOAT: /* _ROW */
+      {
+        int elts = BOX_ELEMENTS (box);
+        return (elts < 128 ? 3 : 6) + 4 * elts;
+      }
     case DV_LONG_INT:
     case DV_SHORT_INT:
       {
-	boxint n = IS_BOX_POINTER (box) ? *((ptrlong *) box) : (boxint)((ptrlong)box); /* Is it ((ptrlong *) box) or ((boxint *) box) ??? */
-	if ((n > -128) && (n < 128))
-	  return 2;
-	else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
-	  return 5;
-	else
-	  return 9;
+        boxint n = IS_BOX_POINTER (box) ? *((ptrlong *) box) : (boxint)((ptrlong)box); /* Is it ((ptrlong *) box) or ((boxint *) box) ??? */
+        if ((n > -128) && (n < 128))
+          return 2;
+        else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
+          return 5;
+        else
+          return 9;
       }
     case DV_STRING:
+    case DV_C_STRING:
       {
-	int len = box_length (box);
-	return (len > 256 ? len + 4 : len + 1); /* count the trailing 0 incl. in the box length */
+        int len = box_length (box);
+        return (len > 256 ? len + 4 : len + 1); /* count the trailing 0 incl. in the box length */
       }
-    case DV_IRI_ID:
-      {
-	iri_id_t iid = unbox_iri_id (box);
-	return  (iid <= 0xffffffff) ? 5 : 9;
+    case DV_UNAME:
+      { /* This is true only for internal Virtuoso serialization! */
+        int len = box_length (box);
+        return (len > 256 ? len + 4 : len + 1); /* count the trailing 0 incl. in the box length */
       }
     case DV_SINGLE_FLOAT:
       return 5;
@@ -297,6 +343,14 @@ box_serial_length (caddr_t box, dtp_t dtp)
       return 9;
     case DV_DB_NULL:
       return 1;
+    case DV_SHORT_CONT_STRING:
+    case DV_LONG_CONT_STRING:
+      return box_length (box);
+    case DV_IRI_ID:
+      {
+	iri_id_t iid = unbox_iri_id (box);
+	return  (iid <= 0xffffffff) ? 5 : 9;
+      }
     case DV_NUMERIC:
       return numeric_dv_len ((numeric_t)box);
     case DV_DATETIME:
@@ -308,20 +362,23 @@ box_serial_length (caddr_t box, dtp_t dtp)
         geo_t *g = (geo_t *)box;
         return geo_serial_length (g);
       }
-    case DV_ARRAY_OF_POINTER: /* _ROW */
-	{
-	  int inx, elts = BOX_ELEMENTS (box);
-	  int len = elts < 128 ? 3 : 6;
-	  DO_BOX (caddr_t, v, inx, (caddr_t *)box)
-	    {
-	      len += box_serial_length (v, 0);
-	    }
-	  END_DO_BOX;
-	  return len;
-	}
+    case DV_WIDE:
+      {
+        const wchar_t *wstr = (const wchar_t *)box;
+        const wchar_t *wide_work = wstr;
+        size_t utf8_len, wide_len = box_length (box) / sizeof (wchar_t) - 1;
+        virt_mbstate_t state;
+        unsigned char mbs[VIRT_MB_CUR_MAX];
+        wide_work = wstr;
+        memset (&state, 0, sizeof (virt_mbstate_t));
+        utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
+        if (((long) utf8_len) < 0)
+          GPF_T1("non consistent wide char to multi-byte translation of a buffer");
+        return ((utf8_len < 256) ? 2 : 5) + utf8_len;
+      }
     default:
       if (approx)
-      return box_length (box);
+        return box_length (box);
       log_error ("box_serial_len called with dtp %d", (uint32)dtp);
       GPF_T1 ("box_serial_length not supported for data type");
     }
