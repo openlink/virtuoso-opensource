@@ -176,7 +176,10 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 struct spar_sqlgen_s;
 struct spar_tree_s;
 
+typedef struct qm_format_s *ssg_valmode_t;
 typedef struct spar_tree_s SPART;
+
+#define SPART_CHECK_FUEL 0 /* will set to 10000 after tweaks in spar_compose_retvals_of_insert_or_delete that results in diamonds now */
 
 typedef struct spar_lexem_s {
   ptrlong sparl_lex_value;
@@ -543,8 +546,6 @@ extern ptrlong sparp_tr_usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT];
 
 #define END_SPARP_REVFOREACH_GP_EQUIV \
 	  }} while (0)
-
-typedef struct qm_format_s *ssg_valmode_t;
 
 /*! Type of callback that can generate an unusual SQL text from a tree of SPAR_CODEGEN type */
 typedef void ssg_codegen_callback_t (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
