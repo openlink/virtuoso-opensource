@@ -463,6 +463,15 @@ box_read_array (dk_session_t * session, dtp_t dtp)
   return (void *) array;
 }
 
+#ifdef SIGNAL_DEBUG
+static void *
+box_read_error_report (dk_session_t * session, dtp_t dtp)
+{
+  void *res = box_read_array (session, dtp);
+  log_error_report_event ((caddr_t) res, 1, "READ");
+  return res;
+}
+#endif
 
 static void *
 box_read_array_of_double (dk_session_t * session, dtp_t dtp)
@@ -750,6 +759,9 @@ init_readtable (void)
   readtable[DV_ARRAY_OF_XQVAL] = box_read_array;
   readtable[DV_XTREE_HEAD] = box_read_array;
   readtable[DV_XTREE_NODE] = box_read_array;
+#ifdef SIGNAL_DEBUG
+  readtable[DV_ERROR_REPORT] = box_read_error_report;
+#endif
 
   readtable[DV_ARRAY_OF_LONG_PACKED] = box_read_packed_array_of_long;
   readtable[DV_ARRAY_OF_LONG] = box_read_array_of_long;
@@ -1207,6 +1219,9 @@ print_object2 (const void *object, dk_session_t * session)
 
       switch (tag)
 	{
+#ifdef SIGNAL_DEBUG
+        case DV_ERROR_REPORT:
+#endif
 	case DV_ARRAY_OF_POINTER:
 	case DV_LIST_OF_POINTER:
 	case DV_ARRAY_OF_XQVAL:

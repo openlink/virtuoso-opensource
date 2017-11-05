@@ -287,7 +287,9 @@ struct rbuf_s
   char	rb_is_new_data;
   int		rb_count;
   rbuf_free_t 	rb_free_func;
-
+#ifdef MALLOC_DEBUG
+  void *rb_origin;
+#endif
 };
 
 #define DO_RBUF(dtp, item, rbe, inx, rb)  \
@@ -312,6 +314,7 @@ void * rbuf_first (rbuf_t * rb);
 void rbuf_delete (rbuf_t * rb, rbuf_elt_t * rbe, int * inx);
 void rbuf_destroy (rbuf_t * rb);
 rbuf_t * rbuf_allocate ();
+void rc_destr_rbuf (void *rbuf);
 int  rbuf_free_cb (rbuf_t * rb);
 void  rbuf_append (rbuf_t * dest, rbuf_t * src);
 void rbuf_delete_all (rbuf_t *);

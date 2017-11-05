@@ -28,10 +28,14 @@
 #ifndef _DKRESOURCE_H
 #define _DKRESOURCE_H
 
+#ifdef MALLOC_DEBUG
+#define RC_DBG
+#endif
+
 typedef void *(*rc_constr_t) (void *cdata);
 typedef void (*rc_destr_t) (void *item);
 
-typedef struct
+typedef struct resource_s
 {
   uint32 		rc_fill;
   uint32 		rc_size;
@@ -48,6 +52,10 @@ typedef struct
   uint32 		rc_n_empty;
   uint32 		rc_n_full;
   uint32 		rc_max_size;
+#ifdef RC_DBG
+  struct resource_s **rc_family;
+  int                 rc_family_size;
+#endif
 } resource_t;
 
 

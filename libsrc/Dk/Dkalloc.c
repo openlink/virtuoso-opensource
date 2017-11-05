@@ -68,6 +68,7 @@ int64 dk_n_max_allocs;
 #endif
 
 extern void dk_box_initialize (void);
+extern void dk_box_finalize (void);
 
 #define NO_MALLOC_CACHE
 #undef CACHE_MALLOC
@@ -984,6 +985,11 @@ dk_memory_initialize (int do_malloc_cache)
   strses_mem_initalize ();
 }
 
+void
+dk_memory_finalize (void)
+{
+  dk_box_finalize ();
+}
 
 void
 dk_cache_allocs (size_t sz, size_t cache_sz)

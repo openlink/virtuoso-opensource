@@ -123,6 +123,12 @@ DBG_NAME(resource_allocate) (DBG_PARAMS  uint32 sz, rc_constr_t constructor, rc_
   rc->rc_stores = 0;
 
   rc->rc_mtx = mutex_allocate ();
+
+#ifdef RC_DBG
+  rc->rc_family = NULL;
+  rc->rc_family_size = 0;
+#endif
+
   return (rc);
 }
 
@@ -295,6 +301,58 @@ DBG_NAME(resource_get) (DBG_PARAMS  resource_t * rc)
   return DBG_NAME(resource_get_1) (DBG_ARGS  rc, 1);
 }
 
+#ifdef RC_DBG
+void
+resource_check_dupes_and_enter_mutex (resource_t * rc, void *item)
+{
+  resource_t **family = rc->rc_family;
+  int family_size, family_ctr;
+  dk_mutex_t *i_own_my_mtx_for_long = NULL;
+  if (NULL == family)
+    {
+      family = &rc;
+      family_size = 1;
+    }
+  else
+    family_size = rc->rc_family_size;
+big_retry:
+  for (family_ctr = family_size; family_ctr--; /* no step */)
+    {
+       resource_t * fam_rc = family[family_ctr];
+       dk_mutex_t *rc_mtx = fam_rc->rc_mtx;
+        void **items;
+        uint32 fill, inx;
+        if (rc_mtx)
+          {
+            if (NULL != i_own_my_mtx_for_long)
+              {
+                if (!mutex_try_enter (rc_mtx))
+                  {
+                    mutex_leave (i_own_my_mtx_for_long);
+                    i_own_my_mtx_for_long = NULL;
+                    goto big_retry;
+                  }
+              }
+            else
+              mutex_enter (rc_mtx);
+          }
+        items = fam_rc->rc_items;
+        fill = fam_rc->rc_fill;
+        for (inx = 0; inx < fill; inx++)
+          if (item == items[inx])
+            GPF_T1 ("adding a duplicate to resource_t");
+        if (rc_mtx)
+          {
+            if (fam_rc == rc)
+              i_own_my_mtx_for_long = rc_mtx;
+            else
+              mutex_leave (rc_mtx);
+          }
+    }
+}
+#else
+#define resource_check_dupes_and_enter_mutex(rc,item) do { if (rc->rc_mtx) mutex_enter (rc->rc_mtx); } while (0)
+#endif /* RC_DBG */
 
 /*##**********************************************************************
  *
@@ -326,19 +384,7 @@ DBG_NAME(resource_store) (DBG_PARAMS  resource_t * rc, void *item)
   malhdr_t *thing = resource_find_malhdr (item);
 #endif
   dk_mutex_t *rc_mtx = rc->rc_mtx;
-  if (rc_mtx)
-    mutex_enter (rc_mtx);
-
-#ifdef RC_DBG
-  {
-    uint32 inx;
-    for (inx = 0; inx < rc->rc_fill; inx++)
-      if (item == rc->rc_items[inx])
-	{
-	  GPF_T1 ("Duplicate resource free.");
-	}
-  }
-#endif /* RC_DBG */
+  resource_check_dupes_and_enter_mutex (rc, item);
 #ifdef MALLOC_DEBUG
   if (NULL != thing)
     dbg_count_like_free (DBG_ARGS  thing);
@@ -379,19 +425,7 @@ DBG_NAME(resource_store_fifo) (DBG_PARAMS  resource_t * rc, void *item, int n_fi
   malhdr_t *thing = resource_find_malhdr (item);
 #endif
   dk_mutex_t *rc_mtx = rc->rc_mtx;
-  if (rc_mtx)
-    mutex_enter (rc_mtx);
-
-#ifdef RC_DBG
-  {
-    uint32 inx;
-    for (inx = 0; inx < rc->rc_fill; inx++)
-      if (item == rc->rc_items[inx])
-	{
-	  GPF_T1 ("Duplicate resource free.");
-	}
-  }
-#endif /* RC_DBG */
+  resource_check_dupes_and_enter_mutex (rc, item);
 #ifdef MALLOC_DEBUG
   if (NULL != thing)
     dbg_count_like_free (DBG_ARGS  thing);
@@ -459,18 +493,7 @@ DBG_NAME(resource_store_timed) (DBG_PARAMS  resource_t * rc, void *item)
 #endif
   dk_mutex_t *rc_mtx = rc->rc_mtx;
   uint32 time = approx_msec_real_time ();
-  if (rc_mtx)
-    mutex_enter (rc_mtx);
-#ifdef RC_DBG
-  {
-    uint32 inx;
-    for (inx = 0; inx < rc->rc_fill; inx++)
-      if (item == rc->rc_items[inx])
-        {
-          GPF_T1 ("Duplicate resource free.");
-        }
-  }
-#endif /* RC_DBG */
+  resource_check_dupes_and_enter_mutex (rc, item);
 #ifdef MALLOC_DEBUG
   if (NULL != thing)
     dbg_count_like_free (DBG_ARGS  thing);

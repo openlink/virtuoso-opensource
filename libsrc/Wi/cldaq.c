@@ -1120,7 +1120,7 @@ fetch_again:
     caddr_t err = subq_handle_reset (qi, reset_code);
     POP_QR_RESET;
     /*log_error ("RDF CB COMPLETE: %s %s", ERR_STATE (err), ERR_MESSAGE (err)); */
-    if (ARRAYP (err) && !strcmp (ERR_STATE (err), "40001"))
+    if (ERROR_REPORT_P (err) && !strcmp (ERR_STATE (err), "40001"))
       {
 	dk_free_tree (err);
 	err = NULL;

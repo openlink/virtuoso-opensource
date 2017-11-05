@@ -13285,11 +13285,12 @@ bif_exec_error (caddr_t * qst, state_slot_t ** args, caddr_t err, dk_set_t warni
       qst_set (qst, args[1], ERR_STATE (err));
       if (ssl_is_settable (args[2]))
 	qst_set (qst, args[2], ERR_MESSAGE (err));
-      dk_free_box(err);
+      ERR_STATE(err) = ERR_MESSAGE(err) = NULL;
+      dk_free_tree (err);
     }
   else
     {
-      qst_set (qst, args[1], IS_POINTER(err) ? ERR_STATE (err) : box_dv_short_string("01W01"));
+      qst_set (qst, args[1], box_dv_short_string("01W01"));
       if (ssl_is_settable (args[2]))
 	{
 	  snprintf (buf, sizeof (buf), "No WHENEVER statement provided for SQLCODE %d", (int)(ptrlong)(err));

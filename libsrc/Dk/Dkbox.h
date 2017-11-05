@@ -544,10 +544,44 @@ typedef struct dk_mem_wrapper_s
 #define DV_WIDE 			225		   /* wchar_t */
 #define DV_LONG_WIDE 			226		   /* wchar_t with 32 bit length */
 
+#ifdef SIGNAL_DEBUG
+#define DV_ERROR_REPORT			250
+#else
+#define DV_ERROR_REPORT			DV_ARRAY_OF_POINTER
+#endif
+#define LAST_DV_DTP 			250
+
 #define IS_STRING_DTP(dtp)		((DV_STRING == (dtp)) || (DV_UNAME == (dtp)))
 #define IS_STRING_ALIGN_DTP(dtp) 	(IS_STRING_DTP(dtp) || (DV_C_STRING == (dtp)) || (DV_SYMBOL == (dtp)) || DV_SHORT_STRING_SERIAL == (dtp) || DV_BIN == (dtp))
 
-#define LAST_DV_DTP 			220
+#define ARRAYP(a) \
+  (IS_BOX_POINTER(a) && DV_ARRAY_OF_POINTER == box_tag((caddr_t) a))
+
+#define ERROR_REPORT_P(a) \
+  (IS_BOX_POINTER(a) && DV_ERROR_REPORT == box_tag((caddr_t) a))
+
+#define SYMBOLP(a) \
+  (IS_BOX_POINTER(a) && DV_SYMBOL == box_tag((caddr_t) a))
+
+#define LITERAL_P(a) \
+  (! IS_BOX_POINTER (a) \
+   || DV_SHORT_STRING == box_tag((caddr_t) a) \
+   || DV_LONG_STRING == box_tag((caddr_t) a) \
+   || DV_WIDE == box_tag((caddr_t) a) \
+   || DV_LONG_WIDE == box_tag((caddr_t) a) \
+   || DV_LONG_INT == box_tag((caddr_t) a) \
+   || DV_DB_NULL == box_tag((caddr_t) a) \
+   || DV_SINGLE_FLOAT == box_tag((caddr_t) a) \
+   || DV_NUMERIC == box_tag((caddr_t) a) \
+   || DV_DOUBLE_FLOAT == box_tag((caddr_t) a) \
+   || DV_BIN == box_tag((caddr_t) a) \
+   || DV_UNAME == box_tag((caddr_t) a) \
+   || DV_IRI_ID == box_tag((caddr_t) a) \
+   || DV_RDF == box_tag((caddr_t) a) \
+   || DV_DATETIME == box_tag((caddr_t) a) \
+   || DV_GEO == box_tag((caddr_t) a) \
+   || DV_XPATH_QUERY == box_tag((caddr_t) a) )
+
 
 typedef int64 boxint;
 #define BOXINT_MAX 			0x7fffffffffffffffLL
@@ -579,12 +613,22 @@ typedef unsigned int64 iri_id_t;
 #define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)7) << 60)
 #define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)
 
+#ifdef SIGNAL_DEBUG
+#define IS_NONLEAF_DTP(dtp) \
+	(((dtp) == DV_ARRAY_OF_POINTER) || \
+	 ((dtp) == DV_LIST_OF_POINTER) || \
+	 ((dtp) == DV_ARRAY_OF_XQVAL) || \
+	 ((dtp) == DV_ERROR_REPORT) || \
+	 ((dtp) == DV_XTREE_HEAD) || \
+	 ((dtp) == DV_XTREE_NODE) )
+#else
 #define IS_NONLEAF_DTP(dtp) \
 	(((dtp) == DV_ARRAY_OF_POINTER) || \
 	 ((dtp) == DV_LIST_OF_POINTER) || \
 	 ((dtp) == DV_ARRAY_OF_XQVAL) || \
 	 ((dtp) == DV_XTREE_HEAD) || \
 	 ((dtp) == DV_XTREE_NODE) )
+#endif
 
 #ifndef __LITTLE_ENDIAN
 #define __LITTLE_ENDIAN  		4321
@@ -1019,5 +1063,11 @@ float buf_to_float (char *buf);
 void double_to_buf (double d, char *buf);
 #define is_array_of_long(type)\
   ((DV_ARRAY_OF_LONG == (type)) || (DV_ARRAY_OF_LONG_PACKED == (type)))
+
+#ifdef SIGNAL_DEBUG
+extern void log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ...);
+#else
+#define log_error_report_event(box,p,fmt,...)
+#endif
 
 #endif

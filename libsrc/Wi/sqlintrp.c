@@ -2650,8 +2650,8 @@ again:
       POP_QR_RESET;
       if (reset_code == RST_ERROR || reset_code == RST_DEADLOCK)
 	{
-	  caddr_t err = RST_ERROR == reset_code ? thr_get_error_code (qi->qi_thread)
-	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.");
+	  caddr_t err = ((RST_ERROR == reset_code) ? thr_get_error_code (qi->qi_thread)
+	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.") );
 	  CHECK_DK_MEM_RESERVE (qi->qi_trx);
 	  CHECK_SESSION_DEAD(qi->qi_trx, NULL, NULL);
 	  if (qi->qi_trx->lt_status != LT_PENDING && (

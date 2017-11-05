@@ -1961,19 +1961,43 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 
 /* Catchers */
 
-#define QR_RESET_CTX_T(thr) \
-{ \
-  du_thread_t * __self = thr; \
+#ifdef SIGNAL_DEBUG
+
+#define QR_RESET_CTX_T_CTX_IMPL(thr, __ctx, file, line)	\
+  du_thread_t * __self = (thr); \
+  int reset_code; \
+  struct TLSF_struct * __tlsf = __self->thr_tlsf; \
+  jmp_buf_splice * __old_ctx = __self->thr_reset_ctx; \
+  (__ctx)->j_file = (file); \
+  (__ctx)->j_line = (line); \
+  (__ctx)->j_parent = (__old_ctx); \
+  __self->thr_reset_ctx = (__ctx); \
+  if (0 == (reset_code = setjmp_splice ((__ctx)))) \
+    {
+
+#else
+
+#define QR_RESET_CTX_T_CTX_IMPL(thr, __ctx, file, line)	\
+  du_thread_t * __self = (thr); \
   int reset_code;  \
   struct TLSF_struct * __tlsf = __self->thr_tlsf; \
   jmp_buf_splice * __old_ctx = __self->thr_reset_ctx;\
-  jmp_buf_splice __ctx;  \
-  __self->thr_reset_ctx = &__ctx; \
-  if (0 == (reset_code = setjmp_splice (&__ctx)))
+  __self->thr_reset_ctx = (__ctx); \
+  if (0 == (reset_code = setjmp_splice ((__ctx)))) \
+    {
+
+#endif
+
+#define QR_RESET_CTX_T_CTX(thr, __ctx)		\
+{ QR_RESET_CTX_T_CTX_IMPL(thr, __ctx, __FILE__, __LINE__)
+
+#define QR_RESET_CTX_T(thr) \
+{ jmp_buf_splice __ctx; QR_RESET_CTX_T_CTX_IMPL(thr, &__ctx, __FILE__, __LINE__)
 
 #define QR_RESET_CTX  QR_RESET_CTX_T (THREAD_CURRENT_THREAD)
 
 #define QR_RESET_CODE \
+    } \
   else \
     { __self->thr_tlsf = __tlsf;
 

@@ -4228,8 +4228,7 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
   int msg_len;
   int code_len = virt_code ? (int) strlen (virt_code) : 0;
 
-  caddr_t *box = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t),
-      DV_ARRAY_OF_POINTER);
+  caddr_t *box = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_ERROR_REPORT);
   va_start (list, msg);
   vsnprintf (temp, 2000, msg, list);
   va_end (list);
@@ -4269,7 +4268,7 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
     {
       log_info ("ERRS_0 %s %s %s", code, virt_code, temp);
     }
-
+  log_error_report_event ((caddr_t) box, 1, "MAKE_NEW_ERROR");
   return ((caddr_t) box);
 }
 
