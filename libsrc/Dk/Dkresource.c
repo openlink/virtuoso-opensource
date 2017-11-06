@@ -190,6 +190,29 @@ DBG_NAME(_resource_adjust) (DBG_PARAMS  resource_t * rc)
     }
 }
 
+#ifdef MALLOC_DEBUG
+void
+DBG_NAME(resource_track_new) (DBG_PARAMS  void *item)
+{
+  malhdr_t *thing = resource_find_or_make_malhdr (item);
+  if (DBGMAL_MAGIC_COUNT_FREED == thing->magic)
+    thing->magic = 0;
+  dbg_count_like_malloc (DBG_ARGS  thing, 1000);
+}
+
+void
+DBG_NAME(resource_track_delete) (DBG_PARAMS  void *item)
+{
+  malhdr_t *thing = resource_find_malhdr (item);
+  dbg_count_like_free (DBG_ARGS  thing);
+  mutex_enter (res_to_thing_mtx);
+  remhash (item, res_to_thing);
+  mutex_leave (res_to_thing_mtx);
+  free (thing);
+}
+#endif
+
+
 /*##**********************************************************************
  *
  *              resource_get

@@ -63,6 +63,8 @@ typedef struct resource_s
 extern resource_t *DBG_NAME(resource_allocate) (DBG_PARAMS  uint32 sz, rc_constr_t constructor, rc_destr_t destructor, rc_destr_t clear_func, void *client_data);
 extern resource_t *DBG_NAME(resource_allocate_primitive) (DBG_PARAMS  uint32 sz, int max_sz);
 extern void resource_no_sem (resource_t * rc);
+extern void DBG_NAME(resource_track_new) (DBG_PARAMS  void *item);
+extern void DBG_NAME(resource_track_delete) (DBG_PARAMS  void *item);
 extern void * DBG_NAME(resource_get) (DBG_PARAMS  resource_t * rc);
 extern void * DBG_NAME(resource_get_1) (DBG_PARAMS  resource_t * rc, int make_new);
 extern void DBG_NAME(resource_get_batch) (DBG_PARAMS  resource_t * rc, void **tgt_array, int batch_size, int make_new);
@@ -75,6 +77,8 @@ extern void DBG_NAME(rc_resize) (DBG_PARAMS  resource_t * rc, int new_sz);
 #ifdef MALLOC_DEBUG
 #define resource_allocate(sz,constructor,destructor,clear_func,client_data)	dbg_resource_allocate(__FILE__,__LINE__,(sz),(constructor),(destructor),(clear_func),(client_data))
 #define resource_allocate_primitive(sz,max_sz)					dbg_resource_allocate_primitive (__FILE__,__LINE__,(sz),(max_sz))
+#define resource_track_new(item)						dbg_resource_track_new(__FILE__,__LINE__,(item))
+#define resource_track_delete(item)						dbg_resource_track_delete(__FILE__,__LINE__,(item))
 #define resource_get(rc)							dbg_resource_get(__FILE__,__LINE__,(rc))
 #define resource_get_1(rc,make_new)						dbg_resource_get_1(__FILE__,__LINE__,(rc),(make_new))
 #define resource_get_batch(rc,tgt_array,batch_size,make_new)			dbg_resource_get_batch (__FILE__,__LINE__,(rc),(tgt_array),(batch_size),(make_new))
@@ -84,5 +88,9 @@ extern void DBG_NAME(rc_resize) (DBG_PARAMS  resource_t * rc, int new_sz);
 #define resource_clear(rc,destruct)						dbg_resource_clear(__FILE__,__LINE__,(rc),(destruct))
 #define _resource_adjust(rc)							dbg__resource_adjust(__FILE__,__LINE__,(rc))
 #define rc_resize(rc,new_sz)							dbg_rc_resize(__FILE__,__LINE__,(rc),(new_sz))
+#else
+#define resource_track_new(item)						do { } while (0)
+#define resource_track_delete(item)						do { } while (0)
 #endif
+
 #endif
