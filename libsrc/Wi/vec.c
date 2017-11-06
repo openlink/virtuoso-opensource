@@ -824,6 +824,10 @@ dc_itc_append_box (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, c
   caddr_t b = itc_box_column (itc, buf, 0, cl);
   if (DCT_BOXES & dc->dc_type)
     {
+#ifdef MALLOC_DEBUG
+      if (DV_CUSTOM == DV_TYPE_OF (b))
+	GPF_T1 ("DV_CUSTOM in dc_itc_append_box");
+#endif
     ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = b;
       if (IS_BOX_POINTER (b) && DV_DB_NULL == box_tag (b))
 	dc->dc_any_null = 1;
@@ -2615,7 +2619,14 @@ dc_copy (data_col_t * target, data_col_t * source)
   if (DCT_BOXES == source->dc_type)
     {
       for (inx = 0; inx < source->dc_n_values; inx++)
-	((caddr_t *) target->dc_values)[inx] = box_mt_copy_tree (((caddr_t *) source->dc_values)[inx]);
+	{
+	  caddr_t val = ((caddr_t *) source->dc_values)[inx];
+#ifdef MALLOC_DEBUG
+	  if (DV_CUSTOM == DV_TYPE_OF (val))
+	    GPF_T1 ("DV_CUSTOM on dc_copy");
+#endif
+	  ((caddr_t *) target->dc_values)[inx] = box_mt_copy_tree (val);
+	}
       return;
     }
   if (DV_ANY == source->dc_dtp)

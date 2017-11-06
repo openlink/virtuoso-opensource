@@ -355,7 +355,7 @@ mp_data_col (mem_pool_t * mp, state_slot_t * ssl, int n_sets)
 	  bytes = values_bytes + 16;
 	  dc->dc_values = (db_buf_t) mp_alloc_box (mp, bytes, DV_NON_BOX);
 	  dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
-	  dc->dc_buffer = (db_buf_t) mp_alloc_box (mp, 0x10000, DV_BIN);
+	  dc->dc_buffer = (db_buf_t) mp_alloc_box (mp, 0x10000, DV_CUSTOM);
 	  dc->dc_buf_len = 0x10000;
 	}
       else
