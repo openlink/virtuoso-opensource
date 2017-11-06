@@ -4732,18 +4732,19 @@ bif_cs_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 int
-col_ac_set_dirty (caddr_t * qst, state_slot_t ** args, it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last)
+col_ac_set_dirty (it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last)
 {
   int n_dirty;
   index_tree_t *it = buf->bd_tree;
   dbe_key_t *key = it->it_key;
   page_map_t *pm;
   int n_segs, r, p, icol;
-  dk_hash_t *dist = hash_table_allocate (1000);
-  if ((args && BOX_ELEMENTS (args) < 2) || !key->key_is_col)
+  dk_hash_t *dist;
+  if (!key->key_is_col)
     return 0;
   if (DPF_INDEX != SHORT_REF (buf->bd_buffer + DP_FLAGS))
     return 0;
+  dist = hash_table_allocate (1000);
   if (buf->bd_storage)
     {
       ITC_IN_KNOWN_MAP (itc, buf->bd_page);

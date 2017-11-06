@@ -708,7 +708,7 @@ int64 itc_anify_param (it_cursor_t * itc, caddr_t box);
 void cs_free_allocd_parts (compress_state_t * cs);
 void cpt_col_uncommitted (dbe_storage_t * dbs);
 void cpt_col_restore_uncommitted ();
-int col_ac_set_dirty (caddr_t * qst, state_slot_t ** args, it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last);
+int col_ac_set_dirty (it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last);
 void itc_ensure_col_refs (it_cursor_t * itc);
 void itc_col_page_free (it_cursor_t * itc, buffer_desc_t * buf, int col);
 void itc_fetch_col_dps (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, dk_hash_t * dps);

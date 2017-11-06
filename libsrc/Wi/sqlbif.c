@@ -9590,6 +9590,7 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   long volatile dp = (long) bif_long_arg (qst, args, 0, "page_dump");
+  int set_col_dirty = (BOX_ELEMENTS (args) >= 2);
   buffer_desc_t buf_auto;
   ALIGNED_PAGE_BUFFER (bd_buffer);
   buffer_desc_t *buf = NULL;
@@ -9608,7 +9609,8 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     if (buf)
       {
 	ITC_LEAVE_MAP_NC (itc);
-	col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+        if (set_col_dirty)
+	  col_ac_set_dirty (itc, buf, 5, 10);
 	dbg_page_map (buf);
 	return 0;
       }
@@ -9630,7 +9632,8 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (buf->bd_tree)
 	{
 	  itc_from_it (itc, buf->bd_tree);
-	  col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+	  if (set_col_dirty)
+	    col_ac_set_dirty (itc, buf, 5, 10);
 	}
     dbg_page_map (buf);
     }
