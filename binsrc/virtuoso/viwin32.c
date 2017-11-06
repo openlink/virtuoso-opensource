@@ -1243,20 +1243,29 @@ usage (void)
   char version[400];
   char line[200];
   char *p;
+  extern char *git_head;
 #if LICENSE
   int lic;
 #endif
 
   sprintf (line, "%s %s\n", PACKAGE_NAME,
-	build_thread_model[0] == '-' && build_thread_model[1] == 'f' ?
-	PACKAGE_FIBER : PACKAGE_THREAD);
+      build_thread_model[0] == '-' && build_thread_model[1] == 'f' ? PACKAGE_FIBER : PACKAGE_THREAD);
   p = stpcpy (version, line);
 
-  sprintf (line, "Version %s.%s%s%s as of %s\n",
+  sprintf (line, "Version %s.%s%s%s as of %s",
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
 
-  sprintf (line, "Compiled for %s (%s)\n", build_opsys_id, build_host_id);
+  /*
+   *  Add git SHA1 of HEAD for easier identification of code base
+   */
+  if (git_head[0])
+    {
+      sprintf (line, " (%s)", git_head);
+      p = stpcpy (p, line);
+    }
+
+  sprintf (line, "\nCompiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);
 
   if (build_special_server_model && strlen(build_special_server_model) > 1)

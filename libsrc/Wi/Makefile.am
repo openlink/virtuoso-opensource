@@ -67,6 +67,7 @@ noinst_HEADERS = \
 
 
 generated_code = \
+	git_head.c \
 	json_l.c \
 	json_p.c \
 	json_p.h \
@@ -184,6 +185,7 @@ libwi_la_SOURCES = \
 	eqlcomp.c \
 	extent.c \
 	gate.c \
+	git_head.c \
 	hash.c \
 	hosting.c \
 	http.c \
@@ -332,6 +334,7 @@ libwi_odbc_la_SOURCES = \
 	eqlcomp.c \
 	extent.c \
 	gate.c \
+	git_head.c \
 	hash.c \
 	hosting.c \
 	http.c \
@@ -751,6 +754,9 @@ SQL_FILES_WS		= \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl
 
 
+git_head.c:FORCE
+	@-$(SHELL) ./mkgit_head.sh
+
 json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
 
@@ -1087,3 +1093,5 @@ EXTRA_DIST = \
 	sparqlwords.gperf \
 	ssl.c \
 	string_tmpl.c
+
+FORCE:
