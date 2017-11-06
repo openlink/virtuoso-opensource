@@ -69,10 +69,6 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 # define LOW_ORDER_FIRST
 #endif
 
-#ifndef MALLOC_DEBUG
-#include "util/dbgmal.h"
-#endif
-
 #include "Dk/Dkparam.h"
 #include "Dk/Dktypes.h"
 #include "Dk/Dktrace.h"

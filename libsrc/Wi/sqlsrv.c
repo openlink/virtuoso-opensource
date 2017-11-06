@@ -58,6 +58,7 @@
 #include "shuric.h"
 #include "srvstat.h"
 #include "sqloinv.h"
+#include "ltrx.h"
 #include "uname_const_decl.h"
 
 #ifdef WIN32
@@ -493,7 +494,12 @@ cli_scrap_cached_statements (client_connection_t * cli)
 	  if (!sst->sst_query->qr_ref_count)
 	    log_error ("Suspect to have query assigned to stmt but 0 ref count on query");
 	  else
-	    sst->sst_query->qr_ref_count--;
+            {
+#ifdef QUERY_DEBUG
+             log_query_event (sst->sst_query, 1, "QR_REF_COUNT-- by stmt_scrap_cached_statements");
+#endif
+	      sst->sst_query->qr_ref_count--;
+            }
 	  LEAVE_CLL;
 	}
       if (client_trace_flag)
@@ -527,20 +533,20 @@ cli_scrap_cached_statements (client_connection_t * cli)
 }
 
 lock_trx_t *
-cli_set_new_trx (client_connection_t *cli)
+DBG_NAME(cli_set_new_trx) (DBG_PARAMS  client_connection_t *cli)
 {
   if (!cli->cli_trx)
-    cli_set_trx (cli, lt_start ());
+    cli_set_trx (cli, DBG_NAME(lt_start) (DBG_ARGS_0));
   else
     cli_set_trx (cli, cli->cli_trx);
   return cli->cli_trx;
 }
 
 lock_trx_t *
-cli_set_new_trx_no_wait_cpt (client_connection_t *cli)
+DBG_NAME(cli_set_new_trx_no_wait_cpt) (DBG_PARAMS  client_connection_t *cli)
 {
   if (!cli->cli_trx)
-    cli_set_trx (cli, lt_start_inner (0));
+    cli_set_trx (cli, DBG_NAME(lt_start_inner) (DBG_ARGS  0));
   else
     cli_set_trx (cli, cli->cli_trx);
   return cli->cli_trx;
@@ -1287,6 +1293,9 @@ long qr_cache_entries = 100;
 void
 cli_qr_remove_from_stmt_cache (client_connection_t * cli, query_t * qr)
 {
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "OUT OF CACHED by cli_qr_remove_from_stmt_cache");
+#endif
   id_hash_remove (cli->cli_text_to_query, (caddr_t) &qr->qr_text);
 }
 
@@ -1371,6 +1380,9 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 	  dk_free_tree (err);
 	  return (caddr_t) SQL_ERROR;
 	}
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "CACHED REPLACING by stmt_set_query");
+#endif
       id_hash_set (cli->cli_text_to_query, (caddr_t) &qr->qr_text, (caddr_t) &qr);
       L2_DELETE (cli->cli_first_query, cli->cli_last_query, old_qr, qr_);
       cli_drop_old_query (cli);
@@ -1390,15 +1402,28 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 	  return (caddr_t) SQL_ERROR;
 	}
       if (!qr->qr_is_ddl)
-	id_hash_set (cli->cli_text_to_query, (caddr_t) & qr->qr_text, (caddr_t) & qr);
+        {
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "CACHED NEW by stmt_set_query");
+#endif
+	  id_hash_set (cli->cli_text_to_query, (caddr_t) & qr->qr_text, (caddr_t) & qr);
+        }
       cli_drop_old_query (cli);
       L2_PUSH (cli->cli_first_query, cli->cli_last_query, qr, qr_);
     }
   dk_free_box (text);
 
   if (stmt->sst_query)
-    stmt->sst_query->qr_ref_count--;
+    {
+#ifdef QUERY_DEBUG
+      log_query_event (stmt->sst_query, 1, "QR_REF_COUNT-- by stmt_set_query");
+#endif
+      stmt->sst_query->qr_ref_count--;
+    }
   stmt->sst_query = qr;
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT++ by stmt_set_query");
+#endif
   qr->qr_ref_count++;
   if (qr != cli->cli_first_query)
     {
@@ -1608,7 +1633,13 @@ stmt_check_recompile (srv_stmt_t * stmt)
 	  dk_free_tree (err);
 	  return (caddr_t) SQL_ERROR;
 	}
+#ifdef QUERY_DEBUG
+      log_query_event (stmt->sst_query, 1, "QR_REF_COUNT-- by stmt_check_recompile");
+#endif
       stmt->sst_query->qr_ref_count--;
+#ifdef QUERY_DEBUG
+      log_query_event (qr, 1, "QR_REF_COUNT++ by stmt_check_recompile");
+#endif
       qr->qr_ref_count++;
       stmt->sst_query = qr;
     }
@@ -2455,7 +2486,12 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
 
       mutex_enter (cli->cli_mtx);
       if (stmt->sst_query)
-	stmt->sst_query->qr_ref_count--;
+        {
+#ifdef QUERY_DEBUG
+          log_query_event (stmt->sst_query, 1, "QR_REF_COUNT-- by sf_sql_free_stmt");
+#endif
+	  stmt->sst_query->qr_ref_count--;
+        }
       id_hash_remove (cli->cli_statements, (caddr_t) & stmt->sst_id);
       mutex_leave (cli->cli_mtx);
       dk_free_box (stmt->sst_id);
@@ -4227,8 +4263,7 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
   int msg_len;
   int code_len = virt_code ? (int) strlen (virt_code) : 0;
 
-  caddr_t *box = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t),
-      DV_ARRAY_OF_POINTER);
+  caddr_t *box = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_ERROR_REPORT);
   va_start (list, msg);
   vsnprintf (temp, 2000, msg, list);
   va_end (list);
@@ -4268,7 +4303,7 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
     {
       log_info ("ERRS_0 %s %s %s", code, virt_code, temp);
     }
-
+  log_error_report_event ((caddr_t) box, 1, "MAKE_NEW_ERROR");
   return ((caddr_t) box);
 }
 

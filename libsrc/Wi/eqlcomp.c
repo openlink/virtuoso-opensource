@@ -395,7 +395,7 @@ kpd_free (key_partition_def_t * kpd)
 }
 
 void
-qr_free (query_t * qr)
+DBG_NAME (qr_free) (DBG_PARAMS  query_t * qr)
 {
   if (!qr)
     return;
@@ -411,6 +411,10 @@ qr_free (query_t * qr)
 	}
       LEAVE_CLL;
     }
+#ifdef QUERY_DEBUG
+  if ((NULL == qr->qr_super) || (NULL != qr->qr_text) || (qr->qr_text_is_constant))
+    log_query_event (qr, 1, "FREE at %s:%d", file, line);
+#endif
   qr_drop_dependencies (qr);
   while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
   while (NULL != qr->qr_used_udts) dk_free_tree (dk_set_pop (&(qr->qr_used_udts)));

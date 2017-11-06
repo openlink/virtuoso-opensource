@@ -741,6 +741,10 @@ dk_free_tree (box_t box)
       len = ALIGN_STR (len);
       break;
 
+#ifdef SIGNAL_DEBUG
+    case DV_ERROR_REPORT:
+      log_error_report_event (box, 0, "FREE");
+#endif
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
@@ -1151,6 +1155,21 @@ unbox_int64 (ccaddr_t box)
   return (ptrlong) box;
 }
 
+box_t
+DBG_NAME (dk_realloc_list) (DBG_PARAMS caddr_t ptr, int new_elements)
+{
+  int old_elements;
+  caddr_t res;
+  if (NULL == ptr)
+    return DBG_NAME (dk_alloc_box_zero) (DBG_ARGS new_elements * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  old_elements = BOX_ELEMENTS (ptr);
+  if (old_elements == new_elements)
+    return ptr;
+  res = DBG_NAME (dk_alloc_box_zero) (DBG_ARGS new_elements * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  memcpy (res, ptr, ((new_elements < old_elements) ? new_elements : old_elements) * sizeof (caddr_t));
+  dk_free_box (ptr);
+  return (box_t) res;
+}
 
 box_t
 DBG_NAME (box_num) (DBG_PARAMS boxint n)
@@ -1367,6 +1386,9 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
     case DV_ARRAY_OF_XQVAL:
     case DV_XTREE_HEAD:
     case DV_XTREE_NODE:
+#ifdef SIGNAL_DEBUG
+    case DV_ERROR_REPORT:
+#endif
       len = box_length (box);
       copy = (box_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS len, tag);
       len /= sizeof (box_t);
@@ -1773,7 +1795,7 @@ int
 box_equal (cbox_t b1, cbox_t b2)
 {
   uint32 l1, l2, bf1, bf2;
-  dtp_t b1_tag, b2_tag;
+  dtp_t b1_tag, b2_tag, nl1, nl2;
   boxint b1_long_val = 0, b2_long_val = 0;
 
   if (b1 == b2)
@@ -1816,8 +1838,13 @@ box_equal (cbox_t b1, cbox_t b2)
   l2 = box_length (b2);
   if (l1 != l2)
     return 0;
-
-  if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
+  if (DV_DB_NULL == b1_tag && DV_DB_NULL == b2_tag)
+    return 1;
+  if (DV_DB_NULL == b1_tag || DV_DB_NULL == b2_tag)
+    return 0;
+  nl1 = IS_NONLEAF_DTP (b1_tag);
+  nl2 = IS_NONLEAF_DTP (b2_tag);
+  if (nl1 && nl2)
     {
       uint32 inx;
       l1 /= sizeof (caddr_t);
@@ -1828,6 +1855,8 @@ box_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
+  if (nl1 || nl2)
+    return 0;
   memcmp_8 (b1, b2, l1, neq);
   bf1 = box_flags (b1);
   bf2 = box_flags (b2);
@@ -1857,7 +1886,7 @@ int
 box_strong_equal (cbox_t b1, cbox_t b2)
 {
   uint32 l1, l2, bf1, bf2;
-  dtp_t b1_tag, b2_tag;
+  dtp_t b1_tag, b2_tag, nl1, nl2;
   boxint b1_long_val = 0, b2_long_val = 0;
 
   if (b1 == b2)
@@ -1903,7 +1932,13 @@ box_strong_equal (cbox_t b1, cbox_t b2)
   l2 = box_length (b2);
   if (l1 != l2)
     return 0;
-  if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
+  if (DV_DB_NULL == b1_tag && DV_DB_NULL == b2_tag)
+    return 1;
+  if (DV_DB_NULL == b1_tag || DV_DB_NULL == b2_tag)
+    return 0;
+  nl1 = IS_NONLEAF_DTP (b1_tag);
+  nl2 = IS_NONLEAF_DTP (b2_tag);
+  if (nl1 && nl2)
     {
       uint32 inx;
       l1 /= sizeof (caddr_t);
@@ -1914,6 +1949,8 @@ box_strong_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
+  if (nl1 || nl2)
+    return 0;
   memcmp_8 (b1, b2, l1, neq);
   bf1 = box_flags (b1);
   bf2 = box_flags (b2);
@@ -2587,21 +2624,80 @@ box_mem_wrapper_destr_hook (caddr_t mw_arg)
   return 0;
 }
 
+#ifdef SIGNAL_DEBUG
+FILE *error_report_log = NULL;
+void
+log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  int ctx_cycle = 0;
+  fprintf (error_report_log, "\n{{{%p ", box);
+  if (!ERROR_REPORT_P (box))
+    fprintf (error_report_log, "TAG %d ", DV_TYPE_OF (box));
+  vfprintf (error_report_log, fmt, ap);
+  if (print_full_content)
+    fprintf (error_report_log, " {{%p} {%s} {%s}}", ((caddr_t *)box)[0], ((caddr_t *)box)[1], ((caddr_t *)box)[2]);
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    {
+    fprintf (error_report_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+      if (ctx->j_parent == ctx)
+        {
+          fprintf (error_report_log, "{CYCLE!}");
+          ctx_cycle = 1;
+          break;
+        }
+    }
+  fprintf (error_report_log, " }}}");
+  fflush (error_report_log);
+  if (ctx_cycle)
+    {
+      fclose (error_report_log);
+      GPF_T1 ("Cycle in stack of jmp_buf_splices (missing POP_QR_RESET?); see the tail of error_report_events_NNN.log");
+}
+}
+#endif
+
+#ifdef QUERY_DEBUG
+FILE *query_log = NULL;
+#endif
 
 caddr_t uname___empty;
+
+#ifdef MALLOC_DEBUG
+extern dk_mutex_t *spare_rbufs_mtx;
+#endif
 
 void
 dk_box_initialize (void)
 {
+#ifdef SIGNAL_DEBUG
+  char error_report_log_fname[50];
+#endif
+#ifdef QUERY_DEBUG
+  char query_log_fname[50];
+#endif
   static int dk_box_is_initialized = 0;
   if (dk_box_is_initialized)
     return;
   dk_box_is_initialized = 1;
+#ifdef SIGNAL_DEBUG
+  sprintf (error_report_log_fname, "error_report_events_%d.log", getpid());
+  error_report_log = fopen (error_report_log_fname, "w");
+#endif
+#ifdef QUERY_DEBUG
+  sprintf (query_log_fname, "query_events_%d.log", getpid());
+  query_log = fopen (query_log_fname, "w");
+#endif
   dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_destr_hook, 0);
 #ifdef MALLOC_DEBUG
   dk_mem_hooks_2 (DV_NON_BOX, box_copy_non_box, NULL, 0, box_mp_copy_non_box);
 #endif
   dk_mem_hooks (DV_RBUF,  box_non_copiable, (box_destr_f)rbuf_free_cb, 0);
+#ifdef MALLOC_DEBUG
+  spare_rbufs_mtx = mutex_allocate ();
+#endif
   uname_mutex = mutex_allocate ();
   if (NULL == uname_mutex)
     GPF_T;
@@ -2704,6 +2800,20 @@ dk_box_initialize (void)
 #endif
 }
 
+void
+dk_box_finalize (void)
+{
+  static int dk_box_is_finalized = 0;
+  if (dk_box_is_finalized)
+    GPF_T;
+  dk_box_is_finalized = 1;
+#ifdef SIGNAL_DEBUG
+  fclose (error_report_log);
+#endif
+#ifdef QUERY_DEBUG
+  fclose (query_log);
+#endif
+}
 
 /* Original signatures should exist for EXE-EXPORTed functions */
 #ifdef MALLOC_DEBUG
@@ -2786,6 +2896,12 @@ box_copy_tree (cbox_t box)
   return dbg_box_copy_tree (__FILE__, __LINE__, box);
 }
 
+#undef dk_realloc_list
+box_t
+dk_realloc_list (caddr_t ptr, int new_elements)
+{
+  return dbg_dk_realloc_list (__FILE__, __LINE__, ptr, new_elements);
+}
 
 #undef box_num
 box_t

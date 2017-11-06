@@ -1708,7 +1708,10 @@ nic_done (resource_t * rc, name_id_cache_t * nic)
   if (11 == nic->nic_name_to_id->ht_buckets)
     resource_store (rc, (void*) nic);
   else
-    nic_free (nic);
+    {
+      resource_track_delete (nic);
+      nic_free (nic);
+    }
 }
 
 
@@ -1881,7 +1884,10 @@ lt_nic_set (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name, boxint id)
 	    {
 	      lt->lt_rdf_iri = (name_id_cache_t*) resource_get (iri_nic_rc);
 	      if (!lt->lt_rdf_iri)
-		lt->lt_rdf_iri = nic_allocate (140000, 1, 11);
+ 		{
+		  lt->lt_rdf_iri = nic_allocate (140000, 1, 11);
+		  resource_track_new (lt->lt_rdf_iri);
+		}
 	      lt->lt_commit_hook = lt_nic_commit_hook;
 	      lt->lt_rollback_hook = lt_nic_rollback_hook;
 	    }
@@ -1898,7 +1904,10 @@ lt_nic_set (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name, boxint id)
 	    {
 	      lt->lt_rdf_prefix = (name_id_cache_t*) resource_get (prefix_nic_rc);
 	      if (!lt->lt_rdf_prefix)
-		lt->lt_rdf_prefix = nic_allocate (4000, 0, 11);
+		{
+		  lt->lt_rdf_prefix = nic_allocate (4000, 0, 11);
+                  resource_track_new (lt->lt_rdf_iri);
+		}
 	      lt->lt_commit_hook = lt_nic_commit_hook;
 	      lt->lt_rollback_hook = lt_nic_rollback_hook;
 	    }

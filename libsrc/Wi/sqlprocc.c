@@ -93,7 +93,9 @@ sql_warning_add (caddr_t err, int is_comp)
     }
   if (sql_warnings_to_syslog)
     log_debug ("SQL warning : [%.5s] %s", ERR_STATE (err), ERR_MESSAGE (err));
-
+#ifdef SIGNAL_DEBUG
+  log_error_report_event (err, 0, "SQL_WARNING_ADD stores to TA_SQL_WARNING_SET");
+#endif
   ((caddr_t *)err)[0] = (caddr_t) QA_WARNING;
   self = THREAD_CURRENT_THREAD;
   warnings_set = (dk_set_t) THR_ATTR (self, TA_SQL_WARNING_SET);

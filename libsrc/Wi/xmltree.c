@@ -6127,7 +6127,7 @@ doctype_may_not_be_printed:
       if (SESSION_IS_STRING (ses))
 	{
 	  strses_flush (ses);
-	  if (ARRAYP(err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<error>");
 	      SES_PRINT (ses, "<code>");

@@ -2577,6 +2577,8 @@ db_not_in_use (void)
   if (unlink (c_lock_file) == -1)
     log (L_WARNING, "Unable to remove %s (%m)", c_lock_file);
 #endif
+
+  dk_memory_finalize();
 }
 
 

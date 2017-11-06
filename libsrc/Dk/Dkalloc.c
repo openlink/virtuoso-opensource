@@ -46,6 +46,7 @@ dk_set_initial_mem (size_t sz)
 #define dk_tlsf_init()
 
 
+int enable_alloc_ctr;
 int64 dk_n_allocs;
 int64 dk_n_total;
 int64 dk_max_allocs;
@@ -67,6 +68,7 @@ int64 dk_n_max_allocs;
 #endif
 
 extern void dk_box_initialize (void);
+extern void dk_box_finalize (void);
 
 #define NO_MALLOC_CACHE
 #undef CACHE_MALLOC
@@ -306,11 +308,14 @@ av_clear (av_list_t * av, size_t sz)
     {
       next = *(caddr_t **) ptr;
       free (ptr);
-      CNT_ENTER;
-      dk_n_total --;
-      CNT_LEAVE;
-      dk_n_free ++;
-      dk_n_bytes -= sz;
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total --;
+	  CNT_LEAVE;
+	  dk_n_free ++;
+	  dk_n_bytes -= sz;
+	}
     }
   av->av_first = NULL;
   av->av_fill = 0;
@@ -770,11 +775,14 @@ dk_alloc (size_t c)
 	    }
 
 	  thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
-	  CNT_ENTER;
-	  dk_n_total ++;
-	  CNT_LEAVE;
-	  dk_n_allocs++;
-	  dk_n_bytes += align_sz;
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total ++;
+	      CNT_LEAVE;
+	      dk_n_allocs++;
+	      dk_n_bytes += align_sz;
+	    }
 	}
       AV_MARK_ALLOC (thing, align_sz);
     }
@@ -783,11 +791,14 @@ dk_alloc (size_t c)
       align_sz = _RNDUP_PWR2 (c, 4096);
       thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
       AV_MARK_ALLOC (thing, align_sz);
-      CNT_ENTER;
-      dk_n_total ++;
-      CNT_LEAVE;
-      dk_n_allocs++;
-      dk_n_bytes += align_sz;
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total ++;
+	  CNT_LEAVE;
+	  dk_n_allocs++;
+	  dk_n_bytes += align_sz;
+	}
     }
 #endif
   if (dk_n_allocs > dk_n_max_allocs)
@@ -886,11 +897,14 @@ dk_free (void *ptr, size_t sz)
 	  mutex_leave (&av->av_mtx);
 	full:
 	  FREE_IN_DK_FREE (ptr);
-	  CNT_ENTER;
-	  dk_n_total --;
-	  CNT_LEAVE;
-	  dk_n_bytes -= sz;
-	  dk_n_free ++;
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total --;
+	      CNT_LEAVE;
+	      dk_n_bytes -= sz;
+	      dk_n_free ++;
+	    }
 	  return;
 	}
     }
@@ -936,7 +950,7 @@ dk_check_end_marks (void)
 void
 dk_alloc_assert (void *ptr)
 {
-  const char *err = dbg_find_allocation_error (ptr, NULL);
+  const char *err = dk_find_alloc_error (ptr, NULL);
   if (err)
     GPF_T1 (err);
 }
@@ -947,12 +961,12 @@ dk_alloc_assert_mp_or_plain (void *ptr)
   const char *err;
   if (ptr == NULL)
     GPF_T1("NULL pointer");
-  if (!_dbgmal_enabled)
+  if (!dbgmal_is_enabled())
     return;
-  if (MALPMAGIC_OK == dbg_malloc_magic_of_data (ptr))
-    err = dbg_find_allocation_error (ptr, dbg_mp_of_data (ptr));
+  if (DBGMAL_MAGIC_POOL_OK == dbg_malloc_magic_of_data (ptr))
+    err = dk_find_alloc_error (ptr, dbg_mp_of_data (ptr));
   else
-    err = dbg_find_allocation_error (ptr, NULL);
+    err = dk_find_alloc_error (ptr, NULL);
   if (err)
     GPF_T1 (err);
 }
@@ -971,6 +985,11 @@ dk_memory_initialize (int do_malloc_cache)
   strses_mem_initalize ();
 }
 
+void
+dk_memory_finalize (void)
+{
+  dk_box_finalize ();
+}
 
 void
 dk_cache_allocs (size_t sz, size_t cache_sz)

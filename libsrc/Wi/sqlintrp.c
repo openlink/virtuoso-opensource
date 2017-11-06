@@ -1946,6 +1946,9 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
   QNCAST (query_instance_t, qi, inst);
   int inx, inx2;
   int len = -1;
+#ifdef MALLOC_DEBUG
+  dk_hash_t *known = NULL;
+#endif
   DO_BOX (state_slot_t *, arg, inx, ins->_.for_vect.in_values)
     {
       caddr_t * arr = (caddr_t*)qst_get (inst, arg);
@@ -1965,6 +1968,11 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	  DC_CHECK_LEN (dc, len - 1);
 	  DO_BOX (caddr_t, in, inx2, arr)
 	    {
+#ifdef MALLOC_DEBUG
+              if (DV_CUSTOM == DV_TYPE_OF (in))
+                GPF_T1 ("DV_CUSTOM comes to dc_values");
+              dk_check_tree_iter (in, NULL, &known);
+#endif
 	      ((caddr_t*)dc->dc_values)[inx2] = in;
 	      arr[inx2] = NULL;
 	      if (IS_BOX_POINTER (in) && DV_DB_NULL == box_tag (in))
@@ -1977,12 +1985,21 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	{
 	  DO_BOX (caddr_t, in, inx2, arr)
 	    {
+#ifdef MALLOC_DEBUG
+	  if (DV_CUSTOM == DV_TYPE_OF (in))
+	    GPF_T1 ("DV_CUSTOM comes to dc_values");
+	  dk_check_tree_iter (in, NULL, &known);
+#endif
 	    dc_append_box (dc, in);
 	    }
 	  END_DO_BOX;
 	}
     }
   END_DO_BOX;
+#ifdef MALLOC_DEBUG
+  if (NULL != known)
+    hash_table_free (known);
+#endif
   qi->qi_n_sets = len;
   qi->qi_set_mask = NULL;
   if (len)
@@ -2650,8 +2667,8 @@ again:
       POP_QR_RESET;
       if (reset_code == RST_ERROR || reset_code == RST_DEADLOCK)
 	{
-	  caddr_t err = RST_ERROR == reset_code ? thr_get_error_code (qi->qi_thread)
-	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.");
+	  caddr_t err = ((RST_ERROR == reset_code) ? thr_get_error_code (qi->qi_thread)
+	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.") );
 	  CHECK_DK_MEM_RESERVE (qi->qi_trx);
 	  CHECK_SESSION_DEAD(qi->qi_trx, NULL, NULL);
 	  if (qi->qi_trx->lt_status != LT_PENDING && (

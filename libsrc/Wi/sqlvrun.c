@@ -355,7 +355,7 @@ mp_data_col (mem_pool_t * mp, state_slot_t * ssl, int n_sets)
 	  bytes = values_bytes + 16;
 	  dc->dc_values = (db_buf_t) mp_alloc_box (mp, bytes, DV_NON_BOX);
 	  dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
-	  dc->dc_buffer = (db_buf_t) mp_alloc_box (mp, 0x10000, DV_BIN);
+	  dc->dc_buffer = (db_buf_t) mp_alloc_box (mp, 0x10000, DV_CUSTOM);
 	  dc->dc_buf_len = 0x10000;
 	}
       else
@@ -408,21 +408,20 @@ mp_data_col (mem_pool_t * mp, state_slot_t * ssl, int n_sets)
   if (ssl->ssl_sqt.sqt_col_dtp)
     dc->dc_sqt.sqt_col_dtp = ssl->ssl_sqt.sqt_col_dtp;
   dc->dc_n_places = n_sets;
-  if (DV_STRING == dc->dc_dtp)
-    GPF_T1 ("no dv string here");
+  if (DV_STRING == dc->dc_dtp) GPF_T1 ("no dv string here");
   return dc;
 }
 
 
 int *
-qn_extend_sets (data_source_t * qn, caddr_t * inst, int n)
+DBG_NAME(qn_extend_sets) (DBG_PARAMS  data_source_t * qn, caddr_t * inst, int n)
 {
   QNCAST (query_instance_t, qi, inst);
   int *prev = QST_BOX (int *, inst, qn->src_sets);
   int fill = QST_INT (inst, qn->src_out_fill);
   caddr_t box;
   n = MIN (n, dc_max_batch_sz);
-  box = QST_BOX (caddr_t, inst, qn->src_sets) = mp_alloc_box_ni (qi->qi_mp, sizeof (int) * n, DV_BIN);
+  box = QST_BOX (caddr_t, inst, qn->src_sets) = DBG_NAME(mp_alloc_box_ni) (DBG_ARGS  qi->qi_mp, sizeof (int) * n, DV_BIN);
   memcpy_16 (box, prev, fill * sizeof (int));
   return (int *) box;
 }
@@ -453,7 +452,7 @@ qi_vec_init_nodes (query_instance_t * qi, int n_sets, query_t * qr, dk_set_t nod
 
 
 void
-qi_vec_init (query_instance_t * qi, int n_sets)
+DBG_NAME(qi_vec_init) (DBG_PARAMS query_instance_t * qi, int n_sets)
 {
   QNCAST (caddr_t, inst, qi);
   int inx, n_dcs, not_inited = 0;
@@ -464,7 +463,7 @@ qi_vec_init (query_instance_t * qi, int n_sets)
   if (!(mp = qi->qi_mp))
     {
       not_inited = 1;
-  mp = qi->qi_mp = mem_pool_alloc ();
+      mp = qi->qi_mp = DBG_NAME(mem_pool_alloc) (DBG_ARGS_0);
       if (qr->qr_vec_ssls)
 	{
 	  int ign;
@@ -478,9 +477,8 @@ qi_vec_init (query_instance_t * qi, int n_sets)
 	}
       if (qi_mp_block_sz)
 	qi->qi_mp->mp_block_size = qi_mp_block_sz;
-#if 0 /*ndef NDEBUG */
-      if (qi->qi_query->qr_text)
-	qi->qi_mp->mp_comment = mp_box_string (qi->qi_mp, qi->qi_query->qr_text);
+#ifdef MP_MAP_CHECK
+      mp_comment (qi->qi_mp, "qi_vec_init ", ((NULL != qi->qi_query->qr_text) ? qi->qi_query->qr_text : " NULL qr_text"));
 #endif
     }
   n_dcs = BOX_ELEMENTS (qi->qi_query->qr_vec_ssls);
@@ -2260,6 +2258,9 @@ qst_copy (caddr_t * inst, state_slot_t ** copy_ssls, ssl_index_t * cp_sets)
   query_t *qr = qi->qi_query;
   int sinx;
   IN_CLL;
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT++ by qst_copy");
+#endif
   qr->qr_ref_count++;
   LEAVE_CLL;
   cpqi->qi_is_allocated = 1;
@@ -3254,6 +3255,9 @@ qi_root_done (query_instance_t * qi)
 void
 qi_qr_done (query_t * qr)
 {
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT-- by qi_qr_done");
+#endif
   IN_CLL;
   qr->qr_ref_count--;
   LEAVE_CLL;

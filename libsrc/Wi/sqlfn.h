@@ -451,6 +451,11 @@ EXE_EXPORT (int, lt_leave, (lock_trx_t * lt));
 #endif
 int lt_enter_anyway (lock_trx_t * lt);
 
+#ifdef DK_ALLOC_BOX_DEBUG
+extern void dk_check_trees_of_qi (query_instance_t *qi);
+#else
+#define dk_check_trees_of_qi(qi)
+#endif
 
 void qi_free (caddr_t * inst);
 void qi_inst_state_free_rsts (caddr_t *qi);
@@ -571,11 +576,18 @@ dk_set_t  upd_ha_pre (update_node_t * upd, query_instance_t * qi);
 void lt_hi_row_change (lock_trx_t * lt, key_id_t key, int log_op, db_buf_t log_entry);
 int  it_hi_done (index_tree_t * it);
 void cli_set_trx (client_connection_t * cli, lock_trx_t * trx);
-lock_trx_t * cli_set_new_trx (client_connection_t *cli);
-lock_trx_t * cli_set_new_trx_no_wait_cpt (client_connection_t *cli);
+lock_trx_t * DBG_NAME(cli_set_new_trx) (DBG_PARAMS  client_connection_t *cli);
+lock_trx_t * DBG_NAME(cli_set_new_trx_no_wait_cpt) (DBG_PARAMS  client_connection_t *cli);
+#ifdef MALLOC_DEBUG
+#define cli_set_new_trx(cli) dbg_cli_set_new_trx(__FILE__, __LINE__, (cli))
+#define cli_set_new_trx_no_wait_cpt(cli) dbg_cli_set_new_trx_no_wait_cpt(__FILE__, __LINE__, (cli))
+#endif
 
-
-void qr_free (query_t * qr);
+extern void DBG_NAME(qr_free) (DBG_PARAMS  query_t * qr);
+#ifdef MALLOC_DEBUG
+#define qr_free(qr) dbg_qr_free (__FILE__, __LINE__, (qr))
+#endif
+extern void qr_free_1 (query_t * qr);
 
 void upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
 			 row_delta_t * rd);
@@ -773,6 +785,11 @@ EXE_EXPORT (void, local_commit, (client_connection_t * cli));
 EXE_EXPORT (void, local_start_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_commit_end_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_rollback_end_trx, (client_connection_t * cli));
+
+extern void DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli);
+#ifdef MALLOC_DEBUG
+#define local_start_trx(cli) dbg_local_start_trx (__FILE__, __LINE__, (cli))
+#endif
 
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
@@ -1422,7 +1439,7 @@ void itc_assert_no_reg (it_cursor_t * itc);
 void qn_result (data_source_t * qn, caddr_t * inst, int set_no);
 void ssl_result (state_slot_t * ssl, caddr_t * inst, int set_no);
 void itc_pop_last_out (it_cursor_t * itc, caddr_t * inst, v_out_map_t * om, buffer_desc_t * buf);
-void qi_vec_init (query_instance_t * qi, int n_sets);
+void DBG_NAME(qi_vec_init) (DBG_PARAMS  query_instance_t * qi, int n_sets);
 void itc_vec_new_results (it_cursor_t * itc);
 void ks_vec_new_results (key_source_t * ks, caddr_t * inst, it_cursor_t * itc);
 int qi_free_cb (caddr_t qi);
@@ -1451,7 +1468,11 @@ void select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * 
 void set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state);
 void ins_vec_exists (instruction_t * ins, caddr_t * inst, db_buf_t next_mask, int * n_true, int * n_false);
 void ins_vec_subq (instruction_t * ins, caddr_t * inst);
-int * qn_extend_sets (data_source_t * qn, caddr_t * inst, int n);
+int * DBG_NAME(qn_extend_sets) (DBG_PARAMS  data_source_t * qn, caddr_t * inst, int n);
+#ifdef MALLOC_DEBUG
+#define qi_vec_init(qi,n_sets) dbg_qi_vec_init (__FILE__, __LINE__, (qi), (n_sets))
+#define qn_extend_sets(qn,inst,n) dbg_qn_extend_sets (__FILE__, __LINE__, (qn), (inst), (n))
+#endif
 #define QN_CHECK_SETS(qn, inst, n) \
   if (box_length (QST_BOX (caddr_t, inst, ((data_source_t*)qn)->src_sets)) < n * sizeof (int)) \
     qn_extend_sets ((data_source_t*)qn, inst, n);

@@ -216,11 +216,10 @@ void
 cluster_init ()
 {
   local_cll.cll_mtx = mutex_allocate ();
-  dk_mem_hooks (DV_CLOP, box_non_copiable, (box_destr_f) clo_destroy, 0);
-  cl_strses_rc =
-      resource_allocate (30, (rc_constr_t) cl_strses_allocate, (rc_destr_t) cl_strses_free, (rc_destr_t) strses_flush, NULL);
+  dk_mem_hooks (DV_CLOP, box_non_copiable, (box_destr_f) clo_destroy, 1);
+  cl_strses_rc = resource_allocate (30, (rc_constr_t) cl_strses_allocate, (rc_destr_t) cl_strses_free, (rc_destr_t) strses_flush, NULL);
   clib_rc_init ();
-  dk_mem_hooks (DV_CLRG, (box_copy_f) clrg_copy, (box_destr_f) clrg_destroy, 0);
+  dk_mem_hooks (DV_CLRG, (box_copy_f) clrg_copy, (box_destr_f) clrg_destroy, 1);
   PrpcSetWriter (DV_CLRG, (ses_write_func) null_serialize);
 }
 

@@ -1095,6 +1095,99 @@ done_iid: ;
   return NULL;
 }
 
+caddr_t
+bif_dk_check_tree (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#ifdef DK_ALLOC_BOX_DEBUG
+  if (0 == BOX_ELEMENTS (args))
+    {
+      dk_check_trees_of_qi((query_instance_t *)qst);
+      return NULL;
+    }
+  int ctr;
+  dk_hash_t *known = NULL;
+  DO_BOX_FAST (state_slot_t *, arg, ctr, args)
+    {
+      caddr_t arg_value = QST_GET (qst, arg);
+      dk_check_tree_iter (arg_value, BADBEEF_BOX, &known);
+    }
+  END_DO_BOX_FAST;
+  if (NULL != known)
+    hash_table_free (known);
+#endif
+  return NULL;
+}
+
+void
+mp_map_dump_stats (const char *fname, caddr_t dt, caddr_t * err_ret)
+{
+#ifdef MP_MAP_CHECK
+  FILE *f = fopen (fname, "a");
+  if (NULL != f)
+    err_ret[0] = NULL;
+  else
+    {
+      int errn = errno;
+      err_ret[0] = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s", fname, virt_strerror (errn));
+      return;
+    }
+  mutex_enter (&mp_reg_mtx);
+  DO_HT (mem_pool_t *, mp, ptrlong,  ign, mp_registered)
+    {
+      int sz = 0, ser_len;
+      caddr_t data, ser;
+      DO_HT (void*, ptr, size_t, b_sz, &mp->mp_large)
+        sz += b_sz;
+      END_DO_HT;
+      data = list (6,
+        dt,
+        box_dv_short_string (mp->mp_alloc_file),
+        box_num (mp->mp_alloc_line),
+        ((NULL != mp->mp_comment) ? box_dv_short_string (mp->mp_comment) : NEW_DB_NULL),
+        box_num (mp->mp_bytes),
+        box_num (mp->mp_max_bytes) );
+      ser = print_object_to_new_string (data, "__mem_pool_dump_stats", err_ret, 0);
+      if (NULL != err_ret[0])
+        return;
+      ser_len = box_length (ser)-1;
+      fprintf (f, "%08x", ser_len);
+      fwrite (ser, ser_len, 1, f);
+    }
+  END_DO_HT;
+  mutex_leave (&mp_reg_mtx);
+  fclose (f);
+#else
+  err_ret[0] = srv_make_new_error ("41000", "SR673", "__mem_pool_dump_stats() requires Virtuoso build with #define MP_MAP_CHECK, not available in release builds");
+#endif
+}
+
+caddr_t
+bif_mem_pool_dump_stats (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname_cvt;
+  caddr_t fname;
+  caddr_t dt = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+  sec_check_dba ((query_instance_t *) qst, "__mem_pool_dump_stats");
+  dt_now (dt);
+  if (1 <= BOX_ELEMENTS (args))
+    {
+      fname = bif_string_or_wide_or_uname_arg (qst, args, 0, "__mem_pool_dump_stats");
+      fname_cvt = file_native_name (fname);
+      file_path_assert (fname_cvt, NULL, 1);
+      mp_map_dump_stats (fname_cvt, dt, err_ret);
+      dk_free_box (fname_cvt);
+    }
+  else
+    {
+      char fname_buf[100];
+      char temp[100];
+      dt_to_string (dt, temp, sizeof (temp));
+      sprintf (fname_buf, "mem_pool_stats_%60s.bin", temp);
+      mp_map_dump_stats (fname_buf, dt, err_ret);
+    }
+  dk_free_box (dt);
+  return NULL;
+}
 
 caddr_t
 bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args)
@@ -12085,7 +12178,7 @@ print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret,
   END_WRITE_FAIL (out);
   if (!STRSES_CAN_BE_STRING (out))
     {
-      return out;
+      return (caddr_t)out;
     }
   else
     res = strses_string (out);
@@ -13192,11 +13285,12 @@ bif_exec_error (caddr_t * qst, state_slot_t ** args, caddr_t err, dk_set_t warni
       qst_set (qst, args[1], ERR_STATE (err));
       if (ssl_is_settable (args[2]))
 	qst_set (qst, args[2], ERR_MESSAGE (err));
-      dk_free_box(err);
+      ERR_STATE(err) = ERR_MESSAGE(err) = NULL;
+      dk_free_tree (err);
     }
   else
     {
-      qst_set (qst, args[1], IS_POINTER(err) ? ERR_STATE (err) : box_dv_short_string("01W01"));
+      qst_set (qst, args[1], box_dv_short_string("01W01"));
       if (ssl_is_settable (args[2]))
 	{
 	  snprintf (buf, sizeof (buf), "No WHENEVER statement provided for SQLCODE %d", (int)(ptrlong)(err));
@@ -16360,6 +16454,8 @@ sql_bif_init (void)
   bif_define_ex ("dbg_obj_princ"	, bif_dbg_obj_princ, BMD_ALIAS, "dbg_obj_prin1", BMD_USES_INDEX, BMD_DONE);
   bif_define ("dbg_obj_print_vars", bif_dbg_obj_print_vars);
   bif_define ("dbg_user_dump", bif_dbg_user_dump);
+  bif_define_ex ("__dk_check_tree"	, bif_dk_check_tree, BMD_DONE);
+  bif_define ("__mem_pool_dump_stats", bif_mem_pool_dump_stats);
   bif_define ("__cache_check", bif_cache_check);
   bif_define ("__autocompact", bif_autocompact);
   bif_define ("__flush", bif_flush);

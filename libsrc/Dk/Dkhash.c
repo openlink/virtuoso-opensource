@@ -47,13 +47,11 @@
   if ((ht->ht_count * 5) / ht->ht_actual_size > 4) \
     DK_REHASH (ht, ht->ht_actual_size << 1);
 
-#define ht_max_sz 1048573
-
 typedef int PRIME;
 
 static PRIME primetable[] =
 {
-  3, 5,7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53
+/* 3, 5,7, */ 11, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53
 , 59, 67, 71, 79, 83, 89, 97, 103, 109, 127
 , 137, 149, 157, 167, 179, 191, 211, 223, 239, 251
 , 269, 283, 307, 331, 349, 367, 389, 409, 431, 457
@@ -72,29 +70,11 @@ static PRIME primetable[] =
 , 208721, 219169, 230137, 241651, 253741, 266447, 279779, 293773, 308467, 323899
 , 340103, 357109, 374977, 393727, 413417, 434107, 455827, 478627, 502591, 527729
 , 554117, 581843, 610957, 641513, 673609, 707293, 742663, 779797, 818813, 859783
-, 902777, 947917, 995327, 1045111, 1097377, 1152287, 1209931, 1270429, 1333963, 1400669
-, 1470709, 1544311, 1621537, 1702627, 1787783, 1877177, 1971049
-, 13, 17, 19, 23, 29, 31, 37, 41, 47, 53
-, 59, 67, 71, 79, 83, 89, 97, 103, 109, 127
-, 137, 149, 157, 167, 179, 191, 211, 223, 239, 251
-, 269, 283, 307, 331, 349, 367, 389, 409, 431, 457
-, 487, 521, 557, 587, 617, 653, 691, 727, 769, 809
-, 853, 907, 953, 1009, 1061, 1117, 1181, 1249, 1319, 1399
-, 1471, 1549, 1627, 1709, 1801, 1901, 1997, 2099, 2207, 2333
-, 2459, 2591, 2729, 2879, 3023, 3181, 3343, 3511, 3691, 3877
-, 4073, 4283, 4507, 4733, 4973, 5227, 5501, 5779, 6073, 6379
-, 6701, 7039, 7393, 7789, 8179, 8597, 9029, 9491, 9967, 10477
-, 11003, 11579, 12161, 12781, 13421, 14107, 14813, 15559, 16339, 17159
-, 18041, 18947, 19913, 20921, 21977, 23081, 24239, 25453, 26729, 28069
-, 29473, 30949, 32497, 34123, 35831, 37633, 39521, 41507, 43591, 45779
-, 48073, 50497, 53047, 55711, 58511, 61441, 64553, 67783, 71191, 74759
-, 78497, 82457, 86587, 90917, 95467, 100267, 105319, 110587, 116131, 121949
-, 128047, 134471, 141199, 148279, 155693, 163481, 171659, 180247, 189271, 198761
-, 208721, 219169, 230137, 241651, 253741, 266447, 279779, 293773, 308467, 323899
-, 340103, 357109, 374977, 393727, 413417, 434107, 455827, 478627, 502591, 527729
-, 554117, 581843, 610957, 641513, 673609, 707293, 742663, 779797, 818813, 859783
-, 902777, 947917, 995327, 1045111, 1097377, 1152287, 1209931, 1270429, 1333963, 1400669
-, 1470709, 1544311, 1621537, 1702627, 1787783, 1877177, 1971049
+, 902777, 947917, 995327
+, 1045111 /* this is the value of id_ht_max_sz; the value of id_ht_max_sz MUST be listed among other primes of the table */
+, 1097377, 1152287, 1209931, 1270429, 1333963, 1400669
+, 1470709, 1544311, 1621537, 1702627, 1787783, 1877177
+, 1971049 /* this is the value of ht_max_sz; the value of ht_max_sz MUST be the last value of the table */
 };
 
 
@@ -105,7 +85,7 @@ static PRIME primetable[] =
 uint32
 hash_nextprime (uint32 n)
 {
-  PRIME *last = &primetable[sizeof (primetable) / sizeof (PRIME) - 1];
+  PRIME *last = primetable + (sizeof (primetable) / sizeof (PRIME) - 1);
   PRIME *base = primetable;
 
   if (n > ht_max_sz)				 /* last_prime in table */
@@ -113,9 +93,8 @@ hash_nextprime (uint32 n)
 
   while (last >= base)
     {
-      PRIME *p = &base[(int) ((last - base) >> 1)];
+      PRIME *p = base + (int) ((last - base) >> 1);
       int res = (int32) n - *p;
-
       if (res == 0)
 	return n;
       if (res < 0)
@@ -311,7 +290,7 @@ DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
     }
 #endif
   {
-    hash_elt_t *new_elt = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t));
+    hash_elt_t *new_elt = (hash_elt_t *) DBG_NAME(ht_alloc) (ht, sizeof (hash_elt_t));
     new_elt->key = key;
     new_elt->data = data;
     new_elt->next = ht->ht_elements[inx].next;
@@ -637,13 +616,14 @@ DBG_NAME (dk_rehash) (DBG_PARAMS dk_hash_t * ht, uint32 new_sz)
 #ifdef HT_STATS
   fprintf (stderr, "*** HASH TABLE %p REHASH TO %lu\n", ht, new_sz);
 #endif
-
   old_sz = ht->ht_actual_size;
+  if (old_sz == new_sz)
+    return;
   memset (&new_ht, 0, sizeof (new_ht));
   new_ht.ht_rehash_threshold = ht->ht_rehash_threshold;
   new_ht.ht_tlsf_id = ht->ht_tlsf_id;
   new_ht.ht_actual_size = new_sz;
-  new_ht.ht_elements = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t) * new_sz);
+  new_ht.ht_elements = (hash_elt_t *) DBG_NAME(ht_alloc) (ht, sizeof (hash_elt_t) * new_sz);
   memset (new_ht.ht_elements, 0xff, sizeof (hash_elt_t) * new_sz);
 #ifdef MTX_DEBUG
   new_ht.ht_required_mtx = ht->ht_required_mtx;
@@ -695,3 +675,47 @@ dk_hash_set_rehash (dk_hash_t * ht, uint32 ov_per_bucket)
 {
   ht->ht_rehash_threshold = ov_per_bucket;
 }
+
+#ifdef MALLOC_DEBUG
+#undef hash_table_allocate
+dk_hash_t * hash_table_allocate (uint32 size)
+{
+   return DBG_NAME(hash_table_allocate) (__FILE__, __LINE__, size);
+}
+
+#undef hash_table_init
+void hash_table_init (dk_hash_t * ht, int size)
+{
+  DBG_NAME(hash_table_init) (__FILE__, __LINE__, ht, size);
+}
+
+#undef hash_table_free
+void hash_table_free (dk_hash_t * table)
+{
+  DBG_NAME(hash_table_free) (__FILE__, __LINE__, table);
+}
+
+#undef sethash
+void * sethash (const void *key, dk_hash_t * ht, void *data)
+{
+  return DBG_NAME(sethash) (__FILE__, __LINE__, key, ht, data);
+}
+
+#undef remhash
+int remhash (const void *key, dk_hash_t * ht)
+{
+  return DBG_NAME(remhash) (__FILE__, __LINE__, key, ht);
+}
+
+#undef clrhash
+void clrhash (dk_hash_t * table)
+{
+  DBG_NAME(clrhash) (__FILE__, __LINE__, table);
+}
+
+#undef dk_rehash
+void dk_rehash (dk_hash_t * ht, uint32 new_sz)
+{
+  DBG_NAME(dk_rehash) (__FILE__, __LINE__, ht, new_sz);
+}
+#endif

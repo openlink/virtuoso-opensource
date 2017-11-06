@@ -173,7 +173,7 @@ mem_pool_alloc (void)
   mp->mp_size = 0x100;
   mp->mp_allocs = (caddr_t *) DK_ALLOC (sizeof (caddr_t) * mp->mp_size);
   mp->mp_unames = hash_table_allocate (11);
-  hash_table_init (&mp->mp_large, 121);
+  DBG_NAME(hash_table_init) (DBG_ARGS  &mp->mp_large, 121);
   mp->mp_large.ht_rehash_threshold = 2;
   mp_register (mp);
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
@@ -205,10 +205,10 @@ mp_free (mem_pool_t * mp)
       const char *err;
       mp->mp_fill -= 1;
       buf = mp->mp_allocs[mp->mp_fill];
-      err = dbg_find_allocation_error (buf, mp);
+      err = dk_find_alloc_error (buf, mp);
       if (NULL != err)
 	GPF_T1 (err);
-      dbg_freep (__FILE__, __LINE__, buf, mp);
+      dk_freep (buf, mp);
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
@@ -231,7 +231,7 @@ mp_check (mem_pool_t * mp)
       const char *err;
       fill -= 1;
       buf = mp->mp_allocs[fill];
-      err = dbg_find_allocation_error (buf, mp);
+      err = dk_find_alloc_error (buf, mp);
       if (NULL != err)
 	GPF_T1 (err);
     }
@@ -242,16 +242,16 @@ void
 mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
 {
 #ifdef DOUBLE_ALIGN
-  const char *err = dbg_find_allocation_error (box - 8, mp);
+  const char *err = dk_find_alloc_error (box - 8, mp);
 #else
-  char *err = dbg_find_allocation_error (box - 4, mp);
+  const char *err = dk_find_alloc_error (box - 4, mp);
 #endif
   if (NULL != err)
     {
 #ifdef DOUBLE_ALIGN
-      dbg_find_allocation_error (box - 8, mp); /* This is here to put a convenient breakpoint and look at the broken magic bytes with comfort */
+      dk_find_alloc_error (box - 8, mp); /* This is here to put a convenient breakpoint and look at the broken magic bytes with comfort */
 #else
-      dbg_find_allocation_error (box - 4, mp); /* You can put only a breakpoint two lines above and not worry about #ifdef-s: if this branch is enabled then the debugger will move the breakpoint down */
+      dk_find_alloc_error (box - 4, mp); /* You can put only a breakpoint two lines above and not worry about #ifdef-s: if this branch is enabled then the debugger will move the breakpoint down */
 #endif
       GPF_T1 (err);
     }
@@ -273,7 +273,7 @@ mem_pool_alloc (void)
 {
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_block_size = ALIGN_8 ((mp_block_size));
-  hash_table_init (&mp->mp_large, 121);
+  DBG_NAME(hash_table_init) (DBG_ARGS  &mp->mp_large, 121);
   mp->mp_large.ht_rehash_threshold = 2;
   mp->mp_unames = DBG_NAME (hash_table_allocate) (DBG_ARGS 11);
   mp_register (mp);
@@ -384,7 +384,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
       dk_free (mp->mp_allocs, (mp->mp_size / 2) * sizeof (caddr_t));
       mp->mp_allocs = newallocs;
     }
-  mp->mp_allocs[mp->mp_fill] = new_alloc;
+  mp->mp_allocs[mp->mp_fill] = ptr = new_alloc;
   mp->mp_fill += 1;
 #ifdef DOUBLE_ALIGN
   ptr = new_alloc + 4;

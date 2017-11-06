@@ -65,29 +65,33 @@ thread_getattr (thread_t *self, void *key)
 
 /*#define ERR_DEBUG*/
 
-#ifdef ERR_DEBUG
-#define ARRAYP(a) \
-  (IS_BOX_POINTER(a) && DV_ARRAY_OF_POINTER == box_tag((caddr_t) a))
-#endif
 caddr_t
-thr_get_error_code (thread_t *thr)
+DBG_NAME(thr_get_error_code) (DBG_PARAMS  thread_t *thr)
 {
   caddr_t ret = thr->thr_reset_code;
   thr->thr_reset_code = NULL;
 #ifdef ERR_DEBUG
   fprintf (stderr, "thr_get_error_code (%p)=%p [%s]\n",
-      thr, ret, ret ? (ARRAYP (ret) ? ((caddr_t *)ret)[2] : "<not found>") : "<none>");
+      thr, ret, ret ? (ERROR_REPORT_P (ret) ? ((caddr_t *)ret)[2] : "<not found>") : "<none>");
+#endif
+#ifdef SIGNAL_DEBUG
+  if (ERROR_REPORT_P(ret))
+    log_error_report_event (ret, 0, "THR_GET at %s:%d", file, line);
 #endif
   return ret;
 }
 
 void
-thr_set_error_code (thread_t *thr, caddr_t err)
+DBG_NAME(thr_set_error_code) (DBG_PARAMS  thread_t *thr, caddr_t err)
 {
 #ifdef ERR_DEBUG
   fprintf (stderr, "thr_set_error_code (%p, %p [%s]) -> free %p [%s]\n",
-      thr, err, err ? (ARRAYP (err) ? ((caddr_t *)err)[2] : "<not found>") : "<none>",
+      thr, err, err ? (ERROR_REPORT_P (err) ? ((caddr_t *)err)[2] : "<not found>") : "<none>",
       thr->thr_reset_code, thr->thr_reset_code ? (ARRAYP (thr->thr_reset_code) ?  ((caddr_t *)thr->thr_reset_code)[2] : "<not found>") : "<none>");
+#endif
+#ifdef SIGNAL_DEBUG
+  if (ERROR_REPORT_P(err))
+    log_error_report_event (err, 0, "THR_SET at %s:%d", file, line);
 #endif
   dk_free_tree (thr->thr_reset_code);
   thr->thr_reset_code = err;
@@ -111,12 +115,21 @@ j_set_cksum (jmp_buf_splice * j, int rc)
     j->j_cksum = j_cksum (j->buf);
   return rc;
 }
+#endif
 
 void
 longjmp_brk (jmp_buf_splice * b, int rc)
 {
+#ifdef JMP_CKSUM
   if (b->j_cksum != j_cksum (b->buf))
     GPF_T1 ("uninited jmp buffer");
+#endif
   longjmp (b->buf, rc);
 }
+
+#ifdef MALLOC_DEBUG
+#undef thr_get_error_code
+caddr_t thr_get_error_code (thread_t *thr) { return dbg_thr_get_error_code (__FILE__, __LINE__, thr); }
+#undef thr_set_error_code
+void thr_set_error_code (thread_t *thr, caddr_t err) { dbg_thr_set_error_code (__FILE__, __LINE__, thr, err); }
 #endif

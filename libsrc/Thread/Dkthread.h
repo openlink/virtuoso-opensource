@@ -30,14 +30,18 @@
 #define _DKTHREAD_H
 
 #define _OPL_THREADS	1
-
 /*#define JMP_CKSUM*/
 
-typedef struct
+typedef struct jmp_buf_splice_s
   {
     jmp_buf buf;
 #ifdef JMP_CKSUM
     uint32	j_cksum;
+#endif
+#ifdef SIGNAL_DEBUG
+    const char *j_file;
+    int j_line;
+    struct jmp_buf_splice_s *j_parent;
 #endif
   } jmp_buf_splice;
 
@@ -168,6 +172,12 @@ void thread_sleep (TVAL msec);
 
 EXE_EXPORT (caddr_t, thr_get_error_code, (thread_t *thr));
 EXE_EXPORT (void, thr_set_error_code, (thread_t *thr, caddr_t err));
+#ifdef MALLOC_DEBUG
+extern caddr_t dbg_thr_get_error_code (const char *file, int line, thread_t *thr);
+extern void dbg_thr_set_error_code (const char *file, int line, thread_t *thr, caddr_t err);
+#define thr_get_error_code(thr) dbg_thr_get_error_code (__FILE__, __LINE__, (thr))
+#define thr_set_error_code(thr,err) dbg_thr_set_error_code (__FILE__, __LINE__, (thr), (err))
+#endif
 
 struct sockaddr;
 

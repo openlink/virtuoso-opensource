@@ -870,31 +870,6 @@ extern long sqlp_bin_op_serial;
 		 (ptrlong) pred, (caddr_t) left, (ST *) subq, (ptrlong) cmp_, (ptrlong) flags, NULL)
 
 
-#define ARRAYP(a) \
-  (IS_BOX_POINTER(a) && DV_ARRAY_OF_POINTER == box_tag((caddr_t) a))
-
-#define SYMBOLP(a) \
-  (IS_BOX_POINTER(a) && DV_SYMBOL == box_tag((caddr_t) a))
-
-#define LITERAL_P(a) \
-  (! IS_BOX_POINTER (a) \
-   || DV_SHORT_STRING == box_tag((caddr_t) a) \
-   || DV_LONG_STRING == box_tag((caddr_t) a) \
-   || DV_WIDE == box_tag((caddr_t) a) \
-   || DV_LONG_WIDE == box_tag((caddr_t) a) \
-   || DV_LONG_INT == box_tag((caddr_t) a) \
-   || DV_DB_NULL == box_tag((caddr_t) a) \
-   || DV_SINGLE_FLOAT == box_tag((caddr_t) a) \
-   || DV_NUMERIC == box_tag((caddr_t) a) \
-   || DV_DOUBLE_FLOAT == box_tag((caddr_t) a) \
-   || DV_BIN == box_tag((caddr_t) a) \
-   || DV_UNAME == box_tag((caddr_t) a) \
-   || DV_IRI_ID == box_tag((caddr_t) a) \
-   || DV_RDF == box_tag((caddr_t) a) \
-   || DV_DATETIME == box_tag((caddr_t) a) \
-   || DV_GEO == box_tag((caddr_t) a) \
-   || DV_XPATH_QUERY == box_tag((caddr_t) a) )
-
 #define ST_P(s, tp) \
   (ARRAYP (s) && BOX_ELEMENTS (s) > 0 && (s)->type == tp)
 

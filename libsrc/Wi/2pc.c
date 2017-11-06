@@ -41,6 +41,7 @@
 #include "2pc_client.h"
 
 #include "msdtc.h"
+#include "sqlfn.h"
 
 /* initial count number for dtransact,
 	 to be erased at checkpoint */

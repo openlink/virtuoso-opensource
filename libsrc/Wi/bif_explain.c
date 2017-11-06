@@ -3684,6 +3684,11 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int * fill = &f;
   query_t * qr;
   DK_ALLOC_QUERY (qr);
+#ifdef QUERY_DEBUG
+  qr->qr_text_is_constant = 1;
+  qr->qr_text = "(no source, only a parsed tree)";
+  log_query_event (qr, 1, "ALLOC by bif_sql_text");
+#endif
   memset (&sc, 0, sizeof (sc));
   CC_INIT (cc, cli);
   sc.sc_cc = &cc;
@@ -3723,6 +3728,68 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return ((caddr_t)(box_dv_short_string (text)));
 }
 
+
+
+
+
+void
+st_print (ST * tree)
+{
+  caddr_t volatile err = NULL;
+  SCS_STATE_FRAME;
+  sql_comp_t sc;
+  comp_context_t cc;
+  client_connection_t *cli = sqlc_client (), *old_cli = sqlc_client ();
+  char text[MAX_TEXT_SZ];
+  int f = 0;
+  int *fill = &f;
+  query_t *qr;
+  DK_ALLOC_QUERY (qr);
+#ifdef QUERY_DEBUG
+  qr->qr_text_is_constant = 1;
+  qr->qr_text = "(no source, only a parsed tree)";
+  log_query_event (qr, 1, "ALLOC by st_print");
+#endif
+  memset (&sc, 0, sizeof (sc));
+  CC_INIT (cc, cli);
+  sc.sc_cc = &cc;
+  sc.sc_client = cli;
+  cc.cc_query = &qr;
+  sc.sc_exp_print_hook = xsql_print_stmt;
+  WITHOUT_TMP_POOL
+  {
+    MP_START ();
+    SCS_STATE_PUSH;
+    sqlc_target_rds (local_rds);
+
+    top_sc = &sc;
+    sqlc_set_client (cli);
+    CATCH (CATCH_LISP_ERROR)
+    {
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
+      memset (text, 0, sizeof (text));
+      sqlc_exp_print (&sc, NULL, tree, text, sizeof (text), fill);
+    }
+    THROW_CODE
+    {
+      err = (caddr_t) THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR);
+      if (!err)
+	err = srv_make_new_error ("42000", "SR105", "Unclassified SQL error.");
+    }
+    END_CATCH;
+    sqlc_set_client (old_cli);
+    SCS_STATE_POP;
+    MP_DONE ();
+    sc_free (&sc);
+  }
+  END_WITHOUT_TMP_POOL;
+  qr_free (qr);
+
+  if (err)
+    printf ("err %s %s\n", ERR_STATE (err), ERR_MESSAGE (err));
+  else
+    printf ("%s\n", text);
+}
 
 
 typedef struct  qnw_mrg_cd_s
