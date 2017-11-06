@@ -654,6 +654,9 @@ udt_free_internals_of_class_def (sql_class_t * udt)
       udt->scl_methods = (sql_method_t *) list(0);
       while (mtd_inx--)
 	{
+#ifdef QUERY_DEBUG
+      log_query_event (methods[mtd_inx].scm_qr, 1, "DEPRECATION by udt_free_internals_of_class_def()");
+#endif
 	  dk_free_box (methods[mtd_inx].scm_name);
 	  dk_free_box (methods[mtd_inx].scm_specific_name);
 	  dk_free_tree ((box_t) methods[mtd_inx].scm_param_names);

@@ -2258,6 +2258,9 @@ qst_copy (caddr_t * inst, state_slot_t ** copy_ssls, ssl_index_t * cp_sets)
   query_t *qr = qi->qi_query;
   int sinx;
   IN_CLL;
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT++ by qst_copy");
+#endif
   qr->qr_ref_count++;
   LEAVE_CLL;
   cpqi->qi_is_allocated = 1;
@@ -3252,6 +3255,9 @@ qi_root_done (query_instance_t * qi)
 void
 qi_qr_done (query_t * qr)
 {
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT-- by qi_qr_done");
+#endif
   IN_CLL;
   qr->qr_ref_count--;
   LEAVE_CLL;

@@ -1394,6 +1394,34 @@ sql_is_ddl (sql_tree_t * tree)
 }
 #endif
 
+#ifdef QUERY_DEBUG
+extern FILE *query_log;
+
+void
+log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  fprintf (query_log, "\n{{{%p ", qr);
+  vfprintf (query_log, fmt, ap);
+  if (print_full_content && qr->qr_text)
+    {
+      char buf[200];
+      char *eol;
+      strncpy (buf, qr->qr_text, sizeof (buf)-1);
+      buf [sizeof (buf)-1] = '\0';
+      for (eol = strchr (buf, '\n'); NULL != eol; eol = strchr (eol+1, '\n')) eol[0] = '\t';
+      fprintf (query_log, " {{%s}}", buf);
+    }
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+  fprintf (query_log, " }}}");
+  fflush (query_log);
+}
+#endif
+
+
 extern int enable_vec;
 int64 sqlc_cum_memory;
 
@@ -1687,11 +1715,13 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   if (inside_sem)
     parse_leave ();
   if (qr)
-    {
+    {      if (NULL != qr->qr_text)        GPF_T;
       qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);
       qr->qr_parse_tree = box_copy_tree ((box_t) the_parse_tree);
+#ifdef QUERY_DEBUG
+      log_query_event (qr, 1, "ALLOC+PARSE by sql_compile_1 at %s:%d", file, line);
+#endif
     }
-
   if (!nested_sql_comp)
     {
       int64 sqlc_mem;
@@ -2065,6 +2095,9 @@ DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connecti
   if (ret_dtp)
     qr->qr_proc_ret_type = list (2, ret_dtp, 0);
   SET_QR_TEXT(qr,string2);
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "ALLOC+TEXT by sql_proc_to_recompile at %s:%d", file, line);
+#endif
   sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
   return qr;
 }
@@ -2320,3 +2353,17 @@ sql_compile_static (const char *string2, client_connection_t * cli, caddr_t * er
 }
 #endif
 
+void
+qr_free_1 (query_t * qr)
+{
+  qr_free (qr);
+}
+
+#ifdef MALLOC_DEBUG
+#undef qr_free
+void
+qr_free (query_t * qr)
+{
+  dbg_qr_free (__FILE__, __LINE__, qr);
+}
+#endif

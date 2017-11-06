@@ -172,7 +172,13 @@ void sqlr_resignal (caddr_t err) NORETURN;
 
 query_t * sql_compile (char *string2, client_connection_t * cli, caddr_t * err,
     int store_procs);
-void qr_free (query_t * qr);
+void qr_free_1 (query_t * qr);
+#ifdef MALLOC_DEBUG
+extern void dbg_qr_free (const char *f, int l,  query_t * qr);
+#define qr_free(qr) dbg_qr_free (__FILE__, __LINE__, (qr))
+#else
+extern void qr_free (query_t * qr);
+#endif
 
 caddr_t qr_rec_exec (query_t * qr, client_connection_t * cli,
     local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts,

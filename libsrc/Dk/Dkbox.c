@@ -2659,6 +2659,10 @@ log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ..
 }
 #endif
 
+#ifdef QUERY_DEBUG
+FILE *query_log = NULL;
+#endif
+
 caddr_t uname___empty;
 
 #ifdef MALLOC_DEBUG
@@ -2671,6 +2675,9 @@ dk_box_initialize (void)
 #ifdef SIGNAL_DEBUG
   char error_report_log_fname[50];
 #endif
+#ifdef QUERY_DEBUG
+  char query_log_fname[50];
+#endif
   static int dk_box_is_initialized = 0;
   if (dk_box_is_initialized)
     return;
@@ -2678,6 +2685,10 @@ dk_box_initialize (void)
 #ifdef SIGNAL_DEBUG
   sprintf (error_report_log_fname, "error_report_events_%d.log", getpid());
   error_report_log = fopen (error_report_log_fname, "w");
+#endif
+#ifdef QUERY_DEBUG
+  sprintf (query_log_fname, "query_events_%d.log", getpid());
+  query_log = fopen (query_log_fname, "w");
 #endif
   dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_destr_hook, 0);
 #ifdef MALLOC_DEBUG
@@ -2798,6 +2809,9 @@ dk_box_finalize (void)
   dk_box_is_finalized = 1;
 #ifdef SIGNAL_DEBUG
   fclose (error_report_log);
+#endif
+#ifdef QUERY_DEBUG
+  fclose (query_log);
 #endif
 }
 

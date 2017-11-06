@@ -3565,7 +3565,7 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
 	  qr = sql_compile_1 ("", cli, &err, SQLC_DO_NOT_STORE_PROC, st, NULL);
 	  dk_free_tree ((box_t) st);
 	  if (err != SQL_SUCCESS)
-	    {
+	    {   if (NULL != qr) GPF_T;
 	      if (qi)
 		QI_POISON_TRX (qi);
 	      sqlr_resignal (err);
@@ -3628,6 +3628,8 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
       dk_free_tree ((box_t) st);
       if (err != SQL_SUCCESS)
 	{
+	  if (NULL != qr)
+	    GPF_T;
 	  if (qi)
 	    QI_POISON_TRX (qi);
 	  sqlr_resignal (err);
@@ -3649,7 +3651,7 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
       qr = sql_compile_1 ("", cli, &err, SQLC_DO_NOT_STORE_PROC, st, NULL);
       dk_free_tree ((box_t) st);
       if (err != SQL_SUCCESS)
-	{
+	{   if (NULL != qr) GPF_T;
 	  if (qi)
 	    QI_POISON_TRX (qi);
 	  sqlr_resignal (err);
@@ -5160,7 +5162,11 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       /*if (owner_user && new_qr)
 	new_qr->qr_proc_owner = owner_user->usr_id;*/
       if (QR_IS_MODULE_PROC (qr))
-	new_qr = NULL;
+        {
+          if (new_qr != qr)
+            qr_free (new_qr);
+	  new_qr = NULL;
+        }
     }
 
   recomp_cli->cli_user = org_user;
@@ -5183,7 +5189,11 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 		      old_mod_qr->qr_proc_grants_is_reused = 1;
 		    }
 		  if (old_mod_qr == qr)
-		    new_qr = new_mod_qr;
+                    {
+                      if (new_qr != qr)
+                        qr_free (new_qr);
+		      new_qr = new_mod_qr;
+                    }
 		}
 	    }
 	  else

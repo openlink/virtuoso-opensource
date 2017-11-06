@@ -583,7 +583,11 @@ lock_trx_t * DBG_NAME(cli_set_new_trx_no_wait_cpt) (DBG_PARAMS  client_connectio
 #define cli_set_new_trx_no_wait_cpt(cli) dbg_cli_set_new_trx_no_wait_cpt(__FILE__, __LINE__, (cli))
 #endif
 
-void qr_free (query_t * qr);
+extern void DBG_NAME(qr_free) (DBG_PARAMS  query_t * qr);
+#ifdef MALLOC_DEBUG
+#define qr_free(qr) dbg_qr_free (__FILE__, __LINE__, (qr))
+#endif
+extern void qr_free_1 (query_t * qr);
 
 void upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
 			 row_delta_t * rd);

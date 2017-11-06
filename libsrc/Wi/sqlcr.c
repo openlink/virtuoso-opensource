@@ -60,6 +60,11 @@ sql_compile_st (ST ** ptree, client_connection_t * cli,
   query_t *volatile qr;
   client_connection_t *old_cli = sqlc_client ();
   DK_ALLOC_QUERY (qr);
+#ifdef QUERY_DEBUG
+  qr->qr_text_is_constant = 1;
+  qr->qr_text = "(no source, only a parsed tree)";
+  log_query_event (qr, 1, "ALLOC by sql_compile_st");
+#endif
   memset (&sc, 0, sizeof (sc));
 
   CC_INIT (cc, cli);

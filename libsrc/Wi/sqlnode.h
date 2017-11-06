@@ -391,6 +391,12 @@ struct query_s
 #define QF_AGG_PARTITIONED 2 /* the aggregations are distinct, no adding up */
 #define QF_AGG_PARTITIONED_GBY 3 /* the aggregations are distinct, no adding up */
 
+#ifdef QUERY_DEBUG
+extern FILE *query_log;
+extern void log_query_event (query_t *qr, int print_full_content, const char *fmt, ...);
+#endif
+
+
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
 #define DK_ALLOC_QUERY(qr) { \
   qr = (query_t *) dk_alloc (sizeof (query_t)); \
