@@ -1486,10 +1486,17 @@ create procedure WEBDAV.DBA.proc (
     -- directory selection
     path := WEBDAV.DBA.real_path (path);
     dirListTmp := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password);
+    if (WEBDAV.DBA.DAV_ERROR (dirListTmp))
+    {
+      dirList := dirListTmp;
+    }
+    else
+    {
     foreach (any item in dirListTmp) do
     {
       if (item[1] = 'C')
         dirList := vector_concat (dirList, vector (item));
+    }
     }
     dir_mode := 0;
     dirFilter := '%';

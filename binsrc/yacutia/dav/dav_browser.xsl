@@ -1368,6 +1368,7 @@
 
               _params := self.vc_page.vc_event.ve_params;
 
+              self.mode := get_keyword ('mode', _params, self.mode);
               self.chars := WEBDAV.DBA.settings_chars (self.settings);
               self.dir_columns := vector (
                 vector ('column_#1', 'c0', 'Name',          1, 0, vector (WEBDAV.DBA.settings_column (self.settings, 1), 1), 'width="50%"'),
