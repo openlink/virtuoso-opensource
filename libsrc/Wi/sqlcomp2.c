@@ -1132,7 +1132,7 @@ sc_free (sql_comp_t * sc)
     }
   if (NULL != sc->sc_big_ssl_consts)
     {
-#ifndef NDEBUG
+#if 0 /* This check is no longer valid, because the pointers to big consts are not (erroneously) zeroed anymore */
       int ctr;
       DO_BOX_FAST (caddr_t, itm, ctr, sc->sc_big_ssl_consts)
         {

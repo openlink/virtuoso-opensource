@@ -265,7 +265,7 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
       if ((idx >= BOX_ELEMENTS_0 (topmost_sc->sc_big_ssl_consts)) || (NULL == ret))
         sqlc_new_error (sc->sc_cc, "42000", "SQ???", "Internal SQL compiler error: bad usage of __ssl_const()");
       val = topmost_sc->sc_big_ssl_consts[idx];
-      topmost_sc->sc_big_ssl_consts[idx] = NULL;
+      /* topmost_sc->sc_big_ssl_consts[idx] = NULL; --- that's now wrong, because ssl_new_big_constant() is not storing val in the created state slot, it only makes a copy if needed. Thus no need to zero it here and prevent the value from being freed on dk_free_tree (sc->sc_big_ssl_consts) in sc_free() */
       val_ssl = ssl_new_big_constant (sc->sc_cc, val);
       cv_artm (code, (ao_func_t)box_identity, ret, val_ssl, NULL);
       return;
