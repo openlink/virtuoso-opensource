@@ -40,6 +40,7 @@
 #include "sqlbif.h"
 #include "mhash.h"
 
+
 #if (GCC_VERSION >= 3004) || defined (__clang__)
 #define ENABLE_GCC_OPTS
 #endif
@@ -124,7 +125,7 @@ cs_any_ce_len (compress_state_t * cs, int nth)
 }
 
 
-void cs_dict (compress_state_t * cs, int from, int to);
+void DBG_NAME(cs_dict) (DBG_PARAMS  compress_state_t * cs, int from, int to);
 
 
 int
@@ -3595,8 +3596,7 @@ ce_string_n_values (db_buf_t ce, int len)
 }
 
 
-void
-cs_best (compress_state_t * cs, dtp_t ** best, int *len)
+void DBG_NAME (cs_best) (DBG_PARAMS compress_state_t * cs, dtp_t ** best, int *len)
 {
   jmp_buf_splice rst;
   int try_dict = !cs->cs_is_asc && !cs->cs_no_dict && (0 == (CS_NO_DICT & cs->cs_exclude))
@@ -3634,7 +3634,7 @@ cs_best (compress_state_t * cs, dtp_t ** best, int *len)
       *best = (db_buf_t) mp_box_n_chars (cs->cs_mp, (caddr_t) cs->cs_asc_output, *len = cs->cs_asc_fill);
       return;
     }
-  cs_dict (cs, 0, cs->cs_n_values);
+  DBG_NAME (cs_dict) (DBG_ARGS cs, 0, cs->cs_n_values);
   cs_buf_mark_check (cs->cs_dict_output);
   if (!dict_only && rnd_len < cs->cs_dict_fill)
     {
@@ -3725,8 +3725,7 @@ cs_cast_incompatible_dict (compress_state_t * cs, int n_distinct, db_buf_t * dis
 }
 
 
-void
-cs_dict (compress_state_t * cs, int from, int to)
+void DBG_NAME (cs_dict) (DBG_PARAMS compress_state_t * cs, int from, int to)
 {
   db_buf_t out;
   int64 *values;
@@ -3753,7 +3752,7 @@ cs_dict (compress_state_t * cs, int from, int to)
       return;
     }
   if (!cs->cs_dict)
-    cs->cs_dict = hash_table_allocate (3 + n_distinct + (n_distinct >> 1));
+    cs->cs_dict = DBG_NAME(hash_table_allocate) (DBG_ARGS  3 + n_distinct + (n_distinct >> 1));
   else
     clrhash (cs->cs_dict);
   for (inx = 0; inx < n_distinct; inx++)
@@ -3859,9 +3858,8 @@ cs_free_allocd_parts (compress_state_t * cs)
   cs->cs_dict = NULL;
 }
 
-
 int
-cs_check_dict (compress_state_t * cs)
+DBG_NAME(cs_check_dict) (DBG_PARAMS  compress_state_t * cs)
 {
   int n_dist = cs->cs_dh.dh_count;
   jmp_buf_splice rst;
@@ -3915,7 +3913,7 @@ cs_check_dict (compress_state_t * cs)
 	{
 	  int last = n < n_split - 1 ? (n + 1) * slice : cs->cs_n_values;
 	  cs->cs_dict_fill = 0;
-	  cs_dict (cs, n * slice, last);
+	  DBG_NAME (cs_dict) (DBG_ARGS cs, n * slice, last);
 	  if (cs->cs_dict_fill > 3000)
 	    {
 	      cs->cs_asc_fill = 0;
@@ -3939,7 +3937,7 @@ cs_check_dict (compress_state_t * cs)
     }
 dict_now:
   cs->cs_dict_fill = 0;
-  cs_dict (cs, 0, cs->cs_n_values);
+  DBG_NAME (cs_dict) (DBG_ARGS cs, 0, cs->cs_n_values);
   t_set_push (&cs->cs_ready_ces, (void *) mp_box_n_chars (cs->cs_mp, (caddr_t) cs->cs_dict_result,
 	  cs->cs_dict_fill - (cs->cs_dict_result - cs->cs_dict_output)));
   if (cs->cs_for_test)

@@ -451,7 +451,13 @@ ce_first = ce + 5; n_bytes = SHORT_REF_CA (ce + 1); n_values = SHORT_REF_CA (ce 
 caddr_t mp_box_to_any (mem_pool_t * mp, caddr_t box);
 void cs_compress (compress_state_t * cs, caddr_t any);
 void cs_compress_int (compress_state_t * cs, int64 * ints, int n_ints);
-void cs_best (compress_state_t * cs, dtp_t ** best, int * len);
+
+void DBG_NAME(cs_best) (DBG_PARAMS  compress_state_t * cs, dtp_t ** best, int * len);
+#ifdef MALLOC_DEBUG
+#define cs_best(cs,best,len) dbg_cs_best(__FILE__, __LINE__, (cs), (best), (len))
+#define cs_check_dict(cs) dbg_cs_check_dict(__FILE__, __LINE__, (cs))
+#endif
+
 void cs_reset (compress_state_t * cs);
 int cs_decode (col_pos_t * cpo, int from, int to);
 
