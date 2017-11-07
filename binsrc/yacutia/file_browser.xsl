@@ -33,40 +33,36 @@
         </v:browse-button>
       </xsl:when>
       <xsl:otherwise>
-        <v:template name="select_template2" type="simple" enabled="-- neq(self.retname2, '')">
-          <script language="JavaScript">
-            function selectRow(frm_name, ret_mode)
-            {
-              var varVal, varVal1;
-              if (opener == null)
-                return;
-
-              this.<?V self.retname2 ?> = opener.<?V self.retname2 ?>;
-              if (<?V self.retname2 ?> != null &amp;&amp; frm_name != '')
-              {
-                varVal = document.forms[frm_name].item_name_22.value;
-                varVal1 = varVal;
-                if (ret_mode == 'http' || ret_mode == 'file-only')
-                {
-                  var http_root = '<?V replace (http_root (), '\\', '/') ?>';
-                  varVal = varVal1.substr (http_root.length, varVal1.length);
-                  if (ret_mode == 'file-only')
-                  {
-                    var pos;
-                    varVal1 = varVal.replace ('\\', '/');
-                    pos = varVal1.lastIndexOf ('/');
-                    if (pos != -1)
-                      varVal = varVal.substr (pos+1, varVal.length);
-                  }
-                }
-                <?V self.retname2 ?>.value = varVal;
-              }
-              opener.focus();
-              close();
-            };
-          </script>
-        </v:template>
         <script language="JavaScript">
+          function selectRow(frm_name, ret_mode)
+          {
+            var varVal, varVal1;
+            if (opener == null)
+              return;
+
+            this.<?V self.retname2 ?> = opener.<?V self.retname2 ?>;
+            if (<?V self.retname2 ?> != null &amp;&amp; frm_name != '')
+            {
+              varVal = document.forms[frm_name].item_name_22.value;
+              varVal1 = varVal;
+              if (ret_mode == 'http' || ret_mode == 'file-only')
+              {
+                var http_root = '<?V replace (http_root (), '\\', '/') ?>';
+                varVal = varVal1.substr (http_root.length, varVal1.length);
+                if (ret_mode == 'file-only')
+                {
+                  var pos;
+                  varVal1 = varVal.replace ('\\', '/');
+                  pos = varVal1.lastIndexOf ('/');
+                  if (pos != -1)
+                    varVal = varVal.substr (pos+1, varVal.length);
+                }
+              }
+              <?V self.retname2 ?>.value = varVal;
+            }
+            opener.focus();
+            close();
+          };
           function selectAllCheckboxes (form, btn)
           {
             var i;
@@ -225,12 +221,7 @@
 
         <v:form name="file_form1" type="simple" method="POST" action="">
           <table class="vdir_headertable" border="0" cellspacing="0" cellpadding="2">
-            <tr class="vdir_headertr" align="left">
-              <td class="vdir_headertd">
-                <a href="#" style="text-decoration:none;" onclick="javascript: if (opener != null) opener.focus(); window.close()"><img src="dav/image/close_16.png" border="0" hspace="2" alt="Close"/>Close</a>
-              </td>
-            </tr>
-            <tr class="vdir_headertr" align="left">
+            <tr class="vdir_headertr">
               <td class="vdir_headertd">
                 <label for="t_path2">Contents of</label>
                 <v:text name="t_path2" xhtml_id="t_path2" value="''" format="%s">
@@ -305,7 +296,7 @@
               </td>
             </tr>
             <v:template name="temp2_crfold" type="simple" enabled="-- neq(self.crfolder_mode2, 0)">
-              <tr class="vdir_headertr" align="left">
+              <tr class="vdir_headertr">
                 <td class="vdir_headertd" colspan="3">
                   <label for="t_newfolder2">New folder</label>
                   <v:text name="t_newfolder2" xhtml_id="t_newfolder2" value="''" format="%s"/>
@@ -334,7 +325,8 @@
               <v:param name="ordseq" value="self.fs_list_ord_seq" />
               <v:before-data-bind>
                 <![CDATA[
-                  declare continue handler for SQLSTATE '42000', SQLSTATE '39000' {
+                  declare continue handler for SQLSTATE '42000', SQLSTATE '39000'
+                  {
                     self.vc_error_message := __SQL_MESSAGE;
                     self.vc_is_valid := 0;
                     self.sel_items2 := '';
@@ -352,11 +344,9 @@
                 <table class="listing" border="0" cellspacing="0" cellpadding="2">
                   <tr class="listing_header_row">
                     <?vsp
-                      declare j integer;
-
-                      j := 3;
                       if (self.show_details2 = 0)
-                      { ?>
+                      {
+                    ?>
                     <th width="1px"/>
                     <th>
                       <v:button action="simple" name="name_ord1" value="Name" style="url">
@@ -399,7 +389,7 @@
                     ?>
                   </tr>
                   <?vsp
-                    if(length(self.curpath2) > 0)
+                    if (length(self.curpath2) > 0)
                     {
                   ?>
                   <tr class="vdir_listrow">
@@ -499,7 +489,9 @@
                       <td><?V case when rowset[3] = -1 then 'N/A' else rowset[3] end ?></td>
                       <td><?V substring (cast (rowset[4] as varchar), 1, 19) ?></td>
                       <td><?V rowset[5] ?></td>
-                      <?vsp } ?>
+                      <?vsp
+                        }
+                      ?>
                     </tr>
                   </table>
                 </v:template>
@@ -530,9 +522,9 @@
                 <td>
                   <v:text name="item_name_22" value="--''" type="simple">
                     <v:before-render>
-                        <![CDATA[
-                          control.ufl_value := self.sel_items2;
-                        ]]>
+                      <![CDATA[
+                        control.ufl_value := self.sel_items2;
+                      ]]>
                     </v:before-render>
                   </v:text>
                   <input type="button" name="b_return" value="Select" onClick="javascript:  selectRow ('file_form1', '<?V self.ret_mode ?>')" />

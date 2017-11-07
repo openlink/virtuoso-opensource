@@ -31,9 +31,9 @@
   <v:form name="F1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
     <v:variable name="settings" type="any" default="null" />
     <v:variable name="domain_id" type="integer" default="0" />
-    <v:variable name="owner_id" type="integer" default="0" />
-    <v:variable name="account_id" type="integer" default="0" />
-    <v:variable name="account_role" type="varchar" default="'W'" />
+    <v:variable name="owner_id" type="integer" default="null" />
+    <v:variable name="account_id" type="integer" default="null" />
+    <v:variable name="account_role" type="varchar" default="''" />
 
     <v:before-data-bind>
       <![CDATA[
