@@ -407,6 +407,46 @@ sparyyerror_impl_1 (sparp_t *sparp, char *raw_text, int yystate, short *yyssa, s
       );
 }
 
+int32 enable_spar_logfile = 0;
+
+void
+spar_log_error_to_file (sparp_t *sparp, const char *msg, const char *type)
+{
+  char filename[100];
+  FILE *f;
+  static int log_ctr = 0;
+  if (!enable_spar_logfile || 1000 <= log_ctr++)
+    return;
+  sprintf (filename, "error_report_%03d_%s.txt", log_ctr, type);
+  f = fopen (filename, "w");
+  if (NULL == f)
+    return;
+  fprintf (f, "Internal error report\n\n"
+"Before sending the file to support, please check it for presence of any sensitive information.\n"
+"An application may compose the query by imprinting some values into a template, these values may come from confidential data.\n"
+"If it is so, please replace these values with some similar fake values, with some caution:\n"
+"1. When one value appears in few places, please replace it with one and the same fake value in all that places;\n"
+"2. Replace different values with different fake values.\n"
+"3. Erase the following line before sending:\n"
+"*** This report is not edited by hands ***\n\n");
+  fprintf (f, "Message: %s\n", msg);
+  if (NULL == sparp)
+    {
+      fprintf (f, "sparp is NULL\n");
+    }
+  else
+    {
+      fprintf (f, "sparp_err_hdr:\n%s\n\n", ((NULL != sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "(NULL)"));
+      if (NULL != sparp->sparp_sparqre->sparqre_exec_user)
+        fprintf (f, "sparqre_exec_user:%s\n", sparp->sparp_sparqre->sparqre_exec_user->usr_name);
+      fprintf (f, "sparp_text:\n%s\n\n", sparp->sparp_text);
+      fprintf (f, "sparqre_compiled_text:\n%s\n\n", sparp->sparp_sparqre->sparqre_compiled_text);
+      if (NULL != sparp->sparp_sparqre->sparqre_super_sc)
+        fprintf (f, "sc_text:\n%s\n\n", sparp->sparp_sparqre->sparqre_super_sc->sc_text);
+    }
+  fclose (f);
+}
+
 void
 spar_error (sparp_t *sparp, const char *format, ...)
 {
@@ -435,6 +475,7 @@ spar_audit_error (sparp_t *sparp, const char *format, ...)
   va_start (ap, format);
   msg = t_box_vsprintf (1500, format, ap);
   va_end (ap);
+  spar_log_error_to_file(sparp, msg, "spar_audit");
 #ifdef SPAR_ERROR_DEBUG
   txt = ((NULL != sparp) ? sparp->sparp_text : "(no text, sparp is NULL)");
   printf ("Internal SPARQL audit error %s while processing\n-----8<-----\n%s\n-----8<-----\n", msg, txt);
@@ -463,9 +504,11 @@ spar_internal_error (sparp_t *sparp, const char *msg)
       sparp->sparp_internal_error_runs_audit = 0;
     }
 #endif
+
+  spar_log_error_to_file (sparp, msg, "spar_internal");
+
   sqlr_new_error ("37000", "SP031",
-    "%.400s: Internal error: %.1500s",
-    ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
+      "%.400s: Internal error: %.1500s", ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
 }
 
 #ifdef SPARQL_DEBUG
