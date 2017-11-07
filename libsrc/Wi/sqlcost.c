@@ -1469,14 +1469,14 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
   lc_next (lc);
   cnt = unbox (lc_nth_col (lc, 0));
   s_cnt = unbox (lc_nth_col (lc, 1));
-  lc_free (lc);
+  LC_FREE (lc);
   err = qr_rec_exec (o_qr, cli, &lc, CALLER_LOCAL, NULL, 1, ":0", box_copy (p), QRP_RAW);
   if (err)
     goto err;
   lc_next (lc);
   o_cnt = unbox (lc_nth_col (lc, 1));
-  lc_free (lc);
  err:
+  LC_FREE (lc);
   if (entered)
     {
       IN_TXN;
@@ -1703,6 +1703,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
       else
 	goto err;
       lc_free (lc);
+      lc = NULL;
     }
   if (NULL != ext_fti)
     err = qr_rec_exec (call2, cli, &lc, CALLER_LOCAL, NULL, 3,
@@ -1728,8 +1729,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
     }
   return ct;
  err:
-  if (lc)
-    lc_free (lc);
+  LC_FREE(lc);
   cli->cli_user = usr;
   cli->cli_anytime_started = at_start;
   cli->cli_rpc_timeout = rpc_timeout;

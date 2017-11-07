@@ -171,16 +171,19 @@ void qn_ts_send_output (data_source_t * src, caddr_t * state,
     code_vec_t after_join_test);
 
 void qr_resume_pending_nodes (query_t * subq, caddr_t * inst);
-caddr_t qi_handle_reset (query_instance_t * qi, int reset);
+caddr_t DBG_NAME(qi_handle_reset) (DBG_PARAMS  query_instance_t * qi, int reset, int *qi_is_killed_ret);
+#ifdef MALLOC_DEBUG
+#define qi_handle_reset(qi,reset,qi_is_killed_ret) dbg_qi_handle_reset (__FILE__, __LINE__, (qi), (reset), (qi_is_killed_ret))
+#endif
 void subq_init (query_t * subq, caddr_t * inst);
 void qn_init (table_source_t * ts, caddr_t * inst);
 
-#define QI_BUNION_RESET(qi, qr, is_subq) \
+#define QI_BUNION_RESET(qi,qr,is_subq,qi_is_killed_ret) \
   if (RST_AT_END == reset_code) \
     goto qr_complete; \
   if (qr->qr_bunion_node && RST_ERROR == reset_code) \
     { \
-      caddr_t bun_ret = qi_bunion_reset (qi, qr, is_subq); \
+      caddr_t bun_ret = qi_bunion_reset (qi, qr, is_subq, qi_is_killed_ret); \
       if (SQL_BUNION_COMPLETE == bun_ret) \
 	goto qr_complete; \
       return bun_ret; \
@@ -189,11 +192,14 @@ void qn_init (table_source_t * ts, caddr_t * inst);
 /* SQL_BUNION_COMPLETE must be different from SQL_SUCCESS, SQL_ERROR et al */
 #define SQL_BUNION_COMPLETE ((caddr_t) -11)
 
-caddr_t qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq);
-
+caddr_t qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq, int *qi_is_killed_ret);
 
 
 EXE_EXPORT (caddr_t, qr_exec, (client_connection_t * cli, query_t * qr, query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt, local_cursor_t ** ret, caddr_t * parms, stmt_options_t * opts, int named_params));
+#ifdef MALLOC_DEBUG
+extern caddr_t DBG_NAME(qr_exec) (DBG_PARAMS  client_connection_t * cli, query_t * qr, query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt, local_cursor_t ** ret, caddr_t * parms, stmt_options_t * opts, int named_params);
+#define qr_exec(cli,qr,caller,cr_name,stmt,ret,parms,opts,named_params) dbg_qr_exec(__FILE__,__LINE__,(cli),(qr),(caller),(cr_name),(stmt),(ret),(parms),(opts),(named_params))
+#endif
 
 caddr_t qr_dml_array_exec (client_connection_t * cli, query_t * qr,
 			   query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt,
@@ -226,8 +232,13 @@ caddr_t lc_get_col (local_cursor_t * lc, char * name);
 
 EXE_EXPORT (void, lc_free, (local_cursor_t * lc));
 EXE_EXPORT (long, lc_next, (local_cursor_t * lc));
-#define LC_FREE(lc) if (lc) \
-    		      lc_free (lc)
+#define LC_FREE(lc) do { \
+  if (lc) \
+    { \
+      lc_free ((lc)); \
+      lc = NULL; \
+    } \
+  } while (0)
 
 caddr_t qr_quick_exec (query_t * qr, client_connection_t * cli, char * id,
 		       local_cursor_t ** lc_ret, long n_pars, ...);
@@ -702,6 +713,11 @@ void ssl_alias (state_slot_t * alias, state_slot_t * real);
 void ssl_copy_types (state_slot_t * to, state_slot_t * from);
 
 EXE_EXPORT (caddr_t, qr_rec_exec, (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...));
+#ifdef MALLOC_DEBUG
+caddr_t DBG_NAME (qr_rec_exec) (DBG_PARAMS  query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...);
+#define qr_rec_exec(qr,cli,lc_ret,caller,opts,n_pars, ...) dbg_qr_rec_exec (__FILE__, __LINE__, (qr),(cli),(lc_ret),(caller),(opts),(n_pars), ##__VA_ARGS__)
+#endif
+
 
 EXE_EXPORT (caddr_t, lc_nth_col, (local_cursor_t * lc, int n));
 
@@ -1384,8 +1400,11 @@ void sparql_init (void);
 
 query_instance_t * qi_top_qi (query_instance_t * qi);
 void fun_ref_set_defaults_and_counts (fun_ref_node_t *fref, caddr_t * inst);
-caddr_t * qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
+caddr_t * DBG_NAME (qi_alloc) (DBG_PARAMS  query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
 		    int auto_qi_len, int n_sets);
+#ifdef MALLOC_DEBUG
+#define qi_alloc(qr,opts,auto_qi,auto_qi_len,n_sets) dbg_qi_alloc(__FILE__, __LINE__, (qr),(opts),(auto_qi),(auto_qi_len),(n_sets))
+#endif
 
 data_source_t * qn_next (data_source_t * qn);
 data_source_t * qn_last (data_source_t * qn);

@@ -856,6 +856,7 @@ exec_trx_sql_1 (client_connection_t * cli, char *pl_call_text, int params,
     {
       if (err_ret)
 	*err_ret = err;
+      LC_FREE (lc);
       goto failed;
     }
   if (lc)

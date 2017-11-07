@@ -5774,7 +5774,7 @@ xpf_collection_dir_list (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   static query_t * proc = NULL;
   caddr_t *res = NULL;
   caddr_t err = NULL;
-  local_cursor_t * lc;
+  local_cursor_t * lc = NULL;
   ptrlong recursive = 1;
   if (NULL == proc)
     {
@@ -5829,12 +5829,16 @@ xpf_collection_dir_list (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 #endif
   err = qr_rec_exec (proc, cli, &lc, qi, NULL, 2, ":0", cache_key[1], QRP_STR, ":1", recursive, QRP_INT);
   if (err)
-    goto scan_error;
+    {
+      LC_FREE (lc);
+      goto scan_error;
+    }
   if (lc_next (lc))
     {
       res = (caddr_t*) box_copy_tree (lc_nth_col (lc, 0));
       xml_doc_cache_add_copy (&(xqi->xqi_doc_cache), (caddr_t)cache_key, (caddr_t)res);
     }
+  LC_FREE (lc);
 
 scan_complete:
   XQI_SET_INT (xqi, tree->_.xp_func.var->_.var.state, XI_INITIAL);

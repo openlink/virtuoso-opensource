@@ -773,6 +773,7 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
       sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
       return;
     }
+  lc_free (lc);
 
   if (!strncmp (name, "DB.DBA.", 7))
     { /* check for the presence of unqualified when it's DB.DBA */
@@ -784,9 +785,8 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
 	  sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
 	  return;
 	}
+      lc_free (lc);
     }
-
-  lc_free (lc);
 
   for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (cols); inx += 2)
     {
@@ -3229,6 +3229,7 @@ ddl_droptable_pre (query_instance_t * qi, char *name)
   if (lc_next (lc))
     { /* it is a snapshot replication destination */
       long ret = unbox (lc_nth_col (lc, 0));
+      lc_free (lc);
       return ret ? 1 : 0;
     }
   lc_free (lc);
