@@ -1085,6 +1085,7 @@ sparp_equiv_alloc (sparp_t *sparp)
 #endif
     }
 #ifdef SPARQL_DEBUG
+#if 0
   for (eqctr = 0; eqctr < eqcount; eqctr++)
     {
       SPART *old_gp;
@@ -1094,6 +1095,7 @@ sparp_equiv_alloc (sparp_t *sparp)
       if ((old_gp != gp) && (eqs[eqctr]->e_dbg_allocator == sparp) && (SPAR_GP == SPART_TYPE (gp)) && (SPAR_GP == SPART_TYPE (old_gp)) && spar_name_same (gp->_.gp.selid, old_gp->_.gp.selid))
         spar_internal_error (sparp, "sparp_" "equiv_alloc(): different gps with same selid");
     }
+#endif
 #endif
   res->e_own_idx = eqcount;
 #ifdef DEBUG
