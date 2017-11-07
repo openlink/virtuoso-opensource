@@ -3267,7 +3267,7 @@
                       if (self.command_mode = 6)
                       {
                         rdf_type := trim (get_keyword ('dav_mime', params, get_keyword ('dav_mime2', params, '')));
-                        rdf_data := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (rdf_type = 'text/html') then 'dav_content_html' else 'dav_content_plain' end, params, '');
+                        rdf_data := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (rdf_type in ('text/html', 'application/xhtml+xml')) then 'dav_content_html' else 'dav_content_plain' end, params, '');
                       }
                       else
                       {
@@ -3476,7 +3476,7 @@
                       }
                       if (self.command_mode = 6)
                       {
-                        dav_file := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (dav_mime = 'text/html') then 'dav_content_html' else 'dav_content_plain' end, params, '');
+                        dav_file := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (dav_mime in ('text/html', 'application/xhtml+xml')) then 'dav_content_html' else 'dav_content_plain' end, params, '');
                         if (dav_mime = 'text/turtle')
                         {
                           if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
@@ -4057,7 +4057,7 @@
               </v:template>
               <div id="f_plain">
                 <?vsp
-                  if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30))
+                  if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType in ('text/html', 'application/xhtml+xml')) and (self.command <> 30))
                   {
                     http ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">');
                     http_value (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
@@ -4100,7 +4100,7 @@
                     item := WEBDAV.DBA.DAV_INIT (self.source);
                     if (not WEBDAV.DBA.DAV_ERROR (item))
                     {
-                      content := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30) then 'f_content_html' else 'f_content_plain' end, self.vc_page.vc_event.ve_params, '');
+                      content := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType in ('text/html', 'application/xhtml+xml')) and (self.command <> 30) then 'f_content_html' else 'f_content_plain' end, self.vc_page.vc_event.ve_params, '');
                       if (self.mimeType = 'text/turtle')
                       {
                         if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
