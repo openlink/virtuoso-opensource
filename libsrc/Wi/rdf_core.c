@@ -1705,7 +1705,7 @@ resource_t * prefix_nic_rc;
 void
 nic_done (resource_t * rc, name_id_cache_t * nic)
 {
-  if (11 == nic->nic_name_to_id->ht_buckets)
+  if (30 > nic->nic_name_to_id->ht_buckets)
     resource_store (rc, (void*) nic);
   else
     {
@@ -2934,7 +2934,10 @@ bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL != err)
     {
       if (!strcmp (ERR_STATE(err), "RDFXX"))
-        return NEW_DB_NULL;
+        {
+          dk_free_tree (err);
+          return NEW_DB_NULL;
+        }
       sqlr_resignal (err);
     }
   if (NULL == res)
