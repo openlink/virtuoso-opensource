@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <html>
   <head>
@@ -30,17 +27,49 @@
     <title>File Browser</title>
   </head>
   <body>
-    <v:page name="dav_browser" style="yacutia_style.xsl" fast-render="1"  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">
-      <table width="100%" class="Warning" border="0" cellpadding="0" cellspacing="0">
-        <tr>
-          <td>
-            <v:error-summary/>
-          </td>
-        </tr>
-      </table>
+    <v:page name="file_browser"
+            style="yacutia_style.xsl"
+            fast-render="1"
+            doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+            xmlns:v="http://www.openlinksw.com/vspx/"
+            xmlns:xhtml="http://www.w3.org/1999/xhtml"
+            xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+      <v:template type="simple" condition="not self.vc_is_valid">
+        <div class="warning">
+          <v:error-summary/>
+        </div>
+      </v:template>
+
       <vm:popup_page_wrapper>
+        <br />
+        <v:login
+          name="admin_login_isql_browser"
+          realm="virtuoso_admin"
+          mode="url"
+          user-password="y_sql_user_password"
+          user-password-check="y_sql_user_password_check"
+          xmlns:v="http://www.openlinksw.com/vspx/"
+          xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+          <v:template name='inl_browser' type="if-no-login">
+            <P>You are not logged in</P>
+          </v:template>
+
+          <v:login-form name="loginf_browser"
+                        required="1"
+                        title="Login"
+                        user-title="User Name"
+                        password-title="Password"
+                        submit-title="Login"/>
+        </v:login>
+
+        <?vsp if (connection_get ('vspx_user') is not null) { ?>
         <vm:file_browser />
+        <?vsp } ?>
+
       </vm:popup_page_wrapper>
+
     </v:page>
   </body>
 </html>

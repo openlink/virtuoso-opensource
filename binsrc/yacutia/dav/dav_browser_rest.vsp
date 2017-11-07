@@ -185,7 +185,7 @@
   }
   else if (action = 'driveFolders')
   {
-    declare _list any;
+    declare _list, _result any;
     declare _drive, _driveParams, _drivePath, _driveSid any;
 
     _list := null;
@@ -198,16 +198,18 @@
     if (_driveSid is not null)
     {
       _driveParams := vector ('access_timestamp', datestring (now ()), 'sid', _driveSid);
-      for (select cs_token, cs_refresh_token, cs_expire_time from OAUTH.DBA.CLI_SESSIONS where cs_sid = _driveSid) do
+      _result := WEBDAV.DBA.exec ('select TOP 1 cs_token, cs_refresh_token, cs_expire_time from OAUTH.DBA.CLI_SESSIONS where cs_sid = ?', vector (_driveSid));
+      if (length (_result))
       {
-        if (not isnull (cs_token))
-          _driveParams := vector_concat (_driveParams, vector ('access_token', cs_token));
+        _result := _result[0];
+        if (not isnull (_result[0]))
+          _driveParams := vector_concat (_driveParams, vector ('access_token', _result[0]));
 
-        if (not isnull (cs_refresh_token))
-          _driveParams := vector_concat (_driveParams, vector ('refresh_token', cs_refresh_token));
+        if (not isnull (_result[1]))
+          _driveParams := vector_concat (_driveParams, vector ('refresh_token', _result[1]));
 
-        if (not isnull (cs_expire_time))
-          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curdatetime(), cs_expire_time)));
+        if (not isnull (_result[2]))
+          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curdatetime(), _result[2])));
       }
     }
     else

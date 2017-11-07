@@ -43,7 +43,7 @@
           style="url"
           value="WebDAV Browser"
           selector="popup_browser.vspx"
-          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800"
+          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=925"
           browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;dir={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;view={@view}"
         />
       </xsl:when>
@@ -1368,6 +1368,7 @@
 
               _params := self.vc_page.vc_event.ve_params;
 
+              self.mode := get_keyword ('mode', _params, self.mode);
               self.chars := WEBDAV.DBA.settings_chars (self.settings);
               self.dir_columns := vector (
                 vector ('column_#1', 'c0', 'Name',          1, 0, vector (WEBDAV.DBA.settings_column (self.settings, 1), 1), 'width="50%"'),
@@ -3267,7 +3268,7 @@
                       if (self.command_mode = 6)
                       {
                         rdf_type := trim (get_keyword ('dav_mime', params, get_keyword ('dav_mime2', params, '')));
-                        rdf_data := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (rdf_type = 'text/html') then 'dav_content_html' else 'dav_content_plain' end, params, '');
+                        rdf_data := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (rdf_type in ('text/html', 'application/xhtml+xml')) then 'dav_content_html' else 'dav_content_plain' end, params, '');
                       }
                       else
                       {
@@ -3476,7 +3477,7 @@
                       }
                       if (self.command_mode = 6)
                       {
-                        dav_file := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (dav_mime = 'text/html') then 'dav_content_html' else 'dav_content_plain' end, params, '');
+                        dav_file := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (dav_mime in ('text/html', 'application/xhtml+xml')) then 'dav_content_html' else 'dav_content_plain' end, params, '');
                         if (dav_mime = 'text/turtle')
                         {
                           if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
@@ -4057,7 +4058,7 @@
               </v:template>
               <div id="f_plain">
                 <?vsp
-                  if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30))
+                  if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType in ('text/html', 'application/xhtml+xml')) and (self.command <> 30))
                   {
                     http ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">');
                     http_value (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
@@ -4100,7 +4101,7 @@
                     item := WEBDAV.DBA.DAV_INIT (self.source);
                     if (not WEBDAV.DBA.DAV_ERROR (item))
                     {
-                      content := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType = 'text/html') and (self.command <> 30) then 'f_content_html' else 'f_content_plain' end, self.vc_page.vc_event.ve_params, '');
+                      content := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType in ('text/html', 'application/xhtml+xml')) and (self.command <> 30) then 'f_content_html' else 'f_content_plain' end, self.vc_page.vc_event.ve_params, '');
                       if (self.mimeType = 'text/turtle')
                       {
                         if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
@@ -4900,21 +4901,26 @@
 
           <!-- Header -->
           <v:template type="simple" name="Brouse_Header" enabled="-- case when (((self.command in (0)) and (self.command_mode in (0, 1)))) then 1 else 0 end">
-            <div class="boxHeader">
-              <b><vm:label for="path" value="' Path '" /></b>
-              <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide(WEBDAV.DBA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
-              <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="<?V self.image_src ('dav/image/go_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'go');" />
-              <b><v:label for="list_type_internal" value="' View '" /></b>
-              <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
-                <v:item name="Details" value="0" />
-                <v:item name="List" value="1" />
-              </v:select-list>
-              <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
-                <b><v:label for="filters" value="--' Filter Pattern '" /></b>
-                <v:text name="filters" xhtml_id="filters" value="--self.search_filter" type="simple" />
-                <img class="pointer" border="0" alt="Filter" title="Filter" src="<?V self.image_src ('dav/image/filter_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'filter');" />
-                <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="<?V self.image_src ('dav/image/close_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" />
-              </v:template>
+            <div class="boxHeader" style="height: 22px;">
+              <div style="float: left;">
+                <b><vm:label for="path" value="' Path '" /></b>
+                <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide(WEBDAV.DBA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
+                <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="<?V self.image_src ('dav/image/go_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'go');" style="margin-left: 5px; vertical-align:middle;" />
+              </div>
+              <div style="float: right;">
+                <b><v:label for="list_type_internal" value="' View '" /></b>
+                <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
+                  <v:item name="Details" value="0" />
+                  <v:item name="List" value="1" />
+                </v:select-list>
+                <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
+                  &amp;nbsp;
+                  <b><v:label for="filters" value="--' Filter Pattern '" /></b>
+                  <v:text name="filters" xhtml_id="filters" value="--self.search_filter" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'filter\')" />
+                  <img class="pointer" border="0" alt="Filter" title="Filter" src="<?V self.image_src ('dav/image/filter_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'filter');" style="margin-left: 5px; vertical-align:middle;" />
+                  <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="<?V self.image_src ('dav/image/close_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" style="vertical-align:middle;" />
+                </v:template>
+              </div>
             </div>
           </v:template>
 
