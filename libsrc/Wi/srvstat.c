@@ -1425,8 +1425,7 @@ static long my_fd_setsize = FD_SETSIZE;
 static char * my_bp_prefix = bp_ctx.db_bp_prfx;
 static long my_case_mode;
 static long my_lite_mode;
-static long st_has_vdb =
-  0;
+static long st_has_vdb = 0;
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
 extern long mp_sparql_cap;
@@ -1436,6 +1435,8 @@ extern int32 col_seg_max_rows;
 extern int32 enable_qr_comment;
 extern int32 enable_rdf_trig;
 extern int32 enable_sslr_check;
+extern int32 enable_spar_logfile;
+extern int32 enable_sqlc_logfile;
 
 
 stat_desc_t stat_descs [] =
@@ -1925,6 +1926,8 @@ stat_desc_t dbf_descs [] =
     {"enable_qr_comment", &enable_qr_comment, SD_INT32},
     {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
     {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
+    {"enable_spar_logfile", (long *) &enable_spar_logfile, SD_INT32},
+    {"enable_sqlc_logfile", (long *) &enable_sqlc_logfile, SD_INT32},
     {NULL, NULL, NULL}
   };
 
