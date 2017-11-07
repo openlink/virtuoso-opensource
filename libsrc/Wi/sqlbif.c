@@ -15758,18 +15758,12 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_box_t *src_rdf_box;
   caddr_t src = bif_arg_unrdf_ext (qst, args, 0, "rdf_substr_impl", (caddr_t *)(&src_rdf_box));
   char src_is_rdf_box = DV_TYPE_OF (src_rdf_box) == DV_RDF;
-  boxint startl = bif_long_arg(qst, args, 1, "rdf_substr_impl");
-  unsigned start = (unsigned) startl - 1;
-  boxint lenl;
-  unsigned len = UINT_MAX;
+  boxint start = bif_long_arg (qst, args, 1, "rdf_substr_impl") - 1;
+  int len_is_passed = (BOX_ELEMENTS (args) >= 3);
+  boxint len = len_is_passed ? bif_long_arg (qst, args, 2, "rdf_substr_impl") : INT_MAX;
   size_t str_n_chars;
   box_t r;
-  if (BOX_ELEMENTS (args) >= 3)
-    {
-      lenl = bif_long_arg (qst, args, 2, "rdf_substr_impl");
-      len = (unsigned) lenl;
-    }
-
+  if (start < 0) start = 0;
   switch (DV_TYPE_OF (src))
     {
     case DV_STRING: /* utf-8 */
@@ -15779,36 +15773,24 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         const char *pstart = src;
         size_t i;
         memset (&mbstate, 0, sizeof(virt_mbstate_t));
-        for (i=0; i<start && *pstart; ++i)
-          {
-            pstart += virt_mbrlen_z (pstart, VIRT_MB_CUR_MAX, &mbstate);
-          }
+        for (i = 0; i < start && pstart[0]; i++)
+          pstart += virt_mbrlen_z (pstart, VIRT_MB_CUR_MAX, &mbstate);
         str_n_chars = wide_char_length_of_utf8_string ((const unsigned char *)pstart, strlen(pstart));
-
-        if (startl < 1 || !str_n_chars ||
-            (BOX_ELEMENTS (args) >= 3 && (lenl < 1 || lenl > str_n_chars)) )
-          goto bad_subrange;
-
-        if (len > str_n_chars)
-          len = str_n_chars;
+        if (len < 0) len = 0;
+        if (len > str_n_chars) len = str_n_chars;
         r = t_box_utf8_string (pstart, len);
       }
       break;
     case DV_WIDE:
     case DV_LONG_WIDE:
       {
-	const wchar_t *pstart;
-	size_t strlength;
-        str_n_chars = virt_wcslen ((const wchar_t *)src);
-
-        if (startl < 1 || startl > str_n_chars ||
-            (BOX_ELEMENTS (args) >= 3 && (lenl < 1 || lenl > str_n_chars - start + 1)) )
-          goto bad_subrange;
-
+        const wchar_t *pstart;
+        size_t strlength;
         pstart = (const wchar_t *)src + start;
+        str_n_chars = virt_wcslen (pstart);
+        if (len < 0) len = 0;
+        if (len > str_n_chars) len = str_n_chars;
         strlength = virt_wcslen(pstart);
-        if (len > strlength)
-          len = strlength;
         r = box_wide_as_utf8_char ((ccaddr_t)pstart, len, DV_STRING);
       }
       break;
@@ -15830,13 +15812,6 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     return (caddr_t)r;
-
-bad_subrange:
-  if (BOX_ELEMENTS (args) >= 3)
-    snprintf (b, 128, ", len=%ld", (long)lenl);
-  sqlr_new_error ("22011", "SR026",
-      "SPARQL substr: Bad string subrange: from=%ld%s.", (long)startl, b);
-  return NEW_DB_NULL;
 }
 
 /*
