@@ -26,6 +26,13 @@
 @prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#> .
 @prefix atom: <http://atomowl.org/ontologies/atomrdf#> .
 
+<http://www.openlinksw.com/sparql/virtrdf-quad-storages.ttl>
+  virtrdf:item
+    <http://www.openlinksw.com/sparql/virtrdf-quad-storages.ttl> ,
+    virtrdf:DefaultQuadStorage ,
+    virtrdf:DefaultServiceStorage ,
+    virtrdf:SyncToQuads .
+
 virtrdf:DefaultQuadStorage
   rdf:type virtrdf:QuadStorage ;
   virtrdf:qsUserMaps virtrdf:DefaultQuadStorage-UserMaps ;
