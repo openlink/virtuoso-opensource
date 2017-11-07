@@ -1123,7 +1123,7 @@ qi_bunion_error_row (query_instance_t * qi, query_t * qr, caddr_t err)
 
 
 caddr_t
-qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq)
+qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq, int *qi_is_killed_ret)
 {
   int err_row;
   caddr_t err = NULL;
@@ -1151,10 +1151,9 @@ qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq)
       if (RST_ERROR == reset_code)
 	goto bunion_next;
       if (is_subq)
-	return (subq_handle_reset (qi, reset_code));
+        return (subq_handle_reset (qi, reset_code));
       else
-	return (qi_handle_reset (qi, reset_code));
-
+        return (qi_handle_reset (qi, reset_code, qi_is_killed_ret));
     }
   END_QR_RESET;
   return (SQL_BUNION_COMPLETE);
@@ -1240,8 +1239,9 @@ subq_next (query_t * subq, caddr_t * inst, int cr_state)
   }
   QR_RESET_CODE
   {
+    int qi_is_killed__stub = 0;
     POP_QR_RESET;
-    QI_BUNION_RESET (qi, subq, 1);
+    QI_BUNION_RESET (qi, subq, 1, &qi_is_killed__stub);
     cli_restore_slice (cli, old_csl);
     return (subq_handle_reset (qi, reset_code));
   }

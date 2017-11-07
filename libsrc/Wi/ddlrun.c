@@ -773,6 +773,7 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
       sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
       return;
     }
+  lc_free (lc);
 
   if (!strncmp (name, "DB.DBA.", 7))
     { /* check for the presence of unqualified when it's DB.DBA */
@@ -784,9 +785,8 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
 	  sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
 	  return;
 	}
+      lc_free (lc);
     }
-
-  lc_free (lc);
 
   for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (cols); inx += 2)
     {
@@ -1628,10 +1628,8 @@ dbe_col_load_stats (client_connection_t *cli, query_instance_t *caller,
       col->col_count = (long) unbox (col_n_values);
       if ( DV_TYPE_OF (n_distinct) == DV_LONG_INT)
 	col->col_n_distinct = (long) unbox (n_distinct);
-      dk_free_tree (col->col_min);
-      col->col_min = box_copy_tree (col_min);
-      dk_free_tree (col->col_max);
-      col->col_max = box_copy_tree (col_max);
+      dk_free_tree (col->col_min); col->col_min = box_copy_tree (col_min);
+      dk_free_tree (col->col_max); col->col_max = box_copy_tree (col_max);
       if (DV_TYPE_OF (col_n_rows) == DV_LONG_INT)
 	tb->tb_count = (long) unbox (col_n_rows);
       if (DV_TYPE_OF (col_avg_len) == DV_LONG_INT)
@@ -1679,10 +1677,8 @@ isp_load_stats_data (client_connection_t *cli)
 	{
 	  col->col_count = DV_TYPE_OF (col_n_values) == DV_LONG_INT ? (long) unbox (col_n_values) : 0;
 	  col->col_n_distinct = DV_TYPE_OF (n_distinct) == DV_LONG_INT ? (long) unbox (n_distinct) : 0;
-	  dk_free_tree (col->col_min);
-	  dk_free_tree (col->col_max);
-	  col->col_min = box_copy_tree (col_min);
-	  col->col_max = box_copy_tree (col_max);
+	  dk_free_tree (col->col_min); col->col_min = box_copy_tree (col_min);
+	  dk_free_tree (col->col_max); col->col_max = box_copy_tree (col_max);
 	  if (DV_TYPE_OF (col_n_rows) == DV_LONG_INT)
 	    tb->tb_count = (long) unbox (col_n_rows);
 	  col->col_avg_len = DV_TYPE_OF (col_avg_len) == DV_LONG_INT ? (long) unbox (col_avg_len) : 0;
@@ -3229,6 +3225,7 @@ ddl_droptable_pre (query_instance_t * qi, char *name)
   if (lc_next (lc))
     { /* it is a snapshot replication destination */
       long ret = unbox (lc_nth_col (lc, 0));
+      lc_free (lc);
       return ret ? 1 : 0;
     }
   lc_free (lc);

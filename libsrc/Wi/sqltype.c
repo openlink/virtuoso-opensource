@@ -811,7 +811,7 @@ udt_drop_obsoleted_types (query_instance_t * qi, sql_class_t *udt)
   static query_t *select_qr = NULL, *drop_qr = NULL;
   client_connection_t *cli = qi->qi_client;
   char subtype_name [MAX_QUAL_NAME_LEN];
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
   caddr_t err = NULL;
 
   if (!select_qr)
@@ -834,7 +834,10 @@ udt_drop_obsoleted_types (query_instance_t * qi, sql_class_t *udt)
   err = qr_rec_exec (select_qr, cli, &lc, qi, NULL, 1,
       ":0", subtype_name, QRP_STR);
   if (err)
-    sqlr_resignal (err);
+    {
+      LC_FREE (lc);
+      sqlr_resignal (err);
+    }
   while (lc_next (lc))
     {
       long id = (long) unbox (lc_nth_col (lc, 0));
@@ -1035,7 +1038,10 @@ udt_read_methods_qrs (sql_class_t *udt, caddr_t *err_ret, query_instance_t *qi, 
   *err_ret = qr_rec_exec (rdproc, bootstrap_cli, &lc, qi, NULL, 1,
       ":0", (ptrlong) (udt->scl_id - 1), QRP_INT);
   if (*err_ret)
-    return;
+    {
+      LC_FREE (lc);
+      return;
+    }
   org_user = bootstrap_cli->cli_user;
   org_qual = bootstrap_cli->cli_qualifier;
   org_schema = bootstrap_cli->cli_new_schema;
@@ -1081,18 +1087,21 @@ static caddr_t
 qi_read_type_schema_1 (query_instance_t * qi, char *read_udt,
     dbe_schema_t * sc, sql_class_t *udt)
 {
-  local_cursor_t *lc = NULL;
   caddr_t err = NULL;
   lock_trx_t * lt = qi->qi_trx;
 
   sch_drop_type (sc, read_udt, udt);
   if (!udt)
     {
+      local_cursor_t *lc = NULL;
       err = qr_rec_exec (udt_read_qr, qi->qi_client, &lc, qi, NULL, 1,
 	  ":0", read_udt, QRP_STR);
 
       if (err)
-	return err;
+        {
+          LC_FREE (lc);
+          return err;
+        }
       /* make */
       while (lc_next (lc))
 	{
@@ -3507,7 +3516,7 @@ bif_udt_method_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t org_qual = cli->cli_qualifier;
   query_t *proc_qr, *rdproc;
   caddr_t err;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
 
   rdproc = sql_compile (
       "select blob_to_string (M_TEXT), M_OWNER, M_QUAL "
@@ -4520,14 +4529,17 @@ static UST *
 udt_get_parse_tree (query_instance_t *qi, char *name, long id)
 {
   caddr_t err = NULL;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
   UST *ret;
 
   err = qr_rec_exec (udt_get_tree_by_id_qr, qi->qi_client, &lc, qi, NULL, 2,
       ":0", name, QRP_STR,
       ":1", (ptrlong) (id - 1), QRP_INT);
   if (err)
-    sqlr_resignal (err);
+    {
+      LC_FREE (lc);
+      sqlr_resignal (err);
+    }
 
   if (!lc_next (lc))
     {
@@ -4881,6 +4893,7 @@ udt_alter_class_def (query_instance_t *qi, ST *_tree)
 	      dk_free_tree ((box_t) udt_old_tree);
 	      dk_free_tree ((box_t) udt_tree);
 	      dk_set_free (derived_udts);
+              LC_FREE (lc);
 	      sqlr_resignal (err);
 	    }
 	  if (!lc_next (lc))

@@ -840,10 +840,10 @@ extern int rq_check_min, rq_check_mod, rq_check_ctr, rq_batch_sz;
 void
 ord_check (query_instance_t * qi)
 {
-  int n, bs;
+  int n = -1, bs;
   caddr_t err = NULL;
   static query_t * qr;
-  local_cursor_t * lc;
+  local_cursor_t * lc = NULL;
   if (!qr)
     {
       qr = sql_compile (RQ_CHECK_TEXT, bootstrap_cli, &err, SQLC_DEFAULT);
@@ -855,14 +855,17 @@ ord_check (query_instance_t * qi)
   bs = dc_batch_sz;
   dc_batch_sz = rq_batch_sz;
   qr_rec_exec (qr, qi->qi_client, &lc, qi, NULL, 0);
-  lc_next (lc);
-  dc_batch_sz = bs;
-  n = unbox (lc_nth_col (lc, 0));
-  lc_free (lc);
+  if (lc)
+    {
+      lc_next (lc);
+      dc_batch_sz = bs;
+      n = unbox (lc_nth_col (lc, 0));
+      lc_free (lc);
+    }
   if (n)
     {
       bing ();
-      sqlr_new_error ("xxxxx", ".....", "orders del oow");
+      sqlr_new_error ("xxxxx", ".....", "orders del oow %d", (int)n);
     }
 }
 #endif

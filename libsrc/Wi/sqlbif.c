@@ -1152,6 +1152,8 @@ mp_map_dump_stats (const char *fname, caddr_t dt, caddr_t * err_ret)
       ser_len = box_length (ser)-1;
       fprintf (f, "%08x", ser_len);
       fwrite (ser, ser_len, 1, f);
+      dk_free_tree (ser);
+      dk_free_tree (data);
     }
   END_DO_HT;
   mutex_leave (&mp_reg_mtx);
@@ -9590,6 +9592,7 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   long volatile dp = (long) bif_long_arg (qst, args, 0, "page_dump");
+  int set_col_dirty = (BOX_ELEMENTS (args) >= 2);
   buffer_desc_t buf_auto;
   ALIGNED_PAGE_BUFFER (bd_buffer);
   buffer_desc_t *buf = NULL;
@@ -9608,7 +9611,8 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     if (buf)
       {
 	ITC_LEAVE_MAP_NC (itc);
-	col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+        if (set_col_dirty)
+	  col_ac_set_dirty (itc, buf, 5, 10);
 	dbg_page_map (buf);
 	return 0;
       }
@@ -9630,7 +9634,8 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (buf->bd_tree)
 	{
 	  itc_from_it (itc, buf->bd_tree);
-	  col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+	  if (set_col_dirty)
+	    col_ac_set_dirty (itc, buf, 5, 10);
 	}
     dbg_page_map (buf);
     }
@@ -12856,7 +12861,7 @@ bif_proc_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t org_qual = cli->cli_qualifier;
   query_t *proc_qr, *rdproc;
   caddr_t err, tb_name = NULL;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
   int is_trig = 0;
   /* Procedure's calls published for replication */
 
@@ -12938,10 +12943,10 @@ end:
     cl_ddl (qi, qi->qi_trx, name, is_trig ? CLO_DDL_TRIG : CLO_DDL_PROC, tb_name);
   if (qi->qi_trx->lt_branch_of && !qi->qi_client->cli_is_log)
     {
-      caddr_t * arr = is_trig
-	? (caddr_t*)list (3, box_dv_short_string ("__proc_changed (?, ?)"), box_dv_short_string (name), box_dv_short_string (tb_name))
-	: (caddr_t *)list (2, box_dv_short_string ("__proc_changed (?)"), box_dv_short_string (name));
-      log_text_array (qi->qi_trx, (caddr_t) arr);
+      caddr_t arr = is_trig
+	? list (3, box_dv_short_string ("__proc_changed (?, ?)"), box_dv_short_string (name), box_dv_short_string (tb_name))
+	: list (2, box_dv_short_string ("__proc_changed (?)"), box_dv_short_string (name));
+      log_text_array (qi->qi_trx, arr);
       dk_free_tree (arr);
     }
   qr_free (rdproc);

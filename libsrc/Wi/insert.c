@@ -1663,7 +1663,7 @@ itc_col_vacuum_compact (it_cursor_t * itc, buffer_desc_t * parent)
   int n_last = dbf_leaf_ac ? 10 : 0;
   dp_may_compact (itc->itc_tree->it_storage, parent->bd_page);
   if (!buf_has_leaves (parent))
-    itc->itc_nth_seq_page += col_ac_set_dirty (NULL, NULL, itc, parent, first, n_last);
+    itc->itc_nth_seq_page += col_ac_set_dirty (itc, parent, first, n_last);
   ITC_IN_KNOWN_MAP (itc, parent->bd_page);
   itc_delta_this_buffer (itc, parent, DELTA_MAY_LEAVE);
   ITC_LEAVE_MAP_NC (itc);

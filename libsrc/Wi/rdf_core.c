@@ -1705,7 +1705,7 @@ resource_t * prefix_nic_rc;
 void
 nic_done (resource_t * rc, name_id_cache_t * nic)
 {
-  if (11 == nic->nic_name_to_id->ht_buckets)
+  if (30 > nic->nic_name_to_id->ht_buckets)
     resource_store (rc, (void*) nic);
   else
     {
@@ -2934,7 +2934,10 @@ bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL != err)
     {
       if (!strcmp (ERR_STATE(err), "RDFXX"))
-        return NEW_DB_NULL;
+        {
+          dk_free_tree (err);
+          return NEW_DB_NULL;
+        }
       sqlr_resignal (err);
     }
   if (NULL == res)
@@ -4062,6 +4065,7 @@ void rdf_inf_init ();
 
 int iri_cache_size = 0;
 int32 enable_iri_nic_n = 1;
+int32 enable_iri_prefix_nic_n = 1;
 
 
 dbe_key_t *
@@ -4321,7 +4325,8 @@ rdf_core_init (void)
   if (enable_iri_nic_n)
     nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
-  nic_set_n_ways (iri_prefix_cache, 64);
+  if (enable_iri_prefix_nic_n)
+    nic_set_n_ways (iri_prefix_cache, 64);
   rdf_lang_cache = nic_allocate (1000, 0, 0);
   rdf_type_cache = nic_allocate (1000, 0, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);

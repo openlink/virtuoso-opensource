@@ -1697,6 +1697,7 @@ pl_col_finalize_page (page_lock_t * pl, it_cursor_t * itc, int is_rb)
       page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_RELEASE_PL | PA_SPLIT_UNLIKELY);
       itc->itc_top_ceic = NULL;
     }
+  cs_free_allocd_parts (ceic.ceic_cs);
   if (ceic.ceic_mp)
     mp_free (ceic.ceic_mp);
   if (enable_rq_check_all)
@@ -1851,6 +1852,7 @@ pl_col_cpt_rb_page (page_lock_t * pl, it_cursor_t * itc)
       page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_MODIFY | PA_SPLIT_UNLIKELY);
       itc->itc_top_ceic = NULL;
     }
+  cs_free_allocd_parts (ceic.ceic_cs);
   if (ceic.ceic_mp)
     mp_free (ceic.ceic_mp);
   itc->itc_matches = NULL;

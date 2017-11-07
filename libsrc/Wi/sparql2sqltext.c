@@ -8572,7 +8572,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
   if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
     (DV_STRING == DV_TYPE_OF (ft_arg1_str)) )
     {
-      ccaddr_t boxed_id;
+      caddr_t boxed_id;
       boxed_id = sparp_graph_sec_iri_to_id_nosignal (ssg->ssg_sparp, g_iri); /* try very fast method first */
       if (NULL == boxed_id)
         boxed_id = sparp_iri_to_id_nosignal (ssg->ssg_sparp, g_iri);
@@ -8592,6 +8592,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
           memcpy (tail, "\' AND ([ __enc \"UTF-8\" ] ", 25); tail += 25;
           memcpy (tail, ft_arg1_str, ft_arg1_strlen); tail += ft_arg1_strlen;
           strcpy (tail, ")");
+          dk_free_tree (boxed_id);
           return patched_ft_arg1;
         }
     }

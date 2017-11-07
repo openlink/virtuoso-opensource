@@ -3153,7 +3153,7 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   xml_tree_ent_t ** origs_ents = 0;
   caddr_t * copies = 0;
   caddr_t ret_text = 0;
-  local_cursor_t * lc = 0;
+  local_cursor_t * lc = NULL;
   dk_set_t lcl = 0;
   query_instance_t * qi = (query_instance_t*) qst;
   caddr_t * err = 0;
@@ -3246,62 +3246,60 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if ((caddr_t*) SQL_SUCCESS != err)
 	{
 #ifdef DEBUG
-	    log_error ("XPATH error %s %s", err[1], err[2]);
+          log_error ("XPATH error %s %s", err[1], err[2]);
 #endif
-	    qr_free (qr);
-	    dk_free_tree ((box_t) err);
-	    goto finish;
-	  }
+          LC_FREE (lc);
+          qr_free (qr);
+          dk_free_tree ((box_t) err);
+        }
+      else if (lc && lc_next (lc))
+        {
+          ret = (xml_tree_ent_t **) (lc_nth_col (lc, 0));
+          dk_set_push (&lcl, lc);
+          lc = NULL;
+          ents =  ret;
+        }
 
-	if (lc && lc_next (lc))
-	  {
-	    ret = (xml_tree_ent_t **) (lc_nth_col (lc, 0));
-	    dk_set_push (&lcl, lc);
-	    ents =  ret;
-	  }
-	lc = 0;
-      finish:
-
-	type_idx = ecm_find_name (type, xenc_types, xenc_types_len, sizeof (xenc_type_t));
-	if (type_idx == -1)
-	  type_idx = XENCTypeElementIdx;
-
-	if (!ents || !xenc_check_ents_encryptability (ents, type_idx))
-	  {
-	    DO_SET (local_cursor_t*, lc, &lcl)
-	      {
-		lc_free (lc);
-	      }
-	    END_DO_SET();
-
-	    DO_SET (xpath_keyinst_t*, xpath_kei, &xp_keys)
-	      {
-		xpath_keyinst_free (xpath_kei);
-	      }
-	    END_DO_SET();
-
-	    if (!lcl)
-	      dk_free_box ((box_t) doc);
-
-	    dk_set_free (lcl);
-
-	    nss_free (_nss);
-
-	    if (err && err[0] == (caddr_t)3)
-	      sqlr_new_error ("42000", "XENC20", "XENC internal error %s %s", err[1], err[2]);
-	    else
-	      sqlr_new_error ("42000", "XENC20", "XENC internal error");
-	  }
-
-	xpath_key = (xpath_keyinst_t *) dk_alloc_box ( sizeof (xpath_keyinst_t), DV_ARRAY_OF_POINTER);
-	memset (xpath_key, 0, sizeof (xpath_keyinst_t));
-	xpath_key->ents = ents;
-	xpath_key->keyinst = (xenc_key_inst_t *) box_copy_tree ((box_t) keyinst);
-	xpath_key->index = xpath_arg_pointer + 1;
-	xpath_key->type_idx = type_idx;
-
-	dk_set_push (&xp_keys, xpath_key);
-	xpath_arg_pointer+=3;
+      type_idx = ecm_find_name (type, xenc_types, xenc_types_len, sizeof (xenc_type_t));
+      if (type_idx == -1)
+        type_idx = XENCTypeElementIdx;
+      
+      if (!ents || !xenc_check_ents_encryptability (ents, type_idx))
+        {
+          DO_SET (local_cursor_t*, lc, &lcl)
+            {
+              lc_free (lc);
+            }
+          END_DO_SET();
+      
+          DO_SET (xpath_keyinst_t*, xpath_kei, &xp_keys)
+            {
+              xpath_keyinst_free (xpath_kei);
+            }
+          END_DO_SET();
+      
+          if (!lcl)
+            dk_free_box ((box_t) doc);
+      
+          dk_set_free (lcl);
+      
+          nss_free (_nss);
+      
+          if (err && err[0] == (caddr_t)3)
+            sqlr_new_error ("42000", "XENC20", "XENC internal error %s %s", err[1], err[2]);
+          else
+            sqlr_new_error ("42000", "XENC20", "XENC internal error");
+        }
+      
+      xpath_key = (xpath_keyinst_t *) dk_alloc_box ( sizeof (xpath_keyinst_t), DV_ARRAY_OF_POINTER);
+      memset (xpath_key, 0, sizeof (xpath_keyinst_t));
+      xpath_key->ents = ents;
+      xpath_key->keyinst = (xenc_key_inst_t *) box_copy_tree ((box_t) keyinst);
+      xpath_key->index = xpath_arg_pointer + 1;
+      xpath_key->type_idx = type_idx;
+      
+      dk_set_push (&xp_keys, xpath_key);
+      xpath_arg_pointer+=3;
     }
 
   xp_keys = dk_set_nreverse (xp_keys);
@@ -3360,6 +3358,11 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  char buf [1024];
 	  xenc_make_error (buf, sizeof (buf), t.xtb_err_code, t.xtb_err_buffer);
 	  dk_free_box (t.xtb_err_buffer);
+          DO_SET (local_cursor_t *, lc, &lcl)
+            {
+              lc_free (lc);
+            }
+          END_DO_SET();
 	  if (!lcl)
 	    dk_free_box ((box_t) doc);
 	  dk_set_free (lcl);
@@ -3413,6 +3416,11 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (dsig_initialize (qi, doc_ses, strses_length (doc_ses), dsig, &c, &c_err))
 	{
 	  char buf [1024];
+          DO_SET (local_cursor_t *, lc, &lcl)
+            {
+              lc_free (lc);
+            }
+          END_DO_SET();
 	  if (!lcl)
 	    dk_free_box ((box_t) doc);
 	  dk_set_free (lcl);

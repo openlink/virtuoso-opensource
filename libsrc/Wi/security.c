@@ -977,7 +977,7 @@ sec_new_u_id (query_instance_t * qi)
   caddr_t col;
   oid_t u_id;
   caddr_t err;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
 
   if (!qi || (CALLER_LOCAL == qi))	/* Added by AK 20-FEB-97. */
     {
@@ -992,7 +992,10 @@ sec_new_u_id (query_instance_t * qi)
 
   err = qr_rec_exec (last_id_qr, cli, &lc, qi, NULL, 0);
   if (err != SQL_SUCCESS)
-    sqlr_resignal (err);
+    {
+      LC_FREE (lc);
+      sqlr_resignal (err);
+    }
   if (!lc_next (lc))
     {
       lc_free (lc);
@@ -1694,7 +1697,7 @@ sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
     char *table, int only_execute_gr)
 {
   dbe_schema_t * sc;
-  caddr_t err;
+  caddr_t err = NULL;
   local_cursor_t *lc = NULL;
   sqlc_set_client (cli);
   if (!sec_initialized)
@@ -1721,8 +1724,7 @@ sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
     }
   if (err)
     {
-      if (lc)
-	lc_free (lc);
+      LC_FREE (lc);
       return err;
     }
   while (lc_next (lc))
@@ -1731,10 +1733,20 @@ sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
       int op = (int) unbox (lc_nth_col (lc, 1));
       char *object = lc_nth_col (lc, 2);
       char *column = lc_nth_col (lc, 3);
-
-      sec_dd_grant (sc, object, column, 1, op, grantee);
+      QR_RESET_CTX_T (((query_instance_t *)(lc->lc_inst))->qi_thread)
+        {
+          sec_dd_grant (sc, object, column, 1, op, grantee);
+          dk_free_tree (err); /* Can't remember more than 1 error anyway */
+          err = lc->lc_error;
+        }
+      QR_RESET_CODE
+        {
+          dk_free_tree (err); /* Can't remember more than 1 error anyway */
+          err = thr_get_error_code (THREAD_CURRENT_THREAD);
+          POP_QR_RESET;
+        }
+      END_QR_RESET;
     }
-  err = lc->lc_error;
   lc_free (lc);
   if (!caller_qi)
     local_commit (bootstrap_cli);
@@ -2658,8 +2670,7 @@ sec_read_tb_rls (client_connection_t * cli, query_instance_t * caller_qi, char *
     }
   if (err)
     {
-      if (lc)
-	lc_free (lc);
+      LC_FREE (lc);
       return err;
     }
   while (lc_next (lc))
