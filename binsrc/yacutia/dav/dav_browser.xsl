@@ -4900,21 +4900,26 @@
 
           <!-- Header -->
           <v:template type="simple" name="Brouse_Header" enabled="-- case when (((self.command in (0)) and (self.command_mode in (0, 1)))) then 1 else 0 end">
-            <div class="boxHeader">
-              <b><vm:label for="path" value="' Path '" /></b>
-              <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide(WEBDAV.DBA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
-              <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="<?V self.image_src ('dav/image/go_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'go');" />
-              <b><v:label for="list_type_internal" value="' View '" /></b>
-              <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
-                <v:item name="Details" value="0" />
-                <v:item name="List" value="1" />
-              </v:select-list>
-              <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
-                <b><v:label for="filters" value="--' Filter Pattern '" /></b>
-                <v:text name="filters" xhtml_id="filters" value="--self.search_filter" type="simple" />
-                <img class="pointer" border="0" alt="Filter" title="Filter" src="<?V self.image_src ('dav/image/filter_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'filter');" />
-                <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="<?V self.image_src ('dav/image/close_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" />
-              </v:template>
+            <div class="boxHeader" style="height: 22px;">
+              <div style="float: left;">
+                <b><vm:label for="path" value="' Path '" /></b>
+                <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide(WEBDAV.DBA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
+                <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="<?V self.image_src ('dav/image/go_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'go');" style="margin-left: 5px; vertical-align:middle;" />
+              </div>
+              <div style="float: right;">
+                <b><v:label for="list_type_internal" value="' View '" /></b>
+                <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
+                  <v:item name="Details" value="0" />
+                  <v:item name="List" value="1" />
+                </v:select-list>
+                <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
+                  &amp;nbsp;
+                  <b><v:label for="filters" value="--' Filter Pattern '" /></b>
+                  <v:text name="filters" xhtml_id="filters" value="--self.search_filter" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'filter\')" />
+                  <img class="pointer" border="0" alt="Filter" title="Filter" src="<?V self.image_src ('dav/image/filter_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'filter');" style="margin-left: 5px; vertical-align:middle;" />
+                  <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="<?V self.image_src ('dav/image/close_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" style="vertical-align:middle;" />
+                </v:template>
+              </div>
             </div>
           </v:template>
 
