@@ -23,7 +23,6 @@
 <v:page name="account_create_page"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
-        vm:owner="yacutia_accounts_page"
         fast-render="1"
         xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
@@ -68,143 +67,27 @@
       <vm:help id="account_create" sect="" />
       <script tyep="text/javascript">
         <![CDATA[
-          function onExitUserName()
-          {
-            // no action yet
-            // with (document.account_form) t_repository_path.value = "/DAV/home/" + t_login_name.value;
-          }
           function onExitAccountName()
           {
-            with (document.account_form) t_login_name.value = t_full_name.value;
+            var f = document.account_form;
+            f.t_login_name.value = f.t_full_name.value;
           }
           function swHomeDir (cb)
           {
-            var l, h;
-            with (document.account_form) l = t_login_name.value;
-            with (document.account_form) h = t_repository_path.value;
-            if (cb.checked == true && h.length == 0 && l.length > 0)
+            var f = document.account_form;
+            var l = f.t_login_name.value;
+            var h = f.t_repository_path.value;
+            if (cb.checked === true && h.length === 0 && l.length > 0)
             {
-              with (document.account_form) t_repository_path.value = "/DAV/home/" + l + "/";
+              f.t_repository_path.value = "/DAV/home/" + l + "/";
             }
-            else if (cb.checked == false)
+            else if (cb.checked === false)
             {
-              with (document.account_form) t_repository_path.value = "";
+              f.t_repository_path.value = "";
             }
           }
         ]]>
       </script>
-      <v:before-data-bind>
-        <![CDATA[
-          declare user_id varchar;
-          declare params any;
-
-          params := self.vc_event.ve_params;
-          self.default_group_name := get_keyword ('dl_default_group', params, self.default_group_name);
-          self.mode := get_keyword ('mode', params, self.mode);
-          self.user_name := get_keyword ('user_name', params, '');
-          select U_NAME into user_id from SYS_USERS where U_ID = 0;
-
-          if (self.mode = 'edit' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
-          {
-            http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
-            return;
-          }
-
-          if (self.mode = 'create' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
-          {
-            http_request_status  ('HTTP/1.1 302 Found');
-            http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
-            return;
-          }
-
-          if (self.mode = 'edit')
-          {
-            declare _u_id, _u_group integer;
-            declare _all_opts, ldapo varchar;
-
-            whenever not found goto nf_user;
-
-            select u_id, u_full_name, u_e_mail,
-                   encode_base64 (u_password), u_group, u_account_disabled,
-                   u_dav_enable, u_sql_enable, u_def_perms, u_home,
-                   u_def_qual, deserialize (blob_to_string (u_opts))
-              into _u_id, self.full_name, self.e_mail,
-                   self.enc_password, _u_group, self.account_disabled,
-                   self.dav_enable, self.sql_enable, self.def_perms, self.homedir,
-                   self.def_qual, _all_opts
-              from SYS_USERS
-             where U_NAME = self.user_name;
-
-            self.dav_quota := coalesce (DB.DBA.USER_GET_OPTION (self.user_name, 'DAVQuota'), 5242880);
-            self._webid := (select top 1 UW_WEBID from DB.DBA.SYS_USER_WEBID where UW_U_NAME = self.user_name);
-            if (self._webid is null)
-              self._webid := '';
-
-            ldapo := USER_GET_OPTION (self.user_name, 'LDAPServer');
-            if (isarray (ldapo) and length (ldapo) > 1)
-            {
-              self.ldap_auth.ufl_value := ldapo[1];
-              self.ldap_auth_s.ufl_value := ldapo[0];
-            }
-
-            if (_u_id = _u_group)
-              self.user_group := 'none';
-            else
-              select U_NAME into self.user_group from SYS_USERS where U_ID = _u_group;
-
-            if (_all_opts is not NULL)
-            {
-              self.os_password := get_keyword ('SYSTEM_UPASS', _all_opts, '');
-              self.os_name := get_keyword ('SYSTEM_UNAME', _all_opts, '');
-              self.os_password := pwd_magic_calc (self.user_name, self.os_password, 1);
-              self.os_name := pwd_magic_calc (self.user_name, self.os_name, 1);
-            }
-            else
-            {
-              self.os_name := '';
-              self.os_password := '';
-            }
-
-            select U_NAME
-              into self.default_group_name
-              from DB.DBA.SYS_USERS
-             where U_ID = _u_group;
-
-            self.roles_grant_list := vector ();
-            if (isstring (self.user_name))
-            {
-              for (select GI_GRANT from SYS_ROLE_GRANTS where GI_SUPER = _u_id and GI_DIRECT = '1') do
-              {
-                declare gp varchar;
-
-                whenever not found goto nf_role;
-                select U_NAME into gp from DB.DBA.SYS_USERS where U_ID = GI_GRANT;
-                self.roles_grant_list := vector_concat (self.roles_grant_list, vector (gp));
-              nf_role:;
-              }
-            }
-          nf_user:;
-          }
-          else if (self.mode = 'create')
-          {
-            self.roles_grant_list := vector ();
-            self.user_name := '';
-            self.default_group_name := '';
-            self.full_name := '';
-            self.enc_password := '';
-            self.account_disabled := 0;
-            self.dav_enable := 0;
-            self.sql_enable := 0;
-            self.def_perms := '110100000R';
-            self.homedir := '';
-            self.def_qual := '';
-            self.os_name := '';
-            self.os_password := '';
-            self.e_mail := '';
-          }
-        ]]>
-      </v:before-data-bind>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -214,19 +97,19 @@
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
                       <td class="page_tab_selected" align="center">
-                        <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
+                        <v:url name="b_url31" value="Users" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
+                        <v:url name="b_url32" value="Roles" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url14" value="Grants"  url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
+                        <v:url name="b_url14" value="Grants" url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url15" value="--'LDAP Import'" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
+                        <v:url name="b_url15" value="LDAP Import" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url15" value="--'LDAP Servers'" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
+                        <v:url name="b_url15" value="LDAP Servers" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
                         &nbsp;
@@ -237,6 +120,90 @@
                     <tr>
                       <td valign="top">
                         <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
+                          <v:before-data-bind>
+                            <![CDATA[
+                              declare params any;
+
+                              params := self.vc_event.ve_params;
+                              self.default_group_name := get_keyword ('dl_default_group', params, self.default_group_name);
+                              self.mode := get_keyword ('mode', params, self.mode);
+                              self.user_name := get_keyword ('user_name', params, '');
+                              if (self.mode = 'edit')
+                              {
+                                declare _u_id, _u_group integer;
+                                declare _all_opts, ldapo varchar;
+
+                                whenever not found goto nf_user;
+
+                                select u_id, u_full_name, u_e_mail,
+                                       encode_base64 (u_password), u_group, u_account_disabled,
+                                       u_dav_enable, u_sql_enable, u_def_perms, u_home,
+                                       u_def_qual, deserialize (blob_to_string (u_opts))
+                                  into _u_id, self.full_name, self.e_mail,
+                                       self.enc_password, _u_group, self.account_disabled,
+                                       self.dav_enable, self.sql_enable, self.def_perms, self.homedir,
+                                       self.def_qual, _all_opts
+                                  from DB.DBA.SYS_USERS
+                                 where U_NAME = self.user_name;
+
+                                self.dav_quota := coalesce (DB.DBA.USER_GET_OPTION (self.user_name, 'DAVQuota'), 5242880);
+                                self._webid := (select top 1 UW_WEBID from DB.DBA.SYS_USER_WEBID where UW_U_NAME = self.user_name);
+                                if (self._webid is null)
+                                  self._webid := '';
+
+                                ldapo := USER_GET_OPTION (self.user_name, 'LDAPServer');
+                                if (isarray (ldapo) and length (ldapo) > 1)
+                                {
+                                  self.ldap_auth.ufl_value := ldapo[1];
+                                  self.ldap_auth_s.ufl_value := ldapo[0];
+                                }
+
+                                if (_u_id = _u_group)
+                                  self.user_group := 'none';
+                                else
+                                  select U_NAME into self.user_group from SYS_USERS where U_ID = _u_group;
+
+                                if (_all_opts is not NULL)
+                                {
+                                  self.os_password := get_keyword ('SYSTEM_UPASS', _all_opts, '');
+                                  self.os_name := get_keyword ('SYSTEM_UNAME', _all_opts, '');
+                                  self.os_password := pwd_magic_calc (self.user_name, self.os_password, 1);
+                                  self.os_name := pwd_magic_calc (self.user_name, self.os_name, 1);
+                                }
+                                else
+                                {
+                                  self.os_name := '';
+                                  self.os_password := '';
+                                }
+
+                                self.default_group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _u_group), '');
+
+                                self.roles_grant_list := vector ();
+                                for (select U_NAME from DB.DBA.SYS_ROLE_GRANTS, DB.DBA.SYS_USERS where U_ID = GI_GRANT and GI_SUPER = _u_id and GI_DIRECT = '1') do
+                                {
+                                  self.roles_grant_list := vector_concat (self.roles_grant_list, vector (U_NAME));
+                                }
+                              nf_user:;
+                              }
+                              else if (self.mode = 'create')
+                              {
+                                self.roles_grant_list := vector ();
+                                self.user_name := '';
+                                self.default_group_name := '';
+                                self.full_name := '';
+                                self.enc_password := '';
+                                self.account_disabled := 0;
+                                self.dav_enable := 0;
+                                self.sql_enable := 0;
+                                self.def_perms := '110100000R';
+                                self.homedir := '';
+                                self.def_qual := '';
+                                self.os_name := '';
+                                self.os_password := '';
+                                self.e_mail := '';
+                              }
+                            ]]>
+                          </v:before-data-bind>
                           <table class="main_page_area" style="valign: top">
                             <tr valign="top">
                               <td>
@@ -257,7 +224,6 @@
                                       <v:text name="t_login_name"
                                               value="--y_utf2wide (self.user_name)"
                                               xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"
-                                              xhtml_onblur="onExitUserName()"
                                               xhtml_id="u_login"
                                               xhtml_tabindex="2"/>
                                     </td>
@@ -1084,16 +1050,16 @@
     if (check_grants (connection_get ('vspx_user'), '') = 1)
       {
         select distinct U_ID into u_ident
-          from SYS_USERS
+                                          from DB.DBA.SYS_USERS
           where U_NAME= user_name and
                 U_IS_ROLE = 0;
 
         for select UG_UID, UG_GID
-              from SYS_USER_GROUP
+                                              from DB.DBA.SYS_USER_GROUP
               where UG_UID = u_ident do
           {
             select distinct U_NAME into g_name
-              from SYS_USERS
+                                            from DB.DBA.SYS_USERS
               where U_ID = UG_GID and U_IS_ROLE = 1;
 
             if (g_name <> '' and g_name <> coalesce (self.dl_default_group.ufl_value, ''))
@@ -1109,7 +1075,8 @@
           {
             if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value or self.dl_default_group.ufl_value is null)
         {
-          if (not exists (select 1 from SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS u
+                                            if (not exists (select 1
+                                                              from DB.DBA.SYS_ROLE_GRANTS, DB.DBA.SYS_USERS g, DB.DBA.SYS_USERS u
       where g.U_NAME = self.roles_grant_list[i] and gi_super = u.u_id and u.u_name = user_name and gi_grant = g.u_id))
                   USER_GRANT_ROLE(user_name, self.roles_grant_list[i]);
         }
@@ -1127,11 +1094,12 @@
             declare davpass varchar;
 
             select pwd_magic_calc ('dav', u_password, 1) into davpass
-              from sys_users where u_name='dav' and u_is_role = 0;
+                                            from DB.DBA.SYS_USERS
+                                           where u_name='dav' and u_is_role = 0;
             {
               declare home_vec any;
               declare cur_path varchar;
-              declare i integer;
+
               user_home := trim (user_home, '/');
               home_vec := split_and_decode (user_home, 0, '\0\0/');
               i := 1;
@@ -1183,7 +1151,6 @@
       {
         control.vc_parent.vc_error_message := msg;
         self.vc_is_valid := 0;
-        return;
       }
     else if (check_grants(connection_get ('vspx_user'), '') = 1)
       {
