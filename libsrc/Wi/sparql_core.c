@@ -942,7 +942,7 @@ static const char *sparp_known_get_params[] = {
     "get:accept", "get:cartridge", "get:destination", "get:error-recovery", "get:group-destination", "get:login", "get:method", "get:note", "get:private", "get:proxy", "get:query", "get:refresh", "get:soft", "get:strategy", "get:uri", NULL };
 
 static const char *sparp_integer_defines[] = {
-    "input:grab-depth", "input:grab-limit", "lang:dialect", "lang:exceptions", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", "sql:comment", "sql:sparql-ebv", NULL };
+    "input:grab-depth", "input:grab-limit", "lang:dialect", "lang:exceptions", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", "sql:comment", "sql:comments", "sql:sparql-ebv", NULL };
 
 static const char *sparp_var_defines[] = { NULL };
 
@@ -1318,7 +1318,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
             spar_error (sparp, "define sql:signal-void-variables should have value 0 or 1");
             sparp->sparp_sg->sg_signal_void_variables = val;
           return; }
-      if (!strcmp (param, "sql:comment")) {
+      if (!strcmp (param, "sql:comment") || !strcmp (param, "sql:comments")) {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : 0);
           sparp->sparp_sg->sg_comment_sql = val;
           return; }
