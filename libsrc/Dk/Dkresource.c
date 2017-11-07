@@ -429,6 +429,7 @@ DBG_NAME(resource_store) (DBG_PARAMS  resource_t * rc, void *item)
       mutex_enter (res_to_thing_mtx);
       remhash (item, res_to_thing);
       mutex_leave (res_to_thing_mtx);
+      if (thing)
       free (thing);
 #endif
       rc->rc_n_full++;
@@ -472,6 +473,7 @@ DBG_NAME(resource_store_fifo) (DBG_PARAMS  resource_t * rc, void *item, int n_fi
       mutex_enter (res_to_thing_mtx);
       remhash (item, res_to_thing);
       mutex_leave (res_to_thing_mtx);
+      if (thing)
       free (thing);
 #endif
       rc->rc_n_full++;
@@ -538,6 +540,7 @@ DBG_NAME(resource_store_timed) (DBG_PARAMS  resource_t * rc, void *item)
       mutex_enter (res_to_thing_mtx);
       remhash (item, res_to_thing);
       mutex_leave (res_to_thing_mtx);
+      if (thing)
       free (thing);
 #endif
       rc->rc_n_full++;
@@ -577,6 +580,7 @@ DBG_NAME(resource_clear) (DBG_PARAMS  resource_t * rc, rc_destr_t destruct)
       mutex_enter (res_to_thing_mtx);
       remhash (item, res_to_thing);
       mutex_leave (res_to_thing_mtx);
+      if (thing)
       free (thing);
 #endif
       destruct (item);
