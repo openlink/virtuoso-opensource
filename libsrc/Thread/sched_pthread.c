@@ -1192,7 +1192,7 @@ mutex_free (dk_mutex_t *mtx)
     {
       pthread_mutex_destroy ((pthread_mutex_t*) &mtx->mtx_mtx);
     }
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) || defined (MTX_METER)
   dk_free_box (mtx->mtx_name);
 #endif
 #ifdef MTX_METER
