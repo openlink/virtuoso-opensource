@@ -809,7 +809,7 @@ case $1 in
 
    # Prepare GRDDL tests to run locally
    gzip -c -d $VIRTUOSO_TEST/grddl-tests.tar.gz | tar xf -
-   if grep ":14300" grddl-tests/* > /dev/null
+   if grep ":14300" grddl-tests/*.* > /dev/null
    then
        echo "The port number to replace is correct."
    else
