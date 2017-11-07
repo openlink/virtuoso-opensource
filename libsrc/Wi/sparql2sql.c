@@ -4541,11 +4541,10 @@ field_sff_isects_qmv_sff: ;
       caddr_t eff_val = SPAR_LIT_OR_QNAME_VAL (field);
       if (DV_UNAME != DV_TYPE_OF (eff_val))
         { /* This would be very-very strange failure */
-#ifdef DEBUG
-          GPF_T1 ("sparp_check_field_mapping_g(): non-UNAME constant used as graph of a triple, legal but strange");
-#else
-          return SSG_QM_NO_MATCH;
+#ifdef SPARQL_DEBUG
+          spar_internal_error (sparp, "sparp_check_field_mapping_g(): non-UNAME constant used as graph of a triple, legal but strange");
 #endif
+          return SSG_QM_NO_MATCH;
         }
       if (tcc->tcc_check_source_graphs)
         {
@@ -4560,7 +4559,7 @@ field_sff_isects_qmv_sff: ;
       chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *) eff_val, qmv_or_fmt_rvr, rvr);
       return chk_res;
     }
-  GPF_T1("ssg_check_field_mapping_g(): field is neither variable nor literal?");
+  spar_internal_error (sparp, "ssg_check_field_mapping_g(): field is neither variable nor literal?");
   return SSG_QM_NO_MATCH;
 }
 
