@@ -2754,12 +2754,46 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 			savefs.style.display = "none";
 		}
 	}
+	function change_run_button(e)
+	{
+		var button = document.getElementById("run");
+		var lbl;
+
+		if (!button) return;
+
+		if (e.checked)
+		{
+		    lbl = " Explain ";
+		}
+		else
+		{
+		    lbl = " Run Query ";
+		}
+
+		if (button)
+		{
+		      if (button.childNodes[0])
+		      {
+			button.childNodes[0].nodeValue=lbl;
+		      }
+		      else if (button.value)
+		      {
+			button.value=lbl;
+		      }
+		      else //if (button.innerHTML)
+		      {
+			button.innerHTML=lbl;
+		      }
+		}
+	}
 	function sparql_endpoint_init()
 	{
 		var format = document.getElementById("format");
  		if (format) format_change(format);
 		var savefs = document.getElementById("savefs");
 		if (savefs) savefs.style.display="none";
+		var b = document.getElementById("explain");
+		if (b) change_run_button(b);
 	}
     ');
     http('    /*]]>*/\n');
@@ -2959,7 +2993,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     in debug integer,
     in log_debug_info integer,
     in save_mode integer,
-    in dav_refresh varchar)
+    in dav_refresh varchar,
+    in explain_report varchar)
 {
     declare can_cxml, can_pivot, can_qrcode, can_sponge integer;
     can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
@@ -3080,9 +3115,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<fieldset id="options">\n');
     http('		<input name="debug" id="debug" type="checkbox"' || case (debug) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="debug" class="ckb">Strict checking of void variables</label>\n');
-    http('		&nbsp;&nbsp;&nbsp;\n');
+    http('		<br>\n');
     http('		<input name="log_debug_info" id="log_debug_info" type="checkbox"' || case (log_debug_info) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="log_debug_info" class="ckb">Log debug info at the end of output (has no effect on some queries and output formats)</label>\n');
+    http('		<br>\n');
+    http('		<input name="explain" id="explain" onclick="javascript:change_run_button(this)" type="checkbox"' || case (explain_report) when '' then '' else ' checked="checked"' end || '/>\n');
+    http('		<label for="explain" class="ckb">Generate SPARQL compilation report (instead of executing the query)</label>\n');
 
 
     if (save_dir is not null)
@@ -3120,7 +3158,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     }
 
     http('		<br />\n');
-    http('		<input type="submit" value="Run Query"/>\n');
+    http('		<input type="submit" name="run" id="run" value="Go"/>\n');
     http('		<input type="reset" value="Reset"/>\n');
     http('	</fieldset>\n');
     http('	</form>\n');
@@ -3152,6 +3190,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare __debug_mode integer;
   declare qtxt, deadl integer;
   declare save_mode, save_dir, dav_refresh, fname varchar;
+  declare explain_report varchar;
   declare save_dir_id any;
   declare help_topic varchar;
   -- dbg_obj_princ ('===============');
@@ -3213,6 +3252,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   def_qry := get_keyword('qtxt', params, '');
   ini_dflt_graph := get_keyword ('default-graph-uri', params, ini_dflt_graph);
   timeout := atoi (get_keyword ('timeout', params, cast (timeout as varchar)));
+  explain_report := get_keyword ('explain', params, '');
 
   if ('' <> def_qry)
     qtxt := 1;
@@ -3348,11 +3388,11 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	}
       debug := get_keyword ('debug', params, '1');
       log_debug_info := get_keyword ('log_debug_info', params, '');
-      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh);
-
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh, explain_report);
       return;
     }
-  execute_query:
+
+execute_query:
   qry_params := dict_new (7);
   for (paramctr := 0; paramctr < paramcount; paramctr := paramctr + 2)
     {
@@ -3718,25 +3758,88 @@ host_found:
   if (sc_max < 0)
     sc_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxExecutionTime'), '-1'));
   if (sc_max > 0)
-    {
-      state := '00000';
-      full_query := concat ('define sql:big-data-const 0 ', full_query);
-      sc := exec_score (concat ('sparql { ', full_query, '\n}'), state, msg);
-      if ((sc/1000) > sc_max)
-	{
-	  signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
-	}
-    }
-
-  state := '00000';
-  metas := null;
-  rset := null;
+    full_query := concat ('define sql:big-data-const 0 ', full_query);
 
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('format = ', format);
   -- dbg_obj_princ ('full_query = ', full_query);
   -- dbg_obj_princ ('qry_params = ', qry_params);
   -- dbg_obj_princ ('save_mode = ', save_mode, ' save_dir = ', save_dir);
+
+  if (sc_max > 0)
+    {
+      state := '00000';
+      sc := exec_score (concat ('sparql { ', full_query, '\n}'), state, msg);
+      if ((sc/1000) > sc_max)
+        signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
+    }
+
+  if (explain_report <> '')
+    {
+      declare report any;
+      --http_header (http_header_get () || 'Context-Type: text/plain\r\n');
+      http ('<html><head><title>Compilation Details</title></head>\n');
+      http ('<body>\n');
+      http ('<h3>SPARQL query after parsing, optimization, and converting back into SPARQL</h3>\n');
+      whenever sqlstate '*' goto err_on_detalize;
+      report := sparql_detalize (concat ('{', full_query, '\n}'));
+      http ('<pre>\n');
+      http_value (report);
+      http ('\n</pre>\n');
+      goto detalize_done;
+err_on_detalize:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+detalize_done:
+      http ('<h3>SPARQL query translated to SQL</h3>\n');
+      http ('<i>For security reasons, code responsible for graph-level security is not generated and some account-specific data are intentionally made wrong.</i>\n');
+      whenever sqlstate '*' goto err_on_sql_text;
+      report := sparql_to_sql_text (concat ('{ define sql:comments 0 ', full_query, '\n}'));
+      http ('<pre>\n');
+      http_value (report);
+      http ('\n</pre>\n');
+      goto sql_text_done;
+err_on_sql_text:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+sql_text_done:
+      http ('<h3>SQL execution plan</h3>\n');
+      whenever sqlstate '*' goto err_on_sql_explain;
+      state := '00000';
+      metas := null;
+      rset := null;
+      commit work;
+      exec (concat ('explain (', WS.ws.STR_SQL_APOS ('sparql {' || full_query || '\n}'), ')'), state, msg, vector(), vector ('use_cache', 0), metas, rset);
+      if ('00000' <> state)
+        {
+          http ('<b>ERROR ' || state || ': ' || msg || '</b>\n');
+        }
+      else
+        {
+          http ('<pre>\n');
+          foreach (any res in rset) do { http_value (res[0]); http ('\n'); }
+          http ('</pre>\n');
+        }
+      goto sql_explain_done;
+err_on_sql_explain:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+sql_explain_done:
+      http ('<h3>Internal optimizer data</h3>\n');
+      http ('<i>These data are primarily for OpenLink support, to get additional details about the query processing.</i>\n');
+      whenever sqlstate '*' goto err_on_sparql_explain;
+      report := sparql_explain (concat ('{ define sql:comments 1 ', full_query, '\n}'));
+      http ('<pre>\n');
+      http_value (report);
+      http ('\n</pre>\n');
+      goto sparql_explain_done;
+err_on_sparql_explain:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+sparql_explain_done:
+      http ('</body></html>\n');
+      return;
+    }
+
+  state := '00000';
+  metas := null;
+  rset := null;
   commit work;
   if (client_supports_partial_res and (timeout > 0))
     {
@@ -3750,7 +3853,8 @@ host_found:
     }
   connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);    
   set_user_id (user_id, 1);
-  again:
+
+again:
   state := '00000';
   start_time := msec_time();
   exec ( concat ('sparql {', full_query, '\n}'), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
@@ -4152,8 +4256,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout par
       http('<h3>How To Let Virtuoso Render Relational Data As RDF?</h3>');
       http('<p>By default, Virtuoso stores all RDF data in a single "RDF Storage" that consists of one four-column relational table containing all triples of all graphs.</p>');
       if (storage_is_dflt)
-        http('<p><b>The Virtuoso instance seems to be in the default configuration now, probably you do not have to inspect the (boring) rest of this page.</b></p>');
-      http('<p>System Adminstrator can extend this basic schema with more storages and more groups of triples to represent variety of SQL tables and views stored in Virtuoso or in attached data sources.</p>');
+        http('<p><b>The Virtuoso instance seems to be in the default configuration now, probably you do not have to inspect the rest of this page.</b></p>');
+      http('<p>System Administrator can extend this basic schema with more storages and more groups of triples to represent a variety of SQL tables and views stored in Virtuoso or in attached data sources.</p>');
       for (sparql define output:valmode "LONG" define input:storage "" select ?storage from virtrdf: where { ?storage a virtrdf:QuadStorage } order by asc(str(?storage))) do
         {
           declare default_qm IRI_ID;
@@ -4166,7 +4270,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout par
           else if ('http://www.openlinksw.com/schemas/virtrdf#SyncToQuads' = id_to_iri ("storage"))
             http ('<p>This pre-defined storage is to enumerate quad maps mentioned by triggers based on RDF Views; these triggers track changes in source tables of RDF Views and materialize updated content of views as "physical" triples.</p>');
           else
-            http ('<p>This storage is created by some application or by system administrator.\n');
+            http ('<p>This storage is created by some application or by a system administrator.\n');
           qm_count := (sparql define input:storage "" select count (1) from virtrdf: where { `iri(?:storage)` virtrdf:qsUserMaps ?maps . ?maps ?p ?qm . ?qm a virtrdf:QuadMap . });
           if (qm_count > 0)
             {
