@@ -244,6 +244,7 @@ create procedure adm_menu_tree ()
    <node name="Parameters" url="inifile.vspx?page=Database" id="21" allowed="yacutia_params_page">
      <node name="Parameters" url="inifile.vspx" id="22" place="1" allowed="yacutia_params_page"/>
    </node>
+   <node name="Registry" url="registries.vspx" id="221" allowed="yacutia_registry_page" />
    <node name="Packages" url="vad.vspx" id="27" allowed="yacutia_vad_page">
      <node name="Packages" url="vad.vspx" id="28" place="1" allowed="yacutia_vad_page"/>
      <node name="Install packages" url="vad_install.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
@@ -6086,5 +6087,28 @@ create procedure y_wide2utf (
       return retValue;
   }
   return charset_recode (S, null, 'UTF-8' );
+}
+;
+
+create procedure y_registries (
+  in _filter varchar := '')
+{
+  declare N integer;
+  declare V, v0, v1 any;
+  declare c0, c1 varchar;
+
+  result_names (c0, c1);
+
+  V := registry_get_all ();
+  for (N := 0; N < length (V); N := N + 2)
+  {
+    v0 := cast (V[N] as varchar);
+    v1 := V[N+1];
+    if ((_filter <> '') and (v0 not like _filter))
+      goto _skip;
+
+    result (v0, v1);
+  _skip:;
+  }
 }
 ;
