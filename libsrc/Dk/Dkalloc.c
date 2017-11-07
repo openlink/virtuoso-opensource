@@ -657,6 +657,11 @@ dk_memory_initialize (int do_malloc_cache)
   strses_mem_initalize ();
 }
 
+void
+dk_memory_finalize (void)
+{
+  dk_box_finalize ();
+}
 
 void
 dk_mem_stat (char *out, int max)
