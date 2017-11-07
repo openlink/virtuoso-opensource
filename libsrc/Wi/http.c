@@ -9770,8 +9770,10 @@ bif_http_body_read (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     sqlr_new_error ("42000", "HT053", "Function http_body_read() not allowed outside http context");
   if ((0 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 0, "http_body_read"))
     {
-      ses = strses_allocate ();
+      ses = NULL; /* not ses = strses_allocate (); because ws_http_body_read() allocates the resulting session itself */
       ws_http_body_read (ws, &ses);
+      if (NULL == ses)
+        ses = strses_allocate ();
     }
   else if (ws->ws_req_body)
     {
