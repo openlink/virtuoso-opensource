@@ -319,7 +319,10 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
       goto p_name_is_set;
     }
   if (!strcmp (ws->ws_method_name, "PUT"))
-    return ws_dav_put (ws, http_call);
+    {
+      while (NULL != parts) dk_free_tree (dk_set_pop (&parts));
+      return ws_dav_put (ws, http_call);
+    }
   else if (NULL == pmethod)
     strcpy_ck (p_name, "WS.WS.DEFAULT");
   if (!sch_proc_def (/*isp_schema (db_main_tree->it_commit_space)*/ wi_inst.wi_schema, p_name))
