@@ -2754,12 +2754,46 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 			savefs.style.display = "none";
 		}
 	}
+	function change_run_button(e)
+	{
+		var button = document.getElementById("run");
+		var lbl;
+
+		if (!button) return;
+
+		if (e.checked)
+		{
+		    lbl = " Explain ";
+		}
+		else
+		{
+		    lbl = " Run Query ";
+		}
+
+		if (button)
+		{
+		      if (button.childNodes[0])
+		      {
+			button.childNodes[0].nodeValue=lbl;
+		      }
+		      else if (button.value)
+		      {
+			button.value=lbl;
+		      }
+		      else //if (button.innerHTML)
+		      {
+			button.innerHTML=lbl;
+		      }
+		}
+	}
 	function sparql_endpoint_init()
 	{
 		var format = document.getElementById("format");
  		if (format) format_change(format);
 		var savefs = document.getElementById("savefs");
 		if (savefs) savefs.style.display="none";
+		var b = document.getElementById("explain");
+		if (b) change_run_button(b);
 	}
     ');
     http('    /*]]>*/\n');
@@ -2951,82 +2985,6 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
 }
 ;
 
-
-create procedure WS.WS.sparql_predefined_nsdecl ()
-{
-  declare label varchar;
-  label := 'Predefined Namespace Prefixes';
-
-  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
-
-  http('<head>\n');
-  WS.WS.SPARQL_ENDPOINT_HTML_HEAD(label);
-  WS.WS.SPARQL_ENDPOINT_STYLE();
-  http('</head>\n');
-
-  http ('<body>\n');
-  http ('    <div id="header">\n');
-  http ('	<h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>\n');
-  http ('    </div>\n\n');
-  http ('    <div id="main">\n');
-  http ('    <br />\n');
-  http ('    <table class="tableresult" border="1">\n');
-  http (sprintf ('	<tr><th>Prefix</th><th>URI</th></tr>\n'));
-  for select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by 1 do
-    {
-       http (sprintf ('	<tr><td>%V</td><td><a href="%s">%V</a></td></tr>\n', NS_PREFIX, NS_URL, NS_URL));
-    }
-  http ('    </table>\n');
-  http ('    </div>\n\n');
-
-  http('<p>');
-  http ('<button type="button" name="back" value="Back" onclick="javascript:history.go(-1);">Back</button>\n');
-  http('</p>\n');
-
-  WS.WS.SPARQL_ENDPOINT_FOOTER();
-  http('</body>\n');
-  http('</html>\n');
-}
-;
-
-
-create procedure WS.WS.sparql_predefined_rdfinf ()
-{
-  declare label varchar;
-  label := 'Predefined Inference Rules';
-
-  WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
-
-  http('<head>\n');
-  WS.WS.SPARQL_ENDPOINT_HTML_HEAD(label);
-  WS.WS.SPARQL_ENDPOINT_STYLE();
-  http('</head>\n');
-
-  http ('<body>\n');
-  http ('    <div id="header">\n');
-  http ('	<h1 id="title">'); http (sprintf ('%s', label)); http ('</h1>\n');
-  http ('    </div>\n\n');
-  http ('    <div id="main">\n');
-  http ('    <br />\n');
-  http ('    <table class="tableresult" border="1">\n');
-  http (sprintf ('	<tr><th>Name</th><th>URI</th></tr>\n'));
-  for select * from SYS_RDF_SCHEMA order by 1 do
-    {
-      http (sprintf ('	<tr><td>%V</td><td>%V</td></tr>\n', RS_NAME, RS_URI));
-    }
-  http ('    </table>\n');
-  http ('    </div>\n\n');
-
-  http('<p>');
-  http ('<button type="button" name="back" value="Back" onclick="javascript:history.go(-1);">Back</button>\n');
-  http('</p>\n');
-
-  WS.WS.SPARQL_ENDPOINT_FOOTER();
-  http('</body>\n');
-  http('</html>\n');
-}
-;
-
 create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     in params any,
     in ini_dflt_graph varchar,
@@ -3035,7 +2993,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     in debug integer,
     in log_debug_info integer,
     in save_mode integer,
-    in dav_refresh varchar)
+    in dav_refresh varchar,
+    in explain_report varchar)
 {
     declare can_cxml, can_pivot, can_qrcode, can_sponge integer;
     can_cxml := case (isnull (DB.DBA.VAD_CHECK_VERSION ('sparql_cxml'))) when 0 then 1 else 0 end;
@@ -3086,8 +3045,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
     http('    <div id="menu">\n');
     http('	  <a href="/sparql?help=intro">About</a>\n');
-    http('	| <a href="/sparql?nsdecl">Namespace Prefixes</a>\n');
-    http('	| <a href="/sparql?rdfinf">Inference rules</a>\n');
+    http('	| <a href="/sparql?help=nsdecl">Namespace Prefixes</a>\n');
+    http('	| <a href="/sparql?help=rdfinf">Inference rules</a>\n');
+    http('	| <a href="/sparql?help=views">RDF views</a>\n');
     if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is not null)
 	    http('	| <a href="/isparql">iSPARQL</a>\n');
     http('    </div>\n\n');
@@ -3155,9 +3115,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<fieldset id="options">\n');
     http('		<input name="debug" id="debug" type="checkbox"' || case (debug) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="debug" class="ckb">Strict checking of void variables</label>\n');
-    http('		&nbsp;&nbsp;&nbsp;\n');
+    http('		<br>\n');
     http('		<input name="log_debug_info" id="log_debug_info" type="checkbox"' || case (log_debug_info) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="log_debug_info" class="ckb">Log debug info at the end of output (has no effect on some queries and output formats)</label>\n');
+    http('		<br>\n');
+    http('		<input name="explain" id="explain" onclick="javascript:change_run_button(this)" type="checkbox"' || case (explain_report) when '' then '' else ' checked="checked"' end || '/>\n');
+    http('		<label for="explain" class="ckb">Generate SPARQL compilation report (instead of executing the query)</label>\n');
 
 
     if (save_dir is not null)
@@ -3195,7 +3158,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     }
 
     http('		<br />\n');
-    http('		<input type="submit" value="Run Query"/>\n');
+    http('		<input type="submit" name="run" id="run" value="Go"/>\n');
     http('		<input type="reset" value="Reset"/>\n');
     http('	</fieldset>\n');
     http('	</form>\n');
@@ -3227,6 +3190,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare __debug_mode integer;
   declare qtxt, deadl integer;
   declare save_mode, save_dir, dav_refresh, fname varchar;
+  declare explain_report varchar;
   declare save_dir_id any;
   declare help_topic varchar;
   -- dbg_obj_princ ('===============');
@@ -3280,11 +3244,15 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   user_id := connection_get ('SPARQLUserId', 'SPARQL');
   help_topic := get_keyword ('help', params, null);
   if (help_topic is not null)
-    goto brief_help;
+    {
+      WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (path, params, lines, user_id, help_topic);
+      return;
+    }
 
   def_qry := get_keyword('qtxt', params, '');
   ini_dflt_graph := get_keyword ('default-graph-uri', params, ini_dflt_graph);
   timeout := atoi (get_keyword ('timeout', params, cast (timeout as varchar)));
+  explain_report := get_keyword ('explain', params, '');
 
   if ('' <> def_qry)
     qtxt := 1;
@@ -3420,11 +3388,11 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	}
       debug := get_keyword ('debug', params, '1');
       log_debug_info := get_keyword ('log_debug_info', params, '');
-      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh);
-
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh, explain_report);
       return;
     }
-  execute_query:
+
+execute_query:
   qry_params := dict_new (7);
   for (paramctr := 0; paramctr < paramcount; paramctr := paramctr + 2)
     {
@@ -3790,25 +3758,88 @@ host_found:
   if (sc_max < 0)
     sc_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxExecutionTime'), '-1'));
   if (sc_max > 0)
-    {
-      state := '00000';
-      full_query := concat ('define sql:big-data-const 0 ', full_query);
-      sc := exec_score (concat ('sparql { ', full_query, '\n}'), state, msg);
-      if ((sc/1000) > sc_max)
-	{
-	  signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
-	}
-    }
-
-  state := '00000';
-  metas := null;
-  rset := null;
+    full_query := concat ('define sql:big-data-const 0 ', full_query);
 
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('format = ', format);
   -- dbg_obj_princ ('full_query = ', full_query);
   -- dbg_obj_princ ('qry_params = ', qry_params);
   -- dbg_obj_princ ('save_mode = ', save_mode, ' save_dir = ', save_dir);
+
+  if (sc_max > 0)
+    {
+      state := '00000';
+      sc := exec_score (concat ('sparql { ', full_query, '\n}'), state, msg);
+      if ((sc/1000) > sc_max)
+        signal ('42000', sprintf ('The estimated execution time %d (sec) exceeds the limit of %d (sec).', sc/1000, sc_max));
+    }
+
+  if (explain_report <> '')
+    {
+      declare report any;
+      --http_header (http_header_get () || 'Context-Type: text/plain\r\n');
+      http ('<html><head><title>Compilation Details</title></head>\n');
+      http ('<body>\n');
+      http ('<h3>SPARQL query after parsing, optimization, and converting back into SPARQL</h3>\n');
+      whenever sqlstate '*' goto err_on_detalize;
+      report := sparql_detalize (concat ('{', full_query, '\n}'));
+      http ('<pre>\n');
+      http_value (report);
+      http ('\n</pre>\n');
+      goto detalize_done;
+err_on_detalize:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+detalize_done:
+      http ('<h3>SPARQL query translated to SQL</h3>\n');
+      http ('<i>For security reasons, code responsible for graph-level security is not generated and some account-specific data are intentionally made wrong.</i>\n');
+      whenever sqlstate '*' goto err_on_sql_text;
+      report := sparql_to_sql_text (concat ('{ define sql:comments 0 ', full_query, '\n}'));
+      http ('<pre>\n');
+      http_value (report);
+      http ('\n</pre>\n');
+      goto sql_text_done;
+err_on_sql_text:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+sql_text_done:
+      http ('<h3>SQL execution plan</h3>\n');
+      whenever sqlstate '*' goto err_on_sql_explain;
+      state := '00000';
+      metas := null;
+      rset := null;
+      commit work;
+      exec (concat ('explain (', WS.ws.STR_SQL_APOS ('sparql {' || full_query || '\n}'), ')'), state, msg, vector(), vector ('use_cache', 0), metas, rset);
+      if ('00000' <> state)
+        {
+          http ('<b>ERROR ' || state || ': ' || msg || '</b>\n');
+        }
+      else
+        {
+          http ('<pre>\n');
+          foreach (any res in rset) do { http_value (res[0]); http ('\n'); }
+          http ('</pre>\n');
+        }
+      goto sql_explain_done;
+err_on_sql_explain:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+sql_explain_done:
+      http ('<h3>Internal optimizer data</h3>\n');
+      http ('<i>These data are primarily for OpenLink support, to get additional details about the query processing.</i>\n');
+      whenever sqlstate '*' goto err_on_sparql_explain;
+      report := sparql_explain (concat ('{ define sql:comments 1 ', full_query, '\n}'));
+      http ('<pre>\n');
+      http_value (report);
+      http ('\n</pre>\n');
+      goto sparql_explain_done;
+err_on_sparql_explain:
+      http ('<b>ERROR ' || __SQL_STATE || ': ' || __SQL_MESSAGE || '</b>\n');
+sparql_explain_done:
+      http ('</body></html>\n');
+      return;
+    }
+
+  state := '00000';
+  metas := null;
+  rset := null;
   commit work;
   if (client_supports_partial_res and (timeout > 0))
     {
@@ -3822,7 +3853,8 @@ host_found:
     }
   connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);    
   set_user_id (user_id, 1);
-  again:
+
+again:
   state := '00000';
   start_time := msec_time();
   exec ( concat ('sparql {', full_query, '\n}'), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
@@ -4006,34 +4038,125 @@ write_results:
           return;
         }
     }
-return;
+}
+;
 
-brief_help:
+registry_set ('/!sparql/', 'no_vsp_recompile')
+;
+
+create function WS.WS.SPARQL_ENDPOINT_QMV_RET_DESCR (in qmv IRI_ID, in fldname varchar)
+{
+  declare ans varchar;
+  ans := (sparql define output:valmode "LONG" define input:storage "" select ?v from virtrdf: where
+      { `iri(?:qmv)` virtrdf:qmvRange-rvrFixedValue ?v . } );
+  if (ans is not null)
+    return fldname || ' &lt;' || id_to_iri (ans) || '&gt;';
+  ans := (sparql define output:valmode "LONG" define input:storage "" select GROUP_CONCAT (bif:concat ("&quot;", str(?sff), "&quot;"), ", ") from virtrdf: where
+      { `iri(?:qmv)` virtrdf:qmvFormat/virtrdf:qmfValRange-rvrSprintffs ?sffs . ?sffs ?p ?sff . filter (isliteral(?sff)) } );
+  if (length (ans))
+    return fldname || 's named like "' || ans || '"';
+--  ans := (sparql define output:valmode "LONG" define input:storage "" select str(?cs) from virtrdf: where
+--      { `iri(?:qmv)` virtrdf:qmvFormat/virtrdf:qmfCustomString1 ?cs . filter (isliteral(?cs)) } );
+--  if (ans is not null)
+--    return fldname || 's of format "' || ans || '"';
+  ans := (sparql define output:valmode "LONG" define input:storage "" select ?qmf from virtrdf: where
+      { `iri(?:qmv)` virtrdf:qmvFormat ?qmf . filter (isiri(?qmf)) } );
+  if (ans is not null)
+    return 'various ' || fldname || 's named by format &lt;' || id_to_iri (ans) || '&gt;';
+  return 'various ' || fldname || 's';
+}
+;
+
+create procedure WS.WS.SPARQL_ENDPOINT_QM_OVERVIEW (in qm IRI_ID)
+{
+#pragma prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+#pragma prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  declare needs_delim integer;
+  http ('The quad map provides triples for ');
+  needs_delim := 0;
+  for (sparql define output:valmode "LONG" define input:storage "" select distinct ?fv from virtrdf: where
+      { ?qm2 a virtrdf:QuadMap .
+        filter (?qm2 = iri(?:qm))
+          { select ?qm2 ?sub_qm from virtrdf: where { ?qm2 virtrdf:qmUserSubMaps [ ?p ?sub_qm ] . ?sub_qm a virtrdf:QuadMap . }
+          } option ( transitive, t_in (?qm2), t_out (?sub_qm), t_min (0), t_distinct )
+        ?sub_qm virtrdf:qmGraphRange-rvrFixedValue ?fv . filter (isiri(?fv))
+      } ) do
+    {
+      if (needs_delim) http ('; '); else needs_delim := 1;
+      http ('<nobr>graph &lt;' || id_to_iri ("fv") || '&gt;</nobr>');
+    }
+  for (select distinct WS.WS.SPARQL_ENDPOINT_QMV_RET_DESCR (t."qmv", 'graph') as descr from
+    (sparql define output:valmode "LONG" define input:storage "" select distinct ?qmv from virtrdf: where
+      { ?qm2 a virtrdf:QuadMap .
+        filter (?qm2 = iri(?:qm))
+          { select ?qm2 ?sub_qm from virtrdf: where { ?qm2 virtrdf:qmUserSubMaps [ ?p ?sub_qm ] . ?sub_qm a virtrdf:QuadMap . }
+          } option ( transitive, t_in (?qm2), t_out (?sub_qm), t_min (0), t_distinct )
+        ?sub_qm virtrdf:qmGraphMap ?qmv .
+      } ) as t ) do
+    {
+      if (needs_delim) http ('; '); else needs_delim := 1;
+      http ('<nobr>' || descr || '</nobr>');
+    }
+  if (not needs_delim) http ('various graphs');
+  http ('.<br/>');
+  http ('The data come from ');
+  needs_delim := 0;
+  for (sparql define input:storage "" select distinct ?tbl from virtrdf: where
+      { ?qm2 a virtrdf:QuadMap .
+        filter (?qm2 = iri(?:qm))
+          { select ?qm2 ?sub_qm from virtrdf: where { ?qm2 virtrdf:qmUserSubMaps [ ?p ?sub_qm ] . ?sub_qm a virtrdf:QuadMap . }
+          } option ( transitive, t_in (?qm2), t_out (?sub_qm), t_min (0), t_distinct )
+        ?sub_qm virtrdf:qmGraphMap|virtrdf:qmSubjectMap|virtrdf:qmPredicateMap|virtrdf:qmObjectMap ?qmv .
+        { ?qmv virtrdf:qmvTableName ?tbl } union { ?qmv virtrdf:qmvATables ?ats . ?ats ?p ?at . ?at virtrdf:qmvaTableName ?tbl . }
+      } ) do
+    {
+      if (needs_delim) http (', '); else needs_delim := 1;
+      if ("tbl" = 'sinv' and ('http://www.openlinksw.com/schemas/virtrdf#DefaultServiceMap' = id_to_iri ("qm")))
+        http ('system procedure views that compose and send HTTP requests to remote SPARQL service endpoints and then parse answers');
+      else
+        http ('<nobr>' || "tbl" || '</nobr>');
+    }
+}
+;
+
+create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout params any, inout lines any, in user_id varchar, in help_topic varchar)
+{
+#pragma prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+#pragma prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
+  declare subtitle varchar;
+  declare format varchar;
+  subtitle := case help_topic
+    when 'intro' then 'About'
+    when 'enable_sponge' then 'Sponge'
+    when 'enable_cxml' then 'CXML'
+    when 'enable_det' then 'DAV'
+    when 'nsdecl' then 'Namespace Prefixes'
+    when 'rdfinf' then 'Inference Rule Sets'
+    when 'views' then 'RDF Views'
+    else 'Error' end;
+  format := '';
   WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
-
   http('<head>\n');
-  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | About');
+  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL Query Editor | ' || subtitle);
   WS.WS.SPARQL_ENDPOINT_STYLE ();
   http('</head>\n');
-
   http('<body>\n');
   http ('    <div id="header">\n');
-  http('	<h1 id="title">Virtuoso SPARQL Query Editor | About</h1>\n');
+  http('	<h1 id="title">Virtuoso SPARQL Query Editor | ' || subtitle || '</h1>\n');
   http ('    </div>\n\n');
-
   http ('    <div id="help">\n');
   if (help_topic='intro')
     {
-      http('<h3>Intro</h3>');
+      http('	<h3>Intro</h3>\n');
       http('	<p>This page is designed to help you test the OpenLink Virtuoso SPARQL protocol endpoint.<br/>\n');
       http('	Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service \n');
       http('	or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>\n');
       http('	<p>There is also a rich Web based user interface with sample queries. \n');
       if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null)
-	  http('	In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>\n');
+	  http('	In order to use it, ask the site admin to install the iSPARQL package (isparql_dav.vad).</p>\n');
       else
 	  http('	You can access it at: <a href="/isparql">/isparql</a>.</p>\n');
-      http('	<p>For your convenience we have a set of <a href="/sparql?nsdecl">predefined name space prefixes</a> and <a href="/sparql?rdfinf">inference rules</a></p>\n');
+      http('	<p>For your convenience we have a set of <a href="/sparql?help=nsdecl">predefined name space prefixes</a> and <a href="/sparql?help=rdfinf">inference rules</a></p>\n');
 
       http('	<h3>What is SPARQL?</h3>\n');
       http('	<p>SPARQL is the W3C''s declaritive query-language for Graph Model Databases and Stores.</p>\n');
@@ -4041,7 +4164,7 @@ brief_help:
       http('    SPARQL is database and host operating system independent.<p>\n');
       http('	<p>The development and evolution of this standard is overseen by the\n');
       http('	<a href="http://www.w3.org/2009/sparql/wiki/Main_Page">SPARQL Working Group</a> within W3C and\n');
-      http('	while parts of the language are still in active <a href="http://www.w3.org/TR/2011/WD-sparql11-query-20110512/">development</a>, it is fully <a href="http://www.w3.org/TR/rdf-sparql-query/">documented</a> and <a href="http://www.w3.org/2009/05/sparql-phase-II-charter">publicly</a> available.</p>\n');
+      http('	while parts of the language are still in active development, it is fully <a href="http://www.w3.org/TR/sparql11-overview/">documented</a> and <a href="http://www.w3.org/2009/05/sparql-phase-II-charter">publicly</a> available.</p>\n');
     }
   else if (help_topic='enable_sponge')
     {
@@ -4094,11 +4217,96 @@ brief_help:
       http('</ol>\n');
       http('<p>As soon as the appropriate directory exists, the SPARQL web service endpoint will show additional controls to choose how to save results.</p>\n');
     }
-  else if (help_topic='enable_det')
+  else if (help_topic='nsdecl')
+    {
+      http ('    <table class="tableresult" border="1">\n');
+      http (sprintf ('	<tr><th>Prefix</th><th>URI</th></tr>\n'));
+      for select NS_PREFIX, NS_URL from SYS_XML_PERSISTENT_NS_DECL order by 1 do
+        {
+           http (sprintf ('	<tr><td>%V</td><td><a href="%s">%V</a></td></tr>\n', NS_PREFIX, NS_URL, NS_URL));
+        }
+      http ('    </table>\n');
+    }
+  else if (help_topic='rdfinf')
+    {
+      http ('    <table class="tableresult" border="1">\n');
+      http (sprintf ('	<tr><th>Name</th><th>URI</th></tr>\n'));
+      for select * from SYS_RDF_SCHEMA order by 1 do
+        {
+          http (sprintf ('	<tr><td>%V</td><td>%V</td></tr>\n', RS_NAME, RS_URI));
+        }
+      http ('    </table>\n');
+    }
+  else if (help_topic='views')
+    {
+      declare storage_is_dflt integer;
+      storage_is_dflt := 0;
+      if (exists
+        (sparql define input:storage "" ask from virtrdf:
+          where
+            {
+              virtrdf:DefaultQuadStorage	a virtrdf:QuadStorage ; virtrdf:qsDefaultMap virtrdf:DefaultQuadMap	; virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
+              virtrdf:DefaultServiceStorage	a virtrdf:QuadStorage ; virtrdf:qsDefaultMap virtrdf:DefaultServiceMap	; virtrdf:qsMatchingFlags virtrdf:SPART_QS_NO_IMPLICIT_USER_QM .
+              virtrdf:SyncToQuads		a virtrdf:QuadStorage .
+            } )
+        and 2 = (sparql define input:storage "" select count (1) from virtrdf: where { [] virtrdf:qsDefaultMap [] } )
+        and 2 = (sparql define input:storage "" select count (1) from virtrdf: where { [] a virtrdf:QuadMap } )
+        and 0 = (sparql define input:storage "" select count (1) from virtrdf: where { [] virtrdf:qsUserMaps/rdf:_1 [] } ) )
+        storage_is_dflt := 1;
+      http('<h3>How To Let Virtuoso Render Relational Data As RDF?</h3>');
+      http('<p>By default, Virtuoso stores all RDF data in a single "RDF Storage" that consists of one four-column relational table containing all triples of all graphs.</p>');
+      if (storage_is_dflt)
+        http('<p><b>The Virtuoso instance seems to be in the default configuration now, probably you do not have to inspect the rest of this page.</b></p>');
+      http('<p>System Administrator can extend this basic schema with more storages and more groups of triples to represent a variety of SQL tables and views stored in Virtuoso or in attached data sources.</p>');
+      for (sparql define output:valmode "LONG" define input:storage "" select ?storage from virtrdf: where { ?storage a virtrdf:QuadStorage } order by asc(str(?storage))) do
+        {
+          declare default_qm IRI_ID;
+          declare qm_count integer;
+          http ('<h3>Storage &lt;'); http_value (id_to_iri ("storage")); http ('&gt;</h3>');
+          if ('http://www.openlinksw.com/schemas/virtrdf#DefaultQuadStorage' = id_to_iri ("storage"))
+            http ('<p>This pre-defined storage is used by default by all SPARQL queries.</p>');
+          else if ('http://www.openlinksw.com/schemas/virtrdf#DefaultServiceStorage' = id_to_iri ("storage"))
+            http ('<p>This pre-defined storage is used internally for SERVICE {...} clauses of SPARQL queries; not for regular use.</p>');
+          else if ('http://www.openlinksw.com/schemas/virtrdf#SyncToQuads' = id_to_iri ("storage"))
+            http ('<p>This pre-defined storage is to enumerate quad maps mentioned by triggers based on RDF Views; these triggers track changes in source tables of RDF Views and materialize updated content of views as "physical" triples.</p>');
+          else
+            http ('<p>This storage is created by some application or by a system administrator.\n');
+          qm_count := (sparql define input:storage "" select count (1) from virtrdf: where { `iri(?:storage)` virtrdf:qsUserMaps ?maps . ?maps ?p ?qm . ?qm a virtrdf:QuadMap . });
+          if (qm_count > 0)
+            {
+              http ('It contains ' || qm_count || ' top-level quad maps ("RDF Views"):</p>\n');
+              http ('  <ol>\n');
+              for (sparql define output:valmode "LONG" define input:storage "" select ?qm from virtrdf:
+                where {
+                    `iri(?:storage)` virtrdf:qsUserMaps ?maps . ?maps ?p ?qm . ?qm a virtrdf:QuadMap .
+                    bind (bif:sprintf_inverse (str (?p), bif:concat (str(rdf:_), "%d"), 0) as ?arr)
+                    filter (bound (?arr)) }
+                order by asc (bif:aref (?arr, 0)) ) do
+                {
+                  http ('    <li>Top-level quad map ("RDF View") &lt;'); http_value (id_to_iri ("qm")); http ('&gt;<br/>\n');
+                  WS.WS.SPARQL_ENDPOINT_QM_OVERVIEW (qm);
+                  http ('    </li>');
+                }
+              http ('  </ol>\n');
+            }
+          else
+            http ('</p>\n<p>The storage contains no RDF Views.</p>\n');
+          default_qm := (sparql define input:storage "" select ?qm from virtrdf: where { `iri(?:storage)` virtrdf:qsDefaultMap ?qm . ?qm a virtrdf:QuadMap . });
+          if (default_qm is not null)
+            {
+              http ('  <p>The storage has a default quad map &lt;'); http_value (id_to_iri ("default_qm")); http ('&gt;<br/>\n');
+              WS.WS.SPARQL_ENDPOINT_QM_OVERVIEW (default_qm);
+              http ('  </p>');
+            }
+          else
+            http ('  <p>The storage has no default quad map.</p>\n');
+        }
+    }
+  else
     {
       DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
         '500', 'Request Failed',
-        'Invalid help topic', format);
+        '(no query)', '00000', 'Invalid help topic', format);
     }
   http('');
   http('<p>To close this help, press ');
