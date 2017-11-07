@@ -19,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="caps_browser_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_grants_page" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso system User Accounts</vm:pagetitle>
@@ -76,19 +75,19 @@
             <table cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td class="page_tab" align="center">
-                  <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
+                  <v:url name="b_url31" value="Users" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
                 </td>
                 <td class="page_tab" align="center">
-                  <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
+                  <v:url name="b_url32" value="Roles" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
                 </td>
                 <td class="page_tab_selected" align="center">
-                  <v:url name="b_url14" value="--'Grants'" format="%s" url="--'accounts_page.vspx?page=3'" xhtml_class="uddi"/>
+                  <v:url name="b_url14" value="Grants" format="%s" url="--'accounts_page.vspx?page=3'" xhtml_class="uddi"/>
                 </td>
                 <td class="page_tab" align="center">
-                  <v:url name="b_url15" value="--'LDAP Import'" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
+                  <v:url name="b_url15" value="LDAP Import" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
                 </td>
                 <td class="page_tab" align="center">
-                  <v:url name="b_url15" value="--'LDAP Servers'" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
+                  <v:url name="b_url15" value="LDAP Servers" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
                 </td>
                 <td class="page_tab_empty" align="center" width="100%">
                   &nbsp;
@@ -118,7 +117,7 @@
                         <td>
                           Catalog
                           <v:data-list name="dl_catalog"
-                                       sql="select distinct name_part (KEY_TABLE, 0) as cat_name  from DB.DBA.SYS_KEYS"
+                                       sql="select distinct ucase (name_part (KEY_TABLE, 0)) as cat_name from DB.DBA.SYS_KEYS union select distinct ucase (name_part (P_NAME, 0)) as cat_name from DB.DBA.SYS_PROCEDURES order by 1"
                                        key-column="cat_name" value-column="cat_name" defvalue="--self.browse_cat"/>
                         </td>
                         <td>
@@ -178,7 +177,7 @@
                         <v:on-post>
                           <![CDATA[
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                            http_header (sprintf ('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n', self.sid, self.realm));
                           ]]>
                         </v:on-post>
                       </v:button>
@@ -341,7 +340,7 @@
                         <v:on-post>
                           <![CDATA[
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                            http_header (sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n', self.sid, self.realm));
                           ]]>
                         </v:on-post>
                       </v:button>
@@ -409,7 +408,7 @@
                               i := i + 1;
                             }
                             http_request_status ('HTTP/1.1 302 Found');
-                            http_header( sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                            http_header (sprintf('Location: accounts_page.vspx?page=3&sid=%s&realm=%s\r\n', self.sid, self.realm));
                           ]]>
                         </v:on-post>
                       </v:button>
