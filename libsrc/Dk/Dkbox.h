@@ -46,7 +46,7 @@ typedef const void *cbox_t;
  * If the configuration has distributed objects they do
  * not get deleted in dk_delete_tree.
  */
-#define SMALLEST_POSSIBLE_POINTER 	((ptrlong)(0x10000))
+#define SMALLEST_POSSIBLE_POINTER 	((ptrlong)(0x100000))
 
 /* This is a pointer that will never be equal to any box pointer (alignment...) */
 #define BADBEEF_BOX 			((box_t)(0xBADBEEF))
