@@ -4341,10 +4341,14 @@ DBG_NAME(qr_exec) (DBG_PARAMS  client_connection_t * cli, query_t * qr,
     QI_BUNION_RESET (qi, qr, 0, &qi_is_killed);
     PLD_SEM_CLEAR(qi)
     res = qi_handle_reset (qi, reset_code, &qi_is_killed);
-#ifndef NDEBUG
     if ((NULL == stmt) && (NULL == lc_ret) && !qi_is_killed)
-      GPF_T1 ("qi is not freed in qr_exec");
+      {
+        qi_kill (qi, QI_DONE);
+        qi_is_killed = __LINE__;
+#ifdef WIRE_DEBUG
+        list_wired_buffers (__FILE__, __LINE__, "qr_exec finish (error on run, no stmt, no lc_ret, no qi_kill at time)");
 #endif
+      }
     return res;
   }
   END_QR_RESET;
