@@ -4358,8 +4358,8 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
           mutex_enter (rdf_graph_group_dict_htable->ht_mutex);
           group_members_ptr = (caddr_t **)id_hash_get (rdf_graph_group_dict_htable, (caddr_t)(&iid));
           mutex_leave (rdf_graph_group_dict_htable->ht_mutex);
+          dk_free_tree (iid);
         }
-      dk_free_tree (iid);
     }
   else
     group_members_ptr = NULL;
@@ -5417,6 +5417,7 @@ static caddr_t boxed_8192_iid = NULL;
           mutex_enter (dflt_perms_of_user->ht_mutex);
           hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid /* not boxed_graph_iid */)));
           mutex_leave (dflt_perms_of_user->ht_mutex);
+          dk_free_tree (boxed_graph_iid);
         }
       if (NULL != hit)
         {
