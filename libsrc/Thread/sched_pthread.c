@@ -79,7 +79,7 @@ _pthread_call_failed (const char *file, int line, int error)
 {
   char msgbuf[200];
 
-  snprintf (msgbuf, sizeof (msgbuf), "pthread operation failed (%d) %s", error, strerror (error));
+  snprintf (msgbuf, sizeof (msgbuf), "pthread operation failed (%d) %d %s", error, errno, strerror (errno));
 #ifdef MTX_DEBUG
   gpf_notice (file, line, msgbuf);
 #else
@@ -469,6 +469,7 @@ thread_create (
   return thr;
 
 failed:
+  log_error ("Failed creating a thread errno %d", errno);
   if (thr->thr_status == RUNNABLE)
     {
       _thread_free_attributes (thr);
