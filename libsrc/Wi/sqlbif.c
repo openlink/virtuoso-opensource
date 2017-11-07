@@ -1701,6 +1701,27 @@ bif_exec_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_result_names_get_count (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long n_out = BOX_ELEMENTS (args), inx;
+  caddr_t cli_ws = (caddr_t) ((query_instance_t *) qst)->qi_client->cli_ws;
+  client_connection_t *cli = (client_connection_t *) ((query_instance_t *) qst)->qi_client;
+
+  if (cli->cli_result_qi)
+    return NEW_DB_NULL;
+  if (cli_ws)
+    return NEW_DB_NULL;
+  if (cli->cli_resultset_comp_ptr)
+    {
+      stmt_compilation_t *sc = ((stmt_compilation_t **)(cli->cli_resultset_comp_ptr))[0];
+      return box_num ((NULL != sc) ? BOX_ELEMENTS_0 (sc->sc_columns) : 0);
+    }
+  if (!cli_is_interactive (cli))
+    return NEW_DB_NULL;
+  return box_num (cli->cli_resultset_cols);
+}
+
 void
 bif_define_int (caddr_t name, bif_t bif, bif_metadata_t *bmd)
 {
@@ -14073,6 +14094,25 @@ bif_transpose (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
      no parameters or rowset data
 */
 
+caddr_t bif_sql_text_arg (caddr_t * qst, state_slot_t ** args, int arg_no, const char *fn_name, int *text_is_temp_box_ret)
+{
+  caddr_t _text = bif_string_or_wide_or_null_arg (qst, args, arg_no, fn_name);
+  text_is_temp_box_ret[0] = 0;
+  if (DV_STRINGP (_text))
+    return _text;
+  if (DV_WIDESTRINGP (_text))
+    {
+      unsigned res_len, wide_len = box_length (_text) / sizeof (wchar_t) - 1, res_max_len = wide_len * 9;
+      caddr_t res = dk_alloc_box (res_max_len + 1, DV_LONG_STRING);
+      res_len = (unsigned) cli_wide_to_escaped (QST_CHARSET (qst), 0, (wchar_t *) _text, wide_len, (unsigned char *) res, res_max_len, NULL, NULL);
+      res [res_len] = 0;
+      text_is_temp_box_ret[0] = 1;
+      return res;
+    }
+  sqlr_new_error ("22023", "SR308", "%50s() is called with NULL instead of text of an SQL statement as argument #%d", fn_name, arg_no+1);
+  return NULL;
+}
+
 caddr_t
 bif_exec_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -14080,59 +14120,36 @@ bif_exec_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int n_args = BOX_ELEMENTS (args);
   query_instance_t *qi = (query_instance_t *) qst;
   stmt_compilation_t *comp = NULL, *proc_comp = NULL;
-  caddr_t _text = bif_string_or_wide_or_null_arg (qst, args, 0, "exec_metadata");
-  caddr_t text = NULL;
+  int text_is_temp_box;
+  caddr_t text = bif_sql_text_arg (qst, args, 0, "exec_metadata", &text_is_temp_box);
   caddr_t err = NULL;
   query_t *qr;
   client_connection_t *cli = qi->qi_client;
   PROC_SAVE_VARS;
-
-  if (DV_STRINGP (_text))
-    text = _text;
-  else if (DV_WIDESTRINGP (_text))
-    {
-      unsigned out_len, wide_len = box_length (_text) / sizeof (wchar_t) - 1;
-      text = dk_alloc_box (wide_len * 9 + 1, DV_LONG_STRING);
-      out_len = (unsigned) cli_wide_to_escaped (QST_CHARSET (qst), 0, (wchar_t *) _text, wide_len,
-    (unsigned char *) text, wide_len * 9, NULL, NULL);
-      text[out_len] = 0;
-    }
-  else
-    sqlr_new_error ("22023", "SR308", "exec_metadata() called with an invalid text to execute");
-
   PROC_SAVE_PARENT;
-
   cli->cli_resultset_max_rows = -1;
   if (n_args > 3 && ssl_is_settable (args[3]))
     cli->cli_resultset_comp_ptr = (caddr_t *) &proc_comp;
-
   qr = sql_compile (text, qi->qi_client, &err, SQLC_DEFAULT);
-
   PROC_RESTORE_SAVED;
-
-  if (text != _text)
+  if (text_is_temp_box)
     dk_free_box (text);
-
   if (err)
-    {
-      return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
-    }
-
+    return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
   if (qr->qr_select_node)
     {
       comp = qr_describe (qr, NULL);
       if (n_args > 3 && ssl_is_settable (args[3]))
-  qst_set (qst, args[3], (caddr_t) comp);
+        qst_set (qst, args[3], (caddr_t) comp);
       else
-  dk_free_tree ((caddr_t) comp);
+        dk_free_tree ((caddr_t) comp);
     }
   else
     {
       if (n_args > 3 && ssl_is_settable (args[3]) && proc_comp)
-  qst_set (qst, args[3], (caddr_t) proc_comp);
+        qst_set (qst, args[3], (caddr_t) proc_comp);
       else
-  dk_free_tree ((caddr_t) proc_comp);
-
+        dk_free_tree ((caddr_t) proc_comp);
     }
   qr_free (qr);
   return (box_num (0));
@@ -14143,27 +14160,13 @@ bif_exec_score (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   /* in text, out sqlstate, out message, * out result_desc */
   query_instance_t *qi = (query_instance_t *) qst;
-  caddr_t _text = bif_string_or_wide_or_null_arg (qst, args, 0, "exec_metadata");
-  caddr_t text = NULL;
+  int text_is_temp_box;
+  caddr_t text = bif_sql_text_arg (qst, args, 0, "exec_score", &text_is_temp_box);
   caddr_t err = NULL;
   caddr_t score_box = NULL;
   float score;
   client_connection_t *cli = qi->qi_client;
   PROC_SAVE_VARS;
-
-  if (DV_STRINGP (_text))
-    text = _text;
-  else if (DV_WIDESTRINGP (_text))
-    {
-      unsigned out_len, wide_len = box_length (_text) / sizeof (wchar_t) - 1;
-      text = dk_alloc_box (wide_len * 9 + 1, DV_LONG_STRING);
-      out_len = (unsigned) cli_wide_to_escaped (QST_CHARSET (qst), 0, (wchar_t *) _text, wide_len,
-	  (unsigned char *) text, wide_len * 9, NULL, NULL);
-      text[out_len] = 0;
-    }
-  else
-    sqlr_new_error ("22023", "SR308", "exec_metadata() called with an invalid text to execute");
-
   PROC_SAVE_PARENT;
 
   cli->cli_resultset_max_rows = -1;
@@ -14175,21 +14178,47 @@ bif_exec_score (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     score = 0;
-
   score = compiler_unit_msecs * score;
-
   PROC_RESTORE_SAVED;
-
-  if (text != _text)
+  if (text_is_temp_box)
     dk_free_box (text);
-
   if (err)
-    {
-      return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
-    }
+    return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
   return (box_float (score));
 }
 
+caddr_t
+bif_explain_query_sources (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int n_args = BOX_ELEMENTS (args);
+  query_instance_t *qi = (query_instance_t *) qst;
+  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
+  int text_is_temp_box;
+  caddr_t text = bif_sql_text_arg (qst, args, 0, "explain_query_sources", &text_is_temp_box);
+  caddr_t err = NULL;
+  query_t *qr;
+  caddr_t *res;
+  int ctr;
+  client_connection_t *cli = qi->qi_client;
+  PROC_SAVE_VARS;
+  PROC_SAVE_PARENT;
+  cli->cli_resultset_max_rows = -1;
+  qr = sql_compile (text, qi->qi_client, &err, SQLC_DEFAULT);
+  PROC_RESTORE_SAVED;
+  if (text_is_temp_box)
+    dk_free_box (text);
+  if (err)
+    return (bif_exec_error (qst, args, err, NULL, NULL, NULL));
+  res = dk_alloc_list (dk_set_length (qr->qr_used_tables));
+  ctr = 0;
+  DO_SET (caddr_t, name, &qr->qr_used_tables)
+    {
+      res[ctr++] = ((DV_C_STRING == DV_TYPE_OF (name)) ? box_dv_short_string (name) : box_copy_tree (name));
+    }
+  END_DO_SET ()
+  qr_free (qr);
+  return (caddr_t)res;
+}
 
 caddr_t
 bif_exec_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16445,10 +16474,12 @@ sql_bif_init (void)
   bif_define ("xid_test", test_xid_encode_decode);
 #endif
 
+
 /* Functions for error & result handling in user created procedures: */
   bif_define ("signal", bif_signal);
   bif_define ("result", bif_result);
   bif_define ("result_names", bif_result_names);
+  bif_define_ex ("result_names_get_count", bif_result_names_get_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("end_result", bif_end_result);
 
 /* Time and Date related functions: */
@@ -16828,10 +16859,11 @@ sql_bif_init (void)
   bif_define_ex ("__copy_non_local", bif_copy_non_local, BMD_RET_TYPE, &bt_copy, BMD_DONE);
   bif_set_uses_index (bif_copy_non_local);
   bif_define_ex ("exec", bif_exec, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_set_uses_index (bif_exec);
   bif_define_ex ("exec_vec", bif_exec_vec, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("exec_metadata", bif_exec_metadata, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("exec_score", bif_exec_score);
-  bif_set_uses_index (bif_exec);
+  bif_define_ex ("explain_query_sources", bif_explain_query_sources, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("exec_next", bif_exec_next, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("exec_close", bif_exec_close);
   bif_define ("exec_result_names", bif_exec_result_names);
