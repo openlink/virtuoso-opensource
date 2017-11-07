@@ -1821,6 +1821,7 @@ stat_desc_t dbf_descs [] =
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},
     {"setp_distinct_max_keys", (long *)&setp_distinct_max_keys, SD_INT32},
     {"enable_iri_nic_n", (long *)&enable_iri_nic_n, SD_INT32},
+    {"enable_iri_prefix_nic_n", (long *) &enable_iri_prefix_nic_n, SD_INT32},
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},
     {"enable_distinct_sas", (long *)&enable_distinct_sas, SD_INT32},

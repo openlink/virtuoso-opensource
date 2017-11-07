@@ -4065,6 +4065,7 @@ void rdf_inf_init ();
 
 int iri_cache_size = 0;
 int32 enable_iri_nic_n = 1;
+int32 enable_iri_prefix_nic_n = 1;
 
 
 dbe_key_t *
@@ -4324,7 +4325,8 @@ rdf_core_init (void)
   if (enable_iri_nic_n)
     nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
-  nic_set_n_ways (iri_prefix_cache, 64);
+  if (enable_iri_prefix_nic_n)
+    nic_set_n_ways (iri_prefix_cache, 64);
   rdf_lang_cache = nic_allocate (1000, 0, 0);
   rdf_type_cache = nic_allocate (1000, 0, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
