@@ -5574,7 +5574,7 @@ create procedure vspx_base_url (in f varchar)
   if (http_map_get ('is_dav'))
     return concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:',f);
   else
-    return concat ('file://', f);
+    return concat ('file://', ltrim (f, '/'));
 }
 ;
 
