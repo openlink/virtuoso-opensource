@@ -2239,7 +2239,13 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rb_dt_lang_check(rb);
   if (((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
     || ((1 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 1, "__rdf_sqlval_of_obj")) )
-    return box_copy_tree (rb->rb_box);
+    {
+      caddr_t res;
+      res = box_copy_tree (rb->rb_box);
+      if (DV_STRING == DV_TYPE_OF (res))
+	box_flags (res) |= BF_UTF8;
+      return res;
+    }
   return box_copy (rb);
 }
 
