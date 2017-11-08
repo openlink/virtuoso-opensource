@@ -16921,7 +16921,7 @@ sql_bif_init (void)
   bif_define_ex ("\x01__sequence_next_no_check", bif_sequence_next_no_check, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 3,
       BMD_IS_DBA_ONLY, BMD_DONE);
   bif_define_ex ("registry_get_all", bif_registry_get_all, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
-  bif_define_ex ("registry_get", bif_registry_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("registry_get", bif_registry_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("registry_name_is_protected", bif_registry_name_is_protected, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("registry_set", bif_registry_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("registry_remove", bif_registry_remove, BMD_RET_TYPE, &bt_integer, BMD_DONE);
