@@ -1403,6 +1403,8 @@ log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
   jmp_buf_splice *ctx;
   va_list ap;
   va_start (ap, fmt);
+  if (NULL == qr)
+    return;
   fprintf (query_log, "\n{{{%p ", qr);
   vfprintf (query_log, fmt, ap);
   if (print_full_content && qr->qr_text)
