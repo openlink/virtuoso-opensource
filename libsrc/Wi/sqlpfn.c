@@ -1288,7 +1288,7 @@ ST **
 sqlp_wrapper_sqlxml (ST ** selection)
 {
   int inx;
-  dk_check_tree_mp_or_plain (selection, 1000);
+  /* dk_check_tree_mp_or_plain (selection, 1000); */
   DO_BOX (ST *, arg, inx, selection)
   {
     selection[inx] = sqlp_wrapper_sqlxml_assign (arg);
