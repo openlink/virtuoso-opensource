@@ -819,7 +819,7 @@ mutex_enter (dk_mutex_t *mtx)
   _thread_num_wait++;
 
 #ifdef MTX_DEBUG
-  assert (mtx->mtx_owner !=  mtx || !mtx);
+  assert (mtx->mtx_owner != self || !self);
   if (mtx->mtx_entry_check
       && !mtx->mtx_entry_check (mtx, thr, mtx->mtx_entry_check_cd))
     GPF_T1 ("Mtx entry check fail");
