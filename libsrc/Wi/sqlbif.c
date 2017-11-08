@@ -2055,6 +2055,80 @@ bif_signal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+extern caddr_t box_err_print_box (caddr_t param_value, int call_depth);
+
+caddr_t
+bif_callstack_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t *ses = strses_allocate ();
+  query_instance_t *qi = (query_instance_t *)qst;
+  while (IS_BOX_POINTER (qi))
+    {
+      char buf[300];
+      int hint_printed = 0;
+      SES_PRINT (ses, "\n    in");
+
+#ifdef PLDBG
+      if (0 != qi->qi_query->qr_line)
+        {
+          sprintf (buf, " %.250s:%d", ((NULL != qi->qi_query->qr_source) ? qi->qi_query->qr_source : "[unknown source]"), qi->qi_query->qr_line);
+          SES_PRINT (ses, buf);
+          hint_printed = 1;
+        }
+#endif
+      if (NULL != qi->qi_query->qr_proc_name)
+        {
+          sprintf (buf, " %.250s()", qi->qi_query->qr_proc_name);
+          SES_PRINT (ses, buf);
+          hint_printed = 1;
+        }
+      if (0 == hint_printed)
+        SES_PRINT (ses, " binary code");
+      if (1 < callstack_on_exception)
+        {
+          DO_SET (state_slot_t *, parm, &qi->qi_query->qr_parms)
+            {
+              caddr_t param_name = parm->ssl_name;
+              caddr_t param_value = QST_GET ((caddr_t*)qi, parm);
+              sprintf (buf, "\n        %s => ", (NULL == param_name) ? "?unnamed?" : param_name);
+              SES_PRINT (ses, buf);
+              if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (param_value))
+                {
+                  int itm_ctr;
+                  sprintf (buf, "array of %ld items", (long)BOX_ELEMENTS (param_value));
+                  SES_PRINT (ses, buf);
+                  DO_BOX_FAST (caddr_t, itm, itm_ctr, param_value)
+                    {
+                      if (20 == itm_ctr)
+                        {
+                          SES_PRINT (ses, "\n            (truncated)");
+                          break;
+                        }
+                      else
+                        {
+                          caddr_t param_print = box_err_print_box (itm, 0);
+                          sprintf (buf, "\n            #%d => %.200s", itm_ctr, param_print);
+                          SES_PRINT (ses, buf);
+                          dk_free_box (param_print);
+                        }
+                    }
+                  END_DO_BOX_FAST;
+                }
+              else
+                {
+                  caddr_t param_print = box_err_print_box (param_value, 0);
+                  sprintf (buf, "%.200s", param_print);
+                  SES_PRINT (ses, buf);
+                  dk_free_box (param_print);
+                }
+            }
+          END_DO_SET ();
+        }
+      qi = qi->qi_caller;
+    }
+  return (caddr_t)ses;
+}
+
 caddr_t
 bif_vec_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -16468,6 +16542,7 @@ sql_bif_init (void)
 
 /* Functions for error & result handling in user created procedures: */
   bif_define ("signal", bif_signal);
+  bif_define ("callstack_dump", bif_callstack_dump);
   bif_define ("result", bif_result);
   bif_define ("result_names", bif_result_names);
   bif_define_ex ("result_names_get_count", bif_result_names_get_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
