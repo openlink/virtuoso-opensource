@@ -6549,7 +6549,7 @@ bif_isinteger (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_isnumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isnumeric");
+  caddr_t arg1 = bif_arg_unrdf (qst, args, 0, "isnumeric");
   int result;
 
   dtp_t dtp = DV_TYPE_OF (arg1);
