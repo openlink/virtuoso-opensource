@@ -6089,23 +6089,23 @@ bif_any_grants (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (box_num (0));
   if (BOX_ELEMENTS (args) > 1)
     op = (long) bif_long_arg (qst, args, 1, "__any_grants");
-  if (sec_tb_check (tb, qi->qi_u_id, qi->qi_g_id, op))
+  if (sec_tb_check (tb, qi->qi_g_id, qi->qi_u_id, op))
     return (box_num (1));
   if (BOX_ELEMENTS (args) > 2)
     col_name = bif_string_arg (qst, args, 2, "__any_grants");
   if (col_name)
     {
       dbe_column_t *col = tb_name_to_column (tb, col_name);
-      if (!col || !sec_col_check (col, qi->qi_u_id, qi->qi_g_id, op))
-  return box_num (0);
+      if (!col || !sec_col_check (col, qi->qi_g_id, qi->qi_u_id, op))
+	return box_num (0);
       else
-  return box_num (1);
+	return box_num (1);
     }
 
   DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
     {
-      if (sec_col_check (col, qi->qi_u_id, qi->qi_g_id, op))
-  return (box_num (1));
+      if (sec_col_check (col, qi->qi_g_id, qi->qi_u_id, op))
+	return (box_num (1));
     }
   END_DO_SET();
   return (box_num (0));
@@ -6139,7 +6139,7 @@ bif_any_grants_to_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (BOX_ELEMENTS (args) > 2)
   op = (long) bif_long_arg (qst, args, 2, "__any_grants_to_user");
 
-  if (sec_tb_check (tb, u_id, u_g_id, op))
+  if (sec_tb_check (tb, u_g_id, u_id, op))
   return (box_num (1));
 
   if (BOX_ELEMENTS (args) > 3)
@@ -6147,15 +6147,15 @@ bif_any_grants_to_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (col_name)
     {
       dbe_column_t *col = tb_name_to_column (tb, col_name);
-      if (!col || !sec_col_check (col, u_id, u_g_id, op))
-  return box_num (0);
+      if (!col || !sec_col_check (col, u_g_id, u_id, op))
+	return box_num (0);
       else
-  return box_num (1);
+	return box_num (1);
     }
   DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
   {
-  if (sec_col_check (col, u_id, u_g_id, op))
-    return (box_num (1));
+    if (sec_col_check (col, u_g_id, u_id, op))
+      return (box_num (1));
   }
   END_DO_SET();
   return (box_num (0));
@@ -11087,7 +11087,7 @@ check_sequence_grants (query_instance_t * qi, caddr_t name)
   if (id_hash_get (dba_sequences, (caddr_t)&name))
     sqlr_new_error ("42000", "SR159:SECURITY", "Sequence %.300s restricted to DBA group.", name);
   tbl = sequence_auto_increment_of (name);
-  if (tbl && !sec_tb_check (tbl, qi->qi_u_id, qi->qi_g_id, GR_INSERT))
+  if (tbl && !sec_tb_check (tbl, qi->qi_g_id, qi->qi_u_id, GR_INSERT))
     sqlr_new_error ("42000", "SR159:SECURITY", "No permission to write sequence %.300s with user ID %d, group ID %d", name, (int)(qi->qi_u_id), (int)(qi->qi_g_id));
 }
 

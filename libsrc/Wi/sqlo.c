@@ -905,7 +905,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	else
 	  {
 	    op_table_t * ot = NULL;
-	    if (!with_view && !sec_tb_check (tb, (oid_t) unbox (tree->_.table.u_id), (oid_t) unbox (tree->_.table.u_id), GR_SELECT))
+	    if (!with_view && !sec_tb_check (tb, (oid_t) unbox (tree->_.table.g_id), (oid_t) unbox (tree->_.table.u_id), GR_SELECT))
 	      sqlc_new_error (so->so_sc->sc_cc, "42000", "SQ070:SECURITY", "Must have select privileges on view %s", tb->tb_name);
 	    view = (ST*) t_box_copy_tree ((caddr_t) view);
 	    if (ST_P (view, UNION_ST) ||

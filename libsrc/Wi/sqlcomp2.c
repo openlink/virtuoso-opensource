@@ -311,7 +311,7 @@ sqlc_add_table_ref (sql_comp_t * sc, ST * tree, dk_set_t * res)
 	  t_box_copy_tree (sch_view_def (wi_inst.wi_schema, tb->tb_name));
 	if (ct->ct_derived)
 	  {
-	    if (!sec_tb_check (tb, ct->ct_u_id, ct->ct_u_id, GR_SELECT))
+	    if (!sec_tb_check (tb, ct->ct_g_id, ct->ct_u_id, GR_SELECT))
 	      sqlc_new_error (sc->sc_cc, "42000", "SQ070:SECURITY",
 		  "Must have select privileges on view %s", tb->tb_name);
 	    if (ST_P (ct->ct_derived, SELECT_STMT))

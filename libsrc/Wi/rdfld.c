@@ -134,7 +134,7 @@ cu_rl_local_exec (cucurbit_t * cu)
 	if (err)
 	  sqlr_resignal (err);
       }
-    if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+    if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_g_id, cli->cli_user->usr_id))
       {
 	user_t *usr = cli->cli_user;
 	sqlr_new_error ("42000", "SR186:SECURITY", "No permission to execute dpipe %s with user ID %d, group ID %d",

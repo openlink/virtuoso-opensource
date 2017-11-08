@@ -1606,7 +1606,7 @@ sqlc_trigger_decl (sql_comp_t * sc, ST * tree)
   if (!tb)
     sqlc_new_error (sc->sc_cc, "42S02", "SQ090", "Bad table %s in trigger %s definition",
 	tree->_.trigger.table, tree->_.trigger.name);
-  if (usr && !sec_tb_check (tb, usr->usr_id, usr->usr_id, GR_SELECT)) /*XXX: let check is the all columns granted to the creator */
+  if (usr && !sec_tb_check (tb, usr->usr_g_id, usr->usr_id, GR_SELECT)) /*XXX: let check is the all columns granted to the creator */
     sqlc_new_error (sc->sc_cc, "42000", "SQ092", "Access denied for table %s", tb->tb_name);
   qr->qr_trig_dbe_table = tb;
   qr->qr_proc_name = box_string (tree->_.trigger.name);
