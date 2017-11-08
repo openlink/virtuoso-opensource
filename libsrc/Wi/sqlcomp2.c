@@ -1220,6 +1220,10 @@ sqlc_make_proc_store_qr (client_connection_t * cli, query_t * proc_or_trig, cons
 
   qr_set_freeable (&cc, qr);
   sc_free (sc);
+#ifdef QUERY_DEBUG
+  log_query_event (proc_or_trig, 1, "MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d resulting %p", __FILE__, __LINE__, qr);
+  log_query_event (qr, 1, "ALLOC+MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d wrapping %p", __FILE__, __LINE__, proc_or_trig);
+#endif
   return qr;
 }
 
