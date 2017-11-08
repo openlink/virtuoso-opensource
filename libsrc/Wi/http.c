@@ -2076,12 +2076,12 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   DO_BOX_FAST_STEP2 (caddr_t, p, caddr_t, q, inx, asked)
     {
       float qf = unbox_float (q);
-      p = ws_get_mime_variant (p, &found);
-      if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
+      const char *mime_of_p = ws_get_mime_variant (p, &found);
+      if (DVC_MATCH == cmp_like (mime, mime_of_p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  if (qf > maxq)
 	    {
-	      match = p;
+	      match = mime;
 	      maxq = qf;
 	    }
 	}
@@ -2107,7 +2107,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 	}
       check_only = 0;
     }
-  if (NULL != found && ws->ws_header && nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:") != NULL)
+  if (NULL != match && ws->ws_header && nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:") != NULL)
     {
       caddr_t * headers = ws_header_line_to_array (ws->ws_header);
       dk_session_t * ses = strses_allocate ();
@@ -2118,7 +2118,16 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 	  SES_PRINT (ses, h);
 	}
       END_DO_BOX;
-      SES_PRINT (ses, "Content-Type: "); SES_PRINT (ses, found); SES_PRINT (ses, "\r\n");
+
+      SES_PRINT (ses, "Content-Type: ");
+      SES_PRINT (ses, match);
+      if (cenc)
+        {
+          SES_PRINT (ses, "; charset=");
+          SES_PRINT (ses, cenc);
+        }
+      SES_PRINT (ses, "\r\n");
+
       dk_free_tree (ws->ws_header);
       ws->ws_header = strses_string (ses);
       dk_free_tree (headers);
