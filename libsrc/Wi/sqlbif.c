@@ -3795,11 +3795,65 @@ box_sprintf_escaped (ccaddr_t str, int is_id)
   return box_dv_short_string (dest);
 }
 
+void
+bif_string_arg_for_sprintf (caddr_t *qst, state_slot_t ** args, int arg_inx, const char *szMe, int obey_len_or_prec, int preserve_wide, caddr_t *arg_ret, caddr_t *narrow_arg_ret)
+{
+  caddr_t arg = arg_ret[0] = bif_arg (qst, args, arg_inx, szMe);
+  narrow_arg_ret[0] = NULL;
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_RDF == dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)arg;
+      if (!rb->rb_is_complete)
+        rb_complete (rb, ((query_instance_t *)qst)->qi_trx, ((query_instance_t *)qst));
+      arg = arg_ret[0] = rb->rb_box;
+      dtp = DV_TYPE_OF (arg);
+    }
+  switch (dtp)
+    {
+    case DV_STRING: case DV_C_STRING: case DV_UNAME:
+      break;
+    case DV_WIDE: case DV_LONG_WIDE:
+      if (preserve_wide)
+        break;
+      arg = arg_ret[0] = narrow_arg_ret[0] = box_wide_string_as_narrow (arg, NULL, 0, NULL);
+      break;
+    case DV_DB_NULL:
+      arg = arg_ret[0] = narrow_arg_ret[0] = box_dv_short_string ("(NULL)");
+      break;
+    case DV_IRI_ID:
+      arg = arg_ret[0] = narrow_arg_ret[0] = key_id_to_iri (((query_instance_t *)qst), unbox_iri_id (arg));
+      break;
+    case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_DATETIME: case DV_NUMERIC:
+      {
+        caddr_t err = NULL;
+        arg = arg_ret[0] = narrow_arg_ret[0] = box_cast_to (qst, arg, dtp, DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+        if (NULL == err)
+          sqlr_resignal (err);
+        break;
+      }
+    default:
+      sqlr_new_error ("22023", "SR007",
+        "Function %s needs a string or a value that can be casted to a string or NULL as argument %d, not an arg of type %s (%d)",
+        szMe, arg_inx, dv_type_title (dtp), dtp );
+    }
+  if (obey_len_or_prec)
+    {
+      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
+        {
+          if (narrow_arg_ret[0])
+            dk_free_box (narrow_arg_ret[0]);
+          sqlr_new_error ("22026", "SR035",
+              "The length of the data for %s argument %d exceed the maximum of %d, so neither length nor precision format modifiers are supported for it", szMe, arg_inx, SPRINTF_BUF_SPACE);
+        }
+    }
+}
+
 
 caddr_t
 bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "sprintf";
+  static const char *szMe = "sprintf";
   dk_session_t *ses = strses_allocate ();
   char tmp[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
   char format[100];
@@ -4038,36 +4092,19 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 's':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+	  caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
-	      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-		{
-		  if (narrow_arg)
-		    dk_free_box (narrow_arg);
-		  sqlr_new_error ("22026", "SR033",
-		      "The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
-		}
-
 	      snprintf (tmp, SPRINTF_BUF_SPACE, format, arg);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
 	    }
 	  else
 	    {
 	      session_buffered_write (ses, arg, box_length (arg) - 1);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
-
 	      goto get_next;
 	    }
 	}
@@ -4075,14 +4112,8 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'R': /* replace spaces with modifier character */
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+	  caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 1, 0, &arg, &narrow_arg);
 	  if (modifier)
 	    {
 	      size_t pos = strspn (arg, " ");
@@ -4108,36 +4139,21 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'S':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+          caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
-	      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-		{
-		  if (narrow_arg)
-		    dk_free_box (narrow_arg);
-		  sqlr_new_error ("22026", "SR034",
-		      "The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
-		}
-
-	      sprintf_escaped_str_literal (arg, tmp, NULL);
-
+              char tmp2[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
+	      sprintf_escaped_str_literal (arg, tmp2, NULL);
+	      snprintf (tmp, SPRINTF_BUF_SPACE, format, tmp2);
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
 	    }
 	  else
 	    {
 	      sprintf_escaped_str_literal (arg, NULL, ses);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
-
 	      goto get_next;
 	    }
 	}
@@ -4145,36 +4161,21 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'I':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+          caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
-	      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-		{
-		  if (narrow_arg)
-		    dk_free_box (narrow_arg);
-		  sqlr_new_error ("22026", "SR035",
-		      "The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
-		}
-
-	      sprintf_escaped_id (arg, tmp, NULL);
-
+              char tmp2[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
+	      sprintf_escaped_id (arg, tmp2, NULL);
+	      snprintf (tmp, SPRINTF_BUF_SPACE, format, tmp2);
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
 	    }
 	  else
 	    {
 	      sprintf_escaped_id (arg, NULL, ses);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
-
 	      goto get_next;
 	    }
 	}
@@ -4183,64 +4184,28 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case 'U':
 	{
 	  caddr_t arg, narrow_arg;
-
 	  if (arg_len || arg_prec)
 	    sqlr_new_error ("22025", "SR036", "The 'URL escaping' sprintf escape %d does not support modifiers", arg_inx);
-
-	  arg = bif_arg (qst, args, arg_inx, szMe);
-
-	  if (DV_NUMERIC == DV_TYPE_OF (arg))
-	    {
-	      narrow_arg = box_cast_to (qst, arg, DV_NUMERIC, DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
-	      session_buffered_write (ses, narrow_arg, box_length (narrow_arg) - 1);
-	      dk_free_box (narrow_arg);
-	      goto get_next;
-	    }
-
-	  arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  narrow_arg = NULL;
-/*
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else*/ if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 1, &arg, &narrow_arg);
 	  http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI);
-
 	  if (narrow_arg)
 	    dk_free_box (narrow_arg);
-
 	  goto get_next;
 	}
 	break;
 
       case 'V':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+	  caddr_t arg, narrow_arg;
 	  if (arg_len || arg_prec)
-	    {
-	      if (narrow_arg)
-		dk_free_box (narrow_arg);
-
-	      sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d does not support modifiers", arg_inx);
-	    }
-	  else
-	    {
-	      http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT);
-
-	      if (narrow_arg)
-		dk_free_box (narrow_arg);
-
-	      goto get_next;
-	    }
+            sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d does not support modifiers", arg_inx);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 1, &arg, &narrow_arg);
+          http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT);
+          if (narrow_arg)
+            dk_free_box (narrow_arg);
+          goto get_next;
 	}
 	break;
-
       case 'D':
 	{
 	  int rb_type;
@@ -16553,15 +16518,14 @@ sql_bif_init (void)
   bif_define_ex ("concat", bif_concat, BMD_ALIAS, "concatenate", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 0, BMD_IS_PURE,
       BMD_DONE);
   bif_define_ex ("replace"		, bif_replace		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf"		, bif_sprintf		, BMD_ALIAS, "__spf"	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_or_null", bif_sprintf_or_null, BMD_ALIAS, "__spfn", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1,
-      BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_iri", bif_sprintf_iri, BMD_ALIAS, "__spfi", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_IS_PURE,
-      BMD_DONE);
-  bif_define_ex ("sprintf_iri_or_null", bif_sprintf_iri_or_null, BMD_ALIAS, "__spfin", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT,
-      1, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_inverse", bif_sprintf_inverse, BMD_ALIAS, "__spfinv", BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3,
-      BMD_IS_PURE, BMD_DONE);
+
+  bif_define_ex ("sprintf"             , bif_sprintf           , BMD_ALIAS, "__spf"    , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_or_null"     , bif_sprintf_or_null   , BMD_ALIAS, "__spfn"   , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_iri"         , bif_sprintf_iri       , BMD_ALIAS, "__spfi"   , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_iri_or_null", bif_sprintf_iri_or_null        , BMD_ALIAS, "__spfin"  , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_inverse"     , bif_sprintf_inverse   , BMD_ALIAS, "__spfinv"                                 , BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3 , BMD_IS_PURE, BMD_DONE);
+
+
 
 /* Finding occurrences of characters and substrings in strings: */
   bif_define_ex ("strchr"		, bif_strchr		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
