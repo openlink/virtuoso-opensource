@@ -333,6 +333,7 @@ extern int no_free_set;
 
 char * rel_to_abs_path (char *p, const char *path, long len);
 
+extern boxint sequence_next_inc_and_log (query_instance_t *qi, caddr_t * err_ret, caddr_t name, boxint inc_by, boxint cl_sz);
 caddr_t bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args);

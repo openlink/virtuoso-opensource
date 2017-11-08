@@ -11065,6 +11065,22 @@ bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return NULL;
 }
 
+boxint
+sequence_next_inc_and_log (query_instance_t * qi, caddr_t * err_ret, caddr_t name, boxint inc_by, boxint cl_sz)
+{
+  boxint res;
+  if (cl_run_local_only)
+    res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
+  else
+    {
+      GPF_T;
+    }
+  if (*err_ret)
+    return 0;
+  log_sequence (qi->qi_trx, name, res + inc_by);
+  return res;
+}
+
 caddr_t
 bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
 {
@@ -11081,18 +11097,10 @@ bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 	sqlr_new_error ("22023", "SR376",
 	    "sequence_next() needs an nonnegative integer as a second argument, not " BOXINT_FMT, inc_by);
     }
-
   if (sec_check)
     check_sequence_grants (qi, name);
-  if (cl_run_local_only)
-    res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
-  else
-    {
-      GPF_T;
-    }
-  if (*err_ret)
-    return NULL;
-  log_sequence (qi->qi_trx, name, res + inc_by);
+  res = sequence_next_inc_and_log (qi, err_ret, name, inc_by,
+      ((BOX_ELEMENTS (args) > 2) ? bif_long_arg (qst, args, 2, "sequence_next") : 1000));
   return (box_num (res));
 }
 
