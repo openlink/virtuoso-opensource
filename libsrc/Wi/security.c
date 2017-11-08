@@ -1456,7 +1456,7 @@ sec_usr_member_ids_add (user_t *gr, user_t *memb)
         return 0;
       break;
     }
-  new_buf = (ptrlong *)dk_alloc_box (len+1, DV_CUSTOM);
+  new_buf = (ptrlong *)dk_alloc_box ((len+1) * sizeof(ptrlong), DV_CUSTOM);
   if (len)
     {
       memcpy (new_buf, gr->usr_member_ids, ctr * sizeof (ptrlong));
@@ -1487,7 +1487,7 @@ sec_usr_member_ids_del (user_t *gr, user_t *memb)
   return 0;
 del_at_ctr:
   sec_usr_flatten_g_ids_stale (gr);
-  new_buf = (ptrlong *)dk_alloc_box (len-1, DV_CUSTOM);
+  new_buf = (ptrlong *)dk_alloc_box ((len-1) * sizeof(ptrlong), DV_CUSTOM);
   memcpy (new_buf, gr->usr_member_ids, ctr * sizeof (ptrlong));
   memcpy (new_buf + ctr, gr->usr_member_ids + ctr + 1, (len - (ctr+1)) * sizeof (ptrlong));
   dk_free_box ((caddr_t)(gr->usr_member_ids));
