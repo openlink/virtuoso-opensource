@@ -1,7 +1,5 @@
 #!/bin/sh
 #
-#  $Id$
-#
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
@@ -30,8 +28,15 @@ LC_ALL=POSIX
 export LANG LC_ALL
 
 #
-#  Main
+#  Generate all gates
 #
 ./gen_gate.sh gate_virtuoso.h
 ./gen_gate.sh plugin_lang25.h
 ./gen_gate.sh plugin_msdtc.h
+
+#
+#  Cleanup
+#
+rm -f *.tmp
+
+exit 0
