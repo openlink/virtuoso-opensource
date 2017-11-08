@@ -9172,6 +9172,87 @@ bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     find_index_to_vector (item, arr, len, vectype, start, every_nth, me)));
 }
 
+int
+bif_one_of_these_match_op (caddr_t *qst, caddr_t item, caddr_t value, caddr_t *err_ret)
+{
+  int they_match;
+  query_instance_t * qi = (query_instance_t *) qst;
+  dtp_t item_dtp = DV_TYPE_OF (item);
+  dtp_t val_dtp = DV_TYPE_OF (value);
+  if (DV_RDF == item_dtp || DV_RDF_ID == item_dtp || DV_RDF == val_dtp || DV_RDF_ID == val_dtp)
+    return boxes_match (item, value);
+  if (IS_WIDE_STRING_DTP (item_dtp) || IS_WIDE_STRING_DTP (val_dtp))
+    {
+      if (DV_STRING == val_dtp)
+        {
+          caddr_t wide;
+          if (BF_IRI & box_flags (value))
+            return 0; /* IRI vs non-IRI */
+          if (BF_UTF8 & box_flags (value))
+            wide = box_utf8_as_wide_char (value, NULL, box_length (value)-1, 0);
+          else
+            wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+          if (*err_ret)
+            return 0;
+          they_match = boxes_match (item, wide);
+          dk_free_box (wide);
+        }
+      else if (DV_STRING == item_dtp)
+        {
+          caddr_t wide;
+          if (BF_IRI & box_flags (item))
+            return 0; /* IRI vs non-IRI */
+          if (BF_UTF8 & box_flags (item))
+            wide = box_utf8_as_wide_char (item, NULL, box_length (value)-1, 0);
+          else
+            wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+          if (*err_ret)
+            return 0;
+          they_match = boxes_match (wide, value);
+          dk_free_box (wide);
+        }
+      else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
+        return 0;
+      else
+        return boxes_match (item, value);
+    }
+  else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
+    {
+      size_t len;
+      if ((DV_STRING == item_dtp) && !(BF_IRI & box_flags (item)))
+        return 0;
+      if ((DV_STRING == val_dtp) && !(BF_IRI & box_flags (value)))
+        return 0;
+      if (!IS_STRING_DTP (val_dtp) || !IS_STRING_DTP (item_dtp))
+        return 0;
+      len = box_length (value);
+      if (len != box_length (item))
+        return 0;
+      if (memcmp (item, value, len-1))
+        return 0;
+      return 1;
+    }
+  else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
+    {
+      caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
+      if (*err_ret)
+        {
+          if (qi->qi_no_cast_error)
+            {
+              dk_free_tree (*err_ret);
+              *err_ret = NULL;
+              return 0;
+            }
+          return 0;
+        }
+      else
+        they_match = boxes_match (item, tmp_val);
+      dk_free_tree (tmp_val);
+    }
+  else
+    they_match = boxes_match (item, value);
+  return they_match;
+}
 
 /* one_of_these(item,arg1,arg2,arg3,arg4,arg5,...,argn)
 
@@ -9183,99 +9264,36 @@ caddr_t uname_one_of_these;
 caddr_t
 bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *me = "one_of_these";
-  query_instance_t * qi = (query_instance_t *) qst;
+  const char *me = "one_of_these";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_arg (qst, args, 0, me);
-  dtp_t item_dtp = DV_TYPE_OF (item);
   int inx;
-  caddr_t value;
-  dtp_t val_dtp;
   int they_match;
-
   for (inx = 1; inx < n_args; inx++)
     {
       caddr_t values = qst_get (qst, args[inx]);
-      int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (values);
-      int nth, n_values = is_array ? BOX_ELEMENTS (values) : 1;
-      for (nth = 0; nth < n_values; nth++)
+      switch (DV_TYPE_OF (values))
         {
-          value = is_array ? ((caddr_t*)values)[nth] : values;
-          val_dtp = DV_TYPE_OF (value);
-          if (DV_RDF == item_dtp || DV_RDF_ID == item_dtp || DV_RDF == val_dtp || DV_RDF_ID == val_dtp)
-            they_match = boxes_match (item, value);
-          else if (IS_WIDE_STRING_DTP (item_dtp) || IS_WIDE_STRING_DTP (val_dtp))
-            {
-              if (DV_STRING == val_dtp)
-                {
-                  caddr_t wide;
-                  if (BF_IRI & box_flags (value))
-                    continue; /* IRI vs non-IRI */
-                  if (BF_UTF8 & box_flags (value))
-                    wide = box_utf8_as_wide_char (value, NULL, box_length (value)-1, 0);
-                  else
-                    wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-                  if (*err_ret)
-                    return NULL;
-                  they_match = boxes_match (item, wide);
-                  dk_free_box (wide);
-                }
-              else if (DV_STRING == item_dtp)
-                {
-                  caddr_t wide;
-                  if (BF_IRI & box_flags (item))
-                    continue; /* IRI vs non-IRI */
-                  if (BF_UTF8 & box_flags (item))
-                    wide = box_utf8_as_wide_char (item, NULL, box_length (value)-1, 0);
-                  else
-                    wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-                  if (*err_ret)
-                    return NULL;
-                  they_match = boxes_match (wide, value);
-                  dk_free_box (wide);
-                }
-              else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
-                continue;
-              else
-                they_match = boxes_match (item, value);
-            }
-          else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
-            {
-              size_t len;
-              if ((DV_STRING == item_dtp) && !(BF_IRI & box_flags (item)))
-                continue;
-              if ((DV_STRING == val_dtp) && !(BF_IRI & box_flags (value)))
-                continue;
-              if (!IS_STRING_DTP (val_dtp) || !IS_STRING_DTP (item_dtp))
-                continue;
-              len = box_length (value);
-              if (len != box_length (item))
-                continue;
-              if (memcmp (item, value, len-1))
-                continue;
-              return (box_num (inx));
-            }
-          else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
-            {
-              caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
-              if (*err_ret)
-                {
-                  if (qi->qi_no_cast_error)
-                    {
-                      dk_free_tree (*err_ret);
-                      *err_ret = NULL;
-                      continue;
-                    }
+        case DV_ARRAY_OF_POINTER:
+          {
+            int nth, n_values = BOX_ELEMENTS (values);
+            for (nth = 0; nth < n_values; nth++)
+              {
+                they_match = bif_one_of_these_match_op (qst, item, ((caddr_t *)(values))[nth], err_ret);
+                if (*err_ret)
                   return NULL;
-                }
-              else
-                they_match = boxes_match (item, tmp_val);
-              dk_free_tree (tmp_val);
-            }
-          else
-            they_match = boxes_match (item, value);
+                if (they_match)
+                  return (box_num (inx));
+              }
+            break;
+          }
+        default:
+          they_match = bif_one_of_these_match_op (qst, item, values, err_ret);
+          if (*err_ret)
+            return NULL;
           if (they_match)
             return (box_num (inx));
+          break;
         }
     }
   return (box_num (0));
