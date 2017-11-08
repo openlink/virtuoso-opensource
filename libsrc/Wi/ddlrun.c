@@ -4659,6 +4659,7 @@ ddl_redo_undefined_triggers (void)
 	    {
 	      caddr_t err2 = NULL;
 	      full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+	      short_text = NULL;
 	      if (err2)
 		{
 		  log_error (
@@ -4896,6 +4897,7 @@ scan_SYS_PROCEDURES:
 	{
 	  caddr_t err2 = NULL;
 	  full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+ 	  short_text = NULL;
 	  if (err2)
 	    {
 	      log_error (
