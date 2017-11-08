@@ -481,7 +481,13 @@ dk_check_trees_of_qi (query_instance_t *qi)
                 if (dc->dc_values && (DCT_BOXES & dc->dc_type))
                   {
                     /* Owns an array of allocd boxes, else they are from qi_mp */
-                    int val_inx;
+		    int prev_alias_inx, val_inx;
+		    for (prev_alias_inx = freeable_idx_inx; prev_alias_inx < countof_freeables; prev_alias_inx++)
+		      {
+			state_slot_t *volatile prev_alias_sl = slots[prev_alias_inx];
+			if ((SSL_VEC == prev_alias_sl->ssl_type) && (sl->ssl_index == prev_alias_sl->ssl_index))
+			  goto skip_already_checked_dc_values;	/* see below */
+		      }
                     for (val_inx = 0; val_inx < dc->dc_n_values; val_inx++)
                       {
                         caddr_t val = ((caddr_t*)dc->dc_values)[val_inx];
@@ -489,6 +495,7 @@ dk_check_trees_of_qi (query_instance_t *qi)
                         if (NULL != known && (SMALLEST_POSSIBLE_POINTER >= gethash (val, known))) /* This is to reflect the use of aliases */
                           dk_check_tree_iter (val, fake_parent, &known);
                       }
+		  skip_already_checked_dc_values:;
                   }
                 break;
               }
