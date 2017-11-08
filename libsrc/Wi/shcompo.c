@@ -498,6 +498,8 @@ void shcompo_init (void)
 {
     shcompo_vtable__qr.shcompo_type_title = "precompiled SQL query";
     shcompo_vtable__qr.shcompo_cache = id_hash_allocate (4096, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    if (c_shcompo_size < shcompo_vtable__qr.shcompo_cache->ht_buckets)
+      c_shcompo_size = shcompo_vtable__qr.shcompo_cache->ht_buckets * 2;
     shcompo_vtable__qr.shcompo_cache_mutex = mutex_allocate ();
     shcompo_vtable__qr.shcompo_spare_mutexes = NULL;
     shcompo_vtable__qr.shcompo_alloc = shcompo_alloc__default;
