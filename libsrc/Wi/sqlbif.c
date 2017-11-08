@@ -3441,6 +3441,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  POP_QR_RESET;
 		  /*dk_free_box ((caddr_t)orig_args); */
 		  dk_free_tree ((caddr_t) cast_args);
+		  qi->qi_no_cast_error = save;
 		  sqlr_resignal (err);
 		}
 		END_QR_RESET;
