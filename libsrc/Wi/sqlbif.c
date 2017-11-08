@@ -2937,6 +2937,13 @@ bif_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+caddr_t
+bif_substr_2 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_substr (qst, err_ret, args);
+}
+
+
 /* left(str,n) takes n first characters of str. */
 caddr_t
 bif_left (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -6768,6 +6775,20 @@ bif_isiri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_rdf_isliteral_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "rdf_isliteral_impl");
+  switch (DV_TYPE_OF (arg0))
+    {
+    case DV_DB_NULL: return (caddr_t)((ptrlong)0);
+    case DV_IRI_ID: return (caddr_t)((ptrlong)0);
+    case DV_UNAME: return (caddr_t)((ptrlong)0);
+    case DV_STRING: return box_bool (!(box_flags (arg0) & BF_IRI));
+    default: return (caddr_t)((ptrlong)1);
+    }
+}
+
+caddr_t
 bif_is_named_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "is_named_iri_id");
@@ -6787,6 +6808,17 @@ bif_is_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_bool (0);
   iid = unbox_iri_id (arg0);
   return box_bool (iid >= min_bnode_iri_id());
+}
+
+caddr_t
+bif_is_plain_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "is_plain_bnode_iri_id");
+  iri_id_t iid;
+  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+    return box_bool (0);
+  iid = unbox_iri_id (arg0);
+  return box_bool ((iid >= min_bnode_iri_id()) && (iid < min_named_bnode_iri_id()));
 }
 
 caddr_t
@@ -6868,6 +6900,15 @@ caddr_t
 bif_min_64bit_named_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return box_iri_id (MIN_64BIT_NAMED_BNODE_IRI_ID);
+}
+
+caddr_t
+bif_iri_id_to_blank_nodeid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint val = bif_iri_id_or_long_arg (qst, args, 0, "iri_id_to_blank_nodeid");
+  caddr_t box = BNODE_FMT_IMPL (box_sprintf, 31, "nodeID://", val);
+  box_flags (box) = BF_IRI;
+  return box;
 }
 
 caddr_t
@@ -9794,6 +9835,22 @@ bif_mem_leaks (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fclose (fd);
   return NULL;
 }
+
+caddr_t
+bif_all_allocs_at_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname = bif_string_arg (qst, args, 0, "all_allocs_at_line");
+  int line = bif_long_arg (qst, args, 1, "all_allocs_at_line");
+  return box_num (all_allocs_at_line (fname, line));
+}
+
+caddr_t
+bif_new_allocs_after (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int prev_res_no = bif_long_arg (qst, args, 0, "new_allocs_after");
+  return box_num (new_allocs_after (prev_res_no));
+}
+
 #endif
 
 extern FILE *tlsf_fp;
@@ -16464,6 +16521,7 @@ bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_bool (1);
 }
 
+
 void
 bif_sparql_init (void)
 {
@@ -16576,6 +16634,7 @@ sql_bif_init (void)
   bif_define_ex ("subseq"		, bif_subseq		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("substring", bif_substr, BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE,
       BMD_DONE);
+  bif_define_ex ("substr"               , bif_substr_2          , BMD_RET_TYPE, &bt_string      , BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3      , BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("left"			, bif_left		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("right"		, bif_right		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("ltrim"		, bif_ltrim		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
@@ -16683,10 +16742,14 @@ sql_bif_init (void)
       BMD_DONE);
   bif_define_ex ("isiri_id", bif_isiri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
       BMD_DONE);
+  bif_define_ex ("rdf_isliteral_impl", bif_rdf_isliteral_impl, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("is_named_iri_id", bif_is_named_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("is_bnode_iri_id", bif_is_bnode_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
       BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("is_plain_bnode_iri_id", bif_is_plain_bnode_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1,
+      BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("isuname", bif_isuname, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
       BMD_DONE);
 
@@ -16710,6 +16773,8 @@ sql_bif_init (void)
   bif_define_ex ("min_64bit_named_bnode_iri_id", bif_min_64bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0,
       BMD_MAX_ARGCOUNT, 0, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("iri_id_bnode32_to_bnode64", bif_iri_id_bnode32_to_bnode64, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 1,
+      BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("iri_id_to_blank_nodeid", bif_iri_id_to_blank_nodeid, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1,
       BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
 
   bif_define_ex ("__all_eq"		, bif_all_eq		, BMD_RET_TYPE, &bt_any_box		, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);
@@ -16977,6 +17042,8 @@ sql_bif_init (void)
   bif_define ("mem_all_in_use", bif_mem_all_in_use);
   bif_define ("mem_new_in_use", bif_mem_new_in_use);
   bif_define ("mem_leaks", bif_mem_leaks);
+  bif_define ("all_allocs_at_line", bif_all_allocs_at_line);
+  bif_define ("new_allocs_after", bif_new_allocs_after);
   bif_define ("mem_count", bif_mem_count);
 #endif
   bif_define_ex ("mem_get_current_total", bif_mem_get_current_total, BMD_RET_TYPE, &bt_integer, BMD_DONE);
