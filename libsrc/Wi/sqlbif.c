@@ -7304,7 +7304,7 @@ bif_atoi (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
     return (NEW_DB_NULL);
   }
-  l = atoi (str);
+  l = atol (str);
   return (box_num (l));
 }
 
