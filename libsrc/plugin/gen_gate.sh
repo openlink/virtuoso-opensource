@@ -22,7 +22,7 @@
 #
 #  Exit script on error
 #
-set -e
+#set -e
 
 
 #
