@@ -456,8 +456,8 @@ dk_check_trees_of_qi (query_instance_t *qi)
   dk_hash_t *known = NULL;
   query_t *qr = qi->qi_query;
   state_slot_t ** slots = qr->qr_freeable_slots;
-  int n = slots ? BOX_ELEMENTS (slots) : 0, freeable_idx_inx;
-  for (freeable_idx_inx = n; freeable_idx_inx--; /* no step */)
+  int countof_freeables = slots ? BOX_ELEMENTS (slots) : 0, freeable_idx_inx;
+  for (freeable_idx_inx = countof_freeables; freeable_idx_inx--; /* no step */ )
     {
       state_slot_t * volatile sl = slots[freeable_idx_inx];
       caddr_t datum = ((caddr_t *)qi)[sl->ssl_index];
