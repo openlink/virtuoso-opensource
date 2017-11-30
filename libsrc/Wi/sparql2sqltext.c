@@ -8660,6 +8660,71 @@ default_modification_only:
   return patched_ft_arg1;
 }
 
+
+void
+ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pred, caddr_t var_name, quad_map_t *qm, qm_ftext_t *qmft, caddr_t ft_type, caddr_t ft_alias, ccaddr_t long_tmpl_or_null)
+{
+  SPART **args, *ft_arg1;
+  int ft_type_is_geo = SPAR_FT_TYPE_IS_GEO(ft_type);
+  int argctr, argcount, contains_in_rdf_quad;
+  args = ft_pred->_.funcall.argtrees;
+  ft_arg1 = args[1];
+  argcount = BOX_ELEMENTS (args);
+  contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
+    !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
+  if (!ft_type_is_geo)
+    {
+      SPART *g = tree->_.triple.tr_graph;
+      ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
+    }
+  ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
+  ssg_puts ("(");
+  if (NULL != long_tmpl_or_null)
+    ssg_print_tmpl (ssg, qm->qmObjectMap->qmvFormat, long_tmpl_or_null, ft_alias, qm->qmObjectMap, tree->_.triple.tr_object, NULL_ASNAME);
+  else
+    {
+      ssg_prin_id (ssg, ft_alias);
+      ssg_puts (".");
+      ssg_prin_id (ssg, qmft->qmvftColumnName);
+    }
+  ssg_puts (", ");
+  if (DV_STRING == DV_TYPE_OF (ft_arg1))
+    ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
+  else
+    ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
+  for (argctr = 2; argctr < argcount; argctr += 2)
+    {
+      switch ((ptrlong)(args[argctr]))
+        {
+        case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
+        case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
+        case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
+        case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
+        case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
+        default:
+          if (SPAR_FT_TYPE_IS_GEO (ft_type))
+            {
+              while (argctr < argcount)
+                {
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, args[argctr++], SSG_VALMODE_SQLVAL, NULL);
+                }
+              goto args_done; /* see below */
+            }
+          spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+        }
+contains_prin_id:
+      ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
+      continue;
+contains_print_scalar:
+      ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
+      continue;
+    }
+args_done:
+  ssg_puts (")");
+}
+
+
 static void
 ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_sets, int tree_set_count, int tree_count, int inside_breakup, int fld_restrictions_bitmask)
 {
@@ -8851,24 +8916,23 @@ from_printed:
       caddr_t ft_type = tree->_.triple.ft_type;
       if (IS_BOX_POINTER (ft_type))
         {
+          SPART *ft_pred = NULL;
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
-          SPART *ft_pred = NULL, **args, *ft_arg1;
           int ft_type_is_geo = SPAR_FT_TYPE_IS_GEO(ft_type);
+          int filter_ctr, filter_idx_to_zap;
           qm_ftext_t *qmft = (ft_type_is_geo ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           caddr_t ft_alias;
-          int ctr, argctr, argcount, contains_in_rdf_quad;
           if (NULL == qmft)
             spar_error (ssg->ssg_sparp, "Special predicate %.100s() for variable %.100s is always false for this specific query on this specific quad storage",
               ft_type, var_name );
-          ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
-          DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
+          DO_BOX_FAST (SPART *, filt, filter_ctr, gp->_.gp.filters)
             {
               if (NULL == spar_filter_is_freetext_or_rtree (ssg->ssg_sparp, filt, tree))
                 continue;
               if (NULL == ft_pred)
                 {
                   ft_pred = filt;
-                  gp->_.gp.filters[ctr] = (SPART *)((void *)(1));
+                  filter_idx_to_zap = filter_ctr;
                 }
               else
                 spar_error (ssg->ssg_sparp, "Too many %.100s() special predicates for variable %.100s, can not build an SQL query",
@@ -8877,58 +8941,21 @@ from_printed:
           END_DO_BOX_FAST;
           if (NULL == ft_pred)
             spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == ft_predicate");
-          args = ft_pred->_.funcall.argtrees;
-          ft_arg1 = args[1];
-          argcount = BOX_ELEMENTS (args);
-          contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
-            !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
-          if (!ft_type_is_geo)
-            {
-              SPART *g = tree->_.triple.tr_graph;
-              ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
-            }
+          ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf_uname (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           ssg_print_where_or_and (ssg, (ft_type_is_geo ? "spatial predicate" : "freetext predicate"));
           ssg_putchar (' ');
-          ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
-          ssg_puts ("(");
-          ssg_prin_id (ssg, ft_alias);
-          ssg_puts (".");
-          ssg_prin_id (ssg, qmft->qmvftColumnName);
-          ssg_puts (", ");
-          if (DV_STRING == DV_TYPE_OF (ft_arg1))
-            ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
-          else
-            ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
-          for (argctr = 2; argctr < argcount; argctr += 2)
-            {
-              switch ((ptrlong)(args[argctr]))
-                {
-                case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
-                case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
-                case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
-                case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
-                case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
-                default:
-                  if (SPAR_FT_TYPE_IS_GEO (ft_type))
+          ssg_print_ft_predicate (ssg, gp, tree, ft_pred, var_name, qm, qmft, ft_type, ft_alias, NULL);
+          if (ft_type_is_geo)
                     {
-                      while (argctr < argcount)
+              qm_format_t *obj_fmt = qm->qmObjectMap->qmvFormat;
+              if (!obj_fmt->qmfIsSubformatOfLong)
                         {
-                          ssg_puts (", ");
-                          ssg_print_scalar_expn (ssg, args[argctr++], SSG_VALMODE_SQLVAL, NULL);
-                        }
-                      goto args_done; /* see below */
-                    }
-                  spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+                  ssg_print_where_or_and (ssg, "spatial predicate, long");
+                  ssg_putchar (' ');
+                  ssg_print_ft_predicate (ssg, gp, tree, ft_pred, var_name, qm, qmft, ft_type, ft_alias, obj_fmt->qmfLongTmpl);
                 }
-contains_prin_id:
-              ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
-              continue;
-contains_print_scalar:
-              ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
-              continue;
             }
-args_done:
-          ssg_puts (")");
+          gp->_.gp.filters[filter_idx_to_zap] = (SPART *)((void *)(1));
         }
       else if (NULL != ft_type)
         {
