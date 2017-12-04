@@ -12404,7 +12404,7 @@ click "Run".</listitem>
 	<graphic fileref="ui/rdfinsert2.png"/>
       </figure>
         </listitem>
-        <listitem>To view the crawled data, go for instance to public SPARQL Endpoint ex. http:/host:port/sparql:
+        <listitem>To view the crawled data, go for instance to public SPARQL Endpoint ex. http://host:port/sparql:
           <figure id="rdfinsertwebdav21" float="1">
             <title>Using Virtuoso Crawler</title>
 	          <graphic fileref="ui/rdfinsert21.png"/>
