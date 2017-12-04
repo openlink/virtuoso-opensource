@@ -35,7 +35,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY review "http://purl.org/stuff/rev#">
 <!ENTITY ebay "urn:ebay:apis:eBLBaseComponents">
 <!ENTITY oplebay "http://www.openlinksw.com/schemas/ebay#">
 <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">

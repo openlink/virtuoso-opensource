@@ -32,7 +32,7 @@
     xmlns:admin="http://webns.net/mvcb/" 
 	xmlns:h="http://www.w3.org/1999/xhtml" 
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:review="http:/www.purl.org/stuff/rev#" 
+    xmlns:review="http://purl.org/stuff/rev#" 
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:v="http://www.w3.org/2006/vcard/ns#" 
 	xmlns:cv="http://purl.org/captsolo/resume-rdf/0.2/cv#"

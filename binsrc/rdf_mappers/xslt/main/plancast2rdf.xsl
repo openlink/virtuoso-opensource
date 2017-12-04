@@ -34,7 +34,7 @@
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY gn "http://www.geonames.org/ontology#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY review "http://purl.org/stuff/rev#">
 <!ENTITY plancast "http://www.openlinksw.com/schema/plancast#">
 <!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
 ]>

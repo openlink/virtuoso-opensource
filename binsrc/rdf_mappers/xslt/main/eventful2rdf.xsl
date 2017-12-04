@@ -35,7 +35,7 @@
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY gn "http://www.geonames.org/ontology#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY review "http://purl.org/stuff/rev#">
 <!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
 <!ENTITY tio "http://purl.org/tio/ns#">
 ]>

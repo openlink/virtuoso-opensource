@@ -36,7 +36,7 @@
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY review "http://purl.org/stuff/rev#">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY amz "http://webservices.amazon.com/AWSECommerceService/2011-08-01">
 <!ENTITY oplamz "http://www.openlinksw.com/schemas/amazon#">

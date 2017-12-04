@@ -35,7 +35,7 @@
 <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#"> 
+<!ENTITY review "http://purl.org/stuff/rev#"> 
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"

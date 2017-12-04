@@ -35,7 +35,7 @@
   <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
   <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
   <!ENTITY evri "http://www.openlinksw.com/schemas/evri#">
-  <!ENTITY review "http:/www.purl.org/stuff/rev#">
+  <!ENTITY review "http://purl.org/stuff/rev#">
   <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
   <!ENTITY geonames "http://www.geonames.org/ontology#">
 ]>
