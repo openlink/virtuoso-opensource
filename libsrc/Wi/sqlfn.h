@@ -829,8 +829,8 @@ void vdb_enter_lt (lock_trx_t * lt);
 void vdb_enter_lt_1 (lock_trx_t * lt, caddr_t * err_ret, int enter_always);
 void vdb_leave_lt (lock_trx_t * lt, caddr_t *err_ret);
 
-void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
-    caddr_t * state);
+void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst, caddr_t * state);
+void rts_free (remote_table_source_t * rts);
 void rts_skip_to_set (remote_table_source_t * rts, caddr_t * inst, int set);
 int  rts_target_set (remote_table_source_t * rts, caddr_t * inst, state_slot_t * set_ssl, int set_no);
 void file_source_input (table_source_t * ts, caddr_t * inst, caddr_t * state);

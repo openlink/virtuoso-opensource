@@ -1729,8 +1729,11 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       char buffer[64000];
       int to_read;
+      int64 len, ofs = 0;
       dk_session_t *ses = (dk_session_t *) string;
-      int64 len = strses_length (ses), ofs = 0;
+      if (ses->dks_session && ses->dks_session->ses_file && ses->dks_session->ses_file->ses_file_descriptor)
+	session_flush (ses);
+      len = strses_length (ses);
       while (ofs < len)
 	{
 	  int readed;

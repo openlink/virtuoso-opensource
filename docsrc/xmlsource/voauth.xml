@@ -586,7 +586,7 @@ and associated API parameters.</para>
     <para>ODS OAuth standards validate the credentials of an external user by means of the digital signature.
 If the user signs the request, and the ODS server validates the digital signature, the developer is granted
 access to the requested resource.</para>
-    <para>To tool is accessible via http:/host:port/ods/oauth_test.vsp</para>
+    <para>To tool is accessible via http://host:port/ods/oauth_test.vsp</para>
     <sect3 id="voauthtoolexample"><title>Example</title>
       <para>The following example demonstrates creating and getting contact info by the ODS REST APIs
 weblog.post.new and weblog.post.get using the OAuth Test Tool.</para>

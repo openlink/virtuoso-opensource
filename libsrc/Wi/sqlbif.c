@@ -2055,6 +2055,80 @@ bif_signal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+extern caddr_t box_err_print_box (caddr_t param_value, int call_depth);
+
+caddr_t
+bif_callstack_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t *ses = strses_allocate ();
+  query_instance_t *qi = (query_instance_t *)qst;
+  while (IS_BOX_POINTER (qi))
+    {
+      char buf[300];
+      int hint_printed = 0;
+      SES_PRINT (ses, "\n    in");
+
+#ifdef PLDBG
+      if (0 != qi->qi_query->qr_line)
+        {
+          sprintf (buf, " %.250s:%d", ((NULL != qi->qi_query->qr_source) ? qi->qi_query->qr_source : "[unknown source]"), qi->qi_query->qr_line);
+          SES_PRINT (ses, buf);
+          hint_printed = 1;
+        }
+#endif
+      if (NULL != qi->qi_query->qr_proc_name)
+        {
+          sprintf (buf, " %.250s()", qi->qi_query->qr_proc_name);
+          SES_PRINT (ses, buf);
+          hint_printed = 1;
+        }
+      if (0 == hint_printed)
+        SES_PRINT (ses, " binary code");
+      if (1 < callstack_on_exception)
+        {
+          DO_SET (state_slot_t *, parm, &qi->qi_query->qr_parms)
+            {
+              caddr_t param_name = parm->ssl_name;
+              caddr_t param_value = QST_GET ((caddr_t*)qi, parm);
+              sprintf (buf, "\n        %s => ", (NULL == param_name) ? "?unnamed?" : param_name);
+              SES_PRINT (ses, buf);
+              if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (param_value))
+                {
+                  int itm_ctr;
+                  sprintf (buf, "array of %ld items", (long)BOX_ELEMENTS (param_value));
+                  SES_PRINT (ses, buf);
+                  DO_BOX_FAST (caddr_t, itm, itm_ctr, param_value)
+                    {
+                      if (20 == itm_ctr)
+                        {
+                          SES_PRINT (ses, "\n            (truncated)");
+                          break;
+                        }
+                      else
+                        {
+                          caddr_t param_print = box_err_print_box (itm, 0);
+                          sprintf (buf, "\n            #%d => %.200s", itm_ctr, param_print);
+                          SES_PRINT (ses, buf);
+                          dk_free_box (param_print);
+                        }
+                    }
+                  END_DO_BOX_FAST;
+                }
+              else
+                {
+                  caddr_t param_print = box_err_print_box (param_value, 0);
+                  sprintf (buf, "%.200s", param_print);
+                  SES_PRINT (ses, buf);
+                  dk_free_box (param_print);
+                }
+            }
+          END_DO_SET ();
+        }
+      qi = qi->qi_caller;
+    }
+  return (caddr_t)ses;
+}
+
 caddr_t
 bif_vec_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2863,6 +2937,13 @@ bif_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+caddr_t
+bif_substr_2 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_substr (qst, err_ret, args);
+}
+
+
 /* left(str,n) takes n first characters of str. */
 caddr_t
 bif_left (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3367,6 +3448,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  POP_QR_RESET;
 		  /*dk_free_box ((caddr_t)orig_args); */
 		  dk_free_tree ((caddr_t) cast_args);
+		  qi->qi_no_cast_error = save;
 		  sqlr_resignal (err);
 		}
 		END_QR_RESET;
@@ -3795,11 +3877,65 @@ box_sprintf_escaped (ccaddr_t str, int is_id)
   return box_dv_short_string (dest);
 }
 
+void
+bif_string_arg_for_sprintf (caddr_t *qst, state_slot_t ** args, int arg_inx, const char *szMe, int obey_len_or_prec, int preserve_wide, caddr_t *arg_ret, caddr_t *narrow_arg_ret)
+{
+  caddr_t arg = arg_ret[0] = bif_arg (qst, args, arg_inx, szMe);
+  narrow_arg_ret[0] = NULL;
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (DV_RDF == dtp)
+    {
+      rdf_box_t *rb = (rdf_box_t *)arg;
+      if (!rb->rb_is_complete)
+        rb_complete (rb, ((query_instance_t *)qst)->qi_trx, ((query_instance_t *)qst));
+      arg = arg_ret[0] = rb->rb_box;
+      dtp = DV_TYPE_OF (arg);
+    }
+  switch (dtp)
+    {
+    case DV_STRING: case DV_C_STRING: case DV_UNAME:
+      break;
+    case DV_WIDE: case DV_LONG_WIDE:
+      if (preserve_wide)
+        break;
+      arg = arg_ret[0] = narrow_arg_ret[0] = box_wide_string_as_narrow (arg, NULL, 0, NULL);
+      break;
+    case DV_DB_NULL:
+      arg = arg_ret[0] = narrow_arg_ret[0] = box_dv_short_string ("(NULL)");
+      break;
+    case DV_IRI_ID:
+      arg = arg_ret[0] = narrow_arg_ret[0] = key_id_to_iri (((query_instance_t *)qst), unbox_iri_id (arg));
+      break;
+    case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_DATETIME: case DV_NUMERIC:
+      {
+        caddr_t err = NULL;
+        arg = arg_ret[0] = narrow_arg_ret[0] = box_cast_to (qst, arg, dtp, DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+        if (NULL == err)
+          sqlr_resignal (err);
+        break;
+      }
+    default:
+      sqlr_new_error ("22023", "SR007",
+        "Function %s needs a string or a value that can be casted to a string or NULL as argument %d, not an arg of type %s (%d)",
+        szMe, arg_inx, dv_type_title (dtp), dtp );
+    }
+  if (obey_len_or_prec)
+    {
+      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
+        {
+          if (narrow_arg_ret[0])
+            dk_free_box (narrow_arg_ret[0]);
+          sqlr_new_error ("22026", "SR035",
+              "The length of the data for %s argument %d exceed the maximum of %d, so neither length nor precision format modifiers are supported for it", szMe, arg_inx, SPRINTF_BUF_SPACE);
+        }
+    }
+}
+
 
 caddr_t
 bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "sprintf";
+  static const char *szMe = "sprintf";
   dk_session_t *ses = strses_allocate ();
   char tmp[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
   char format[100];
@@ -4038,36 +4174,19 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 's':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+	  caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
-	      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-		{
-		  if (narrow_arg)
-		    dk_free_box (narrow_arg);
-		  sqlr_new_error ("22026", "SR033",
-		      "The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
-		}
-
 	      snprintf (tmp, SPRINTF_BUF_SPACE, format, arg);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
 	    }
 	  else
 	    {
 	      session_buffered_write (ses, arg, box_length (arg) - 1);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
-
 	      goto get_next;
 	    }
 	}
@@ -4075,14 +4194,8 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'R': /* replace spaces with modifier character */
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+	  caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 1, 0, &arg, &narrow_arg);
 	  if (modifier)
 	    {
 	      size_t pos = strspn (arg, " ");
@@ -4108,36 +4221,21 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'S':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+          caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
-	      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-		{
-		  if (narrow_arg)
-		    dk_free_box (narrow_arg);
-		  sqlr_new_error ("22026", "SR034",
-		      "The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
-		}
-
-	      sprintf_escaped_str_literal (arg, tmp, NULL);
-
+              char tmp2[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
+	      sprintf_escaped_str_literal (arg, tmp2, NULL);
+	      snprintf (tmp, SPRINTF_BUF_SPACE, format, tmp2);
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
 	    }
 	  else
 	    {
 	      sprintf_escaped_str_literal (arg, NULL, ses);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
-
 	      goto get_next;
 	    }
 	}
@@ -4145,36 +4243,21 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'I':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+          caddr_t arg, narrow_arg;
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
-	      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
-		{
-		  if (narrow_arg)
-		    dk_free_box (narrow_arg);
-		  sqlr_new_error ("22026", "SR035",
-		      "The length of the data for sprintf argument %d exceed the maximum of %d", arg_inx, SPRINTF_BUF_SPACE);
-		}
-
-	      sprintf_escaped_id (arg, tmp, NULL);
-
+              char tmp2[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
+	      sprintf_escaped_id (arg, tmp2, NULL);
+	      snprintf (tmp, SPRINTF_BUF_SPACE, format, tmp2);
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
 	    }
 	  else
 	    {
 	      sprintf_escaped_id (arg, NULL, ses);
-
 	      if (narrow_arg)
 		dk_free_box (narrow_arg);
-
 	      goto get_next;
 	    }
 	}
@@ -4183,64 +4266,28 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case 'U':
 	{
 	  caddr_t arg, narrow_arg;
-
 	  if (arg_len || arg_prec)
 	    sqlr_new_error ("22025", "SR036", "The 'URL escaping' sprintf escape %d does not support modifiers", arg_inx);
-
-	  arg = bif_arg (qst, args, arg_inx, szMe);
-
-	  if (DV_NUMERIC == DV_TYPE_OF (arg))
-	    {
-	      narrow_arg = box_cast_to (qst, arg, DV_NUMERIC, DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
-	      session_buffered_write (ses, narrow_arg, box_length (narrow_arg) - 1);
-	      dk_free_box (narrow_arg);
-	      goto get_next;
-	    }
-
-	  arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  narrow_arg = NULL;
-/*
-	  if (DV_WIDESTRINGP (arg))
-	    arg = narrow_arg = box_wide_string_as_narrow (arg, NULL, 0, NULL);
-	  else*/ if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 1, &arg, &narrow_arg);
 	  http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI);
-
 	  if (narrow_arg)
 	    dk_free_box (narrow_arg);
-
 	  goto get_next;
 	}
 	break;
 
       case 'V':
 	{
-	  caddr_t arg = bif_string_or_uname_or_wide_or_null_arg (qst, args, arg_inx, szMe);
-	  caddr_t narrow_arg = NULL;
-
-	  if (!arg)
-	    arg = narrow_arg = box_dv_short_string ("(NULL)");
-
+	  caddr_t arg, narrow_arg;
 	  if (arg_len || arg_prec)
-	    {
-	      if (narrow_arg)
-		dk_free_box (narrow_arg);
-
-	      sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d does not support modifiers", arg_inx);
-	    }
-	  else
-	    {
-	      http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT);
-
-	      if (narrow_arg)
-		dk_free_box (narrow_arg);
-
-	      goto get_next;
-	    }
+            sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d does not support modifiers", arg_inx);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 1, &arg, &narrow_arg);
+          http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT);
+          if (narrow_arg)
+            dk_free_box (narrow_arg);
+          goto get_next;
 	}
 	break;
-
       case 'D':
 	{
 	  int rb_type;
@@ -6042,23 +6089,23 @@ bif_any_grants (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (box_num (0));
   if (BOX_ELEMENTS (args) > 1)
     op = (long) bif_long_arg (qst, args, 1, "__any_grants");
-  if (sec_tb_check (tb, qi->qi_u_id, qi->qi_g_id, op))
+  if (sec_tb_check (tb, qi->qi_g_id, qi->qi_u_id, op))
     return (box_num (1));
   if (BOX_ELEMENTS (args) > 2)
     col_name = bif_string_arg (qst, args, 2, "__any_grants");
   if (col_name)
     {
       dbe_column_t *col = tb_name_to_column (tb, col_name);
-      if (!col || !sec_col_check (col, qi->qi_u_id, qi->qi_g_id, op))
-  return box_num (0);
+      if (!col || !sec_col_check (col, qi->qi_g_id, qi->qi_u_id, op))
+	return box_num (0);
       else
-  return box_num (1);
+	return box_num (1);
     }
 
   DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
     {
-      if (sec_col_check (col, qi->qi_u_id, qi->qi_g_id, op))
-  return (box_num (1));
+      if (sec_col_check (col, qi->qi_g_id, qi->qi_u_id, op))
+	return (box_num (1));
     }
   END_DO_SET();
   return (box_num (0));
@@ -6092,7 +6139,7 @@ bif_any_grants_to_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (BOX_ELEMENTS (args) > 2)
   op = (long) bif_long_arg (qst, args, 2, "__any_grants_to_user");
 
-  if (sec_tb_check (tb, u_id, u_g_id, op))
+  if (sec_tb_check (tb, u_g_id, u_id, op))
   return (box_num (1));
 
   if (BOX_ELEMENTS (args) > 3)
@@ -6100,15 +6147,15 @@ bif_any_grants_to_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (col_name)
     {
       dbe_column_t *col = tb_name_to_column (tb, col_name);
-      if (!col || !sec_col_check (col, u_id, u_g_id, op))
-  return box_num (0);
+      if (!col || !sec_col_check (col, u_g_id, u_id, op))
+	return box_num (0);
       else
-  return box_num (1);
+	return box_num (1);
     }
   DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
   {
-  if (sec_col_check (col, u_id, u_g_id, op))
-    return (box_num (1));
+    if (sec_col_check (col, u_g_id, u_id, op))
+      return (box_num (1));
   }
   END_DO_SET();
   return (box_num (0));
@@ -6502,7 +6549,7 @@ bif_isinteger (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_isnumeric (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t arg1 = bif_arg (qst, args, 0, "isnumeric");
+  caddr_t arg1 = bif_arg_unrdf (qst, args, 0, "isnumeric");
   int result;
 
   dtp_t dtp = DV_TYPE_OF (arg1);
@@ -6728,6 +6775,20 @@ bif_isiri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_rdf_isliteral_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "rdf_isliteral_impl");
+  switch (DV_TYPE_OF (arg0))
+    {
+    case DV_DB_NULL: return (caddr_t)((ptrlong)0);
+    case DV_IRI_ID: return (caddr_t)((ptrlong)0);
+    case DV_UNAME: return (caddr_t)((ptrlong)0);
+    case DV_STRING: return box_bool (!(box_flags (arg0) & BF_IRI));
+    default: return (caddr_t)((ptrlong)1);
+    }
+}
+
+caddr_t
 bif_is_named_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg0 = bif_arg (qst, args, 0, "is_named_iri_id");
@@ -6747,6 +6808,17 @@ bif_is_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_bool (0);
   iid = unbox_iri_id (arg0);
   return box_bool (iid >= min_bnode_iri_id());
+}
+
+caddr_t
+bif_is_plain_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t arg0 = bif_arg (qst, args, 0, "is_plain_bnode_iri_id");
+  iri_id_t iid;
+  if (DV_IRI_ID != DV_TYPE_OF (arg0))
+    return box_bool (0);
+  iid = unbox_iri_id (arg0);
+  return box_bool ((iid >= min_bnode_iri_id()) && (iid < min_named_bnode_iri_id()));
 }
 
 caddr_t
@@ -6828,6 +6900,15 @@ caddr_t
 bif_min_64bit_named_bnode_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return box_iri_id (MIN_64BIT_NAMED_BNODE_IRI_ID);
+}
+
+caddr_t
+bif_iri_id_to_blank_nodeid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint val = bif_iri_id_or_long_arg (qst, args, 0, "iri_id_to_blank_nodeid");
+  caddr_t box = BNODE_FMT_IMPL (box_sprintf, 31, "nodeID://", val);
+  box_flags (box) = BF_IRI;
+  return box;
 }
 
 caddr_t
@@ -7223,7 +7304,7 @@ bif_atoi (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
     return (NEW_DB_NULL);
   }
-  l = atoi (str);
+  l = atol (str);
   return (box_num (l));
 }
 
@@ -9172,6 +9253,87 @@ bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     find_index_to_vector (item, arr, len, vectype, start, every_nth, me)));
 }
 
+int
+bif_one_of_these_match_op (caddr_t *qst, caddr_t item, caddr_t value, caddr_t *err_ret)
+{
+  int they_match;
+  query_instance_t * qi = (query_instance_t *) qst;
+  dtp_t item_dtp = DV_TYPE_OF (item);
+  dtp_t val_dtp = DV_TYPE_OF (value);
+  if (DV_RDF == item_dtp || DV_RDF_ID == item_dtp || DV_RDF == val_dtp || DV_RDF_ID == val_dtp)
+    return boxes_match (item, value);
+  if (IS_WIDE_STRING_DTP (item_dtp) || IS_WIDE_STRING_DTP (val_dtp))
+    {
+      if (DV_STRING == val_dtp)
+        {
+          caddr_t wide;
+          if (BF_IRI & box_flags (value))
+            return 0; /* IRI vs non-IRI */
+          if (BF_UTF8 & box_flags (value))
+            wide = box_utf8_as_wide_char (value, NULL, box_length (value)-1, 0);
+          else
+            wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+          if (*err_ret)
+            return 0;
+          they_match = boxes_match (item, wide);
+          dk_free_box (wide);
+        }
+      else if (DV_STRING == item_dtp)
+        {
+          caddr_t wide;
+          if (BF_IRI & box_flags (item))
+            return 0; /* IRI vs non-IRI */
+          if (BF_UTF8 & box_flags (item))
+            wide = box_utf8_as_wide_char (item, NULL, box_length (value)-1, 0);
+          else
+            wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+          if (*err_ret)
+            return 0;
+          they_match = boxes_match (wide, value);
+          dk_free_box (wide);
+        }
+      else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
+        return 0;
+      else
+        return boxes_match (item, value);
+    }
+  else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
+    {
+      size_t len;
+      if ((DV_STRING == item_dtp) && !(BF_IRI & box_flags (item)))
+        return 0;
+      if ((DV_STRING == val_dtp) && !(BF_IRI & box_flags (value)))
+        return 0;
+      if (!IS_STRING_DTP (val_dtp) || !IS_STRING_DTP (item_dtp))
+        return 0;
+      len = box_length (value);
+      if (len != box_length (item))
+        return 0;
+      if (memcmp (item, value, len-1))
+        return 0;
+      return 1;
+    }
+  else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
+    {
+      caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
+      if (*err_ret)
+        {
+          if (qi->qi_no_cast_error)
+            {
+              dk_free_tree (*err_ret);
+              *err_ret = NULL;
+              return 0;
+            }
+          return 0;
+        }
+      else
+        they_match = boxes_match (item, tmp_val);
+      dk_free_tree (tmp_val);
+    }
+  else
+    they_match = boxes_match (item, value);
+  return they_match;
+}
 
 /* one_of_these(item,arg1,arg2,arg3,arg4,arg5,...,argn)
 
@@ -9183,99 +9345,36 @@ caddr_t uname_one_of_these;
 caddr_t
 bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *me = "one_of_these";
-  query_instance_t * qi = (query_instance_t *) qst;
+  const char *me = "one_of_these";
   int n_args = BOX_ELEMENTS (args);
   caddr_t item = bif_arg (qst, args, 0, me);
-  dtp_t item_dtp = DV_TYPE_OF (item);
   int inx;
-  caddr_t value;
-  dtp_t val_dtp;
   int they_match;
-
   for (inx = 1; inx < n_args; inx++)
     {
       caddr_t values = qst_get (qst, args[inx]);
-      int is_array = DV_ARRAY_OF_POINTER == DV_TYPE_OF (values);
-      int nth, n_values = is_array ? BOX_ELEMENTS (values) : 1;
-      for (nth = 0; nth < n_values; nth++)
+      switch (DV_TYPE_OF (values))
         {
-          value = is_array ? ((caddr_t*)values)[nth] : values;
-          val_dtp = DV_TYPE_OF (value);
-          if (DV_RDF == item_dtp || DV_RDF_ID == item_dtp || DV_RDF == val_dtp || DV_RDF_ID == val_dtp)
-            they_match = boxes_match (item, value);
-          else if (IS_WIDE_STRING_DTP (item_dtp) || IS_WIDE_STRING_DTP (val_dtp))
-            {
-              if (DV_STRING == val_dtp)
-                {
-                  caddr_t wide;
-                  if (BF_IRI & box_flags (value))
-                    continue; /* IRI vs non-IRI */
-                  if (BF_UTF8 & box_flags (value))
-                    wide = box_utf8_as_wide_char (value, NULL, box_length (value)-1, 0);
-                  else
-                    wide = box_narrow_string_as_wide ((unsigned char *) value, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-                  if (*err_ret)
-                    return NULL;
-                  they_match = boxes_match (item, wide);
-                  dk_free_box (wide);
-                }
-              else if (DV_STRING == item_dtp)
-                {
-                  caddr_t wide;
-                  if (BF_IRI & box_flags (item))
-                    continue; /* IRI vs non-IRI */
-                  if (BF_UTF8 & box_flags (item))
-                    wide = box_utf8_as_wide_char (item, NULL, box_length (value)-1, 0);
-                  else
-                    wide = box_narrow_string_as_wide ((unsigned char *) item, NULL, 0, QST_CHARSET (qst), err_ret, 1);
-                  if (*err_ret)
-                    return NULL;
-                  they_match = boxes_match (wide, value);
-                  dk_free_box (wide);
-                }
-              else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
-                continue;
-              else
-                they_match = boxes_match (item, value);
-            }
-          else if (DV_UNAME == item_dtp || DV_UNAME == val_dtp)
-            {
-              size_t len;
-              if ((DV_STRING == item_dtp) && !(BF_IRI & box_flags (item)))
-                continue;
-              if ((DV_STRING == val_dtp) && !(BF_IRI & box_flags (value)))
-                continue;
-              if (!IS_STRING_DTP (val_dtp) || !IS_STRING_DTP (item_dtp))
-                continue;
-              len = box_length (value);
-              if (len != box_length (item))
-                continue;
-              if (memcmp (item, value, len-1))
-                continue;
-              return (box_num (inx));
-            }
-          else if (item_dtp != val_dtp && item_dtp != DV_DB_NULL && val_dtp != DV_DB_NULL)
-            {
-              caddr_t tmp_val = box_cast_to (qst, value, val_dtp, item_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err_ret);
-              if (*err_ret)
-                {
-                  if (qi->qi_no_cast_error)
-                    {
-                      dk_free_tree (*err_ret);
-                      *err_ret = NULL;
-                      continue;
-                    }
+        case DV_ARRAY_OF_POINTER:
+          {
+            int nth, n_values = BOX_ELEMENTS (values);
+            for (nth = 0; nth < n_values; nth++)
+              {
+                they_match = bif_one_of_these_match_op (qst, item, ((caddr_t *)(values))[nth], err_ret);
+                if (*err_ret)
                   return NULL;
-                }
-              else
-                they_match = boxes_match (item, tmp_val);
-              dk_free_tree (tmp_val);
-            }
-          else
-            they_match = boxes_match (item, value);
+                if (they_match)
+                  return (box_num (inx));
+              }
+            break;
+          }
+        default:
+          they_match = bif_one_of_these_match_op (qst, item, values, err_ret);
+          if (*err_ret)
+            return NULL;
           if (they_match)
             return (box_num (inx));
+          break;
         }
     }
   return (box_num (0));
@@ -9736,6 +9835,22 @@ bif_mem_leaks (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   fclose (fd);
   return NULL;
 }
+
+caddr_t
+bif_all_allocs_at_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname = bif_string_arg (qst, args, 0, "all_allocs_at_line");
+  int line = bif_long_arg (qst, args, 1, "all_allocs_at_line");
+  return box_num (all_allocs_at_line (fname, line));
+}
+
+caddr_t
+bif_new_allocs_after (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int prev_res_no = bif_long_arg (qst, args, 0, "new_allocs_after");
+  return box_num (new_allocs_after (prev_res_no));
+}
+
 #endif
 
 extern FILE *tlsf_fp;
@@ -10972,7 +11087,7 @@ check_sequence_grants (query_instance_t * qi, caddr_t name)
   if (id_hash_get (dba_sequences, (caddr_t)&name))
     sqlr_new_error ("42000", "SR159:SECURITY", "Sequence %.300s restricted to DBA group.", name);
   tbl = sequence_auto_increment_of (name);
-  if (tbl && !sec_tb_check (tbl, qi->qi_u_id, qi->qi_g_id, GR_INSERT))
+  if (tbl && !sec_tb_check (tbl, qi->qi_g_id, qi->qi_u_id, GR_INSERT))
     sqlr_new_error ("42000", "SR159:SECURITY", "No permission to write sequence %.300s with user ID %d, group ID %d", name, (int)(qi->qi_u_id), (int)(qi->qi_g_id));
 }
 
@@ -11047,6 +11162,22 @@ bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return NULL;
 }
 
+boxint
+sequence_next_inc_and_log (query_instance_t * qi, caddr_t * err_ret, caddr_t name, boxint inc_by, boxint cl_sz)
+{
+  boxint res;
+  if (cl_run_local_only)
+    res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
+  else
+    {
+      GPF_T;
+    }
+  if (*err_ret)
+    return 0;
+  log_sequence (qi->qi_trx, name, res + inc_by);
+  return res;
+}
+
 caddr_t
 bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
 {
@@ -11063,18 +11194,10 @@ bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 	sqlr_new_error ("22023", "SR376",
 	    "sequence_next() needs an nonnegative integer as a second argument, not " BOXINT_FMT, inc_by);
     }
-
   if (sec_check)
     check_sequence_grants (qi, name);
-  if (cl_run_local_only)
-    res = sequence_next_inc_1 (name, OUTSIDE_MAP, inc_by, err_ret);
-  else
-    {
-      GPF_T;
-    }
-  if (*err_ret)
-    return NULL;
-  log_sequence (qi->qi_trx, name, res + inc_by);
+  res = sequence_next_inc_and_log (qi, err_ret, name, inc_by,
+      ((BOX_ELEMENTS (args) > 2) ? bif_long_arg (qst, args, 2, "sequence_next") : 1000));
   return (box_num (res));
 }
 
@@ -16398,6 +16521,7 @@ bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_bool (1);
 }
 
+
 void
 bif_sparql_init (void)
 {
@@ -16477,6 +16601,7 @@ sql_bif_init (void)
 
 /* Functions for error & result handling in user created procedures: */
   bif_define ("signal", bif_signal);
+  bif_define ("callstack_dump", bif_callstack_dump);
   bif_define ("result", bif_result);
   bif_define ("result_names", bif_result_names);
   bif_define_ex ("result_names_get_count", bif_result_names_get_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
@@ -16509,6 +16634,7 @@ sql_bif_init (void)
   bif_define_ex ("subseq"		, bif_subseq		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("substring", bif_substr, BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE,
       BMD_DONE);
+  bif_define_ex ("substr"               , bif_substr_2          , BMD_RET_TYPE, &bt_string      , BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3      , BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("left"			, bif_left		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("right"		, bif_right		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("ltrim"		, bif_ltrim		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
@@ -16527,15 +16653,14 @@ sql_bif_init (void)
   bif_define_ex ("concat", bif_concat, BMD_ALIAS, "concatenate", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 0, BMD_IS_PURE,
       BMD_DONE);
   bif_define_ex ("replace"		, bif_replace		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf"		, bif_sprintf		, BMD_ALIAS, "__spf"	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_or_null", bif_sprintf_or_null, BMD_ALIAS, "__spfn", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1,
-      BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_iri", bif_sprintf_iri, BMD_ALIAS, "__spfi", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_IS_PURE,
-      BMD_DONE);
-  bif_define_ex ("sprintf_iri_or_null", bif_sprintf_iri_or_null, BMD_ALIAS, "__spfin", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT,
-      1, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_inverse", bif_sprintf_inverse, BMD_ALIAS, "__spfinv", BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3,
-      BMD_IS_PURE, BMD_DONE);
+
+  bif_define_ex ("sprintf"             , bif_sprintf           , BMD_ALIAS, "__spf"    , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_or_null"     , bif_sprintf_or_null   , BMD_ALIAS, "__spfn"   , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_iri"         , bif_sprintf_iri       , BMD_ALIAS, "__spfi"   , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_iri_or_null", bif_sprintf_iri_or_null        , BMD_ALIAS, "__spfin"  , BMD_RET_TYPE, &bt_varchar     , BMD_MIN_ARGCOUNT, 1   , BMD_USES_INDEX, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_inverse"     , bif_sprintf_inverse   , BMD_ALIAS, "__spfinv"                                 , BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3 , BMD_IS_PURE, BMD_DONE);
+
+
 
 /* Finding occurrences of characters and substrings in strings: */
   bif_define_ex ("strchr"		, bif_strchr		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
@@ -16617,10 +16742,14 @@ sql_bif_init (void)
       BMD_DONE);
   bif_define_ex ("isiri_id", bif_isiri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
       BMD_DONE);
+  bif_define_ex ("rdf_isliteral_impl", bif_rdf_isliteral_impl, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("is_named_iri_id", bif_is_named_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("is_bnode_iri_id", bif_is_bnode_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
       BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("is_plain_bnode_iri_id", bif_is_plain_bnode_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1,
+      BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("isuname", bif_isuname, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
       BMD_DONE);
 
@@ -16644,6 +16773,8 @@ sql_bif_init (void)
   bif_define_ex ("min_64bit_named_bnode_iri_id", bif_min_64bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0,
       BMD_MAX_ARGCOUNT, 0, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("iri_id_bnode32_to_bnode64", bif_iri_id_bnode32_to_bnode64, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 1,
+      BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("iri_id_to_blank_nodeid", bif_iri_id_to_blank_nodeid, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1,
       BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
 
   bif_define_ex ("__all_eq"		, bif_all_eq		, BMD_RET_TYPE, &bt_any_box		, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);
@@ -16790,7 +16921,7 @@ sql_bif_init (void)
   bif_define_ex ("\x01__sequence_next_no_check", bif_sequence_next_no_check, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 3,
       BMD_IS_DBA_ONLY, BMD_DONE);
   bif_define_ex ("registry_get_all", bif_registry_get_all, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
-  bif_define_ex ("registry_get", bif_registry_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("registry_get", bif_registry_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("registry_name_is_protected", bif_registry_name_is_protected, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("registry_set", bif_registry_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("registry_remove", bif_registry_remove, BMD_RET_TYPE, &bt_integer, BMD_DONE);
@@ -16911,6 +17042,8 @@ sql_bif_init (void)
   bif_define ("mem_all_in_use", bif_mem_all_in_use);
   bif_define ("mem_new_in_use", bif_mem_new_in_use);
   bif_define ("mem_leaks", bif_mem_leaks);
+  bif_define ("all_allocs_at_line", bif_all_allocs_at_line);
+  bif_define ("new_allocs_after", bif_new_allocs_after);
   bif_define ("mem_count", bif_mem_count);
 #endif
   bif_define_ex ("mem_get_current_total", bif_mem_get_current_total, BMD_RET_TYPE, &bt_integer, BMD_DONE);

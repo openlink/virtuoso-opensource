@@ -950,7 +950,7 @@ cfg_setup (void)
     c_future_thread_sz = 140000;
 
   if (cfg_getlong (pconfig, section, "ThreadCleanupInterval", &long_helper) == -1)
-    c_cfg_thread_live_period = 0;
+    c_cfg_thread_live_period = 1;
   else
     c_cfg_thread_live_period = (unsigned long) long_helper;
 
@@ -960,7 +960,7 @@ cfg_setup (void)
     c_cfg_thread_threshold = (unsigned long) long_helper;
 
   if (cfg_getlong (pconfig, section, "ResourcesCleanupInterval", &long_helper) == -1)
-    c_cfg_resources_clear_interval = 0;
+    c_cfg_resources_clear_interval = 1;
   else
     c_cfg_resources_clear_interval = (unsigned long) long_helper;
 

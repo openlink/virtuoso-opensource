@@ -3710,11 +3710,11 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	return box_wide_as_utf8_char (data, wcslen ((wchar_t *) data), DV_LONG_STRING);
     case DV_BLOB_WIDE_HANDLE:
       {
-	caddr_t res;
-	result = blob_to_string (((query_instance_t *) qst)->qi_trx, data);
-	res = box_wide_as_utf8_char (result, wcslen ((wchar_t *) result), DV_LONG_STRING);
-	dk_free_tree (result);
-	return res;
+        caddr_t res = blob_to_string (((query_instance_t *) qst)->qi_trx, data);
+        result = box_wide_as_utf8_char (res, wcslen ((wchar_t *) res), DV_LONG_STRING);
+        dk_free_tree (res);
+        box_flags (result) |= BF_UTF8;
+        return result;
       }
     case DV_XML_ENTITY:
       {
@@ -3723,16 +3723,18 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	if (ent->xe_attr_name)
 	  {
 	    res = ent->_->xe_currattrvalue (ent);
-	    return DBG_NAME(box_copy) (DBG_ARGS res);
+            result = DBG_NAME(box_copy) (DBG_ARGS res);
 	  }
 	else
 	  {
-	    ent->_->DBG_NAME(xe_string_value) (DBG_ARGS ent, &res, DV_STRING);
-	    return res;
+            result = NULL;
+            ent->_->DBG_NAME(xe_string_value) (DBG_ARGS ent, &result, DV_STRING);
 	  }
+        if (DV_STRING == DV_TYPE_OF (result))
+          box_flags (result) |= BF_UTF8;
+        return result;
       }
     case DV_STRING:
-    case DV_UNAME:
       {
         /* Bug 5763: No need:
         encoding_handler_t * eh = eh_get_handler (CHARSET_NAME(QST_CHARSET (qst), "ISO-8859-1"));
@@ -3740,11 +3742,18 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	  return literal_as_utf8 (eh, data, box_length (data) - 1);
 	else
 	*/
+          if (box_flags (data) & BF_UTF8)
+            return DBG_NAME(box_copy) (DBG_ARGS data);
 	  result = DBG_NAME (box_narrow_string_as_utf8) (DBG_ARGS NULL, data, 0, QST_CHARSET (qst), &err, 1);
 	  if (err)
 	    sqlr_resignal (err);
+          box_flags (result) |= BF_UTF8;
 	  return result;
       }
+    case DV_UNAME:
+      result = DBG_NAME(box_dv_short_nchars) (DBG_ARGS data, box_length (data) - 1);
+      box_flags (result) |= BF_UTF8;
+      return result;
     case DV_DB_NULL:
       return NEW_DB_NULL;
     default:
@@ -3752,18 +3761,19 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
         /* Bug 5763: No need:
 	encoding_handler_t * eh = eh_get_handler (CHARSET_NAME(QST_CHARSET (qst), "ISO-8859-1"));
 	*/
-	caddr_t res;
-	result = box_cast (qst, data, (sql_tree_tmp*) varchar, dtp);
+        caddr_t res = box_cast (qst, data, (sql_tree_tmp*) varchar, dtp);
         /* Bug 5763: No need:
 	if (eh)
 	  res = literal_as_utf8 (eh, result, box_length (result) - 1);
 	else
 	*/
-	res = box_narrow_string_as_utf8 (NULL, result, 0, QST_CHARSET (qst), &err, 1);
-	dk_free_tree (result);
+        result = box_narrow_string_as_utf8 (NULL, res, 0, QST_CHARSET (qst), &err, 1);
+        dk_free_tree (res);
 	if (err)
 	  sqlr_resignal (err);
-	return res;
+        if (DV_STRING == DV_TYPE_OF (result))
+          box_flags (result) |= BF_UTF8;
+        return result;
       }
     }
 }

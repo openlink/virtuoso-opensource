@@ -1126,7 +1126,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
        qs2 := DB.DBA.URLREWRITE_CALC_QS (lang, VM_LANG);
        qs3 := DB.DBA.URLREWRITE_CALC_QS (cset, VM_ENC);
 --       dbg_obj_print (VM_VARIANT_URI, ' ', qs1, ' ', qs2, ' ', qs3);
-       curr := VM_QS * qs1 * qs2 * qs3;
+       curr := qs1 * qs2 * qs3;
        if (registry_get ('__debug_url_rewrite') in ('1', '2'))
 	 dbg_printf ('tcn trying: %s qs1=%f qs2=%f qs3=%f qs=%f', VM_VARIANT_URI, qs1, qs2, qs3, curr);
        if (curr > best_q)

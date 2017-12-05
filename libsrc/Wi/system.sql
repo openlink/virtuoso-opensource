@@ -536,12 +536,16 @@ try_http_get:
     }
   else if (proto = 'file')
     {
-      inx := 5;
-      base_uri := charset_recode (base_uri, 'UTF-8', NULL);
-      while (length (base_uri) > inx + 1 and
-	  aref (base_uri, inx) = ascii ('/'))
-	inx := inx + 1;
-      str := file_to_string (concat (http_root(), '/' , subseq (base_uri, inx)));
+      if ('localhost' = s_uri[1])
+        base_uri := charset_recode (s_uri[2], 'UTF-8', NULL);
+      else if (('' <> s_uri[1]) and ('/' = s_uri[2]))
+        base_uri := charset_recode (s_uri[1], 'UTF-8', NULL);
+      else
+        base_uri := charset_recode (s_uri[1] || s_uri[2], 'UTF-8', NULL);
+      if (base_uri like '/%')
+        str := file_to_string (base_uri);
+      else
+        str := file_to_string (concat (http_root(), '/' , base_uri));
     }
   else if (proto = 'virt')
     {

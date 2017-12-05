@@ -947,7 +947,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
 	  return NULL;
 	}
     }
-  if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+  if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_g_id, cli->cli_user->usr_id))
     {
       user_t * usr = cli->cli_user;
       *err_ret = srv_make_new_error ("42000", "SR186:SECURITY", "No permission to execute %s in aq_request() with user ID %d, group ID %d",

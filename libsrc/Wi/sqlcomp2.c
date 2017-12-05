@@ -311,7 +311,7 @@ sqlc_add_table_ref (sql_comp_t * sc, ST * tree, dk_set_t * res)
 	  t_box_copy_tree (sch_view_def (wi_inst.wi_schema, tb->tb_name));
 	if (ct->ct_derived)
 	  {
-	    if (!sec_tb_check (tb, ct->ct_u_id, ct->ct_u_id, GR_SELECT))
+	    if (!sec_tb_check (tb, ct->ct_g_id, ct->ct_u_id, GR_SELECT))
 	      sqlc_new_error (sc->sc_cc, "42000", "SQ070:SECURITY",
 		  "Must have select privileges on view %s", tb->tb_name);
 	    if (ST_P (ct->ct_derived, SELECT_STMT))
@@ -1220,6 +1220,10 @@ sqlc_make_proc_store_qr (client_connection_t * cli, query_t * proc_or_trig, cons
 
   qr_set_freeable (&cc, qr);
   sc_free (sc);
+#ifdef QUERY_DEBUG
+  log_query_event (proc_or_trig, 1, "MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d resulting %p", __FILE__, __LINE__, qr);
+  log_query_event (qr, 1, "ALLOC+MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d wrapping %p", __FILE__, __LINE__, proc_or_trig);
+#endif
   return qr;
 }
 
@@ -1403,6 +1407,8 @@ log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
   jmp_buf_splice *ctx;
   va_list ap;
   va_start (ap, fmt);
+  if (NULL == qr)
+    return;
   fprintf (query_log, "\n{{{%p ", qr);
   vfprintf (query_log, fmt, ap);
   if (print_full_content && qr->qr_text)

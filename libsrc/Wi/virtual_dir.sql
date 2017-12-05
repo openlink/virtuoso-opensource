@@ -1107,7 +1107,7 @@ end_loop:;
 		accept := 'text/turtle';
 	      else if ("output-format" = 'n3')
 		accept := 'text/rdf+n3';
-              else if ("output-format" = 'nt' or "output-format" = 'txt')
+              else if ("output-format" = 'nt' or "output-format" = 'txt' or "output-format" = 'text')
                 accept := 'text/n3';
               else if ("output-format" = 'json')
                 accept := 'application/json';

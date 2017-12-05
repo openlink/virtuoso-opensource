@@ -3418,7 +3418,7 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
                   if (col->col_n_distinct > max - min)
                     col->col_n_distinct = MAX (1, max - min);
                 }
-              if (is_int)
+              if (!is_int)
                 {
                   dk_free_tree (col->col_min); col->col_min = col_min_max_trunc (minb); minb = NULL;
                   dk_free_tree (col->col_max); col->col_max = col_min_max_trunc (maxb); maxb = NULL;

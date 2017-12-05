@@ -3532,7 +3532,7 @@ bif_dict_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       /* no break */
     case 1:
       arg = (long) bif_long_arg (qst, args, 0, "dict_new");
-      if (arg > 31)
+      if ((arg < 0) || (arg > 31))
         size = hash_nextprime (arg);
       /* no break */
     case 0: ;

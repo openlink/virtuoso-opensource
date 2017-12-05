@@ -200,6 +200,9 @@ wi_free_old_qrs ()
       while (global_old_procs)
 	{
 	  query_t *qr = (query_t *) dk_set_pop (&global_old_procs);
+#ifdef QUERY_DEBUG
+          log_query_event (qr, 1, "POP_GLOBAL_OLD by wi_free_old_qrs at %s:%d", __FILE__, __LINE__, qr);
+#endif
 	  /*log_debug ("freeing proc %.50s", qr->qr_proc_name);*/
 	  gpf_if_found (isp_schema (NULL)->sc_name_to_object[sc_to_proc], qr);
 	  qr_free (qr);

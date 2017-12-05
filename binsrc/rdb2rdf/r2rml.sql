@@ -133,7 +133,9 @@ create function R2RML_NS_OF_IRI (in iri varchar) returns varchar
   patchedlen := length (patched);
   for (taillen := 0; taillen < irilen; taillen := taillen + 1)
     {
-      if (iri[irilen-(1+taillen)] <> patched[patchedlen-(1+taillen)])
+      declare orig_code integer;
+      orig_code := iri[irilen-(1+taillen)];
+      if ((orig_code <> patched[patchedlen-(1+taillen)]) or (orig_code >= 127) or strchr ('@`~', chr (orig_code)) is not null)
         goto found_diff;
     }
 found_diff:
@@ -165,7 +167,7 @@ create method R2RML_FILL_NS_PREFIXES_CACHE () returns integer for DB.DBA.R2RML_M
     select distinct ?i where { graph `iri(?:self.graph_iid)` {
               {
                 ?s ?p ?i .
-                filter (?p in (rr:graph, rr:subject, rr:predicate, rr:object))
+                filter (?p in (rr:graph, rr:subject, rr:predicate, rr:object, rr:class))
               }
             union
               {
@@ -549,7 +551,7 @@ create_iol_class:
           declare raw_argname, argname varchar;
           argdtp := argtypes[argctr][0];
           raw_argname := format_parts[argctr * 2 + 1];
-          argname := replace (sprintf ('%U', raw_argname), '-', '_');
+          argname := replace (replace (replace (replace (sprintf ('%U', raw_argname), '-', '_'), '@', '_'), '`', '_'), '~', '_');
           if (raw_argname <> argname)
             argname := sprintf ('%s_n%d', replace (replace (argname, '+', '_'), '%', '__'), argctr);
           if (argctr > 0)

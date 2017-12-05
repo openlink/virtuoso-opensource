@@ -1356,7 +1356,7 @@ DB.DBA.R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0,
 create procedure
 DB.DBA.R2RML_QUAL_NOTATION (in qualifier varchar, in qual_ns varchar, in loc varchar)
 {
-  if (sprintf ('%U', loc) = loc)
+  if ((replace (replace (replace (sprintf ('%U', loc), '@', '!'), '`', '!'), '~', '!') = loc) and (charset_recode (loc, 'ASCII', 'UTF-8') = loc))
     return concat (qualifier, ':', loc);
   return sprintf ('<%s:%U>', qual_ns, loc);
 }

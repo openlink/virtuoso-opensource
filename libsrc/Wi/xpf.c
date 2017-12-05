@@ -4514,7 +4514,7 @@ xpf_extension (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 	  tree->_.xp_func.qname, *pname, (unsigned long)(decl_arg_no - sys_arg_no), call_arg_no );
       goto err_end;
     }
-  if (!sec_proc_check (proc, U_ID_PUBLIC, G_ID_PUBLIC))
+  if (!sec_proc_check (proc, G_ID_PUBLIC, U_ID_PUBLIC))
     {
       err = srv_make_new_error ("42001", "XPE07",
 	  "XPATH extension function '%.200s' refers to the Virtuoso/PL procedure '%.200s' that is is not granted to public",
@@ -4678,7 +4678,7 @@ bif_xpf_extension (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_new_error ("42001", "XPE01", "The function %s does not exist", pname);
     }
 
-  if (!sec_proc_check (proc, U_ID_PUBLIC, G_ID_PUBLIC))
+  if (!sec_proc_check (proc, G_ID_PUBLIC, U_ID_PUBLIC))
     {
       if (is_define)
 	{
