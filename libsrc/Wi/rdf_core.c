@@ -3048,6 +3048,8 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
   lock_trx_t * lt = qi ? qi->qi_trx : NULL;
   lock_trx_t * nic_lt = lt ? lt : bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
+  if (0 == iri_id_no) return uname_nodeID_ns_0;
+  if (8192 == iri_id_no) return uname_nodeID_ns_8192;
   local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
   if (!local)
     {
@@ -3105,6 +3107,29 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
   return name;
 }
 
+caddr_t
+key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no)
+{
+  boxint pref_id;
+  lock_trx_t * nic_lt = bootstrap_cli->cli_trx;
+  caddr_t local, prefix, name;
+  if (0 == iri_id_no) return uname_nodeID_ns_0;
+  if (8192 == iri_id_no) return uname_nodeID_ns_8192;
+  local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
+  if (!local)
+    return NULL;
+  pref_id = LONG_REF_NA (local);
+  prefix = nic_id_name (iri_prefix_cache, pref_id);
+  if (!prefix)
+    return NULL;
+  name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
+  /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
+  memcpy (name, prefix, box_length (prefix) - 1);
+  memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
+  dk_free_box (prefix);
+  dk_free_box (local);
+  return name;
+}
 
 caddr_t
 key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
@@ -3199,6 +3224,24 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
   return 1;
 }
 
+void
+rdf_handle_invalid_iri_id (caddr_t * qst, const char *msg, iri_id_t iid)
+{
+  sqlr_new_error ("42000", "SR673", "%s" BOXINT_FMT "", msg, (boxint)iid);
+}
+
+caddr_t
+bif_rdf_handle_invalid_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t msg = bif_string_arg (qst, args, 0, "__rdf_handle_invalid_iri_id");
+  iri_id_t iid = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
+  if (0 == iid) return uname_nodeID_ns_0;
+  if (8192 == iid) return uname_nodeID_ns_8192;
+  rdf_handle_invalid_iri_id (qst, msg, iid);
+  return NULL; /* never reached */
+}
+
 caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -3212,15 +3255,20 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       {
 	iri_id_t iid = unbox_iri_id (iid_box);
 	caddr_t iri;
-	if (0L == iid)
-	  return NEW_DB_NULL;
 	if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
 	  iri = BNODE_IID_TO_LABEL (iid);
 	else
 	  {
 	    iri = key_id_to_iri (qi, iid);
 	    if (!iri)
-	      return NEW_DB_NULL;
+	      {
+		if (0 == iid)
+		  return uname_nodeID_ns_0;
+		if (8192 == iid)
+		  return uname_nodeID_ns_8192;
+		rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+		return NULL;	/* never reached */
+	      }
 	  }
 	box_flags (iri) = BF_IRI;
 	return iri;
@@ -3259,7 +3307,10 @@ bif_id_to_canonicalized_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
           {
             iri = key_id_to_canonicalized_iri (qi, iid);
             if (!iri)
-              return NEW_DB_NULL;
+              {
+                rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+                return NULL; /* never reached */
+              }
           }
         box_flags (iri) = BF_IRI;
         return iri;
@@ -3296,7 +3347,14 @@ bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  {
 	    iri = key_id_to_iri (qi, iid);
 	    if (!iri)
-	      return NEW_DB_NULL;
+	      {
+		if (0 == iid)
+		  return uname_nodeID_ns_0;
+		if (8192 == iid)
+		  return uname_nodeID_ns_8192;
+		rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+		return NULL;	/* never reached */
+	      }
 	  }
 	box_flags (iri) = BF_IRI;
 	return iri;
@@ -4286,6 +4344,7 @@ rdf_core_init (void)
   bif_set_uses_index (bif_iri_canonicalize);
   bif_define_ex ("iri_to_id_nosignal", bif_iri_to_id_nosignal, BMD_ALIAS, "__i2idn", BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("iri_to_id_if_cached", bif_iri_to_id_if_cached, BMD_ALIAS, "__i2idc", BMD_RET_TYPE, &bt_iri_id, BMD_DONE);
+  bif_define_ex ("__rdf_handle_invalid_iri_id"	, bif_rdf_handle_invalid_iri_id, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("id_to_iri"			, bif_id_to_iri	, BMD_ALIAS, "__id2i"	, BMD_VECTOR_IMPL, bif_id2i_vec, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("id_to_canonicalized_iri"	, bif_id_to_canonicalized_iri	, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
