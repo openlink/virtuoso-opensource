@@ -629,8 +629,8 @@ sqlc_searched_case (sql_comp_t * sc, ST * tree, dk_set_t * code)
       SET_PRIVATE_ELTS (sc,dfe,inx);
       sqlg_cond_start (sc);
       GENERATE_CONTROL_EXP (sc, dfe, inx, code);
-      sqlg_cond_end (sc);
       pred_gen_1 (sc, cond, code, ok, next, next);
+      sqlg_cond_end (sc);	/* Fix for Git issue 693: cond end is here, not one row above, so pred_gen_1() is quite naturally in one cond gen with the preceding GENERATE_CONTROL_EXP */
       cv_label (code, ok);
       RESTORE_PRIVATE_ELTS (sc, dfe);
       SET_PRIVATE_ELTS (sc,dfe,inx + 1);
@@ -699,7 +699,6 @@ sqlc_coalesce_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
 void
 sqlg_cond_start (sql_comp_t * sc)
 {
-  /* Assignments in code between this and the matching sqlg_cond_end call are not guaranteed to be defined after the sqlg_cond_end */
   t_set_push (&sc->sc_cond_defd_dfes, sc->sc_re_emitted_dfes);
   sc->sc_re_emitted_dfes = NULL;
   sc->sc_re_emit_code = 1;
@@ -843,7 +842,7 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
 	subq_compilation_t * sqc = sqlc_subq_compilation (sc, tree->_.bin_exp.left, NULL);
 	state_slot_t * res = cv_subq (code, sqc, sc);
 	sqc->sqc_query->qr_select_node->sel_vec_set_mask = cc_new_instance_slot (sc->sc_cc);
-	return res;
+	return res;		/* Shouldn't it be seg_return (res) here? */
       }
     }
   sqlc_new_error (sc->sc_cc, "42000", "SQ083", "Can't generate scalar exp %d", tree->type);
