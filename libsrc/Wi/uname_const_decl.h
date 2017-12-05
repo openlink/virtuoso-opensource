@@ -91,6 +91,8 @@ extern caddr_t uname_false;
 extern caddr_t uname_lang;
 extern caddr_t uname_nil;
 extern caddr_t uname_nodeID_ns;
+extern caddr_t uname_nodeID_ns_0;
+extern caddr_t uname_nodeID_ns_8192;
 extern caddr_t uname_rdf_ns_uri;
 extern caddr_t uname_rdf_ns_uri_Description;
 extern caddr_t uname_rdf_ns_uri_ID;

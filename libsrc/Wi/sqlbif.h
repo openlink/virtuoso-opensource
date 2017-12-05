@@ -385,4 +385,22 @@ extern id_hash_t * bif_exec_pending;
 extern int c_no_dbg_print;
 
 #define BIF_NOT_VECTORED ((caddr_t)-2) /* err ret of a vectored bif for reverting to non-vectored form */
+
+/* sqlprt.c */
+
+#define TRSET_BUF_MAX		4000
+
+typedef struct trset_ctx_s
+{
+  caddr_t tc_buf;
+  char *  tc_tail;
+  query_instance_t* tc_qst;
+  int tc_indent;
+} trset_ctx_t;
+
+extern void trset_start (caddr_t *qst);
+extern void trset_printf (const char *str, ...);
+extern void trset_end (void);
+extern void trset_add_indent (int delta);
+
 #endif /* _SQLBIF_H */

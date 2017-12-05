@@ -830,7 +830,7 @@ extern void sparp_configure_storage_and_macro_libs (sparp_t *sparp);
 extern void sparp_compile_smllist (sparp_t *sparp, caddr_t sml_iri_uname, void /* actually struct sparql_macro_library_t */ *smlib);
 
 extern const char *spart_dump_opname (ptrlong opname, int is_op);
-extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint);
+extern void spart_dump (const void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint);
 
 #define SPAR_IS_BLANK_OR_VAR(tree) \
   ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) && \

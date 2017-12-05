@@ -566,9 +566,13 @@ EXE_EXPORT (void, sqlr_resignal, (caddr_t err));
 #define GET_IMMEDIATE_CLIENT_OR_NULL \
 	((client_connection_t *)(IMMEDIATE_CLIENT_OR_NULL && IMMEDIATE_CLIENT ? DKS_DB_DATA (IMMEDIATE_CLIENT) : THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT)))
 
+#if 0				/* no longer in use */
 #define TA_REPORT_BUFFER	1212
 #define TA_REPORT_PTR		1213
 #define TA_REPORT_QST		1214
+#else
+#define TA_REPORT_CTX	1212
+#endif
 #define TA_SQLC_ASG_SET 1215
 #define TA_DBG_STR 1216
 #define TA_STAT_INST 1217
@@ -576,8 +580,7 @@ EXE_EXPORT (void, sqlr_resignal, (caddr_t err));
 
 void update_node_input (update_node_t * del, caddr_t * inst, caddr_t * state);
 
-void current_of_node_input (current_of_node_t * del, caddr_t * inst,
-    caddr_t * state);
+void current_of_node_input (current_of_node_t * del, caddr_t * inst, caddr_t * state);
 caddr_t upd_nth_value (update_node_t * upd, caddr_t * state, int nth);
 int upd_n_cols  (update_node_t * upd, caddr_t * state);
 oid_t upd_nth_col  (update_node_t * upd, caddr_t * state, int inx);
