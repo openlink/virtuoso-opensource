@@ -68,6 +68,8 @@ caddr_t uname_false;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
+caddr_t uname_nodeID_ns_0;
+caddr_t uname_nodeID_ns_8192;
 caddr_t uname_rdf_ns_uri;
 caddr_t uname_rdf_ns_uri_Description;
 caddr_t uname_rdf_ns_uri_ID;
@@ -267,6 +269,8 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
+  { &uname_nodeID_ns_0				, "nodeID://0"			},
+  { &uname_nodeID_ns_8192			, "nodeID://8192"		},
   { &uname_rdf_ns_uri				, RDF_NS_URI			},
   { &uname_rdf_ns_uri_Description		, RDF_NS_URI "Description"	},
   { &uname_rdf_ns_uri_ID			, RDF_NS_URI "ID"		},
