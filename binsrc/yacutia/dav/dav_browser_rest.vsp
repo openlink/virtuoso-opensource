@@ -379,16 +379,15 @@
   }
   else if (action = 'prefixes')
   {
+    declare _pos1, _pos2 integer;
+    declare _prefix, _ns, _msg varchar;
     declare _graph, _content, _ns, _dictionary, _triples any;
-    declare exit handler for sqlstate '37000' {
-      returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
-
-      goto _exit_5;
-    };
 
     returnData := vector ();
     _content := get_keyword ('content', params, '');
     _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+
+    -- try load
     {
       declare exit handler for sqlstate '37000' {goto _again; };
 
@@ -397,20 +396,44 @@
 
       goto _exit_5;
     }
+
   _again:;
+    -- prepare new content with namespaces
     _ns := string_output ();
     for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
     {
       http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), _ns);
     }
     http (_content, _ns);
-    _dictionary := dict_new ();
-    DB.DBA.RDF_TTL_LOAD_DICT (_ns, _graph, _graph, _dictionary);
+
+    -- try load again
+    {
+      declare exit handler for sqlstate '37000'
+      {
+        _msg := VALIDATE.DBA.clear (__SQL_MESSAGE);
+        if (isnull (strstr (_msg,  'Undefined namespace prefix')))
+        {
+          returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
+          goto _exit_5;
+        }
+        else
+        {
+          _pos1 := strrchr (_msg, ' ');
+          _pos2 := strrchr (_msg, ':');
+          _prefix := subseq (_msg, _pos1+1, _pos2);
+          _ns := replace (http_get (WEBDAV.DBA.host_url () || http_path() || '?a=prefix&p=' || _prefix), '"', '');
+          if (_ns <> '')
+            returnData := vector ('prefixes', sprintf ('@prefix %s: <%s> . \n', _prefix, _ns));
+        }
+        goto _exit_5;
+      };
+      _dictionary := dict_new ();
+      DB.DBA.RDF_TTL_LOAD_DICT (_ns, _graph, _graph, _dictionary);
+    }
 
     _triples := dict_list_keys (_dictionary, 1);
     _ns := string_output ();
     WS.WS.TTL_QUERY_PREFIXES (_triples, _ns);
-    -- returnData := vector ('prefixes', split_and_decode (string_output_string(_ns), 0, '\0\0\n'));
     returnData := vector ('prefixes', string_output_string(_ns));
 
   _exit_5:;

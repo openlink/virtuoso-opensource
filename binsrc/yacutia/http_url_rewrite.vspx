@@ -366,6 +366,8 @@
                             <v:item name="Automatic" value="\x24accept"/>
                             <v:item name="RDF/XML" value="application/rdf+xml"/>
                             <v:item name="Turtle" value="text/rdf+n3"/>
+                            <v:item name="JSON" value="application/rdf+json"/>
+                            <v:item name="JSON-LD" value="application/ld+json"/>
                           </v:select-list>
                           <br />
                         </v:template>

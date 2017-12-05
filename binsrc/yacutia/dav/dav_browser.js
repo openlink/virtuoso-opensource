@@ -1346,6 +1346,7 @@ WEBDAV.prefixDialog = function ()
     '    <tr>' +
     '      <td align="center" colspan="2">' +
     '        <input type="button" value="Search" onclick="javascript: prefixDialog.search(); return false;" />' +
+    '        <input id="btn_insert" type="button" value="Insert" onclick="javascript: prefixDialog.insert(); return false;" style="display: none;" />' +
     '        <input type="button" value="Close" onclick="javascript: prefixDialog.hide(); return false;" />' +
     '      <td>' +
     '    </tr>' +
@@ -1359,20 +1360,29 @@ WEBDAV.prefixDialog = function ()
   prefixDialog.cancel = prefixDialog.hide;
   prefixDialog.search = function () {
     var x = function (txt) {
-      if (txt != "")
-      {
+      if (txt != "") {
         var json = OAT.JSON.deserialize(txt);
         var prefixTD = $("td_prefix");
         if (prefixTD)
         {
           prefixTD.innerHTML = (json) ? json : 'N/A';
           OAT.Dom.show("tr_prefix");
+          if (json)
+            OAT.Dom.show('btn_insert');
         }
       } else {
         OAT.Dom.hide("tr_prefix");
       }
     }
+    OAT.Dom.hide('btn_insert');
     OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=prefix&p='+$v("f_prefix"), null, x);
+  };
+  prefixDialog.insert = function () {
+    var prefixTD = $("td_prefix").innerHTML;
+    if (prefixTD !== 'N/A') {
+      var v = $('dav_content_plain') || $('f_content_plain');
+      v.value = '@prefix ' + $v("f_prefix") + ': <' + prefixTD + '> . \n' + v.value;
+    }
   };
   prefixDialog.show ();
 }
