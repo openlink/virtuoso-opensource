@@ -3118,7 +3118,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 String rb_type = rb.getType();
                 if (rb_val.length()==1 && (rb_val.charAt(0)=='1' || rb_val.charAt(0)=='0')) {
                     if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean"))
-                        return valueFactory.createLiteral(rb_val.charAt(0)=='1'?"true":"false"); //  return getRepository().getValueFactory().createLiteral(rb_val.charAt(0)=='1'?"true":"false", this.getRepository().getValueFactory().createURI(rb_type));
+                        return valueFactory.createLiteral(rb_val.charAt(0)=='1'?true:false); //  return getRepository().getValueFactory().createLiteral(rb_val.charAt(0)=='1'?"true":"false", this.getRepository().getValueFactory().createURI(rb_type));
                 }
                 return valueFactory.createLiteral(rb_val, valueFactory.createIRI(rb_type));
             }
