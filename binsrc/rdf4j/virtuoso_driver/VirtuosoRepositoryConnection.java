@@ -1727,7 +1727,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public void setNamespace(String prefix, String name) throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
-        String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
+        String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 2)";
         try {
             PreparedStatement ps = prepareStatement(query, false);
             ps.setString(1, prefix);
@@ -1753,7 +1753,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public void removeNamespace(String prefix) throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
-        String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
+        String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 2)";
         try {
             PreparedStatement ps = prepareStatement(query, false);
             ps.setString(1, prefix);
@@ -1774,7 +1774,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public void clearNamespaces() throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
-        String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
+        String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS(2)";
         try {
             java.sql.Statement stmt = createStatement(-1, true);
             stmt.execute(query);

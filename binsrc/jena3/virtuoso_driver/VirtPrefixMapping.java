@@ -75,7 +75,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
     }
 
     public PrefixMapping removeNsPrefix(String prefix) {
-        String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
+        String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 2)";
         super.removeNsPrefix(prefix);
 
         try {
@@ -98,7 +98,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
     public PrefixMapping setNsPrefix(String prefix, String uri) {
         super.setNsPrefix(prefix, uri);
 
-        String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
+        String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 2)";
 
         // All went well, so persist the prefix by adding it to the graph properties
         // (the addPrefix call will overwrite any existing mapping with the same prefix
