@@ -45,6 +45,7 @@ JENA_SRC= \
 	virtuoso_driver/VirtGraph.java \
 	virtuoso_driver/VirtInfGraph.java \
 	virtuoso_driver/VirtModel.java \
+	virtuoso_driver/VirtIsolationLevel.java \
 	virtuoso_driver/VirtPrefixMapping.java \
 	virtuoso_driver/VirtResSetIter.java \
 	virtuoso_driver/VirtResSetIter2.java \
