@@ -36,7 +36,7 @@ One tab before end of single-line BNF comment.
 
 Whitespaces in all other places, including two whitespaces after "::=" in BNF comments */
 
-%pure_parser
+%pure-parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
 %expect 14
