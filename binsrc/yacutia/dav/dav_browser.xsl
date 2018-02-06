@@ -758,7 +758,7 @@
               }
               else if (detClass = 'rdfSink')
               {
-                retValue := vector (0, 1, vector ('graph', 'base'));
+                retValue := vector (0, 1, vector ('graph', 'base', 'contentType'));
               }
               else if (detClass = 'IMAP')
               {
@@ -853,6 +853,22 @@
                   '  </th> \n' ||
                   '  <td> \n' ||
                   '    <input type="text" name="dav_%s_base" id="dav_%s_base" value="%V" disabled="disabled" class="field-text" /> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n',
+                  det,
+                  det,
+                  det,
+                  S
+                ));
+
+                S := get_keyword ('contentType', rdfParams, 'text/turtle');
+                http (sprintf (
+                  '<tr> \n' ||
+                  '  <th> \n' ||
+                  '    <label for="dav_%s_contentType">Output Content Type</label> \n' ||
+                  '  </th> \n' ||
+                  '  <td> \n' ||
+                  '    <input type="text" name="dav_%s_contentType" id="dav_%s_contentType" value="%V" disabled="disabled" class="field-text" /> \n' ||
                   '  </td> \n' ||
                   '</tr> \n',
                   det,
@@ -3423,14 +3439,17 @@
                         detParams := self.detParamsPrepare (dav_detType, null);
                         if (not isnull (detParams))
                         {
+                          declare tmp_fullPath varchar;
+
                           tmp := null;
+                          tmp_fullPath := case when (mode = 'edit') then WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath') else dav_fullPath end;
                           if (__proc_exists ('WEBDAV.DBA.' || dav_detType || '_VERIFY') is not null)
                           {
-                            tmp := call ('WEBDAV.DBA.' || dav_detType || '_VERIFY') (dav_fullPath, detParams);
+                            tmp := call ('WEBDAV.DBA.' || dav_detType || '_VERIFY') (tmp_fullPath, detParams);
                           }
                           else if (__proc_exists ('DB.DBA.' || dav_detType || '_VERIFY') is not null)
                           {
-                            tmp := call ('DB.DBA.' || dav_detType || '_VERIFY') (dav_fullPath, detParams);
+                            tmp := call ('DB.DBA.' || dav_detType || '_VERIFY') (tmp_fullPath, detParams);
                           }
                           if (not isnull (tmp))
                             signal('TEST', tmp);
@@ -3974,7 +3993,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" name="cVerify" xhtml_id="cVerify" value="Verify" xhtml_onclick="WEBDAV.verifyDialog(); return false;" xhtml_style="display: none;"/>
+              <!--v:button action="simple" name="cVerify" xhtml_id="cVerify" value="Verify" xhtml_onclick="WEBDAV.verifyDialog(); return false;" xhtml_style="display: none;"/-->
               <v:button action="simple" name="cUnmount" xhtml_id="cUnmount" value="Unmount" enabled="--case when (self.dav_type = 'C') and (self.dav_detClass = '') and (self.dav_subClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')) then 1 else 0 end">
                 <v:on-post>
                   <![CDATA[

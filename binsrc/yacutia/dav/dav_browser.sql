@@ -2873,6 +2873,7 @@ create procedure WEBDAV.DBA.det_category (
   in type varchar)
 {
   declare retValue varchar;
+  declare tmp any;
 
   retValue := null;
   if (isinteger (id) and (what = 'C'))
@@ -2881,7 +2882,8 @@ create procedure WEBDAV.DBA.det_category (
   }
   else if (what = 'R')
   {
-    if (DB.DBA.IS_REDIRECT_REF (path))
+    tmp := DB.DBA.DAV_PROP_GET_INT (id, what, 'redirectref', 0);
+    if (not WEBDAV.DBA.DAV_ERROR (tmp) and (tmp not like 'http:/%'))
     {
       retValue := 'Link';
     }
@@ -3084,7 +3086,8 @@ create procedure WEBDAV.DBA.DAV_GET_AUTOVERSION (
 {
   --declare exit handler for SQLSTATE '*' {return '';};
 
-  if (WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R'))) {
+  if (WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
+  {
     declare id integer;
 
     id := DAV_SEARCH_ID (path, 'C');
@@ -3552,6 +3555,7 @@ create procedure WEBDAV.DBA.DAV_SET (
 {
   -- dbg_obj_princ ('WEBDAV.DBA.DAV_SET (', path, property, ')');
   declare tmp varchar;
+  declare retValue any;
 
   if (property = 'permissions')
     return WEBDAV.DBA.DAV_PROP_SET (path, ':virtpermissions', value, auth_name, auth_pwd, 0);
@@ -3568,7 +3572,15 @@ create procedure WEBDAV.DBA.DAV_SET (
   if (property = 'name')
   {
     tmp := concat (left(path, strrchr(rtrim(path, '/'), '/')), '/', value, either (equ (right (path, 1), '/'), '/', ''));
-    return WEBDAV.DBA.DAV_MOVE (path, tmp, 0, auth_name, auth_pwd);
+    retValue := WEBDAV.DBA.DAV_MOVE (path, tmp, 0, auth_name, auth_pwd);
+    if (right (path, 1) = '/')
+    {
+      tmp := concat (left(path, strrchr(rtrim(path, '/'), '/')), '/', value, '_activity.log');
+      path:= concat (left (path, length (path)-1), '_activity.log');
+      WEBDAV.DBA.DAV_MOVE (path, tmp, 0, auth_name, auth_pwd);
+    }
+
+    return retValue;
   }
 
   if (property = 'detType')
@@ -3765,10 +3777,38 @@ create procedure WEBDAV.DBA.CatFilter_CONFIGURE (
 --
 create procedure WEBDAV.DBA.rdfSink_CONFIGURE (
   in id integer,
-  in params any)
+  in params any,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   -- RDF Graph & Sponger params
-  return DB.DBA.DAV_DET_RDF_PARAMS_SET ('rdfSink', id, params, vector ('sponger', 'cartridges', 'metaCartridges', 'base', 'graph'));
+  declare uid, gid integer;
+  declare oldGraph, oldPath, oldContentType varchar;
+  declare retValue, oldParams any;
+
+  oldParams := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', id);
+  retValue := DB.DBA.DAV_DET_RDF_PARAMS_SET ('rdfSink', id, params, vector ('sponger', 'cartridges', 'metaCartridges', 'base', 'graph', 'contentType'));
+  oldGraph := get_keyword ('graph', oldParams, '');
+  if (oldGraph <> '')
+  {
+    oldContentType := get_keyword ('contentType', oldParams, '');
+    if ((oldGraph <> get_keyword ('graph', params)) or (oldContentType <> get_keyword ('contentType', params, '')))
+    {
+      oldPath := WS.WS.COL_PATH (id) || replace (DB.DBA.DAV_RDF_RES_NAME (oldGraph), ' ', '_');
+      if (not isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (oldPath, 'R'))))
+      {
+        WEBDAV.DBA.DAV_API_PARAMS (auth_name, auth_pwd);
+        WEBDAV.DBA.DAV_DELETE (oldPath, 0, auth_name, auth_pwd);
+        if (__proc_exists ('DB.DBA.RDF_SINK_REDIRECT') is not null)
+        {
+          WEBDAV.DBA.DAV_OWNER_ID (auth_name, null, uid, gid);
+          DB.DBA.RDF_SINK_REDIRECT (id, get_keyword ('graph', params), params, uid, gid);
+        }
+      }
+    }
+  }
+
+  return retValue;
 }
 ;
 
