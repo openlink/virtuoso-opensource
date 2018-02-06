@@ -2851,7 +2851,11 @@ create procedure WEBDAV.DBA.det_category (
   }
   else if (what = 'R')
   {
-    if ((type = 'text/plain') and (path like '%.txt'))
+    if (DB.DBA.IS_REDIRECT_REF (path))
+    {
+      retValue := 'Link';
+    }
+    else if ((type = 'text/plain') and (path like '%.txt'))
     {
       retValue := 'Text Document';
     }

@@ -2362,6 +2362,25 @@
                         </td>
                       </tr>
                     </v:template>
+                    <v:template name="tf_5" type="simple" enabled="--case when self.viewField ('link') and self.dav_is_redirect then 1 else 0 end">
+                      <tr id="davRow_link">
+                        <th width="30%">
+                          <vm:label for="dav_link" value="Source (*)" />
+                        </th>
+                        <td>
+                          <v:text name="dav_link" xhtml_id="dav_link" value="--self.dav_redirect" format="%s" xhtml_disabled="disabled">
+                            <v:before-render>
+                              <![CDATA[
+                                control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('link') then ' disabled' else '' end);
+                              ]]>
+                            </v:before-render>
+                          </v:text>
+                          <vm:if test="self.editField ('link') and self.dav_enable">
+                            <input type="button" onclick="javascript: WEBDAV.davSelect ('dav_link', false);" value="Select" disabled="disabled" class="button"/>
+                          </vm:if>
+                        </td>
+                      </tr>
+                    </v:template>
                     <v:template name="tf_3" type="simple" enabled="-- self.viewField ('name')">
                       <tr id="davRow_name">
                         <th width="30%">
@@ -2442,25 +2461,6 @@
                             ?>
                             Automatically add missing @prefix declarations
                           </label>
-                        </td>
-                      </tr>
-                    </v:template>
-                    <v:template name="tf_5" type="simple" enabled="--case when self.viewField ('link') and self.dav_is_redirect then 1 else 0 end">
-                      <tr id="davRow_link">
-                        <th width="30%">
-                          <vm:label for="dav_link" value="--'Link To'" />
-                        </th>
-                        <td>
-                          <v:text name="dav_link" xhtml_id="dav_link" value="--self.dav_redirect" format="%s" xhtml_disabled="disabled">
-                            <v:before-render>
-                              <![CDATA[
-                                control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('link') then ' disabled' else '' end);
-                              ]]>
-                            </v:before-render>
-                          </v:text>
-                          <vm:if test="self.editField ('link') and self.dav_enable">
-                            <input type="button" onclick="javascript: WEBDAV.davSelect ('dav_link', false);" value="Select" disabled="disabled" class="button"/>
-                          </vm:if>
                         </td>
                       </tr>
                     </v:template>
