@@ -49,9 +49,10 @@
       </xsl:when>
       <xsl:when test="not @browse_type='standalone' and @render='popup' and @return_box">
         <v:browse-button
-          value="Browse..."
+          value="WebDAV Browser"
           selector="popup_browser.vspx"
-          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800 " browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;dir={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;retname={@return_box}&amp;view={@view}"
+          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=925"
+          browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;dir={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;retname={@return_box}&amp;view={@view}"
           >
           <v:field name="{@return_box}" />
         </v:browse-button>
@@ -108,6 +109,7 @@
           <v:variable name="dir_cloud" type="integer" default="0" />
           <v:variable name="dir_tags" type="any" default="null" />
           <v:variable name="dir_columns" type="any" default="null" />
+          <v:variable name="dir_fileSize" type="varchar" default="'1'" />
           <v:variable name="returnName" persist="0" type="varchar" default="''" />
           <v:variable name="returnType" persist="0" type="varchar" default="''" />
           <v:variable name="search_filter" persist="0" type="varchar" default="''" />
@@ -613,7 +615,10 @@
               else if (detClass = 'Share')
                 retValue := vector ('edit', 'view', 'delete', 'rename', 'tag', 'properties', 'share');
 
-              else if (detClass in ('DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
+              else if (detClass = 'DynaRes')
+                retValue := vector ('delete', 'properties', 'share');
+
+              else if (detClass in ('Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
                 retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'properties', 'share');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
@@ -641,28 +646,28 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
                 retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expiretexm', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if (detClass = 'HostFS')
-                retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
+                retValue := vector ('source', 'name', 'mime', 'fileSize', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
 
               else if (detClass = 'IMAP')
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
               else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'))
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -1401,6 +1406,7 @@
               );
               self.dir_order := get_keyword ('ts_order', params, WEBDAV.DBA.settings_orderBy (self.settings));
               self.dir_direction := get_keyword ('ts_direction', params, WEBDAV.DBA.settings_orderDirection (self.settings));
+              self.dir_fileSize := WEBDAV.DBA.settings_fileSize (self.settings);
 
               self.dir_path := get_keyword ('dir', _params, self.dir_path);
               if (self.dir_path = '__root__')
@@ -2074,7 +2080,7 @@
                 </tr>
                 <tr>
                   <td><?V WEBDAV.DBA.dav_get (old_vector, 'name') ?></td>
-                  <td><?vsp http (WEBDAV.DBA.ui_size (WEBDAV.DBA.dav_get (old_vector, 'length'))); ?></td>
+                  <td><?vsp http (WEBDAV.DBA.ui_size (WEBDAV.DBA.dav_get (old_vector, 'length'), 'R', self.dir_fileSize)); ?></td>
                   <td><?vsp http (WEBDAV.DBA.ui_date (WEBDAV.DBA.dav_get (old_vector, 'modificationTime'))); ?></td>
                   <td><?V WEBDAV.DBA.dav_get (old_vector, 'mimeType') ?></td>
                   <td><?V WEBDAV.DBA.dav_get (old_vector, 'ownerName') ?></td>
@@ -2086,7 +2092,7 @@
                 </tr>
                 <tr>
                   <td><?V WEBDAV.DBA.dav_get (old_vector, 'name') ?></td>
-                  <td><?vsp http (WEBDAV.DBA.ui_size (self.dav_vector [2])); ?></td>
+                  <td><?vsp http (WEBDAV.DBA.ui_size (self.dav_vector [2]), 'R', self.dir_fileSize); ?></td>
                   <td><?vsp http (WEBDAV.DBA.ui_date (now())); ?></td>
                   <td><?V self.dav_vector [3] ?></td>
                   <td><?V WEBDAV.DBA.user_name (self.dav_vector [5]) ?></td>
@@ -2602,6 +2608,27 @@
                               }
                             ?>
                           </select>
+                        </td>
+                      </tr>
+                    </v:template>
+                    <v:template name="tf_8a" type="simple" enabled="-- case when self.viewField ('fileSize') and (self.dav_type = 'R') and (self.command_mode = 10) then 1 else 0 end">
+                      <tr id="davRow_fileSize">
+                        <th width="30%" valign="top">
+                          File Size
+                        </th>
+                        <td>
+                          <b><v:label>
+                            <v:before-data-bind>
+                              <![CDATA[
+                                declare itemSize integer;
+
+                                itemSize := WEBDAV.DBA.DAV_GET (self.dav_item, 'length');
+                                control.ufl_value := WEBDAV.DBA.ui_size (itemSize, 'R', self.dir_fileSize, 1);
+                                if (((self.dir_fileSize = '1') and (itemSize >= 1024)) or ((self.dir_fileSize = '2') and (itemSize >= 1000)))
+                                  control.ufl_value := control.ufl_value || ' (' || WEBDAV.DBA.ui_size (itemSize, 'R', '0', 1) || ' Bytes)';
+                              ]]>
+                            </v:before-data-bind>
+                          </v:label></b>
                         </td>
                       </tr>
                     </v:template>
@@ -4922,23 +4949,23 @@
           <v:template type="simple" name="Brouse_Header" enabled="-- case when (((self.command in (0)) and (self.command_mode in (0, 1)))) then 1 else 0 end">
             <div class="boxHeader" style="height: 22px;">
               <div style="float: left;">
-                <b><vm:label for="path" value="' Path '" /></b>
-                <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide(WEBDAV.DBA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
+              <b><vm:label for="path" value="' Path '" /></b>
+              <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide(WEBDAV.DBA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
                 <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="<?V self.image_src ('dav/image/go_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'go');" style="margin-left: 5px; vertical-align:middle;" />
               </div>
               <div style="float: right;">
-                <b><v:label for="list_type_internal" value="' View '" /></b>
-                <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
-                  <v:item name="Details" value="0" />
-                  <v:item name="List" value="1" />
-                </v:select-list>
-                <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
+              <b><v:label for="list_type_internal" value="' View '" /></b>
+              <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
+                <v:item name="Details" value="0" />
+                <v:item name="List" value="1" />
+              </v:select-list>
+              <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
                   &amp;nbsp;
-                  <b><v:label for="filters" value="--' Filter Pattern '" /></b>
+                <b><v:label for="filters" value="--' Filter Pattern '" /></b>
                   <v:text name="filters" xhtml_id="filters" value="--self.search_filter" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'filter\')" />
                   <img class="pointer" border="0" alt="Filter" title="Filter" src="<?V self.image_src ('dav/image/filter_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'filter');" style="margin-left: 5px; vertical-align:middle;" />
                   <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="<?V self.image_src ('dav/image/close_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" style="vertical-align:middle;" />
-                </v:template>
+              </v:template>
               </div>
             </div>
           </v:template>
@@ -5243,7 +5270,7 @@
                                     <v:label>
                                       <v:before-data-bind>
                                         <![CDATA[
-                                          control.ufl_value := WEBDAV.DBA.ui_size((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[2], (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1]);
+                                          control.ufl_value := WEBDAV.DBA.ui_size((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[2], (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], self.dir_fileSize);
                                         ]]>
                                       </v:before-data-bind>
                                     </v:label>
@@ -6012,7 +6039,7 @@
                           <v:label>
                             <v:after-data-bind>
                               <![CDATA[
-                                control.ufl_value := WEBDAV.DBA.ui_size(WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_column_value('c0'), ':getcontentlength'), 'R');
+                                control.ufl_value := WEBDAV.DBA.ui_size(WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_column_value('c0'), ':getcontentlength'), 'R', self.dir_fileSize);
                               ]]>
                             </v:after-data-bind>
                           </v:label>

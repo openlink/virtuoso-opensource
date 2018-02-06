@@ -134,7 +134,10 @@ create procedure WEBDAV.DBA.url_fix (
     T := '&';
   }
   if (not is_empty_or_null (realm))
-    S := S || T || 'realm=' || realm;
+    if (__proc_exists ('ODS.DBA.url_encode') is not null)
+      S := S || T || 'realm=' || ODS.DBA.url_encode (realm);
+    else
+      S := S || T || 'realm=' || realm;
 
   return S;
 }
@@ -2539,6 +2542,7 @@ create procedure WEBDAV.DBA.settings_init (
   WEBDAV.DBA.set_keyword ('rows', settings, WEBDAV.DBA.settings_rows (settings));
   WEBDAV.DBA.set_keyword ('tbLabels', settings, WEBDAV.DBA.settings_tbLabels (settings));
   WEBDAV.DBA.set_keyword ('hiddens', settings, WEBDAV.DBA.settings_hiddens (settings));
+  WEBDAV.DBA.set_keyword ('fileSize', settings, WEBDAV.DBA.settings_fileSize (settings));
   WEBDAV.DBA.set_keyword ('atomVersion', settings, WEBDAV.DBA.settings_atomVersion (settings));
   WEBDAV.DBA.set_keyword ('column_#1', settings, WEBDAV.DBA.settings_column (settings, 1));
   WEBDAV.DBA.set_keyword ('column_#2', settings, WEBDAV.DBA.settings_column (settings, 2));
@@ -2593,6 +2597,15 @@ create procedure WEBDAV.DBA.settings_hiddens (
   inout settings any)
 {
   return get_keyword ('hiddens', settings, '.,_');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.settings_fileSize (
+  inout settings any)
+{
+  return get_keyword ('fileSize', settings, '1');
 }
 ;
 
@@ -4505,23 +4518,38 @@ create procedure WEBDAV.DBA.ui_alt (
 --
 create procedure WEBDAV.DBA.ui_size (
   in itemSize integer,
-  in itemType varchar := 'R')
+  in itemType varchar := 'R',
+  in sizeType varchar := '1',
+  in sizeMode varchar := 0)
 {
+  declare D integer;
   declare S varchar;
 
   if ((itemSize = 0) and (itemType = 'C'))
     return '';
 
-  S := '%d<span style="font-family: Monospace;">&nbsp;%s</span>';
-  if (itemSize < 1024)
-    return sprintf (S, itemSize, 'B&nbsp;');
-  if (itemSize < (1024 * 1024))
-    return sprintf (S, floor(itemSize / 1024), 'KB');
-  if (itemSize < (1024 * 1024 * 1024))
-    return sprintf (S, floor(itemSize / (1024 * 1024)), 'MB');
-  if (itemSize < (1024 * 1024 * 1024 * 1024))
-    return sprintf (S, floor(itemSize / (1024 * 1024 * 1024)), 'GB');
-  return sprintf (S, floor(itemSize / (1024 * 1024 * 1024 * 1024)), 'TB');
+  if (sizeType = '0')
+    return cast (itemSize as varchar);
+
+  D := case when (sizeType = '1') then 1000 else 1024 end;
+  if (sizeMode)
+    S := '<span title="%d Bytes">%d&nbsp;%s</span>';
+  else
+    S := '<span title="%d Bytes">%d<span style="font-family: Monospace;">&nbsp;%s</span></span>';
+
+  if (itemSize < D)
+    return sprintf (S, itemSize, itemSize, case when (sizeType = '1') then 'B&nbsp;' else 'B&nbsp;&nbsp;' end);
+
+  if (itemSize < (D * D))
+    return sprintf (S, itemSize, floor(itemSize / D), case when (sizeType = '1') then 'KB' else 'KiB' end);
+
+  if (itemSize < (D * D * D))
+    return sprintf (S, itemSize, floor(itemSize / (D * D)), case when (sizeType = '1') then 'MB' else 'MiB' end);
+
+  if (itemSize < (D * D * D * D))
+    return sprintf (S, itemSize, floor(itemSize / (D * D * D)), case when (sizeType = '1') then 'GB' else 'GiB' end);
+
+  return sprintf (S, itemSize, floor(itemSize / (D * D * D * D)), case when (sizeType = '1') then 'TB' else 'TiB' end);
 }
 ;
 
