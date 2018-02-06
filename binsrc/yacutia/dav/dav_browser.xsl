@@ -763,7 +763,7 @@
               }
               else if (detClass = 'rdfSink')
               {
-                retValue := vector (0, 1, vector ('graph', 'base', 'contentType'));
+                retValue := vector (0, 1, vector ('activity', 'graph', 'base', 'contentType'));
               }
               else if (detClass = 'IMAP')
               {
@@ -800,7 +800,7 @@
             <![CDATA[
               declare S, T, graph varchar;
               declare N integer;
-              declare rdfParams, cartridges, selectedCartridges any;
+              declare rdfParams, cartridges, selectedCartridges, V any;
 
               rdfParams := DB.DBA.DAV_DET_RDF_PARAMS_GET (det, DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C'));
               graph := get_keyword ('graph', rdfParams, '');
@@ -873,14 +873,21 @@
                   '    <label for="dav_%s_contentType">Output Content Type</label> \n' ||
                   '  </th> \n' ||
                   '  <td> \n' ||
-                  '    <input type="text" name="dav_%s_contentType" id="dav_%s_contentType" value="%V" disabled="disabled" class="field-text" /> \n' ||
-                  '  </td> \n' ||
-                  '</tr> \n',
+                  '    <select name="dav_%s_contentType" id="dav_%s_contentType" disabled="disabled"> \n',
                   det,
                   det,
-                  det,
-                  S
+                  det
                 ));
+                V := vector ('text/turtle', 'text/n3', 'application/rdf+xml', 'application/ld+json');
+                for (N := 0; N < length (V); N := N + 1)
+                {
+                  http (self.option_prepare (V[N], V[N], S));
+                }
+                http (
+                  '    </select> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n'
+                );
               }
 
               S := get_keyword ('graphSecurity', rdfParams, 'off');
@@ -5757,6 +5764,19 @@
   <xsl:template match="vm:search-dc-template8">
     <div id="8" class="tabContent" style="display: none;">
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
+        <tr>
+          <th width="30%">
+            <v:label for="dav_rdfSink_activity" value="--'Activity manager (on/off)'" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_rdfSink_activity', self.dav_path, 'virt:rdfSink-activity', 'on');
+              http (sprintf ('<input type="checkbox" name="dav_rdfSink_activity" id="dav_rdfSink_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
         <?vsp
           self.detSpongerUI ('rdfSink', 8);
         ?>
