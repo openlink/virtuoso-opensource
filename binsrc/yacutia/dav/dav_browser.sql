@@ -5609,7 +5609,7 @@ create procedure WEBDAV.DBA.metaCartridges_get ()
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.ldp_recovery (
-  in path varchar)
+  in path varchar := null)
 {
   declare aq any;
   declare exit handler for SQLSTATE '*'
@@ -5618,45 +5618,86 @@ create procedure WEBDAV.DBA.ldp_recovery (
   };
 
   aq := async_queue (1, 4);
-  aq_request (aq, 'WEBDAV.DBA.ldp_recovery_aq', vector (path));
+  if (isnull (path))
+    aq_request (aq, 'WEBDAV.DBA.ldp_recovery_all_aq', vector ());
+
+  aq_request (aq, 'WEBDAV.DBA.ldp_recovery_aq', vector (path, 0));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.ldp_recovery_aq (in path varchar)
+create procedure WEBDAV.DBA.ldp_recovery_all_aq ()
+{
+  -- dbg_obj_princ ('WEBDAV.DBA.ldp_recovery_all_aq ()');
+  declare id integer;
+  declare uri, ruri any;
+
+  for (select PROP_PARENT_ID, PROP_TYPE from WS.WS.SYS_DAV_PROP where PROP_NAME = 'LDP' and PROP_TYPE = 'C') do
+  {
+    WEBDAV.DBA.ldp_recovery_aq (DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, PROP_TYPE));
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.ldp_recovery_aq (
+  in path varchar,
+  in enabled integer := 0)
 {
   -- dbg_obj_princ ('WEBDAV.DBA.ldp_recovery_aq (', path, ')');
   declare id integer;
   declare uri, ruri any;
 
   id := DB.DBA.DAV_SEARCH_ID (path, 'C');
-  if (DB.DBA.LDP_ENABLED (id))
-  {
+  if (isnull (DB.DBA.DAV_HIDE_ERROR (id)))
+    return;
+
+  if (isarray (id))
+    return;
+
+  if (not enabled)
+    enabled := DB.DBA.LDP_ENABLED (id);
+
     for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
 	  {
       uri := WS.WS.DAV_IRI (path);
+    if (enabled)
+    {
       TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
-      for (select RES_CONTENT, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id and RES_TYPE in ('text/turtle', 'application/ld+json')) do
+    }
+    else
+    {
+      DB.DBA.LDP_DELETE (path, 1);
+    }
+    for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
+    {
+      if (enabled and (RES_TYPE in ('text/turtle', 'application/ld+json')))
       {
         ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
         TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
-        TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), uri, uri);
+        TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), ruri, ruri);
         {
           declare continue handler for sqlstate '*';
           TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
         }
       }
+      else
+      {
+        DB.DBA.LDP_DELETE (RES_FULL_PATH);
+      }
+    }
       for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
 	    {
         ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
         TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
 	    }
 	  }
-  }
+
   for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
   {
-    WEBDAV.DBA.ldp_recovery_aq (path || COL_NAME || '/');
+    WEBDAV.DBA.ldp_recovery_aq (path || COL_NAME || '/', enabled);
   }
 }
 ;

@@ -3394,8 +3394,8 @@
                           signal('TEST', 'Folder/File could not be found!<>');
 
                         self.dav_type := WEBDAV.DBA.DAV_GET (self.dav_item, 'type');
-                        self.dav_detClass := coalesce (WEBDAV.DBA.det_class (self.dav_path, self.dav_type) , '');
-                        self.dav_ownClass := WEBDAV.DBA.det_ownClass (self.dav_path, self.dav_type);
+                        self.dav_detClass := coalesce (WEBDAV.DBA.det_class (dav_fullPath, self.dav_type) , '');
+                        self.dav_ownClass := WEBDAV.DBA.det_ownClass (dav_fullPath, self.dav_type);
                       }
                       else
                       {
@@ -3677,37 +3677,36 @@
                           retValue := WEBDAV.DBA.DAV_SET (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath'), 'name', dav_name);
                           if (WEBDAV.DBA.DAV_ERROR (retValue))
                             signal('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
-
-                          self.dav_path := dav_fullPath;
                         }
+                        self.dav_path := dav_fullPath;
 
                       _exec_1:;
                         if (not self.editField ('mime'))
                           goto _exec_2;
 
                         if ((self.dav_type = 'R') and (WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType') <> dav_mime))
-                          WEBDAV.DBA.DAV_SET (self.dav_path, 'mimeType', dav_mime);
+                          WEBDAV.DBA.DAV_SET (dav_fullPath, 'mimeType', dav_mime);
 
                       _exec_2:;
                         if (not self.editField ('permissions'))
                           goto _exec_3;
 
                         if (WEBDAV.DBA.DAV_GET (self.dav_item, 'permissions') <> dav_perms)
-                          WEBDAV.DBA.DAV_SET (self.dav_path, 'permissions', dav_perms);
+                          WEBDAV.DBA.DAV_SET (dav_fullPath, 'permissions', dav_perms);
 
                       _exec_3:;
                         if (not self.editField ('owner'))
                           goto _exec_4;
 
                         if ((WEBDAV.DBA.DAV_GET (self.dav_item, 'ownerID') <> dav_owner) or isnull (dav_owner))
-                          WEBDAV.DBA.DAV_SET (self.dav_path, 'ownerID', dav_owner);
+                          WEBDAV.DBA.DAV_SET (dav_fullPath, 'ownerID', dav_owner);
 
                       _exec_4:;
                         if (not self.editField ('group'))
                           goto _exec_5;
 
                         if ((WEBDAV.DBA.DAV_GET (self.dav_item, 'groupID') <> dav_group) or isnull (dav_group))
-                          WEBDAV.DBA.DAV_SET (self.dav_path, 'groupID', dav_group);
+                          WEBDAV.DBA.DAV_SET (dav_fullPath, 'groupID', dav_group);
 
                       _exec_5:;
                       }
@@ -3727,7 +3726,7 @@
                         else
                         {
                           if (get_keyword ('dav_recursive', params, '') <> '')
-                            WEBDAV.DBA.DAV_SET_RECURSIVE (self.dav_path, dav_perms, dav_owner, dav_group);
+                            WEBDAV.DBA.DAV_SET_RECURSIVE (dav_fullPath, dav_perms, dav_owner, dav_group);
 
                           if ((dav_detType <> 'Versioning') and isinteger (self.dav_id))
                           {
@@ -3737,7 +3736,7 @@
                             {
                                 DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
                               }
-                            WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
+                            WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C')));
                           }
                         }
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'permissions-inheritance', get_keyword ('dav_permissions_inheritance', params, 'N'));
@@ -3827,46 +3826,27 @@
                           }
                           else
                           {
-                            tmp := WEBDAV.DBA.DAV_SET (self.dav_path, 'detType', either (equ (dav_detType, ''), null, dav_detType));
+                            tmp := WEBDAV.DBA.DAV_SET (dav_fullPath, 'detType', either (equ (dav_detType, ''), null, dav_detType));
                           }
                           if (WEBDAV.DBA.DAV_ERROR (tmp))
                             signal('TEST', tmp);
                         }
+
                       _exec_6:;
-                        -- LDP
-                        if (not self.editField ('ldp'))
-                          goto _exec_65;
-
-                        dav_ldp := get_keyword ('dav_ldp', params, '');
-                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'LDP', '');
-                        if (dav_ldp <> tmp)
-                        {
-                          if (dav_ldp = '')
-                          {
-                            WEBDAV.DBA.DAV_PROP_REMOVE (self.dav_path, 'LDP');
-                          }
-                          else
-                          {
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'LDP', dav_ldp);
-                            WEBDAV.DBA.ldp_recovery (dav_fullPath);
-                          }
-                        }
-
-                      _exec_65:;
                         if (not self.editField ('turtleRedirect'))
                           goto _exec_7;
 
                         dav_turtleRedirect := get_keyword ('dav_turtleRedirect', params, 'no');
-                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:turtleRedirect', '');
+                        tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:turtleRedirect', '');
                         if (dav_turtleRedirect <> tmp)
                         {
-                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:turtleRedirect', dav_turtleRedirect);
+                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:turtleRedirect', dav_turtleRedirect);
                         }
                         dav_turtleRedirectParams := get_keyword ('dav_turtleRedirectParams', params, '');
-                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:turtleRedirectParams', '');
+                        tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:turtleRedirectParams', '');
                         if (dav_turtleRedirectParams <> tmp)
                         {
-                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:turtleRedirectParams', dav_turtleRedirectParams);
+                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:turtleRedirectParams', dav_turtleRedirectParams);
                         }
 
                       _exec_7:;
@@ -4034,11 +4014,33 @@
                         }
                       }
 
+                    _exec_15:;
+                      -- LDP
+                      if (not self.editField ('ldp'))
+                        goto _exec_16;
+
+                      dav_ldp := get_keyword ('dav_ldp', params, '');
+                      tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'LDP', '');
+                      if (dav_ldp <> tmp)
+                      {
+                        if (dav_ldp = '')
+                        {
+                          WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, 'LDP');
+                        }
+                        else
+                        {
+                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'LDP', dav_ldp);
+                        }
+                        commit work;
+                        WEBDAV.DBA.ldp_recovery (dav_fullPath);
+                      }
+
+                    _exec_16:;
                     }
                     commit work;
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
                     {
-                      self.webdav_redirect (WEBDAV.DBA.path_parent (self.dav_path, 1), '');
+                      self.webdav_redirect (WEBDAV.DBA.path_parent (dav_fullPath, 1), '');
                       return;
                     }
                     self.dav_action := '';
