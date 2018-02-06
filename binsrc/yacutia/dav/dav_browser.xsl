@@ -2433,8 +2433,9 @@
                               ]]>
                             </v:before-render>
                           </v:text>
-                          <v:text name="dav_name_save"   xhtml_id="dav_name_save" type="hidden" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" />
-                          <v:text name="dav_name_rdf"    xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
+                          <v:text name="dav_name_save" xhtml_id="dav_name_save" type="hidden" />
+                          <v:text name="dav_name_save_mime" xhtml_id="dav_name_save_mime" type="hidden" />
+                          <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
                         </td>
                       </tr>
                     </v:template>
@@ -4086,6 +4087,10 @@
                 WEBDAV.updateLabel($v('dav_det'));
                 initDisabled();
                 WEBDAV.initTab(17, 1);
+
+                var v = $('dav_name').value;
+                $('dav_name_save').value = v;
+                $('dav_name_save_mime').value = v;
               ]]>
             </script>
           </v:template>

@@ -856,12 +856,13 @@ WEBDAV.toggleEditor = function ()
   if (!window.oEditor)
     return;
 
-  if ($v('dav_mime') == 'text/html') {
+  var mime = $('dav_mime') || $('dav_mime2');
+  if (mime.value == 'text/html') {
     OAT.Dom.hide('dav_plain');
     OAT.Dom.hide('dav_plain_turtle');
     OAT.Dom.show('dav_html');
   }
-  else if ($v('dav_mime') == 'text/turtle') {
+  else if (mime.value == 'text/turtle') {
     OAT.Dom.show('dav_plain');
     OAT.Dom.show('dav_plain_turtle');
     OAT.Dom.hide('dav_html');
@@ -1872,9 +1873,9 @@ WEBDAV.datePopup = function(objName, format, weekStart, cb) {
 WEBDAV.getFileName = function (obj)
 {
   var davName = $('dav_name');
-  if (!davName) {
+  if (!davName)
     return;
-  }
+
   var S = obj.value;
   var N;
   if (S.lastIndexOf('\\') > 0) {
@@ -1910,18 +1911,34 @@ WEBDAV.getFileName = function (obj)
 
 WEBDAV.mimeTypeByExt = function (name)
 {
-  if ($("dav_mime")) {
-    if (!name) {
+  function getFileExtension (fn) {
+    return fn.slice((fn.lastIndexOf(".") - 1 >>> 0) + 2);
+  }
+
+  var mime = $('dav_mime') || $('dav_mime2');
+  if (mime) {
+    if (!name)
       name = $("dav_name").value;
-    }
+
+    if (!name)
+      return;
+
+    var name_save = $("dav_name_save_mime").value;
+    if (name == name_save)
+      return;
+
+    $("dav_name_save_mime").value = name;;
+    var ext = getFileExtension(name);
+    var ext_save = getFileExtension(name_save);
+
+    if ((ext == '') || (ext == ext_save))
+      return;
+
     var x = function (txt) {
-      if (txt != "")
-      {
-        var davMime = $("dav_mime");
-        if (davMime) {
-          davMime.value = txt;
-        }
-      }
+      if (txt == '')
+        return;
+
+      mime.value  = txt;
     }
     OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=mimeTypeByExt&fileName='+name, x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
   }
@@ -1930,7 +1947,7 @@ WEBDAV.mimeTypeByExt = function (name)
 WEBDAV.nameByMimeType = function ()
 {
   var dav_name = $("dav_name");
-  var dav_mime = $("dav_mime");
+  var dav_mime = $('dav_mime') || $('dav_mime2');
   if (dav_name && dav_mime) {
     var x = function (data) {
       var o = OAT.JSON.parse(data);
