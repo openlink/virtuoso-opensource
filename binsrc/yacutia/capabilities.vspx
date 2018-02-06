@@ -65,10 +65,10 @@
                   <td>
                     <v:text name="pattern_text1" default="%" width="105" height="24">
                       <v:after-data-bind>
-                        <v:script><![CDATA[
+                    <![CDATA[
                          control.ufl_value:= self.pattern_value;
                          control.vc_data_bound := 1;
-                      ]]></v:script>
+                    ]]>
                     </v:after-data-bind>
                     </v:text>
                   </td>
@@ -76,7 +76,6 @@
                     <v:button name="filter_submit" action="simple" value="Filter" width="90" height="24">
                   <v:on-post>
                     <![CDATA[
-                        {
                           declare str varchar;
 
                           str := get_keyword('pattern_text1', e.ve_params, '%');
@@ -89,10 +88,10 @@
                           else if (get_keyword('howto1', e.ve_params, '%') = '3')
                             self.search_mask :=concat('%', str);
 
+                      self.ds1.vc_reset ();
                           self.ds1.vc_enabled := 1;
                           self.ds1.vc_data_bind(e);
                           self.pattern_text1.vc_data_bind(e);
-                        }
                     ]]>
                   </v:on-post>
                     </v:button>
@@ -101,14 +100,13 @@
                     <v:button name="filter_reset" action="simple" value="Reset" width="90" height="24">
                   <v:on-post>
                     <![CDATA[
-                        {
                           self.pattern_value := '';
                           self.search_mask := '%';
                           self.pattern_text1.ufl_value :='';
                           self.pattern_text1.vc_data_bound := 1;
+                      self.ds1.vc_reset ();
                           self.ds1.vc_enabled := 1;
                           self.ds1.vc_data_bind(e);
-                        }
                     ]]>
                   </v:on-post>
                     </v:button>

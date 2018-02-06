@@ -79,6 +79,7 @@
                     self.f_how := self.how.ufl_value;
                     self.f_value := self.value.ufl_value;
 
+                    self.ds1.vc_reset ();
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
