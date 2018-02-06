@@ -3790,7 +3790,7 @@
                         {
                           detParams := self.detParamsPrepare (dav_detType, 19);
                         }
-                        else if (dav_detType in ('Blog', 'Bookmark', 'Calendar', 'CalDAV', 'CardDAV', 'News3'))
+                        else if (dav_detType in ('DynaRes', 'Blog', 'Bookmark', 'Calendar', 'CalDAV', 'CardDAV', 'News3'))
                         {
                           detParams := vector ();
                         }
