@@ -1203,10 +1203,40 @@ create procedure WEBDAV.DBA.path_escape (
   parts := split_and_decode (path, 0, '\0\0' || delimiter);
   foreach (varchar part in parts) do
   {
-    if (part = '')
-      retValue := retValue || '/';
-    else
-      retValue := retValue || sprintf ('%U/', part);
+    retValue := retValue || case when (part = '') then '/' else sprintf ('%U/', part) end;
+  }
+  retValue := subseq (retValue, 0, length(retValue)-1);
+
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.path_unescape (
+  in path varchar,
+  in delimiter varchar := '/')
+{
+  declare parts any;
+  declare retValue varchar;
+
+  if (DB.DBA.is_empty_or_null (path))
+    return path;
+
+  retValue := '';
+  parts := split_and_decode (path, 0, '\0\0' || delimiter);
+  foreach (varchar part in parts) do
+  {
+    if (part <> '')
+    {
+      -- un!escape chars which are not allowed
+      part := replace (part, '%27', '''');
+      part := replace (part, '%3C', '<');
+      part := replace (part, '%3E', '>');
+      part := replace (part, '%20', ' ');
+      retValue := retValue || part;
+    }
+    retValue := retValue || '/';
   }
   retValue := subseq (retValue, 0, length(retValue)-1);
 
