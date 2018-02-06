@@ -136,7 +136,6 @@
           <v:variable name="dav_item" type="any" default="null" />
           <v:variable name="dav_enable" type="integer" default="1" />
           <v:variable name="dav_enable_versioning" type="integer" default="1" />
-          <v:variable name="dav_acl" persist="0" type="varbinary" />
           <v:variable name="dav_tags_private" persist="0" type="varchar" />
           <v:variable name="dav_tags_public" persist="0" type="varchar" />
           <v:variable name="dav_encryption" type="varchar" default="'None'" />
@@ -1390,6 +1389,18 @@
             ]]>
           </v:method>
 
+          <v:method name="aclInherited" arglist="inout path varchar">
+            <![CDATA[
+              declare acls any;
+
+              acls := cast (WEBDAV.DBA.DAV_PROP_GET (path, ':virtacl', cast (WS.WS.ACL_CREATE() as varchar)) as varbinary);
+              acls := WS.WS.ACL_PARSE (acls, '123', 0);
+              acls := WS.WS.ACL_COMPOSE (WS.WS.ACL_MAKE_INHERITED (acls));
+
+              return acls;
+            ]]>
+          </v:method>
+
           <v:before-data-bind>
             <![CDATA[
               declare _params, tmp any;
@@ -2279,10 +2290,6 @@
                   if (self.dav_enable and not WEBDAV.DBA.version_permission (self.dav_path))
                     self.dav_enable := 0;
                 }
-                if (isnull (get_keyword ('dav_group', params)))
-                {
-                  self.dav_acl := WEBDAV.DBA.DAV_GET (self.dav_item, 'acl');
-                }
                 if (self.command_mode = 10)
                 {
                   if (isnull (get_keyword ('dav_group', params)))
@@ -3115,20 +3122,29 @@
                                   <![CDATA[
                                     <script type="text/javascript">
                                     <?vsp
-                                      declare M, N integer;
-                                      declare acl, acl_values, V any;
+                                      declare N integer;
+                                      declare acl, acl_values, acls, V any;
 
-                                      M := 0;
+                                      if (self.command_mode = 10)
+                                      {
+                                        acls := WEBDAV.DBA.DAV_GET (self.dav_item, 'acl');
+                                      }
+                                      else
+                                      {
+                                        acls := self.aclInherited (self.dav_path);
+                                      }
+
+                                      acl_values := WEBDAV.DBA.acl_vector (acls);
                                       V := vector (0, 'This object only', 1, 'This object, subfolders and files', 2, 'Subfolders and files', 3, 'Inherited');
-                                      acl_values := WEBDAV.DBA.acl_vector (self.dav_acl);
                                       for (N := 0; N < length (acl_values); N := N + 1)
                                       {
-                                        M := M + 1;
                                         acl := acl_values[N];
                                         if (self.dav_enable and self.editField ('acl') and (acl[1] <> 3))
                                         {
                                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("f", null, {fld_1: {mode: 51, value: "%s", formMode: "u", nrows: %d, tdCssText: "white-space: nowrap;", className: "_validate_"}, fld_2: {mode: 43, value: %d, tdCssText: "white-space: nowrap;", objectType: "%s"}, fld_3: {mode: 42, value: [%d, %d, %d], suffix: "_grant", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], suffix: "_deny", onclick: function(){TBL.clickCell42(this);}, tdCssText: "width: 1%%; text-align: center;"}});});', WEBDAV.DBA.account_iri (acl[0]), WEBDAV.DBA.settings_rows (self.settings), acl[1], self.dav_type, bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
-                                        } else {
+                                        }
+                                        else
+                                        {
                                           http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("f", {fld_1: {value: "%s"}, fld_2: {value: "%s", tdCssText: "white-space: nowrap;"}, fld_3: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}, fld_4: {mode: 42, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', WEBDAV.DBA.account_iri (acl[0]), get_keyword (acl[1], V, ''), bit_and (acl[2], 4), bit_and (acl[2], 2), bit_and (acl[2], 1), bit_and (acl[3], 4), bit_and (acl[3], 2), bit_and (acl[3], 1)));
                                         }
                                       }
@@ -3175,23 +3191,27 @@
                                   <![CDATA[
                                     <script type="text/javascript">
                                     <?vsp
-                                      declare L integer;
+                                      declare L, pathMode integer;
                                       declare aci_values, aci_parents any;
 
-                                      aci_parents := WEBDAV.DBA.aci_parents (self.dav_path);
+                                      pathMode := case when self.command_mode = 10 then 1 else 0 end;
+                                      aci_parents := WEBDAV.DBA.aci_parents (self.dav_path, pathMode);
                                       for (L := 0; L < length (aci_parents); L := L + 1)
                                       {
                                         aci_values := WEBDAV.DBA.aci_load (aci_parents[L]);
                                         WEBDAV.DBA.aci_lines (aci_values);
                                       }
-                                      aci_values := WEBDAV.DBA.aci_load (self.dav_path);
-                                      if (self.dav_enable and self.editField ('aci') and (self.dav_path not like '%,acl') and (self.dav_path not like '%,meta'))
+                                      if (pathMode)
                                       {
-                                        WEBDAV.DBA.aci_lines (aci_values, '', 'true');
-                                      }
-                                      else
-                                      {
-                                        WEBDAV.DBA.aci_lines (aci_values, 'disabled');
+                                        aci_values := WEBDAV.DBA.aci_load (self.dav_path);
+                                        if (self.dav_enable and self.editField ('aci') and (self.dav_path not like '%,acl') and (self.dav_path not like '%,meta'))
+                                        {
+                                          WEBDAV.DBA.aci_lines (aci_values, '', 'true');
+                                        }
+                                        else
+                                        {
+                                          WEBDAV.DBA.aci_lines (aci_values, 'disabled');
+                                        }
                                       }
                                     ?>
                                     </script>
@@ -3271,7 +3291,7 @@
                     declare N, M, retValue, dav_owner, dav_group, dav_encryption_state integer;
                     declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, dav_turtleRedirect, dav_turtleRedirectParams, msg, _p varchar;
                     declare properties, c_properties any;
-                    declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content, dav_expireDate any;
+                    declare old_dav_acl, dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content, dav_expireDate any;
                     declare params, detParams, itemList any;
                     declare tmp any;
 
@@ -3979,12 +3999,12 @@
                         goto _exec_13;
 
                       -- ACL
-                      dav_acl := WEBDAV.DBA.DAV_GET (self.dav_item, 'acl');
-                      self.dav_acl := WEBDAV.DBA.acl_params (params, dav_acl);
-                      if ((dav_acl <> self.dav_acl) or dav_encryption_state)
+                      old_dav_acl := case when (self.command_mode = 10) then WEBDAV.DBA.DAV_GET (self.dav_item, 'acl') else self.aclInherited (self.dav_path) end;
+                      dav_acl := WEBDAV.DBA.acl_params (params, old_dav_acl);
+                      if ((old_dav_acl <> dav_acl) or dav_encryption_state)
                       {
-                        if (not WEBDAV.DBA.DAV_ERROR (WEBDAV.DBA.DAV_SET (self.dav_path, 'acl', self.dav_acl)))
-                          WEBDAV.DBA.acl_send_mail (self.account_id, self.dav_path, dav_acl, self.dav_acl, dav_encryption_state);
+                        if (not WEBDAV.DBA.DAV_ERROR (WEBDAV.DBA.DAV_SET (dav_fullPath, 'acl', dav_acl)))
+                          WEBDAV.DBA.acl_send_mail (self.account_id, dav_fullPath, old_dav_acl, dav_acl, dav_encryption_state);
                       }
 
                     _exec_13:;
@@ -3992,11 +4012,11 @@
                         goto _exec_14;
 
                       -- ACI (Web Access)
-                      old_dav_aci := WEBDAV.DBA.aci_load (self.dav_path);
+                      old_dav_aci := case when (self.command_mode = 10) then WEBDAV.DBA.aci_load (dav_fullPath) else vector () end;
                       if ((not WEBDAV.DBA.aci_compare (old_dav_aci, dav_aci)) or dav_encryption_state)
                       {
-                        WEBDAV.DBA.aci_save (self.dav_path, dav_aci);
-                        WEBDAV.DBA.aci_send_mail (self.account_id, self.dav_path, old_dav_aci, dav_aci, dav_encryption_state);
+                        WEBDAV.DBA.aci_save (dav_fullPath, dav_aci);
+                        WEBDAV.DBA.aci_send_mail (self.account_id, dav_fullPath, old_dav_aci, dav_aci, dav_encryption_state);
                       }
 
                     _exec_14:;

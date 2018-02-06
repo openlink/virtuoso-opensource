@@ -3464,7 +3464,7 @@ create procedure WEBDAV.DBA.DAV_GET (
     if (isstring (path) and path like '%,acl')
       path := regexp_replace (path, ',acl\x24', '');
 
-    if (isstring (path) and path like '%,meta')
+    else if (isstring (path) and path like '%,meta')
       path := regexp_replace (path, ',meta\x24', '');
 
     return cast (WEBDAV.DBA.DAV_PROP_GET (path, ':virtacl', cast (WS.WS.ACL_CREATE() as varchar)) as varbinary);
@@ -3485,8 +3485,10 @@ create procedure WEBDAV.DBA.DAV_GET (
 
       if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-rdf', '') <> '')
         detType := 'rdfSink';
+
       else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-History', '') <> '')
         detType := 'UnderVersioning';
+
       else if (WEBDAV.DBA.syncml_detect (path))
         detType := 'SyncML';
     }
@@ -4958,7 +4960,8 @@ create procedure WEBDAV.DBA.aci_vector (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_parents (
-  in path varchar)
+  in path varchar,
+  in pathMode integer := 1)
 {
   declare N integer;
   declare tmp, V, aPath any;
@@ -4966,7 +4969,7 @@ create procedure WEBDAV.DBA.aci_parents (
   tmp := '/';
   V := vector ();
   aPath := split_and_decode (trim (path, '/'), 0, '\0\0/');
-  for (N := 0; N < length (aPath)-1; N := N + 1)
+  for (N := 0; N < length (aPath)-pathMode; N := N + 1)
   {
     tmp := tmp || aPath[N] || '/';
     V := vector_concat (V, vector (tmp));
