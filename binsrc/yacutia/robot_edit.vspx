@@ -520,7 +520,7 @@
                               <td/>
                               <td>
                                 <v:check-box name="get_rdf" value="1" initial-checked="--case when self._get_rdf then 1 else 0 end" xhtml_id="get_rdf" xhtml_onchange='javascript: toggleMeta (this, "meta_opts");'/>
-                                <label for="get_rdf">Store metadata *</label>
+                                <label for="get_rdf">Save Linked Data to RDF Storage *</label>
                               </td>
                             </tr>
                             <tr>
