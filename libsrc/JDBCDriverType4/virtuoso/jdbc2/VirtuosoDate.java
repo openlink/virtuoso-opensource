@@ -103,6 +103,10 @@ public class VirtuosoDate extends java.sql.Date
             formatter.setTimeZone(TimeZone.getTimeZone("GMT"+timeZoneString));
         }
         sb.append(formatter.format(this));
+
+        if (with_timezone && timezone!=0)
+            sb.append(timeZoneString);
+
         return sb.toString();
     }
 

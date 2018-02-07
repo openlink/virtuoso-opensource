@@ -59,13 +59,12 @@ class DateObject
           java.util.Calendar cal_gmt = new java.util.GregorianCalendar(TimeZone.getTimeZone("GMT"));
 
           num2date(day, cal_gmt);
-          if (type!=VirtuosoTypes.DT_TYPE_DATE) 
-          {
-             cal_gmt.set (Calendar.HOUR_OF_DAY, hour);
-             cal_gmt.set (Calendar.MINUTE, minute);
-             cal_gmt.set (Calendar.SECOND, second);
-             cal_gmt.set (Calendar.MILLISECOND, fraction/1000);
-          }
+
+          cal_gmt.set (Calendar.HOUR_OF_DAY, hour);
+          cal_gmt.set (Calendar.MINUTE, minute);
+          cal_gmt.set (Calendar.SECOND, second);
+          cal_gmt.set (Calendar.MILLISECOND, fraction/1000);
+
           // Convert to Local GMT
           cal_dat.setTime(cal_gmt.getTime());
        }
@@ -99,13 +98,11 @@ class DateObject
           }
 
           num2date(day, cal_dat);
-          if (type!=VirtuosoTypes.DT_TYPE_DATE) 
-          {
-             cal_dat.set (Calendar.HOUR_OF_DAY, hour);
-             cal_dat.set (Calendar.MINUTE, minute);
-             cal_dat.set (Calendar.SECOND, second);
-             cal_dat.set (Calendar.MILLISECOND, fraction/1000);
-          }
+
+          cal_dat.set (Calendar.HOUR_OF_DAY, hour);
+          cal_dat.set (Calendar.MINUTE, minute);
+          cal_dat.set (Calendar.SECOND, second);
+          cal_dat.set (Calendar.MILLISECOND, fraction/1000);
        }
 
        switch(type)
