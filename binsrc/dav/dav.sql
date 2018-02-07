@@ -2158,14 +2158,13 @@ create procedure WS.WS.PATCH (
   in lines any)
 {
   declare rc, _col_parent_id integer;
-  declare id integer;
   declare content_type varchar;
   declare _col integer;
   declare _name varchar;
   declare _cont_len integer;
   declare full_path, _perms, uname, upwd varchar;
   declare _u_id, _g_id integer;
-  declare location varchar;
+  declare location, etag varchar;
   declare ses any;
 
   ses := aref_set_0 (params, 1);
@@ -2211,7 +2210,7 @@ create procedure WS.WS.PATCH (
 
   if (content_type = 'application/sparql-update')
   {
-    declare giid, meta, data any;
+    declare giid, meta, data, etag any;
 
     connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
     WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines);
@@ -2225,28 +2224,18 @@ create procedure WS.WS.PATCH (
       rc := -28;
       rc := DAV_RES_UPLOAD_STRSES_INT (full_path, data, 'text/turtle', _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
     }
-    commit work;
     if (DAV_HIDE_ERROR (rc) is not null)
-    {
-      DB.DBA.DAV_SET_HTTP_STATUS (200);
-      return;
-    }
-    goto error_ret;
+      goto _204;
   }
-
+  else
+  {
   rc := -28;
   rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
-  --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
   if (DAV_HIDE_ERROR (rc) is not null)
-    {
-      commit work;
-    DB.DBA.DAV_SET_HTTP_STATUS (204);
-
-      return;
+      goto _204;
     }
 
-error_ret:
-   --dbg_obj_princ ('PUT get error: ', __SQL_STATE, __SQL_MESSAGE);
+error_ret:;
   if (__SQL_STATE = '40001')
     {
       rollback work;
@@ -2258,9 +2247,21 @@ error_ret:
   http_body_read ();
   DAV_SET_HTTP_REQUEST_STATUS (rc);
 
+  return;
+
+_204:;
+  commit work;
+  DB.DBA.DAV_SET_HTTP_STATUS (204);
+  http_header (sprintf ('Content-Location: %s%s\r\n', WS.WS.DAV_HOST (), full_path));
+  etag := WS.WS.ETAG_BY_ID (rc, 'R');
+  if (etag is not null)
+    http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', etag));
+
+  http_rewrite ();
+
+  return;
 }
 ;
-
 
 create procedure WS.WS.HEX_TO_DEC (in c char)
 {
