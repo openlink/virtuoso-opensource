@@ -2412,25 +2412,18 @@ DAV_COL_CREATE_INT (
     DAV_OWNER_ID (uid, gid, ouid, ogid);
 
   {
-    declare exit handler for sqlstate '*' {
+    declare exit handler for sqlstate '*'
+    {
       rc := -3;
     };
-    -- dbg_obj_princ ('about to insert ', rc, name, pid, ouid, ogid, permissions, now(), now ());
+
     insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_OWNER, COL_GROUP, COL_PERMS, COL_CR_TIME, COL_MOD_TIME)
       values (rc, name, pid, ouid, ogid, permissions, now(), now ());
 
     if (not row_count())
-      {
-        rc := -3;
-      }
+      rc := -3;
 
-    if (DB.DBA.LDP_ENABLED (pid))
-      {
-        declare uri any;
-        uri := WS.WS.DAV_IRI (path);
-        TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
-        DB.DBA.LDP_CREATE (path);
-      }
+    DB.DBA.LDP_CREATE_COL (path, pid);
   }
 
   return rc;
@@ -2561,11 +2554,10 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   old_log_mode := log_enable (bit_or (new_log_mode, 4), 1);
   rc := DAV_RES_UPLOAD_STRSES_INT_INNER (path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks);
   log_enable (bit_or (old_log_mode, 4), 1);
-  if (DAV_HIDE_ERROR (rc) is not null)
-  {
+
+  if ((DAV_HIDE_ERROR (rc) is not null) and (type in ('text/turtle', 'application/ld+json')))
     -- create LDP triple if needed
     DB.DBA.LDP_CREATE (path);
-  }
 
   return rc;
 }
@@ -3369,13 +3361,13 @@ create procedure DAV_DELETE_INT (
   if (what = 'R')
   {
     delete from WS.WS.SYS_DAV_RES where RES_ID = id;
-    DB.DBA.LDP_DELETE (path);
+    DB.DBA.LDP_DELETE (path, 1);
 
     -- delete *,meta
     if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_meta)))
     {
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
-      DB.DBA.LDP_DELETE (path_meta);
+      DB.DBA.LDP_DELETE (path_meta, 1);
     }
   }
   else if (what = 'C')
@@ -3444,13 +3436,13 @@ create procedure DAV_DELETE_INT (
       }
     }
     delete from WS.WS.SYS_DAV_COL where COL_ID = id;
-    DB.DBA.LDP_DELETE (path);
+    DB.DBA.LDP_DELETE (path, 1);
 
     -- delete *,meta
     if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_meta)))
     {
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
-      DB.DBA.LDP_DELETE (path_meta);
+      DB.DBA.LDP_DELETE (path_meta, 1);
     }
   }
   else if (not silent)
@@ -4017,7 +4009,7 @@ create procedure DAV_MOVE_INT (
   }
   else
   {
-    dp_det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=dp_id), NULL);
+    dp_det := (select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = dp_id);
   }
   if (dp_det is not null)
     {
@@ -4066,17 +4058,30 @@ create procedure DAV_MOVE_INT (
             }
           else
             {
-              declare pid integer;
-              declare rname, rtype varchar;
+              declare pid, rldp, nldp integer;
+              declare rname, rpath, rldp, npath varchar;
 
-              select RES_COL, RES_NAME, RES_TYPE into pid, rname, rtype from WS.WS.SYS_DAV_RES where RES_ID = d_id;
+              select RES_NAME
+                into rname
+                from WS.WS.SYS_DAV_RES
+               where RES_ID = d_id;
               delete from WS.WS.SYS_DAV_TAG where DT_RES_ID = d_id;
               delete from WS.WS.SYS_DAV_RES where RES_ID = d_id;
-              update WS.WS.SYS_DAV_RES set RES_COL = dp_id, RES_NAME = rname, RES_MOD_TIME = now () where RES_ID = id;
+
+              rpath := DB.DBA.DAV_SEARCH_PATH (id, 'R');
+              pid := DB.DBA.DAV_SEARCH_ID (rpath, 'P');
+              rldp := DB.DBA.LDP_ENABLED (pid);
+              update WS.WS.SYS_DAV_RES
+                 set RES_COL = dp_id,
+                     RES_NAME = rname,
+                     RES_MOD_TIME = now ()
+               where RES_ID = id;
+              npath := DB.DBA.DAV_SEARCH_PATH (id, 'R');
+              nldp := DB.DBA.LDP_ENABLED (dp_id);
+              DB.DBA.LDP_RENAME ('R', rpath, npath, rldp, nldp);
               if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
-                {
-                  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
-                }
+                delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
+
               update WS.WS.SYS_DAV_LOCK set LOCK_PARENT_ID = id where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = d_id;
               -- dbg_obj_princ ('DAV_MOVE_INT completed deleted destination and update source to set new RES_NAME = ', rname, ' and RES_COL = ', dp_id);
             }
@@ -4113,13 +4118,24 @@ create procedure DAV_MOVE_INT (
                 return rc;
 
               if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
-                {
-                  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
-                }
+                delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
             }
           else
             {
-              update WS.WS.SYS_DAV_RES set RES_COL = dp_id, RES_NAME = rname, RES_MOD_TIME = now () where RES_ID = id;
+              declare pid, rldp, nldp integer;
+              declare rpath, npath varchar;
+
+              rpath := DB.DBA.DAV_SEARCH_PATH (id, 'R');
+              pid := DB.DBA.DAV_SEARCH_ID (rpath, 'P');
+              rldp := DB.DBA.LDP_ENABLED (pid);
+              update WS.WS.SYS_DAV_RES
+                 set RES_COL = dp_id,
+                     RES_NAME = rname,
+                     RES_MOD_TIME = now ()
+               where RES_ID = id;
+              npath := DB.DBA.DAV_SEARCH_PATH (id, 'R');
+              nldp := DB.DBA.LDP_ENABLED (dp_id);
+              DB.DBA.LDP_RENAME ('R', rpath, npath, rldp, nldp);
               if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
                 delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = DB.DBA.DAV_DET_DAV_ID (id);
             }
@@ -4175,7 +4191,19 @@ create procedure DAV_MOVE_INT (
         }
       else
         {
-          update WS.WS.SYS_DAV_COL set COL_NAME = rname, COL_PARENT = dp_id, COL_MOD_TIME = now () where COL_ID = id;
+          declare rldp, nldp integer;
+          declare rpath, npath varchar;
+
+          rpath := DB.DBA.DAV_SEARCH_PATH (id, 'C');
+          rldp := DB.DBA.LDP_ENABLED (id);
+          update WS.WS.SYS_DAV_COL
+             set COL_NAME = rname,
+                 COL_PARENT = dp_id,
+                 COL_MOD_TIME = now ()
+           where COL_ID = id;
+          npath := DB.DBA.DAV_SEARCH_PATH (id, 'C');
+          nldp := DB.DBA.LDP_ENABLED (id);
+          DB.DBA.LDP_RENAME ('C', rpath, npath, rldp, nldp);
         }
 
       rc := DAV_DELETE_INT (path, 1, null, null, 0);
@@ -4189,8 +4217,10 @@ create procedure DAV_MOVE_INT (
 
 insufficient_storage:
   return -41;
+
 disabled_owner:
   return -42;
+
 disabled_home:
   return -43;
 }
@@ -5075,16 +5105,18 @@ DAV_PROP_LIST_INT (
 ;
 
 
-create procedure
-DAV_MAKE_DIR (in path any, in own integer, in grp integer, in perms varchar)
+create procedure DAV_MAKE_DIR (
+  in path any,
+  in own integer,
+  in grp integer,
+  in perms varchar)
 {
   declare pat any;
   declare col, len, inx, t_col integer;
 
   pat := split_and_decode (path, 0, '\0\0/');
-
   if (length (pat) < 3)
-    return NULL;
+    return null;
 
   if (pat[1] <> 'DAV' or pat[0] <> '')
     signal ('22023', 'Not valid path string');
@@ -5094,21 +5126,23 @@ DAV_MAKE_DIR (in path any, in own integer, in grp integer, in perms varchar)
   t_col := 1;
   whenever not found goto nf;
   while (inx < len)
-    {
-      select COL_ID into col from WS.WS.SYS_DAV_COL where COL_PARENT = t_col and COL_NAME = pat[inx];
-      t_col := col;
-      inx := inx + 1;
-    }
+  {
+    select COL_ID into col from WS.WS.SYS_DAV_COL where COL_PARENT = t_col and COL_NAME = pat[inx];
+    t_col := col;
+    inx := inx + 1;
+  }
+
 nf:
   while (inx < len)
-    {
-      col := WS.WS.GETID ('C');
-      insert into WS.WS.SYS_DAV_COL
-        (COL_ID, COL_NAME, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER, COL_GROUP, COL_PERMS)
-        values (col, pat[inx], t_col, now (), now (), own, grp, perms);
-      inx := inx + 1;
-      t_col := col;
-    }
+  {
+    col := WS.WS.GETID ('C');
+    insert into WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER, COL_GROUP, COL_PERMS)
+      values (col, pat[inx], t_col, now (), now (), own, grp, perms);
+
+    DB.DBA.LDP_CREATE_COL (WS.WS.COL_PATH (col), t_col);
+    inx := inx + 1;
+    t_col := col;
+  }
   return col;
 }
 ;
@@ -5459,7 +5493,7 @@ create trigger SYS_DAV_RES_WAC_I after insert on WS.WS.SYS_DAV_RES order 100 ref
     rid := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = newPath);
     set triggers off;
     insert into WS.WS.SYS_DAV_PROP (PROP_ID, PROP_PARENT_ID, PROP_NAME, PROP_TYPE, PROP_VALUE)
-	values (WS.WS.GETID ('P'), rid, 'virt:aci_meta_n3', 'R', N.RES_CONTENT);
+	    values (WS.WS.GETID ('P'), rid, 'virt:aci_meta_n3', 'R', N.RES_CONTENT);
     set triggers on;
     update_acl := 0;
     WS.WS.WAC_INSERT (newPath, aciContent, N.RES_OWNER, N.RES_GROUP, update_acl);
@@ -6923,13 +6957,14 @@ DAV_REGISTER_RDF_SCHEMA (in schema_uri varchar, in location varchar, in local_ad
         signal ('23000', sprintf ('Uniqueness violation: RDF schema ''%s'' is already registered', schema_uri));
       else if ('replacing' = mode)
         insert replacing WS.WS.SYS_RDF_SCHEMAS (RS_URI, RS_LOCATION, RS_LOCAL_ADDONS, RS_DEPRECATED)
-        values (schema_uri, location, local_addon, 0);
+          values (schema_uri, location, local_addon, 0);
       else if ('soft' = mode)
         update WS.WS.SYS_RDF_SCHEMAS set RS_LOCAL_ADDONS = local_addon, RS_DEPRECATED = 0 where RS_URI = schema_uri and RS_LOCAL_ADDONS is null;
     }
   else
     insert replacing WS.WS.SYS_RDF_SCHEMAS (RS_URI, RS_LOCATION, RS_LOCAL_ADDONS, RS_DEPRECATED)
-    values (schema_uri, location, local_addon, 0);
+      values (schema_uri, location, local_addon, 0);
+
   DAV_GET_RDF_SCHEMA_N3 (schema_uri);
 }
 ;

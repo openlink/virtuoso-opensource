@@ -6608,53 +6608,252 @@ create procedure DB.DBA.DAV_SET_HTTP_STATUS (
 }
 ;
 
-create procedure LDP_ENABLED (in _col_id any)
+create procedure DB.DBA.LDP_ENABLED (
+  in col_id any)
 {
+  -- dbg_obj_princ ('DB.DBA.LDP_ENABLED (', col_id, ')');
   declare p_id any;
-  whenever not found goto nf;
-  while (_col_id > 0 or isvector (_col_id))
-    {
-      if (DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'LDP', 0)) is not null)
-	return 1;
-      p_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_col_id, 'C'), 'P');
-      _col_id := p_id;
-    }
-  nf:
+
+  while (col_id > 0 or isvector (col_id))
+  {
+    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (col_id, 'C', 'LDP', 0)) is not null)
+      return 1;
+
+    p_id := DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_SEARCH_PATH (col_id, 'C'), 'P');
+    col_id := p_id;
+  }
+
   return 0;
 }
 ;
 
+create procedure DB.DBA.LDP_CREATE_COL (
+  in path any,
+  in id_parent any := null)
+{
+  -- dbg_obj_princ ('LDP_CREATE_COL (', path, ')');
+  declare graph any;
+
+  if (isnull (id_parent))
+    id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
+
+  if (not DB.DBA.LDP_ENABLED (id_parent))
+    return;
+
+  graph := WS.WS.DAV_IRI (path);
+  TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', graph, graph);
+  DB.DBA.LDP_CREATE (path, id_parent);
+}
+;
+
 create procedure DB.DBA.LDP_CREATE (
-  in path any)
+  in path any,
+  in id_parent any := null)
 {
   -- dbg_obj_princ ('LDP_CREATE (', path, ')');
-  declare id_parent any;
   declare path_parent, graph, graph_parent varchar;
 
-  id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
-	if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_parent)) and DB.DBA.LDP_ENABLED (id_parent))
-	{
-  	path_parent := DB.DBA.DAV_SEARCH_PATH (id_parent, 'C');
-		graph_parent := WS.WS.DAV_IRI (path_parent);
-		graph := WS.WS.DAV_IRI (path);
-		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph), graph_parent, graph_parent);
-	}
+  if (isnull (id_parent))
+    id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
+
+  if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_parent)) and DB.DBA.LDP_ENABLED (id_parent))
+  {
+    path_parent := DB.DBA.DAV_SEARCH_PATH (id_parent, 'C');
+    graph_parent := WS.WS.DAV_IRI (path_parent);
+    graph := WS.WS.DAV_IRI (path);
+    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph), graph_parent, graph_parent);
+  }
 }
 ;
 
 create procedure DB.DBA.LDP_DELETE (
-  in path any)
+  in path any,
+  in allData integer := 0)
 {
   -- dbg_obj_princ ('LDP_DELETE (', path, ')');
   declare graph varchar;
+  declare graphIdn any;
 
   graph := WS.WS.DAV_IRI (path);
-  SPARQL clear graph ?:graph;
-  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE 
-    a.P = __i2idn ('http://www.w3.org/ns/ldp#contains') and a.O = __i2idn (graph) do
+  graphIdn := __i2idn (graph);
+  if (allData)
+  {
+    SPARQL clear graph ?:graph;
+  }
+  else
+  {
+    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and O = __i2idn ('http://www.w3.org/ns/ldp#Resource');
+    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and O = __i2idn ('http://www.w3.org/2000/01/rdf-schema#Resource');
+  }
+  delete from DB.DBA.RDF_QUAD where P = __i2idn ('http://www.w3.org/ns/ldp#contains') and O = graphIdn;
+}
+;
+
+create procedure DB.DBA.LDP_RENAME (
+  in what varchar,
+  in oldPath any,
+  in newPath any,
+  in oldLDP integer,
+  in newLDP integer)
+{
+  -- dbg_obj_princ ('LDP_RENAME (', what, oldPath, newPath, oldLDP, newLDP, ')');
+  declare oldGraph, newGraph, mimeType varchar;
+
+  if (oldPath = newPath)
+    return;
+
+  if ((oldLDP = 0) and (newLDP = 0))
+    return;
+
+  oldGraph := WS.WS.DAV_IRI (oldPath);
+  newGraph := WS.WS.DAV_IRI (newPath);
+  if ((what = 'R') and newLDP)
+    mimeType := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_FULL_PATH = newPath);
+
+  if ((oldLDP = 0) and (newLDP = 1))
+  {
+    if (what = 'C')
     {
-      delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
+      DB.DBA.LDP_CREATE_COL (newPath);
+      DB.DBA.LDP_REFRESH (newPath);
     }
+    else if (what = 'R')
+    {
+      if (mimeType in ('text/turtle', 'application/ld+json'))
+        DB.DBA.LDP_CREATE (newPath);
+
+      DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
+    }
+  }
+  else if ((oldLDP = 1) and (newLDP = 0))
+  {
+    if (what = 'C')
+    {
+      DB.DBA.LDP_DELETE (oldPath, 1);
+      DB.DBA.LDP_DELETE_GRAPHS (oldPath, newPath);
+    }
+    else if (what = 'R')
+    {
+      DB.DBA.LDP_DELETE (oldPath);
+      DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
+    }
+  }
+  else
+  {
+    if (what = 'C')
+    {
+      DB.DBA.LDP_DELETE (oldPath, 1);
+      DB.DBA.LDP_DELETE_GRAPHS (oldPath, newPath);
+      DB.DBA.LDP_CREATE_COL (newPath);
+      DB.DBA.LDP_REFRESH (newPath);
+    }
+    else if (what = 'R')
+    {
+      DB.DBA.LDP_DELETE (oldPath);
+      if (mimeType in ('text/turtle', 'application/ld+json'))
+        DB.DBA.LDP_CREATE (newPath);
+
+      DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
+    }
+  }
+}
+;
+
+create procedure DB.DBA.LDP_RENAME_GRAPH (
+  in oldGraph any,
+  in newGraph any)
+{
+  -- dbg_obj_princ ('LDP_RENAME_GRAPH (', oldGraph, newGraph, ')');
+
+  SPARQL clear graph ?:newGraph;
+  update DB.DBA.RDF_QUAD
+     set G = __i2idn (newGraph)
+   where G = __i2idn (oldGraph);
+}
+;
+
+create procedure DB.DBA.LDP_DELETE_GRAPHS (
+  in oldPath any,
+  in newPath any,
+  in id integer := null)
+{
+  -- dbg_obj_princ ('LDP_DELETE_GRAPHS (', oldPath, newPath, ')');
+  declare path varchar;
+
+  if (isnull (id))
+  {
+    id := DB.DBA.DAV_SEARCH_ID (newPath, 'C');
+    if (isnull (DB.DBA.DAV_HIDE_ERROR (id)))
+      return;
+  }
+  for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
+  {
+    path := oldPath || subseq (RES_FULL_PATH, length (newPath));
+    DB.DBA.LDP_DELETE (path);
+  }
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = id) do
+  {
+    path := oldPath || subseq (DB.DBA.DB_SEARCH_PATH (COL_ID), length (newPath));
+    DB.DBA.LDP_DELETE (path, 1);
+    DB.DBA.LDP_DELETE_GRAPHS (oldPath, newPath, COL_ID);
+  }
+}
+;
+
+create procedure DB.DBA.LDP_REFRESH (
+  in path varchar,
+  in enabled integer := 0)
+{
+  -- dbg_obj_princ ('DB.DBA.LDP_REFRESH (', path, ')');
+  declare id integer;
+  declare uri, ruri any;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+  if (isnull (DB.DBA.DAV_HIDE_ERROR (id)))
+    return;
+
+  if (not enabled)
+    enabled := DB.DBA.LDP_ENABLED (id);
+
+  for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
+  {
+    uri := WS.WS.DAV_IRI (path);
+    if (enabled)
+    {
+      TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
+    }
+    else
+    {
+      DB.DBA.LDP_DELETE (path, 1);
+    }
+    for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
+    {
+      ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
+      if (enabled and (RES_TYPE in ('text/turtle', 'application/ld+json')))
+      {
+        TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
+        TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), ruri, ruri);
+        {
+          declare continue handler for sqlstate '*';
+          TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+        }
+      }
+      else
+      {
+        DB.DBA.LDP_DELETE (RES_FULL_PATH);
+      }
+    }
+    for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
+    {
+      ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
+      TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
+    }
+  }
+
+  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
+  {
+    DB.DBA.LDP_REFRESH (path || COL_NAME || '/', enabled);
+  }
 }
 ;
 
