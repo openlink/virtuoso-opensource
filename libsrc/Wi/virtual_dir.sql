@@ -1313,40 +1313,54 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
 ;
 
 -- /* get a header field based on max of quality value */
-create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar, in mask any := null)
+create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (
+  in accept varchar,
+  in mask any := null)
 {
-  declare format, itm varchar;
-  declare arr any;
-  declare i, l int;
-  declare best_q, q double precision;
+  declare format, item varchar;
+  declare arr, arr2, arr3 any;
+  declare i, l, j, k integer;
+  declare q, q_best double precision;
 
-  arr := split_and_decode (accept, 0, '\0\0,;');
-  best_q := 0;
-  l := length (arr);
+  q := 0;
+  q_best := 0;
   format := null;
-  for (i := 0; i < l; i := i + 2)
+  arr := split_and_decode (accept, 0, '\0\0,');
+  l := length (arr);
+  for (i := 0; i < l; i := i + 1)
+  {
+    arr2 := split_and_decode (trim (arr[i]), 0, '\0\0;');
+    k := length (arr2);
+    if (k > 0)
     {
-      declare tmp any;
-      itm := trim(arr[i]);
-      q := arr[i+1];
-      if (q is null)
-	q := 1.0;
-      else
-	{
-	  tmp := split_and_decode (q, 0, '\0\0=');
-	  if (length (tmp) = 2)
-	    q := atof (tmp[1]);
-	  else
+      item := trim (arr2[0]);
 	    q := 1.0;
-        }
-      if (best_q < q)
-        {
-	  best_q := q;
-	  format := itm;
-	}
-      if (mask is not null and q = best_q and itm like mask)
-	format := itm;
+      for (j := 1; j < k; j := j + 1)
+      {
+        arr3 := split_and_decode (trim (arr2[j]), 0, '\0\0=');
+	      if (length (arr3) = 2)
+	      {
+	        if (trim (arr3[0]) = 'q')
+	        {
+	          q := atof (arr3[1]);
+	          goto _break;
+	        }
+	        else if (trim (arr3[0]) = 'level')
+	        {
+	          q := atof (arr3[1]);
+	        }
+	      }
+      }
+    _break:;
+      if (q_best < q)
+      {
+    	  q_best := q;
+  	    format := item;
+  	  }
     }
+    if (q = q_best and mask is not null and item like mask)
+	    format := item;
+  }
   return format;
 }
 ;
