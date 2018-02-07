@@ -8035,7 +8035,7 @@ bif_connection_vars_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   while (hit_next (&it, (caddr_t *) &name, (caddr_t *) &val1))
   {
     dk_free_tree (*val1);
-    dk_free_box (*name);
+    dk_free_tree (*name);
   }
   id_hash_clear (cli->cli_globals);
   cli->cli_globals_dirty = 0;

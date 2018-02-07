@@ -3315,7 +3315,7 @@ ws_connection_vars_clear (client_connection_t * cli)
   while (hit_next (&it, (caddr_t *) &name, (caddr_t *) &val))
 	{
 	  dk_free_tree (*val);
-	  dk_free_box (*name);
+	  dk_free_tree (*name);
 	}
   id_hash_clear (cli->cli_globals);
   cli->cli_globals_dirty = 0;
