@@ -3423,8 +3423,9 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
     }
   }
 
-  if (accept in ('text/turtle', 'application/ld+json'))
-  {
+  if (accept not in ('text/turtle', 'application/ld+json'))
+    return 0;
+
     declare fmt, etag, qr any;
     declare page, cnt, last, n_per_page, is_col int;
 
@@ -3484,8 +3485,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
       signal ('LDP00', 'Invalid request');
     }
 
-    etag := WS.WS.ETAG (name_, id_, mod_time);
-    if (LDP_ENABLED (_col_id) = 0)
+  if (not DB.DBA.LDP_ENABLED (_col_id))
       return 0;
 
     if (not (exists (sparql define input:storage "" select (1) where { graph `iri(?:gr)` { ?s ?p ?o }})))
@@ -3503,11 +3503,10 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
             return 0;
         }
       }
-
      DB.DBA.DAV_SET_HTTP_STATUS (406, '406 Not Acceptable', '406 Not Acceptable', sprintf ('<p>An appropriate representation of the requested resource %s could not be found on this server.</p>', full_path));
-
       return 1;
 		}
+  etag := WS.WS.ETAG (name_, id_, mod_time);
     cnt := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
     last := (cnt / n_per_page) + 1;
     http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, page, last, full_path)));
@@ -3516,16 +3515,14 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
 
     qr := sprintf ('define sql:select-option "order" define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d', n_per_page, n_per_page * (page - 1));
   execqr:
+  DB.DBA.DAV_SET_HTTP_STATUS (200);
     connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
     WS.WS."/!sparql/" (
       path,
-      vector_concat (vector ('default-graph-uri', gr, 'format', fmt, 'query', qr), params),
-      lines);
+    vector_concat (vector ('default-graph-uri', gr, 'format', fmt, 'query', qr), params), lines);
       http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK', 'PATCH');
     return 1;
   }
-	  return 0;
-}
 ;
 
 -- /* POST method */
@@ -6642,7 +6639,28 @@ create procedure DB.DBA.LDP_CREATE_COL (
     return;
 
   graph := WS.WS.DAV_IRI (path);
-  TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', graph, graph);
+  set_user_id ('dba');
+  TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#BasicContainer>, <http://www.w3.org/ns/ldp#Container> .', graph), graph, graph);
+  DB.DBA.LDP_CREATE (path, id_parent);
+}
+;
+
+create procedure DB.DBA.LDP_CREATE_RES (
+  in path any,
+  in id_parent any := null)
+{
+  -- dbg_obj_princ ('LDP_CREATE_RES (', path, ')');
+  declare graph any;
+
+  if (isnull (id_parent))
+    id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
+
+  if (not DB.DBA.LDP_ENABLED (id_parent))
+    return;
+
+  graph := WS.WS.DAV_IRI (path);
+  set_user_id ('dba');
+  TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', graph), graph, graph);
   DB.DBA.LDP_CREATE (path, id_parent);
 }
 ;
@@ -6662,6 +6680,7 @@ create procedure DB.DBA.LDP_CREATE (
     path_parent := DB.DBA.DAV_SEARCH_PATH (id_parent, 'C');
     graph_parent := WS.WS.DAV_IRI (path_parent);
     graph := WS.WS.DAV_IRI (path);
+    set_user_id ('dba');
     TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph), graph_parent, graph_parent);
   }
 }
@@ -6720,10 +6739,9 @@ create procedure DB.DBA.LDP_RENAME (
     }
     else if (what = 'R')
     {
-      if (mimeType in ('text/turtle', 'application/ld+json'))
-        DB.DBA.LDP_CREATE (newPath);
-
       DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
+      if (mimeType in ('text/turtle', 'application/ld+json'))
+        DB.DBA.LDP_CREATE_RES (newPath);
     }
   }
   else if ((oldLDP = 1) and (newLDP = 0))
@@ -6751,10 +6769,9 @@ create procedure DB.DBA.LDP_RENAME (
     else if (what = 'R')
     {
       DB.DBA.LDP_DELETE (oldPath);
-      if (mimeType in ('text/turtle', 'application/ld+json'))
-        DB.DBA.LDP_CREATE (newPath);
-
       DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
+      if (mimeType in ('text/turtle', 'application/ld+json'))
+        DB.DBA.LDP_CREATE_RES (newPath);
     }
   }
 }
