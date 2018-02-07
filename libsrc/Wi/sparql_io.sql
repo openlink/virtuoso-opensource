@@ -2791,7 +2791,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 		var format = document.getElementById("format");
  		if (format) format_change(format);
 		var savefs = document.getElementById("savefs");
-		if (savefs) savefs.style.display="none";
+		if (savefs)
+		{
+		  var save = document.getElementById("save");
+		  if (save)
+		    savedav_change(save);
+		}
 		var b = document.getElementById("explain");
 		if (b) change_run_button(b);
 	}
@@ -2876,7 +2881,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       declare lbl any;
       if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
 	lbl := 'HTML (Faceted Browsing Links)';
-      else	
+      else
 	lbl := 'HTML (Basic Browsing Links)';
       if (not length (format)) format := 'text/html';
       opts := vector (
@@ -2994,6 +2999,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     in log_debug_info integer,
     in save_mode integer,
     in dav_refresh varchar,
+    in overwrite varchar,
     in explain_report varchar)
 {
     declare can_cxml, can_pivot, can_qrcode, can_sponge integer;
@@ -3128,7 +3134,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     	http('		<br />\n');
     	http('		<input name="save" id="save" onclick="savedav_change(this)" type="checkbox"' || case when (save_mode is null) then '' else ' checked="checked"' end || ' />\n');
     	http('		<label for="save" class="ckb">Save resultset to WebDAV folder on the server</label>\n');
-    	http('		<span id="savefs">\n');
+    	http('		<span id="savefs" style="display: %s;">\n');
     	http('		  <label for="dname">Dynamic resource collection:</label>\n');
     	http('		  <select id="dname" name="dname" >\n');
       for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and WS.WS.COL_PATH (COL_PARENT) like '/DAV/home/%') do
@@ -3145,6 +3151,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     	http('		  <br />\n');
     	http('		  <input type="checkbox" name="dav_refresh" id="dav_refresh"' || case when (dav_refresh is null) then '' else ' checked="checked"' end || ' />\n');
     	http('		  <label class="ckb" for="dav_refresh">Refresh periodically</label>\n');
+    	http('		  <br />\n');
+    	http('		  <input type="checkbox" name="dav_overwrite" id="dav_overwrite"' || case when (overwrite is null or overwrite = '0') then '' else ' checked="checked"' end || ' />\n');
+    	http('		  <label class="ckb" for="dav_overwrite">Overwrite if exists</label>\n');
     	http('		</span>\n');
     }
 
@@ -3189,7 +3198,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare exec_time, exec_db_activity any;
   declare __debug_mode integer;
   declare qtxt, deadl integer;
-  declare save_mode, save_dir, dav_refresh, fname varchar;
+  declare save_mode, save_dir, dav_refresh, overwrite, fname varchar;
   declare explain_report varchar;
   declare save_dir_id any;
   declare help_topic varchar;
@@ -3278,6 +3287,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   dav_refresh := get_keyword ('dav_refresh', params, '');
   if (dav_refresh = '')
     dav_refresh := null;
+
+  overwrite := get_keyword ('dav_overwrite', params, '0');
+  if (overwrite <> '0')
+    overwrite := '1';
 
   save_mode := get_keyword ('save', params, '');
 
@@ -3388,7 +3401,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	}
       debug := get_keyword ('debug', params, '1');
       log_debug_info := get_keyword ('log_debug_info', params, '');
-      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh, explain_report);
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, debug, log_debug_info, save_mode, dav_refresh, overwrite, explain_report);
       return;
     }
 
@@ -3851,7 +3864,7 @@ sparql_explain_done:
     {
       set TRANSACTION_TIMEOUT=hard_timeout;
     }
-  connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);    
+  connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
   set_user_id (user_id, 1);
 
 again:
@@ -4000,7 +4013,8 @@ write_results:
               exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
               exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
               exec_uname => user_id,
-              content => ses
+              content => ses,
+              overwrite => atoi (overwrite)
           );
           WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
           http ('<head>\n');
