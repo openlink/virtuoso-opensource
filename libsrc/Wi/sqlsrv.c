@@ -468,6 +468,9 @@ client_connection_create (void)
   cli->cli_user_info = NULL;
   cli->cli_slice = QI_NO_SLICE;
   thr_set_tlsf (self, save_tlsf);
+#ifdef QUERY_DEBUG
+  log_cli_event (cli, 0, "CLI_CREATE");
+#endif
   return cli;
 }
 
@@ -496,7 +499,7 @@ cli_scrap_cached_statements (client_connection_t * cli)
 	  else
             {
 #ifdef QUERY_DEBUG
-             log_query_event (sst->sst_query, 1, "QR_REF_COUNT-- by stmt_scrap_cached_statements");
+             log_query_event (sst->sst_query, 1, "QR_REF_COUNT-- by stmt_scrap_cached_statements, client connection %p", cli);
 #endif
 	      sst->sst_query->qr_ref_count--;
             }
@@ -526,7 +529,9 @@ cli_scrap_cached_statements (client_connection_t * cli)
 	   (* text)[79] = 0;
 	 logit (L_DEBUG, "%s", *text);
        }
-
+#ifdef QUERY_DEBUG
+      log_query_event (qr[0], 1, "CLI_SCRAP_CACHED by stmt_scrap_cached_statements, client connection %p", cli);
+#endif
       qr_free (*qr);
 
     }
@@ -599,6 +604,9 @@ client_connection_set_worker_ses (client_connection_t *cli, dk_session_t *ses)
 void
 client_connection_free (client_connection_t * cli)
 {
+#ifdef QUERY_DEBUG
+  log_cli_event (cli, 1, "CLI_FREE_START");
+#endif
   if (DO_LOG_INT(LOG_VUSER))
     {
       LOG_GET
@@ -686,6 +694,9 @@ client_connection_free (client_connection_t * cli)
     }
   dk_free_box ((caddr_t)cli->cli_ql_strses);
   dk_free ((caddr_t) cli, sizeof (client_connection_t));
+#ifdef QUERY_DEBUG
+  log_cli_event (cli, 0, "CLI_FREE_DONE");
+#endif
 }
 
 
@@ -1062,6 +1073,9 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
   if (SESSION_IS_INPROCESS (client))
     {
       cli = DKS_DB_DATA (client);
+#ifdef QUERY_DEBUG
+      log_cli_event (cli, 0, "SF_SQL_CONNECT_INPROCESS");
+#endif
       return make_login_answer (cli);
     }
 #endif
@@ -1116,6 +1130,9 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
     password = box_dv_short_string ("");
 
   cli = client_connection_create ();
+#ifdef QUERY_DEBUG
+      log_cli_event (cli, 0, "SF_SQL_CONNECT");
+#endif
   if (info)
     {
       cli->cli_user_info = box_dv_short_string (info[LGID_APP_NAME]);

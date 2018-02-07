@@ -1402,6 +1402,48 @@ sql_is_ddl (sql_tree_t * tree)
 extern FILE *query_log;
 
 void
+log_query_content (FILE *query_log, const char *title, query_t *qr)
+ {
+   char buf[200];
+   char *eol;
+   if (NULL == qr->qr_text)
+     {
+       fprintf (query_log, " %s{{null}}", title);
+       return;
+     }
+   strncpy (buf, qr->qr_text, sizeof (buf)-1);
+   buf [sizeof (buf)-1] = '\0';
+   for (eol = strchr (buf, '\n'); NULL != eol; eol = strchr (eol+1, '\n')) eol[0] = '\t';
+   fprintf (query_log, " %s{{%s}}", title, buf);
+ }
+
+void
+log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  if (NULL == cli)
+    return;
+  fprintf (query_log, "\n{{{%p ", cli);
+  vfprintf (query_log, fmt, ap);
+  if (print_full_content)
+    {
+      if (cli->cli_first_query)
+        log_query_content (query_log, "first=", cli->cli_first_query);
+      if (cli->cli_last_query)
+        if (cli->cli_last_query != cli->cli_first_query)
+          log_query_content (query_log, "last=", cli->cli_last_query);
+        else
+          fprintf (query_log, " last={{first}}");
+    }
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+  fprintf (query_log, " }}}");
+  fflush (query_log);
+}
+
+void
 log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
 {
   jmp_buf_splice *ctx;
@@ -1411,15 +1453,8 @@ log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
     return;
   fprintf (query_log, "\n{{{%p ", qr);
   vfprintf (query_log, fmt, ap);
-  if (print_full_content && qr->qr_text)
-    {
-      char buf[200];
-      char *eol;
-      strncpy (buf, qr->qr_text, sizeof (buf)-1);
-      buf [sizeof (buf)-1] = '\0';
-      for (eol = strchr (buf, '\n'); NULL != eol; eol = strchr (eol+1, '\n')) eol[0] = '\t';
-      fprintf (query_log, " {{%s}}", buf);
-    }
+  if (print_full_content)
+    log_query_content (query_log, "", qr);
   for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
     fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
   fprintf (query_log, " }}}");
@@ -1476,6 +1511,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   qr->qr_text_is_constant = cr_type == SQLC_QR_TEXT_IS_CONSTANT;
 
   sc.sc_text = string2;
+  SET_QR_TEXT(qr,sc.sc_text);
   sc.sc_client = cli;
 
   cc.cc_query = qr;
