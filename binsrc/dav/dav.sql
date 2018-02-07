@@ -23,102 +23,117 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
-	declare full_path varchar;
-	declare path_id, _res_id any;
-	full_path := '/' || DAV_CONCAT_PATH (path, '/');
-	path_id := DAV_SEARCH_ID (full_path, 'C');
-	_res_id := DAV_SEARCH_ID (DAV_CONCAT_PATH ('/', path), 'R');
-	if (isarray(path_id) = 1)
-    {
-		if (path_id[0] = UNAME'CalDAV')
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, access-control, calendar-access\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-		if (path_id[0] = UNAME'CardDAV')
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, 3, access-control, addressbook\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-    }
-	else
-    {
-		declare is_det int;
-		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
-		if (is_det > 0)
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, access-control, calendar-access\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
-		if (is_det > 0)
-		{
-			http_header (concat (
-				'Content-Type: text/xml\r\n',
-				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-				'DAV: 1, 2, 3, access-control, addressbook\r\n',
-				'MS-Author-Via: DAV\r\n'));
-			return;
-		}
-    }
+  declare full_path varchar;
+  declare _path_id, _res_id any;
 
-	declare s_etag, res_name_, ldp_head varchar;
-	declare id_ integer;
-	declare mod_time datetime;
-	whenever not found goto not_found;
-	ldp_head := '';
-	if (not isvector (path_id) and not isvector (_res_id))
-	  {
-	    if (path_id <> -1)
-	      {
-		select COL_NAME, COL_MOD_TIME into res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = path_id;
-		id_ := path_id;
-		if (LDP_ENABLED (path_id))
-		  ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\nLink: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
-	      }
-	    else
-	      {
-		select RES_COL, RES_NAME, RES_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
-		if (LDP_ENABLED (id_))
-		  ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
-	      }
-	    s_etag := WS.WS.ETAG (res_name_, id_, mod_time);
-	  }
+  full_path := DAV_CONCAT_PATH ('/', DAV_CONCAT_PATH (path, '/'));
+  _path_id := DAV_SEARCH_ID (full_path, 'C');
+  _res_id := DAV_SEARCH_ID (DAV_CONCAT_PATH ('/', path), 'R');
+  if (isarray (_path_id))
+  {
+    if (_path_id[0] = UNAME'CalDAV')
+    {
+      http_header (concat (
+        'Content-Type: text/xml\r\n',
+        'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+        'DAV: 1, 2, access-control, calendar-access\r\n',
+        'MS-Author-Via: DAV\r\n'));
+      return;
+    }
+    if (_path_id[0] = UNAME'CardDAV')
+    {
+      http_header (concat (
+        'Content-Type: text/xml\r\n',
+        'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+        'DAV: 1, 2, 3, access-control, addressbook\r\n',
+        'MS-Author-Via: DAV\r\n'));
+      return;
+    }
+  }
+  else
+  {
+    if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _path_id and COL_DET = 'CalDAV'))
+    {
+      http_header (concat (
+        'Content-Type: text/xml\r\n',
+        'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+        'DAV: 1, 2, access-control, calendar-access\r\n',
+        'MS-Author-Via: DAV\r\n')
+      );
+      return;
+    }
+    if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _path_id and COL_DET = 'CardDAV'))
+    {
+      http_header (concat (
+        'Content-Type: text/xml\r\n',
+        'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+        'DAV: 1, 2, 3, access-control, addressbook\r\n',
+        'MS-Author-Via: DAV\r\n')
+      );
+      return;
+    }
+  }
+
+  declare _etag, _ldp_head varchar;
+
+  _ldp_head := '';
+  if (not isvector (_path_id) and not isvector (_res_id))
+  {
+    declare _name varchar;
+    declare _id integer;
+    declare _mod_time datetime;
+    whenever not found goto not_found;
+
+    if (_path_id <> -1)
+    {
+      select COL_NAME, COL_MOD_TIME into _name, _mod_time from WS.WS.SYS_DAV_COL where COL_ID = _path_id;
+      _id := _path_id;
+      if (LDP_ENABLED (_path_id))
+        _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\nLink: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+    }
+    else
+    {
+      select RES_COL, RES_NAME, RES_MOD_TIME into _id, _name, _mod_time from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
+      if (LDP_ENABLED (_id))
+        _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
+    }
+    _etag := sprintf ('ETag: "%s"\r\n', WS.WS.ETAG (_name, _id, _mod_time));
+  }
+
 not_found: ;
-	declare headers, ctype, msauthor any;
-	http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK', 'PATCH');
-	WS.WS.GET (path, params, lines);
-	headers := http_header_array_get ();
-	ctype := http_request_header (headers, 'Content-Type', null, 'text/plain');
-	msauthor := http_request_header (headers, 'MS-Author-Via', null, 'DAV');
-	http_status_set (200);
-	http_rewrite ();
-	
-	http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
-		case when isstring (s_etag) then sprintf ('ETag: "%s"\r\n', s_etag) else '' end,
-		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
-		ldp_head,
-		'Access-Control-Allow-Methods: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n',
-		'Access-Control-Allow-Headers: authorization, accept, slug, link, origin, content-type\r\n',
-		'Accept-Patch: */*\r\n',
-		'Accept-Post: */*\r\n',
-		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
+  declare headers, contentType, acceptPatch, acceptPost, msAuthor any;
+
+  http_methods_set ('GET','HEAD','POST','PUT','DELETE','OPTIONS','PROPFIND','PROPPATCH','COPY','MOVE','LOCK','UNLOCK','TRACE','PATCH');
+  WS.WS.GET (path, params, lines);
+  headers := http_header_array_get ();
+  contentType := sprintf ('Content-Type: %s\r\n', http_request_header (headers, 'Content-Type', null, 'text/plain'));
+  acceptPatch := http_request_header (headers, 'Accept-Patch', null, '');
+  if (acceptPatch <> '')
+    acceptPatch := sprintf ('Accept-Patch: %s\r\n', acceptPatch);
+
+  acceptPost := http_request_header (headers, 'Accept-Post', null, '*/*');
+  if (acceptPost <> '')
+    acceptPost := sprintf ('Accept-Post: %s\r\n', acceptPost);
+
+  msAuthor := sprintf ('MS-Author-Via: %s\r\n', http_request_header (headers, 'MS-Author-Via', null, 'DAV'));
+
+  http_status_set (200);
+  http_rewrite ();
+  http_header (concat (contentType,
+                       _etag,
+                       'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
+                       _ldp_head,
+                       'Access-Control-Allow-Methods: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n',
+                       'Access-Control-Allow-Headers: Authorization, Accept, Slug, Link, Origin, Content-Type\r\n',
+                       acceptPatch,
+                       acceptPost,
+                       msAuthor
+                      )
+              );
 }
 ;
 
@@ -1669,7 +1684,7 @@ create procedure WS.WS."DELETE" (in path varchar, inout params varchar, in lines
   rc := DAV_DELETE_INT (full_path, 1, null, null, 0);
   if (rc >= 0)
   {
-    http_header (WS.WS.LDP_HDRS (0,0,0,0, full_path));
+    http_header (WS.WS.LDP_HDRS (0, 0, 0, 0, full_path));
     DB.DBA.DAV_SET_HTTP_STATUS (204);
   }
   else if (rc = -8)
@@ -2707,7 +2722,9 @@ again:
         1
       );
     }
-    http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, full_path));
+
+    http_header (http_header_get () || WS.WS.LDP_HDRS (1, LDP_ENABLED (_col_id), 0, 0, full_path));
+
     server_etag := WS.WS.ETAG_BY_ID (_col_id, 'C');
     if (server_etag is not null)
       http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
@@ -3295,37 +3312,49 @@ err_end:
 ;
 
 -- /* common headers */
-create procedure WS.WS.LDP_HDRS (in is_col int := 0, in add_rel int := 0, in page int := 0, in last int := 0, in link any := null)
+create procedure WS.WS.LDP_HDRS (
+  in is_col integer := 0,
+  in add_rel integer := 0,
+  in page integer := 0,
+  in last integer := 0,
+  in link any := null)
 {
-  declare h, nid any;
-  h := 'MS-Author-Via: DAV, SPARQL\r\n' ||
-      'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,MKCOL,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
-      'Accept-Patch: application/sparql-update\r\n' ||
-      'Accept-Post: text/turtle,text/n3,text/nt,text/html\r\n' ||
-      'Vary: Accept,Origin,If-Modified-Since,If-None-Match\r\n';
-  nid := connection_get ('NetId');
-  if (nid is not null)
-    {
-      h := h || sprintf ('User: <%s>\r\n', nid);
-    }
+  declare header, msAuthor, acceptPatch, acceptPost, netID any;
+
+  msAuthor := sprintf ('MS-Author-Via: %s\r\n', case when add_rel then 'DAV, SPARQL' else 'DAV' end);
+  acceptPatch := case when add_rel then 'Accept-Patch: application/sparql-update\r\n' else '' end;
+  acceptPost := sprintf ('Accept-Post: %s\r\n', case when add_rel then 'text/turtle,text/n3,text/nt,text/html' else '*/*' end);
+  header := 'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,MKCOL,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
+            'Vary: Accept,Origin,If-Modified-Since,If-None-Match\r\n' ||
+            msAuthor ||
+            acceptPatch ||
+            acceptPost;
+  netID := connection_get ('NetId');
+  if (netID is not null)
+    header := header || sprintf ('User: <%s>\r\n', netID);
+
   if (add_rel)
-    {
-      h := h || 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
-      if (is_col)
-	h := h || 'Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
-    }
+  {
+    header := header || 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
+    if (is_col)
+	    header := header || 'Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+  }
+
   if (page > 0)
-    h := h || 'Link: <?p=1>; rel="first"\r\n';
+    header := header || 'Link: <?p=1>; rel="first"\r\n';
+
   if (last > 0)
-    h := h || sprintf ('Link: <?p=%d>; rel="last"\r\n', last);
+    header := header || sprintf ('Link: <?p=%d>; rel="last"\r\n', last);
+
   if (link is not null)
-    {
-      link := rtrim (link, '/');
-      link := WS.WS.DAV_LINK (link);
-      h := h || sprintf ('Link: <%s,meta>; rel="meta"\r\n', link);
-      h := h || sprintf ('Link: <%s,acl>; rel="acl"\r\n', link);
-    }  
-  return h;
+  {
+    link := rtrim (link, '/');
+    link := WS.WS.DAV_LINK (link);
+    header := header || sprintf ('Link: <%s,meta>; rel="meta"\r\n', link);
+    header := header || sprintf ('Link: <%s,acl>; rel="acl"\r\n', link);
+  }
+
+  return header;
 }
 ;
 
