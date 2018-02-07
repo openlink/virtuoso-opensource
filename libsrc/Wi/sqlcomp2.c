@@ -1580,6 +1580,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    }
 	  if (!parse_tree)
 	    {
+#ifdef QUERY_DEBUG
+              qr->qr_text = string2;
+              qr->qr_text_is_constant = 1;
+              log_query_event (qr, 1, "ALLOC+FAILED by sql_compile_1 at %s:%d, parse error", file, line);
+#endif
 	      qr_free (qr);
 	      if (err && !*err)
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
@@ -1595,6 +1600,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      if (inside_sem)
 		parse_leave ();
 	      POP_CATCH;
+	      self->thr_tlsf = save_tlsf;
 	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
 		{
 		  if (SQLC_DO_NOT_STORE_PROC == cr_type)
@@ -1626,6 +1632,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	sqlc_inside_sem = 1;
       if (cr_type == SQLC_PARSE_ONLY)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+PARSE_ONLY by sql_compile_1 at %s:%d", file, line);
+#endif
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
 	  sqlc_set_client (old_cli);
 	  if (!nested_sql_comp)
@@ -1641,6 +1652,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	}
       if (cr_type == SQLC_TRY_SQLO)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+TRY_SQLO by sql_compile_1 at %s:%d", file, line);
+#endif
 	  caddr_t tree1;
 	  ST *ret = (ST *) sqlo_top (&sc, &tree, NULL);
 	  tree1 = box_copy_tree ((box_t) (ret ? ret : tree));
@@ -1658,6 +1674,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	}
       else if (cr_type == SQLC_SQLO_SCORE)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+SQLO_SCORE by sql_compile_1 at %s:%d", file, line);
+#endif
 	  float score = 0;
 	  sqlo_top (&sc, &tree, &score);
 	  sqlc_set_client (old_cli);
@@ -1716,6 +1737,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   }
   THROW_CODE
   {
+#ifdef QUERY_DEBUG
+    qr->qr_text = string2;
+    qr->qr_text_is_constant = 1;
+    log_query_event (qr, 1, "ALLOC+FAILED by sql_compile_1 at %s:%d, compilation error", file, line);
+#endif
     if (qr && qr->qr_proc_name)
       query_free (qr);
     else
@@ -1757,8 +1783,10 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   if (inside_sem)
     parse_leave ();
   if (qr)
-    {      if (NULL != qr->qr_text)        GPF_T;
-      qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);
+    {
+      if ((NULL != qr->qr_text) && !qr->qr_text_is_constant)
+        dk_free_box (qr->qr_text);
+      SET_QR_TEXT(qr,sc.sc_text);
       qr->qr_parse_tree = box_copy_tree ((box_t) the_parse_tree);
 #ifdef QUERY_DEBUG
       log_query_event (qr, 1, "ALLOC+PARSE by sql_compile_1 at %s:%d", file, line);
