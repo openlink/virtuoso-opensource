@@ -426,7 +426,7 @@ again:
 create procedure WS.WS.SYS_DAV_TAG_DT_TAGS_HOOK (
   inout vtb any,
   inout d_id integer,
-  inout mode integer)
+  in mode integer)
 {
   for select DT_RES_ID, DT_U_ID, DT_TAGS from WS.WS.SYS_DAV_TAG where DT_FT_ID = d_id do
   {
