@@ -3398,39 +3398,53 @@ disabled_home:
 ;
 
 
-create function DAV_TAG_LIST (in id any, in st char (1), in uid_list any) returns any
+create procedure DAV_TAG_LIST (
+  in id any,
+  in st char (1),
+  in uid_list any) returns any
 {
-  if (isarray (id))
-    {
-      whenever sqlstate '42001' goto unsupported;
-      return call (cast (id[0] as varchar) || '_DAV_TAG_LIST')(id, st, uid_list);
-unsupported:
-      return -20;
-    }
+  -- dbg_obj_princ ('DAV_TAG_LIST (', id, st, uid_list, ')');
   if ('R' <> st)
     return vector ();
+
+  if (isarray (id) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
+  {
+    whenever sqlstate '42001' goto _unsupported;
+    return call (cast (id[0] as varchar) || '_DAV_TAG_LIST')(id, st, uid_list);
+
+  _unsupported:
+    return -20;
+  }
+
   if (uid_list is null)
-    return (select VECTOR_AGG (vector (DT_U_ID, DT_TAGS)) from Ws.WS.SYS_DAV_TAG where DT_RES_ID = id);
-  else
-    return (select VECTOR_AGG (vector (DT_U_ID, DT_TAGS)) from Ws.WS.SYS_DAV_TAG where DT_RES_ID = id and position (DT_U_ID, uid_list));
+    return (select VECTOR_AGG (vector (DT_U_ID, DT_TAGS)) from Ws.WS.SYS_DAV_TAG where DT_RES_ID = DB.DBA.DAV_DET_DAV_ID (id));
+
+  return (select VECTOR_AGG (vector (DT_U_ID, DT_TAGS)) from Ws.WS.SYS_DAV_TAG where DT_RES_ID = DB.DBA.DAV_DET_DAV_ID (id) and position (DT_U_ID, uid_list));
 }
 ;
 
-create function DAV_TAG_SET (in id any, in st char (1), in uid integer, in tags varchar) returns integer
+create procedure DAV_TAG_SET (
+  in id any,
+  in st char (1),
+  in uid integer,
+  in tags varchar) returns integer
 {
+  -- dbg_obj_princ ('DAV_TAG_SET (', id, st, uid, tags, ')');
   if (not exists (select 1 from WS.WS.SYS_DAV_USER where U_ID = uid))
     return -18;
+
   if ('R' <> st)
     return -14;
-  if (exists (select 1 from WS.WS.SYS_DAV_TAG where DT_RES_ID = id and DT_U_ID = uid))
-    {
-      update WS.WS.SYS_DAV_TAG set DT_TAGS = tags where DT_RES_ID = id and DT_U_ID = uid;
-    }
+
+  if (exists (select 1 from WS.WS.SYS_DAV_TAG where DT_RES_ID = DB.DBA.DAV_DET_DAV_ID (id) and DT_U_ID = uid))
+  {
+    update WS.WS.SYS_DAV_TAG set DT_TAGS = tags where DT_RES_ID = DB.DBA.DAV_DET_DAV_ID (id) and DT_U_ID = uid;
+  }
   else
-    {
-      insert into WS.WS.SYS_DAV_TAG (DT_RES_ID, DT_U_ID, DT_FT_ID, DT_TAGS)
-      values (id, uid, WS.WS.GETID ('T'), tags);
-    }
+  {
+    insert into WS.WS.SYS_DAV_TAG (DT_RES_ID, DT_U_ID, DT_FT_ID, DT_TAGS)
+      values (DB.DBA.DAV_DET_DAV_ID (id), uid, WS.WS.GETID ('T'), tags);
+  }
   return 0;
 }
 ;
@@ -3582,13 +3596,13 @@ create procedure DAV_COPY_INT (
         {
           rc := DAV_IS_LOCKED (d_id , st, check_locks);
           if (rc = -8)
-             {
-               rc := DAV_CHECKOUT_INT (d_id, null, null, 0);
-               if (rc < 0)
-                 return rc;
-             }
+            {
+              rc := DAV_CHECKOUT_INT (d_id, null, null, 0);
+              if (rc < 0)
+                return rc;
+            }
           else if (0 <> rc)
-             return rc;
+            return rc;
         }
     }
 
@@ -3641,7 +3655,8 @@ create procedure DAV_COPY_INT (
               {
                 update WS.WS.SYS_DAV_RES
                    set RES_CONTENT = rcnt,
-                       RES_TYPE = rt, RES_OWNER = ouid,
+                       RES_TYPE = rt,
+                       RES_OWNER = ouid,
                        RES_GROUP = ogid,
                        RES_PERMS = permissions,
                        RES_MOD_TIME = now (),
@@ -3657,6 +3672,7 @@ create procedure DAV_COPY_INT (
           rname := aref (dar, length (dar)-1);
           if (rname = '')
             return -2;
+
           if (isarray (id))
             {
               declare rt varchar;
@@ -4121,26 +4137,37 @@ create procedure DAV_COPY_PROPS (
 {
   -- dbg_obj_princ ('DAV_COPY_PROPS (', mode, src, what, dst, ')');
   declare det varchar;
-  declare props any;
+  declare dst_id, props any;
 
   if (isstring (dst))
   {
-    dst := DB.DBA.DAV_SEARCH_ID (dst, what);
+    dst_id := DB.DBA.DAV_SEARCH_ID (dst, what);
+  }
+  else if (isarray (dst))
+  {
+    dst_id := dst;
+    dst := DB.DBA.DAV_SEARCH_PATH (dst_id, what);
   }
   det := case when (isarray (src)) then src[0] else '' end;
   props := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_LIST_INT (src, what, '%', extern, auth_uname, auth_pwd), vector ());
   foreach (any prop in props) do
+  {
+    if (mode and (prop[0] in ('DAV:checked-in', 'DAV:checked-out', 'DAV:version-history')))
+      goto _skip;
+
+    if ((det <> '') and ((prop[0] like ('virt:' || det || '%')) or (prop[0] = 'virt:DETCOL_ID')))
+      goto _skip;
+
+    if (isarray (dst_id))
     {
-      if (mode and (prop[0] in ('DAV:checked-in', 'DAV:checked-out', 'DAV:version-history')))
-        goto _skip;
-
-      if ((det <> '') and ((prop[0] like ('virt:' || det || '%')) or (prop[0] = 'virt:DETCOL_ID')))
-        goto _skip;
-
-      DB.DBA.DAV_PROP_SET_RAW (dst, what, prop[0], prop[1], 0, auth_uid);
-
-    _skip:;
+      call (cast (dst_id[0] as varchar) || '_DAV_PROP_SET') (dst_id, what, prop[0], prop[1], 0, auth_uid);;
     }
+    else
+    {
+      DB.DBA.DAV_PROP_SET_RAW (dst_id, what, prop[0], prop[1], 0, auth_uid);
+    }
+  _skip:;
+  }
 }
 ;
 
@@ -4152,18 +4179,20 @@ create procedure DAV_COPY_TAGS (
   -- dbg_obj_princ ('DAV_COPY_TAGS (', src, what, dst, ')');
   declare tags any;
 
-  if (isarray (src))
+  if (not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (src)))
     return;
 
   if (isstring (dst))
-  {
     dst := DB.DBA.DAV_SEARCH_ID (dst, what);
-  }
+
+  if (not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (dst)))
+    return;
+
   tags := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_TAG_LIST (src, what, null), vector ());
   foreach (any tag in tags) do
-    {
-      DB.DBA.DAV_TAG_SET (dst, what, tag[0], tag[1]);
-    }
+  {
+    DB.DBA.DAV_TAG_SET (dst, what, tag[0], tag[1]);
+  }
 }
 ;
 

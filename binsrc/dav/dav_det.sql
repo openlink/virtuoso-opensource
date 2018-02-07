@@ -346,6 +346,9 @@ create function DB.DBA.DAV_DET_RES_UPLOAD_CM (
       if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
         goto _exit;
 
+      target_id := retValue;
+      DB.DBA.DAV_COPY_PROPS (0, source_id, 'R', target_id, auth_uname, auth_pwd, extern, auth_uid);
+      DB.DBA.DAV_COPY_TAGS (source_id, 'R', target_id);
       if (mode = 'move')
       {
         tmp := DB.DBA.DAV_DELETE_INT (source_path, 1, auth_uname, auth_pwd, extern, check_locks);
