@@ -25,7 +25,7 @@
  *
  */
 
-%pure_parser
+%pure-parser
 %parse-param {xpp_t * xpp_arg}
 %lex-param {xpp_t * xpp_arg}
 

@@ -25,7 +25,7 @@
  *
  */
 
-%pure_parser
+%pure-parser
 %parse-param {yyscan_t scanner}
 %lex-param {yyscan_t scanner}
 /*%parse-param {sql_comp_context_t* scs_arg}*/

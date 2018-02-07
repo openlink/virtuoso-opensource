@@ -21,7 +21,7 @@
  *
  */
 
-%pure_parser
+%pure-parser
 %parse-param {ttlp_t * ttlp_arg}
 %parse-param {yyscan_t yyscanner}
 %lex-param {ttlp_t * ttlp_arg}
