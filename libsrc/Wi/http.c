@@ -1959,10 +1959,14 @@ ws_split_ac_header (const caddr_t header)
       sep = strchr (tok, ';');
       if (NULL != sep)
 	{
-	  char * eq = strchr (sep, '=');
-	  if (eq)
-	    q = atof (++eq);
+	  char * eq;
           *sep = 0;
+          sep ++;
+          while (sep && isspace (*sep))
+            sep ++;
+          eq  = strchr (sep, '=');
+	  if (eq && (0 == strnicmp (sep, "q=", 2) || 0 == strnicmp (sep, "level=", 6)))
+	    q = atof (++eq);
 	  tmp = sep > tok ? sep - 1 : NULL;
 	}
       else if (tok_s)
