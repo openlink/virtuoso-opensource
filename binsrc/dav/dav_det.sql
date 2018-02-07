@@ -951,7 +951,7 @@ create function DB.DBA.DAV_DET_RDF_DELETE (
   }
 
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
-  DB.DBA.RDF_SINK_CLEAR (null, path, rdf_graph);
+  DB.DBA.RDF_SINK_DELETE (-1, path, id, detcol_id, 1);
 }
 ;
 

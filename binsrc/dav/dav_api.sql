@@ -2456,7 +2456,7 @@ create procedure DB.DBA.IS_REDIRECT_REF (inout path any)
 }
 ;
 
-create procedure is_rdf_type(in type varchar) returns integer
+create procedure DB.DBA.is_rdf_type(in type varchar) returns integer
 {
 	if (
 		strstr (type, 'text/n3') is not null or
@@ -2471,6 +2471,7 @@ create procedure is_rdf_type(in type varchar) returns integer
 		strstr (type, 'application/x-turtle') is not null
 	)
 		return 1;
+
 	return 0;
 }
 ;
@@ -2867,40 +2868,6 @@ create procedure DAV_RDF_RES_NAME (in rdf_graph varchar)
 }
 ;
 
-create procedure RDF_SINK_FUNC (
-  in queue_id integer,
-  in path varchar,
-  in rc integer,
-  in c_id integer,
-  in rdf_graph any,
-  in type any,
-  in ouid int,
-  in ogid int)
-{
-  -- dbg_obj_print ('RDF_SINK_FUNC', path);
-  declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges, content any;
-  declare exit handler for sqlstate '*'
-  {
-    goto _bad_content;
-  };
-
-  -- get sponger parameters?
-  content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = rc);
-  rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', c_id);
-  rdf_base := get_keyword ('base', rdf_params, '');
-  rdf_sponger := get_keyword ('sponger', rdf_params, 'on');
-  rdf_cartridges := get_keyword ('cartridges', rdf_params, '');
-  rdf_metaCartridges := get_keyword ('metaCartridges', rdf_params, '');
-
-  -- upload into first (rdf_sink) graph
-  if (DB.DBA.RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
-    DB.DBA.RDF_SINK_REDIRECT (c_id, rdf_graph, rdf_params, ouid, ogid);
-
-_bad_content:;
-  DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
-}
-;
-
 create procedure RDF_SINK_REDIRECT (
   in c_id integer,
   in rdf_graph any,
@@ -2923,14 +2890,16 @@ create procedure RDF_SINK_REDIRECT (
 
     DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('%s/sparql?default-graph-uri=%U&query=%U&format=%U', WS.WS.DAV_HOST (), rdf_graph,
       'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', rdf_contentType), null, null, 0, 0, 1);
+
+    DB.DBA.DAV_DET_ACTIVITY ('rdfSink', c_id, 'LDI: Create SPARQL request file ' || rdf_graph_resource_path);
   }
 }
 ;
 
 create procedure RDF_SINK_UPLOAD (
   in path varchar,
-  inout _content any,
-  in type varchar,
+  inout res_content any,
+  in res_type varchar,
   in rdf_graph varchar,
   in rdf_base varchar,
   in rdf_sponger varchar,
@@ -2938,29 +2907,31 @@ create procedure RDF_SINK_UPLOAD (
   in rdf_metaCartridges varchar,
   in rdf_private integer := 1)
 {
-  -- dbg_obj_princ ('RDF_SINK_UPLOAD (', path, type, ')');
+  -- dbg_obj_princ ('RDF_SINK_UPLOAD (', path, res_type, ')');
   declare rdf_iri, rdf_graph2, rdf_base2 varchar;
   declare content any;
+  declare exit handler for sqlstate '*'
+  {
+    return 0;
+  };
 
-  if (length (_content) = 0)
+  if (length (res_content) = 0)
     return 0;
 
   -- general case, should return false
-  declare exit handler for sqlstate '*' {
-     return 0;
-  };
 
   if (path like '%.zip')
     {
       declare lst, tmp_file any;
 
       tmp_file := tmp_file_name ();
-      declare exit handler for sqlstate '*' {
+      declare exit handler for sqlstate '*'
+      {
         file_delete (tmp_file, 1);
         return 0;
       };
       rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
-      string_to_file (tmp_file, _content, -2);
+      string_to_file (tmp_file, res_content, -2);
       lst := unzip_list (tmp_file);
       foreach (any x in lst) do
         {
@@ -2979,20 +2950,21 @@ create procedure RDF_SINK_UPLOAD (
       goto _private;
     }
 
-  content := _content;
-  if (path like '%.gz' and length (_content) > 2)
+  content := blob_to_string (res_content);
+  if (path like '%.gz' and length (res_content) > 2)
     {
       declare magic, html_start varchar;
-      magic := subseq (_content, 0, 2);
+      magic := subseq (res_content, 0, 2);
       html_start := null;
       if (magic[0] = 0hex1f and magic[1] = 0hex8b)
         {
-          content := gzip_uncompress (cast (_content as varchar));
+          content := gzip_uncompress (cast (res_content as varchar));
           path := regexp_replace (path, '\.gz\x24', '');
-          type := DAV_GUESS_MIME_TYPE (path, content, html_start);
+          res_type := DAV_GUESS_MIME_TYPE (path, content, html_start);
         }
     }
-  -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
+
+  -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), res_type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
   rdf_iri := WS.WS.DAV_IRI (path);
   rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
   if (is_empty_or_null (rdf_base))
@@ -3009,9 +2981,10 @@ create procedure RDF_SINK_UPLOAD (
 
     rdf_base2 := rtrim (rdf_base, '/') || '/' || name;
   }
+
   if (
-       strstr (type, 'application/rdf+xml') is not null or
-       strstr (type, 'application/foaf+xml') is not null
+       strstr (res_type, 'application/rdf+xml') is not null or
+       strstr (res_type, 'application/foaf+xml') is not null
      )
   {
     {
@@ -3019,26 +2992,29 @@ create procedure RDF_SINK_UPLOAD (
       {
         goto _grddl;
       };
-    if (rdf_sponger = 'on')
-    {
-      declare xt any;
 
-      xt := xtree_doc (content);
-      if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
-        goto _grddl;
-    }
-    DB.DBA.RDF_LOAD_RDFXML (blob_to_string (content), rdf_base2, rdf_graph2);
+      if (rdf_sponger = 'on')
+      {
+        declare xt any;
+
+        xt := xtree_doc (content);
+        if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
+          goto _grddl;
+      }
+      DB.DBA.RDF_LOAD_RDFXML (content, rdf_base2, rdf_graph2);
     }
     goto _exit;
   }
-  if (is_rdf_type(type))
+
+  if (DB.DBA.is_rdf_type (res_type))
   {
     {
       declare exit handler for sqlstate '*'
       {
         goto _grddl;
       };
-      DB.DBA.TTLP (blob_to_string (content), rdf_base2, rdf_graph2);
+
+      DB.DBA.TTLP (content, rdf_base2, rdf_graph2);
     }
     goto _exit;
   }
@@ -3047,17 +3023,15 @@ _grddl:;
   if (rdf_sponger = 'on')
   {
     declare rc, rcMeta integer;
-    declare ret_body varchar;
     declare exit handler for sqlstate '*'
     {
       goto _exit;
     };
 
-    ret_body := cast (content as varchar);
-    -- dbg_obj_print ('extractor');
-    rc := RDF_SINK_UPLOAD_CARTRIDGES (ret_body, type, 'select RM_ID, RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID', rdf_iri, rdf_graph2, rdf_cartridges);
-    -- dbg_obj_print ('meta');
-    rcMeta := RDF_SINK_UPLOAD_CARTRIDGES (ret_body, type, 'select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ, MC_ID', rdf_iri, rdf_graph2, rdf_metaCartridges);
+    -- dbg_obj_print ('extractor :', length (content), rdf_cartridges);
+    rc := RDF_SINK_UPLOAD_CARTRIDGES (content, res_type, 'select RM_ID, RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_ENABLED = 1 order by RM_ID', rdf_iri, rdf_graph2, rdf_cartridges);
+    -- dbg_obj_print ('meta :', length (content), rdf_metaCartridges);
+    rcMeta := RDF_SINK_UPLOAD_CARTRIDGES (content, res_type, 'select MC_ID, MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_OPTIONS from DB.DBA.RDF_META_CARTRIDGES where MC_ENABLED = 1 order by MC_SEQ, MC_ID', rdf_iri, rdf_graph2, rdf_metaCartridges);
     if (rc or rcMeta)
       goto _exit;
   }
@@ -3068,7 +3042,8 @@ _exit:
 
 _private:
   {
-    declare exit handler for sqlstate '*' {
+    declare exit handler for sqlstate '*'
+    {
       SPARQL clear graph ?:rdf_graph2;
       return 1;
     };
@@ -3178,57 +3153,100 @@ _again:;
 ;
 
 create procedure RDF_SINK_INSERT (
+  in _queue_id integer := null,
   in _path varchar,
   in _res_id integer,
   in _col_id integer,
   in _res_type varchar,
   in _res_owner integer,
-  in _res_group integer)
+  in _res_group integer,
+  in _res_length integer)
 {
-  -- dbg_obj_princ ('RDF_SINK_INSERT (', _path, ')');
-  declare _graph varchar;
-
-  _graph := RDF_SINK_GRAPH_SEARCH (_path, _col_id);
-  if (length (_graph))
+  -- dbg_obj_princ ('RDF_SINK_INSERT (', _queue_id, _path, ')');
+  declare rdf_graph varchar;
+  declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges, _res_content any;
+  declare exit handler for sqlstate '*'
   {
-    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_INSERT', _res_id, 'DB.DBA.RDF_SINK_FUNC', vector (_path, _res_id, _col_id, _graph, _res_type, _res_owner, _res_group));
-    DB.DBA.DAV_QUEUE_INIT ();
+    goto _bad_content;
+  };
+
+  if (_res_length = 0)
+    goto _bad_content;
+
+  rdf_graph := DB.DBA.RDF_SINK_GRAPH_SEARCH (_path, _col_id);
+  if (length (rdf_graph) = 0)
+    goto _bad_content;
+
+  if (isnull (_queue_id))
+  {
+    DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import Queued for Insert: ' || _path);
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_INSERT', _res_id, 'DB.DBA.RDF_SINK_INSERT', vector (_path, _res_id, _col_id, _res_type, _res_owner, _res_group, _res_length));
+    DB.DBA.DAV_QUEUE_INIT (1);
+
+    return;
   }
+
+  _res_content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = _res_id);
+
+  -- get sponger parameters?
+  rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', _col_id);
+  rdf_base := get_keyword ('base', rdf_params, '');
+  rdf_sponger := get_keyword ('sponger', rdf_params, 'on');
+  rdf_cartridges := get_keyword ('cartridges', rdf_params, '');
+  rdf_metaCartridges := get_keyword ('metaCartridges', rdf_params, '');
+
+  -- upload into first (rdf_sink) graph
+  DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import Start: ' || _path);
+  if (DB.DBA.RDF_SINK_UPLOAD (_path, _res_content, _res_type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
+  {
+    DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import End: ' || _path);
+    DB.DBA.RDF_SINK_REDIRECT (_col_id, rdf_graph, rdf_params, _res_owner, _res_group);
+  }
+  else
+  {
+    DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import Error: ' || _path);
+  }
+
+_bad_content:;
+  if (not isnull (_queue_id) and (_queue_id > 0))
+    DB.DBA.DAV_QUEUE_UPDATE_FINAL (_queue_id);
 }
 ;
 
 create procedure RDF_SINK_DELETE (
+  in _queue_id integer := null,
   in _path varchar,
   in _res_id integer,
-  in _col_id integer)
+  in _col_id integer,
+  in _res_length integer)
 {
-  -- dbg_obj_princ ('RDF_SINK_DELETE (', _path, ')');
-  declare _graph varchar;
-
-  _graph := RDF_SINK_GRAPH_SEARCH (_path, _col_id);
-  if (length (_graph))
-  {
-    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_DELETE', _res_id, 'DB.DBA.RDF_SINK_CLEAR', vector (_path, _graph));
-    DB.DBA.DAV_QUEUE_INIT ();
-  }
-}
-;
-
-create procedure RDF_SINK_CLEAR (
-  in queue_id integer,
-  in path varchar,
-  in rdf_graph varchar)
-{
-  -- dbg_obj_princ ('RDF_SINK_CLEAR (', path, rdf_graph, ')');
+  -- dbg_obj_princ ('RDF_SINK_DELETE (', _queue_id, _path, ')');
+  declare rdf_graph varchar;
   declare rdf_group, rdf_graph2 varchar;
   declare g_iid, g2_iid any;
 
-  rdf_group := 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs';
-  if (path like '%.gz')
+  if (_res_length = 0)
+    goto _bad_content;
+
+  rdf_graph := DB.DBA.RDF_SINK_GRAPH_SEARCH (_path, _col_id);
+  if (length (rdf_graph) = 0)
+    goto _bad_content;
+
+  if (isnull (_queue_id))
   {
-    path := regexp_replace (path, '\.gz\x24', '');
+    DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import Queued for Delete: ' || _path);
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_DELETE', _res_id, 'DB.DBA.RDF_SINK_DELETE', vector (_path, _res_id, _col_id, _res_length));
+    DB.DBA.DAV_QUEUE_INIT (1);
+
+    return;
   }
-  rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
+
+  rdf_group := 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs';
+  if (_path like '%.gz')
+  {
+    _path := regexp_replace (_path, '\.gz\x24', '');
+  }
+  rdf_graph2 := WS.WS.WAC_GRAPH (_path, '#ldiTemp');
   g_iid := __i2idn (rdf_graph);
   g2_iid := __i2idn (rdf_graph2);
   for (select a.S as _s, a.P as _p, a.O as _o from DB.DBA.RDF_QUAD a where a.G = g2_iid) do
@@ -3241,7 +3259,50 @@ create procedure RDF_SINK_CLEAR (
     DB.DBA.RDF_GRAPH_GROUP_DEL (rdf_group, rdf_graph2);
   }
 
-  DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
+_bad_content:;
+  if (not isnull (_queue_id) and (_queue_id > 0))
+  {
+    DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import Delete: ' || _path);
+    DB.DBA.DAV_QUEUE_UPDATE_FINAL (_queue_id);
+  }
+}
+;
+
+create procedure RDF_SINK_UPDATE (
+  in _queue_id integer := null,
+  in _o_path varchar,
+  in _o_res_id integer,
+  in _o_col_id integer,
+  in _o_res_length integer,
+  in _n_path varchar,
+  in _n_res_id integer,
+  in _n_col_id integer,
+  in _n_res_type varchar,
+  in _n_res_owner integer,
+  in _n_res_group integer,
+  in _n_res_length integer)
+{
+  -- dbg_obj_princ ('RDF_SINK_UPDATE (', _queue_id, _o_path, ')');
+
+  if ((_o_res_length = 0) and (_n_res_length = 0))
+    return;
+
+  if ((length (RDF_SINK_GRAPH_SEARCH (_o_path, _o_col_id)) = 0) and (length (RDF_SINK_GRAPH_SEARCH (_n_path, _n_col_id)) = 0))
+    return;
+
+  if (isnull (_queue_id))
+  {
+    DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _n_col_id, 'Data Import Queued for Update: ' || _n_path);
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK_UPDATE', _n_res_id, 'DB.DBA.RDF_SINK_UPDATE', vector (_o_path, _o_res_id, _o_col_id, _o_res_length, _n_path, _n_res_id, _n_col_id, _n_res_type, _n_res_owner, _n_res_group, _n_res_length));
+    DB.DBA.DAV_QUEUE_INIT (1);
+
+    return;
+  }
+
+  RDF_SINK_DELETE (-_queue_id, _o_path, _o_res_id, _o_col_id, _o_res_length);
+  RDF_SINK_INSERT (-_queue_id, _n_path, _n_res_id, _n_col_id, _n_res_type, _n_res_owner, _n_res_group, _n_res_length);
+
+  DB.DBA.DAV_QUEUE_UPDATE_FINAL (_queue_id);
 }
 ;
 
@@ -5327,28 +5388,21 @@ create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
 create trigger SYS_DAV_RES_LDI_AI after insert on WS.WS.SYS_DAV_RES order 110 referencing new as N
 {
   -- insert RDF data
-  RDF_SINK_INSERT (N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP);
+  DB.DBA.RDF_SINK_INSERT (null, N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE));
 }
 ;
 
 create trigger SYS_DAV_RES_LDI_AU after update (RES_FULL_PATH, RES_ID, RES_COL, RES_TYPE, RES_OWNER, RES_GROUP) on WS.WS.SYS_DAV_RES order 110 referencing new as N, old as O
 {
-  declare c_id, _parent_co_id, depth integer;
-  declare _inherit, rdf_graph varchar;
-  declare rdf_params any;
-
-  -- delete RDF data from separate (file) graph (if exists)
-  RDF_SINK_DELETE (O.RES_FULL_PATH, O.RES_ID, O.RES_COL);
-
-  -- insert RDF data
-  RDF_SINK_INSERT (N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP);
+  -- update RDF data
+  DB.DBA.RDF_SINK_UPDATE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE), N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE));
 }
 ;
 
 create trigger SYS_DAV_RES_LDI_AD after delete on WS.WS.SYS_DAV_RES order 110 referencing old as O
 {
   -- delete RDF data from separate (file) graph (if exists)
-  RDF_SINK_DELETE (O.RES_FULL_PATH, O.RES_ID, O.RES_COL);
+  DB.DBA.RDF_SINK_DELETE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE));
 }
 ;
 
@@ -7906,7 +7960,8 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
 }
 ;
 
-create procedure DB.DBA.DAV_QUEUE_INIT ()
+create procedure DB.DBA.DAV_QUEUE_INIT (
+  in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_INIT ()');
   declare aq any;
@@ -7915,13 +7970,14 @@ create procedure DB.DBA.DAV_QUEUE_INIT ()
   {
     set_user_id ('dba');
     aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0));
+    aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0, _delay));
   }
 }
 ;
 
 create procedure DB.DBA.DAV_QUEUE_RUN (
-  in _notInit integer := 1)
+  in _notInit integer := 1,
+  in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_RUN ()');
   declare N, L, waited, threads integer;
@@ -7932,6 +7988,9 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
     log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
     resignal;
   };
+
+  if (_delay)
+    delay (_delay);
 
   set isolation = 'committed';
   if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
