@@ -121,8 +121,8 @@ not_found: ;
 
   msAuthor := sprintf ('MS-Author-Via: %s\r\n', http_request_header (headers, 'MS-Author-Via', null, 'DAV'));
 
-  http_status_set (200);
   http_rewrite ();
+  DB.DBA.DAV_SET_HTTP_STATUS (200);
   http_header (concat (contentType,
                        _etag,
                        'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
@@ -2024,7 +2024,7 @@ create procedure WS.WS.PUT (
 
   if (content_type = 'application/sparql-query')
     {
-      http_status_set (200);
+    DB.DBA.DAV_SET_HTTP_STATUS (200);
       if (_method = 'PUT')
     {
         WS.WS.SPARQL_QUERY_POST (full_path, ses, uid, 1);
@@ -2152,7 +2152,10 @@ error_ret:
 ;
 
 -- PATCH METHOD
-create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
+create procedure WS.WS.PATCH (
+  in path any,
+  inout params any,
+  in lines any)
 {
   declare rc, _col_parent_id integer;
   declare id integer;
@@ -2184,6 +2187,7 @@ create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
       rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
     else
       rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+
       if (rc < 0)
         goto error_ret;
     }
@@ -2203,34 +2207,32 @@ create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
 
   _cont_len := atoi (WS.WS.FINDPARAM (lines, 'Content-Length:'));
   if ((full_path like '%.vsp' or full_path like '%.vspx') and _cont_len > 0)
-    {
       content_type := 'text/html';
-    }
-   --dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
 
   if (content_type = 'application/sparql-update')
+  {
+    declare giid, meta, data any;
+
+    connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
+    WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines);
+    giid := iri_to_id (WS.WS.DAV_IRI (full_path));
+    data := null;
+    rc := 0;
+    exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
+    if (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = 185)
     {
-      declare giid, meta, data any;
-      connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
-      WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines);
-      giid := iri_to_id (WS.WS.DAV_IRI (full_path));
-      data := null;
-      rc := 0;
-      exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
-      if (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = 185)
-	{
-	  data := data[0][0];
-	  rc := -28;
-	  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, data, 'text/turtle', _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
-	}
-      commit work;
-      if (DAV_HIDE_ERROR (rc) is not null)
-	{
-	  DB.DBA.DAV_SET_HTTP_STATUS (204);
-	  return;
-	}
-      goto error_ret;
+      data := data[0][0];
+      rc := -28;
+      rc := DAV_RES_UPLOAD_STRSES_INT (full_path, data, 'text/turtle', _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
     }
+    commit work;
+    if (DAV_HIDE_ERROR (rc) is not null)
+    {
+      DB.DBA.DAV_SET_HTTP_STATUS (200);
+      return;
+    }
+    goto error_ret;
+  }
 
   rc := -28;
   rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
@@ -2517,7 +2519,7 @@ again:
       if (DAV_HIDE_ERROR (rc) is null)
         goto _500;
 
-      http_request_status ('HTTP/1.1 200 OK');
+      DB.DBA.DAV_SET_HTTP_STATUS (200);
       http (content_);
     }
     else
@@ -2677,7 +2679,7 @@ again:
     http_header (sprintf ('Location: %s%s\r\n', host1, location));
     return (0);
   }
-  http_request_status ('HTTP/1.1 200 OK');
+  DB.DBA.DAV_SET_HTTP_STATUS (200);
   client_etag := WS.WS.FINDPARAM (lines, 'If-None-Match:');
   if ((_col_id is not null) or (_res_id is not null))
   {
@@ -3076,7 +3078,7 @@ again:
 
     if (client_etag <> server_etag)
     {
-      http_request_status ('HTTP/1.1 200 OK');
+      DB.DBA.DAV_SET_HTTP_STATUS (200);
       xpr := get_keyword ('XPATH', params, '/*');
       if (cont_type = 'xml/view')
       {
@@ -3976,27 +3978,27 @@ create procedure WS.WS."LOCK" (in path varchar, inout params varchar, in lines v
     }
     return;
   }
-   http_request_status ('HTTP/1.1 200 OK');
-   hdr := concat ( 'Lock-Token: <opaquelocktoken:', rc ,'>\r\n',
-                   'Content-type: text/xml; charset="utf-8"\r\n',
-	                 'Keep-Alive: timeout=15, max=100\r\n');
-   http_header (hdr);
-   http (concat ('<?xml version="1.0" encoding="utf-8"?>',
-		'<D:prop xmlns:D="DAV:">',
-		'<D:lockdiscovery>',
-		'<D:activelock>',
-		'<D:locktype><D:write/></D:locktype>',
-		'<D:lockscope>'));  if (scope = 'X') http ('<D:exclusive/>'); else http ('<D:shared/>');
-		http (sprintf ('</D:lockscope><D:depth>%s</D:depth>', dpth));
-		http (owner_name);
-		http (concat ('<D:timeout>Second-',
-		cast (timeout as varchar),'</D:timeout>',
-		'<D:locktoken>',
-		'<D:href>', 'opaquelocktoken:', rc, '</D:href>',
-		'</D:locktoken>',
-		'</D:activelock>',
-		'</D:lockdiscovery>',
-    '</D:prop>'));
+  DB.DBA.DAV_SET_HTTP_STATUS (200);
+  hdr := concat ( 'Lock-Token: <opaquelocktoken:', rc ,'>\r\n',
+                  'Content-type: text/xml; charset="utf-8"\r\n',
+	                'Keep-Alive: timeout=15, max=100\r\n');
+  http_header (hdr);
+  http (concat ('<?xml version="1.0" encoding="utf-8"?>',
+	'<D:prop xmlns:D="DAV:">',
+	'<D:lockdiscovery>',
+	'<D:activelock>',
+	'<D:locktype><D:write/></D:locktype>',
+	'<D:lockscope>'));  if (scope = 'X') http ('<D:exclusive/>'); else http ('<D:shared/>');
+	http (sprintf ('</D:lockscope><D:depth>%s</D:depth>', dpth));
+	http (owner_name);
+	http (concat ('<D:timeout>Second-',
+	cast (timeout as varchar),'</D:timeout>',
+	'<D:locktoken>',
+	'<D:href>', 'opaquelocktoken:', rc, '</D:href>',
+	'</D:locktoken>',
+	'</D:activelock>',
+	'</D:lockdiscovery>',
+  '</D:prop>'));
 }
 ;
 
@@ -6503,11 +6505,15 @@ create procedure DB.DBA.DAV_SET_HTTP_STATUS (
 
   if (isinteger (status))
   {
-    if (status = 204)
+    if (status = 200)
+    {
+      http_request_status ('HTTP/1.1 200 OK');
+    }
+    else if (status = 204)
     {
       http_request_status ('HTTP/1.1 204 No Content');
     }
-    if (status = 400)
+    else if (status = 400)
     {
        http_request_status ('HTTP/1.1 400 Bad Request');
     }
