@@ -4383,7 +4383,7 @@ DAV_PROP_SET_RAW_INNER (
             return -10;
           return 0;
         }
-      if (auth_uid = http_dav_uid())
+      if (auth_uid = http_dav_uid ())
         can_patch_access := 2;
 --      else if (auth_uid = 0)
 --        can_patch_access := -1;
@@ -4397,7 +4397,7 @@ DAV_PROP_SET_RAW_INNER (
           if (0 >= can_patch_access)
             return -13;
           if (not exists (select top 1 1 from WS.WS.SYS_DAV_USER where U_ID = propvalue))
-            propvalue := 0;
+            propvalue := http_dav_uid ();
           if ('R' = st)
             update WS.WS.SYS_DAV_RES set RES_OWNER = propvalue where RES_ID = id;
           else
@@ -4408,8 +4408,8 @@ DAV_PROP_SET_RAW_INNER (
         {
           if (0 >= can_patch_access)
             return -13;
-          if (not exists (select top 1 1 from WS.WS.SYS_DAV_GROUP where G_ID = propvalue))
-            propvalue := 0;
+          if (not exists (select top 1 1 from WS.WS.SYS_DAV_GROUP where G_ID = propvalue) and not exists (select top 1 1 from WS.WS.SYS_DAV_USER where U_ID = propvalue))
+            propvalue := http_admin_gid ();
           if ('R' = st)
             update WS.WS.SYS_DAV_RES set RES_GROUP = propvalue where RES_ID = id;
           else
