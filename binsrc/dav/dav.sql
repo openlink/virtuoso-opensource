@@ -3471,7 +3471,8 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
             return 0;
         }
       }
-      http_request_status ('HTTP/1.1 404 Not Found');
+
+     DB.DBA.DAV_SET_HTTP_STATUS (406, '406 Not Acceptable', '406 Not Acceptable', sprintf ('<p>An appropriate representation of the requested resource %s could not be found on this server.</p>', full_path));
 
       return 1;
 		}
@@ -6520,6 +6521,10 @@ create procedure DB.DBA.DAV_SET_HTTP_STATUS (
     else if (status = 405)
     {
       http_request_status ('HTTP/1.1 405 Method Not Allowed');
+    }
+    else if (status = 406)
+    {
+      http_request_status ('HTTP/1.1 406 Not Acceptable');
     }
     else if (status = 409)
     {
