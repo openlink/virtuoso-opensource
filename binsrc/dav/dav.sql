@@ -5902,7 +5902,8 @@ create procedure WS.WS.IS_REDIRECT_REF (inout path any, in lines any, inout loca
       RES_FULL_PATH = fpath1
       and PROP_PARENT_ID = RES_ID and
       PROP_NAME = 'redirectref' and PROP_TYPE = 'R' option (order);
-  fpath := http_physical_path (); fpath1 := rtrim (fpath, '/');
+  fpath := http_physical_path ();
+  fpath1 := rtrim (fpath, '/');
   whenever not found goto nfp;
   open cr (prefetch 1);
   fetch cr into _ref;

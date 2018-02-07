@@ -2878,8 +2878,7 @@ create procedure RDF_SINK_FUNC (
   in ogid int)
 {
   -- dbg_obj_print ('RDF_SINK_FUNC', path);
-  declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges any;
-  declare rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path, host, content any;
+  declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges, content any;
   declare exit handler for sqlstate '*'
   {
     goto _bad_content;
@@ -2894,26 +2893,37 @@ create procedure RDF_SINK_FUNC (
   rdf_metaCartridges := get_keyword ('metaCartridges', rdf_params, '');
 
   -- upload into first (rdf_sink) graph
-  if (RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
-  {
-    rdf_graph_resource_name := DAV_RDF_RES_NAME (rdf_graph);
-    rdf_graph_resource_name := replace (rdf_graph_resource_name, ' ', '_');
-    rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
-    if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
-    {
-      -- RDF content
-      host := WS.WS.DAV_HOST ();
-      rdf_graph_resource_id := WS.WS.GETID ('R');
-      insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
-        values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
-
-      DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
-        'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'application/rdf+xml'), null, null, 0, 0, 1);
-    }
-  }
+  if (DB.DBA.RDF_SINK_UPLOAD (path, content, type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
+    DB.DBA.RDF_SINK_REDIRECT (c_id, rdf_graph, rdf_params, ouid, ogid);
 
 _bad_content:;
   DB.DBA.DAV_QUEUE_UPDATE_FINAL (queue_id);
+}
+;
+
+create procedure RDF_SINK_REDIRECT (
+  in c_id integer,
+  in rdf_graph any,
+  in rdf_params any,
+  in ouid integer,
+  in ogid integer)
+{
+  declare rdf_contentType, rdf_graph_resource_id, rdf_graph_resource_name, rdf_graph_resource_path any;
+
+  rdf_graph_resource_name := DB.DBA.DAV_RDF_RES_NAME (rdf_graph);
+  rdf_graph_resource_name := replace (rdf_graph_resource_name, ' ', '_');
+  rdf_graph_resource_path := WS.WS.COL_PATH (c_id) || rdf_graph_resource_name;
+  if (isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
+  {
+    -- RDF content
+    rdf_contentType := get_keyword ('contentType', rdf_params, 'text/turtle');
+    rdf_graph_resource_id := WS.WS.GETID ('R');
+    insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
+      values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), rdf_contentType, '');
+
+    DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('%s/sparql?default-graph-uri=%U&query=%U&format=%U', WS.WS.DAV_HOST (), rdf_graph,
+      'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', rdf_contentType), null, null, 0, 0, 1);
+  }
 }
 ;
 
