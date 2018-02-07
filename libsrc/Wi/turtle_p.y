@@ -380,46 +380,46 @@ top_blank_predicate_object_list_or_garbage_with_dot
 
 predicate_object_list_or_garbage_opt
 	: /* empty */
-	| predicate_object_list_nosemi
-	| predicate_object_list_semi
-	| predicate_object_list_nosemi _GARBAGE_BEFORE_DOT_WS
-	| predicate_object_list_semi _GARBAGE_BEFORE_DOT_WS
+	| predicate_object_list_nosemis
+	| predicate_object_list_semis
+	| predicate_object_list_nosemis _GARBAGE_BEFORE_DOT_WS
+	| predicate_object_list_semis _GARBAGE_BEFORE_DOT_WS
 	| _GARBAGE_BEFORE_DOT_WS
 	;
 
 predicate_object_list_or_garbage
-	: predicate_object_list_nosemi
-	| predicate_object_list_semi
-	| predicate_object_list_nosemi _GARBAGE_BEFORE_DOT_WS
-	| predicate_object_list_semi _GARBAGE_BEFORE_DOT_WS
+	: predicate_object_list_nosemis
+	| predicate_object_list_semis
+	| predicate_object_list_nosemis _GARBAGE_BEFORE_DOT_WS
+	| predicate_object_list_semis _GARBAGE_BEFORE_DOT_WS
 	| _GARBAGE_BEFORE_DOT_WS
 	;
 
 top_blank_predicate_object_list
-	: predicate_object_list_nosemi
-	| predicate_object_list_semi
+	: predicate_object_list_nosemis
+	| predicate_object_list_semis
 	| _COMMA { ttlyyerror_action ("Missing predicate and object object between top-level blank node and a comma"); }
 	| _SEMI { ttlyyerror_action ("Missing predicate and object between top-level blank node and a semicolon"); }
 	| error { ttlyyerror_action ("Predicate expected after top-level blank node"); }
 	;
 
 predicate_object_list
-	: predicate_object_list_nosemi
-	| predicate_object_list_semi
+	: predicate_object_list_nosemis
+	| predicate_object_list_semis
 	| _COMMA { ttlyyerror_action ("Missing object before comma"); }
 	| _SEMI { ttlyyerror_action ("Missing predicate and object before semicolon"); }
 	| _DOT_WS { ttlyyerror_action ("Missing predicate and object before dot"); }
 	| error { ttlyyerror_action ("Predicate expected"); }
 	;
 
-predicate_object_list_nosemi
+predicate_object_list_nosemis
 	: verb_and_object_list
-	| predicate_object_list_semi verb_and_object_list_or_garbage
+	| predicate_object_list_semis verb_and_object_list_or_garbage
 	;
 
-predicate_object_list_semi
-	: verb_and_object_list _SEMI		{ ttlp_triple_process_prepared (ttlp_arg); }
-	| predicate_object_list_semi verb_and_object_list_or_garbage _SEMI		{ ttlp_triple_process_prepared (ttlp_arg); }
+predicate_object_list_semis
+	: verb_and_object_list semis		{ ttlp_triple_process_prepared (ttlp_arg); }
+	| predicate_object_list_semis verb_and_object_list_or_garbage semis		{ ttlp_triple_process_prepared (ttlp_arg); }
 	;
 
 verb_and_object_list_or_garbage
@@ -813,4 +813,10 @@ q_complete
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		}
 	;
+
+semis
+	: _SEMI /* empty */
+	| semis _SEMI /* empty */
+	;
+
 
