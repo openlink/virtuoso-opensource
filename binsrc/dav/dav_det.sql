@@ -1047,8 +1047,7 @@ create function DB.DBA.DAV_DET_PRIVATE_INIT ()
 
   -- private graph group (if not exists)
   DB.DBA.RDF_GRAPH_GROUP_CREATE (DB.DBA.DAV_DET_PRIVATE_GRAPH (), 1);
-
-  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0, 1);
+  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 1, 1);
   DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023, 1);
 
   registry_set ('__DAV_DET_PRIVATE_INIT', '1');
