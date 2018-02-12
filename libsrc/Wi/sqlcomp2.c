@@ -1600,7 +1600,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      if (inside_sem)
 		parse_leave ();
 	      POP_CATCH;
-	      self->thr_tlsf = save_tlsf;
 	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
 		{
 		  if (SQLC_DO_NOT_STORE_PROC == cr_type)
