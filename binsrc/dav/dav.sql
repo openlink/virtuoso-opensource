@@ -3326,7 +3326,7 @@ create procedure WS.WS.LDP_HDRS (
 
   msAuthor := sprintf ('MS-Author-Via: %s\r\n', case when add_rel then 'DAV, SPARQL' else 'DAV' end);
   acceptPatch := case when add_rel then 'Accept-Patch: application/sparql-update\r\n' else '' end;
-  acceptPost := sprintf ('Accept-Post: %s\r\n', case when add_rel then 'text/turtle,text/n3,text/nt,text/html' else '*/*' end);
+  acceptPost := sprintf ('Accept-Post: %s\r\n', case when add_rel then 'text/turtle,text/n3,text/nt,text/html,application/ld+json' else '*/*' end);
   header := 'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,MKCOL,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
             'Vary: Accept,Origin,If-Modified-Since,If-None-Match\r\n' ||
             msAuthor ||
@@ -3634,7 +3634,8 @@ create procedure WS.WS.SPARQL_QUERY_POST (
     {
     qr := string_output_string (ses);
     }
-  def_gr := WS.WS.DAV_HOST () || sprintf ('%U', path);
+  qr := trim (qr);
+  def_gr := WS.WS.DAV_IRI (path);
   if (lower (qr) not like 'construct %' and lower (qr) not like 'describe %')
     full_qr := sprintf ('SPARQL define input:default-graph-uri <%s> ', def_gr);
   else
@@ -3649,6 +3650,7 @@ create procedure WS.WS.SPARQL_QUERY_POST (
   if (length (data) > 0 and length (data[0]) and __tag (data[0][0]) = 214)
     {
       declare dict, triples any;
+
       dict := data[0][0];
       ses := string_output ();
       triples := dict_list_keys (dict, 1);
