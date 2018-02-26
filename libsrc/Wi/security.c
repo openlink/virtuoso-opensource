@@ -189,8 +189,7 @@ sec_tb_is_owner (dbe_table_t * tb, query_instance_t * qi, char * tb_name, oid_t 
       char * name;
       name = ddl_complete_table_name (qi, tb_name);
       owner = &o_tmp[0];
-      if (!name)
-	name = tb_name;
+      /*if (!name) name = tb_name;  --- this happens in ddl_complete_table_name */
       sch_split_name (NULL, name, q_tmp, o_tmp, n_tmp);
     }
   else

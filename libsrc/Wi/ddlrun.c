@@ -2976,12 +2976,12 @@ bif_table_renamed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dbe_table_t *old_tb;
   dk_set_t old_roots = NULL;
   old = ddl_complete_table_name (qi, old);
-  if (!old)
+  old_tb = sch_name_to_table (isp_schema (NULL), old);
+  if (!old_tb)
     {
-      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table in rename table");
+      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table %.500s before renaming it to %.500s", old, new_name);
       return NULL;
     }
-  old_tb = sch_name_to_table (isp_schema (NULL), old);
   DO_SET (dbe_key_t *, old_k, &old_tb->tb_keys)
     {
       dk_set_push (&old_roots, (caddr_t) ((ptrlong) old_k->key_id));
@@ -3009,17 +3009,19 @@ ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *e
     {
       ren_table = eql_compile ("DB.DBA.rename_table (?, ?)", bootstrap_cli);
     }
-  old = ddl_complete_table_name (qi, old);
-  sql_error_if_remote_table (qi_name_to_table (qi, old));
-  if (!old)
+  old_tb = qi_name_to_table (qi, old);
+  sql_error_if_remote_table (old_tb);
+  if (!old_tb)
     {
-      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table in rename table");
+      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table %.500s in rename table", old);
       return;
     }
-  if (NULL != (new_tb = qi_name_to_table (qi, new_name)))
+  old = old_tb->tb_name;
+  new_tb = qi_name_to_table (qi, new_name);
+  if (NULL != new_tb)
     {
       *err_ret = srv_make_new_error ("42S01", "SQ201",
-	  "There is already table named %s in ALTER TABLE",
+	  "There is already table named %.500s in ALTER TABLE",
 	  new_tb->tb_name);
       return;
     }
