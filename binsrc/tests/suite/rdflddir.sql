@@ -75,10 +75,10 @@ ld_file (in path varchar, in f varchar, in graph varchar, in del_after int)
     update load_list
       set ll_state = 2,
           ll_done = curdatetime (),
-          ll_error = __sql_state || ' ' || __sql_message
+          ll_error = __SQL_STATE || ' ' || __SQL_MESSAGE
       where ll_file = f;
     commit work;
-    log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
+    log_message (sprintf (' File %s error %s %s', f, __SQL_STATE, __SQL_MESSAGE));
     return;
   };
   ttlp (file_to_string_output (path || '/' || f), '', graph);

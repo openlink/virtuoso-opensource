@@ -1389,7 +1389,7 @@ char *dp_no_err =
     "create procedure dpipe_define_no_err (in DP_NAME any, in DP_PART_TABLE any, in DP_PART_KEY any, in DP_SRV_PROC any, in DP_IS_UPD any, in DP_CALL_PROC any, in DP_CALL_BIF any, in DP_EXTRA any)\n"
     "{\n"
     "  declare exit handler for sqlstate '*' {\n"
-    "   log_message (sprintf ('error in dpipe init %s %s', __sql_state, __sql_message)); return;\n"
+    "   log_message (sprintf ('error in dpipe init %s %s', __SQL_STATE, __SQL_MESSAGE)); return;\n"
     "};\n"
     "dpipe_define_1 (DP_NAME, DP_PART_TABLE, DP_PART_KEY, DP_SRV_PROC, DP_IS_UPD, DP_CALL_PROC, DP_CALL_BIF, DP_EXTRA);\n" "}\n";
 

@@ -277,10 +277,10 @@ csv_ld_file (in f varchar, in zf varchar, in tb varchar, in ld_mode int, in opts
   st := 0; offs := 1;
   declare exit handler for sqlstate '*' {
     rollback work;
-    update DB.DBA.CSV_LOAD_LIST set CL_STATE = 2, CL_DONE = now (), CL_ERROR = __sql_state || ' ' || __sql_message
+    update DB.DBA.CSV_LOAD_LIST set CL_STATE = 2, CL_DONE = now (), CL_ERROR = __SQL_STATE || ' ' || __SQL_MESSAGE
 		where CL_FILE = f and CL_FILE_IN_ZIP = zf;
     commit work;
-    log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
+    log_message (sprintf (' File %s error %s %s', f, __SQL_STATE, __SQL_MESSAGE));
     return;
   };
   if (isvector (opts) and mod (length (opts), 2) = 0)

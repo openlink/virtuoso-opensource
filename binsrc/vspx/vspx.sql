@@ -2183,7 +2183,7 @@ text_split_complete:
   return;
 
 run_error:
-    self.vc_error_message := vector_concat( self.vc_error_message, vector(vector(__sql_state,__sql_message)) );
+    self.vc_error_message := vector_concat( self.vc_error_message, vector(vector(__SQL_STATE,__SQL_MESSAGE)) );
     self.isql_mtd := vector_concat( self.isql_mtd, vector(0) );
     self.isql_res := vector_concat( self.isql_res, vector(vector()) );
     self.isql_stmts := vector_concat(self.isql_stmts, vector (self.isql_text));

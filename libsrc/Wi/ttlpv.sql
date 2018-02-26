@@ -541,7 +541,7 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
       }
     connection_set ('g_dict', null);
     log_enable (old_log_mode, 1);
-    signal (__sql_state, __sql_message || ' processed pending to here.');
+    signal (__SQL_STATE, __SQL_MESSAGE || ' processed pending to here.');
   };
   old_log_mode := log_enable (null, 1);
   if (transactional = 0)
@@ -593,7 +593,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
     aq_wait_all (app_env[0]);
     connection_set ('g_dict', null);
     log_enable (old_log_mode, 1);
-    signal (__sql_state, __sql_message || ' processed pending to here.');
+    signal (__SQL_STATE, __SQL_MESSAGE || ' processed pending to here.');
   };
   old_log_mode := log_enable (null, 1);
   if (transactional = 0)

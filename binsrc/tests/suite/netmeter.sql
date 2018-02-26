@@ -57,8 +57,8 @@ create procedure nm_run (in n_batches int, in bytes int, in ops_per_batch int)
 	    }
 	}
       declare exit handler for sqlstate '*' {
-	log_message (sprintf ('In net_meter %s %ss', __sql_state, __sql_message));
-	signal (__sql_state, __sql_message);
+	log_message (sprintf ('In net_meter %s %ss', __SQL_STATE, __SQL_MESSAGE));
+	signal (__SQL_STATE, __SQL_MESSAGE);
       };
       daq_results (daq);
     }

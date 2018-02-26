@@ -316,10 +316,10 @@ create procedure tdav_perf (in nthr int)
 
   declare exit handler for sqlstate '*'
     {
-      dbg_obj_print (sprintf ('\n*** dav perf test driver exiting with %s: %s\n', __sql_state, __sql_message));
+      dbg_obj_print (sprintf ('\n*** dav perf test driver exiting with %s: %s\n', __SQL_STATE, __SQL_MESSAGE));
       rollback work;
       goto again;
-      --signal (__sql_state, __sql_message);
+      --signal (__SQL_STATE, __SQL_MESSAGE);
     };
   declare exit handler for sqlstate '40001'
     {
