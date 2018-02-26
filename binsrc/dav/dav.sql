@@ -3051,10 +3051,13 @@ again:
           {
             hdr_uri := sprintf ('%s://%s%s', case when is_https_ctx () then 'https' else 'http' end, http_request_header (lines, 'Host', NULL, NULL), hdr_path);
           }
-          hdr_str := hdr_str || sprintf ('Link: <%s,meta>; rel="meta"; title="Metadata File"\r\n', hdr_uri);
+          if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (hdr_path || ',meta', 'R')) is not null)
+            hdr_str := hdr_str || sprintf ('Link: <%s,meta>; rel="meta"; title="Metadata File"\r\n', hdr_uri);
+
           if (hdr_path not like '%,acl')
           {
-            hdr_str := hdr_str || sprintf ('Link: <%s,acl>; rel="acl"; title="Access Control File"\r\n', hdr_uri);
+            if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (hdr_path || ',acl', 'R')) is not null)
+              hdr_str := hdr_str || sprintf ('Link: <%s,acl>; rel="acl"; title="Access Control File"\r\n', hdr_uri);
           }
           rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
           if (rdf_graph is not null)
@@ -3320,9 +3323,9 @@ create procedure WS.WS.LDP_HDRS (
   in add_rel integer := 0,
   in page integer := 0,
   in last integer := 0,
-  in link any := null)
+  in path any := null)
 {
-  declare header, msAuthor, acceptPatch, acceptPost, netID any;
+  declare link, header, msAuthor, acceptPatch, acceptPost, netID any;
 
   msAuthor := sprintf ('MS-Author-Via: %s\r\n', case when add_rel then 'DAV, SPARQL' else 'DAV' end);
   acceptPatch := case when add_rel then 'Accept-Patch: application/sparql-update\r\n' else '' end;
@@ -3349,12 +3352,14 @@ create procedure WS.WS.LDP_HDRS (
   if (last > 0)
     header := header || sprintf ('Link: <?p=%d>; rel="last"\r\n', last);
 
-  if (link is not null)
+  if (path is not null)
   {
-    link := rtrim (link, '/');
-    link := WS.WS.DAV_LINK (link);
-    header := header || sprintf ('Link: <%s,meta>; rel="meta"\r\n', link);
-    header := header || sprintf ('Link: <%s,acl>; rel="acl"\r\n', link);
+    link := WS.WS.DAV_LINK (rtrim (path, '/'));
+    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (rtrim (path, '/') || ',meta', 'R')) is not null)
+      header := header || sprintf ('Link: <%s,meta>; rel="meta"\r\n', link);
+
+    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (rtrim (path, '/') || ',acl', 'R')) is not null)
+      header := header || sprintf ('Link: <%s,acl>; rel="acl"\r\n', link);
   }
 
   return header;
