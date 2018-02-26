@@ -3394,9 +3394,9 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   in _col_id int)
 {
   -- dbg_obj_princ ('WS.WS.GET_EXT_DAV_LDP (', _res_id, _col_id, ')');
-  declare accept, accept_full, name_ varchar;
+  declare accept, accept_mime, accept_full, accept_profile, name_ varchar;
   declare mod_time datetime;
-  declare gr any;
+  declare gr, as_part varchar;
   declare id_ integer;
   declare pref_mime varchar;
 
@@ -3407,10 +3407,11 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   pref_mime := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (_res_id));
 
   accept_full := http_request_header_full (lines, 'Accept', '*/*');
-  accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept_full, pref_mime);
-  if ((pref_mime = 'application/ld+json') and (accept not in ('*/*', 'application/ld+json')))
+  accept_mime := HTTP_RDF_GET_ACCEPT_BY_Q (accept_full, pref_mime);
+  if ((pref_mime = 'application/ld+json') and (accept_mime not in ('*/*', 'application/ld+json')))
     return 0;
 
+  accept := accept_mime;
   if (accept = '*/*' and isinteger (_res_id))
   {
     if (pref_mime = 'text/turtle')
@@ -3513,7 +3514,13 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
     if (isstring (etag))
       http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
 
-    qr := sprintf ('define sql:select-option "order" define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d', n_per_page, n_per_page * (page - 1));
+  accept_profile := case when (accept = 'application/ld+json') then DB.DBA.LDP_ACCEPT_PARAM (accept_full, accept_mime, 'profile') else null end;
+  as_part := '';
+  if (accept_profile = '"https://www.w3.org/ns/activitystreams"')
+    as_part := '<http://www.w3.org/ns/activitystreams#items> owl:equivalentProperty <http://www.w3.org/ns/ldp#contains> . <http://www.w3.org/ns/activitystreams#Collection> owl:equivalentClass <http://www.w3.org/ns/ldp#Container> .';
+
+  qr := sprintf ('define sql:select-option "order" define input:storage "" construct { %s `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d', as_part, n_per_page, n_per_page * (page - 1));
+
   execqr:
   DB.DBA.DAV_SET_HTTP_STATUS (200);
     connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
@@ -6874,6 +6881,41 @@ create procedure DB.DBA.LDP_REFRESH (
   {
     DB.DBA.LDP_REFRESH (path || COL_NAME || '/', enabled);
   }
+}
+;
+
+create procedure DB.DBA.LDP_ACCEPT_PARAM (
+  in accept_full varchar,
+  in accept_mime varchar,
+  in param varchar)
+{
+  declare retValue any;
+  declare arr, arr2, arr3 any;
+  declare i, l, j, k integer;
+
+  retValue := null;
+  arr := split_and_decode (accept_full, 0, '\0\0,');
+  l := length (arr);
+  for (i := 0; i < l; i := i + 1)
+  {
+    arr2 := split_and_decode (trim (arr[i]), 0, '\0\0;');
+    k := length (arr2);
+    if ((k > 0) or (accept_mime = trim (arr2[0])))
+    {
+      for (j := 1; j < k; j := j + 1)
+      {
+        arr3 := split_and_decode (trim (arr2[j]), 0, '\0\0=');
+        if ((length (arr3) = 2) and (param = trim (arr3[0])))
+        {
+          retValue := trim (arr3[1]);
+          goto _break;
+        }
+      }
+      goto _break;
+    }
+  }
+_break:;
+  return retValue;
 }
 ;
 
