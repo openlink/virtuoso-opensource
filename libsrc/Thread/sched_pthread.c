@@ -1405,6 +1405,14 @@ mutex_leave (dk_mutex_t * mtx)
 
 #endif
 
+#ifdef SEM_DEBUG
+#undef semaphore_leave
+void
+semaphore_leave (semaphore_t * sem)
+{
+   semaphore_leave_dbg (__LINE__, __FILE__, sem);
+}
+#endif
 
 int
 mutex_try_enter (dk_mutex_t *mtx)
