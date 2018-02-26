@@ -5647,20 +5647,21 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
   in enabled integer := 0)
 {
   -- dbg_obj_princ ('WEBDAV.DBA.ldp_recovery_aq (', path, ')');
-  declare id integer;
-  declare uri, ruri any;
+  declare id, work_id any;
+  declare det, uri, ruri varchar;
 
   id := DB.DBA.DAV_SEARCH_ID (path, 'C');
   if (isnull (DB.DBA.DAV_HIDE_ERROR (id)))
     return;
 
-  if (isarray (id))
+  if (isarray (id) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
     return;
 
+  work_id := DB.DBA.DAV_DET_DAV_ID (id);
   if (not enabled)
-    enabled := DB.DBA.LDP_ENABLED (id);
+    enabled := DB.DBA.LDP_ENABLED (work_id);
 
-    for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
+  for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = work_id) do
 	  {
       uri := WS.WS.DAV_IRI (path);
     if (enabled)
@@ -5671,7 +5672,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
     {
       DB.DBA.LDP_DELETE (path, 1);
     }
-    for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
+    for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = work_id) do
     {
       if (enabled and (RES_TYPE in ('text/turtle', 'application/ld+json')))
       {
@@ -5688,14 +5689,14 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
         DB.DBA.LDP_DELETE (RES_FULL_PATH);
       }
     }
-      for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
+    for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = work_id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
 	    {
         ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
         TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
 	    }
 	  }
 
-  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
+  for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = work_id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
   {
     WEBDAV.DBA.ldp_recovery_aq (path || COL_NAME || '/', enabled);
   }

@@ -1560,59 +1560,6 @@
           ?>
           <div class="toolbar">
             <?vsp
-              -- The DAV system makes optional use of VAL for authentication. Session cookies can be shared with other pages such as
-              -- /sparql or even ODS. The following code adds a logout button to the dav browser toolbar if logged in.
-              if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null)
-              {
-                declare val_sid, val_serviceId, val_realm, val_uname varchar;
-                declare val_isRealUser int;
-                val_realm := null;
-
-                if (self.mode = 'webdav')
-                {
-                  if (VAL.DBA.authentication_details_for_connection (sid=>val_sid, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser, realm=>val_realm))
-                  {
-                    declare serviceIdHtml, profileName varchar;
-                    profileName := coalesce (val_uname, val_serviceId);
-                    serviceIdHtml := null;
-                    if (__proc_exists ('VAL.DBA.get_profile_url'))
-                    {
-                      serviceIdHtml := VAL.DBA.get_profile_url (val_serviceId);
-                      profileName := coalesce (VAL.DBA.get_profile_name (val_serviceId), val_uname, val_serviceId);
-                    }
-                    if (not serviceIdHtml is null)
-                      serviceIdHtml := sprintf ('<a href="%s">%V</a>', serviceIdHtml, profileName);
-                    else
-                      serviceIdHtml := profileName;
-
-                    http (         '<div style="float:right;">');
-                    http (sprintf ('  <span class="toolbar" style="width:auto;text-align:right;padding:10px;"><b>Logged in as</b><br/><span style="font-weight:normal;">%s</span></span>', serviceIdHtml));
-                    http (sprintf ('  <img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
-                    http (         '  <span class="toolbar" style="cursor: pointer;">');
-                    http (sprintf ('    <a href="/val/authenticate.vsp?res=%U&action=login"><b>Change Login</b></a>', HTTP_REQUESTED_URL()));
-                    http (         '  </span>');
-                    http (sprintf ('  <img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
-                    http (         '  <span class="toolbar" style="cursor: pointer;">');
-                    http (sprintf ('    <a href="/val/logout.vsp?returnto=%U"><b>Logout</b></a>', HTTP_REQUESTED_URL()));
-                    http (         '  </span>');
-                    http (         '</div>');
-                  }
-                  else
-                  {
-                    http (         '<div style="float:right;">');
-                    http (         '  <span class="toolbar" style="width:auto;text-align:right;padding:10px;">');
-                    http (         '    <b>Not logged in</b>');
-                    http (         '  </span>');
-                    http (sprintf ('  <img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
-                    http (         '  <span class="toolbar" style="cursor: pointer;">');
-                    http (sprintf ('    <a href="/val/authenticate.vsp?res=%U"><b>Login</b></a>', HTTP_REQUESTED_URL()));
-                    http (         '  </span>');
-                    http (         '</div>');
-                  }
-                }
-              }
-            ?>
-            <?vsp
               declare writePermission integer;
               declare path varchar;
 
@@ -2458,7 +2405,7 @@
                                 setInterval(WEBDAV.toggleEditor, 100);
                               </script>
                             ]]>
-                            <vm:if test="self.editField ('mime') and self.dav_enable">
+                            <vm:if test="self.editField ('mime') and self.dav_enable and (self.dav_detClass <> 'SN')">
                               <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=dav_mime:s1;') ?>');" disabled="disabled" class="button" />
                             </vm:if>
                           </vm:if>
@@ -5834,7 +5781,7 @@
               <v:label value="--sprintf ('Content is %s in Version Control', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
             </th>
             <td>
-              <v:button name="template_vc" action="simple" value="--sprintf ('%s VC', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button">
+              <v:button name="template_vc" style="url" action="simple" value="--sprintf ('%s VC', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_style="padding-top: 0">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -5872,7 +5819,7 @@
               File commands
             </th>
             <td>
-              <v:button name="tepmpate_lock" action="simple" value="Lock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 0 else 1 end" xhtml_class="button">
+              <v:button name="tepmpate_lock" style="url" action="simple" value="Lock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 0 else 1 end" xhtml_class="button" xhtml_style="padding-top: 0">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -5894,7 +5841,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button name="tepmpate_unlock" action="simple" value="Unlock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 1 else 0 end" xhtml_class="button">
+              <v:button name="tepmpate_unlock" style="url" action="simple" value="Unlock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -5923,7 +5870,7 @@
               Versioning commands
             </th>
             <td>
-              <v:button name="tepmpate_checkIn" action="simple" value="Check-In" enabled="-- case when (is_empty_or_null (WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
+              <v:button name="tepmpate_checkIn" style="url" action="simple" value="Check-In" enabled="-- case when (is_empty_or_null (WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -5945,7 +5892,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button name="tepmpate_checkOut" action="simple" value="Check-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-out'))) then 1 else 0 end" xhtml_class="button">
+              <v:button name="tepmpate_checkOut" style="url" action="simple" value="Check-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-out'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -5967,7 +5914,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button name="tepmpate_uncheckOut" action="simple" value="Uncheck-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button">
+              <v:button name="tepmpate_uncheckOut" style="url" action="simple" value="Uncheck-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
