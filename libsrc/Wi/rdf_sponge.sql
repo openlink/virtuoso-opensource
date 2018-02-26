@@ -408,7 +408,7 @@ DB.DBA.RDF_GRAB (
   all_params := vector_concat (vector (grab_params), app_params);
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB (', app_params, grab_params, ',..., ', ret_limit, const_iris, depth, doc_limit, plain_ret, uid, ')');
   DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() begins its work with limit on number of documents set to %d, depth limit is %d', doc_limit, depth);
-  aq := async_queue (8);
+  aq := async_queue (sys_stat ('enable_qp'));
   grabbed := dict_new ();
   foreach (any val in const_iris) do
     {
