@@ -1916,7 +1916,7 @@ fi
 AC_SUBST(LIBTHR)
 save_LIBS="$LIBS"
 LIBS="$LIBTHR $LIBS"
-AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize pthread_sigmask)
+AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize pthread_sigmask pthread_rwlock_init)
 LIBS="$save_LIBS"
 srvrlibs="$srvrlibs $LIBTHR"
 AM_CONDITIONAL(WITH_PTHREADS, test "x$WITH_PTHREADS" = "xyes" )

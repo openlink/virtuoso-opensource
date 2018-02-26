@@ -67,15 +67,18 @@ void longjmp_brk (jmp_buf_splice * j, int rc);
 #define thread_t opl_thread_t
 #define rwlock_t opl_rwlock_t
 #endif
-typedef struct thread_s thread_t;
 
-typedef struct semaphore_s semaphore_t;
-
-typedef struct mutex_s dk_mutex_t;
-
-typedef struct spinlock_s spinlock_t;
-
+#ifdef HAVE_PTHREAD_RWLOCK_INIT
+#undef  rwlock_t
+#define rwlock_t pthread_rwlock_t
+#else
 typedef struct rwlock_s rwlock_t;
+#endif
+
+typedef struct thread_s thread_t;
+typedef struct semaphore_s semaphore_t;
+typedef struct mutex_s dk_mutex_t;
+typedef struct spinlock_s spinlock_t;
 
 typedef int (*mtx_entry_check_t) (dk_mutex_t * mtx, thread_t * self, void * cd);
 
