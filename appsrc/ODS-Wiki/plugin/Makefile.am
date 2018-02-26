@@ -19,9 +19,7 @@
 #  
 #  
 
-if WITH_ODS_VAD
 hosting_LTLIBRARIES = wikiv.la mediawiki.la creolewiki.la
-endif
 
 LTFLAGS	= -module -avoid-version -export-dynamic -no-undefined
 
