@@ -1349,7 +1349,7 @@ AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
        yes)	with_im="yes" ;;
        no)	with_im="no" ;;
        /*)	with_im="${enableval}"
-		PKG_CONFIG_PATH="${enableval}:$PKG_CONFIG_PATH"
+		PKG_CONFIG_PATH="${enableval}/lib/pkgconfig:$PKG_CONFIG_PATH"
 		export PKG_CONFIG_PATH
 		;;
        *)	AC_MSG_ERROR(bad value ${enableval} for --disable-imagemagick) ;;
