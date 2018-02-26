@@ -245,7 +245,7 @@ create procedure TUT_generate_files(
     else
       xml_output := '';
 	  
-	  http_value(xslt('file://'||path|| '/page'||xml_output||'.xsl',_TUT_XML,_xsl_params),null,_stream);
+	  http_value(xslt('file://' || http_root() ||path|| '/page'||xml_output||'.xsl',_TUT_XML,_xsl_params),null,_stream);
 	  _stream := string_output_string(_stream);
 	  if (xml_output <> '') {
 	    _stream := replace(_stream,'dc:dc=""','');
