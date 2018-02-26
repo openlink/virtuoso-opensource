@@ -85,6 +85,8 @@ struct dk_session_s
   void *			dks_cluster_data;	/* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol vrsions and cluster is all the same version */
   void *			dks_write_temp;		/* Used by Distributed Objects */
 
+  /*! max msecs to block on a connect */
+  timeout_t 			dks_connect_timeout;
   /*! max msecs to block on a read */
   timeout_t 			dks_read_block_timeout;
   /*! max msecs to block on a write */

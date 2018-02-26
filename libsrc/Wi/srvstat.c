@@ -483,6 +483,7 @@ extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
 
 extern int timezoneless_datetimes;
+extern int http_connect_timeout;;
 
 static long thr_cli_running;
 static long thr_cli_waiting;
@@ -1928,6 +1929,7 @@ stat_desc_t dbf_descs [] =
     {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
     {"enable_spar_logfile", (long *) &enable_spar_logfile, SD_INT32},
     {"enable_sqlc_logfile", (long *) &enable_sqlc_logfile, SD_INT32},
+    {"http_connect_timeout", &http_connect_timeout, SD_INT32},
     {NULL, NULL, NULL}
   };
 

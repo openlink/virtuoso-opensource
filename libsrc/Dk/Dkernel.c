@@ -2545,6 +2545,7 @@ dk_session_allocate (int sesclass)
 
   dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
   dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_connect_timeout.to_sec = 20;
   dk_ses->dks_read_block_timeout.to_sec = 100;
 
   return dk_ses;
@@ -2569,6 +2570,7 @@ dk_session_alloc_box (int sesclass, int in_len)
   dk_ses->dks_in_length = in_len;
   dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
   dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_connect_timeout.to_sec = 20;
   dk_ses->dks_read_block_timeout.to_sec = 100;
   dk_ses->dks_refcount = 1;
   return dk_ses;
@@ -2595,6 +2597,7 @@ dk_session_clear (dk_session_t * ses)
   ses->dks_in_length = DKSES_IN_BUFFER_LENGTH;
   ses->dks_out_buffer = out;
   ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  ses->dks_connect_timeout.to_sec = 20;
   ses->dks_read_block_timeout.to_sec = 100;
   ses->dks_mtx = mtx;
   ses->dks_session = dks_ses;

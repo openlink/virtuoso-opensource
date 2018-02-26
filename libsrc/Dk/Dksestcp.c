@@ -675,7 +675,98 @@ tcpses_print_client_ip (session_t * ses, char *buf, int buf_len)
  */
 
 
-/*##**********************************************************************
+
+#if !defined(WIN32)
+/*
+ *  Estabish a connection to an ip:port with timeout
+ */
+static int
+connect_nonblock(int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
+{
+  int flags = 0, error = 0, ret = 0;
+  fd_set rset, wset;
+  socklen_t len = sizeof (error);
+  struct timeval ts;
+
+  dbg_printf_1 (("conn_nonblock sa=%s:%u timeout=%d", inet_ntoa (sa->sin_addr), ntohs (sa->sin_port), timeout));
+
+  /*
+   * Initialize
+   */
+  FD_ZERO (&rset);
+  FD_SET (sock, &rset);
+  wset = rset;
+
+  /*
+   *  Save original flags and set nonblock mode
+   */
+  if ((flags = fcntl (sock, F_GETFL, 0)) < 0)
+    return -1;
+  if (fcntl (sock, F_SETFL, flags | O_NONBLOCK) < 0)
+    return -1;
+
+  /*
+   *  Initiate the connection
+   */
+  ret = connect (sock, (struct sockaddr *) sa, sa_len);
+  if (ret == 0)
+    goto success;
+  else if (errno != EINPROGRESS)
+    return -1;
+
+  /*
+   *  Wait for connection to complete
+   */
+  do
+    {
+      ts.tv_sec = timeout;
+      ts.tv_usec = 0;
+
+      ret = select (sock + 1, &rset, &wset, NULL, (timeout) ? &ts : NULL);
+
+      switch (ret)
+	{
+	case 0:
+	  errno = ETIMEDOUT;
+	  return -1;
+
+	case -1:
+	  if (errno == EINTR)
+	    continue;
+	  return -1;
+
+	default:
+	  if (FD_ISSET (sock, &rset) || FD_ISSET (sock, &wset))
+	    break;
+	}
+    }
+  while (ret == -1);
+
+  /*
+   *  If the socket was signalled, check if the operation returned an error
+   */
+  if (getsockopt (sock, SOL_SOCKET, SO_ERROR, &error, &len) < 0)
+    return -1;
+
+  if (error)
+    {
+      errno = error;
+      return -1;
+    }
+
+  /*
+   *  Restore initial flags and return
+   */
+success:
+  if (fcntl (sock, F_SETFL, flags) < 0)
+    return -1;
+
+  return 0;
+}
+#endif
+
+
+/*************************************************************************
  *
  *              tcpses_connect
  *
@@ -706,6 +797,7 @@ tcpses_print_client_ip (session_t * ses, char *buf, int buf_len)
 static int
 tcpses_connect (session_t * ses)
 {
+  dk_session_t *dks = SESSION_DK_SESSION (ses);
   saddrin_t *p_addr;		/* shortcut to address information */
   int s;
   int rc;
@@ -734,16 +826,11 @@ tcpses_connect (session_t * ses)
     }
 
   /* Connect to the server */
-#ifdef ERESTARTSYS
-  while ((rc = connect (s, (struct sockaddr *) p_addr, sizeof (saddrin_t))) < 0)
-    {
-      if (errno != SYS_EWBLK && errno != ERESTARTSYS)
-	break;
-    }
-  if (rc < 0)
+#if defined(WIN32)
+  if ((rc = connect (s, (struct sockaddr *) p_addr, (socklen_t) sizeof (saddrin_t))) < 0)
     {
 #else
-  if ((rc = connect (s, (struct sockaddr *) p_addr, sizeof (saddrin_t))) < 0)
+  if ((rc = connect_nonblock(s, p_addr, sizeof (saddrin_t), dks->dks_connect_timeout.to_sec)) < 0)
     {
 #endif
       test_eintr (ses, rc, errno);

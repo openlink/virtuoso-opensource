@@ -5916,6 +5916,8 @@ remove_old_cached_sessions (void)
   http_trace (("-------- END HTTP PROXY CACHE -------\n"));
 }
 
+int http_connect_timeout = 10;
+
 dk_session_t *
 http_dks_connect (char * host2, caddr_t * err_ret)
 {
@@ -5942,6 +5944,9 @@ http_dks_connect (char * host2, caddr_t * err_ret)
       *err_ret = srv_make_new_error ("2E000", "HT015", "Cannot resolve host %s in http_get", host);
       return NULL;
     }
+
+  ses->dks_connect_timeout.to_sec = http_connect_timeout;
+
   rc = session_connect (ses->dks_session);
 
   if (!_thread_sched_preempt)
@@ -5949,6 +5954,7 @@ http_dks_connect (char * host2, caddr_t * err_ret)
       timeout = dks_fibers_blocking_read_default_to;
       ses->dks_read_block_timeout = timeout;
     }
+
 
   if (SER_SUCC != rc)
     {
