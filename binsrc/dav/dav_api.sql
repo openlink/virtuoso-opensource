@@ -2922,7 +2922,7 @@ create procedure RDF_SINK_UPLOAD (
         file_delete (tmp_file, 1);
         return 0;
       };
-      rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
+      rdf_graph2 := WS.WS.WAC_GRAPH (path, 'LDITEMP');
       string_to_file (tmp_file, res_content, -2);
       lst := unzip_list (tmp_file);
       foreach (any x in lst) do
@@ -2958,7 +2958,7 @@ create procedure RDF_SINK_UPLOAD (
 
   -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), res_type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
   rdf_iri := WS.WS.DAV_IRI (path);
-  rdf_graph2 := WS.WS.WAC_GRAPH (path, '#ldiTemp');
+  rdf_graph2 := WS.WS.WAC_GRAPH (path, 'LDITEMP');
   if (is_empty_or_null (rdf_base))
   {
     rdf_base2 := WS.WS.DAV_HOST () || path;
@@ -3057,6 +3057,7 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
   in rdf_graph varchar,
   in rdf_cartridges varchar)
 {
+  dbg_obj_princ ('RDF_SINK_UPLOAD_CARTRIDGES (', type, rdf_iri, rdf_graph, rdf_cartridges, ')');
   declare cnt, hasSelection integer;
   declare cname, pname varchar;
   declare cartridges, aq, ps any;
@@ -3238,7 +3239,7 @@ create procedure RDF_SINK_DELETE (
   {
     _path := regexp_replace (_path, '\.gz\x24', '');
   }
-  rdf_graph2 := WS.WS.WAC_GRAPH (_path, '#ldiTemp');
+  rdf_graph2 := WS.WS.WAC_GRAPH (_path, 'LDITEMP');
   g_iid := __i2idn (rdf_graph);
   g2_iid := __i2idn (rdf_graph2);
   for (select a.S as _s, a.P as _p, a.O as _o from DB.DBA.RDF_QUAD a where a.G = g2_iid) do
