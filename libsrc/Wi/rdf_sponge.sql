@@ -2174,7 +2174,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       }
   else
     signal ('RDFZZ', sprintf (
-      'This version of Virtuoso supports only "soft", "replacing" and "add" values of "define get:soft ...", not "%.500s"',
+      'This version of Virtuoso supports only "soft", "replacing", "add" and "no-sponge" values of "define get:soft ...", not "%.500s"',
       get_soft ) );
   get_private := get_keyword_ucase ('get:private', options, null);
   if (get_private is not null)
