@@ -168,9 +168,9 @@ sqlfiles = \
 # JDBC 2.x
 ###########################################
 std2javafiles = \
-        $(utilfiles:%.java=outstd2/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd2/virtuoso/sql/%.java) \
-    	$(infiles:%.java=outstd2/virtuoso/jdbc2/%.java)
+	$(utilfiles:%.java=outstd2/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd2/virtuoso/sql/%.java) \
+	$(infiles:%.java=outstd2/virtuoso/jdbc2/%.java)
 
 
 .PHONY: doc2
@@ -246,12 +246,12 @@ outssl2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 # JDBC 3.x
 ###########################################
 std3javafiles = \
-        $(utilfiles:%.java=outstd3/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd3/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd3/openlink/util/%.java) \
-    	$(in3files:%.java=outstd3/virtuoso/jdbc3/%.java) \
-    	$(infiles:%.java=outstd3/virtuoso/jdbc3/%.java) \
-        $(javaxfiles:%.java=outstd3/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd3/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd3/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd3/openlink/util/%.java) \
+	$(in3files:%.java=outstd3/virtuoso/jdbc3/%.java) \
+	$(infiles:%.java=outstd3/virtuoso/jdbc3/%.java) \
+	$(javaxfiles:%.java=outstd3/virtuoso/javax/%.java)
 
 
 .PHONY: doc3
@@ -297,12 +297,12 @@ outstd3/virtuoso/javax/%.java: ../javax/%.java
 # JDBC 3.x (SSL)
 ###########################################
 ssl3javafiles = \
-        $(utilfiles:%.java=outssl3/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl3/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl3/openlink/util/%.java) \
-    	$(in3files:%.java=outssl3/virtuoso/jdbc3/%.java) \
-    	$(infiles:%.java=outssl3/virtuoso/jdbc3/%.java) \
-        $(javaxfiles:%.java=outssl3/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl3/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl3/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl3/openlink/util/%.java) \
+	$(in3files:%.java=outssl3/virtuoso/jdbc3/%.java) \
+	$(infiles:%.java=outssl3/virtuoso/jdbc3/%.java) \
+	$(javaxfiles:%.java=outssl3/virtuoso/javax/%.java)
 
 .PHONY: ssl3
 ssl3: ../../virtjdbc3ssl.jar
@@ -342,14 +342,14 @@ outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 # JDBC 4.x
 ###########################################
 std4javafiles = \
-        $(utilfiles:%.java=outstd4/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd4/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd4/openlink/util/%.java) \
-        $(util4files:%.java=outstd4/openlink/util/%.java) \
-    	$(in3files:%.java=outstd4/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outstd4/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outstd4/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outstd4/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd4/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd4/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd4/openlink/util/%.java) \
+	$(util4files:%.java=outstd4/openlink/util/%.java) \
+	$(in3files:%.java=outstd4/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outstd4/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outstd4/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outstd4/virtuoso/javax/%.java)
 
 
 .PHONY: doc4
@@ -396,14 +396,14 @@ outstd4/virtuoso/javax/%.java: ../javax/%.java
 # JDBC 4.x (SSL)
 ###########################################
 ssl4javafiles = \
-        $(utilfiles:%.java=outssl4/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl4/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl4/openlink/util/%.java) \
-        $(util4files:%.java=outssl4/openlink/util/%.java) \
-    	$(in3files:%.java=outssl4/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outssl4/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outssl4/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outssl4/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl4/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl4/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl4/openlink/util/%.java) \
+	$(util4files:%.java=outssl4/openlink/util/%.java) \
+	$(in3files:%.java=outssl4/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outssl4/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outssl4/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outssl4/virtuoso/javax/%.java)
 
 .PHONY: ssl4
 ssl4: ../../virtjdbc4ssl.jar
@@ -443,14 +443,14 @@ outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 # JDBC 4.1
 ###########################################
 std4_1javafiles = \
-        $(utilfiles:%.java=outstd4_1/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd4_1/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd4_1/openlink/util/%.java) \
-        $(util4files:%.java=outstd4_1/openlink/util/%.java) \
-    	$(in3files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outstd4_1/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd4_1/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd4_1/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd4_1/openlink/util/%.java) \
+	$(util4files:%.java=outstd4_1/openlink/util/%.java) \
+	$(in3files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outstd4_1/virtuoso/javax/%.java)
 
 
 .PHONY: doc4_1
@@ -497,14 +497,14 @@ outstd4_1/virtuoso/javax/%.java: ../javax/%.java
 # JDBC 4.1 (SSL)
 ###########################################
 ssl4_1javafiles = \
-        $(utilfiles:%.java=outssl4_1/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl4_1/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl4_1/openlink/util/%.java) \
-        $(util4files:%.java=outssl4_1/openlink/util/%.java) \
-    	$(in3files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outssl4_1/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl4_1/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl4_1/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl4_1/openlink/util/%.java) \
+	$(util4files:%.java=outssl4_1/openlink/util/%.java) \
+	$(in3files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outssl4_1/virtuoso/javax/%.java)
 
 .PHONY: ssl4_1
 ssl4_1: ../../virtjdbc4_1ssl.jar
@@ -544,14 +544,14 @@ outssl4_1/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
 # JDBC 4.2
 ###########################################
 std4_2javafiles = \
-        $(utilfiles:%.java=outstd4_2/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd4_2/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd4_2/openlink/util/%.java) \
-        $(util4files:%.java=outstd4_2/openlink/util/%.java) \
-    	$(in3files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outstd4_2/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd4_2/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd4_2/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd4_2/openlink/util/%.java) \
+	$(util4files:%.java=outstd4_2/openlink/util/%.java) \
+	$(in3files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outstd4_2/virtuoso/javax/%.java)
 
 
 .PHONY: doc4_2
@@ -598,14 +598,14 @@ outstd4_2/virtuoso/javax/%.java: ../javax/%.java
 # JDBC 4.2 (SSL)
 ###########################################
 ssl4_2javafiles = \
-        $(utilfiles:%.java=outssl4_2/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl4_2/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl4_2/openlink/util/%.java) \
-        $(util4files:%.java=outssl4_2/openlink/util/%.java) \
-    	$(in3files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outssl4_2/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl4_2/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl4_2/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl4_2/openlink/util/%.java) \
+	$(util4files:%.java=outssl4_2/openlink/util/%.java) \
+	$(in3files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outssl4_2/virtuoso/javax/%.java)
 
 .PHONY: ssl4_2
 ssl4_2: ../../virtjdbc4_2ssl.jar
