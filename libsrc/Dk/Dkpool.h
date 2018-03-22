@@ -488,7 +488,7 @@ size_t mm_next_size (size_t n, int * nth);
 size_t mm_cache_trim (size_t target_sz, int age_limit, int old_only);
 extern size_t mp_block_size;
 
-#if !defined (NDEBUG) /*&& !defined (MALLOC_DEBUG)*/
+#if defined (DEBUG) || defined (MALLOC_DEBUG)
 #define MP_MAP_CHECK
 #endif
 
