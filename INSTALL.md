@@ -201,7 +201,7 @@ configuration-related scripts to be executed by `/bin/bash`.
 Configure Invocation
 ======================
 
-`configure` recognizes a number options that control how it operates.
+`configure` recognizes a number of options that control how it operates.
 ```
 --help
 -h
