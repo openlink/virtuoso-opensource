@@ -433,7 +433,7 @@ next_response:
     href := href || '/';
   parent_col := DAV_SEARCH_ID (href, 'P');
   http ('<D:response xmlns:D="DAV:" xmlns:lp0="DAV:" xmlns:i0="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
-  http (sprintf ('<D:href>%V</D:href>\n', charset_recode (href, 'UTF-8', '_WIDE_')));
+  http (sprintf ('<D:href>%V</D:href>\n', DB.DBA.DAV_HREF_URL (href)));
   -- http ('<D:href>');
   -- http_dav_url (
   --   charset_recode (
@@ -514,17 +514,17 @@ next_response:
 	}
 	else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-home-set')
 	{
-		http (sprintf ('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>%V</D:href></C:calendar-home-set>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
+		http (sprintf ('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>%V</D:href></C:calendar-home-set>\n', DB.DBA.DAV_HREF_URL (lpath)));
           found_sprop := 1;
 	}
 	else if (prop = 'urn:ietf:params:xml:ns:carddav:addressbook-home-set')
 	{
-		http (sprintf ('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>%V</D:href></C:addressbook-home-set>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
+		http (sprintf ('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>%V</D:href></C:addressbook-home-set>\n', DB.DBA.DAV_HREF_URL (lpath)));
           found_sprop := 1;
 	}
 	else if (prop = ':principal-URL')
 	{
-		http (sprintf ('<D:principal-URL><D:href>%V</D:href></D:principal-URL>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
+		http (sprintf ('<D:principal-URL><D:href>%V</D:href></D:principal-URL>\n', DB.DBA.DAV_HREF_URL (lpath)));
         found_sprop := 1;
 	}
 	else if (prop = ':current-user-privilege-set')
@@ -1186,7 +1186,7 @@ nf:
   http ('<D:multistatus xmlns:D="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
       http ('<D:response xmlns:lp0="DAV:" xmlns:i0="DAV:">\n');
       -- http ('<D:href>'); http_dav_url (lpath); http ('</D:href>\n');
-      http (sprintf ('<D:href>%V</D:href>\n', charset_recode (lpath, 'UTF-8', '_WIDE_')));
+      http (sprintf ('<D:href>%V</D:href>\n', DB.DBA.DAV_HREF_URL (lpath)));
 	    http ('<D:propstat>\n');
 	      http ('<D:prop>\n');
 	      if (_prop = 'propname')
@@ -1574,12 +1574,14 @@ create procedure WS.WS.DELCHILDREN (in id integer, in lines varchar)
 	      LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = r_id and isnull (strstr (if_token, LOCK_TOKEN));
 	  if (n_locks > 0)
 	    {
-              http_header ('Content-type: text/xml; charset="utf-8"\r\n');
+        http_header ('Content-type: text/xml; charset="utf-8"\r\n');
 	      http (concat (
 		    '<?xml version="1.0" encoding="utf-8" ?>',
 		    '<d:multistatus xmlns:d="DAV:">',
 		    '<d:response>',
-		    '<d:href>')); http_dav_url (name); http(concat ('</d:href>',
+		    '<d:href>',
+		    DB.DBA.DAV_HREF_URL (name),
+		    '</d:href>',
 		    '<d:status>HTTP/1.1 423 Locked</d:status>',
 		    '</d:response>',
 		    '</d:multistatus>'
@@ -1604,12 +1606,14 @@ del_res_end:
 	      LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = icol and isnull (strstr (if_token, LOCK_TOKEN));
 	  if (n_locks > 0)
 	    {
-              http_header ('Content-type: text/xml; charset="utf-8"\r\n');
+        http_header ('Content-type: text/xml; charset="utf-8"\r\n');
 	      http (concat (
 		    '<?xml version="1.0" encoding="utf-8" ?>',
 		    '<d:multistatus xmlns:d="DAV:">',
 		    '<d:response>',
-		    '<d:href>')); http_dav_url (cname); http(concat ('</d:href>',
+		    '<d:href>',
+		    DB.DBA.DAV_HREF_URL (cname),
+		    '</d:href>',
 		    '<d:status>HTTP/1.1 423 Locked</d:status>',
 		    '</d:response>',
 		    '</d:multistatus>'
@@ -6951,5 +6955,15 @@ create procedure DB.DBA.TTL_REDIRECT_PARAMS (
 _not_found:
 
   return '';
+}
+;
+
+create procedure DB.DBA.DAV_HREF_URL (
+  in href varchar)
+{
+  href := replace (href, ' ', '%20');
+
+  return charset_recode (href, 'UTF-8', '_WIDE_');
+
 }
 ;
