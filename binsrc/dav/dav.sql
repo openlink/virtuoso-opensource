@@ -2919,47 +2919,8 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-    if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (DB.DBA.is_rdf_type (cont_type) or cont_type = 'application/ld+json') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
-    {
-      declare sp_opt, sp_col_opt any;
-
-      sp_col_opt := DB.DBA.TTL_REDIRECT_PARAMS (_col);
-      if (not isnull (sp_col_opt))
-      {
-        declare ttl_sp_enable varchar;
-
-        sp_col_opt := '&' || trim (sp_col_opt, '&');
-        http_rewrite ();
-        http_status_set (303);
-
-        ttl_sp_enable := registry_get ('__WebDAV_sponge_ttl__');
-        if (isinteger (ttl_sp_enable))
-        {
-          ttl_sp_enable := 'no';
-        }
-        if ((ttl_sp_enable = 'yes') or (ttl_sp_enable = 'add'))
-        {
-          sp_opt := '&sponger:get=add';
-        }
-        else if (ttl_sp_enable = 'soft')
-        {
-          sp_opt := '&sponger:get=soft';
-        }
-        else if (ttl_sp_enable = 'replace')
-        {
-          sp_opt := '&sponger:get=replace';
-        }
-        else
-        {
-          sp_opt := '';
-        }
-
-        http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s%s\r\n',
-          WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt, sp_col_opt));
-
-        return;
-      }
-    }
+    if (isinteger (_res_id) and (_accept = 'text/html') and WS.WS.TTL_REDIRECT (_col, full_path, cont_type))
+      return;
 
     _sse_cont_type := cont_type;
     cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
@@ -3842,6 +3803,137 @@ create procedure WS.WS.TTL_QUERY_POST_CLEAR (
 create procedure WS.WS.TTL_REDIRECT_ENABLED ()
 {
   return case when registry_get ('__WebDAV_ttl__') = 'yes' then 1 else 0 end;
+}
+;
+
+create procedure DB.DBA.TTL_REDIRECT_PARAMS (
+  in _col_id any,
+  out _ttlApp varchar,
+  out _ttlAppOption varchar)
+{
+  declare _tmp, _col_parent any;
+  whenever not found goto _exit;
+
+  _ttlApp := null;
+  _ttlAppOption := null;
+  while (1)
+  {
+    _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirect', 0);
+    if (DAV_HIDE_ERROR (_tmp) is not null)
+    {
+      if (_tmp <> 'yes')
+        return 0;
+
+      _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirectApp', 0);
+      if (DAV_HIDE_ERROR (_tmp) is not null)
+  	    _ttlApp := _tmp;
+
+      _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirectParams', 0);
+      if (DAV_HIDE_ERROR (_tmp) is not null)
+  	    _ttlAppOption := _tmp;
+
+      goto _exit;
+	  }
+    select COL_PARENT into _col_parent from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
+    _col_id := _col_parent;
+  }
+
+_exit:
+  if (isnull (_ttlApp))
+  {
+    _ttlApp := registry_get ('__WebDAV_ttl_app__');
+    if (isInteger (_ttlApp))
+      _ttlApp :=  case when (isnull (DB.DBA.VAD_CHECK_VERSION ('fct'))) then 'sponger' else 'fct' end;
+  }
+
+  if (isnull (_ttlAppOption))
+  {
+    _ttlAppOption := registry_get ('__WebDAV_ttl_app_option__');
+    if (isInteger (_ttlAppOption))
+    {
+      _ttlAppOption := '';
+      if (_ttlApp = 'fct')
+      {
+        declare ttl_sponge varchar;
+
+        ttl_sponge := registry_get ('__WebDAV_sponge_ttl__');
+        if (isinteger (ttl_sponge))
+        {
+          ttl_sponge := 'no';
+        }
+        else if (ttl_sponge = 'yes')
+        {
+          ttl_sponge := 'add';
+        }
+        if ((ttl_sponge = 'yes') or (ttl_sponge = 'add'))
+        {
+          _ttlAppOption := '&sponger:get=add';
+        }
+        else if (ttl_sponge = 'soft')
+        {
+          _ttlAppOption := '&sponger:get=soft';
+        }
+        else if (ttl_sponge = 'replace')
+        {
+          _ttlAppOption := '&sponger:get=replace';
+        }
+      }
+    }
+  }
+
+  return 1;
+}
+;
+
+create procedure WS.WS.TTL_REDIRECT (
+  in col_id integer,
+  in path varchar,
+  in cont_type varchar)
+{
+  declare mimeTypes, location, ttl_app, ttl_app_option any;
+
+  if (not WS.WS.TTL_REDIRECT_ENABLED ())
+    return 0;
+
+  mimeTypes := registry_get ('__WebDAV_ttl_mimes__');
+  if (isInteger (mimeTypes))
+  {
+    mimeTypes := vector ('text/turtle');
+  }
+  else
+  {
+    mimeTypes := deserialize (mimeTypes);
+  }
+  if (not position (cont_type, mimeTypes))
+    return 0;
+
+  if (not DB.DBA.TTL_REDIRECT_PARAMS (col_id, ttl_app, ttl_app_option))
+    return 0;
+
+  location := null;
+  if ((ttl_app = 'fct') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+  {
+    location := 'Location: %s/describe/?url=%U%s\r\n';
+  }
+  else if ((ttl_app = 'osde') and not isnull (DB.DBA.VAD_CHECK_VERSION ('rdf-editor')))
+  {
+    location := 'Location: %s/rdf-editor/index.html#/editor?uri=%U&ioType=dav%s\r\n';
+  }
+  else if (ttl_app = 'sponger')
+  {
+    location := 'Location: %s/about/html/%s\r\n';
+  }
+
+  if (not isnull (location))
+  {
+    http_rewrite ();
+    http_status_set (303);
+    http_header (http_header_get () || sprintf (location, WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (path, ' ', '%20'), ttl_app_option));
+
+    return 1;
+  }
+
+  return 0;
 }
 ;
 
@@ -6925,36 +7017,6 @@ create procedure DB.DBA.LDP_ACCEPT_PARAM (
   }
 _break:;
   return retValue;
-}
-;
-
-create procedure DB.DBA.TTL_REDIRECT_PARAMS (
-  in _col_id any)
-{
-  declare _p_id, _tmp any;
-  whenever not found goto _not_found;
-
-  while (_col_id > 0 or isvector (_col_id))
-  {
-    _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirect', 0);
-    if (DAV_HIDE_ERROR (_tmp) is not null)
-    {
-      if (_tmp <> 'yes')
-  	    return null;
-
-      _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirectParams', 0);
-      if (DAV_HIDE_ERROR (_tmp) is not null)
-  	    return _tmp;
-
-      return '';
-	  }
-
-    _p_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_col_id, 'C'), 'P');
-    _col_id := _p_id;
-  }
-_not_found:
-
-  return '';
 }
 ;
 
