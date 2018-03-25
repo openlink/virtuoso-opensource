@@ -123,8 +123,13 @@ caddr_t uname_virtrdf_ns_uri_dialect_exceptions;
 caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
-caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+caddr_t uname_virtrdf_ns_uri_namespace_base;
+caddr_t uname_virtrdf_ns_uri_namespace_iri;
+caddr_t uname_virtrdf_ns_uri_namespace_prefix;
+caddr_t uname_virtrdf_ns_uri_namespace_row;
 caddr_t uname_virtrdf_ns_uri_rdf_repl_all;
+caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+caddr_t uname_virtrdf_ns_uri_rdf_repl_world;
 caddr_t uname_xhv_ns_uri;
 caddr_t uname_xhv_ns_uri_alternate;
 caddr_t uname_xhv_ns_uri_appendix;
@@ -324,8 +329,13 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	},
   { &uname_virtrdf_ns_uri_isSubclassOf		, VIRTRDF_NS_URI "isSubclassOf"	},
   { &uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	},
-  { &uname_virtrdf_ns_uri_rdf_repl_graph_group	, VIRTRDF_NS_URI "rdf_repl_graph_group"	},
+  { &uname_virtrdf_ns_uri_namespace_base		, VIRTRDF_NS_URI "namespace-base"		},
+  { &uname_virtrdf_ns_uri_namespace_iri			, VIRTRDF_NS_URI "namespace-iri"		},
+  { &uname_virtrdf_ns_uri_namespace_prefix		, VIRTRDF_NS_URI "namespace-prefix"		},
+  { &uname_virtrdf_ns_uri_namespace_row			, VIRTRDF_NS_URI "namespace-row"		},
   { &uname_virtrdf_ns_uri_rdf_repl_all		, VIRTRDF_NS_URI "rdf_repl_all"	},
+  { &uname_virtrdf_ns_uri_rdf_repl_graph_group		, VIRTRDF_NS_URI "rdf_repl_graph_group"		},
+  { &uname_virtrdf_ns_uri_rdf_repl_world		, VIRTRDF_NS_URI "rdf_repl_world"		},
   { &uname_xhv_ns_uri				, XHV_NS_URI			},
   { &uname_xhv_ns_uri_alternate			, XHV_NS_URI "alternate"	},
   { &uname_xhv_ns_uri_appendix			, XHV_NS_URI "appendix"		},

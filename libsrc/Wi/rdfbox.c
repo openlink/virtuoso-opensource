@@ -149,10 +149,12 @@ stat_desc_t rdf_preset_datatypes_descs [] =
 caddr_t boxed_iid_of_virtrdf_ns_uri = NULL;
 caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_all = NULL;
 caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_graph_group = NULL;
+caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_world = NULL;
 
 iri_id_t iid_of_virtrdf_ns_uri = 0;
 iri_id_t iid_of_virtrdf_ns_uri_rdf_repl_all = 0;
 iri_id_t iid_of_virtrdf_ns_uri_rdf_repl_graph_group = 0;
+iri_id_t iid_of_virtrdf_ns_uri_rdf_repl_world = 0;
 
 void
 rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
@@ -169,6 +171,7 @@ rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_all)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_graph_group)
+  RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_world)
 }
 
 iri_id_t bnode_t_treshold = ~((iri_id_t)0);
@@ -6441,6 +6444,7 @@ bif_rdf_repl_uid (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 /*! This returns nonzero if the graph in question should be replicated. The \c answer_is_one_for_all_ret is fileld with zero if this decision is "individual"
 and nonzero if the reason is as common as replication not enabled or \c REPLICATION_SUPPORT is not enabled in the build or vica versa the replication is
 enabled and enable for all by putting virtrdf:rdf_repl_all to the replication group.
+Even if all graphs are "world", virtrdf:rdf_repl_world does not affect \c answer_is_one_for_all_ret when added to the replication group.
 However care should be taken in case of positive returned result combined with nonzero answer_is_one_for_all_ret.
 This combination does not mean that all graphs can be replicated. An additional check should be made for virtrdf: that should never be replicated. */
 int
