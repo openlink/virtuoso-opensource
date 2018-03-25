@@ -589,6 +589,7 @@ libwic_la_SOURCES = \
 	datesupp.c \
 	multibyte.c \
 	numeric.c \
+	sqlver.c \
 	wirpc.c \
 	wi_xid.c
 
@@ -601,6 +602,7 @@ libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
+libwic_la_CFLAGS  += -DOPSYS=\"@OPSYS@\" -DHOST=\"@host@\"
 libwic_la_LDLAGS  = -static
 
 ###################################################################

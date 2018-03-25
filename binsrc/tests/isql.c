@@ -27,6 +27,7 @@
 #include "libutil.h"
 #include "odbcinc.h"
 #include "timeacct.h"
+#include "Wi/sqlver.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -60,7 +61,7 @@
 /* Changed from 0.9846b at 26-JAN-1998 */
 /* Changed from 0.9847b at 12-FEB-1998 */
 /* Changed from 0.9848b at 18-MAR-1998 */
-#define ISQL_VERSION _T("0.9849b")
+#define ISQL_VERSION _T("" DBMS_SRV_VER "")
 
 
 TCHAR *isql_version = ISQL_VERSION;
@@ -492,7 +493,7 @@ option /t or /s is present with /b).
 Have to be global as a few functions need these.
 */
 #if defined(ODBC_ONLY)
-TCHAR *datasource = _T("Virtuoso");
+TCHAR *datasource = _T("Local Virtuoso");
 TCHAR *username = NULL;
 TCHAR *password = NULL;
 
@@ -708,7 +709,7 @@ TCHAR *delayed_settings[MAX_DELAYED_SETTINGS + 2] =
 {NULL};
 int n_delayed_settings = 0;	/* A zero-based index to previous. */
 
-#define MIN_INPUT_SIZE 250000
+#define MIN_INPUT_SIZE (10*1024*1024)
 TCHAR input1[MIN_INPUT_SIZE + 20];
 int input_size = MIN_INPUT_SIZE;
 TCHAR *input = input1;
@@ -719,7 +720,7 @@ TCHAR *input = input1;
 
 
 #ifndef TMPBUF_SIZE
-#define TMPBUF_SIZE 560
+#define TMPBUF_SIZE  1024
 #endif
 
 #define RETVALBUFSIZE 3003
@@ -5119,7 +5120,7 @@ print_blob_col_csv_rfc4180 (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_ty
           if (!isprint(*ch))
             isqlt_tprintf (_T("%%%2.2hX"), (short)*ch);
 	  else if (*ch == (TCHAR)('"'))
-	    isqlt_puttchar (_T("\"\""));
+	    isqlt_tprintf (_T("\"\""));
           else
             isqlt_puttchar (*ch);
         }
@@ -9646,11 +9647,12 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
     {
 #if defined (NO_DRIVER_CONNECT)
       isql_fprintf (error_stream,
-		    "%" PCT_S _T(": SQLDriverConnect not available on this platform. Please use SET DSN, UID and PWD commands before CONNECT command without arguments to connect.\n"), progname);
+		    "%") PCT_S _T(": SQLDriverConnect not available on this platform. Please use SET DSN, UID and PWD commands before CONNECT command without arguments to connect. Connection string was: \"%s\"\n",
+		    progname, datasource);
       isql_exit (1);
 #else
       SWORD conn_str_length;
-      TCHAR completed_conn_string[4096];
+      TCHAR completed_conn_string[1001];
 
 #ifdef ODBC_ONLY
       TCHAR dsn2[512];
@@ -10250,16 +10252,20 @@ isql_main (int argc,
     /* Normal usage from shell. */
     /* Parse command line arguments in this little loop. */
     {				/* This part taken from dbdump.c. Web-interface implemented above */
-      int i, u_encountered = 0;
+      int u_encountered = 0;
       for (i = 1, nth_non_option = 0; i < argc; i++)
 	{
 	  if (!isqlt_tcsncmp (argv[i], _T("-?"), 2) || !isqlt_tcsncmp (argv[i], _T("/?"), 2) || !isqlt_tcsncmp (argv[i], _T("--help"), 6))
 	    {
+	      isqlt_ftprintf (stdout, _T("%") PCT_S _T(" Interactive SQL ") ISQL_TYPE _T("\n"), PRODUCT_NAME);
+	      isqlt_ftprintf (stdout, _T("Version %")  PCT_S  _T(" as of %s\n"), ISQL_VERSION, __DATE__);
+#ifndef ODBC_ONLY
+	      isqlt_ftprintf (stdout, _T("Compiled for %")  PCT_S _T(" (%")  PCT_S _T(")\n"), build_opsys_id, build_host_id);
+#endif
+ 	      isqlt_ftprintf (stdout, _T("%s\n"), PRODUCT_COPYRIGHT);
 	      isqlt_ftprintf (stdout,
-		  _T("OpenLink Interactive SQL ") ISQL_TYPE _T(", version %") PCT_S _T(".\n"),
-		  ISQL_VERSION);
-	      isqlt_ftprintf (stdout,
-		_T("\n   Usage :\n")
+		_T("\n")
+	        _T("Usage:\n")
 #ifndef ODBC_ONLY
 		_T("isql <HOST>[:<PORT>] <UID> <PWD> file1 file2 ...\n")
 		_T("\n")
@@ -10267,15 +10273,14 @@ isql_main (int argc,
 		_T("     [-E] [-X <pkcs12_file>] [-K] [-C <num>] [-b <num>]\n")
 		_T("     [-u <name>=<val>]* [-i <param1> <param2>]\n")
 #else
-		_T("isql <DSN> <UID> <PWD> file1 file2 ...\n\n")
+		_T("  isql <DSN> <UID> <PWD> file1 file2 ...\n")
 		_T("\n")
 		_T("isql -H datasource [-U <UID>] [-P <PWD>] [-u <name>=<val>]* [-i <param1> <param2>]\n")
-		_T("\n")
 #endif
-		_T("     isql -?")
+		_T("\n")
+		_T("  isql -?\n")
 		_T("\n")
 		_T("Connection options:\n")
-		_T("\n")
 		_T("  -?                  - This help message\n")
 		_T("  -U username         - Specifies the login user ID\n")
 		_T("  -P password         - Specifies the login password\n")
@@ -10286,16 +10291,16 @@ isql_main (int argc,
                 _T("  -C                  - Specifies that password will be sent in cleartext\n")
 		_T("  -X pkcs12_file      - Specifies that encryption & X509 certificates will\n")
 		_T("                        be used\n")
-		_T("  -T server_cert      - Specifies that CA certificate file to be used\n")
-                _T("  -b size             - Specifies that large command buffer to be used\n")
+		_T("  -T server_cert      - Specifies that CA certificate file will be used\n")
+		_T("  -W webid_delegate   - Specifies WebID delegate IRI\n")
+                _T("  -b size             - Specifies that large command buffer will be used\n")
 		_T("                        (in KBytes)\n")
-		_T("  -K                  - Shuts down the virtuoso on connecting to it\n")
+		_T("  -K                  - Shuts down the virtuoso engine after connecting to it\n")
 #else
 		_T("  -H datasource       - Specifies the data source name (DSN)\n")
 #endif
 		_T("\n")
 		_T("Parameter passing options:\n")
-		_T("\n")
 		_T("  -u name1=val1... - Everything after -u is stored to associative array U,\n")
 		_T("                        until -i is encountered. If no equal sign then value\n")
 		_T("                        is NULL\n")
@@ -10303,8 +10308,10 @@ isql_main (int argc,
 		_T("                        comes arbitrary input parameter(s) for isql procedure,\n")
 		_T("                        which can be referenced with $ARGV[$I] by the\n")
 		_T("                        ISQL-commands.\n")
-		_T("  <OPT>=<value>       - Sets the ISQL options\n\n")
-		_T("  Note that if none of the above matches then the non-options go as \n")
+		_T("  <OPT>=<value>       - Sets the ISQL options\n")
+		_T("\n")
+		_T("Note: Arguments that do not match one of the above options will be assigned\n")
+                _T("      in order to the following fields:\n")
 #ifndef ODBC_ONLY
 		_T("  <HOST>[:<PORT>] <UID> <PWD> file1 file2 ...\n\n")
 #else
@@ -10542,6 +10549,14 @@ isql_main (int argc,
       return 0;
     }
 #endif
+
+  if (verbose_mode && (NOT web_mode))
+    {
+      isql_printf (_T("%") PCT_S _T(" Interactive SQL ") ISQL_TYPE _T("\n"), PRODUCT_NAME);
+      isql_printf (_T("Version %")  PCT_S  _T(" as of %s\n"), ISQL_VERSION, __DATE__);
+      isql_printf ("Type HELP; for help and EXIT; to exit.\n");
+    }
+
   if (nth_non_option || shortcuts_used)		/* Used in the traditional way, with datasource,
 				   and possibly username and password given from
 				   the command line? */
@@ -10598,14 +10613,6 @@ isql_main (int argc,
 	{
 	  goto done;
 	}
-    }
-
-  if (verbose_mode && (NOT web_mode))
-    {
-      isql_printf (
-	  _T("OpenLink Interactive SQL ") ISQL_TYPE
-	  _T(", version %") PCT_S _T(".\nType HELP; for help and EXIT; to exit.\n"),
-	  ISQL_VERSION);
     }
 
 /* Check if the user has given one or more statements to be executed
