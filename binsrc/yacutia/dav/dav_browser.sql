@@ -4053,6 +4053,35 @@ create procedure WEBDAV.DBA.DAV_PROP_GET (
 
 -------------------------------------------------------------------------------
 --
+create procedure WEBDAV.DBA.DAV_PROP_GET_CHAIN (
+  in path varchar,
+  in propName varchar,
+  in propValue varchar := null,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
+{
+  -- dbg_obj_princ ('WEBDAV.DBA.DAV_PROP_GET (', path, propName, ')');
+  declare retValue any;
+  declare exit handler for SQLSTATE '*' {goto _exit;};
+
+  WEBDAV.DBA.DAV_API_PARAMS (auth_name, auth_pwd);
+  while (1)
+  {
+    retValue := DB.DBA.DAV_PROP_GET (path, propName, auth_name, auth_pwd);
+    if (not WEBDAV.DBA.DAV_ERROR (retValue))
+      return retValue;
+
+    path := WEBDAV.DBA.path_parent (path, 1);
+    if (path = '/')
+      goto _exit;
+  }
+_exit:
+  return propValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure WEBDAV.DBA.DAV_PROP_SET (
   in path varchar,
   in propName varchar,

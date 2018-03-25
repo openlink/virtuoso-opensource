@@ -553,7 +553,7 @@
             ]]>
           </v:method>
 
-          <v:method name="get_fieldProperty" arglist="in formFieldName varchar, in path varchar, in davPropertyName varchar, in defaultValue varchar">
+          <v:method name="get_fieldProperty" arglist="in formFieldName varchar, in path varchar, in davPropertyName varchar, in defaultValue any">
             <![CDATA[
               declare tmp, params varchar;
 
@@ -783,6 +783,72 @@
               else
               {
                 retValue := vector (0, 0, vector ());
+              }
+
+              return retValue;
+            ]]>
+          </v:method>
+
+          <v:method name="turtleRedirectApp" arglist="in path varchar">
+            <![CDATA[
+              declare retValue varchar;
+
+              retValue := WEBDAV.DBA.DAV_PROP_GET_CHAIN (path, 'virt:turtleRedirectApp');
+              if (isnull (retValue))
+                retValue := registry_get ('__WebDAV_ttl_app__');
+
+              if (isInteger (retValue))
+                retValue :=  case when (isnull (DB.DBA.VAD_CHECK_VERSION ('fct'))) then 'sponger' else 'fct' end;
+
+              return retValue;
+            ]]>
+          </v:method>
+
+          <v:method name="turtleRedirectParams" arglist="in path varchar">
+            <![CDATA[
+              declare retValue, ttl_sponge varchar;
+
+              retValue := WEBDAV.DBA.DAV_PROP_GET_CHAIN (path, 'virt:turtleRedirectParams');
+              if (isnull (retValue))
+                retValue := registry_get ('__WebDAV_ttl_app_option__');
+
+              if (isInteger (retValue))
+              {
+                retValue := '';
+                if (self.get_fieldProperty ('dav_turtleRedirectApp', path, 'virt:turtleRedirectApp', self.turtleRedirectApp (path)) = 'fct')
+                {
+                  ttl_sponge := self.turtleRedirectSponge ();
+                  if ((ttl_sponge = 'yes') or (ttl_sponge = 'add'))
+                  {
+                    retValue := '&sponger:get=add';
+                  }
+                  else if (ttl_sponge = 'soft')
+                  {
+                    retValue := '&sponger:get=soft';
+                  }
+                  else if (ttl_sponge = 'replace')
+                  {
+                    retValue := '&sponger:get=replace';
+                  }
+                }
+              }
+
+              return retValue;
+            ]]>
+          </v:method>
+
+          <v:method name="turtleRedirectSponge" arglist="">
+            <![CDATA[
+              declare retValue varchar;
+
+              retValue := registry_get ('__WebDAV_sponge_ttl__');
+              if (isinteger (retValue))
+              {
+                retValue := 'no';
+              }
+              else if (retValue = 'yes')
+              {
+                retValue := 'add';
               }
 
               return retValue;
@@ -2840,31 +2906,44 @@
                     </v:template>
                     <v:template name="tf_12c" type="simple" enabled="-- case when self.viewField ('turtleRedirect') and (self.dav_type = 'C') and not self.dav_is_redirect then 1 else 0 end">
                       <tr>
-                        <th width="30%">Enable Content Negotiation based Redirection</th>
+                        <th>Redirect "text/html" requests on RDF docs</th>
                         <td>
                           <label>
                             <?vsp
                               declare tmp, checked any;
 
-                              tmp := self.get_fieldProperty ('dav_turtleRedirect', self.dav_path, 'virt:turtleRedirect', 'yes');
-                              if (tmp = 'yes')
-                              {
-                                checked := 'checked="checked"';
-                              }
-                              else
-                              {
-                                checked := '';
-                              }
-                              http (sprintf ('<input type="checkbox" name="dav_turtleRedirect" id="dav_turtleRedirect" value="yes" disabled="disabled" title="Turtle Redirect" %s />',  checked));
+                              tmp := self.get_fieldProperty ('dav_turtleRedirect', self.dav_path, 'virt:turtleRedirect', WEBDAV.DBA.DAV_PROP_GET_CHAIN (self.dav_path, 'virt:turtleRedirect', 'yes'));
+                              checked := case when (tmp = 'yes') then 'checked="checked"' else '' end;
+                              http (sprintf ('<input type="checkbox" name="dav_turtleRedirect" id="dav_turtleRedirect" value="yes" disabled="disabled" title="Turtle Redirect" %s onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'ttl_enable_1\', \'ttl_enable_2\']}, \'unchecked\': {\'hide\': [\'ttl_enable_1\', \'ttl_enable_2\']}});" />',  checked));
                             ?>
-                            <b> ('text/html' content negotiation for 'text/turtle' files)</b>
+                            <b> ('text/html' content negotiation only)</b>
                           </label>
                         </td>
                       </tr>
-                      <tr>
-                        <th width="30%">Redirection URL Params</th>
+                      <tr id="ttl_enable_1" style="display: none;">
+                        <th nowrap="nowrap" valign="top">
+                          Select RDF Data Browser Application for redirection
+                        </th>
                         <td>
-                          <v:text name="dav_turtleRedirectParams" xhtml_id="dav_turtleRedirectParams" value="--self.get_fieldProperty ('dav_turtleRedirectParams', self.dav_path, 'virt:turtleRedirectParams', '')" xhtml_disabled="disabled" xhtml_class="field-short" />
+                          <select name="dav_turtleRedirectApp" id ="dav_turtleRedirectApp" onchange="$('dav_turtleRedirectParams').value = '';">
+                          <?vsp
+                            declare tmp any;
+
+                            tmp := self.get_fieldProperty ('dav_turtleRedirectApp', self.dav_path, 'virt:turtleRedirectApp', self.turtleRedirectApp (self.dav_path));
+                            http (sprintf ('<option value="sponger" %s>Sponger About</option>', case when tmp = 'sponger' then 'selected="selected"' else '' end));
+                            if (not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+                              http (sprintf ('<option value="fct" %s>Faceted Browser</option>', case when tmp = 'fct' then 'selected="selected"' else '' end));
+
+                            if (not isnull (DB.DBA.VAD_CHECK_VERSION ('rdf-editor')))
+                              http (sprintf ('<option value="osde" %s>OSDE</option>', case when tmp = 'osde' then 'selected="selected"' else '' end));
+                          ?>
+                          </select>
+                        </td>
+                      </tr>
+                      <tr id="ttl_enable_2" style="display: none;">
+                        <th>RDF Data Browser Application options</th>
+                        <td>
+                          <v:text name="dav_turtleRedirectParams" xhtml_id="dav_turtleRedirectParams" value="--self.get_fieldProperty ('dav_turtleRedirectParams', self.dav_path, 'virt:turtleRedirectParams', self.turtleRedirectParams(self.dav_path))" xhtml_disabled="disabled" xhtml_class="field-short" />
                         </td>
                       </tr>
                     </v:template>
@@ -3237,7 +3316,7 @@
                 <v:on-post>
                   <![CDATA[
                     declare N, M, retValue, dav_owner, dav_group, dav_encryption_state integer;
-                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, dav_turtleRedirect, dav_turtleRedirectParams, msg, _p varchar;
+                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, dav_turtleRedirect, dav_turtleRedirectApp, dav_turtleRedirectParams, msg, _p varchar;
                     declare properties, c_properties any;
                     declare old_dav_acl, dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content, dav_expireDate any;
                     declare params, detParams, itemList any;
@@ -3785,16 +3864,25 @@
                           goto _exec_7;
 
                         dav_turtleRedirect := get_keyword ('dav_turtleRedirect', params, 'no');
-                        tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:turtleRedirect', '');
-                        if (dav_turtleRedirect <> tmp)
-                        {
-                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:turtleRedirect', dav_turtleRedirect);
-                        }
+                        dav_turtleRedirectApp := get_keyword ('dav_turtleRedirectApp', params, '');
                         dav_turtleRedirectParams := get_keyword ('dav_turtleRedirectParams', params, '');
-                        tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:turtleRedirectParams', '');
-                        if (dav_turtleRedirectParams <> tmp)
+                        WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:turtleRedirect', dav_turtleRedirect);
+                        if (
+                            (dav_turtleRedirect = 'yes') and
+                            (
+                             (dav_turtleRedirect <> WEBDAV.DBA.DAV_PROP_GET_CHAIN (dav_fullPath, 'virt:turtleRedirect', 'yes')) or
+                             (dav_turtleRedirectApp <> WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:turtleRedirectApp', '')) or
+                             (dav_turtleRedirectParams <> WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:turtleRedirectParams', ''))
+                            )
+                           )
                         {
+                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:turtleRedirectApp', dav_turtleRedirectApp);
                           WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:turtleRedirectParams', dav_turtleRedirectParams);
+                        }
+                        else
+                        {
+                          WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, 'virt:turtleRedirectApp');
+                          WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, 'virt:turtleRedirectParams');
                         }
 
                       _exec_7:;
@@ -4034,6 +4122,7 @@
                 WEBDAV.updateLabel($v('dav_det'));
                 initDisabled();
                 WEBDAV.initTab(17, 1);
+                destinationChange($('dav_turtleRedirect'), {'checked': {'show': ['ttl_enable_1', 'ttl_enable_2']}, 'unchecked': {'hide': ['ttl_enable_1', 'ttl_enable_2']}});
 
                 var v = $('dav_name').value;
                 $('dav_name_save').value = v;
