@@ -2915,7 +2915,7 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-    if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+    if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (DB.DBA.is_rdf_type (cont_type) or cont_type = 'application/ld+json') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
     {
       declare sp_opt, sp_col_opt any;
 
