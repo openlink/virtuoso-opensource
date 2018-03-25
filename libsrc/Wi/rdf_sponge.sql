@@ -392,8 +392,7 @@ out_of_limit:
 }
 ;
 
-create procedure
-DB.DBA.RDF_GRAB (
+create procedure DB.DBA.RDF_GRAB (
   in app_params any, in grab_params any, in seed varchar, in iter varchar, in final varchar, in ret_limit integer,
   in const_iris any, in depth integer, in plain_ret integer, in uid any )
 {
@@ -671,7 +670,7 @@ alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
 ;
 --#ENDIF
 
-create table RDF_WEBID_ACL_GROUPS (
+create table DB.DBA.RDF_WEBID_ACL_GROUPS (
 	AG_WEBID varchar,
 	AG_GROUP varchar,
 primary key (AG_WEBID, AG_GROUP)
@@ -2278,6 +2277,142 @@ create function DB.DBA.RDF_SPONGE_UP_LIST (in sources any)
 }
 ;
 
+-- API
+
+create function DB.DBA.SPONGER_DOCUMENT_IS_SPONGED (in doc varchar)
+{
+  if (exists (select 1 from DB.DBA.SYS_HTTP_SPONGE where HS_ORIGIN_URI = doc))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.SPONGER_DOCUMENT_EXPIRATION (in graph varchar)
+{
+  declare ret datetime;
+  ret := null;
+  for select HS_EXPIRATION from DB.DBA.SYS_HTTP_SPONGE where HS_ORIGIN_URI = graph do
+    {
+      ret := HS_EXPIRATION;
+    }
+  return ret;
+}
+;
+
+create procedure DB.DBA.SPONGER_CACHE_CHECK (in url varchar, in top_url varchar, out old_etag varchar, out old_last_modified any)
+{
+  declare old_exp_is_true, old_expiration, old_read_count any;
+  whenever not found goto no_record;
+  select HS_EXP_IS_TRUE, HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG, HS_READ_COUNT
+      into old_exp_is_true, old_expiration, old_last_modified, old_etag, old_read_count
+      from DB.DBA.SYS_HTTP_SPONGE where HS_FROM_IRI = url and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
+  -- as we are at point we load everything we always do re-load
+no_record:
+  return 0;
+}
+;
+
+create procedure DB.DBA.SPONGER_CACHE_REGISTER (in url varchar, in top_url varchar, inout hdr any,
+                   in old_last_modified any, in download_size int, in load_msec int)
+{
+  declare explicit_refresh, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+      ret_dt_date, ret_dt_expires, ret_dt_last_modified any;
+
+  if (not isarray (hdr))
+    return;
+
+  url := WS.WS.EXPAND_URL (top_url, url);
+  explicit_refresh := null;
+  new_expiration := now ();
+  DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS (explicit_refresh, old_last_modified,
+      hdr, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+       ret_dt_date, ret_dt_expires, ret_dt_last_modified);
+  insert replacing DB.DBA.SYS_HTTP_SPONGE (
+      HS_LAST_LOAD,
+      HS_LAST_ETAG,
+      HS_LAST_READ,
+      HS_EXP_IS_TRUE,
+      HS_EXPIRATION,
+      HS_LAST_MODIFIED,
+      HS_DOWNLOAD_SIZE,
+      HS_DOWNLOAD_MSEC_TIME,
+      HS_READ_COUNT,
+      HS_SQL_STATE,
+      HS_SQL_MESSAGE,
+      HS_LOCAL_IRI,
+      HS_PARSER,
+      HS_ORIGIN_URI,
+      HS_ORIGIN_LOGIN,
+      HS_FROM_IRI)
+      values
+      (
+       now (),
+       ret_etag,
+       now(),
+       case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
+       coalesce (ret_dt_expires, new_expiration, now()),
+       ret_dt_last_modified,
+       download_size,
+       load_msec,
+       1,
+       NULL,
+       NULL,
+       url,
+       'DB.DBA.RDF_LOAD_HTTP_RESPONSE',
+       url,
+       NULL,
+       top_url
+       );
+
+  return;
+}
+;
+
+-- scheduler task if needed to keep volume under certain limit
+create procedure DB.DBA.SPONGE_CLEAN_SPONGE (in d int := 30, in n int := 2000)
+{
+  declare res, stat, msg varchar;
+  declare inx int;
+
+  declare exit handler for sqlstate '*'
+    {
+      log_enable (1);
+      resignal;
+    }
+  ;
+  log_enable (2);
+  inx := 0;
+  for select HS_LOCAL_IRI as graph from DB.DBA.SYS_HTTP_SPONGE where HS_EXPIRATION < dateadd ('day', -1*d, now ()) do
+    {
+       inx := inx + 1;
+       stat := '00000';
+       exec ('sparql clear graph <'||graph||'>', stat, msg);
+       if (inx > n)
+         goto endp;
+    }
+ endp:
+  log_enable (1);
+}
+;
+
+create procedure DB.DBA.SPONGER_GET_GRAPHS_LIKE (in graph_pattern varchar)
+{
+  declare ret any;
+  ret := (select VECTOR_AGG (HS_ORIGIN_URI) from DB.DBA.SYS_HTTP_SPONGE where regexp_match (graph_pattern, HS_ORIGIN_URI) is not null);
+  return ret;
+}
+;
+
+create procedure DB.DBA.SPONGER_GET_EXPIRY_INFO (in graph varchar)
+{
+  declare ret any;
+  ret := (select VECTOR_AGG (vector (HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG))
+      from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI =  graph and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE');
+  return ret;
+}
+;
+
+-- end API
 
 create procedure DB.DBA.RDF_GRANT_SPONGE ()
 {
@@ -2295,7 +2430,13 @@ create procedure DB.DBA.RDF_GRANT_SPONGE ()
     'grant execute on DB.DBA.SPARQL_EVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_SPONGE',
     'grant execute on DB.DBA.RDF_SPONGE_UP_1 to SPARQL_SPONGE',
-    'grant execute on DB.DBA.RDF_SPONGE_UP_LIST to SPARQL_SPONGE' );
+    'grant execute on DB.DBA.RDF_SPONGE_UP_LIST to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_DOCUMENT_IS_SPONGED to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_DOCUMENT_EXPIRATION to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_CACHE_CHECK to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_CLEAN_SPONGE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_GET_GRAPHS_LIKE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_GET_EXPIRY_INFO to SPARQL_SPONGE');
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);
