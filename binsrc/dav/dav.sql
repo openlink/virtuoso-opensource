@@ -2161,6 +2161,7 @@ create procedure WS.WS.PATCH (
   inout params any,
   in lines any)
 {
+  -- dbg_obj_princ ('WS.WS.PATCH (', path, params, lines, ')');
   declare rc, _col_parent_id integer;
   declare content_type varchar;
   declare _col integer;
@@ -2170,22 +2171,25 @@ create procedure WS.WS.PATCH (
   declare _u_id, _g_id integer;
   declare location, etag varchar;
   declare ses any;
-
-  ses := aref_set_0 (params, 1);
-
   whenever sqlstate '*' goto error_ret;
 -- As instructed by Orri, loop retries are removed
 --deadlock_retry:
 
+  ses := aref_set_0 (params, 1);
+
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
   full_path := DAV_CONCAT_PATH ('/', path);
-  _u_id := null;
-  _g_id := null;
   _col := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (full_path, '/'), 'C'));
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
-  if (_col_parent_id is not null)
+  if (_col_parent_id is null)
     {
+    DB.DBA.DAV_SET_HTTP_STATUS (409);
+    return;
+  }
+
+  _u_id := null;
+  _g_id := null;
     if (_col is not null)
       rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
     else
@@ -2193,12 +2197,7 @@ create procedure WS.WS.PATCH (
 
       if (rc < 0)
         goto error_ret;
-    }
-  else
-    {
-    DB.DBA.DAV_SET_HTTP_STATUS (409);
-      return;
-    }
+
   if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, _u_id))
     {
     DB.DBA.DAV_SET_HTTP_STATUS (423);
@@ -2208,35 +2207,43 @@ create procedure WS.WS.PATCH (
   if (content_type = '')
     content_type := http_mime_type (full_path);
 
+  rc := 0;
   _cont_len := atoi (WS.WS.FINDPARAM (lines, 'Content-Length:'));
   if ((full_path like '%.vsp' or full_path like '%.vspx') and _cont_len > 0)
+  {
       content_type := 'text/html';
-
-  if (content_type = 'application/sparql-update')
-  {
-    declare giid, meta, data, etag any;
-
-    connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
-    WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines);
-    giid := iri_to_id (WS.WS.DAV_IRI (full_path));
-    data := null;
-    rc := 0;
-    exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
-    if (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = 185)
-    {
-      data := data[0][0];
-      rc := -28;
-      rc := DAV_RES_UPLOAD_STRSES_INT (full_path, data, 'text/turtle', _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
-    }
-    if (DAV_HIDE_ERROR (rc) is not null)
-      goto _204;
   }
-  else
+  else if (content_type = 'application/sparql-update')
   {
-  rc := -28;
-  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
-  if (DAV_HIDE_ERROR (rc) is not null)
-      goto _204;
+    declare giid, meta, data any;
+
+    if (not WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines))
+      return;
+
+    giid := iri_to_id (WS.WS.DAV_IRI (full_path));
+    set_user_id ('dba');
+    exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
+    if (not (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = 185))
+      goto _skip;
+
+    ses := data[0][0];
+    content_type := 'text/turtle';
+  }
+  rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 0);
+
+_skip:;
+  if (DB.DBA.DAV_HIDE_ERROR (rc) is not null)
+  {
+    commit work;
+    DB.DBA.DAV_SET_HTTP_STATUS (204);
+    http_header (sprintf ('Content-Location: %s%s\r\n', WS.WS.DAV_HOST (), full_path));
+    etag := WS.WS.ETAG_BY_ID (rc, 'R');
+    if (etag is not null)
+      http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', etag));
+
+    http_rewrite ();
+
+    return;
     }
 
 error_ret:;
@@ -2250,18 +2257,6 @@ error_ret:;
 
   http_body_read ();
   DAV_SET_HTTP_REQUEST_STATUS (rc);
-
-  return;
-
-_204:;
-  commit work;
-  DB.DBA.DAV_SET_HTTP_STATUS (204);
-  http_header (sprintf ('Content-Location: %s%s\r\n', WS.WS.DAV_HOST (), full_path));
-  etag := WS.WS.ETAG_BY_ID (rc, 'R');
-  if (etag is not null)
-    http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', etag));
-
-  http_rewrite ();
 
   return;
 }
@@ -3718,10 +3713,10 @@ create procedure WS.WS.TTL_QUERY_POST (
       if (connection_get ('__WebDAV_ttl_prefixes__') = 'yes')
         goto _again;
 
-      if (connection_get ('__WebDAV_ttl_prefixes__') = 'no')
+      else if (connection_get ('__WebDAV_ttl_prefixes__') = 'no')
         goto _error;
 
-      if (not WS.WS.TTL_PREFIXES_ENABLED ())
+      else if (not WS.WS.TTL_PREFIXES_ENABLED ())
         goto _error;
 
       goto _again;
@@ -3967,10 +3962,16 @@ create procedure WS.WS.SPARQL_QUERY_GET (in content any, in full_path varchar, i
 
 create procedure WS.WS.SPARQL_QUERY_UPDATE (in content any, in full_path varchar, in path any, inout lines any)
 {
-  declare pars, def_gr any;
-  def_gr := WS.WS.DAV_IRI (full_path);
-  pars := vector ('query', string_output_string (content), 'default-graph-uri', def_gr);
-  WS.WS."/!sparql/" (path, pars, lines);
+  declare params, data any;
+
+  connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
+  params := vector ('query', string_output_string (content), 'default-graph-uri', WS.WS.DAV_IRI (full_path));
+  WS.WS."/!sparql/" (path, params, lines);
+  data := http_get_string_output ();
+  if (data not like '<sparql%')
+    return 0;
+
+  return 1;
 }
 ;
 
@@ -6921,7 +6922,7 @@ create procedure DB.DBA.LDP_DELETE_GRAPHS (
   }
   for (select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = id) do
   {
-    path := oldPath || subseq (DB.DBA.DB_SEARCH_PATH (COL_ID), length (newPath));
+    path := oldPath || subseq (DB.DBA.DAV_SEARCH_PATH (COL_ID), length (newPath));
     DB.DBA.LDP_DELETE (path, 1);
     DB.DBA.LDP_DELETE_GRAPHS (oldPath, newPath, COL_ID);
   }
