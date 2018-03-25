@@ -70,3 +70,43 @@ function dsns_chg(sel)
     }
   }
 }
+
+function destinationChange(obj, changes) {
+  function destinationChangeInternal(actions) {
+    if (!obj)
+      return;
+
+    if (actions.hide) {
+      var a = actions.hide;
+      for ( var i = 0; i < a.length; i++)
+        OAT.Dom.hide(a[i]);
+    }
+    if (actions.show) {
+      var a = actions.show;
+      for ( var i = 0; i < a.length; i++)
+        OAT.Dom.show(a[i]);
+    }
+    if (actions.clear) {
+      var a = actions.clear;
+      for ( var i = 0; i < a.length; i++) {
+        var o = $(a[i])
+        if (o && o.value)
+          o.value = '';
+      }
+    }
+    if (actions.exec) {
+      var a = actions.exec;
+      for ( var i = 0; i < a.length; i++) {
+        a[i](obj);
+      }
+    }
+  }
+  if (!changes)
+    return;
+
+  if (obj.checked && changes.checked)
+    destinationChangeInternal(changes.checked);
+
+  if (!obj.checked && changes.unchecked)
+    destinationChangeInternal(changes.unchecked);
+}
