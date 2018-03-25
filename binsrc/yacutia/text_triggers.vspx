@@ -243,7 +243,7 @@
       </tr>
       <tr>
         <th nowrap="nowrap" valign="top">
-          Enable redirection for RDF-Turtle files
+          Redirect “text/html” requests on RDF docs:<br />
         </th>
         <td colspan="2">
           <label>
@@ -259,8 +259,35 @@
         </td>
       </tr>
       <tr>
+        <td colspan="3" valign="top" style="padding-left: 20px;">
+		      <i>text/n3, text/turtle, text/rdf+n3, text/rdf+ttl, text/rdf+turtle, application/rdf+xml, application/rdf+n3, application/rdf+turtle, application/turtle, application/x-turtle, application/ld+json</i>
+        </td>
+      </tr>
+      <tr>
         <th nowrap="nowrap" valign="top">
-          Enable adding automatically missed prefixes for RDF-Turtle files
+          RDF Data Browser Applications:
+        </th>
+        <td colspan="2" />
+      </tr>
+      <tr>
+        <td colspan="3" valign="top" style="padding-left: 20px;">
+          <?vsp
+            declare S varchar;
+
+            S := 'Sponger About';
+            if (not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+              S := S || ', Faceted Browser';
+
+            if (not isnull (DB.DBA.VAD_CHECK_VERSION ('rdf-editor')))
+              S := S || ', OSDE';
+
+		        http ('<i>' || S || '</i>');
+		      ?>
+        </td>
+      </tr>
+      <tr>
+        <th nowrap="nowrap" valign="top">
+          Automatically add missing @prefix declarations for RDF-Turtle documents
         </th>
         <td colspan="2">
           <label>
