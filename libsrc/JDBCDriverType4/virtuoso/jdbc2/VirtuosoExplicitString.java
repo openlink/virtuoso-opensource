@@ -90,7 +90,7 @@ public class VirtuosoExplicitString
 	    }
 	  else if (dtp == VirtuosoTypes.DV_ANY)
 	    {
-	      if (con != null && con.charset != null)
+	      if (con != null && (con.charset != null || con.charset_utf8))
 	        {
 		  bytes = (con.charset_utf8) ? str.getBytes ("UTF8") : con.charsetBytes(str);
 		  this.dtp = (bytes.length < 256) ? VirtuosoTypes.DV_SHORT_STRING_SERIAL : VirtuosoTypes.DV_STRING;
