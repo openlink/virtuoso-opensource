@@ -297,7 +297,7 @@ public class VirtuosoConnection implements Connection
       {
 	charset = (String)prop.get("charset");
 	//System.out.println ("VirtuosoConnection " + charset);
-	if (charset.indexOf("UTF-8") != -1) // special case all will go as UTF-8
+	if (charset.toUpperCase().indexOf("UTF-8") != -1) // special case all will go as UTF-8
 	{
 	    this.charset = null;
 	    this.charset_utf8 = true;
