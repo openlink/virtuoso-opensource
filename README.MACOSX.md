@@ -107,9 +107,9 @@ This installs ImageMagick 6.x together with a number of libraries to work with s
 
 At configure time you can use the following line:
 
-    $ ./configure \
-       ..... \
-       --enable-imagemagick=/usr/local/opt/imagemagick\@6/
+    $ sh ./configure \
+      ..... \
+      --enable-imagemagick=/usr/local/opt/imagemagick\@6/
 
 
 ## Example of running configure on Mac OS X
@@ -122,23 +122,29 @@ First we set some environment variables:
 Next we (re)generate the configure script and all related build files, using the supplied script in
 your working directory:
 
-    $ sh autogen.sh
+    $ sh ./autogen.sh
 
-Assuming this did not return an error we can now configure virtuoso:
+Assuming this did not return an error we can now configure Virtuoso.  
 
-    $ sh configure \
-        --enable-maintainer-mode \
-        --enable-silent-rules \
-        --prefix=/usr/local/vos \
-        --with-layout=openlink \
-        --enable-openssl=/usr/local/opt/openssl/
-        --enable-imagemagick=/usr/local/opt/imagemagick@6/ \
-        --enable-openldap \
-        --disable-python \
-        --with-editline \
-        --with-jdk4=/System/Library/Frameworks/JavaVM.framework/Versions/1.6.0 \
-        --with-jdk4_1=/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home/ \
-        --with-jdk4_2=/Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/
+The command below includes many common options:
+
+    $ sh ./configure \
+      --enable-maintainer-mode \
+      --enable-silent-rules \
+      --prefix=/usr/local/vos \
+      --with-layout=openlink \
+      --enable-openssl=/usr/local/opt/openssl/ \
+      --enable-imagemagick=/usr/local/opt/imagemagick@6/ \
+      --enable-openldap \
+      --disable-python \
+      --with-editline \
+      --with-jdk4=/System/Library/Frameworks/JavaVM.framework/Versions/1.6.0 \
+      --with-jdk4_1=/Library/Java/JavaVirtualMachines/jdk1.7.0_71.jdk/Contents/Home/ \
+      --with-jdk4_2=/Library/Java/JavaVirtualMachines/jdk1.8.0_45.jdk/Contents/Home/
+
+For a full list of available `configure` options, including various optional subpackages, check the output of --
+
+    $ sh ./configure -help
 
 If the above steps return without error you should now be able to build the archive using the following commands:
 
