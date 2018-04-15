@@ -2530,8 +2530,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   declare id, rc, old_log_mode, new_log_mode any;
 
   -- clear previous uploaded data
-  id := DAV_SEARCH_ID (path, 'R');
-  if (not isnull (DAV_HIDE_ERROR (id)) and ('text/turtle' = (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))))
+  id := DB.DBA.DAV_SEARCH_ID (path, 'R');
+  if (not isnull (DB.DBA.DAV_HIDE_ERROR (id)) and ('text/turtle' = (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))))
     WS.WS.TTL_QUERY_POST_CLEAR (path);
 
   if (0 = dav_call)
@@ -2542,7 +2542,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
 	}
       else if (type = 'text/turtle')
 	{
-	  rc := WS.WS.TTL_QUERY_POST (path, content, 1);
+      rc := WS.WS.TTL_QUERY_POST (path, content, DB.DBA.LDP_ENABLED (DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_DET_PATH_PARENT (path, 1), 'C')));
       if (isnull (DAV_HIDE_ERROR (rc)))
 	    return rc;
 	}

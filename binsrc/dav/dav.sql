@@ -2162,13 +2162,10 @@ create procedure WS.WS.PATCH (
   in lines any)
 {
   -- dbg_obj_princ ('WS.WS.PATCH (', path, params, lines, ')');
-  declare rc, _col_parent_id integer;
+  declare rc, _res_id, _col, _col_parent_id integer;
   declare content_type varchar;
-  declare _col integer;
-  declare _name varchar;
-  declare _cont_len integer;
-  declare full_path, _perms, uname, upwd varchar;
-  declare _u_id, _g_id integer;
+  declare full_path, _perms, auth_name, auth_pwd varchar;
+  declare uid, gid integer;
   declare location, etag varchar;
   declare ses any;
   whenever sqlstate '*' goto error_ret;
@@ -2180,6 +2177,7 @@ create procedure WS.WS.PATCH (
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
   full_path := DAV_CONCAT_PATH ('/', path);
+  _res_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (full_path, 'R'));
   _col := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (full_path, '/'), 'C'));
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is null)
@@ -2188,17 +2186,27 @@ create procedure WS.WS.PATCH (
     return;
   }
 
-  _u_id := null;
-  _g_id := null;
-    if (_col is not null)
-      rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+  uid := null;
+  gid := null;
+  if (_col is not null) -- SPARQL query on container
+  {
+    rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+  }
+  else if (_res_id is not null)
+  {
+    rc := DAV_AUTHENTICATE_HTTP (_res_id, 'R', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    if (rc >= 0)
+      rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+  }
     else
-      rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+  {
+    rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+  }
 
       if (rc < 0)
         goto error_ret;
 
-  if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, _u_id))
+  if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, uid))
     {
     DB.DBA.DAV_SET_HTTP_STATUS (423);
       return;
@@ -2208,8 +2216,7 @@ create procedure WS.WS.PATCH (
     content_type := http_mime_type (full_path);
 
   rc := 0;
-  _cont_len := atoi (WS.WS.FINDPARAM (lines, 'Content-Length:'));
-  if ((full_path like '%.vsp' or full_path like '%.vspx') and _cont_len > 0)
+  if ((full_path like '%.vsp' or full_path like '%.vspx') and atoi (WS.WS.FINDPARAM (lines, 'Content-Length:')) > 0)
   {
       content_type := 'text/html';
   }
@@ -2229,7 +2236,11 @@ create procedure WS.WS.PATCH (
     ses := data[0][0];
     content_type := 'text/turtle';
   }
-  rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 0);
+  if ((_res_id is not null) and isinteger (_res_id))
+  {
+    select RES_OWNER, RES_GROUP, RES_PERMS into uid, gid, _perms from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
+  }
+  rc := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, uid, gid, 0, 0);
 
 _skip:;
   if (DB.DBA.DAV_HIDE_ERROR (rc) is not null)
@@ -2456,7 +2467,7 @@ create procedure WS.WS.GET (
   inout params any,
   in lines any)
 {
-  -- dbg_obj_princ ('WS.WS.GET (', path, params, lines, ')');
+  --dbg_obj_princ ('WS.WS.GET (', path, params, lines, ')');
   declare path_len integer;
   declare content long varchar;
   declare content_type varchar;
@@ -2914,7 +2925,7 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-    if (isinteger (_res_id) and (_accept = 'text/html') and WS.WS.TTL_REDIRECT (_col, full_path, cont_type))
+    if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_res_id)) and (_accept = 'text/html') and WS.WS.TTL_REDIRECT (_col, full_path, cont_type))
       return;
 
     _sse_cont_type := cont_type;
@@ -3679,9 +3690,11 @@ create procedure WS.WS.TTL_QUERY_PREFIXES (
 create procedure WS.WS.TTL_QUERY_POST (
   in path varchar,
   inout ses varchar,
-  in is_res integer := 0)
+  in is_resource integer := 0)
 {
-  -- dbg_obj_princ ('WS.WS.TTL_QUERY_POST (', path, ')');
+  -- dbg_obj_princ ('WS.WS.TTL_QUERY_POST (', path, __tag (ses), is_resource, ')');
+  declare step integer;
+  declare ldp_resource varchar;
   declare ns, def_gr, giid, dict, triples, prefixes, flags any;
 	declare exit handler for sqlstate '*'
 	{
@@ -3690,16 +3703,34 @@ create procedure WS.WS.TTL_QUERY_POST (
 	  connection_set ('__sql_message', __SQL_MESSAGE);
 	  return -44;
 	};
+  declare exit handler for sqlstate '37000'
+  {
+    step := step + 1;
+    if (step > 1)
+      goto _error;
+
+    else if (connection_get ('__WebDAV_ttl_prefixes__') = 'yes')
+      goto _again;
+
+    else if (connection_get ('__WebDAV_ttl_prefixes__') = 'no')
+      goto _error;
+
+    else if (not WS.WS.TTL_PREFIXES_ENABLED ())
+      goto _error;
+
+    goto _again;
+  };
 
   set_user_id ('dba');
   flags := 255;
   def_gr := WS.WS.DAV_IRI (path);
   giid := iri_to_id (def_gr);
   log_enable (3);
-  if (is_res)
+  if (is_resource)
 	{
     WS.WS.TTL_QUERY_POST_CLEAR (path);
-      DB.DBA.TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', def_gr), '', def_gr);
+    ldp_resource := sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', def_gr);
+    DB.DBA.TTLP (ldp_resource, '', def_gr);
 	 }
   else
     {
@@ -3707,32 +3738,15 @@ create procedure WS.WS.TTL_QUERY_POST (
       filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
     }
 
-  {
-    declare exit handler for sqlstate '37000'
-  {
-      if (connection_get ('__WebDAV_ttl_prefixes__') = 'yes')
-        goto _again;
+  -- Varbinary
+  if (__tag (ses) = 222)
+    ses := cast (ses as varchar);
 
-      else if (connection_get ('__WebDAV_ttl_prefixes__') = 'no')
-        goto _error;
+  step := 0;
+  ns := ses;
 
-      else if (not WS.WS.TTL_PREFIXES_ENABLED ())
-        goto _error;
+  goto _load;
 
-      goto _again;
-    };
-
-    -- Varbinary
-    if (__tag (ses) = 222)
-    {
-      ses := cast (ses as varchar);
-    }
-    ns := ses;
-    dict := dict_new ();
-    DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict, flags);
-
-    goto _exit;
-  }
 _again:;
   ns := string_output ();
   for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
@@ -3740,8 +3754,14 @@ _again:;
       http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), ns);
     }
   http (ses, ns);
+  if (is_resource)
+    http (ldp_resource, ns);
+
+_load:;
   dict := dict_new ();
   DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict, flags);
+  if (step = 0)
+    goto _exit;
 
 _next:;
   triples := dict_list_keys (dict, 1);
@@ -3809,6 +3829,7 @@ create procedure DB.DBA.TTL_REDIRECT_PARAMS (
   declare _tmp, _col_parent any;
   whenever not found goto _exit;
 
+  _col_id := DB.DBA.DAV_DET_DAV_ID (_col_id);
   _ttlApp := null;
   _ttlAppOption := null;
   while (1)
@@ -3881,10 +3902,11 @@ _exit:
 ;
 
 create procedure WS.WS.TTL_REDIRECT (
-  in col_id integer,
+  in col_id any,
   in path varchar,
   in cont_type varchar)
 {
+  -- dbg_obj_princ ('WS.WS.TTL_REDIRECT (', col_id, path, cont_type);
   declare mimeTypes, location, ttl_app, ttl_app_option any;
 
   if (not WS.WS.TTL_REDIRECT_ENABLED ())
@@ -6718,18 +6740,20 @@ create procedure DB.DBA.DAV_SET_HTTP_STATUS (
 ;
 
 create procedure DB.DBA.LDP_ENABLED (
-  in col_id any)
+  in _col_id any)
 {
   -- dbg_obj_princ ('DB.DBA.LDP_ENABLED (', col_id, ')');
-  declare p_id any;
 
-  while (col_id > 0 or isvector (col_id))
+  if (not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_col_id)))
+    return 0;
+
+  _col_id := DB.DBA.DAV_DET_DETCOL_ID (_col_id);
+  while (_col_id > 0)
   {
-    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (col_id, 'C', 'LDP', 0)) is not null)
+    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'LDP', 0)) is not null)
       return 1;
 
-    p_id := DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_SEARCH_PATH (col_id, 'C'), 'P');
-    col_id := p_id;
+    _col_id := coalesce ((select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = _col_id), -1);
   }
 
   return 0;
