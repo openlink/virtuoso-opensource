@@ -1671,25 +1671,27 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
     }
   }
 
-
   declare _perms, a_gid any;
   declare webid, serviceId varchar;
+
+  webid := null;
+  serviceId := null;
+
 
   if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
     return a_uid;
 
-  if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null) {
-    if (DAV_AUTHENTICATE_WITH_VAL (id, what, null, req, a_uid, a_gid, _perms, serviceId))
-      return a_uid;
+
+  -- Normalize the service variables for error handling in VAL
+  if (not webid is null and serviceId is null)
+  {
+    serviceId := webid;
   }
 
   -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
   a_uid := -1;
 
-  -- A session ID might be connected to a normal user account, that is what we check first
-  for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
-    a_uid := U_ID;
 
   if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
   {
@@ -1834,15 +1836,8 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
       check_more_auth:
 
         if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
-        {
           return a_uid;
-        }
-        if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null) {
-          if (DAV_AUTHENTICATE_WITH_VAL (id, what, null, req, a_uid, a_gid, _perms, serviceId))
-          {
-            return a_uid;
-          }
-        }
+
 
         -- Normalize the service variables for error handling in VAL
         if (not webid is null and serviceId is null)
@@ -1854,9 +1849,6 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
         -- However, service ids may map to ODS user accounts. This is what we check here
         a_uid := -1;
 
-        -- A session ID might be connected to a normal user account, that is what we check first
-        for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
-          a_uid := U_ID;
 
         if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
         {
@@ -2280,46 +2272,6 @@ DAV_AUTHENTICATE_SSL (
 }
 ;
 
---!
--- Get authentication information via VAL and check ACLs.
---/
-create function
-DAV_AUTHENTICATE_WITH_VAL (
-  in id any,
-  in what char(1),
-  in path varchar,
-  in req varchar,
-  inout a_uid integer,
-  inout a_gid integer,
-  inout _perms varchar,
-  out serviceId varchar) returns integer
-{
-  --dbg_printf('DAV_AUTHENTICATE_WITH_VAL (%d, %s, %s, ...)', id, what, path);
-  declare val_sid, val_sidRealm varchar;
-  declare val_uname varchar;
-  declare val_isRealUser integer;
-
-  declare exit handler for sqlstate '*' {
-    return 0;
-  };
-
-  val_sidRealm := null;
-  if (not VAL.DBA.authentication_details_for_connection (
-        val_sid,
-        serviceId,
-        val_uname,
-        val_isRealUser,
-        val_sidRealm,
-        'sid')
-     ) {
-    return 0;
-  }
-
-  -- Finally verify the ACL rules
-  DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
-  return DAV_CHECK_ACLS (id, serviceId, null, what, path, req, a_uid, a_gid, _perms);
-}
-;
 
 --!AWK PUBLIC
 create procedure
