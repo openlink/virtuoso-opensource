@@ -2297,7 +2297,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		StringBuffer ret = new StringBuffer("sparql\n ");
 
 	        if (baseURI!=null && baseURI.length()>0)
-        	    ret.append(" define input:graph-base <" + baseURI + "> \n");
+        	    ret.append(" define input:grab-base <" + baseURI + "> \n");
 
 		if (includeInferred && ruleSet!=null && ruleSet.length() > 0)
 		  ret.append("define input:inference '"+ruleSet+"'\n ");
