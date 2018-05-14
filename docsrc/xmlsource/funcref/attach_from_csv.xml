@@ -54,14 +54,15 @@
       <para>Name of the Virtuoso SQL table to be associated with the attached CSV file</para>
     </refsect2>
     <refsect2><title>fname</title>
-      <para>Name of the CSV file, which must be situated in a file system location within the scope of 'DirsAllowed' INI setting,
+      <para>Name of the CSV file, which must be situated in a file system location within the scope of <code>DirsAllowed</code> INI setting,
       	in one of the following forms:</para>
       <itemizedlist mark="bullet">
-        <listitem>'contacts.csv' -- relative path, here assuming a file in the 'pwd' of the Virtuoso instance</listitem>
-        <listitem>'/tmp/contacts.csv' -- absolute path, here assuming a file located in the '/tmp' folder/directory</listitem>
-        <listitem>'file:contacts.csv' or 'file:/tmp/contacts.csv' -- these common forms of incorrect file: scheme URIs are
-        	treated as simple (absolute or relative) paths</listitem>
-        <listitem>'file:///tmp/contacts.csv' -- absolute path, using file: scheme URI based identification <i>(implementation in progress)</i></listitem>
+        <listitem><code>'contacts.csv'</code> -- relative path, here assuming a file in the 'pwd' of the Virtuoso instance</listitem>
+        <listitem><code>'/tmp/contacts.csv'</code> -- absolute path, here assuming a file located in the '/tmp' folder/directory</listitem>
+        <listitem><code>'file:contacts.csv'</code> or <code>'file:/tmp/contacts.csv'</code> -- these common forms of incorrect 
+		<code>file:</code> scheme URIs are treated as simple (absolute or relative) paths</listitem>
+        <listitem><code>'file:///tmp/contacts.csv'</code> -- absolute path, using <code>file:</code> scheme URI based identification 
+		<i>(implementation in progress)</i></listitem>
       </itemizedlist>
     </refsect2>
     <refsect2><title>delimiter</title>
@@ -82,8 +83,9 @@
         <listitem>By default, this parameter value is null, and the virtual table will have no primary key.</listitem>
         <listitem>For a simple primary key, based on a single CSV column, this parameter should be set to that column's
         	ordinal value (first column = 1, second column = 2, etc.). </listitem>
-        <listitem> For a compound primary key, comprised of multiple CSV columns, this parameter should be set to a vector.
-        	For example, for a primary key comprised of ordinal columns 1 and 3, the parameter value should be vector(1,3) .</listitem>
+        <listitem>For a compound or composite primary key, composed of multiple CSV columns, this parameter should be set to a vector 
+		of the column ordinals. For example, for a primary key composed of ordinal columns 1 and 3, this parameter value should 
+		be set to vector(1,3).</listitem>
       </orderedlist>
     </refsect2>
   </refsect1>
@@ -108,8 +110,8 @@ Id,Fname,Sname,Age
 ]]></programlisting>
       </listitem>
       <listitem>Place the created <code>contacts1.csv</code> file within scope of <code>DirsAllowed</code> INI setting.</listitem>
-      <listitem>Call the attach_from_csv function from iSQL or Virtuoso Conductor UI ( http://host:port/conductor ) . Note: As the pkey_columns parameter
-      	value is not specified, by default the virtual table will have no Primary Key:
+      <listitem>Call the <code>attach_from_csv</code> function from iSQL or Virtuoso Conductor UI (<code>http://host:port/conductor</code>). Note: As the <code>pkey_columns</code> parameter
+      	value is not specified, the virtual table will have the default (i.e., <i>no</i>) Primary Key:
 <programlisting><![CDATA[
 SQL> attach_from_csv ('csv.tutorials.contacts1', 'file:contacts1.csv', ',', '\n', null, 1);
 Done. -- 109 msec.
@@ -147,7 +149,7 @@ ________________________________________________________________________________
   </example>
 
   <example id="ex_attach_from_csv_2"><title>Simplified CSV File Attachment with Compound Key Generation</title>
-    <para>In this example a CSV File System is not only attached to Virtuoso, but as part of the process a Primary Key is
+    <para>In this example, a CSV File System is not only attached to Virtuoso, but as part of the process, a Primary Key is
     	generated using the first and second ordinal columns from the CSV file content:</para>
     <orderedlist>
       <listitem>Create CSV file named <code>contacts2.csv</code>:
@@ -162,13 +164,13 @@ Tim,Craft,41
 ]]></programlisting>
       </listitem>
       <listitem>Place the created <code>contacts2.csv</code> file within scope of <code>DirsAllowed</code> INI setting.</listitem>
-      <listitem>Call the attach_from_csv function from iSQL or Virtuoso Conductor UI ( http://host:port/conductor ):
+      <listitem>Call the <code>attach_from_csv</code> function from iSQL or Virtuoso Conductor UI (<code>http://host:port/conductor</code>):
 <programlisting><![CDATA[
 SQL> attach_from_csv ('csv.tutorials.contacts2', 'file:contacts2.csv', ',', '\n', null, 1, vector(1,2));
 Done. -- 109 msec.
 ]]></programlisting>
       </listitem>
-      <listitem>Check the inserted data in the csv.tutorials.contacts2 table:
+      <listitem>Check the inserted data in the <code>csv.tutorials.contacts2</code> table:
 <programlisting><![CDATA[
 SQL> SELECT * FROM csv.tutorials.contacts2 ;
 Fname         Sname       Age
@@ -202,9 +204,9 @@ DB               DBA          csv.tutorials.contacts2  Sname        2         cs
   </example>
 
   <example id="ex_attach_from_csv_3"><title>Simplified CSV File Attachment with Composite Key Generation</title>
-    <para>In this example a CSV File System is not only attached to Virtuoso, but as part of the process a Primary Key is generated
-    	using the second (<code>CompanyID</code>), third (<code>Fname</code>) and forth (<code>Sname</code>) ordinal columns. In this
-    	example the CompanyID column (which uniquely identifies a company) is combined with the <code>Fname</code> and <code>Sname</code>
+    <para>In this example, a CSV File System is not only attached to Virtuoso, but as part of the process, a Primary Key is generated
+    	using the second (<code>CompanyID</code>), third (<code>Fname</code>) and fourth (<code>Sname</code>) ordinal columns. In this
+    	example, the <code>CompanyID</code> column (which uniquely identifies a company) is combined with the <code>Fname</code> and <code>Sname</code>
     	columns to create a primary key for each contact:</para>
     <orderedlist>
       <listitem>Create CSV file named <code>contacts3.csv</code>:
@@ -219,7 +221,7 @@ ZiAirLines,13,Tim,Craft,41
 ]]></programlisting>
       </listitem>
       <listitem>Place the created <code>contacts3.csv</code> file within scope of <code>DirsAllowed</code> INI setting.</listitem>
-      <listitem>Call the attach_from_csv function from iSQL or Virtuoso Conductor UI ( http://host:port/conductor ):
+      <listitem>Call the <code>attach_from_csv</code> function from iSQL or Virtuoso Conductor UI (<code>http://host:port/conductor</code>):
 <programlisting><![CDATA[
 SQL> attach_from_csv ('csv.tutorials.contacts3', 'file:contacts3.csv', ',', '\n', null, 1, vector (2,3,4));
 Done. -- 109 msec.
