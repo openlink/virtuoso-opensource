@@ -85,7 +85,7 @@
         	ordinal value (first column = 1, second column = 2, etc.). </listitem>
         <listitem>For a compound or composite primary key, composed of multiple CSV columns, this parameter should be set to a vector 
 		of the column ordinals. For example, for a primary key composed of ordinal columns 1 and 3, this parameter value should 
-		be set to vector(1,3).</listitem>
+		be set to <code>vector(1,3)</code>.</listitem>
       </orderedlist>
     </refsect2>
   </refsect1>
