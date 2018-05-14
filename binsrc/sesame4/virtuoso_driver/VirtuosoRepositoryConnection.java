@@ -1723,7 +1723,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public void setNamespace(String prefix, String name) throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
-        String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 2)";
+        String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
         try {
             PreparedStatement ps = prepareStatement(query, false);
             ps.setString(1, prefix);
@@ -1749,7 +1749,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public void removeNamespace(String prefix) throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
-        String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 2)";
+        String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
         try {
             PreparedStatement ps = prepareStatement(query, false);
             ps.setString(1, prefix);
@@ -1770,7 +1770,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public void clearNamespaces() throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
-        String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS(2)";
+        String query = "DB.DBA.XML_CLEAR_ALL_NS_DECLS()";
         try {
             java.sql.Statement stmt = createStatement(-1, true);
             stmt.execute(query);
@@ -2220,9 +2220,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
         StringBuilder ret = new StringBuilder("sparql\n");
 
-        if (baseURI!=null && baseURI.length()>0)
-            ret.append(" define input:graph-base <" + baseURI + "> \n");
-
         if (includeInferred && ruleSet!=null && ruleSet.length() > 0)
             ret.append("define input:inference '"+ruleSet+"'\n ");
 
@@ -2257,6 +2254,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
         if (!added_def_graph && useDefGraphForQueries)
             ret.append(" define input:default-graph-uri <" + defGraph + "> \n");
+
+        if (baseURI!=null && baseURI.length()>0)
+            ret.append(" BASE <" + baseURI + "> \n");
 
         ret.append(substBindings(query, bindings, pstmtParams, isSPARUL));
         return ret.toString();
@@ -3099,7 +3099,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 String rb_type = rb.getType();
                 if (rb_val.length()==1 && (rb_val.charAt(0)=='1' || rb_val.charAt(0)=='0')) {
                     if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean"))
-                        return valueFactory.createLiteral(rb_val.charAt(0)=='1'?true:false); //  return getRepository().getValueFactory().createLiteral(rb_val.charAt(0)=='1'?"true":"false", this.getRepository().getValueFactory().createURI(rb_type));
+                        return valueFactory.createLiteral(rb_val.charAt(0)=='1'?"true":"false"); //  return getRepository().getValueFactory().createLiteral(rb_val.charAt(0)=='1'?"true":"false", this.getRepository().getValueFactory().createURI(rb_type));
                 }
                 return valueFactory.createLiteral(rb_val, valueFactory.createIRI(rb_type));
             }

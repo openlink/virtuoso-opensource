@@ -2223,9 +2223,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
         StringBuilder ret = new StringBuilder("sparql\n");
 
-        if (baseURI!=null && baseURI.length()>0)
-            ret.append(" define input:graph-base <" + baseURI + "> \n");
-
         if (includeInferred && ruleSet!=null && ruleSet.length() > 0)
             ret.append("define input:inference '"+ruleSet+"'\n ");
 
@@ -2260,6 +2257,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	if (!added_def_graph && useDefGraphForQueries)
             ret.append(" define input:default-graph-uri <" + defGraph + "> \n");
+
+        if (baseURI!=null && baseURI.length()>0)
+            ret.append(" BASE <" + baseURI + "> \n");
 
         ret.append(substBindings(query, bindings, pstmtParams, isSPARUL));
         return ret.toString();
