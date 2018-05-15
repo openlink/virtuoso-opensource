@@ -1704,7 +1704,6 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   {
     if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
     {
-
       return a_uid;
     }
     if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
@@ -1727,14 +1726,17 @@ create procedure DAV_GET_UID_BY_SERVICE_ID (in serviceId any, out a_uid int, out
 {
   declare st, msg, meta, rows any;
 
-  a_uid := null;
-  a_gid := null;
-  a_uname := null;
-  _perms := null;
   st := '00000';
   exec ('select WUO_U_ID, U_GROUP, U_NAME, U_DEF_PERMS from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', st, msg, vector (serviceId), 0, meta, rows);
   if (('00000' <> st) or (length (rows) = 0))
+  {
+    a_uid := null;
+    a_gid := null;
+    a_uname := null;
+    _perms := null;
+
     return 0;
+  }
 
   a_uid := rows[0][0];
   a_gid := rows[0][1];
@@ -1755,12 +1757,16 @@ create procedure DAV_GET_UID_BY_WEBID (out a_uid int, out a_gid int)
   cert := client_attr ('client_certificate');
   if (cert = 0)
     return 0;
-  a_uid := null;
-  a_gid := null;
+
   st := '00000';
   exec ('select U_ID, U_GROUP from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = ? and UC_U_ID = U_ID', st, msg, vector (get_certificate_info (6, cert)), 0, meta, rows);
   if (('00000' <> st) or (length (rows) = 0))
+  {
+    a_uid := null;
+    a_gid := null;
+
     return 0;
+  }
 
   a_uid := rows[0][0];
   a_gid := rows[0][1];
@@ -1988,11 +1994,7 @@ DAV_AUTHENTICATE_SSL_SQL_PREPARE (
   declare _name, _value, _pattern, _char varchar;
   declare V any;
 
-  _char := '?';
-  if (_sql like 'sparql%')
-    _char := '??';
-
-
+  _char := case when (_sql like 'sparql%') then '??' else '?' end;
   _pattern := '\\^\\{([a-zA-Z0-9])+\\}\\^';
   while (1)
   {
@@ -2022,7 +2024,8 @@ DAV_AUTHENTICATE_SSL_WEBID (
     declare cert, fing, vtype any;
 
     cert := client_attr ('client_certificate');
-    if (cert is null or cert = 0) {
+    if (cert is null or cert = 0)
+    {
       https_renegotiate (3);
       cert := client_attr ('client_certificate');
     }
@@ -2060,86 +2063,86 @@ DAV_CHECK_ACLS_INTERNAL (
 
   if (not isnull (webid))
   {
-  for (
-    sparql
-    define input:storage ""
-    prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-    prefix foaf: <http://xmlns.com/foaf/0.1/>
-    prefix acl: <http://www.w3.org/ns/auth/acl#>
-    select ?p1 ?p2 ?p3 ?mode
-     where {
-             {
-               graph `iri(?:graph)`
+    for (
+      sparql
+      define input:storage ""
+      prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+      prefix foaf: <http://xmlns.com/foaf/0.1/>
+      prefix acl: <http://www.w3.org/ns/auth/acl#>
+      select ?p1 ?p2 ?p3 ?mode
+       where {
                {
-                 ?rule rdf:type acl:Authorization ;
-                       acl:accessTo `iri(?:graph)` ;
-                       acl:mode ?mode ;
-                       acl:agent `iri(?:webid)` ;
-                       acl:agent ?p1 .
+                 graph `iri(?:graph)`
+                 {
+                   ?rule rdf:type acl:Authorization ;
+                         acl:accessTo `iri(?:graph)` ;
+                         acl:mode ?mode ;
+                         acl:agent `iri(?:webid)` ;
+                         acl:agent ?p1 .
+                 }
+               }
+               union
+               {
+                 graph `iri(?:graph)`
+                 {
+                   ?rule rdf:type acl:Authorization ;
+                         acl:accessTo `iri(?:graph)` ;
+                         acl:mode ?mode ;
+                         acl:agentClass foaf:Agent ;
+                         acl:agentClass ?p2 .
+                 }
+               }
+               union
+               {
+                 graph `iri(?:graph)`
+                 {
+                   ?rule rdf:type acl:Authorization ;
+                         acl:accessTo `iri(?:graph)` ;
+                         acl:mode ?mode ;
+                         acl:agentClass ?p3 .
+                 }
+                 graph ?g
+                 {
+                   ?p3 rdf:type foaf:Group ;
+                   foaf:member `iri(?:webid)` .
+                 }
                }
              }
-             union
-             {
-               graph `iri(?:graph)`
-               {
-                 ?rule rdf:type acl:Authorization ;
-                       acl:accessTo `iri(?:graph)` ;
-                       acl:mode ?mode ;
-                       acl:agentClass foaf:Agent ;
-                       acl:agentClass ?p2 .
-               }
-             }
-             union
-             {
-               graph `iri(?:graph)`
-               {
-                 ?rule rdf:type acl:Authorization ;
-                       acl:accessTo `iri(?:graph)` ;
-                       acl:mode ?mode ;
-                       acl:agentClass ?p3 .
-               }
-               graph ?g
-               {
-                 ?p3 rdf:type foaf:Group ;
-                 foaf:member `iri(?:webid)` .
-               }
-             }
-           }
-     order by ?p3 ?p2 ?p1 ?mode) do
-  {
-    if      (not isnull ("p1"))
-      I := 0;
-    else if (not isnull ("p2"))
-      I := 1;
-    else if (not isnull ("p3"))
-      I := 2;
-    else
-      goto _skip;
-
-    if (tmp <> coalesce ("p1", coalesce ("p2", "p3")))
+       order by ?p3 ?p2 ?p1 ?mode) do
     {
-      tmp := coalesce ("p1", coalesce ("p2", "p3"));
-      for (M := 0; M < length (IRIs[I]); M := M + 1)
+      if      (not isnull ("p1"))
+        I := 0;
+      else if (not isnull ("p2"))
+        I := 1;
+      else if (not isnull ("p3"))
+        I := 2;
+      else
+        goto _skip;
+
+      if (tmp <> coalesce ("p1", coalesce ("p2", "p3")))
       {
-        if (tmp = IRIs[I][M])
-          goto _skip;
+        tmp := coalesce ("p1", coalesce ("p2", "p3"));
+        for (M := 0; M < length (IRIs[I]); M := M + 1)
+        {
+          if (tmp = IRIs[I][M])
+            goto _skip;
+        }
       }
+
+      if ("mode" like '%#Read')
+        realMode[0] := 1;
+      else if ("mode" like '%#Write')
+        realMode[1] := 1;
+      else if ("mode" like '%#Execute')
+        realMode[2] := 1;
+
+      if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
+        goto _exit;
+
+      IRIs[I] := vector_concat (IRIs[I], vector (tmp));
+
+      _skip:;
     }
-
-    if ("mode" like '%#Read')
-      realMode[0] := 1;
-    else if ("mode" like '%#Write')
-      realMode[1] := 1;
-    else if ("mode" like '%#Execute')
-      realMode[2] := 1;
-
-    if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
-      goto _exit;
-
-    IRIs[I] := vector_concat (IRIs[I], vector (tmp));
-
-    _skip:;
-  }
   }
 
 
@@ -2256,15 +2259,14 @@ DAV_AUTHENTICATE_SSL (
     rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
     if (rc)
       {
-	DAV_PERMS_FIX (_perms, '000000000TM');
-	declare hdr, hstr any;
-	hdr := http_header_array_get ();
-	hstr := '';
-	foreach (any h in hdr) do
-	  {
-	    if (h not like 'WWW-Authenticate:%')
-	      hstr := hstr || h;
-	  }
+      DAV_PERMS_FIX (_perms, '000000000TM');
+      hdr := http_header_array_get ();
+      hstr := '';
+      foreach (any h in hdr) do
+      {
+        if (h not like 'WWW-Authenticate:%')
+          hstr := hstr || h;
+      }
         http_header (hstr);
       }
   }
@@ -2337,9 +2339,9 @@ DAV_COL_CREATE_INT (
     }
 
   if (isarray (pid))
-    det := pid[0];
+    det := DB.DBA.DAV_DET_NAME (pid);
   else if ((pid > 0) and (connection_get ('dav_store') is null))
-    det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid), NULL);
+    det := (select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = pid);
   else
     det := null;
   if (det is not null)
@@ -2354,7 +2356,9 @@ DAV_COL_CREATE_INT (
             return auth_uid;
         }
       else
-        auth_uid := http_nobody_uid ();
+        {
+          auth_uid := http_nobody_uid ();
+        }
       DAV_SEARCH_ID_OR_DET (par, 'C', det, detcol_id, detcol_path, unreached_path);
       return call (cast (det as varchar) || '_DAV_COL_CREATE') (detcol_id, unreached_path, permissions, ouid, ogid, auth_uid);
     }
@@ -5585,7 +5589,7 @@ create procedure WS.WS.WAC_INSERT (
 {
   -- dbg_obj_print ('WAC_INSERT', path);
   declare what, graph, permissions varchar;
-  declare giid, subj, nsubj any;
+  declare giid, subj any;
 
   graph := WS.WS.WAC_GRAPH (path);
   aciContent := cast (blob_to_string (aciContent) as varchar);

@@ -1934,7 +1934,7 @@ create procedure WS.WS.PUT (
 
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
-  
+
   full_path := DAV_CONCAT_PATH ('/', path);
   slug := http_request_header (lines, 'Slug', null, '');
   if (slug <> '')
@@ -3037,30 +3037,22 @@ again:
             hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', soap_print_box (modt, '', 1));
 
           hdr_path := DAV_CONCAT_PATH ('/', full_path);
+          hdr_uri := sprintf ('%s://%s%s', case when is_https_ctx () then 'https' else 'http' end, http_request_header (lines, 'Host', NULL, NULL), hdr_path);
           if (hdr_path not like '%,meta')
-          {
-            hdr_uri := sprintf ('%s://%s%s', case when is_https_ctx () then 'https' else 'http' end, http_request_header (lines, 'Host', NULL, NULL), hdr_path);
-          }
-          if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (hdr_path || ',meta', 'R')) is not null)
             hdr_str := hdr_str || sprintf ('Link: <%s,meta>; rel="meta"; title="Metadata File"\r\n', hdr_uri);
 
           if (hdr_path not like '%,acl')
-          {
-            if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (hdr_path || ',acl', 'R')) is not null)
-              hdr_str := hdr_str || sprintf ('Link: <%s,acl>; rel="acl"; title="Access Control File"\r\n', hdr_uri);
-          }
+            hdr_str := hdr_str || sprintf ('Link: <%s,acl>; rel="acl"; title="Access Control File"\r\n', hdr_uri);
+
           rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
           if (rdf_graph is not null)
-          {
-            declare rdf_uri varchar;
-            rdf_uri := rfc1808_expand_uri (DB.DBA.HTTP_REQUESTED_URL (), DAV_RDF_RES_NAME (rdf_graph));
-            hdr_str := hdr_str || sprintf ('Link: <%s>; rel="alternate"\r\n', rdf_uri);
-          }
+            hdr_str := hdr_str || sprintf ('Link: <%s>; rel="alternate"\r\n', rfc1808_expand_uri (DB.DBA.HTTP_REQUESTED_URL (), DAV_RDF_RES_NAME (rdf_graph)));
+
           http_header (hdr_str);
         }
         else
         {
-          http_header (concat ('Content-Type: text/xml\r\nETag: "',server_etag,'"\r\n'));
+          http_header ('Content-Type: text/xml\r\nETag: "' || server_etag || '"\r\n');
         }
       }
     }
@@ -3236,6 +3228,8 @@ again:
               if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
                 return;
             }
+
+            http_header (http_header_get () || WS.WS.LDP_HDRS (0, LDP_ENABLED (_col), 0, 0, full_path));
             if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
             {
               commit work;
@@ -3344,12 +3338,15 @@ create procedure WS.WS.LDP_HDRS (
 
   if (path is not null)
   {
-    link := WS.WS.DAV_LINK (rtrim (path, '/'));
-    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (rtrim (path, '/') || ',meta', 'R')) is not null)
-      header := header || sprintf ('Link: <%s,meta>; rel="meta"\r\n', link);
+    declare hdr_str varchar;
 
-    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (rtrim (path, '/') || ',acl', 'R')) is not null)
-      header := header || sprintf ('Link: <%s,acl>; rel="acl"\r\n', link);
+    hdr_str := http_header_get ();
+    link := WS.WS.DAV_LINK (rtrim (path, '/'));
+    if ((strcasestr (hdr_str, 'rel="meta"') is null) and (link not like '%,meta'))
+      header := header || sprintf ('Link: <%s,meta>; rel="meta"; title="Metadata File"\r\n', link);
+
+    if ((strcasestr (hdr_str, 'rel="acl"') is null) and (link not like '%,acl'))
+      header := header || sprintf ('Link: <%s,acl>; rel="acl"; title="Access Control File"\r\n', link);
   }
 
   return header;
@@ -4727,19 +4724,17 @@ request_auth:
 
 create procedure WS.WS.PERM_COMP (in perm varchar, in mask varchar)
 {
-  declare inx integer;
-  inx := 0;
+  declare inx, _1 integer;
+
   if (length (perm) <> 3 or length (mask) <> 3)
     return 0;
 
-  while (inx < 3)
-    {
-       if (aref (mask, inx) = ascii('1') and aref (perm, inx) <> ascii('1'))
-	 {
-	   return 0;
-	 }
-     inx := inx + 1;
-    }
+  _1 := ascii ('1');
+  for (inx := 0; inx < 3; inx := inx + 1)
+  {
+    if (mask[inx] = _1 and perm[inx] <> _1)
+      return 0;
+  }
   return 1;
 }
 ;
@@ -4751,8 +4746,8 @@ create procedure WS.WS.CHECKPERM ( in path varchar, in _u_id integer, in action 
   declare _perms varchar;
   declare name varchar;
   declare col integer;
-  declare temp varchar;
   declare rc integer;
+
   rc := 0;
   _perms := '000000000';
   if (_u_id > 0 and _u_id is not null)
@@ -4773,57 +4768,52 @@ create procedure WS.WS.CHECKPERM ( in path varchar, in _u_id integer, in action 
   else if (WS.WS.ISRES (path))
     {
       WS.WS.FINDRES (path, col, name);
-      select RES_OWNER, RES_GROUP, RES_PERMS into _user, _group, _perms
-	  from WS.WS.SYS_DAV_RES where RES_COL = col and RES_NAME = name;
+      select RES_OWNER, RES_GROUP, RES_PERMS into _user, _group, _perms from WS.WS.SYS_DAV_RES where RES_COL = col and RES_NAME = name;
     }
-  else if (not WS.WS.ISCOL(path) and not WS.WS.ISRES (path) and WS.WS.ISCOL (WS.WS.PARENT_PATH (path)))
+  else if (WS.WS.ISCOL (WS.WS.PARENT_PATH (path)))
     {
       if (is_http_ctx())
         DB.DBA.DAV_SET_HTTP_STATUS (404);
 
       return 0;
     }
+
   if (_perms is null)
     return 0;
+
+  _perms := cast (_perms as varchar);
   if (_u_id = _user)
     {
-      temp := substring (cast (_perms as varchar), 1, 3);
-      rc := WS.WS.PERM_COMP (temp, action);
+      rc := WS.WS.PERM_COMP (substring (_perms, 1, 3), action);
     }
   if (_group = g_id and rc = 0)
     {
-      temp := substring (cast (_perms as varchar), 4, 3);
-      rc := WS.WS.PERM_COMP (temp, action);
+      rc := WS.WS.PERM_COMP (substring (_perms, 4, 3), action);
     }
   if (rc = 0)
     {
-      temp := substring (cast (_perms as varchar), 7, 3);
-      rc := WS.WS.PERM_COMP (temp, action);
+      rc := WS.WS.PERM_COMP (substring (_perms, 7, 3), action);
     }
   -- if not a public, not in primary group or owner then check for granted groups
   if (rc = 0)
     {
-      temp := substring (cast (_perms as varchar), 4, 3);
-      rc := WS.WS.PERM_COMP (temp, action);
-      if (rc > 0 and exists (select 1 from WS.WS.SYS_DAV_USER_GROUP where UG_UID = _u_id and UG_GID = _group))
-	{
-          rc := 1;
-	}
-      else
-	rc := 0;
+      rc := WS.WS.PERM_COMP (substring (_perms, 4, 3), action);
+      if (rc > 0 and not exists (select 1 from WS.WS.SYS_DAV_USER_GROUP where UG_UID = _u_id and UG_GID = _group))
+        rc := 0;
     }
   if (rc = 0 and is_http_ctx ())
-  {
-    DB.DBA.DAV_SET_HTTP_STATUS (403);
-  }
+    {
+      DB.DBA.DAV_SET_HTTP_STATUS (403);
+    }
+
   return rc;
 }
 ;
 
 create procedure WS.WS.ISPUBLIC (in path varchar, in ask varchar)
 {
-  declare perms, name, given varchar;
-  declare res, col integer;
+  declare perms, name varchar;
+  declare col integer;
   whenever not found goto nf;
   if (WS.WS.ISCOL (path))
     {
@@ -4836,11 +4826,15 @@ create procedure WS.WS.ISPUBLIC (in path varchar, in ask varchar)
       select RES_PERMS into perms from WS.WS.SYS_DAV_RES where RES_NAME = name and RES_COL = col;
     }
   else
-   return 0;
+    {
+      return 0;
+    }
+
   if (perms is null)
     return 0;
-  given := substring (cast (perms as varchar), 7, 3);
-  return WS.WS.PERM_COMP (given, ask);
+
+  return WS.WS.PERM_COMP (substring (cast (perms as varchar), 7, 3), ask);
+
 nf:
   return 0;
 }
@@ -6053,23 +6047,32 @@ create procedure WS.WS.COPY_TO_OTHER (in path varchar,
 create procedure WS.WS.CHECK_READ_ACCESS (in _u_id integer, in doc_id integer)
 {
   declare _perms varchar;
-  declare g_id, _user, _group, rc integer;
+  declare _user, _group, _1 integer;
+
   if (_u_id = http_dav_uid ())
     return 1;
-  rc := 0;
-  g_id := coalesce ((select U_GROUP from WS.WS.SYS_DAV_USER where U_ID = _u_id), 0);
+
   whenever not found goto exit_p;
-  select RES_OWNER, RES_GROUP, RES_PERMS into _user, _group, _perms
+  select RES_OWNER, RES_GROUP, RES_PERMS
+    into _user, _group, _perms
 	  from WS.WS.SYS_DAV_RES where RES_ID = doc_id;
-  _perms := coalesce (_perms, '000000000');
-  if (_u_id = _user)
-    rc := WS.WS.PERM_COMP (substring (cast (_perms as varchar), 1, 3), '100');
-  if (_group = g_id and rc = 0)
-    rc := WS.WS.PERM_COMP (substring (cast (_perms as varchar), 4, 3), '100');
-  if (rc = 0)
-    rc := WS.WS.PERM_COMP (substring (cast (_perms as varchar), 7, 3), '100');
+
+  if (isnull (_perms))
+    goto exit_p;
+
+  _perms := cast (_perms as varchar);
+  _1 := ascii('1');
+  if ((_u_id = _user) and (_perms[0] = _1))
+    return 1;
+
+  if ((_perms[3] = _1) and (_group = coalesce ((select U_GROUP from WS.WS.SYS_DAV_USER where U_ID = _u_id), 0)))
+    return 1;
+
+  if (_perms[6] = _1)
+    return 1;
+
 exit_p:;
-  return rc;
+  return 0;
 }
 ;
 
