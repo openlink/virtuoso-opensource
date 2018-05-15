@@ -1808,7 +1808,7 @@ create procedure WS.WS.PUT (
   declare _atomPub integer;
   declare _path, _destination, _oldName, _name, _what, _method, _category varchar;
   declare _xtree, _content, _parts any;
-  declare client_etag, server_etag, res_name_, rc_type varchar;
+  declare client_etag, server_etag, slug, res_name_, rc_type varchar;
   declare res_id_, id_ integer;
   declare mod_time datetime;
   declare o_perms, o_uid, o_gid any;
@@ -1934,7 +1934,15 @@ create procedure WS.WS.PUT (
 
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
+  
   full_path := DAV_CONCAT_PATH ('/', path);
+  slug := http_request_header (lines, 'Slug', null, '');
+  if (slug <> '')
+  {
+    full_path := rtrim (full_path, '/') || '/' || slug;
+    path := vector_concat (path, vector (slug));
+  }
+
   uid := null;
   gid := null;
   res_id_ := DAV_HIDE_ERROR (DAV_SEARCH_ID (full_path, 'R'));
@@ -1942,7 +1950,7 @@ create procedure WS.WS.PUT (
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is not null)
     {
-       --dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
+    -- dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
     if (_col is not null) -- SPARQL query on container
     {
       rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
@@ -1957,7 +1965,7 @@ create procedure WS.WS.PUT (
     {
     rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
     }
-    --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, auth_name, auth_pwd, uid, gid, _perms);
+    -- dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, auth_name, auth_pwd, uid, gid, _perms);
       if (rc < 0)
         goto error_ret;
     }
@@ -2079,8 +2087,18 @@ create procedure WS.WS.PUT (
       {
 	    rc := _col;
       }
-	  http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (DAV_CONCAT_PATH (full_path, '/'))));
-	  http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, full_path)); 
+
+      if (not DB.DBA.LDP_ENABLED (rc))
+      {
+        declare propName, propValue varchar;
+
+        propName := 'LDP';
+        propValue := 'ldp:BasicContainer';
+        DB.DBA.DAV_PROP_SET_RAW (rc, 'C', propName, propValue, 1, http_dav_uid ());
+      }
+
+      http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (newpath)));
+      http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, newpath));
 
 	  goto rcck;
 	}
@@ -2101,7 +2119,8 @@ create procedure WS.WS.PUT (
     _destination := concat (left (full_path, strrchr (rtrim (full_path, '/'), '/')), '/', _name, either (equ (right (full_path, 1), '/'), '/', ''));
     rc := DB.DBA.DAV_MOVE_INT (full_path, _destination, 0, null, null, 0);
   }
-  rcck:
+
+rcck:
   if (DAV_HIDE_ERROR (rc) is not null)
     {
       commit work;
@@ -2122,7 +2141,7 @@ create procedure WS.WS.PUT (
       http_header (http_header_get () || sprintf('Content-Type: %s\r\n', content_type));
       if (content_type = 'application/sparql-query')
       {
-        http_header ('MS-Author-Via: SPARQL\r\n');
+        http_header (http_header_get () || http_header ('MS-Author-Via: SPARQL\r\n'));
       }
       else
       {

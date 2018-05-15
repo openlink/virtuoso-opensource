@@ -23,7 +23,7 @@
 --
 create function DB.DBA.DAV_DET_SPECIAL ()
 {
-  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
+  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP', 'LDP');
 }
 ;
 
@@ -36,7 +36,7 @@ create function DB.DBA.DAV_DET_IS_SPECIAL (
 
 create function DB.DBA.DAV_DET_WEBDAV_BASED ()
 {
-  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
+  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP', 'LDP');
 }
 ;
 
@@ -573,6 +573,12 @@ create function DB.DBA.DAV_DET_HTTP_CODE (
 }
 ;
 
+create function DB.DBA.DAV_DET_HTTP_MESSAGE (
+  in _header any)
+{
+  return subseq (_header[0], 13);
+}
+;
 --
 -- User related procs
 --
