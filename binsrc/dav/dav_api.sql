@@ -6899,24 +6899,34 @@ create function DAV_FC_PRINT_WHERE_INT (in filter any, inout pred_metas any, ino
 
 -- RDF Schemas for properties of DAV resources.
 
-
-create procedure
-DAV_REGISTER_RDF_SCHEMA (in schema_uri varchar, in location varchar, in local_addon varchar, in mode varchar)
+create procedure DAV_REGISTER_RDF_SCHEMA (
+  in schema_uri varchar,
+  in location varchar,
+  in local_addon varchar,
+  in mode varchar)
 {
-  mode := lower (mode);
   if (exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_URI = schema_uri))
+  {
+    mode := lower (mode);
+    if ('into' = mode)
     {
-      if ('into' = mode)
-        signal ('23000', sprintf ('Uniqueness violation: RDF schema ''%s'' is already registered', schema_uri));
-      else if ('replacing' = mode)
-        insert replacing WS.WS.SYS_RDF_SCHEMAS (RS_URI, RS_LOCATION, RS_LOCAL_ADDONS, RS_DEPRECATED)
-          values (schema_uri, location, local_addon, 0);
-      else if ('soft' = mode)
-        update WS.WS.SYS_RDF_SCHEMAS set RS_LOCAL_ADDONS = local_addon, RS_DEPRECATED = 0 where RS_URI = schema_uri and RS_LOCAL_ADDONS is null;
+      signal ('23000', sprintf ('Uniqueness violation: RDF schema ''%s'' is already registered', schema_uri));
     }
+    else if ('replacing' = mode)
+    {
+      insert replacing WS.WS.SYS_RDF_SCHEMAS (RS_URI, RS_LOCATION, RS_LOCAL_ADDONS, RS_DEPRECATED)
+        values (schema_uri, location, local_addon, 0);
+    }
+    else if ('soft' = mode)
+    {
+      update WS.WS.SYS_RDF_SCHEMAS set RS_LOCAL_ADDONS = local_addon, RS_DEPRECATED = 0 where RS_URI = schema_uri and RS_LOCAL_ADDONS is null;
+    }
+  }
   else
+  {
     insert replacing WS.WS.SYS_RDF_SCHEMAS (RS_URI, RS_LOCATION, RS_LOCAL_ADDONS, RS_DEPRECATED)
       values (schema_uri, location, local_addon, 0);
+  }
 
   DAV_GET_RDF_SCHEMA_N3 (schema_uri);
 }
@@ -6924,7 +6934,9 @@ DAV_REGISTER_RDF_SCHEMA (in schema_uri varchar, in location varchar, in local_ad
 
 
 --!AWK PUBLIC
-create function DAV_RDF_SCHEMA_N3_LIST_PROPERTIES (inout schema_n3 any, in classname varchar)
+create procedure DAV_RDF_SCHEMA_N3_LIST_PROPERTIES (
+  inout schema_n3 any,
+  in classname varchar)
 {
   if (classname is null)
     {
@@ -6960,205 +6972,230 @@ let ("incl",
 ;
 
 
-create procedure
-DAV_CROP_URI_TO_CATNAME (in uri varchar)
+create procedure DAV_CROP_URI_TO_CATNAME (
+  in uri varchar)
 {
   declare res varchar;
   declare slash integer;
+
   uri := replace (uri, '#', '/');
+
 again:
   if (uri like '%/')
-    {
-      uri := subseq (uri, 0, length (uri) - 1);
-      goto again;
-    }
+  {
+    uri := subseq (uri, 0, length (uri) - 1);
+    goto again;
+  }
+
   if (uri like 'http://%')
-    {
-      uri := subseq (uri, 7);
-      goto again;
-    }
+  {
+    uri := subseq (uri, 7);
+    goto again;
+  }
+
   slash := strrchr (uri, '/');
   if (slash is not null)
     return subseq (uri, slash + 1);
+
   return uri;
 }
 ;
 
 
 --!AWK PUBLIC
-create procedure
-DAV_GET_RDF_SCHEMA_N3 (in schema_uri varchar)
+create procedure DAV_GET_RDF_SCHEMA_N3 (
+  in schema_uri varchar)
 {
   for (select RS_LOCATION, RS_LOCAL_ADDONS, RS_PRECOMPILED from WS.WS.SYS_RDF_SCHEMAS where RS_URI = schema_uri) do
+  {
+    declare std_schema, local_addon, mix any;
+    declare schema_catname varchar;
+    declare prop_list, prop_catnames, prop_catnames_hash any;
+
+    if (RS_PRECOMPILED is not null)
+      return RS_PRECOMPILED;
+
+    if (RS_LOCATION is null)
     {
-      declare std_schema, local_addon, mix any;
-      declare schema_catname varchar;
-      declare prop_list, prop_catnames, prop_catnames_hash any;
-      if (RS_PRECOMPILED is not null)
-        return RS_PRECOMPILED;
-      if (RS_LOCATION is null)
-        std_schema := NULL;
-      else
-        {
-          std_schema := xtree_doc (XML_URI_GET_AND_CACHE (RS_LOCATION), 0, RS_LOCATION);
-          std_schema := xslt ('http://local.virt/rdfxml2n3xml', std_schema);
-        }
-      if (RS_LOCAL_ADDONS is null)
-        local_addon := NULL;
-      else
-        {
-          local_addon := xtree_doc (XML_URI_GET ('', RS_LOCAL_ADDONS), 0, RS_LOCAL_ADDONS);
-          local_addon := xslt ('http://local.virt/rdfxml2n3xml', local_addon);
-        }
-        mix := DAV_RDF_MERGE (std_schema, local_addon, null, -1);
-      -- Composing best possible catname for schema URI.
-      -- dbg_obj_princ ('SCHEMA META: ', xpath_eval ('/N3[@N3S=\044schema-uri]', mix, 0, vector (UNAME'schema-uri', schema_uri)));
-      schema_catname := xpath_eval ('/N3[@N3S=\044schema-uri][@N3P="http://www.openlinksw.com/schemas/virtrdf#catName"]', mix, 1, vector (UNAME'schema-uri', schema_uri));
-      if (schema_catname is not null)
-        {
-          schema_catname := replace (replace (cast (schema_catname as varchar), '#', '/') , '/', '-' || '-');
-          if (not exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_CATNAME = schema_catname and RS_URI <> schema_uri))
-            goto schema_catname_complete;
-        }
-      schema_catname := xpath_eval ('/N3[@N3S=\044schema-uri][@N3P="http://www.w3.org/2000/01/rdf-schema#label"]', mix, 1, vector (UNAME'schema-uri', schema_uri));
-      if (schema_catname is not null)
-        {
-          schema_catname := replace (replace (cast (schema_catname as varchar), '#', '/') , '/', '-' || '-');
-          if (not exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_CATNAME = schema_catname and RS_URI <> schema_uri))
-            goto schema_catname_complete;
-        }
-      schema_catname := DAV_CROP_URI_TO_CATNAME (schema_uri);
-      schema_catname := replace (schema_catname, '/', '-' || '-');
+      std_schema := NULL;
+    }
+    else
+    {
+      std_schema := xtree_doc (XML_URI_GET_AND_CACHE (RS_LOCATION), 0, RS_LOCATION);
+      std_schema := xslt ('http://local.virt/rdfxml2n3xml', std_schema);
+    }
+    if (RS_LOCAL_ADDONS is null)
+    {
+      local_addon := NULL;
+    }
+    else
+    {
+      local_addon := xtree_doc (XML_URI_GET ('', RS_LOCAL_ADDONS), 0, RS_LOCAL_ADDONS);
+      local_addon := xslt ('http://local.virt/rdfxml2n3xml', local_addon);
+    }
+    mix := DAV_RDF_MERGE (std_schema, local_addon, null, -1);
+
+    -- Composing best possible catname for schema URI.
+    -- dbg_obj_princ ('SCHEMA META: ', xpath_eval ('/N3[@N3S=\044schema-uri]', mix, 0, vector (UNAME'schema-uri', schema_uri)));
+    schema_catname := xpath_eval ('/N3[@N3S=\044schema-uri][@N3P="http://www.openlinksw.com/schemas/virtrdf#catName"]', mix, 1, vector (UNAME'schema-uri', schema_uri));
+    if (schema_catname is not null)
+    {
+      schema_catname := replace (replace (cast (schema_catname as varchar), '#', '/') , '/', '-' || '-');
       if (not exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_CATNAME = schema_catname and RS_URI <> schema_uri))
         goto schema_catname_complete;
-      schema_catname := replace (replace (schema_uri, '#', '/') , '/', '-' || '-');
-      while (exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_CATNAME = schema_catname and RS_URI <> schema_uri))
-        schema_catname := sprintf ('%s--%d', (replace (schema_uri, '#', '/') , '/', '-' || '-'), 10000 + rnd (90000));
+    }
+    schema_catname := xpath_eval ('/N3[@N3S=\044schema-uri][@N3P="http://www.w3.org/2000/01/rdf-schema#label"]', mix, 1, vector (UNAME'schema-uri', schema_uri));
+    if (schema_catname is not null)
+    {
+      schema_catname := replace (replace (cast (schema_catname as varchar), '#', '/') , '/', '-' || '-');
+      if (not exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_CATNAME = schema_catname and RS_URI <> schema_uri))
+        goto schema_catname_complete;
+    }
+    schema_catname := DAV_CROP_URI_TO_CATNAME (schema_uri);
+    schema_catname := replace (schema_catname, '/', '-' || '-');
+    if (not exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_CATNAME = schema_catname and RS_URI <> schema_uri))
+      goto schema_catname_complete;
+
+    schema_catname := replace (replace (schema_uri, '#', '/') , '/', '-' || '-');
+    while (exists (select top 1 1 from WS.WS.SYS_RDF_SCHEMAS where RS_CATNAME = schema_catname and RS_URI <> schema_uri))
+    {
+      schema_catname := sprintf ('%s--%d', (replace (schema_uri, '#', '/') , '/', '-' || '-'), 10000 + rnd (90000));
+    }
 
 schema_catname_complete:
-      -- Composing best possible catnames for top properties.
-      vectorbld_init (prop_catnames);
-      prop_catnames_hash := dict_new ();
-      prop_list := DAV_RDF_SCHEMA_N3_LIST_PROPERTIES (mix, NULL);
-      foreach (varchar propname in prop_list) do
-        {
-          declare catname varchar;
-          declare catid integer;
-          catname := xpath_eval ('/N3[@N3S=\044propname][@N3P="http://www.openlinksw.com/schemas/virtrdf#catName"]', mix, 1, vector (UNAME'propname', propname));
-          propname := cast (propname as varchar);
-          if (catname is not null)
-            {
-              catname := replace (replace (cast (catname as varchar), '#', '/') , '/', '-' || '-');
-              if (0 = dict_get (prop_catnames_hash, catname, 0))
-                goto prop_catname_complete;
-            }
-          catname := DAV_CROP_URI_TO_CATNAME (propname);
-          catname := replace (catname, '/', '-' || '-');
-          if (0 = dict_get (prop_catnames_hash, catname, 0))
-            goto prop_catname_complete;
-          catname := replace (replace (propname, '#', '/') , '/', '-' || '-');
-          while (dict_get (prop_catnames_hash, catname, 0))
-            catname := sprintf ('%s--%d', replace (replace (propname, '#', '/') , '/', '-' || '-'), 10000 + rnd (90000));
+    -- Composing best possible catnames for top properties.
+    vectorbld_init (prop_catnames);
+    prop_catnames_hash := dict_new ();
+    prop_list := DAV_RDF_SCHEMA_N3_LIST_PROPERTIES (mix, NULL);
+    foreach (varchar propname in prop_list) do
+    {
+      declare catname varchar;
+      declare catid integer;
 
-prop_catname_complete:
-          catid := coalesce ((select RPN_CATID from WS.WS.SYS_RDF_PROP_NAME where RPN_URI = propname));
-          if (catid is null)
-            {
-              catid := WS.WS.GETID ('RPN');
-              insert into WS.WS.SYS_RDF_PROP_NAME (RPN_URI, RPN_CATID) values (propname, catid);
-            }
-          vectorbld_acc (prop_catnames, propname, catname, catid, 0, 0, 0);
-          dict_put (prop_catnames_hash, catname, catid);
-        }
-      vectorbld_final (prop_catnames);
-      update WS.WS.SYS_RDF_SCHEMAS
-      set
-        RS_PRECOMPILED = mix,
-        RS_COMPILATION_DATE = now (),
-        RS_CATNAME = schema_catname,
-        RS_PROP_CATNAMES = serialize (prop_catnames)
-      where RS_URI = schema_uri;
-      return mix;
+      catname := xpath_eval ('/N3[@N3S=\044propname][@N3P="http://www.openlinksw.com/schemas/virtrdf#catName"]', mix, 1, vector (UNAME'propname', propname));
+      propname := cast (propname as varchar);
+      if (catname is not null)
+      {
+        catname := replace (replace (cast (catname as varchar), '#', '/') , '/', '-' || '-');
+        if (0 = dict_get (prop_catnames_hash, catname, 0))
+          goto prop_catname_complete;
+      }
+      catname := DAV_CROP_URI_TO_CATNAME (propname);
+      catname := replace (catname, '/', '-' || '-');
+      if (0 = dict_get (prop_catnames_hash, catname, 0))
+           goto prop_catname_complete;
+
+      catname := replace (replace (propname, '#', '/') , '/', '-' || '-');
+      while (dict_get (prop_catnames_hash, catname, 0))
+        catname := sprintf ('%s--%d', replace (replace (propname, '#', '/') , '/', '-' || '-'), 10000 + rnd (90000));
+
+    prop_catname_complete:
+      catid := (select RPN_CATID from WS.WS.SYS_RDF_PROP_NAME where RPN_URI = propname);
+      if (catid is null)
+      {
+        catid := WS.WS.GETID ('RPN');
+        insert into WS.WS.SYS_RDF_PROP_NAME (RPN_URI, RPN_CATID) values (propname, catid);
+      }
+      vectorbld_acc (prop_catnames, propname, catname, catid, 0, 0, 0);
+      dict_put (prop_catnames_hash, catname, catid);
     }
--- TODO: implement some guess for reading schemas
+    vectorbld_final (prop_catnames);
+    update WS.WS.SYS_RDF_SCHEMAS
+       set RS_PRECOMPILED = mix,
+           RS_COMPILATION_DATE = now (),
+           RS_CATNAME = schema_catname,
+           RS_PROP_CATNAMES = serialize (prop_catnames)
+     where RS_URI = schema_uri;
+
+    return mix;
+  }
+  -- TODO: implement some guess for reading schemas
   return xtree_doc ('<stub/>');
 }
 ;
 
 
-create procedure
-DAV_DEPRECATE_RDF_SCHEMA (in schema_uri varchar)
+create procedure DAV_DEPRECATE_RDF_SCHEMA (
+  in schema_uri varchar)
 {
   update WS.WS.SYS_RDF_SCHEMAS set RS_DEPRECATED = 1 where RS_URI = schema_uri;
   if (exists (select top 1 1 from WS.WS.SYS_MIME_RDFS where MR_RDF_URI = schema_uri))
-    {
-      update WS.WS.SYS_MIME_RDFS set MR_DEPRECATED = 1 where MR_RDF_URI = schema_uri;
-      return;
-    }
---TBD: prematurely return if any property of the schema is used for any resources
+  {
+    update WS.WS.SYS_MIME_RDFS set MR_DEPRECATED = 1 where MR_RDF_URI = schema_uri;
+    return;
+  }
+  --TBD: prematurely return if any property of the schema is used for any resources
   delete from WS.WS.SYS_RDF_SCHEMAS where RS_URI = schema_uri and RS_LOCAL_ADDONS is null;
 }
 ;
 
-create procedure
-DAV_REGISTER_MIME_TYPE (in m_ident varchar, in descr varchar, in dflt_ext varchar, in badmagic varchar, in mode varchar)
+create procedure DAV_REGISTER_MIME_TYPE (
+  in m_ident varchar,
+  in descr varchar,
+  in dflt_ext varchar,
+  in badmagic varchar,
+  in mode varchar)
 {
--- Argument mode is one of 'soft', 'into' or 'replacing'.
--- This adds a record into WS.WS.SYS_MIME_TYPES but it also can add an dflt_ext into WS.WS.SYS_DAV_RES_TYPES.
+  -- Argument mode is one of 'soft', 'into' or 'replacing'.
+  -- This adds a record into WS.WS.SYS_MIME_TYPES but it also can add an dflt_ext into WS.WS.SYS_DAV_RES_TYPES.
   mode := lower (mode);
   if (exists (select top 1 1 from WS.WS.SYS_MIME_TYPES where MT_IDENT = m_ident))
-    {
-      if ('into' = mode)
-        signal ('23000', sprintf ('Uniqueness violation: MIME type ''%s'' is already registered', m_ident));
-      else if ('replacing' = mode)
-        insert replacing WS.WS.SYS_MIME_TYPES (MT_IDENT, MT_DESCRIPTION, MT_DEFAULT_EXT, MT_BADMAGIC_IDENT)
+  {
+    if ('into' = mode)
+      signal ('23000', sprintf ('Uniqueness violation: MIME type ''%s'' is already registered', m_ident));
+
+    if ('soft' = mode)
+      return;
+
+    if ('replacing' = mode)
+      insert replacing WS.WS.SYS_MIME_TYPES (MT_IDENT, MT_DESCRIPTION, MT_DEFAULT_EXT, MT_BADMAGIC_IDENT)
         values (m_ident, descr, dflt_ext, badmagic);
-      else if ('soft' = mode)
-        return;
-    }
+  }
   else
+  {
     insert replacing WS.WS.SYS_MIME_TYPES (MT_IDENT, MT_DESCRIPTION, MT_DEFAULT_EXT, MT_BADMAGIC_IDENT)
-    values (m_ident, descr, dflt_ext, badmagic);
-  insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values (m_ident, dflt_ext);
+      values (m_ident, descr, dflt_ext, badmagic);
+  }
+  insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE, T_EXT)
+    values (m_ident, dflt_ext);
 }
 ;
 
-create procedure
-DAV_REGISTER_MIME_RDF (in m_ident varchar, in schema_uri varchar)
+create procedure DAV_REGISTER_MIME_RDF (
+  in m_ident varchar,
+  in schema_uri varchar)
 {
   insert replacing WS.WS.SYS_MIME_RDFS (MR_MIME_IDENT, MR_RDF_URI, MR_DEPRECATED)
-  values (m_ident, schema_uri, 0);
+    values (m_ident, schema_uri, 0);
 }
 ;
 
-create procedure
-DAV_DEPRECATE_MIME_RDF (in m_ident varchar, in schema_uri varchar)
+create procedure DAV_DEPRECATE_MIME_RDF (
+  in m_ident varchar,
+  in schema_uri varchar)
 {
   update WS.WS.SYS_MIME_RDFS set MR_DEPRECATED = 1 where MR_MIME_IDENT = m_ident and MR_RDF_URI = schema_uri;
 }
 ;
 
 --!AWK PUBLIC
-create function
-DAV_RDF_PROP_SET (
-    in path varchar,                    -- Path to the resource or collection
-    in single_schema varchar,           -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
-    in rdf any,                         -- RDF XML
-    in auth_uname varchar := null,
-    in auth_pwd varchar := null) returns integer
+create procedure DAV_RDF_PROP_SET (
+  in path varchar,                    -- Path to the resource or collection
+  in single_schema varchar,           -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
+  in rdf any,                         -- RDF XML
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null) returns integer
 {
   return DAV_RDF_PROP_SET_INT (path, single_schema, rdf, auth_uname, auth_pwd);
 }
 ;
 
-
 --!AWK PUBLIC
-create procedure
-DAV_RDF_PROP_GET (
-    in path varchar,                    -- Path to the resource or collection
-    in single_schema varchar,           -- Name of single RDF schema to filter out redundant records or NULL to return all non-deprecated schemas associated in WS.WS.SYS_MIME_RDFS with the resource.
-    in auth_uname varchar := null,
-    in auth_pwd varchar := null) returns any
+create procedure DAV_RDF_PROP_GET (
+  in path varchar,                    -- Path to the resource or collection
+  in single_schema varchar,           -- Name of single RDF schema to filter out redundant records or NULL to return all non-deprecated schemas associated in WS.WS.SYS_MIME_RDFS with the resource.
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null) returns any
 {
   declare st varchar;
   if ((path <> '') and (path[length(path)-1] = 47))
@@ -7170,13 +7207,17 @@ DAV_RDF_PROP_GET (
 ;
 
 
-create function
-DAV_RDF_PREPROCESS_RDFXML_SUB (inout n3_subj_dict any, in main_res nvarchar, in mode integer, inout firsttime_subj_list any) returns any
+create procedure DAV_RDF_PREPROCESS_RDFXML_SUB (
+  inout n3_subj_dict any,
+  in main_res nvarchar,
+  in mode integer,
+  inout firsttime_subj_list any) returns any
 {
 -- mode 0 = no nesting, 1 = extra level for nodeID resources, 2 = main_res is the described document.
   declare top_props, top_acc, top_head, top_tag any;
   declare firsttime_use integer;
   declare isdupe varchar;
+
   top_props := dict_get (n3_subj_dict, main_res, 0);
   xte_nodebld_init (top_acc);
   firsttime_use := position (main_res, firsttime_subj_list);
@@ -7239,8 +7280,10 @@ DAV_RDF_PREPROCESS_RDFXML_SUB (inout n3_subj_dict any, in main_res nvarchar, in 
 ;
 
 
-create function
-DAV_RDF_PREPROCESS_RDFXML (in rdfxml any, in main_res nvarchar, in already_n3 integer := 0)
+create procedure DAV_RDF_PREPROCESS_RDFXML (
+  in rdfxml any,
+  in main_res nvarchar,
+  in already_n3 integer := 0)
 {
   declare n3xml, n3_list, n3_subj_dict, rdf_acc, subj_list, firsttime_subj_list any;
   declare tmp varchar;
@@ -7287,58 +7330,61 @@ DAV_RDF_PREPROCESS_RDFXML (in rdfxml any, in main_res nvarchar, in already_n3 in
 ;
 
 
-create function
-DAV_RDF_PROP_SET_INT (
-    in path varchar,            -- Path to the resource or collection
-    in single_schema varchar,   -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
-    in rdf any,                 -- RDF XML
-    in auth_uname varchar := null,
-    in auth_pwd varchar := null,
-    in extern integer := 1,
-    in check_locks any := 1,
-    in overwrite integer := 0,
-    in auth_uid integer := null
-    ) returns integer
+create procedure DAV_RDF_PROP_SET_INT (
+  in path varchar,            -- Path to the resource or collection
+  in single_schema varchar,   -- Name of single RDF schema to filter out redundant records or NULL to compose any number of properties.
+  in rdf any,                 -- RDF XML
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1,
+  in overwrite integer := 0,
+  in auth_uid integer := null) returns integer
 {
   declare n3xml, davtree any;
   declare top_subj nvarchar;
+
   if (single_schema is null)
     return -20;
+
   n3xml := xslt ('http://local.virt/rdfxml2n3xml', rdf);
   top_subj := null;
   if (xpath_eval ('/N3[@N3S=\044path]', n3xml, 1, vector (UNAME'path', path)) is null)
     top_subj := coalesce (xpath_eval ('/N3[1]/@N3S', n3xml), cast (path as nvarchar));
   else
     top_subj := cast (path as nvarchar);
+
   davtree := DAV_RDF_PREPROCESS_RDFXML (n3xml, top_subj, 1);
   return DAV_PROP_SET_INT (path, single_schema, davtree, auth_uname, auth_pwd, extern, check_locks, overwrite, auth_uid);
 }
 ;
 
 
-create procedure
-DAV_RDF_PROP_GET_INT (
-    in id any,
-    in what char(0),
-    in single_schema varchar,
-    in extern integer := 1,
-    in auth_uname varchar := null,
-    in auth_pwd varchar := null,
-    in auth_uid integer := null ) returns any
+create procedure DAV_RDF_PROP_GET_INT (
+  in id any,
+  in what char(1),
+  in single_schema varchar,
+  in extern integer := 1,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in auth_uid integer := null ) returns any
 {
   declare davtree any;
+
   davtree := DAV_PROP_GET_INT (id, what, single_schema, extern, auth_uname, auth_pwd, auth_uid);
   if (isinteger (davtree))
     return davtree;
+
   if (isentity (davtree))
     return davtree;
+
   davtree := xml_tree_doc (deserialize (davtree));
   return davtree;
 }
 ;
 
 
-create function DAV_RDF_MERGE (
+create procedure DAV_RDF_MERGE (
   in old_n3 any,
   in patch_n3 any,
   in sch_n3 any,
@@ -7426,10 +7472,9 @@ create function DAV_RDF_MERGE (
 ;
 
 
-create function DAV_RDF_SUBTRACT (
+create procedure DAV_RDF_SUBTRACT (
   in old_n3 any,
-  in sub_n3 any
-  ) returns any
+  in sub_n3 any) returns any
 {
   declare n3_tmp_list, sub_dict, res_acc any;
   sub_dict := dict_new ();
@@ -7475,176 +7520,233 @@ create function DAV_RDF_SUBTRACT (
 ;
 
 
-create trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_I after insert on WS.WS.SYS_DAV_RES order 20 referencing new as NEWR
+create trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_I after insert on WS.WS.SYS_DAV_RES order 20 referencing new as N
 {
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_I (', N.RES_ID, N.RES_PERMS, ')');
   whenever sqlstate '*' goto no_op;
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_I (', NEWR.RES_ID, NEWR.RES_PERMS, ')');
-  if (length (NEWR.RES_PERMS) < 11)
+
+  if (length (N.RES_PERMS) < 11)
     goto no_op;
-  if (not (NEWR.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
+
+  if (not (N.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
     goto no_op;
-  DAV_EXTRACT_AND_SAVE_RDF_INT (NEWR.RES_ID, NEWR.RES_NAME, NEWR.RES_TYPE, NEWR.RES_CONTENT);
+
+  DAV_EXTRACT_AND_SAVE_RDF_INT (N.RES_ID, N.RES_NAME, N.RES_TYPE, N.RES_CONTENT);
 no_op:
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_I (', NEWR.RES_ID, NEWR.RES_PERMS, ') done');
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_I (', N.RES_ID, N.RES_PERMS, ') done');
   ;
 }
 ;
 
-create trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 after update (RES_ID, RES_NAME, RES_TYPE, RES_PERMS) on WS.WS.SYS_DAV_RES order 20 referencing new as NEWR, old as OLDR
+
+create trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 after update (RES_ID, RES_NAME, RES_TYPE, RES_PERMS) on WS.WS.SYS_DAV_RES order 20 referencing new as N, old as O
 {
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 (', OLDR.RES_ID, '=->', NEWR.RES_ID, OLDR.RES_TYPE, '=->', NEWR.RES_TYPE, OLDR.RES_PERMS, '=->', NEWR.RES_PERMS, ')');
-  if (length (NEWR.RES_PERMS) < 11)
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 (', O.RES_ID, '=->', N.RES_ID, O.RES_TYPE, '=->', N.RES_TYPE, O.RES_PERMS, '=->', N.RES_PERMS, ')');
+  whenever sqlstate '*' goto no_op;
+
+  if (length (N.RES_PERMS) < 11)
     goto no_op;
-  if (not (NEWR.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
+
+  if (not (N.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
     goto no_op;
-  if ((OLDR.RES_ID <> NEWR.RES_ID) or (OLDR.RES_TYPE <> NEWR.RES_TYPE))
+
+  if ((O.RES_ID <> N.RES_ID) or (O.RES_TYPE <> N.RES_TYPE))
     goto ignore_old_res_perms;
-  if ((OLDR.RES_NAME <> NEWR.RES_NAME) and (DAV_GUESS_MIME_TYPE_BY_NAME (OLDR.RES_NAME) <> DAV_GUESS_MIME_TYPE_BY_NAME (NEWR.RES_NAME)))
+
+  if ((O.RES_NAME <> N.RES_NAME) and (DAV_GUESS_MIME_TYPE_BY_NAME (O.RES_NAME) <> DAV_GUESS_MIME_TYPE_BY_NAME (N.RES_NAME)))
     goto ignore_old_res_perms;
-  if ((length (OLDR.RES_PERMS) >= 11) and (OLDR.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
+
+  if ((length (O.RES_PERMS) >= 11) and (O.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
     goto no_op; -- Do nothing because no actual change happened.
+
 ignore_old_res_perms:
-  whenever sqlstate '*' goto no_op;
-  DAV_EXTRACT_AND_SAVE_RDF_INT (NEWR.RES_ID, NEWR.RES_NAME, NEWR.RES_TYPE, NEWR.RES_CONTENT);
+  DAV_EXTRACT_AND_SAVE_RDF_INT (N.RES_ID, N.RES_NAME, N.RES_TYPE, N.RES_CONTENT);
 no_op:
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 (', OLDR.RES_ID, '=->', NEWR.RES_ID, OLDR.RES_TYPE, '=->', NEWR.RES_TYPE, OLDR.RES_PERMS, '=->', NEWR.RES_PERMS, ') done');
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 (', O.RES_ID, '=->', N.RES_ID, O.RES_TYPE, '=->', N.RES_TYPE, O.RES_PERMS, '=->', N.RES_PERMS, ') done');
   ;
 }
 ;
 
-create trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U2 after update (RES_ID, RES_NAME, RES_TYPE, RES_CONTENT) on WS.WS.SYS_DAV_RES order 21 referencing new as NEWR, old as OLDR
+
+create trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U2 after update (RES_ID, RES_NAME, RES_TYPE, RES_CONTENT) on WS.WS.SYS_DAV_RES order 21 referencing new as N, old as O
 {
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U2 (', OLDR.RES_ID, '=->', NEWR.RES_ID, OLDR.RES_TYPE, '=->', NEWR.RES_TYPE, OLDR.RES_PERMS, '=->', NEWR.RES_PERMS, ')');
-  if (length (NEWR.RES_PERMS) < 11)
-    goto no_op;
-  if (not (NEWR.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
-    goto no_op;
-  if ((OLDR.RES_ID <> NEWR.RES_ID) or (OLDR.RES_TYPE <> NEWR.RES_TYPE))
-    goto no_op; -- Do nothing because data are extracted already by SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 trigger.
-  if ((OLDR.RES_NAME <> NEWR.RES_NAME) and (DAV_GUESS_MIME_TYPE_BY_NAME (OLDR.RES_NAME) <> DAV_GUESS_MIME_TYPE_BY_NAME (NEWR.RES_NAME)))
-    goto no_op; -- Do nothing because data are extracted already by SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 trigger.
-  if (not ((length (OLDR.RES_PERMS) >= 11) and (OLDR.RES_PERMS[10] in (ascii ('R'), ascii ('M')))))
-    goto no_op; -- Do nothing because data are extracted already by SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 trigger.
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U2 (', O.RES_ID, '=->', N.RES_ID, O.RES_TYPE, '=->', N.RES_TYPE, O.RES_PERMS, '=->', N.RES_PERMS, ')');
   whenever sqlstate '*' goto no_op;
-  DAV_EXTRACT_AND_SAVE_RDF_INT (NEWR.RES_ID, NEWR.RES_NAME, NEWR.RES_TYPE, NEWR.RES_CONTENT);
+
+  if (length (N.RES_PERMS) < 11)
+    goto no_op;
+
+  if (not (N.RES_PERMS[10] in (ascii ('R'), ascii ('M'))))
+    goto no_op;
+
+  if ((O.RES_ID <> N.RES_ID) or (O.RES_TYPE <> N.RES_TYPE))
+    goto no_op; -- Do nothing because data are extracted already by SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 trigger.
+
+  if ((O.RES_NAME <> N.RES_NAME) and (DAV_GUESS_MIME_TYPE_BY_NAME (O.RES_NAME) <> DAV_GUESS_MIME_TYPE_BY_NAME (N.RES_NAME)))
+    goto no_op; -- Do nothing because data are extracted already by SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 trigger.
+
+  if (not ((length (O.RES_PERMS) >= 11) and (O.RES_PERMS[10] in (ascii ('R'), ascii ('M')))))
+    goto no_op; -- Do nothing because data are extracted already by SYS_DAV_RES_CONTENT_EXTRACT_RDF_U1 trigger.
+
+  DAV_EXTRACT_AND_SAVE_RDF_INT (N.RES_ID, N.RES_NAME, N.RES_TYPE, N.RES_CONTENT);
 no_op:
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U2 (', OLDR.RES_ID, '=->', NEWR.RES_ID, OLDR.RES_TYPE, '=->', NEWR.RES_TYPE, OLDR.RES_PERMS, '=->', NEWR.RES_PERMS, ') done');
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_CONTENT_EXTRACT_RDF_U2 (', O.RES_ID, '=->', N.RES_ID, O.RES_TYPE, '=->', N.RES_TYPE, O.RES_PERMS, '=->', N.RES_PERMS, ') done');
   ;
 }
 ;
 
-create procedure DAV_EXTRACT_AND_SAVE_RDF (in resid integer)
+
+create procedure DAV_EXTRACT_AND_SAVE_RDF (
+  in resid integer)
 {
+  -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF (', resid, ')');
   declare resname, restype varchar;
   declare rescontent any;
-  -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF (', resid, ')');
-  select RES_NAME, RES_TYPE, RES_CONTENT into resname, restype, rescontent from WS.WS.SYS_DAV_RES where RES_ID = resid;
+
+  select RES_NAME, RES_TYPE, RES_CONTENT
+    into resname, restype, rescontent
+    from WS.WS.SYS_DAV_RES
+   where RES_ID = resid;
   DAV_EXTRACT_AND_SAVE_RDF_INT (resid, resname, restype, rescontent);
-  -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF (', resid, ') done');
 }
 ;
 
-create procedure DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(in mime_type varchar) returns varchar
+
+create procedure DAV_GET_RES_TYPE_URI_BY_MIME_TYPE (
+  in mime_type varchar) returns varchar
 {
-        if (mime_type = 'application/bpel+xml')
-                return 'http://www.openlinksw.com/schemas/WSDL#';
-        if (mime_type = 'application/doap+rdf')
-                return 'http://www.openlinksw.com/schemas/doap#';
-        if (mime_type = 'application/foaf+xml')
-                return 'http://xmlns.com/foaf/0.1/';
-        --if (mime_type = 'application/google-kinds+xml')
-        --        return 'http://www.openlinksw.com/schemas/google-kinds#';
-        if (mime_type = 'application/google-base+xml')
-                return 'http://www.openlinksw.com/schemas/google-base#';
-        if (mime_type = 'application/license')
-                return 'http://www.openlinksw.com/schemas/opllic#';
-        if (mime_type = 'application/mods+xml')
-                return 'http://www.openlinksw.com/schemas/MODS#';
-        if (mime_type = 'application/msexcel')
-                return 'http://www.openlinksw.com/schemas/Office#';
-        if (mime_type = 'application/mspowerpoint')
-                return 'http://www.openlinksw.com/schemas/Office#';
-        if (mime_type = 'application/msproject')
-                return 'http://www.openlinksw.com/schemas/Office#';
-        if (mime_type = 'application/msword')
-                return 'http://www.openlinksw.com/schemas/Office#';
-        if (mime_type = 'application/msword+xml')
-                return 'http://www.openlinksw.com/schemas/Office#';
-        if (mime_type = 'application/opml+xml')
-                return 'http://www.openlinksw.com/schemas/OPML#';
-        if (mime_type = 'application/pdf')
-                return 'http://www.openlinksw.com/schemas/Office#';
-        if (mime_type = 'application/rdf+xml')
-                return 'http://www.openlinksw.com/schemas/RDF#';
-        if (mime_type = 'application/rss+xml')
-                return 'http://purl.org/rss/1.0/';
-        if (mime_type = 'application/wsdl+xml')
-                return 'http://www.openlinksw.com/schemas/WSDL#';
-        if (mime_type = 'application/x-openlink-image')
-                return 'http://www.openlinksw.com/schemas/Image#';
-        if (mime_type = 'application/x-openlink-photo')
-                return 'http://www.openlinksw.com/schemas/Photo#';
-        if (mime_type = 'application/x-openlinksw-vad')
-                return 'http://www.openlinksw.com/schemas/VAD#';
-        if (mime_type = 'application/x-openlinksw-vsp')
-                return 'http://www.openlinksw.com/schemas/VSPX#';
-        if (mime_type = 'application/x-openlinksw-vspx+xml')
-                return 'http://www.openlinksw.com/schemas/VSPX#';
-        if (mime_type = 'application/xbel+xml')
-                return 'http://www.python.org/topics/xml/xbel/';
-        if (mime_type = 'application/xbrl+xml')
-                return 'http://www.openlinksw.com/schemas/xbrl#';
-        if (mime_type = 'application/xddl+xml')
-                return 'http://www.openlinksw.com/schemas/XDDL#';
-        if (mime_type = 'application/zip')
-                return 'http://www.openlinksw.com/schemas/Archive#';
-        if (mime_type = 'text/directory')
-                return 'http://www.w3.org/2001/vcard-rdf/3.0#';
-        if (mime_type = 'text/eml')
-                return 'http://www.openlinksw.com/schemas/Email#';
-        if (mime_type = 'text/html')
-                return 'http://www.openlinksw.com/schemas/XHTML#';
-        if (mime_type = 'text/wiki')
-                return 'http://www.openlinksw.com/schemas/Wiki#';
-	return NULL;
+  if (mime_type = 'application/bpel+xml')
+    return 'http://www.openlinksw.com/schemas/WSDL#';
+
+  if (mime_type = 'application/doap+rdf')
+    return 'http://www.openlinksw.com/schemas/doap#';
+
+  if (mime_type = 'application/foaf+xml')
+    return 'http://xmlns.com/foaf/0.1/';
+
+  if (mime_type = 'application/google-base+xml')
+    return 'http://www.openlinksw.com/schemas/google-base#';
+
+  if (mime_type = 'application/license')
+    return 'http://www.openlinksw.com/schemas/opllic#';
+
+  if (mime_type = 'application/mods+xml')
+    return 'http://www.openlinksw.com/schemas/MODS#';
+
+  if (mime_type = 'application/msexcel')
+    return 'http://www.openlinksw.com/schemas/Office#';
+
+  if (mime_type = 'application/mspowerpoint')
+    return 'http://www.openlinksw.com/schemas/Office#';
+
+  if (mime_type = 'application/msproject')
+    return 'http://www.openlinksw.com/schemas/Office#';
+
+  if (mime_type = 'application/msword')
+    return 'http://www.openlinksw.com/schemas/Office#';
+
+  if (mime_type = 'application/msword+xml')
+    return 'http://www.openlinksw.com/schemas/Office#';
+
+  if (mime_type = 'application/opml+xml')
+    return 'http://www.openlinksw.com/schemas/OPML#';
+
+  if (mime_type = 'application/pdf')
+    return 'http://www.openlinksw.com/schemas/Office#';
+
+  if (mime_type = 'application/rdf+xml')
+    return 'http://www.openlinksw.com/schemas/RDF#';
+
+  if (mime_type = 'application/rss+xml')
+    return 'http://purl.org/rss/1.0/';
+
+  if (mime_type = 'application/wsdl+xml')
+    return 'http://www.openlinksw.com/schemas/WSDL#';
+
+  if (mime_type = 'application/x-openlink-image')
+    return 'http://www.openlinksw.com/schemas/Image#';
+
+  if (mime_type = 'application/x-openlink-photo')
+    return 'http://www.openlinksw.com/schemas/Photo#';
+
+  if (mime_type = 'application/x-openlinksw-vad')
+    return 'http://www.openlinksw.com/schemas/VAD#';
+
+  if (mime_type = 'application/x-openlinksw-vsp')
+    return 'http://www.openlinksw.com/schemas/VSPX#';
+
+  if (mime_type = 'application/x-openlinksw-vspx+xml')
+    return 'http://www.openlinksw.com/schemas/VSPX#';
+
+  if (mime_type = 'application/xbel+xml')
+    return 'http://www.python.org/topics/xml/xbel/';
+
+  if (mime_type = 'application/xbrl+xml')
+    return 'http://www.openlinksw.com/schemas/xbrl#';
+
+  if (mime_type = 'application/xddl+xml')
+    return 'http://www.openlinksw.com/schemas/XDDL#';
+
+  if (mime_type = 'application/zip')
+    return 'http://www.openlinksw.com/schemas/Archive#';
+
+  if (mime_type = 'text/directory')
+    return 'http://www.w3.org/2001/vcard-rdf/3.0#';
+
+  if (mime_type = 'text/eml')
+    return 'http://www.openlinksw.com/schemas/Email#';
+
+  if (mime_type = 'text/html')
+    return 'http://www.openlinksw.com/schemas/XHTML#';
+
+  if (mime_type = 'text/wiki')
+    return 'http://www.openlinksw.com/schemas/Wiki#';
+
+  return null;
 }
 ;
 
 -- /* extracting metadata */
-create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resname varchar, in restype varchar, inout _rescontent any)
+create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (
+  inout resid integer,
+  inout resname varchar,
+  in restype varchar,
+  inout _rescontent any)
 {
   declare rescontent any;
+
   rescontent := subseq (_rescontent, 0, 10000000-1);
   if ((length (_rescontent) < 262144) or (registry_get ('DAV_EXTRACT_RDF_ASYNC') <> '1'))
-    {
-      DAV_EXTRACT_AND_SAVE_RDF_INT2 (resid, resname, restype, rescontent);
-    }
-  else
-    {
-      declare aq any;
-      aq := async_queue (1, 4);
-      if (not isstring (rescontent))
-	rescontent := cast (rescontent as varchar);
-      aq_request (aq, 'DB.DBA.DAV_EXTRACT_AND_SAVE_RDF_INT2', vector (resid, resname, restype, rescontent));
-    }
+    return DAV_EXTRACT_AND_SAVE_RDF_INT2 (resid, resname, restype, rescontent);
+
+  declare aq any;
+
+  aq := async_queue (1, 4);
+  if (not isstring (rescontent))
+    rescontent := cast (rescontent as varchar);
+
+  aq_request (aq, 'DB.DBA.DAV_EXTRACT_AND_SAVE_RDF_INT2', vector (resid, resname, restype, rescontent));
 }
 ;
 
 -- /* extracting metadata */
-create procedure DAV_EXTRACT_AND_SAVE_RDF_INT2 (in resid integer, in resname varchar, in restype varchar, in rescontent any)
+create procedure DAV_EXTRACT_AND_SAVE_RDF_INT2 (
+  in resid integer,
+  in resname varchar,
+  in restype varchar,
+  in rescontent any)
 {
   -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF_INT (', resid, resname, restype, rescontent, ')');
   declare resttype, res_type_uri, full_name varchar;
   declare old_prop_id integer;
   declare html_start, full_xml, type_tree any;
   declare old_n3, addon_n3, spotlight_addon_n3 any;
+
   html_start := null;
   full_xml := null;
   spotlight_addon_n3 := null;
   addon_n3 := null;
-  --if (restype is null)
   restype := DAV_GUESS_MIME_TYPE (resname, rescontent, html_start);
-  -- dbg_obj_princ ('restype is ', restype);
   if (restype is not null)
     {
       declare p_name varchar;
@@ -7653,46 +7755,34 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT2 (in resid integer, in resname var
           -- dbg_obj_princ ('Failed to call DB.DBA.DAV_EXTRACT_RDF_' || restype, '(', resname, ',... ): ', __SQL_STATE, __SQL_MESSAGE);
           goto addon_n3_set;
         };
-        select RES_FULL_PATH into full_name from WS.WS.SYS_DAV_RES where RES_ID = resid;
-        if (full_name is null)
-            full_name := resname;
-	p_name := 'DB.DBA.DAV_EXTRACT_RDF_' || restype;
-	if (__proc_exists (p_name) is not null)
-	  {
-	    addon_n3 := call (p_name) (full_name, rescontent, html_start);
-	    res_type_uri := DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(restype);
-	    if (res_type_uri is not null)
-	      {
-		type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="' || res_type_uri || '"/>' );
-		addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
-	      }
-	  }
-          --dbg_obj_princ ('test:', addon_n3);
-addon_n3_set: ;
+
+      select RES_FULL_PATH into full_name from WS.WS.SYS_DAV_RES where RES_ID = resid;
+      if (full_name is null)
+        full_name := resname;
+
+      p_name := 'DB.DBA.DAV_EXTRACT_RDF_' || restype;
+      if (__proc_exists (p_name) is not null)
+        {
+          addon_n3 := call (p_name) (full_name, rescontent, html_start);
+          res_type_uri := DAV_GET_RES_TYPE_URI_BY_MIME_TYPE (restype);
+          if (res_type_uri is not null)
+            {
+              type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="' || res_type_uri || '"/>' );
+              addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
+             }
+        }
+        --dbg_obj_princ ('test:', addon_n3);
+    addon_n3_set:;
     }
+
   -- dbg_obj_princ ('addon_n3 is', addon_n3);
-  if (__proc_exists ('SPOTLIGHT_METADATA',2) is not null)
+  if (__proc_exists ('SPOTLIGHT_METADATA', 2) is not null)
     spotlight_addon_n3 := DAV_EXTRACT_SPOTLIGHT (resname, rescontent);
+
   -- dbg_obj_princ ('spotlight_addon_n3 is', spotlight_addon_n3);
   if (addon_n3 is null and spotlight_addon_n3 is null)
     goto no_op;
-  whenever not found goto no_old;
-  select xml_tree_doc (deserialize (blob_to_string (PROP_VALUE))), PROP_ID
-  into old_n3, old_prop_id
-  from WS.WS.SYS_DAV_PROP
-  where PROP_NAME = 'http://local.virt/DAV-RDF' and PROP_TYPE = 'R' and PROP_PARENT_ID = resid;
-  old_n3 := xslt ('http://local.virt/davxml2n3xml', old_n3);
-  --dbg_obj_princ ('old_n3 is', old_n3);
-  if (addon_n3 is not null)
-    old_n3 := DAV_RDF_MERGE (old_n3, addon_n3, null, 0);
-  if (spotlight_addon_n3 is not null)
-    old_n3 := DAV_RDF_MERGE (old_n3, spotlight_addon_n3, null, 0);
-  --dbg_obj_princ ('will update: ', old_n3);
-  update WS.WS.SYS_DAV_PROP set PROP_VALUE = serialize (DAV_RDF_PREPROCESS_RDFXML (old_n3, N'http://local.virt/this', 1))
-  where PROP_ID = old_prop_id;
-  goto no_op;
 
-no_old:
   if (spotlight_addon_n3 is not null)
     {
       if (addon_n3 is not null)
@@ -7700,18 +7790,34 @@ no_old:
       else
         addon_n3 := spotlight_addon_n3;
     }
-  --dbg_obj_princ ('will insert: ', addon_n3);
-  insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
-  values
-    (WS.WS.GETID ('P'), 'http://local.virt/DAV-RDF', 'R', resid,
-      serialize (DAV_RDF_PREPROCESS_RDFXML (addon_n3, N'http://local.virt/this', 1)) );
+
+  whenever not found goto no_old;
+  select xml_tree_doc (deserialize (blob_to_string (PROP_VALUE))), PROP_ID
+    into old_n3, old_prop_id
+    from WS.WS.SYS_DAV_PROP
+   where PROP_NAME = 'http://local.virt/DAV-RDF'
+     and PROP_TYPE = 'R'
+     and PROP_PARENT_ID = resid;
+
+  old_n3 := xslt ('http://local.virt/davxml2n3xml', old_n3);
+  old_n3 := DAV_RDF_MERGE (old_n3, addon_n3, null, 0);
+
+  --dbg_obj_princ ('will update: ', old_n3);
+  update WS.WS.SYS_DAV_PROP
+    set PROP_VALUE = serialize (DAV_RDF_PREPROCESS_RDFXML (old_n3, N'http://local.virt/this', 1))
+  where PROP_ID = old_prop_id;
   goto no_op;
 
-no_op:
+no_old:
+  --dbg_obj_princ ('will insert: ', addon_n3);
+  insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
+    values (WS.WS.GETID ('P'), 'http://local.virt/DAV-RDF', 'R', resid, serialize (DAV_RDF_PREPROCESS_RDFXML (addon_n3, N'http://local.virt/this', 1)) );
+
+no_op:;
   -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF_INT (', resid, resname, restype, rescontent, ') done');
-  ;
 }
 ;
+
 
 create function DAV_HOME_DIR_UPDATE ()
 {
