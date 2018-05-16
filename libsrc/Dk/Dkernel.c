@@ -5436,7 +5436,7 @@ end:
 int
 ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
 {
-  int /*session_id_context = 2, */ i;
+  int i, j;
   FILE *fi;
   PKCS12 *p12 = NULL;
   EVP_PKEY *pkey;
@@ -5473,9 +5473,9 @@ ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
     i = SSL_check_private_key (ssl);
   if (i)
     {
-      for (i = 0; i < sk_X509_num (ca_list); i++)
+      for (j = 0; j < sk_X509_num (ca_list); j++)
 	{
-	  X509 *ca = (X509 *) sk_X509_value (ca_list, i);
+	  X509 *ca = (X509 *) sk_X509_value (ca_list, j);
 	  SSL_add_client_CA (ssl, ca);
 	  X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca);
 	}
