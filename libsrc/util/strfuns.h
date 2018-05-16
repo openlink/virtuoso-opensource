@@ -38,15 +38,18 @@ char *	cslentry (const char *list, int entry);
 int	cslnumentries (const char *list);
 int	csllookup (const char *list, const char *expr);
 int	make_env (const char *id, const char *value);
+#ifndef WIN32
 int	stricmp (const char *, const char *);
 int	strnicmp (const char *, const char *, size_t);
 char *	strlwr (char *);
 char *	strupr (char *);
+#endif
 char *	rtrim (char *);
 const char *ltrim (const char *);
 char *	strindex (const char *str, const char *find);
 void	strinsert (char *where, const char *what);
-char *	strexpect (char *keyword, char *source);
+char *	strexpect (const char *keyword, const char *source);
+char *	strexpect_cs (const char *keyword, const char *source);
 int	build_argv_from_string (const char *s, int *pargc, char ***pargv);
 void	free_argv (char **argv);
 char *	fntodos (char *filename);
