@@ -640,7 +640,7 @@ http(sprintf('<xsl:for-each select="text">
     </xsl:if>
     <xsl:attribute name="id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
     <xsl:attribute name="class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
-    <xsl:attribute name="onclick">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+    <xsl:attribute name="onclick">javascript:WEBDAV.showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
     <xsl:value-of select="@caption"/>
   </div>
 </xsl:template>
