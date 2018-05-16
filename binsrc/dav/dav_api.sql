@@ -2053,13 +2053,12 @@ DAV_CHECK_ACLS_INTERNAL (
   in grpGraph varchar,
   inout IRIs any,
   inout reqMode any,
-  inout realMode any)
+  inout realMode any,
+  inout cert any := null)
 {
   -- dbg_printf('DAV_CHECK_ACLS_INTERNAL (%s, %s, %s, %s, ...)', webid, webidGraph, graph, grpGraph);
   declare M, I integer;
-  declare tmp, _cert, _commands, _command any;
-  declare _filterMode, _filterValue, _filterCriteriaValue, _mode, _filter, _criteria, _operand, _condition, _value, _pattern, _statement, _params any;
-  declare _sql, _state, _msg, _sqlParams, _meta, _rows any;
+  declare tmp any;
 
   if (not isnull (webid))
   {
@@ -2163,13 +2162,13 @@ DAV_CHECK_ACLS (
   in req varchar,
   inout a_uid integer,
   inout a_gid integer,
-  inout _perms varchar) returns integer
+  inout _perms varchar,
+  inout cert any := null) returns integer
 {
   -- dbg_printf('DAV_CHECK_ACLS (_, %s, %s, %s, %s, ...)', webid, webidGraph, what, path);
-  declare rc, N integer;
+  declare rc integer;
+  declare det varchar;
   declare graph, grpGraph, reqMode, realMode, IRIs any;
-  declare cert, diArray, finger, digest, digestHash any;
-  declare tmp, T, V any;
 
   rc := 0;
   req := replace (req, '_', '0');
@@ -2178,38 +2177,18 @@ DAV_CHECK_ACLS (
   IRIs := vector (vector(), vector(), vector());
 
   set_user_id ('dba');
-  tmp := '/';
-  V := vector ();
-  T := split_and_decode (trim (path, '/'), 0, '\0\0/');
-  for (N := 0; N < length (T)-1; N := N + 1)
-  {
-    tmp := tmp || T[N] || '/';
-    V := vector_concat (vector (tmp), V);
-  }
-  V := vector_concat (vector (path), V);
-  for (N := 0; N < length (V); N := N + 1)
-  {
-    if (N <> 0)
+  while (path <> '/')
     {
-      what := 'C';
-      id := DAV_SEARCH_ID (V[N], what);
-    }
+    id := DB.DBA.DAV_SEARCH_ID (path, what);
+    det := DB.DBA.DAV_DET_NAME (id);
     if (
-        (isinteger (id) and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3')) or
-        (isarray (id) and (cast (id[0] as varchar) = 'IMAP')) or
-        (isarray (id) and (cast (id[0] as varchar) = 'DynaRes'))
+        (DB.DBA.DAV_DET_IS_WEBDAV_BASED (det) and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID =  DB.DBA.DAV_DET_DAV_ID (id) and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3')) or
+        (det in ('IMAP', 'DynaRes'))
        )
     {
-      tmp := null;
-      graph := WS.WS.WAC_GRAPH (V[N]);
+      graph := WS.WS.WAC_GRAPH (path);
       grpGraph := SIOC.DBA.get_graph () || '/private/%';
-      DAV_CHECK_ACLS_INTERNAL (webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode);
-      if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
-        goto _exit;
-    }
-  }
-
-_exit:;
+      DB.DBA.DAV_CHECK_ACLS_INTERNAL (webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, cert);
   if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
   {
     if (not DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid))
@@ -2226,7 +2205,14 @@ _exit:;
       }
     }
     rc := 1;
+        goto _exit;
+      }
   }
+    path := DB.DBA.DAV_DET_PATH_PARENT (path, 1);
+    what := 'C';
+  }
+
+_exit:;
   _perms := sprintf ('%d%d%d', realMode[0], realMode[1], realMode[2]);
   return rc;
 }
@@ -2245,18 +2231,20 @@ DAV_AUTHENTICATE_SSL (
 {
   --dbg_printf('DAV_AUTHENTICATE_SSL (%d, %s, %s, ...)', id, what, path);
   declare rc integer;
-  declare webidGraph any;
+  declare webidGraph, cert any;
+  declare hdr, hstr any;
 
   rc := 0;
   if (DAV_AUTHENTICATE_SSL_CONDITION ())
   {
     DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
 
+    cert := null;
     webidGraph := null;
     DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
 
     _perms := '___';
-    rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
+    rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms, cert);
     if (rc)
       {
       DAV_PERMS_FIX (_perms, '000000000TM');
