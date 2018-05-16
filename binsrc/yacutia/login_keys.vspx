@@ -22,32 +22,27 @@
 -->
 <v:page name="oauth_apps" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" button-anchors="1">
 	<vm:pagetitle>Login Authentication Keys</vm:pagetitle>
-	<v:method name="serviceName" arglist="in a_key any">
+  <v:method name="dataClean" arglist="">
 		<![CDATA[
-			declare N integer;
-			for (N := 0; N < length (self.a_services); N := N + 2)
-			{
-				if (replace (replace (lcase (a_key), ' ', ''), 'api', '') = replace (replace (lcase (self.a_services[N]), ' ', ''), 'api', ''))
-					return self.a_services[N+1];
-			}
-			return a_key;
-		]]>
-	</v:method>
-	<v:method name="serviceKey" arglist="in a_name any">
-		<![CDATA[
-			declare N integer;
-			for (N := 0; N < length (self.a_services); N := N + 2)
-			{
-				if (a_name = self.a_services[N+1])
-					return self.a_services[N];
-			}
-			return a_name;
+      self.v_type := 0;
+      self.v_name := '';
+      self.a_name.ufl_value := '';
+      self.a_name_custom.ufl_value := '';
+      self.a_version.ufl_value := '2.0';
+      self.a_url_authenticate.ufl_value := '';
+      self.a_url_token.ufl_value := '';
+      self.a_url_userinfo.ufl_value := '';
+      self.a_key.ufl_value := '';
+      self.a_secret.ufl_value := '';
+
+      self.lk_edit := null;
 		]]>
 	</v:method>
 	<vm:pagewrapper>
 		<vm:variables>
-			<v:variable name="a_name" type="varchar" default="''" />
-			<v:variable name="a_services" type="any" default="null" />
+      <v:variable name="v_type" type="integer" default="0" />
+      <v:variable name="v_name" type="varchar" default="null" />
+      <v:variable name="v_services" type="any" default="null" />
 			<v:variable name="lk_edit" type="integer" default="null" param-name="edit" />
 			<v:variable name="lk_delete" type="integer" default="null" param-name="del" />
 		</vm:variables>
@@ -57,40 +52,15 @@
 		<vm:header caption="Login Authentication Keys"/>
 		<vm:pagebody>
 			<v:on-init>
-				self.a_services := vector(
-					'MyOpenLink API',    'MyOpenLink',
-					'AngelList API',     'AngelList',
-					'Bitly API',         'Bitly',
-					'Box Net API',       'Box Net',
-					'Disqus API',        'Disqus',
-					'Dropbox API',       'Dropbox',
-					'Facebook API',      'Facebook',
-					'flickr',            'Flickr',
-					'Foursquare API',    'Foursquare',
-					'GitHub API',        'GitHub',
-					'Google API',        'Google',
-					'Instagram API',     'Instagram',
-					'LinkedIn API',      'LinkedIn',
-					'meetup',            'Meetup',
-					'salesforce',        'Salesforce',
-					'Tumblr API',        'Tumblr',
-					'Twitter API',       'Twitter',
-					'Windows Live API',  'Windows Live',
-					'Wordpress API',     'Wordpress',
-					'Xing',              'Xing',
-					'Yahoo API',         'Yahoo');
+        self.v_services := VAL.DBA.thirdparty_service_labels ();
 			</v:on-init>
 			<v:form type="simple" method="POST">
 				<table class="listing" rules="groups">
-					<colgroup>
-						<col/>
-						<col/>
-					</colgroup>
 					<tr class="listing_header_row">
-						<th>Provider</th>
+            <th>Service Name</th>
 						<th width="5%">Action</th>
 					</tr>
-					<v:data-set name="maps" sql="select A_ID, A_NAME, A_KEY, A_SECRET from OAUTH..APP_REG where A_OWNER = 0" scrollable="1" editable="1" nrows="0">
+          <v:data-set name="maps" sql="select A_ID, A_TYPE, A_NAME, A_VERSION, A_URL_AUTHENTICATE, A_URL_TOKEN, A_URL_USERINFO, A_KEY, A_SECRET from OAUTH..APP_REG where A_OWNER = 0" scrollable="1" editable="1" nrows="0">
 						<v:before-data-bind>
 							if (not e.ve_is_post and self.lk_delete is not null)
 							{
@@ -98,19 +68,25 @@
 							}
 						</v:before-data-bind>
 						<v:template name="maps_rep" type="repeat">
+
 							<v:template name="maps_brows" type="browse">
 								<v:after-data-bind>
 									if (not e.ve_is_post and control.te_rowset[0] = self.lk_edit)
 									{
-										self.a_name := control.te_rowset[1];
-										self.a_key.ufl_value := control.te_rowset[2];
-										self.a_secret.ufl_value := control.te_rowset[3];
+                    self.v_type := control.te_rowset[1];
+                    self.v_name := control.te_rowset[2];
+                    self.a_version.ufl_value := control.te_rowset[3];
+                    self.a_url_authenticate.ufl_value := control.te_rowset[4];
+                    self.a_url_token.ufl_value := control.te_rowset[5];
+                    self.a_url_userinfo.ufl_value := control.te_rowset[6];
+                    self.a_key.ufl_value := control.te_rowset[7];
+                    self.a_secret.ufl_value := control.te_rowset[8];
 									}
 								</v:after-data-bind>
-								<tr class="<?V case when self.lk_edit = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                <tr>
 									<td>
 										<v:url name="ur1"
-										value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, self.serviceName ((control.vc_parent as vspx_row_template).te_rowset[1]))'
+                           value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, get_keyword ((control.vc_parent as vspx_row_template).te_rowset[2], self.v_services, (control.vc_parent as vspx_row_template).te_rowset[2]))'
 										format="%s"
 										url="--sprintf ('login_keys.vspx?edit=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 										xhtml_title="Edit"
@@ -118,7 +94,8 @@
 										/>
 									</td>
 									<td nowrap="nowrap">
-										<v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
+                    <v:url name="ur2"
+                           value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
 										format="%s"
 										url="--sprintf ('login_keys.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[0])"
 										xhtml_title="Delete"
@@ -129,40 +106,107 @@
 								</tr>
 							</v:template>
 						</v:template>
+
 						<v:template name="maps_footer" type="simple">
 							<tr>
-								<td colspan="3" class="listing_col_action">
+                <td colspan="2" class="listing_col_action">
 									<vm:ds-navigation data-set="maps" type="set" />
 								</td>
 							</tr>
 						</v:template>
 					</v:data-set>
 				</table>
+
 				<div class="fm">
 					<table>
 						<tr>
 							<th width="90px">
+                <label for="a_type">Custom Service Type</label>
+              </th>
+              <td>
+                <v:check-box name="a_type" value="1" xhtml_id="a_type" xhtml_onchange="javascript: customType(this);">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      control.ufl_selected := case when (self.v_type = 0) then 0 else 1 end;
+                      control.vc_data_bound := 1;
+                    ]]>
+                  </v:before-data-bind>
+                  <v:before-render>
+                    <![CDATA[
+                      control.ufl_selected := case when (self.v_type = 0) then 0 else 1 end;
+                      if (self.lk_edit is not null)
+                        control.vc_add_attribute ('disabled', 'disabled');
+                    ]]>
+                  </v:before-render>
+                </v:check-box>
+              </td>
+            </tr>
+            <tr>
+              <th>
 								<label for="a_name">Service Name</label>
 							</th>
 							<td id="td_name">
-								<script type="text/javascript">
+                <v:select-list name="a_name" xhtml_id="a_name" xhtml_style="display: none; width: 300px;" enabled="--case when (self.lk_edit is null) then 1 else 0 end">
+                  <v:before-data-bind>
 									<![CDATA[
-										function f_name ()
+                      declare x, y, services any;
+
+                      x := vector ();
+                      y := vector ();
+                      services := VAL.DBA.thirdparty_keyServices ();
+                      foreach (any service in services) do
 										{
-											var fld = new OAT.Combolist([], "<?V self.serviceName (self.a_name) ?>");
-											fld.input.name = 'a_name';
-											fld.input.id = 'a_name';
-											fld.input.style.width = "300px";
-											$("td_name").appendChild(fld.div);
-											<?vsp
-												declare N integer;
-												for (N := 0; N < length (self.a_services); N := N + 2)
-													http (sprintf ('fld.addOption("%s");', self.a_services[N+1]));
-											?>
+                        x := vector_concat (x, vector (get_keyword ('key', service)));
+                        y := vector_concat (y, vector (get_keyword ('label', service)));
 										}
-										OAT.Loader.load(["combolist"], f_name);
+                      control.vsl_item_values := x;
+                      control.vsl_items := y;
 									]]>
-								</script>
+                  </v:before-data-bind>
+                </v:select-list>
+                <v:text name="a_name_custom" xhtml_id="a_name_custom" xhtml_style="display: none; width: 300px;" value="--self.v_name" enabled="--case when (self.lk_edit is null) then 1 else 0 end" />
+                <v:label name="a_name_label" value="--get_keyword (self.v_name, self.v_services, self.v_name)" enabled="--case when self.lk_edit is null then 0 else 1 end" />
+              </td>
+            </tr>
+            <tr id="ac_version">
+              <th>
+                <label for="a_version" class="form">OAuth Version</label>
+              </th>
+              <td>
+                <v:select-list name="a_version" xhtml_id="a_version" xhtml_style="width: 150px;">
+                  <v:item name="1.0" value="1.0" />
+                  <v:item name="2.0" value="2.0" />
+                  <v:before-data-bind>
+                    <![CDATA[
+                      if (isnull (control.ufl_value))
+                        control.ufl_value := '2.0';
+                    ]]>
+                  </v:before-data-bind>
+                </v:select-list>
+              </td>
+            </tr>
+            <tr id="ac_url_authenticate">
+              <th>
+                <label for="a_url_authenticate" class="form">Authenticate URL</label>
+              </th>
+              <td>
+                <v:text name="a_url_authenticate" xhtml_id="a_url_authenticate" value="" xhtml_style="width: 500px;" />
+              </td>
+            </tr>
+            <tr id="ac_url_token">
+              <th>
+                <label for="a_url_token" class="form">Token URL</label>
+              </th>
+              <td>
+                <v:text name="a_url_token" xhtml_id="a_url_token" value="" xhtml_style="width: 500px;" />
+              </td>
+            </tr>
+            <tr id="ac_url_userinfo">
+              <th>
+                <label for="a_url_userinfo" class="form">User Info URL</label>
+              </th>
+              <td>
+                <v:text name="a_url_userinfo" xhtml_id="a_url_userinfo" value="" xhtml_style="width: 500px;" />
 							</td>
 						</tr>
 						<tr>
@@ -170,7 +214,7 @@
 								<label for="a_key">Key</label>
 							</th>
 							<td>
-								<v:text name="a_key" value="" xhtml_size="110" xhtml_id="a_key" error-glyph="*" />
+                <v:text name="a_key" value="" xhtml_style="width: 500px;" xhtml_id="a_key" error-glyph="*" />
 							</td>
 						</tr>
 						<tr>
@@ -178,7 +222,7 @@
 								<label for="a_secret">Secret</label>
 							</th>
 							<td>
-								<v:text name="a_secret" value="" xhtml_size="110" xhtml_id="a_secret" error-glyph="*" />
+                <v:text name="a_secret" value="" xhtml_style="width: 500px;" xhtml_id="a_secret" error-glyph="*" />
 							</td>
 						</tr>
 						<tr>
@@ -187,54 +231,97 @@
 							<td>
 								<v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.lk_edit),0)">
 									<v:on-post>
-										self.a_name := '';
-										self.a_key.ufl_value := '';
-										self.a_secret.ufl_value := '';
-										self.lk_edit := null;
-										self.save1.vc_data_bind (e);
-										control.vc_enabled := 0;
+                    self.dataClean ();
+                    self.vc_data_bind (e);
 									</v:on-post>
 								</v:button>
 								<v:button name="save1" value="--case when self.lk_edit is null then 'Add' else 'Update' end" action="simple">
 									<v:on-post>
-										if (not self.vc_is_valid)
-											return;
-										declare exit handler for sqlstate '23000'
+                    declare exit handler for SQLSTATE '*'
 										{
 											rollback work;
+                      if (__SQL_STATE like 'NV%')
+                      {
+                        self.vc_error_message := VALIDATE.DBA.CLEAR (__SQL_MESSAGE);
+                        self.vc_is_valid := 0;
+
+                        return;
+                      }
+                      if (__SQL_STATE = '23000')
+                      {
 											self.vc_is_valid := 0;
 											self.vc_error_message := 'The values entered conflict with other data. Please supply correct new values.';
+
 											return;
 										};
-										self.a_name := self.serviceKey (get_keyword ('a_name', e.ve_params));
+                      resignal;
+                    };
+
 										if (self.lk_edit is null)
 										{
-										  declare service_id varchar;
+                      self.v_type := self.a_type.ufl_selected;
+                      self.v_name := case when self.v_type then self.a_name_custom.ufl_value else self.a_name.ufl_value end;
+                    }
 
-										  service_id := case when (__proc_exists ('VAL.DBA.user_personal_uri') is not null) then VAL.DBA.user_personal_uri ('dba') else '' end;
-                      insert into OAUTH..APP_REG (A_OWNER, A_SERVICE_ID, A_NAME, A_KEY, A_SECRET)
-                        values (0, service_id, self.a_name, self.a_key.ufl_value, self.a_secret.ufl_value);
+                    if (self.v_type)
+                    {
+                      if (self.lk_edit is null)
+                        VALIDATE.DBA.VALIDATE (self.v_name, vector('name', 'Service Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 128));
+
+                      VALIDATE.DBA.VALIDATE (self.a_url_authenticate.ufl_value, vector('name', 'URL Authenticate', 'class', 'uri', 'minLength', 1));
+                      VALIDATE.DBA.VALIDATE (self.a_url_token.ufl_value, vector('name', 'URL Token', 'class', 'uri', 'minLength', 1));
+                      VALIDATE.DBA.VALIDATE (self.a_url_userinfo.ufl_value, vector('name', 'URL User Info', 'class', 'uri', 'minLength', 1));
+                    }
+                    VALIDATE.DBA.VALIDATE (self.a_key.ufl_value, vector('name', 'Key', 'class', 'varchar', 'minLength', 1));
+                    VALIDATE.DBA.VALIDATE (self.a_secret.ufl_value, vector('name', 'Secret', 'class', 'varchar', 'minLength', 1));
+
+                    if (self.lk_edit is null)
+                    {
+                      insert into OAUTH..APP_REG (A_OWNER, A_SERVICE_ID, A_TYPE, A_NAME, A_VERSION, A_URL_AUTHENTICATE, A_URL_TOKEN, A_URL_USERINFO, A_KEY, A_SECRET)
+                        values (0, VAL.DBA.user_personal_uri (connection_get ('vspx_user')), self.v_type, self.v_name, self.a_version.ufl_value, self.a_url_authenticate.ufl_value, self.a_url_token.ufl_value, self.a_url_userinfo.ufl_value, self.a_key.ufl_value, self.a_secret.ufl_value);
 										}
 										else
 										{
 											update OAUTH..APP_REG
-												set A_NAME = self.a_name,
+                         set A_VERSION = self.a_version.ufl_value,
+                             A_URL_AUTHENTICATE = self.a_url_authenticate.ufl_value,
+                             A_URL_TOKEN = self.a_url_token.ufl_value,
+                             A_URL_USERINFO = self.a_url_userinfo.ufl_value,
 												A_KEY = self.a_key.ufl_value,
 												A_SECRET = self.a_secret.ufl_value
 												where A_ID = self.lk_edit;
 										}
-										self.a_name := '';
-										self.a_key.ufl_value := '';
-										self.a_secret.ufl_value := '';
-										self.lk_edit := null;
-										control.vc_data_bind (e);
-										self.maps.vc_data_bind (e);
+
+                    self.dataClean ();
+                    self.vc_data_bind (e);
 									</v:on-post>
 								</v:button>
 							</td>
 						</tr>
 					</table>
 				</div>
+        <script type="text/javascript">
+          function customType(obj)
+          {
+            if (obj.checked) {
+              OAT.Dom.show('a_name_custom');
+              OAT.Dom.show('ac_version');
+              OAT.Dom.show('ac_url_authenticate');
+              OAT.Dom.show('ac_url_token');
+              OAT.Dom.show('ac_url_userinfo');
+              OAT.Dom.hide('a_name');
+            }
+            else {
+              OAT.Dom.hide('a_name_custom');
+              OAT.Dom.hide('ac_version');
+              OAT.Dom.hide('ac_url_authenticate');
+              OAT.Dom.hide('ac_url_token');
+              OAT.Dom.hide('ac_url_userinfo');
+              OAT.Dom.show('a_name');
+            }
+          }
+          customType($('a_type'));
+        </script>
 			</v:form>
 		</vm:pagebody>
 	</vm:pagewrapper>

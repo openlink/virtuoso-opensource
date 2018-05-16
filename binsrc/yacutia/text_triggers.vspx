@@ -98,13 +98,14 @@
 
   <v:method name="ttl_app_option" arglist="">
     <![CDATA[
-      declare retValue, ttl_sponge varchar;
+      declare retValue, ttl_app, ttl_sponge varchar;
 
+      ttl_app := self.ttl_app ();
       retValue := registry_get ('__WebDAV_ttl_app_option__');
       if (isInteger (retValue))
       {
         retValue := '';
-        if (self.ttl_app () = 'fct')
+        if (ttl_app = 'fct')
         {
           ttl_sponge := self.ttl_sponge ();
           if ((ttl_sponge = 'yes') or (ttl_sponge = 'add'))
@@ -119,6 +120,22 @@
           {
             retValue := '&sponger:get=replace';
           }
+        }
+      }
+
+      if (DB.DBA.is_empty_or_null (retValue))
+      {
+        if (ttl_app = 'sponger')
+        {
+          retValue := '&sponger:get=soft';
+        }
+        else if (ttl_app = 'fct')
+        {
+          retValue := '&sponger:get=soft';
+        }
+        else if (ttl_app = 'osde')
+        {
+          retValue := '&view=statements';
         }
       }
 
@@ -364,7 +381,7 @@
           Select RDF Data Browser Application for redirection
         </th>
         <td colspan="2">
-          <select name="ttl_app" id ="ttl_app" onchange="$('ttl_app_option').value = '';">
+          <select name="ttl_app" id ="ttl_app" onchange="turtleRedirectAppChange(this);">
           <?vsp
             declare V any;
 
@@ -502,6 +519,16 @@
         </table>
     <script type="text/javascript">
       <![CDATA[
+        function turtleRedirectAppChange(obj)
+        {
+          if (obj.value == 'sponger')
+            $('ttl_app_option').value = '&sponger:get=soft';
+          else if (obj.value == 'fct')
+            $('ttl_app_option').value = '&sponger:get=soft';
+          else if (obj.value == 'osde')
+            $('ttl_app_option').value = '&view=statements';
+        }
+
         OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('ttl_enable'), {'checked': {'show': ['ttl_enable_1', 'ttl_enable_2', 'ttl_enable_3']}, 'unchecked': {'hide': ['ttl_enable_1', 'ttl_enable_2', 'ttl_enable_3']}})});
       ]]>
     </script>

@@ -294,8 +294,12 @@ function renameShow(myForm, myPrefix, myPage, width, height) {
 }
 
 function authenticateShow(sPage, sPageName, drive, width, height) {
-  if (drive == 'WebDAV')
+  if (drive == 'WebDAV') {
     sPage += '&service=' + encodeURIComponent($v('dav_WebDAV_oauth'));
+  }
+  else if (drive == 'LDP') {
+    sPage += '&service=' + encodeURIComponent($v('dav_LDP_oauth'));
+  }
 
   OAT.Dom.show('dav_'+drive+'_throbber');
   windowShowInternal(sPage, sPageName, width, height);
@@ -377,7 +381,7 @@ WEBDAV.updateLabel = function(value)
       OAT.Dom.hide('tab_'+i);
   }
 
-  if (['', 'rdfSink', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP'].indexOf(value) === -1) {
+  if (['', 'rdfSink', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'].indexOf(value) === -1) {
     OAT.Dom.hide('tr_dav_ldp');
   } else {
     OAT.Dom.show('tr_dav_ldp');
@@ -386,7 +390,7 @@ WEBDAV.updateLabel = function(value)
   if (!value)
     return;
 
-  hideLabel(4, 19);
+  hideLabel(4, 20);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -416,12 +420,9 @@ WEBDAV.updateLabel = function(value)
   else if (value == 'RACKSPACE')
     showLabel(17, 17);
   else if (value == 'FTP')
-    showLabel(18, 18);
-
-  if (value == 'WebDAV')
-    OAT.Dom.show('cVerify');
-  else
-    OAT.Dom.hide('cVerify');
+    showLabel(19, 19);
+  else if (value == 'LDP')
+    showLabel(20, 20);
 }
 
 
@@ -788,14 +789,14 @@ WEBDAV.updateRdfGraph = function ()
     var rdfGraph;
 
     if ((det === 'rdfSink') || $('dav_'+det+'_binding').checked) {
-    rdfGraph = $('dav_'+det+'_graph');
-    if (!rdfGraph)
-      return;
+      rdfGraph = $('dav_'+det+'_graph');
+      if (!rdfGraph)
+        return;
 
-    graphPrefix = $v('rdfGraph_prefix');
+      graphPrefix = $v('rdfGraph_prefix');
       if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save')))) {
-      rdfGraph.value = graphPrefix + escape($v('dav_name'));
-  }
+        rdfGraph.value = graphPrefix + escape($v('dav_name'));
+      }
     }
   }
   function updateRdfBaseInternal(det) {
@@ -834,6 +835,8 @@ WEBDAV.updateRdfGraph = function ()
   updateRdfGraphInternal('Box');
   updateRdfGraphInternal('WebDAV');
   updateRdfGraphInternal('RACKSPACE');
+  updateRdfGraphInternal('FTP');
+  updateRdfGraphInternal('LDP');
 
   $('dav_name_save').value = escape($v('dav_name'));
 }
@@ -894,140 +897,6 @@ WEBDAV.oauthParams = function (drive, oauth)
   OAT.Dom.hide('dav_'+drive+'_throbber');
 }
 
-WEBDAV.verifyDialog = function ()
-{
-  var verifyDiv = $('verifyDiv');
-  if (verifyDiv)
-    OAT.Dom.unlink(verifyDiv);
-
-  var verifyType = $v('dav_det');
-
-  var content;
-  content =
-    '<div style="padding: 1em;">' +
-    '<table style="width: 100%;">';
-  if (verifyType == 'IMAP') {
-    content +=
-    '  <tr>' +
-    '    <td align="right" width="50%">' +
-    '      <b>Connection type:</b>' +
-    '    </td>' +
-    '    <td>{connection}</td>' +
-    '  </tr>' +
-    '  <tr>' +
-    '    <td align="right" width="50%">' +
-    '      <b>Mail server:</b>' +
-    '    </td>' +
-    '    <td>{server}:{port}</td>' +
-    '  </tr>' +
-    '  <tr>' +
-    '    <td align="right" width="50%">' +
-    '      <b>User:</b>' +
-    '    </td>' +
-    '    <td>{user}</td>' +
-      '  </tr>'
-  ;
-  } else {
-    content +=
-      '  <tr>' +
-      '    <td align="right" width="50%">' +
-      '      <b>WebDAV path:</b>' +
-      '    </td>' +
-      '    <td>{path}</td>' +
-      '  </tr>' +
-      '  <tr>' +
-      '    <td align="right" width="50%">' +
-      '      <b>User:</b>' +
-      '    </td>' +
-      '    <td>{user}</td>' +
-      '  </tr>'
-    ;
-  }
-  content +=
-    '  <tr><td align="center" colspan="2"><hr /><td></tr>' +
-    '  <tr>' +
-    '    <td align="right">' +
-    '      <b>Verification:</b>' +
-    '    </td>' +
-    '    <td>{text}</td>' +
-    '  </tr>' +
-    '  <tr><td align="center" colspan="2"><hr /><td></tr>' +
-    '  <tr>' +
-    '    <td align="center" colspan="2">' +
-    '      <input type="button" value="OK" onclick="javascript: verifyDialog.hide(); return false;" />' +
-    '    <td>' +
-    '  </tr>' +
-    '</table>' +
-    '</div>'
-  ;
-
-  verifyDiv = OAT.Dom.create('div', {height: '165px', overflow: 'hidden'});
-  verifyDiv.id = 'verifyDiv';
-  verifyDialog = new OAT.Dialog('Verify External Account', verifyDiv, {width:475, buttons: 0, resize:0, modal:1});
-  verifyDialog.cancel = verifyDialog.hide;
-  verifyDiv.innerHTML = '<img src="'+OAT.Preferences.imagePath+'Ajax_throbber.gif'+'" style="margin: 80px 220px;" />';
-  verifyDialog.show();
-
-  var x = function (txt) {
-    var verifyDiv = $("verifyDiv");
-    if (verifyDiv) {
-      if (verifyType == 'IMAP') {
-      content = content.replace('{connection}', $v('dav_IMAP_connection'));
-      content = content.replace('{server}', $v('dav_IMAP_server'));
-      content = content.replace('{port}', $v('dav_IMAP_port'));
-      content = content.replace('{user}', $v('dav_IMAP_user'));
-      } else {
-        content = content.replace('{path}', $v('dav_WebDAV_path'));
-        content = content.replace('{user}', $v('dav_WebDAV_user'));
-      }
-      if (txt) {
-        if (txt.length > 30)
-          verifyDiv.style.height = '180px';
-
-        txt = '<i style="color: red;">' + txt + '</i>';
-      } else {
-        txt = '<i style="color: green;">Successful</i>';
-      }
-      content = content.replace('{text}', txt);
-      verifyDiv.innerHTML = content;
-    }
-  }
-  var t = function(){x('Timeout');};
-
-  OAT.MSG.attach(OAT.AJAX, 'AJAX_TIMEOUT', t);
-  var params;
-  if (verifyType == 'WebDAV') {
-    var webdavType;
-    if ($('dav_WebDAV_authenticationType_1') && $('dav_WebDAV_authenticationType_1').checked)
-      webdavType = 'WebID';
-    else if ($('dav_WebDAV_authenticationType_2') && $('dav_WebDAV_authenticationType_2').checked)
-      webdavType = 'oauth';
-    else
-      webdavType = 'Digest';
-
-    params = '&a=webdavVerify'
-           + '&type='       + webdavType
-           + '&server='     + encodeURIComponent($v('dav_WebDAV_path'));
-    if (webdavType == 'Digest') {
-      params +='&user='     + encodeURIComponent($v('dav_WebDAV_user'))
-             + '&password=' + encodeURIComponent($v('dav_WebDAV_password'));
-    } else if (webdavType == 'oauth') {
-      try {
-        var p = OAT.JSON.parse($v('dav_WebDAV_JSON'));
-        if (p && p.sid)
-          params +='&oauthSid=' + encodeURIComponent(p.sid);
-      } catch (e) {}
-    } else {
-      params +='&key='      + encodeURIComponent($v('dav_WebDAV_key'))
-             + WEBDAV.sessionParams();
-    }
-  }
-  if ($('item_path'))
-    params += '&path='      + encodeURIComponent($v('item_path'));
-
-  OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend: function(){OAT.MSG.detach(OAT.AJAX, 'AJAX_TIMEOUT', t);}});
-}
-
 WEBDAV.dav_IMAP_seqNo = 0;
 WEBDAV.loadIMAPFolders = function ()
 {
@@ -1070,21 +939,21 @@ WEBDAV.loadIMAPFolders = function ()
         }
         if (!founded) {
           dav_IMAP_folder.value = '';
-      }
+        }
         if (o.length) {
           OAT.Dom.show(cl.img);
           $('dav_IMAP_authenticated').innerHTML = 'Authenticated';
         }
         OAT.Dom.hide(cl.throbler);
-    }
+      }
     }
     var params = '&connection=' + encodeURIComponent(WEBDAV.dav_IMAP_connection)
                + '&server='     + encodeURIComponent(WEBDAV.dav_IMAP_server)
                + '&port='       + encodeURIComponent(WEBDAV.dav_IMAP_port)
                + '&user='       + encodeURIComponent(WEBDAV.dav_IMAP_user)
                + '&password='   + encodeURIComponent(WEBDAV.dav_IMAP_password);
-      if ($('item_path'))
-        params  += '&path='       + $v('item_path');
+    if ($('item_path'))
+      params  += '&path='       + $v('item_path');
 
    var dav_IMAP_folder = $('dav_IMAP_folder');
    var cl = dav_IMAP_folder.comboList;
@@ -1096,9 +965,9 @@ WEBDAV.loadIMAPFolders = function ()
 
     WEBDAV.dav_IMAP_seqNo += 1;
     var seqNo = WEBDAV.dav_IMAP_seqNo;
-      OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
-    }
+    OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
   }
+}
 
 WEBDAV.dav_DET_seqNo = 0;
 WEBDAV.loadDriveFolders = function (drive, fields)
@@ -1155,11 +1024,14 @@ WEBDAV.loadDriveFolders = function (drive, fields)
   OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=driveFolders'+params, '', function(data){x(seqNo, drive, data);});
 }
 
-
 WEBDAV.dav_DET_seqNo = 0;
 WEBDAV.loadDriveBuckets = function (drive, bucketName, fields)
 {
   var needLoad = false;
+  var sDrive = $v('dav_det');
+  if (drive !== sDrive)
+    return;
+
   for (var i = 0; i < fields.length; i++) {
     if (!WEBDAV["dav_"+fields[i]] || (WEBDAV["dav_"+fields[i]] != $v('dav_'+drive+'_' + fields[i]).trim())) {
       WEBDAV["dav_"+fields[i]] = $v('dav_'+drive+'_' + fields[i]).trim();
@@ -1549,9 +1421,9 @@ WEBDAV.progressParams = function()
       if ((o.name != 'item') && (o.type == 'text' || o.type == 'select-one' || o.type == 'radio' || o.type == 'checkbox')) {
         if (o.type == 'text' || o.type == 'select-one')
           params += '&' + o.name +'=' + encodeURIComponent(o.value);
-        if (o.type == 'checkbox')
+        else if (o.type == 'checkbox')
           params += '&' + o.name +'=' + encodeURIComponent((o.checked)? '1' : '0');
-        if (o.type == 'radio' && o.checked)
+        else if (o.type == 'radio' && o.checked)
           params += '&' + o.name +'=' + encodeURIComponent(o.value);
       }
     }
@@ -1899,7 +1771,7 @@ WEBDAV.nameByMimeType = function ()
     }
     OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=nameByMimeType&fileName='+dav_name.value+'&mimeType='+dav_mime.value, x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
   }
-}
+};
 
 WEBDAV.nameByMimeTypeSelect = function (obj)
 {
@@ -1907,5 +1779,14 @@ WEBDAV.nameByMimeTypeSelect = function (obj)
   if (dav_name) {
     dav_name.value = obj.value;
   }
-}
+};
 
+WEBDAV.turtleRedirectAppChange = function (obj)
+{
+  if (obj.value == 'sponger')
+    $('dav_turtleRedirectParams').value = '&sponger:get=soft';
+  else if (obj.value == 'fct')
+    $('dav_turtleRedirectParams').value = '&sponger:get=soft';
+  else if (obj.value == 'osde')
+    $('dav_turtleRedirectParams').value = '&view=statements';
+};
