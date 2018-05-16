@@ -14,6 +14,7 @@ If you have any questions, please email us at <mailto:vos.admin@openlinksw.com>.
 ## Downloading the source code
 OpenLink Software frequently pushes updates to the Virtuoso Open Source tree on GitHub.
 
+
 ### Using git on a local machine
 Developers who just want to build Virtuoso on their own machine can make a local clone of the source
 tree using the following command:
@@ -24,13 +25,14 @@ At this point you can create your own work branch based on any of the branches a
 bugfixes and commit them to your own branch and then use the 'git format-patch' command to generate
 the appropriate diffs to send to <mailto:vos.admin@openlinksw.com>.
 
+
 ### Forking the tree on Github
 OpenLink Software encourages developers to create their own account on GitHub, after which they can
-fork the project using GitHub using:
+fork the project by going to the following URL with any web browser and pressing the **Fork** button:
 
-    https://github.com/openlink/virtuoso-opensource#fork-destination-box
+    https://github.com/openlink/virtuoso-opensource
 
-At this point you can clone your fork to your local system, create your own branches to make
+At this point you can clone your fork to your local Mac OS X system, create your own branches to make
 enhancements/bugfixes, push these branches back to GitHub and then send pull requests using the
 excellent GitHub interface for the OpenLink team to examine and incorporate the fixes into the
 master tree for an upcoming release.
@@ -39,6 +41,7 @@ Github has excellent documentation on how to fork a project, send pull requests,
 etc. on:
 
     http://help.github.com/
+
 
 ### Using a source tar archive
 Developers who do not want to mess with git can also download a source tar archive from:
@@ -80,6 +83,7 @@ or
 
     $ brew install readline
 
+
 ### OpenSSL on Mac OS X
 As Apple is actively deprecating OpenSSL from Mac OS X, your system either has a pretty old version
 of openssl, and in case of High Sierra (10.13) Apple removed the required include files from the
@@ -91,7 +95,7 @@ We recommend installing the OpenSSL 1.0.2 library using:
 
 And at configure time you can use the following:
 
-    $ ./configure \
+    $ sh ./configure \
       ..... \
       ..... \
       --enable-openssl=/usr/local/opt/openssl/
@@ -107,7 +111,7 @@ This installs ImageMagick 6.x together with a number of libraries to work with s
 
 At configure time you can use the following line:
 
-    $ ./configure \
+    $ sh ./configure \
        ..... \
        --enable-imagemagick=/usr/local/opt/imagemagick\@6/
 
@@ -122,16 +126,22 @@ First we set some environment variables:
 Next we (re)generate the configure script and all related build files, using the supplied script in
 your working directory:
 
-    $ sh autogen.sh
+    $ sh ./autogen.sh
 
-Assuming this did not return an error we can now configure virtuoso:
+Assuming this did not return an error we can now configure Virtuoso.
 
-    $ sh configure \
+For a full list of available `configure` options, including various optional subpackages, check the output of:
+
+    $ sh ./configure --help
+
+The following command includes a number of options we recommend for an initial build of Virtuoso on Mac OS X:
+
+    $ sh ./configure \
         --enable-maintainer-mode \
         --enable-silent-rules \
         --prefix=/usr/local/vos \
         --with-layout=openlink \
-        --enable-openssl=/usr/local/opt/openssl/
+        --enable-openssl=/usr/local/opt/openssl/ \
         --enable-imagemagick=/usr/local/opt/imagemagick@6/ \
         --enable-openldap \
         --disable-python \
@@ -153,18 +163,17 @@ And finally to install the resulting binaries into the /usr/local/vos directory:
     $ make install
 
 
-
 ## Diskspace Requirements
 The build produces a demo database and Virtuoso application packages that are quite large.
 
-At least 1.1GB of free space should be available on the build file system. Running the testsuite
-requires an additional 2.8GB of free space on the system
+At least 1.1GB of free space should be available on the build file system.
+
+Running the testsuite requires an additional 2.8GB of free space on the system.
 
 An installation containing the virtuoso server executable and supporting binaries, all the hosting
 plugins, VAD packages, config files etc excluding the database will take around 350MB of disk space.
 
 
 ## Generate build files
-
 Please read the files INSTALL and README in this directory for further
 information on how to configure the package and install it on your system.
