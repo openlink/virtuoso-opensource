@@ -2626,6 +2626,7 @@ box_mem_wrapper_destr_hook (caddr_t mw_arg)
 
 #ifdef SIGNAL_DEBUG
 FILE *error_report_log = NULL;
+dk_mutex_t *error_report_log_mutex = NULL;
 void
 log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ...)
 {
@@ -2633,7 +2634,8 @@ log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ..
   va_list ap;
   va_start (ap, fmt);
   int ctx_cycle = 0;
-  fprintf (error_report_log, "\n{{{%p ", box);
+  mutex_enter (error_report_log_mutex);
+  fprintf (error_report_log, "\n{{{ERR %p ", box);
   if (!ERROR_REPORT_P (box))
     fprintf (error_report_log, "TAG %d ", DV_TYPE_OF (box));
   vfprintf (error_report_log, fmt, ap);
@@ -2656,11 +2658,13 @@ log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ..
       fclose (error_report_log);
       GPF_T1 ("Cycle in stack of jmp_buf_splices (missing POP_QR_RESET?); see the tail of error_report_events_NNN.log");
 }
+  mutex_leave (error_report_log_mutex);
 }
 #endif
 
 #ifdef QUERY_DEBUG
 FILE *query_log = NULL;
+dk_mutex_t *query_log_mutex;
 #endif
 
 caddr_t uname___empty;
@@ -2673,22 +2677,36 @@ void
 dk_box_initialize (void)
 {
 #ifdef SIGNAL_DEBUG
+#ifdef QUERY_DEBUG
+  char query_and_error_log_fname[50];
+#else
   char error_report_log_fname[50];
 #endif
+#else
 #ifdef QUERY_DEBUG
   char query_log_fname[50];
+#endif
 #endif
   static int dk_box_is_initialized = 0;
   if (dk_box_is_initialized)
     return;
   dk_box_is_initialized = 1;
 #ifdef SIGNAL_DEBUG
+#ifdef QUERY_DEBUG
+  sprintf (query_and_error_log_fname, "query_and_error_events_%d.log", getpid());
+  error_report_log = query_log = fopen (query_and_error_log_fname, "w");
+  error_report_log_mutex = query_log_mutex = mutex_allocate ();
+#else
   sprintf (error_report_log_fname, "error_report_events_%d.log", getpid());
   error_report_log = fopen (error_report_log_fname, "w");
+  error_report_log_mutex = mutex_allocate ();
 #endif
+#else
 #ifdef QUERY_DEBUG
   sprintf (query_log_fname, "query_events_%d.log", getpid());
   query_log = fopen (query_log_fname, "w");
+  query_log_mutex = mutex_allocate ();
+#endif
 #endif
   dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_destr_hook, 0);
 #ifdef MALLOC_DEBUG
@@ -2809,9 +2827,13 @@ dk_box_finalize (void)
   dk_box_is_finalized = 1;
 #ifdef SIGNAL_DEBUG
   fclose (error_report_log);
+  error_report_log = NULL;
 #endif
 #ifdef QUERY_DEBUG
+#ifndef SIGNAL_DEBUG
   fclose (query_log);
+#endif
+  query_log = NULL;
 #endif
 }
 

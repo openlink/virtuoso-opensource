@@ -106,7 +106,7 @@ struct mem_pool_s
   resource_t **		mp_large_reuse;
   dk_hash_t *		mp_unames;
   dk_set_t 		mp_trash;
-#if defined (DEBUG) || defined (MALLOC_DEBUG)
+#if defined (DEBUG) || defined (MALLOC_DEBUG) || !defined(NDEBUG)
   const char *		mp_alloc_file;
   int 			mp_alloc_line;
 #endif
@@ -488,7 +488,7 @@ size_t mm_next_size (size_t n, int * nth);
 size_t mm_cache_trim (size_t target_sz, int age_limit, int old_only);
 extern size_t mp_block_size;
 
-#if defined (DEBUG) || defined (MALLOC_DEBUG)
+#if defined (DEBUG) || defined (MALLOC_DEBUG) || !defined(NDEBUG)
 #define MP_MAP_CHECK
 #endif
 
