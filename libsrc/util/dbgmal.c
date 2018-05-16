@@ -130,7 +130,7 @@ void **kill_ringbuf_curr = kill_ringbuf;
 size_t dbg_malloc_get_current_total (void) { return _totalmem; }
 
 #define PLACE_COLUMN_WIDTH 25
-#define NUM_COLUMN_FMT "%9ld"
+#define NUM_COLUMN_FMT "%11ld"
 
 static void
 mal_printall (htrecord_t record, void *arg)
@@ -212,7 +212,7 @@ mal_printoneleak (htrecord_t record, void *arg)
   if (rec->mr_linenum == -1)
     snprintf(buf, sizeof (buf), "%s (mark)", localname);
   else
-    snprintf(buf, sizeof (buf), "%s (%4d)", localname, rec->mr_linenum);
+    snprintf(buf, sizeof (buf), "%s (%04d)", localname, rec->mr_linenum);
   buflen = strlen(buf);
   if (buflen < PLACE_COLUMN_WIDTH)
     {
@@ -221,7 +221,7 @@ mal_printoneleak (htrecord_t record, void *arg)
     }
   /* Printing statistics */
   fprintf ((FILE *) arg,
-    "%s" NUM_COLUMN_FMT " leaks =" NUM_COLUMN_FMT " -" NUM_COLUMN_FMT " |" NUM_COLUMN_FMT " +" NUM_COLUMN_FMT " =" NUM_COLUMN_FMT " b\n",
+    "%s" NUM_COLUMN_FMT " leaks = " NUM_COLUMN_FMT " - " NUM_COLUMN_FMT " | " NUM_COLUMN_FMT " + " NUM_COLUMN_FMT " = " NUM_COLUMN_FMT " b\n",
     buf,
     (rec->mr_numalloc - rec->mr_prevalloc) - (rec->mr_numfree - rec->mr_prevfree),
     (rec->mr_numalloc - rec->mr_prevalloc),
