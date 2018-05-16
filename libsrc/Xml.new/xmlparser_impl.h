@@ -451,7 +451,10 @@ extern int xmlparser_log_box (vxml_parser_t *parser, int errlevel, caddr_t msg);
 /* Adds a message of \errlevel importance into log of \c dv, allocating
 at least \c buflen_eval bytes for internal buffer.
 \returns zero if message is not dumped e.g. due to limitation on number of messages. */
-extern int xmlparser_logprintf (vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...);
+extern int DBG_NAME(xmlparser_logprintf) (DBG_PARAMS  vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...);
+#ifdef MALLOC_DEBUG
+#define xmlparser_logprintf(parser,errlevel,buflen_eval,format,...) dbg_xmlparser_logprintf (__FILE__, __LINE__, (parser), (errlevel), (buflen_eval), (format), ##__VA_ARGS__)
+#endif
 
 extern int xmlparser_log_place (struct vxml_parser_s *parser);
 

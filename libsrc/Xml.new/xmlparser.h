@@ -223,7 +223,7 @@ typedef void (*VXmlProcessingInstructionHandler)
 
   typedef char *(*VXmlUriResolver) (void *uri_appdata, char **err_ret, ccaddr_t base_uri, ccaddr_t rel_uri, const char *output_charset);
   typedef char *(*VXmlUriReader) (void *uri_appdata, char **err_ret, char **options, ccaddr_t base_uri, ccaddr_t rel_uri, int cast_blob_to_varchar);
-  typedef void (*VXmlErrorReporter) (const char *state, const char *format, ...);
+  typedef void (*VXmlErrorReporter) (DBG_PARAMS  const char *state, const char *format, ...);
 
   typedef void *(*VXmlAttrParser) (void *userData, const char *elname, const char *attrname, const char *attrvalue);
   
