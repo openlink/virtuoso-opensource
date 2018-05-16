@@ -1,6 +1,4 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -262,42 +260,38 @@ no_op:
 
 create procedure file_space_fmt (in d integer) returns varchar
 {
-  declare ret float;
   if (d is null or d = 0)
     return 'N/A';
-  if (d >= 1024 and d < 1048576)
-  {
-    ret := d/1024;
-    return sprintf('%d KB', ret);
-  }
-  if (d >= 1048576)
-  {
-    ret := d/1024/1024;
-    return sprintf('%d MB', ret);
-  }
-  else
+
+  if (d < 1024)
     return sprintf('%d B', d);
+
+  if (d < 1048576)
+    return sprintf('%d KB', d / 1024);
+
+  return sprintf('%d MB', d / 1024 / 1024);
 }
 ;
 
 create function "DAV_EXTRACT_RDF_application/x-openlink-license" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-  declare doc, metas, res, content any;
-  whenever sqlstate '*' goto errexit;
-        content := blob_to_string (content1);
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-license (', orig_res_name, ',... )');
-  xte_nodebld_init(res);
+  declare res, content any;
   declare mydata, reg_to, con_num, serial varchar;
+  whenever sqlstate '*' goto errexit;
+
+  content := blob_to_string (content1);
+  xte_nodebld_init(res);
   mydata := "asn1_to_xml" (content, length(blob_to_string (content)));
   reg_to := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="RegisteredTo"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
   con_num := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="NumberOfConnections"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
   serial := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="SerialNumber"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#registeredTo'), reg_to));
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#RegisteredTo'), reg_to));
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#numberOfConnections'), con_num));
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#NumberOfConnections'), con_num));
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#serialNumber'), serial));
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#SerialNumber'), serial));
   xte_nodebld_final(res, xte_head (UNAME' root'));
   return xml_tree_doc (res);
 errexit:
@@ -1908,9 +1902,10 @@ final:
 -- /* meta data extractor */
 create function "DAV_EXTRACT_RDF_BY_METAS" (inout doc any, inout metas any, inout extras any)
 {
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, ')');
   declare res any;
   declare ctr, len integer;
-  --dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, ')');
+
   xte_nodebld_init (res);
   whenever sqlstate '*' goto final;
   len := length (metas);
@@ -2311,8 +2306,11 @@ insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME)
 xpf_extension ('http://www.openlinksw.com/xsltext/:unixTime2ISO', 'DB.DBA.XML_UNIX_DATE_TO_ISO', 0)
 ;
 
-create procedure DAV_EXTRACT_META_AS_RDF_XML (in resname varchar, in rescontent any := null)
+create procedure DAV_EXTRACT_META_AS_RDF_XML (
+  in resname varchar,
+  in rescontent any := null)
 {
+  -- dbg_obj_princ ('DAV_EXTRACT_META_AS_RDF_XML ()');
   declare res_type_uri, restype varchar;
   declare html_start, type_tree any;
   declare addon_n3, spotlight_addon_n3, ret any;
@@ -2340,6 +2338,7 @@ addon_n3_set: ;
     }
   if (__proc_exists ('SPOTLIGHT_METADATA', 2) is not null)
     spotlight_addon_n3 := DAV_EXTRACT_SPOTLIGHT (resname, rescontent);
+
   if (addon_n3 is null and spotlight_addon_n3 is null)
     goto no_op;
 

@@ -1198,7 +1198,7 @@ create procedure WS.WS.SYS_DAV_INIT_RDF ()
   @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
   ldp:BasicContainer rdfs:subClassOf ldp:Container .
   ldp:DirectContainer rdfs:subClassOf ldp:Container .
-  ldp:IndirectContainer rdfs:subClassOf ldp:Container .', 'http://www.w3.org/ns/ldp#', 'http://www.w3.org/ns/ldp#'); 
+  ldp:IndirectContainer rdfs:subClassOf ldp:Container .', 'http://www.w3.org/ns/ldp#', 'http://www.w3.org/ns/ldp#');
   DB.DBA.rdfs_rule_set ('ldp','http://www.w3.org/ns/ldp#');
   DB.DBA.XML_SET_NS_DECL ('ldp','http://www.w3.org/ns/ldp#',2);
 }

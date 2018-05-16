@@ -143,17 +143,17 @@ create procedure "DynaRes_DAV_AUTHENTICATE" (
   pacl := DB.DBA.DynaRes__acl (id[1], pacl);
   if (a_uid >= 0)
   {
-  if (DAV_CHECK_PERM (pperms, req, a_uid, http_nogroup_gid(), pgid, puid))
-    return a_uid;
+    if (DAV_CHECK_PERM (pperms, req, a_uid, http_nogroup_gid(), pgid, puid))
+      return a_uid;
 
     if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
-    return a_uid;
+      return a_uid;
   }
 
   if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
-      return a_uid;
+    return a_uid;
 
-  -- DAV_AUTHENTICATE_SSL only check IRI ACLs
+  -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
   a_uid := -1;
 
@@ -253,8 +253,8 @@ create procedure "DynaRes_DAV_AUTHENTICATE_HTTP" (
           return a_uid;
 
         if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
-        return a_uid;
-        }
+          return a_uid;
+      }
 
       -- If the user already provided some kind of credentials we return a 403 code
       if (not serviceId is null)
@@ -285,8 +285,8 @@ create procedure "DynaRes_DAV_AUTHENTICATE_HTTP" (
   {
     if (isnull (id))
     {
-    a_uid := http_nobody_uid ();
-    a_gid := http_nogroup_gid ();
+      a_uid := http_nobody_uid ();
+      a_gid := http_nogroup_gid ();
     }
     else
     {
@@ -445,8 +445,8 @@ create procedure "DynaRes_DAV_PROP_REMOVE" (
       if (length (id) <> 5)
         update WS.WS.DYNA_RES set DR_ACI = null where DR_RES_ID = id[3];
 
-    return 1;
-  }
+      return 1;
+    }
     if (propname[0] = 58)
       return -16;
   }
@@ -500,7 +500,7 @@ create procedure "DynaRes_DAV_PROP_SET" (
     if (':virtacl' = propname)
     {
       if (length (id) <> 5)
-      update WS.WS.DYNA_RES set DR_ACL = propvalue where DR_RES_ID = id[3];
+        update WS.WS.DYNA_RES set DR_ACL = propvalue where DR_RES_ID = id[3];
 
       return 1;
     }
@@ -510,9 +510,9 @@ create procedure "DynaRes_DAV_PROP_SET" (
         update WS.WS.DYNA_RES set DR_ACI = propvalue where DR_RES_ID = id[3];
 
       return 1;
-  }
-  if (propname[0] = 58)
-    return -16;
+    }
+    if (propname[0] = 58)
+      return -16;
   }
 
   return -20;
@@ -546,7 +546,7 @@ create procedure "DynaRes_DAV_PROP_GET" (
       return (select DR_PERMS from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
     }
     if (':virtacl' = propname)
-  {
+    {
       declare acl any;
 
       acl := coalesce ((select DR_ACL from WS.WS.DYNA_RES where DR_RES_ID = id[3]), WS.WS.ACL_CREATE());
@@ -557,7 +557,7 @@ create procedure "DynaRes_DAV_PROP_GET" (
     if (propname = 'virt:aci_meta_n3')
     {
       return (select DR_ACI from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
-  }
+    }
   }
   return -11;
 }
@@ -630,7 +630,7 @@ create procedure "DynaRes_DAV_DIR_LIST" (
   {
     top_id := DB.DBA.DynaRes_DAV_SEARCH_ID (detcol_id, path_parts, what);
     if (DB.DBA.DAV_HIDE_ERROR (top_id) is null)
-    return vector();
+      return vector();
   }
   top_davpath := DB.DBA.DAV_CONCAT_PATH (detcol_path, path_parts);
   if ('R' = what)
@@ -712,7 +712,7 @@ create procedure "DynaRes_DAV_FC_PRINT_WHERE" (
   DB.DBA.DynaRes_DAV_FC_TABLE_METAS (table_metas);
   used_tables := vector (
     'DYNA_RES', vector ('DYNA_RES', '_top', null, vector (), vector (), vector ())
-    );
+  );
   return DB.DBA.DAV_FC_PRINT_WHERE_INT (filter, pred_metas, cmp_metas, table_metas, used_tables, param_uid);
 }
 ;
@@ -920,8 +920,8 @@ create procedure "DynaRes_DAV_RES_CONTENT" (
   -- dbg_obj_princ ('DynaRes_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
   declare c cursor for
     select
-    DR_NAME, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_CREATED_DT, DR_MODIFIED_DT, DR_REFRESH_DT, DR_DELETE_DT,
-    DR_REFRESH_SECONDS, DR_MIME, DR_EXEC_STMT, deserialize (DR_EXEC_PARAMS), DR_EXEC_UNAME, DR_CONTENT
+      DR_NAME, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_CREATED_DT, DR_MODIFIED_DT, DR_REFRESH_DT, DR_DELETE_DT,
+      DR_REFRESH_SECONDS, DR_MIME, DR_EXEC_STMT, deserialize (DR_EXEC_PARAMS), DR_EXEC_UNAME, DR_CONTENT
     from
       WS.WS.DYNA_RES
     where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1] for update;
@@ -969,30 +969,30 @@ create procedure "DynaRes_DAV_RES_CONTENT" (
     if (c_modified_dt is not null
       and (c_refresh_dt is null or c_refresh_dt > now())
       and (c_delete_dt is null or c_delete_dt > now()) )
-      {
-        type := c_mime;
-        close c;
-        goto content_ready;
-      }
+    {
+      type := c_mime;
+      close c;
+      goto content_ready;
+    }
     if (c_delete_dt is not null and c_delete_dt <= now())
-      {
-        delete from WS.WS.DYNA_RES where current of c;
-        return -1;
-      }
+    {
+      delete from WS.WS.DYNA_RES where current of c;
+      return -1;
+    }
     update WS.WS.DYNA_RES set DR_MODIFIED_DT = null where current of c;
     set_user_id (c_exec_uname, 1);
     stat := '00000';
     exec (c_exec_stmt, stat, msg, c_exec_params, 1, mdta, rset);
     if (stat <> '00000')
-      {
-        update WS.WS.DYNA_RES set DR_MODIFIED_DT = c_modified_dt where current of c;
-        commit work;
-        signal (stat, msg);
-      }
+    {
+      update WS.WS.DYNA_RES set DR_MODIFIED_DT = c_modified_dt where current of c;
+      commit work;
+      signal (stat, msg);
+    }
     c_content := rset[0][0];
     update WS.WS.DYNA_RES
        set DR_MODIFIED_DT = now(), DR_REFRESH_DT = dateadd ('second', c_refresh_seconds, now()), DR_LAST_LENGTH = length (c_content), DR_CONTENT = c_content
-    where current of c;
+     where current of c;
     commit work;
     type := c_mime;
     close c;
@@ -1006,10 +1006,13 @@ create procedure "DynaRes_DAV_RES_CONTENT" (
 content_ready:
   if ((content_mode = 0) or (content_mode = 2))
     content := c_content;
+
   else if (content_mode = 1)
     http (c_content, content);
+
   else if (content_mode = 3)
     http (c_content);
+
   return 0;
 
 nf:
@@ -1144,16 +1147,17 @@ create procedure "DynaRes_CF_FEED_FROM_AND_WHERE" (
     cmp_col := "DynaRes_CF_PROPNAME_TO_COLNAME" (filter_data [filter_idx]);
     cmp_val := filter_data [filter_idx + 2];
     if (cmp_col is null)
+    {
+      if ('' <> cmp_val)
       {
-        if ('' <> cmp_val)
-          {
-            where_clause := '1 = 2';
-            goto where_clause_complete;
-          }
-        goto where_oper_complete;
+        where_clause := '1 = 2';
+        goto where_clause_complete;
       }
+      goto where_oper_complete;
+    }
     if (where_clause <> '')
       where_clause := where_clause || ' and ';
+
     mode := filter_data [filter_idx + 3];
     if (mode = 0)
       where_clause := where_clause || sprintf ('(%s = %s)', cmp_col, WS.WS.STR_SQL_APOS (cmp_val));
@@ -1210,8 +1214,8 @@ create procedure "DynaRes_CF_LIST_PROP_DISTVALS" (
       {
         dict_put (distval_dict, "CatFilter_ENCODE_CATVALUE" (execrow[0]), 1);
       }
+    }
   }
-}
 }
 ;
 
@@ -1319,7 +1323,7 @@ create procedure "DynaRes_INSERT_RESOURCE" (
   if (exec_stmt is null and content is null)
     signal ('DR005', 'No content and no statement to execute, so nothing to create');
 
-  if (not exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_ID = detcol_id and COL_DET='DynaRes'))
+  if (not exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_ID = detcol_id and COL_DET = 'DynaRes'))
     signal ('DR006', 'The DET collection ID is not valid');
 
   action := 'insert';
@@ -1327,7 +1331,7 @@ create procedure "DynaRes_INSERT_RESOURCE" (
   {
     pid := (select top 1 DR_RES_ID from WS.WS.DYNA_RES where DR_NAME = fname and DR_DETCOL_ID = detcol_id);
     if (not isnull (pid) and not overwrite)
-    signal ('DR007', sprintf ('The dynamic resource "%.500s" already exists', fname));
+      signal ('DR007', sprintf ('The dynamic resource "%.500s" already exists', fname));
 
     if (not isnull (pid))
       action := 'update';
@@ -1378,14 +1382,14 @@ create procedure "DynaRes_INSERT_RESOURCE" (
   values (
     pid,
     detcol_id,
-    coalesce (fname, sprintf ('%.100s - untitled resource - made by %.100s', cast (now() as varchar), USER)),
+    coalesce (fname, sprintf ('%.100s - untitled resource - made by %.100s', cast (now () as varchar), USER)),
     coalesce (perms, pperms),
     coalesce (owner_uid, puid),
     coalesce (owner_gid, pgid),
-    now(),
-    now(),
-    case when (refresh_seconds is null) then null else dateadd ('second', refresh_seconds, now()) end,
-    case when (ttl_seconds is null) then null else dateadd ('second', ttl_seconds, now()) end,
+    now (),
+    now (),
+    case when (refresh_seconds is null) then null else dateadd ('second', refresh_seconds, now ()) end,
+    case when (ttl_seconds is null) then null else dateadd ('second', ttl_seconds, now ()) end,
     refresh_seconds,
     coalesce (mime, 'text/plain'),
     exec_stmt,

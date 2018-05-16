@@ -23,7 +23,7 @@
 --
 create function DB.DBA.DAV_DET_SPECIAL ()
 {
-  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
+  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP', 'LDP');
 }
 ;
 
@@ -36,7 +36,7 @@ create function DB.DBA.DAV_DET_IS_SPECIAL (
 
 create function DB.DBA.DAV_DET_WEBDAV_BASED ()
 {
-  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
+  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP', 'LDP');
 }
 ;
 
@@ -125,6 +125,20 @@ create function DB.DBA.DAV_DET_PATH_PARENT (
 
   path := left (path, pos);
   return case when mode then '/' || path || '/' else path end;
+}
+;
+
+create function DB.DBA.DAV_DET_PARENT (
+   in id any,
+   in what char(1))
+{
+  if (what = 'R')
+    return coalesce ((select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id)), -1);
+
+  if (what = 'C')
+    return coalesce ((select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = DB.DBA.DAV_DET_DAV_ID (id)), -1);
+
+  return -1;
 }
 ;
 
@@ -573,6 +587,12 @@ create function DB.DBA.DAV_DET_HTTP_CODE (
 }
 ;
 
+create function DB.DBA.DAV_DET_HTTP_MESSAGE (
+  in _header any)
+{
+  return subseq (_header[0], 13);
+}
+;
 --
 -- User related procs
 --
@@ -587,7 +607,7 @@ create function DB.DBA.DAV_DET_USER (
 create function DB.DBA.DAV_DET_PASSWORD (
   in user_id integer)
 {
-  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = user_id), '');
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_ID = user_id), '');
 }
 ;
 
@@ -681,13 +701,17 @@ create function DB.DBA.DAV_DET_PARAM_GET (
 
   propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_DET_DAV_ID (_id), _what, _propName, 0, DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
+  {
     propValue := null;
+  }
+  else
+  {
+    if (_serialized and not isnull (propValue))
+      propValue := deserialize (propValue);
 
-  if (_serialized and not isnull (propValue))
-    propValue := deserialize (propValue);
-
-  if (_decrypt and not isnull (propValue))
-    propValue := pwd_magic_calc (_password, propValue, 1);
+    if (_decrypt and not isnull (propValue))
+      propValue := pwd_magic_calc (_password, propValue, 1);
+  }
 
   return propValue;
 }
@@ -810,7 +834,9 @@ create function DB.DBA.DAV_DET_ENTRY_XPATH (
   if (_cast)
   {
     retValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('string (//entry%s)', _xpath), _xml, 1));
-  } else {
+  }
+  else
+  {
     retValue := xpath_eval ('//entry' || _xpath, _xml, 1);
   }
   return retValue;
@@ -1110,7 +1136,6 @@ create function DB.DBA.DAV_DET_PRIVATE_GRAPH_REMOVE (
 create function DB.DBA.DAV_DET_PRIVATE_GRAPH_CHECK (
   in graph_iri varchar)
 {
-  declare tmp integer;
   declare private_graph varchar;
   declare private_graph_id any;
 
@@ -1120,10 +1145,6 @@ create function DB.DBA.DAV_DET_PRIVATE_GRAPH_CHECK (
 
   private_graph_id := DB.DBA.DAV_DET_PRIVATE_GRAPH_ID ();
   if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = private_graph_id and RGGM_MEMBER_IID = iri_to_id (graph_iri)))
-    return 0;
-
-  tmp := coalesce ((select top 1 RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = http_nobody_uid ()), 0);
-  if (tmp <> 0)
     return 0;
 
   return 1;
@@ -1155,7 +1176,7 @@ create function DB.DBA.DAV_DET_PRIVATE_USER_ADD (
   declare exit handler for sqlstate '*' {return 0;};
 
   if (isinteger (uid))
-    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+    uid := DB.DBA.DAV_DET_USER (uid);
 
   DB.DBA.RDF_GRAPH_GROUP_INS (DB.DBA.DAV_DET_PRIVATE_GRAPH (), graph_iri);
   DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uid, rights);
@@ -1179,7 +1200,7 @@ create function DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (
   declare exit handler for sqlstate '*' {return 0;};
 
   if (isinteger (uid))
-    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+    uid := DB.DBA.DAV_DET_USER (uid);
 
   DB.DBA.RDF_GRAPH_USER_PERMS_DEL (graph_iri, uid);
 
@@ -1187,6 +1208,9 @@ create function DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (
 }
 ;
 
+--!
+-- \brief Compare 2 ACLs fo eqality
+--/
 create function DB.DBA.DAV_DET_PRIVATE_ACL_COMPARE (
   in acls_1 any,
   in acls_2 any)
