@@ -123,6 +123,8 @@
           }
           self.owner_id := self.account_id;
           self.settings := WEBDAV.DBA.settings (self.account_id);
+          self.account_name := WEBDAV.DBA.account_name (self.account_id);
+          self.account_password := WEBDAV.DBA.account_password (self.account_id);
         ]]>
       </v:before-data-bind>
       <?vsp
@@ -176,8 +178,10 @@
           <v:variable persist="0" name="owner_id" type="integer" default="null" />
           <v:variable persist="0" name="account_id" type="integer" default="null" />
           <v:variable persist="0" name="account_role" type="varchar" default="'R'" />
+          <v:variable persist="0" name="account_name" type="varchar" default="null"/>
+          <v:variable persist="0" name="account_password" type="varchar" default="null"/>
           <?vsp http (sprintf ('<input type="hidden" name="sid" id="sid" value="%s" />', get_keyword ('sid', self.vc_page.vc_event.ve_params, ''))); ?>
-          <?vsp http (sprintf ('<input type="hidden" name="mode" id="sid" value="%s" />', get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav'))); ?>
+          <?vsp http (sprintf ('<input type="hidden" name="mode" id="mode" value="%s" />', get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav'))); ?>
           <vm:dav_browser mode="webdav" />
         </v:form>
       </vm:popup_page_wrapper>

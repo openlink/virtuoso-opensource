@@ -54,6 +54,8 @@
           <v:variable name="owner_id" type="integer" default="null" />
           <v:variable name="account_id" type="integer" default="null" />
           <v:variable name="account_role" type="varchar" default="null" />
+          <v:variable name="account_name" type="varchar" default="null"/>
+          <v:variable name="account_password" type="varchar" default="null"/>
 
           <v:login
             name="admin_login_isql_browser"
@@ -82,6 +84,8 @@
               self.account_id := case when (isnull (vspx_user)) then http_nobody_uid () else WEBDAV.DBA.account_id (vspx_user) end;
               self.owner_id := self.account_id;
               self.settings := WEBDAV.DBA.settings (self.account_id);
+              self.account_name := WEBDAV.DBA.account_name (self.account_id);
+              self.account_password := WEBDAV.DBA.account_password (self.account_id);
             ]]>
           </v:before-data-bind>
 
