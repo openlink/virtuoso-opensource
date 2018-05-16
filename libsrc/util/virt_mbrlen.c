@@ -38,7 +38,7 @@ virt_mbrlen (const char *s, size_t n, virt_mbstate_t *ps)
 
   if (s == NULL)
     {
-      s = (unsigned char *) "";
+      s = (char *) "";
       n = 1;
     }
 

@@ -27,7 +27,7 @@
 #include "libutil.h"
 
 size_t
-virt_wcsnrtombs (unsigned char * dst, wchar_t ** src, size_t nwc, size_t len, virt_mbstate_t *ps)
+virt_wcsnrtombs (unsigned char * dst, const wchar_t ** src, size_t nwc, size_t len, virt_mbstate_t *ps)
 {
   size_t written = 0;
   wchar_t *run = src[0];

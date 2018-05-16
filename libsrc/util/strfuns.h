@@ -31,6 +31,12 @@
 struct tm;	/* VAX C complains on this type of declarations */
 #endif
 
+#ifdef __THROW
+#define __THROW_AS_IN_SYS __THROW
+#else
+#define __THROW_AS_IN_SYS
+#endif
+
 
 BEGIN_CPLUSPLUS
 
@@ -59,6 +65,7 @@ char *	fnsearch (const char *filename, const char *path);
 char *	quotelist (char* szIn);
 int	StrCopyIn (char **poutStr, char *inStr, ssize_t size);
 int	StrCopyInUQ (char **poutStr, char *inStr, ssize_t size);
+int	strcpy_out (const char *inStr, char *outStr, size_t size, size_t *result);
 char *	strquote (char *s, ssize_t size, int quoteChr);
 char *	strunquote (char *s, ssize_t size, int quoteChr);
 
@@ -81,6 +88,59 @@ void *	memmove (void *dest, const void *src, size_t count);
 #endif
 
 char *	opl_strerror (int err);
+
+
+#ifndef HAVE_WCSLEN
+size_t wcslen (wchar_t *wcs);
+#endif
+
+#ifndef HAVE_WCSCPY
+wchar_t *wcscpy (wchar_t *dest, const wchar_t *src);
+#endif
+
+#ifndef HAVE_WCSDUP
+wchar_t *wcsdup (wchar_t *s);
+#endif
+
+#ifndef HAVE_WCSCMP
+int wcscmp (wchar_t *s1, wchar_t *s2);
+#endif
+
+#ifndef HAVE_TOWLOWER
+wint_t towlower (wint_t wc);
+#endif
+
+#ifndef HAVE_TOWUPPER
+wint_t towupper (wint_t wc);
+#endif
+
+#ifndef HAVE_WCSCASECMP
+int wcscasecmp (wchar_t *s1, wchar_t *s2);
+#endif
+
+#ifndef HAVE_WCSTOL
+long int wcstol (const wchar_t *ptr, wchar_t **endptr, int base) __THROW_AS_IN_SYS;
+#endif
+
+#ifndef HAVE_WCSTOD
+double wcstod (const wchar_t *ptr, wchar_t **endptr) __THROW_AS_IN_SYS;
+#endif
+
+#ifndef HAVE_WCSNCPY
+wchar_t *wcsncpy (wchar_t *dest, const wchar_t *src, size_t n) __THROW_AS_IN_SYS;
+#endif
+
+#ifndef HAVE_WCSCHR
+wchar_t *wcschr (const wchar_t *wcs, const wchar_t wc) __THROW_AS_IN_SYS;
+#endif
+
+#ifndef HAVE_WCSCAT
+wchar_t *wcscat (wchar_t *dest, const wchar_t *src) __THROW_AS_IN_SYS;
+#endif
+
+#ifndef HAVE_WCSNCAT
+wchar_t *wcsncat (wchar_t *dest, const wchar_t *src, size_t n) __THROW_AS_IN_SYS;
+#endif
 
 END_CPLUSPLUS
 

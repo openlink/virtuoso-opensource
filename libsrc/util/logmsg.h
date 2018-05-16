@@ -44,8 +44,8 @@
 
 BEGIN_CPLUSPLUS
 
-int openlog (char *ident, int options, int facility);
-int syslog (int level, char *format, ...);
+int openlog (const char *ident, int options, int facility);
+int syslog (int level, const char *format, ...);
 
 END_CPLUSPLUS
 
@@ -55,7 +55,7 @@ END_CPLUSPLUS
 
 typedef struct _log LOG;
 
-typedef void (*log_emit_func) (LOG *log, int level, char *msg);
+typedef void (*log_emit_func) (LOG *log, int level, const char *msg);
 typedef void (*log_close_func) (LOG *log);
 
 struct _log
@@ -113,28 +113,25 @@ BEGIN_CPLUSPLUS
  */
 #define log	logit
 
-int   logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap);
-int   logmsg (int level, char *file, int line, int mask, char *format, ...);
-int   log_error (char *format, ...);
-int   log_warning (char *format, ...);
-int   log_info (char *format, ...);
-int   log_debug (char *format, ...);
-int   log (int level, char *file, int line, char *format, ...);
+int   logmsg_ap (int level, const char *file, int line, int mask, const char *format, va_list ap);
+int   logmsg (int level, const char *file, int line, int mask, const char *format, ...);
+int   log_error (const char *format, ...);
+int   log_warning (const char *format, ...);
+int   log_info (const char *format, ...);
+int   log_debug (const char *format, ...);
+int   log (int level, const char *file, int line, const char *format, ...);
 int   log_set_limit (int rate);
 int   log_reset_limits (void);
 int   log_set_mask (LOG * logptr, int level, int mask);
 int   log_set_level (LOG * logptr, int level);
-LOG * log_open_syslog (char *ident, int logopt, int facility, int level,
-		      int mask, int style);
+LOG * log_open_syslog (const char *ident, int logopt, int facility, int level, int mask, int style);
 LOG * log_open_fp (FILE * fp, int level, int mask, int style);
 LOG * log_open_fp2 (FILE * fp, int level, int mask, int style);
-LOG * log_open_callback (log_emit_func emitter, log_close_func closer,
-			int level, int mask, int style);
-LOG * log_open_file (char *filename, int level, int mask, int style);
+LOG * log_open_callback (log_emit_func emitter, log_close_func closer, int level, int mask, int style);
+LOG * log_open_file (const char *filename, int level, int mask, int style);
 int   log_close (LOG * log);
 void  log_close_all (void);
-int   log_parse_mask (char *mask_str, LOGMASK_ALIST * alist, int size,
-		      int *maskp);
+int   log_parse_mask (char *mask_str, LOGMASK_ALIST * alist, int size, int *maskp);
 void  log_flush_all (void);
 
 END_CPLUSPLUS

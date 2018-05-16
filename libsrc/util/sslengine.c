@@ -49,7 +49,6 @@ ssl_load_privkey (const char *keyname, const void *keypass)
 {
   EVP_PKEY *pkey = NULL;
   BIO *bio_in;
-  char *s;
 
   if ((bio_in = BIO_new_file (keyname, "r")) != NULL)
     {

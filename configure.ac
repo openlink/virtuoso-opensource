@@ -567,11 +567,11 @@ dnl not used AC_FUNC_GETLOADAVG
 
 AC_CHECK_FUNCS(getpagesize gettimeofday strtok_r ftruncate fchmod fsync ftime localtime_r gmtime_r syslog)
 AC_CHECK_FUNCS(snprintf vsnprintf)
-AC_CHECK_FUNCS(wcsdup wcscasecmp wcsicmp)
-AC_CHECK_FUNCS(wcscmp wcslen wcsncat wcsnicmp wcsncasecmp wcsncmp wcscpy iswspace iswdigit wcsncpy wtol wtoi wcschr wcsrchr wcsstr wcscat iswlower iswupper towlower towupper)
-AC_CHECK_FUNCS(wprintf fputws putwc swprintf fwprintf swscanf fgetws putwchar putws wfopen cwprintf wperror wexecvp)
-AC_CHECK_FUNCS(wgetenv)
-AC_CHECK_FUNCS(wgetpass wgetpassphrase)
+
+AC_CHECK_FUNCS(cwprintf fgetws fputws fwprintf iswdigit iswlower iswspace iswupper putwc putwchar putws)
+AC_CHECK_FUNCS(swprintf swscanf towlower towupper wcscasecmp wcscat wcschr wcscmp wcscpy wcsdup wcsicmp)
+AC_CHECK_FUNCS(wcslen wcsncasecmp wcsncat wcsncmp wcsncpy wcsnicmp wcsrchr wcsstr wexecvp wfopen wgetenv)
+AC_CHECK_FUNCS(wperror wprintf wtoi wtol wgetpass wgetpassphrase)
 
 AC_CHECK_FUNCS(getpwnam getgrnam chmod getpwuid getgrgid setuid)
 AC_CHECK_FUNCS(putenv setenv)

@@ -28,7 +28,7 @@
 
 
 size_t
-virt_mbsnrtowcs (wchar_t * dst, unsigned char ** src, size_t nmc, size_t len, virt_mbstate_t * ps)
+virt_mbsnrtowcs (wchar_t * dst, const unsigned char ** src, size_t nmc, size_t len, virt_mbstate_t * ps)
 {
   size_t written = 0;
   char *run = (char *) *src;

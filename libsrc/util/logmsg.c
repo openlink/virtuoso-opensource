@@ -71,7 +71,7 @@ static int limit_rate;
 #define LIMIT_OFF	2
 
 static int
-limit_check (char *file, int line)
+limit_check (const char *file, int line)
 {
   char key[BUFSIZ];
   struct logrecord *r;
@@ -159,14 +159,14 @@ limit_check (char *file, int line)
   the loglevel is to low to force the printout.
 */
 static void
-fix_format (char *format_in, char *format_out, int len, int errno_save, char *file, int line)
+fix_format (const char *format_in, char *format_out, int len, int errno_save, const char *file, int line)
 {
   char *f;
   char *b;
   char *b_end;
   char c;
 
-  f = gettext (format_in);
+  f = gettext ((char *) format_in);
   b = format_out;
   b_end = &format_out[len];
 
@@ -205,7 +205,7 @@ fix_format (char *format_in, char *format_out, int len, int errno_save, char *fi
 
 
 int
-logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
+logmsg_ap (int level, const char *file, int line, int mask, const char *format, va_list ap)
 {
   LOG *log;
   char buf[BUFSIZ];
@@ -387,7 +387,7 @@ logmsg_ap (int level, char *file, int line, int mask, char *format, va_list ap)
 
 
 int
-logmsg (int level, char *file, int line, int mask, char *format, ...)
+logmsg (int level, const char *file, int line, int mask, const char *format, ...)
 {
   va_list ap;
   int rc;
@@ -401,7 +401,7 @@ logmsg (int level, char *file, int line, int mask, char *format, ...)
 
 
 int
-log_error (char *format, ...)
+log_error (const char *format, ...)
 {
   va_list ap;
   int rc;
@@ -415,7 +415,7 @@ log_error (char *format, ...)
 
 
 int
-log_warning (char *format, ...)
+log_warning (const char *format, ...)
 {
   va_list ap;
   int rc;
@@ -429,7 +429,7 @@ log_warning (char *format, ...)
 
 
 int
-log_info (char *format, ...)
+log_info (const char *format, ...)
 {
   va_list ap;
   int rc;
@@ -443,7 +443,7 @@ log_info (char *format, ...)
 
 
 int
-log_debug (char *format, ...)
+log_debug (const char *format, ...)
 {
   va_list ap;
   int rc;
@@ -457,7 +457,7 @@ log_debug (char *format, ...)
 
 
 int
-log (int level, char *file, int line, char *format, ...)
+log (int level, const char *file, int line, const char *format, ...)
 {
   va_list ap;
   int rc;
@@ -573,7 +573,7 @@ log_open_callback (log_emit_func emitter, log_close_func closer,
 
 
 static void
-file_emit (LOG *log, int level, char *msg)
+file_emit (LOG *log, int level, const char *msg)
 {
   FILE *fp = (FILE *) log->user_data;
 
@@ -596,7 +596,7 @@ file_close (LOG *log)
 
 
 static void
-syslog_emit (LOG *log, int level, char *msg)
+syslog_emit (LOG *log, int level, const char *msg)
 {
 #ifdef HAVE_SYSLOG
   syslog (level, "%s", msg);
@@ -614,7 +614,7 @@ syslog_close (LOG *log)
 
 
 LOG *
-log_open_syslog (char *ident, int logopt, int facility, int level, int mask, int style)
+log_open_syslog (const char *ident, int logopt, int facility, int level, int mask, int style)
 {
   LOG *log;
 
@@ -661,7 +661,7 @@ log_open_fp2 (FILE * fp, int level, int mask, int style)
 
 
 LOG *
-log_open_file (char *filename, int level, int mask, int style)
+log_open_file (const char *filename, int level, int mask, int style)
 {
   FILE *fp;
   LOG *log;
