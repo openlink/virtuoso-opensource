@@ -99,7 +99,7 @@ create procedure TEST_CATFILTER_SINGLE_FILE (in cf_uname varchar, in uri varchar
   declare ctr integer;
   declare acc any;
   declare mt, base0, base, addon_uri varchar;
-  --dbg_obj_princ ('TEST_CATFILTER_SINGLE_FILE (', cf_uname, uri, schema_idx, schema_size, ')');
+  -- dbg_obj_princ ('TEST_CATFILTER_SINGLE_FILE (', cf_uname, uri, schema_idx, schema_size, ')');
   mt := sprintf ('test/mime%d', 1000 + schema_idx);
   base0 := 'http://www.openlinksw.com/schemas/DETtest_CatFilter1000#';
   base := sprintf ('http://www.openlinksw.com/schemas/DETtest_CatFilter%d#', 1000 + schema_idx);
