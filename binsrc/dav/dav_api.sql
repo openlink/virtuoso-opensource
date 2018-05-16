@@ -2996,8 +2996,7 @@ _private:
       return 1;
     };
 
-    if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs'))
-      DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', rdf_graph2);
+    DB.DBA.DAV_DET_PRIVATE_GRAPH_ADD (rdf_graph2);
   }
 
   return 1;
@@ -3013,7 +3012,7 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
   in rdf_graph varchar,
   in rdf_cartridges varchar)
 {
-  dbg_obj_princ ('RDF_SINK_UPLOAD_CARTRIDGES (', type, rdf_iri, rdf_graph, rdf_cartridges, ')');
+  -- dbg_obj_princ ('RDF_SINK_UPLOAD_CARTRIDGES (', type, rdf_iri, rdf_graph, rdf_cartridges, ')');
   declare cnt, hasSelection integer;
   declare cname, pname varchar;
   declare cartridges, aq, ps any;
@@ -3170,8 +3169,7 @@ create procedure RDF_SINK_DELETE (
   in _res_length integer)
 {
   -- dbg_obj_princ ('RDF_SINK_DELETE (', _queue_id, _path, ')');
-  declare rdf_graph varchar;
-  declare rdf_group, rdf_graph2 varchar;
+  declare rdf_graph, rdf_graph2 varchar;
   declare g_iid, g2_iid any;
 
   if (_res_length = 0)
@@ -3190,7 +3188,6 @@ create procedure RDF_SINK_DELETE (
     return;
   }
 
-  rdf_group := 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs';
   if (_path like '%.gz')
   {
     _path := regexp_replace (_path, '\.gz\x24', '');
@@ -3203,10 +3200,7 @@ create procedure RDF_SINK_DELETE (
 	  delete from DB.DBA.RDF_QUAD where G = g_iid and S = _s and P = _p and O = _o;
 	}
   delete from DB.DBA.RDF_QUAD where G = g2_iid;
-  if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = rdf_group))
-  {
-    DB.DBA.RDF_GRAPH_GROUP_DEL (rdf_group, rdf_graph2);
-  }
+  DB.DBA.DAV_DET_PRIVATE_GRAPH_REMOVE (rdf_graph2);
 
 _bad_content:;
   if (not isnull (_queue_id) and (_queue_id > 0))
@@ -5378,22 +5372,132 @@ create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
 --
 create trigger SYS_DAV_RES_LDI_AI after insert on WS.WS.SYS_DAV_RES order 110 referencing new as N
 {
+  -- dbg_obj_princ ('SYS_DAV_RES_LDI_AI -----------');
+
   -- insert RDF data
-  DB.DBA.RDF_SINK_INSERT (null, N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE));
+  declare _n_size integer;
+  declare _oldAcls, _newAcls any;
+  declare _acis any;
+  declare _rdfParams any;
+
+  _n_size := DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE);
+  if (_n_size <> 0)
+    DB.DBA.RDF_SINK_INSERT (null, N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, _n_size);
+
+  -- ACLs
+  _oldAcls := vector ();
+  _newAcls := vector (N.RES_ACL);
+  DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (N.RES_COL, 'C', _oldAcls, _newAcls);
+
+  -- ACIs
+  _acis := DB.DBA.DAV_DET_ACI_LOAD_ALL (N.RES_ID, 'R');
+
+  _rdfParams := vector ('graph', WS.WS.DAV_IRI (N.RES_FULL_PATH), 'graphSecurityACI', _acis);
+  DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
+    N.RES_ID,
+    'I',
+    null,
+    N.RES_TYPE,
+    null,
+    N.RES_OWNER,
+    null,
+    N.RES_GROUP,
+    null,
+    N.RES_PERMS,
+    null,
+    _newAcls,
+    null,
+    _rdfParams
+  );
 }
 ;
 
-create trigger SYS_DAV_RES_LDI_AU after update (RES_FULL_PATH, RES_ID, RES_COL, RES_TYPE, RES_OWNER, RES_GROUP) on WS.WS.SYS_DAV_RES order 110 referencing new as N, old as O
+create trigger SYS_DAV_RES_LDI_AU after update (RES_FULL_PATH, RES_ID, RES_COL, RES_TYPE, RES_OWNER, RES_GROUP, RES_PERMS, RES_ACL) on WS.WS.SYS_DAV_RES order 110 referencing new as N, old as O
 {
+  -- dbg_obj_princ ('SYS_DAV_RES_LDI_AU -----------');
+
   -- update RDF data
-  DB.DBA.RDF_SINK_UPDATE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE), N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE));
+  declare _o_size, _n_size integer;
+  declare _oldAcls, _newAcls any;
+  declare _acis any;
+  declare _rdfParams any;
+
+  _o_size := DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE);
+  _n_size := DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE);
+  if (
+      (_o_size <> _n_size) or
+      (O.RES_FULL_PATH <> N.RES_FULL_PATH) or
+      (md5 (case when isblob (O.RES_CONTENT) then blob_to_string_output (O.RES_CONTENT) else O.RES_CONTENT end) <> md5 (case when isblob (N.RES_CONTENT) then blob_to_string_output (N.RES_CONTENT) else N.RES_CONTENT end))
+     )
+    DB.DBA.RDF_SINK_UPDATE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, _o_size, N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, _n_size);
+
+  -- ACLs
+  _oldAcls := vector (O.RES_ACL);
+  _newAcls := vector (N.RES_ACL);
+  DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (O.RES_COL, 'C', _oldAcls, _newAcls);
+
+  -- ACIs
+  _acis := DB.DBA.DAV_DET_ACI_LOAD_ALL (O.RES_ID, 'R');
+
+  _rdfParams := vector ('graph', WS.WS.DAV_IRI (O.RES_FULL_PATH), 'graphSecurityACI', _acis);
+  DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
+    N.RES_ID,
+    'U',
+    O.RES_TYPE,
+    N.RES_TYPE,
+    O.RES_OWNER,
+    N.RES_OWNER,
+    O.RES_GROUP,
+    N.RES_GROUP,
+    O.RES_PERMS,
+    N.RES_PERMS,
+    _oldAcls,
+    _newAcls,
+    _rdfParams,
+    _rdfParams
+  );
 }
 ;
 
 create trigger SYS_DAV_RES_LDI_AD after delete on WS.WS.SYS_DAV_RES order 110 referencing old as O
 {
+  -- dbg_obj_princ ('SYS_DAV_RES_LDI_AD -----------');
+
   -- delete RDF data from separate (file) graph (if exists)
-  DB.DBA.RDF_SINK_DELETE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE));
+  declare _o_size integer;
+  declare _oldAcls, _newAcls any;
+  declare _acis any;
+  declare _rdfParams any;
+
+  _o_size := DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE);
+  if (_o_size <> 0)
+    DB.DBA.RDF_SINK_DELETE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, _o_size);
+
+  -- ACLs
+  _oldAcls := vector (O.RES_ACL);
+  _newAcls := vector ();
+  DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (O.RES_COL, 'C', _oldAcls, _newAcls);
+
+  -- ACIs
+  _acis := DB.DBA.DAV_DET_ACI_LOAD_ALL (O.RES_ID, 'R');
+
+  _rdfParams := vector ('graph', WS.WS.DAV_IRI (O.RES_FULL_PATH), 'graphSecurityACI', _acis);
+  DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
+    O.RES_ID,
+    'D',
+    O.RES_TYPE,
+    null,
+    O.RES_OWNER,
+    null,
+    O.RES_GROUP,
+    null,
+    O.RES_PERMS,
+    null,
+    _oldAcls,
+    null,
+    _rdfParams,
+    null
+  );
 }
 ;
 
@@ -5441,17 +5545,34 @@ create trigger SYS_DAV_RES_WAC_I after insert on WS.WS.SYS_DAV_RES order 100 ref
   if (connection_get ('dav_acl_sync') = 1)
     return;
 
-  if (N.RES_NAME like '%,acl')
+  if (ends_with (N.RES_NAME, ',acl'))
   {
-    declare rid int;
-    newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
-    newPath := regexp_replace (newPath, ',acl\x24', '');
+    declare id integer;
+    declare what varchar;
+
+    newPath := WS.WS.COL_PATH (N.RES_COL) || regexp_replace (N.RES_NAME, ',acl\x24', '');
+
+    id := DB.DBA.DAV_SEARCH_ID (newPath, 'R');
+    if (DB.DBA.DAV_HIDE_ERROR (id) is null)
+    {
+      what := 'C';
+      newPath := newPath || '/';
+      id := DB.DBA.DAV_SEARCH_ID (newPath, 'C');
+    }
+    else
+    {
+      what := 'R';
+    }
+    if (DB.DBA.DAV_HIDE_ERROR (id) is null)
+      return;
+
     aciContent := N.RES_CONTENT;
-    rid := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = newPath);
+
     set triggers off;
     insert into WS.WS.SYS_DAV_PROP (PROP_ID, PROP_PARENT_ID, PROP_NAME, PROP_TYPE, PROP_VALUE)
-	    values (WS.WS.GETID ('P'), rid, 'virt:aci_meta_n3', 'R', N.RES_CONTENT);
+	    values (WS.WS.GETID ('P'), id, 'virt:aci_meta_n3', what, N.RES_CONTENT);
     set triggers on;
+
     update_acl := 0;
     WS.WS.WAC_INSERT (newPath, aciContent, N.RES_OWNER, N.RES_GROUP, update_acl);
   }
@@ -5465,18 +5586,38 @@ create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 ref
   if (connection_get ('dav_acl_sync') = 1)
     return;
 
-  if (N.RES_NAME like '%,acl')
+  if (ends_with (N.RES_NAME, ',acl'))
   {
-    declare rid int;
-    oldPath := WS.WS.COL_PATH (O.RES_COL) || O.RES_NAME;
-    newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
-    oldPath := regexp_replace (oldPath, ',acl\x24', '');
-    newPath := regexp_replace (newPath, ',acl\x24', '');
+    declare id integer;
+    declare what varchar;
+
+    if ((O.RES_NAME = N.RES_NAME) and (O.RES_COL = N.RES_COL) and (cast (O.RES_CONTENT as varchar) = cast (N.RES_CONTENT as varchar)))
+	    return;
+
+    oldPath := WS.WS.COL_PATH (O.RES_COL) || regexp_replace (O.RES_NAME, ',acl\x24', '');
+    newPath := WS.WS.COL_PATH (N.RES_COL) || regexp_replace (N.RES_NAME, ',acl\x24', '');
+
+    id := DB.DBA.DAV_SEARCH_ID (newPath, 'R');
+    if (DB.DBA.DAV_HIDE_ERROR (id) is null)
+    {
+      what := 'C';
+      newPath := newPath || '/';
+      oldPath := oldPath || '/';
+      id := DB.DBA.DAV_SEARCH_ID (newPath, 'C');
+    }
+    else
+    {
+      what := 'R';
+    }
+    if (DB.DBA.DAV_HIDE_ERROR (id) is null)
+      return;
+
     aciContent := N.RES_CONTENT;
-    rid := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = oldPath);
+
     set triggers off;
-    update WS.WS.SYS_DAV_PROP set PROP_VALUE = N.RES_CONTENT where PROP_TYPE = 'R' and PROP_NAME = 'virt:aci_meta_n3' and PROP_PARENT_ID = rid;
+    update WS.WS.SYS_DAV_PROP set PROP_VALUE = aciContent where PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3' and PROP_PARENT_ID = id;
     set triggers on;
+
     update_acl := 0;
   }
   else
@@ -5500,22 +5641,34 @@ create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 ref
 create trigger SYS_DAV_RES_WAC_D after delete on WS.WS.SYS_DAV_RES order 100 referencing old as O
 {
   declare update_acl int;
-  declare path varchar;
+  declare oldPath varchar;
 
   if (connection_get ('dav_acl_sync') = 1)
     return;
 
-  if (O.RES_NAME like '%,acl')
+  if (ends_with (O.RES_NAME, ',acl'))
   {
+    declare id integer;
+
+    oldPath := regexp_replace (O.RES_FULL_PATH, ',acl\x24', '');
+
+    id := DB.DBA.DAV_SEARCH_ID (oldPath, 'R');
+    if (DB.DBA.DAV_HIDE_ERROR (id) is null)
+    {
+      oldPath := oldPath || '/';
+      id := DB.DBA.DAV_SEARCH_ID (oldPath, 'C');
+    }
+    if (DB.DBA.DAV_HIDE_ERROR (id) is null)
+      return;
+
     update_acl := 0;
-    path := regexp_replace (O.RES_FULL_PATH, ',acl\x24', '');
   }
   else
   {
-    path := O.RES_FULL_PATH;
+    oldPath := O.RES_FULL_PATH;
     update_acl := 1;
   }
-  WS.WS.WAC_DELETE (path, update_acl);
+  WS.WS.WAC_DELETE (oldPath, update_acl);
 }
 ;
 
@@ -5601,17 +5754,21 @@ create procedure WS.WS.WAC_INSERT (
     DAV_RES_UPLOAD_STRSES_INT (rtrim (path, '/') || ',acl', aciContent, 'text/turtle', permissions, uid, gid, null, null, 0);
     connection_set ('dav_acl_sync', null);
   }
+
+  if (DB.DBA.DAV_HIDE_ERROR (permissions) is null)
+    return;
+
   giid := iri_to_id (graph);
   subj := iri_to_id (WS.WS.DAV_LINK (path));
   DB.DBA.TTLP (aciContent, graph, graph);
   sparql insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
   if (exists (sparql prefix foaf: <http://xmlns.com/foaf/0.1/>  prefix acl: <http://www.w3.org/ns/auth/acl#> ask where { graph ?:giid { [] acl:accessTo ?:giid ; acl:mode acl:Read  ; acl:agentClass foaf:Agent . }})) -- public read
-    {
-      set triggers off;
-      permissions [6] := 49;
-      DAV_PROP_SET_INT (path, ':virtpermissions', permissions, null, null, 0, 0, 1, http_dav_uid ());
-      set triggers on;
-    }
+  {
+    set triggers off;
+    permissions [6] := 49;
+    DAV_PROP_SET_INT (path, ':virtpermissions', permissions, null, null, 0, 0, 1, http_dav_uid ());
+    set triggers on;
+  }
 }
 ;
 
@@ -5626,7 +5783,7 @@ create procedure WS.WS.WAC_DELETE (
   if (update_acl)
   {
     connection_set ('dav_acl_sync', 1);
-    DAV_DELETE_INT (rtrim (path, '/') || ',acl', 1, null, null, 0, 0);
+    DB.DBA.DAV_DELETE_INT (rtrim (path, '/') || ',acl', 1, null, null, 0, 0);
     connection_set ('dav_acl_sync', null);
   }
   set_user_id ('dba');
