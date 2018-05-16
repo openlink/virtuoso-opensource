@@ -155,6 +155,7 @@ create procedure WEBDAV.DBA.exec (
   exec (S, st, msg, P, 0, meta, rows);
   if ('00000' = st)
     return rows;
+
   return vector ();
 }
 ;
@@ -773,7 +774,7 @@ create procedure WEBDAV.DBA.dc_compareMetas (inout cmp_metas any)
 --
 create procedure WEBDAV.DBA.dt_current_time()
 {
-  return dateadd('minute', - timezone(curdatetime_tz()),curdatetime_tz());
+  return dateadd ('minute', - timezone (curdatetime_tz ()), curdatetime_tz ());
 }
 ;
 
@@ -1466,9 +1467,9 @@ create procedure WEBDAV.DBA.proc (
   in dir_password any := null) returns any
 {
   -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, dir_mode, dir_params, dir_hiddens, dir_account, dir_password, ')');
-  declare item, dirListTmp, detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
+  declare dirListTmp, detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
   declare vspx_user, dir_account_name, user_name, group_name varchar;
-  declare path_home, path_parent varchar;
+  declare path_parent varchar;
   declare user_id, group_id integer;
   declare c2 any;
   declare c0, c1, c3, c4, c5, c6, c7, c8, c9, c10 varchar;
@@ -1525,11 +1526,11 @@ create procedure WEBDAV.DBA.proc (
     }
     else
     {
-    foreach (any item in dirListTmp) do
-    {
-      if (item[1] = 'C')
-        dirList := vector_concat (dirList, vector (item));
-    }
+      foreach (any item in dirListTmp) do
+      {
+        if (item[1] = 'C')
+          dirList := vector_concat (dirList, vector (item));
+      }
     }
     dir_mode := 0;
     dirFilter := '%';
@@ -1570,9 +1571,10 @@ create procedure WEBDAV.DBA.proc (
   group_name := '';
   if ((dir_mode = 0) or (dir_mode = 1))
   {
+     declare item any;
+
      -- standard list & filter
      dir_account_name := WEBDAV.DBA.account_name (dir_account);
-     path_home := '/DAV/home/' || dir_account_name || '/';
      path_parent := WEBDAV.DBA.path_parent (path, 1);
      item := WEBDAV.DBA.DAV_INIT (path, dir_account_name, dir_password);
      if (not WEBDAV.DBA.DAV_ERROR (item))
@@ -1580,7 +1582,8 @@ create procedure WEBDAV.DBA.proc (
        WEBDAV.DBA.proc_work (item, user_id, user_name, group_id, group_name, detCategory, dateAdded);
        result ('.', item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], detCategory, left (cast (item[8] as varchar), 19), left (cast (dateAdded as varchar), 19));
      }
-     if (path_parent <> '/')
+     path_parent := WEBDAV.DBA.dav_parentPath (path, dir_account);
+     if (not isnull (path_parent))
      {
        item := WEBDAV.DBA.DAV_INIT (path_parent, dir_account_name, dir_password);
        if (not WEBDAV.DBA.DAV_ERROR (item))
@@ -1848,12 +1851,12 @@ create procedure WEBDAV.DBA.account_sioc_url (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.account_basicAuthorization (
-  in account_name varchar)
+  in account any)
 {
   declare account_password varchar;
 
-  account_password := WEBDAV.DBA.account_password (account_name);
-  return sprintf ('Basic %s', encode_base64 (account_name || ':' || account_password));
+  account_password := WEBDAV.DBA.account_password (account);
+  return sprintf ('Basic %s', encode_base64 (account || ':' || account_password));
 }
 ;
 
@@ -2116,7 +2119,60 @@ create procedure WEBDAV.DBA.dav_logical_home (
   home := WEBDAV.DBA.dav_home2 (account_id);
   if (not isnull (home))
     home := replace (home, '/DAV', '');
+
   return home;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.dav_browsable ()
+{
+  if (http_map_get ('browseable') = 0)
+    return 0;
+
+  if (http_map_get ('mounted') like '/DAV/VAD/%')
+    return 0;
+
+  return 1;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.dav_parentPath (
+  in path varchar,
+  in account_id integer)
+{
+  -- dbg_obj_princ ('WEBDAV.DBA.dav_parentPath (', path, account_id, ')');
+  declare ppath, home varchar;
+
+  if (path = '/DAV/')
+    return null;
+
+  if (WEBDAV.DBA.dav_browsable ())
+  {
+    ppath := http_map_get ('mounted');
+    if (path not like ppath || '%')
+      return null;
+
+    if (length (path) = length (ppath))
+      return null;
+
+    return WEBDAV.DBA.path_parent (path, 1);
+  }
+
+  if (WEBDAV.DBA.check_admin (account_id))
+    return WEBDAV.DBA.path_parent (path, 1);
+
+  if (account_id = 'nobody')
+    return WEBDAV.DBA.path_parent (path, 1);
+
+  home := WEBDAV.DBA.dav_home2 (account_id, '');
+  if ((path like home || '%') and (length (path) > length (home)))
+    return WEBDAV.DBA.path_parent (path, 1);
+
+  return null;
 }
 ;
 
@@ -2127,7 +2183,7 @@ create procedure WEBDAV.DBA.refine_path(
 {
   path := replace (path, '\\', '/');
   path := replace (path, '//', '/');
-  return trim(path, '/');
+  return trim (path, '/');
 }
 ;
 
@@ -2431,90 +2487,17 @@ create procedure WEBDAV.DBA.acl_vector_unique (
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.ace_grantee(
-  in N integer) returns varchar
-{
-  if (isnull (N))
-    return '~none~';
-
-  declare S varchar;
-
-  S := (select concat ('Group: ', G_NAME) from WS.WS.SYS_DAV_GROUP where G_ID = N);
-  if (isnull (S))
-    S := coalesce ((select concat ('User: ', U_NAME) from DB.DBA.SYS_USERS where U_ID = N), '~unknown~');
-
-  return S;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.ace_inheritance(
-  in N integer) returns varchar
-{
-  if (N = 0)
-    return 'This object only';
-  if (N = 1)
-    return 'This object, subfolders and files';
-  if (N = 2)
-    return 'Subfolders and files';
-  if (N = 3)
-    return 'Inherited';
-  return '';
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.ace_grant(
-  in N integer) returns varchar
-{
-  if (N = 0)
-    return 'Revoke';
-  if (N = 1)
-    return 'Grant';
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.ace_permissions(
-  in N integer) returns varchar
-{
-  declare S varchar;
-
-  S := 'rwx';
-  if (bit_and(N, 1) = 0)
-    S := replace (S, 'x', '-');
-  if (bit_and(N, 2) = 0)
-    S := replace (S, 'w', '-');
-  if (bit_and(N, 4) = 0)
-    S := replace (S, 'r', '-');
-
-  return S;
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure WEBDAV.DBA.settings (
   in account_id integer)
 {
   declare retValue, V any;
 
-  if (account_id = http_nobody_uid ())
+  V := vector ();
+  if (account_id <> http_nobody_uid ())
   {
-    V := vector ();
-  }
-  else
-  {
-  retValue := WEBDAV.DBA.exec ('select USER_SETTINGS from ODRIVE.WA.SETTINGS where USER_ID = ?', vector (account_id));
-  if (not WEBDAV.DBA.isVector (retValue) or (length (retValue) = 0) or (length (retValue[0]) = 0) or isnull (retValue[0][0]))
-  {
-    V := vector ();
-  } else {
-    V := deserialize (blob_to_string (retValue[0][0]));
-  }
+    retValue := WEBDAV.DBA.exec ('select USER_SETTINGS from ODRIVE.WA.SETTINGS where USER_ID = ?', vector (account_id));
+    if ((length (retValue) = 1) and not isnull (retValue[0][0]))
+      V := deserialize (blob_to_string (retValue[0][0]));
   }
   return WEBDAV.DBA.settings_init (V);
 }
@@ -2671,12 +2654,16 @@ create procedure WEBDAV.DBA.auto_version_full (
 {
   if (value = 'A')
     return 'DAV:checkout-checkin';
+
   if (value = 'B')
     return 'DAV:checkout-unlocked-checkin';
+
   if (value = 'C')
     return 'DAV:checkout';
+
   if (value = 'D')
     return 'DAV:locked-checkout';
+
   return '';
 }
 ;
@@ -2686,12 +2673,16 @@ create procedure WEBDAV.DBA.auto_version_short (
 {
   if (value = 'DAV:checkout-checkin')
     return 'A';
+
   if (value = 'DAV:checkout-unlocked-checkin')
     return 'B';
+
   if (value = 'DAV:checkout')
     return 'C';
+
   if (value = 'DAV:locked-checkout')
     return 'D';
+
   return '';
 }
 ;
@@ -2751,6 +2742,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'PropFilter', 'Property Filter',
     'HostFs',     'Host FS',
     'rdfSink',    'Linked Data Import',
+    'LDP',        'Linked Data Protocol',
     'RDFData',    'RDF Data',
     'DynaRes',    'Dynamic Resources',
     'SyncML',     'SyncML',
@@ -3273,14 +3265,19 @@ create procedure WEBDAV.DBA.DAV_SET_AUTOVERSION (
   if (WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
   {
     retValue := WEBDAV.DBA.DAV_SET_VERSIONING_CONTROL (path, value);
-  } else {
+  }
+  else
+  {
     value := WEBDAV.DBA.auto_version_full (value);
     if (value = '')
     {
       retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'DAV:auto-version');
-    } else {
+    }
+    else
+    {
       if (not WEBDAV.DBA.DAV_GET_VERSION_CONTROL (path))
         WEBDAV.DBA.DAV_VERSION_CONTROL (path);
+
       retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'DAV:auto-version', value);
     }
   }
@@ -3297,13 +3294,15 @@ create procedure WEBDAV.DBA.DAV_PERROR (
 
   if (x = -3)
     return 'Destination exists';
+
   S := DB.DBA.DAV_PERROR(x);
-  if (not is_empty_or_null(S)) {
+  if (not is_empty_or_null (S))
+  {
     S := replace (S, 'collection', 'folder');
     S := replace (S, 'Collection', 'Folder');
     S := replace (S, 'resource', 'file');
     S := replace (S, 'Resource', 'File');
-    S := subseq(S, 6);
+    S := subseq (S, 6);
   }
   return S;
 }
@@ -3634,23 +3633,26 @@ create procedure WEBDAV.DBA.DAV_SET_RECURSIVE (
   in path varchar,
   in dav_perms any,
   in dav_owner any,
-  in dav_group any)
+  in dav_group any,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare items any;
+  declare itemPath varchar;
 
-  items := WEBDAV.DBA.DAV_DIR_LIST (path, 0);
+  items := WEBDAV.DBA.DAV_DIR_LIST (path, 0, auth_name, auth_pwd);
   foreach (any item in items) do
   {
-    declare itemPath varchar;
-
     itemPath := item[0];
-    WEBDAV.DBA.DAV_SET(itemPath, 'permissions', dav_perms);
+    WEBDAV.DBA.DAV_SET (itemPath, 'permissions', dav_perms, auth_name, auth_pwd);
     if (dav_owner <> -1)
-      WEBDAV.DBA.DAV_SET(itemPath, 'ownerID', dav_owner);
+      WEBDAV.DBA.DAV_SET (itemPath, 'ownerID', dav_owner, auth_name, auth_pwd);
+
     if (dav_group <> -1)
-      WEBDAV.DBA.DAV_SET(itemPath, 'groupID', dav_group);
+      WEBDAV.DBA.DAV_SET (itemPath, 'groupID', dav_group, auth_name, auth_pwd);
+
     if (item[1] = 'C')
-      WEBDAV.DBA.DAV_SET_RECURSIVE (itemPath, dav_perms, dav_owner, dav_group);
+      WEBDAV.DBA.DAV_SET_RECURSIVE (itemPath, dav_perms, dav_owner, dav_group, auth_name, auth_pwd);
   }
 }
 ;
@@ -3803,7 +3805,7 @@ create procedure WEBDAV.DBA.rdfSink_CONFIGURE (
 
   oldParams := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', id);
   DB.DBA.DAV_DET_PARAM_SET ('rdfSink', null, id, 'C', 'activity', get_keyword ('activity', params, 'off'), 0);
-  retValue := DB.DBA.DAV_DET_RDF_PARAMS_SET ('rdfSink', id, params, vector ('sponger', 'cartridges', 'metaCartridges', 'base', 'graph', 'contentType'));
+  retValue := DB.DBA.DAV_DET_RDF_PARAMS_SET ('rdfSink', id, params, vector ('sponger', 'cartridges', 'metaCartridges', 'base', 'graph', 'contentType', 'graphSecurity', 'graphSecurityACL', 'graphSecurityACI'));
   oldGraph := get_keyword ('graph', oldParams, '');
   if (oldGraph <> '')
   {
@@ -3890,15 +3892,12 @@ create procedure WEBDAV.DBA.DAV_DELETE (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
+  -- dbg_obj_princ ('WEBDAV.DBA.DAV_DELETE (', path, ')');
   declare detType varchar;
 
   WEBDAV.DBA.DAV_API_PARAMS (auth_name, auth_pwd);
-  if (WEBDAV.DBA.path_type (path) = 'C')
-  {
-    detType := WEBDAV.DBA.det_type (path, 'C');
-    if (detType = 'SyncML')
-      WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (path, 'C')));
-  }
+  if ((WEBDAV.DBA.path_type (path) = 'C') and (WEBDAV.DBA.det_type (path, 'C') = 'SyncML'))
+    WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (path, 'C')));
 
   return DB.DBA.DAV_DELETE (path, silent, auth_name, auth_pwd);
 }
@@ -4065,15 +4064,13 @@ create procedure WEBDAV.DBA.DAV_PROP_GET_CHAIN (
   declare exit handler for SQLSTATE '*' {goto _exit;};
 
   WEBDAV.DBA.DAV_API_PARAMS (auth_name, auth_pwd);
-  while (1)
+  while ((path <> '/'))
   {
     retValue := DB.DBA.DAV_PROP_GET (path, propName, auth_name, auth_pwd);
     if (not WEBDAV.DBA.DAV_ERROR (retValue))
       return retValue;
 
     path := WEBDAV.DBA.path_parent (path, 1);
-    if (path = '/')
-      goto _exit;
   }
 _exit:
   return propValue;
@@ -4552,7 +4549,7 @@ create procedure WEBDAV.DBA.ui_size (
   in itemSize integer,
   in itemType varchar := 'R',
   in sizeType varchar := '1',
-  in sizeMode varchar := 0)
+  in sizeMode integer := 0)
 {
   declare D integer;
   declare S varchar;
@@ -4588,7 +4585,7 @@ create procedure WEBDAV.DBA.ui_size (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.ui_date (
-  in itemDate datetime)
+  in itemDate any)
 {
   itemDate := left (cast (itemDate as varchar), 19);
   return sprintf ('%s <font size="1">%s</font>', left(itemDate, 10), right(itemDate, 8));
@@ -5021,7 +5018,7 @@ create procedure WEBDAV.DBA.aci_load (
   what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP')))
   {
     retValue := WEBDAV.DBA.DAV_PROP_GET (path, 'virt:aci_meta', auth_name=>auth_name, auth_pwd=>auth_pwd);
     if (WEBDAV.DBA.DAV_ERROR (retValue))
@@ -5111,12 +5108,12 @@ create procedure WEBDAV.DBA.aci_load (
           if (ODS.ODS_API."ontology.normalize" (row[2]) = 'foaf:Agent')
           {
             V[1] := ODS.ODS_API."ontology.normalize" (row[2]);
-          V[2] := 'public';
+            V[2] := 'public';
           }
           else
           {
             V[1] := row[2];
-          V[2] := 'group';
+            V[2] := 'group';
           }
         }
         else if (not isnull (row[4]))
@@ -5160,7 +5157,7 @@ create procedure WEBDAV.DBA.aci_save (
 
   what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP')))
   {
     retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta', aci, auth_name=>auth_name, auth_pwd=>auth_pwd);
   }
@@ -5350,7 +5347,7 @@ create procedure WEBDAV.DBA.aci_params (
   in params any,
   in tbl varchar := 's')
 {
-  declare N, M, N2, M2 integer;
+  declare I, N, M, N2, M2 integer;
   declare aclNo, aclNo2, retValue, V, V2, T any;
 
   M := 1;
@@ -5398,6 +5395,25 @@ create procedure WEBDAV.DBA.aci_params (
                      atoi (get_keyword (tbl || '_fld_3_' || aclNo || '_w', params, '0')),
                      atoi (get_keyword (tbl || '_fld_3_' || aclNo || '_x', params, '0'))
                     );
+        if (V[2] <> 'advanced')
+        {
+          for (I := 0; I < length (retValue); I := i + 1)
+          {
+            if (V[1] = retValue[I][1])
+            {
+              if (V[3] = 1)
+                retValue[I][3] := 1;
+
+              if (V[4] = 1)
+                retValue[I][4] := 1;
+
+              if (V[5] = 1)
+                retValue[I][5] := 1;
+
+              goto _skip;
+            }
+          }
+        }
         retValue := vector_concat (retValue, vector (V));
         M := M + 1;
       _skip:;
@@ -5480,14 +5496,14 @@ create procedure WEBDAV.DBA.iri2ssl (
 
   if (iri not like 'https://%')
   {
-  ssl := ODS.ODS_API.getDefaultHttps ();
-  if (ssl is not null)
-  {
-    V := rfc1808_parse_uri (iri);
-    V[0] := 'https';
-    V[1] := ssl;
-    iri := DB.DBA.vspx_uri_compose (V);
-  }
+    ssl := ODS.ODS_API.getDefaultHttps ();
+    if (ssl is not null)
+    {
+      V := rfc1808_parse_uri (iri);
+      V[0] := 'https';
+      V[1] := ssl;
+      iri := DB.DBA.vspx_uri_compose (V);
+    }
   }
   return iri;
 }
@@ -5691,8 +5707,8 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
     enabled := DB.DBA.LDP_ENABLED (work_id);
 
   for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = work_id) do
-	  {
-      uri := WS.WS.DAV_IRI (path);
+  {
+    uri := WS.WS.DAV_IRI (path);
     if (enabled)
     {
       TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
@@ -5719,11 +5735,11 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
       }
     }
     for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = work_id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
-	    {
-        ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
-        TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
-	    }
-	  }
+    {
+      ruri := WS.WS.DAV_IRI (path || COL_NAME || '/');
+      TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
+    }
+  }
 
   for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = work_id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
   {
@@ -5975,7 +5991,7 @@ create procedure WEBDAV.DBA.progress_start (
     if (params[N] = 'item')
     {
       results := vector_concat (results, vector ('Progress'));
-	    registry_set ('progress_data_'  || progressID, DB.DBA.obj2json (results));
+      registry_set ('progress_data_'  || progressID, DB.DBA.obj2json (results));
       itemPath := params[N+1];
       item := WEBDAV.DBA.DAV_INIT (itemPath);
       if (not WEBDAV.DBA.DAV_ERROR (item))
@@ -5991,7 +6007,6 @@ create procedure WEBDAV.DBA.progress_start (
           if (get_keyword ('f_unmount', params) = 'D')
           {
             -- delete all
-
             retValue := WEBDAV.DBA.DAV_DELETE (itemPath);
           }
           else if (get_keyword ('f_unmount', params) = 'U')
@@ -6152,9 +6167,9 @@ create procedure WEBDAV.DBA.progress_start (
 
       -- set registry data
       M := M + 1;
-	    registry_set ('progress_index_'  || progressID, cast (M as varchar));
-	    registry_set ('progress_data_'  || progressID, DB.DBA.obj2json (results));
-	    commit work;
+      registry_set ('progress_index_'  || progressID, cast (M as varchar));
+      registry_set ('progress_data_'  || progressID, DB.DBA.obj2json (results));
+      commit work;
     }
   }
   return results;

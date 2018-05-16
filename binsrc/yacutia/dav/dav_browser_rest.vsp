@@ -23,6 +23,8 @@
   declare sid, realm, vspx_user, action, subAction, node, nodePath varchar;
   declare tmp, nodes, parts, returnData any;
 
+  set http_charset='utf-8';
+
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
 
