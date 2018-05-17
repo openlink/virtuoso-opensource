@@ -23,7 +23,7 @@
 --
 create function DB.DBA.DAV_DET_SPECIAL ()
 {
-  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP', 'LDP');
+  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP');
 }
 ;
 
@@ -36,7 +36,7 @@ create function DB.DBA.DAV_DET_IS_SPECIAL (
 
 create function DB.DBA.DAV_DET_WEBDAV_BASED ()
 {
-  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP', 'LDP');
+  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP');
 }
 ;
 
@@ -167,10 +167,6 @@ create function DB.DBA.DAV_DET_PROPPATCH (
   {
     det := 'rdfSink';
   }
-  else if (det = 'SocialNetwork')
-  {
-    det := 'SN';
-  }
   if ((det <> 'rdfSink') and (__proc_exists ('DB.DBA.' || det || '_DAV_AUTHENTICATE_HTTP') is null))
   {
     DB.DBA.DAV_SET_HTTP_STATUS (400);
@@ -187,7 +183,7 @@ create function DB.DBA.DAV_DET_PROPPATCH (
     det_params := vector_concat (det_params, vector (dpn, dpv));
   }
 
-  if (det in ('Box', 'Dropbox', 'SkyDrive', 'GDrive', 'SN'))
+  if (det in ('Box', 'Dropbox', 'SkyDrive', 'GDrive'))
   {
     declare expire_in integer;
     declare expire_time datetime;
@@ -202,8 +198,6 @@ create function DB.DBA.DAV_DET_PROPPATCH (
       service_name := 'google';
     else if (det = 'Box')
       service_name := 'boxnet';
-    else if (det = 'SN')
-      service_name := get_keyword ('det_network', det_params);
     else
       service_name := lcase (det);
 
@@ -251,11 +245,6 @@ create function DB.DBA.DAV_DET_PROPPATCH (
     {
       det_params := vector_concat (det_params, vector ('sid', service_sid));
       det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
-    }
-    -- SN
-    else if (det in ('SN'))
-    {
-      det_params := vector_concat (det_params, vector ('sid', service_sid));
     }
   }
 
