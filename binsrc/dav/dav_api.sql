@@ -1674,19 +1674,9 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   declare _perms, a_gid any;
   declare webid, serviceId varchar;
 
-  webid := null;
-  serviceId := null;
-
-
   if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
     return a_uid;
 
-
-  -- Normalize the service variables for error handling in VAL
-  if (not webid is null and serviceId is null)
-  {
-    serviceId := webid;
-  }
 
   -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
@@ -5377,8 +5367,6 @@ create trigger SYS_DAV_RES_LDI_AI after insert on WS.WS.SYS_DAV_RES order 110 re
   _newAcls := vector (N.RES_ACL);
   DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (N.RES_COL, 'C', _oldAcls, _newAcls);
 
-  -- ACIs
-  _acis := DB.DBA.DAV_DET_ACI_LOAD_ALL (N.RES_ID, 'R');
 
   _rdfParams := vector ('graph', WS.WS.DAV_IRI (N.RES_FULL_PATH), 'graphSecurityACI', _acis);
   DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
@@ -5424,8 +5412,6 @@ create trigger SYS_DAV_RES_LDI_AU after update (RES_FULL_PATH, RES_ID, RES_COL, 
   _newAcls := vector (N.RES_ACL);
   DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (O.RES_COL, 'C', _oldAcls, _newAcls);
 
-  -- ACIs
-  _acis := DB.DBA.DAV_DET_ACI_LOAD_ALL (O.RES_ID, 'R');
 
   _rdfParams := vector ('graph', WS.WS.DAV_IRI (O.RES_FULL_PATH), 'graphSecurityACI', _acis);
   DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
@@ -5466,8 +5452,6 @@ create trigger SYS_DAV_RES_LDI_AD after delete on WS.WS.SYS_DAV_RES order 110 re
   _newAcls := vector ();
   DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (O.RES_COL, 'C', _oldAcls, _newAcls);
 
-  -- ACIs
-  _acis := DB.DBA.DAV_DET_ACI_LOAD_ALL (O.RES_ID, 'R');
 
   _rdfParams := vector ('graph', WS.WS.DAV_IRI (O.RES_FULL_PATH), 'graphSecurityACI', _acis);
   DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
