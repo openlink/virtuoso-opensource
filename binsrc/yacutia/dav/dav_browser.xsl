@@ -165,6 +165,7 @@
               if (mode)
                 path := WEBDAV.DBA.dav_lpath (path);
 
+              path := WEBDAV.DBA.path_escape (path);
               params := self.vc_page.vc_event.ve_params;
               if (get_keyword ('sid', params, '') <> '')
                 parts := parts || '&sid=' || get_keyword ('sid', params);
@@ -1504,7 +1505,8 @@
                 vector ('column_#8', 'c6', 'Group',         1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 8), 0), ''),
                 vector ('column_#9', 'c7', 'Permissions',   0, 0, vector (WEBDAV.DBA.settings_column (self.settings, 9), 0), ''),
                 vector ('column_#10','c10','Date Created',  1, 1, vector (WEBDAV.DBA.settings_column (self.settings,10), 0), ''),
-                vector ('column_#11','c11','Date Added',    1, 1, vector (WEBDAV.DBA.settings_column (self.settings,11), 0), '')
+                vector ('column_#11','c11','Date Added',    1, 1, vector (WEBDAV.DBA.settings_column (self.settings,11), 0), ''),
+                vector ('column_#12','c12','Creator',       0, 0, vector (WEBDAV.DBA.settings_column (self.settings,12), 0), '')
               );
               self.dir_order := get_keyword ('ts_order', params, WEBDAV.DBA.settings_orderBy (self.settings));
               self.dir_direction := get_keyword ('ts_direction', params, WEBDAV.DBA.settings_orderDirection (self.settings));
@@ -1635,6 +1637,14 @@
               {
                 self.vc_error_message := VALIDATE.DBA.clear (tmp);
                 self.vc_is_valid := 0;
+              }
+              if (self.mode = 'webdav')
+              {
+                declare form vspx_form;
+
+                form := self.vc_find_control ('F1');
+                if (not isnull (form))
+                  form.uf_action := WEBDAV.DBA.path_escape (WEBDAV.DBA.dav_lpath (self.dir_path));
               }
             ]]>
           </v:after-data-bind>
@@ -1940,7 +1950,7 @@
                         if (WEBDAV.DBA.dav_get (_item, 'type') = 'R')
                         {
                           http_request_status ('HTTP/1.1 302 Found');
-                          http_header (sprintf ('Location: %s\r\n', WEBDAV.DBA.url_fix (_path, self.sid , self.realm)));
+                          http_header (sprintf ('Location: %s\r\n', WEBDAV.DBA.url_fix (WEBDAV.DBA.path_escape (_path), self.sid , self.realm)));
                           return;
                         }
                         self.dir_path := trim (_path, '/');
@@ -4112,7 +4122,7 @@
                     commit work;
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
                     {
-                      self.webdav_redirect (WEBDAV.DBA.path_parent (dav_fullPath, 1), 1, '');
+                      self.webdav_redirect (self.dir_path, 1, '');
                       return;
                     }
                     self.dav_action := '';
@@ -4126,7 +4136,7 @@
                   <![CDATA[
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
                     {
-                      self.webdav_redirect (WEBDAV.DBA.path_parent (self.dav_path, 1), 1, '');
+                      self.webdav_redirect (self.dir_path, 1, '');
                       return;
                     }
                     self.command_pop (null);
@@ -4142,7 +4152,7 @@
                   <![CDATA[
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
                     {
-                      self.webdav_redirect (WEBDAV.DBA.path_parent (self.dav_path, 1), 1, '');
+                      self.webdav_redirect (self.dir_path, 1, '');
                       return;
                     }
                     self.command_pop (null);
@@ -4273,7 +4283,7 @@
                       return;
                     }
                     self.command_pop (null);
-                    self.vc_data_bind (self.vc_page.vc_event);
+                    self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
               </v:button>
@@ -4286,7 +4296,7 @@
                       return;
                     }
                     self.command_pop (null);
-                    self.vc_data_bind (self.vc_page.vc_event);
+                    self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
               </v:button>
@@ -5127,7 +5137,7 @@
                     control.add_parameter (self.account_password);
 
 
-                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
+                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar, c12 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
                     if (self.dir_details = 0)
                     {
                       declare dir_order, dir_grouping any;
@@ -5256,6 +5266,7 @@
                                   <?vsp self.showColumnHeader('column_#11'); ?>
                                   <?vsp self.showColumnHeader('column_#5'); ?>
                                   <?vsp self.showColumnHeader('column_#6'); ?>
+                                  <?vsp self.showColumnHeader('column_#12'); ?>
                                   <?vsp self.showColumnHeader('column_#7'); ?>
                                   <?vsp self.showColumnHeader('column_#8'); ?>
                                   <?vsp self.showColumnHeader('column_#9'); ?>
@@ -5318,9 +5329,10 @@
                                 ?>
                                 <td nowrap="nowrap">
                                   <?vsp
-                                    declare id, click any;
+                                    declare id, typeName, click any;
 
                                     id := case when (rowset[1] = 'R') then sprintf ('id="%V"', path) else '' end;
+                                    typeName := case when (rowset[1] = 'R') then 'File' else 'Folder' end;
                                     if ((self.returnName <> '') and (self.returnType in ('res', 'both')) and (rowset[1] = 'R'))
                                     {
                                       click := sprintf ('onclick="javascript: $(\'item_name\').value = \'%s\'; return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
@@ -5330,7 +5342,7 @@
                                       click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
                                             || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
                                     }
-                                    http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                    http (sprintf ('<a %s href="%s" %s title="%s - %V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, typeName, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
                                     <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
@@ -5404,6 +5416,11 @@
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#6')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9]" />
+                                  </td>
+                                </v:template>
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#12')">
+                                  <td nowrap="nowrap">
+                                    <?vsp http (WEBDAV.DBA.ui_creator ((control.vc_parent as vspx_row_template).te_rowset[12])); ?>
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#7')">
