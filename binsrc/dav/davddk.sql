@@ -29,7 +29,7 @@ create table WS.WS.SYS_DAV_COL
 (
   COL_ID              integer,
   COL_NAME            varchar (256),
-  COL_CREATOR         IRI_ID,
+  COL_CREATOR         IRI_ID_8,
   COL_OWNER           integer,
   COL_GROUP           integer,
   COL_PARENT          integer,
@@ -70,16 +70,17 @@ alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
 alter table WS.WS.SYS_DAV_COL add COL_ADD_TIME datetime
 ;
 
-alter table WS.WS.SYS_DAV_COL add COL_CREATOR IRI_ID
-;
 --#ENDIF
+
+alter table WS.WS.SYS_DAV_COL add COL_CREATOR IRI_ID_8
+;
 
 -- WebDAV Resource
 create table WS.WS.SYS_DAV_RES
 (
   RES_ID              integer,
   RES_NAME            varchar (256),
-  RES_CREATOR         IRI_ID,
+  RES_CREATOR         IRI_ID_8,
   RES_OWNER           integer,
   RES_GROUP           integer,
   RES_COL             integer,
@@ -125,10 +126,11 @@ alter table WS.WS.SYS_DAV_RES add RES_SIZE integer
 alter table WS.WS.SYS_DAV_RES add RES_ADD_TIME datetime
 ;
 
-alter table WS.WS.SYS_DAV_RES add RES_CREATOR IRI_ID
+--#ENDIF
+
+alter table WS.WS.SYS_DAV_RES add RES_CREATOR IRI_ID_8
 ;
 
---#ENDIF
 --__ddl_changed ('WS.WS.SYS_DAV_RES')
 --;
 
