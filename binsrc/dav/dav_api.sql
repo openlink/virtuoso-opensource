@@ -1983,6 +1983,9 @@ _check_extented:;
       a_perms := i_perms;
       return a_uid;
     }
+
+    if (not a_save and i_serviceID is null)
+      return rc;
   }
 
   -- If the user already provided some kind of credentials we return a 403 code
