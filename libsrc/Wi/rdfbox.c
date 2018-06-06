@@ -2955,7 +2955,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
       int ctr;
       caddr_t *tmp;
 /*INDENT-OFF*/
-      tmp = (caddr_t *)list (30*2,
+      tmp = (caddr_t *) list (31 * 2,
         "text/rdf+n3"				, "TTL"			, /*  0 */
         "text/rdf+ttl"				, "TTL"			, /*  1 */
         "text/rdf+turtle"			, "TTL"			, /*  2 */
@@ -2967,12 +2967,12 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/json"			, "JSON"		, /*  8 */
         "application/soap+xml"			, "SOAP"		, /*  9 */
         "application/soap+xml;11"		, "SOAP"		, /* 10 */
-        "application/sparql-results+xml"		, "XML"			, /* 11 */
+        "application/sparql-results+xml"	, "XML"			, /* 11 */
         "text/html"				, "HTML"		, /* 12 */
         "application/vnd.ms-excel"		, "HTML"		, /* 13 */
         "application/javascript"		, "JS"			, /* 14 */
         "application/rdf+json"			, "JSON;TALIS"		, /* 15 */
-        "application/x-rdf+json"			, "JSON;TALIS"		, /* 16 */
+        "application/x-rdf+json"		, "JSON;TALIS"		, /* 16 */
         "application/rdf+xml"			, "RDFXML"		, /* 17 */
         "application/atom+xml"			, "ATOM;XML"		, /* 18 */
         "application/odata+json"		, "JSON;ODATA"		, /* 19 */
@@ -2985,7 +2985,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/tab-separated-values"		, "TSV"			, /* 26 */
         "application/x-nice-turtle"		, "NICE_TTL"		, /* 27 */
         "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	, /* 28 */
-        "text/x-html+tr"				, "HTML;TR"		); /* 29 Increase count in this list() call when add more MIME types! */
+	"text/x-html+tr"			, "HTML;TR"		, /* 29 */
+	"application/n-triples"			, "NT"			/* 30 */
+	  );			/* Increase count in this list() call when add more MIME types! */
 /*INDENT-ON*/
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
@@ -2996,8 +2998,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
       int ctr;
       caddr_t *tmp;
 /*INDENT-OFF*/
-      tmp = (caddr_t *)list (42*2,
-        "application/x-trig"			, "TRIG"		, /*  0 */
+      tmp = (caddr_t *) list (43 * 2,
+	"application/x-trig"			, "TRIG"		, /*  0 */
         "text/rdf+n3"				, "TTL"			, /*  1 */
         "text/rdf+ttl"				, "TTL"			, /*  2 */
         "text/rdf+turtle"			, "TTL"			, /*  3 */
@@ -3007,7 +3009,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/x-turtle"			, "TTL"			, /*  7 */
         "application/json"			, "JSON"		, /*  8 */
         "application/rdf+json"			, "JSON;TALIS"		, /*  9 */
-        "application/x-rdf+json"			, "JSON;TALIS"		, /* 10 */
+        "application/x-rdf+json"		, "JSON;TALIS"		, /* 10 */
         "application/soap+xml;11"		, "SOAP"		, /* 11 */
         "application/soap+xml"			, "SOAP"		, /* 12 */
         "application/rdf+xml"			, "RDFXML"		, /* 13 */
@@ -3020,11 +3022,11 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/javascript"		, "JS"			, /* 20 */
         "application/atom+xml"			, "ATOM;XML"		, /* 21 */
         "application/odata+json"		, "JSON;ODATA"		, /* 22 */
-        "application/sparql-results+xml"		, "XML"			, /* 23 */
+        "application/sparql-results+xml"	, "XML"			, /* 23 */
         "text/cxml+qrcode"			, "CXML;QRCODE"		, /* 24 */
         "text/cxml"				, "CXML"		, /* 25 */
-        "text/x-html+ul"				, "HTML;UL"		, /* 26 */
-        "text/x-html+tr"				, "HTML;TR"		, /* 27 */
+        "text/x-html+ul"			, "HTML;UL"		, /* 26 */
+        "text/x-html+tr"			, "HTML;TR"		, /* 27 */
         "text/md+html"				, "HTML;MICRODATA"	, /* 28 */
         "text/microdata+html"			, "HTML;MICRODATA"	, /* 29 */
         "application/microdata+json"		, "JSON;MICRODATA"	, /* 30 */
@@ -3038,7 +3040,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/x-nice-microdata"		, "HTML;NICE_MICRODATA"	, /* 38 */
         "text/x-html-script-ld+json"		, "HTML;SCRIPT_LD_JSON"	, /* 39 */
         "text/x-html-script-turtle"		, "HTML;SCRIPT_TTL"	, /* 40 */
-        "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	/* 41 Increase count in this list() call when add more MIME types! */
+	"text/x-html-nice-turtle"		, "HTML;NICE_TTL"	, /* 41 */
+	"application/n-triples"			, "NT"			  /* 42  Increase count in this list() call when add more MIME types! */
         );
 /*INDENT-ON*/
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
