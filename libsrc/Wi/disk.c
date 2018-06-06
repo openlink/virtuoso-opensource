@@ -648,9 +648,9 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
   buffer_desc_t * buf;
   dk_hash_iterator_t hit;
   if (!it)
-    return;
+    return 0;
   if (it->it_hi && it_hi_done (it))
-    return;  /* a reusable hash temp ref dropped */
+    return 0;			/* a reusable hash temp ref dropped */
   TC (tc_it_temp_free);
   if (it->it_hi_signature)
     GPF_T1 ("freeing hash without invalidating it first");
@@ -663,7 +663,9 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
       if (n < 0) GPF_T1 ("neg ref count of oby temp");
       LEAVE_HIC;
       if (n)
-	return;
+	{
+	  return 0;
+	}
     }
   ITC_INIT (itc, NULL, NULL);
   itc_from_it (itc, it);
@@ -738,6 +740,7 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
       if (!resource_store (it_rc, (void*) it))
 	it_free (it);
     }
+  return 1;
 }
 
 
