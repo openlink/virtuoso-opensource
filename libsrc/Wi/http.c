@@ -4253,6 +4253,8 @@ do_file:
 	      else
 		ws->ws_params = (caddr_t *) dk_alloc_box (0, DV_ARRAY_OF_POINTER);
 	      strses_flush (ws->ws_strses);
+	      if (err)
+		dk_free_tree (err);
 	      goto request_do_again;
 	    }
 	}
