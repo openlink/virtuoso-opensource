@@ -7447,7 +7447,7 @@ bif_http_output_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_output_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * strses = bif_strses_arg (qst, args, 0, "string_output_string");
+  dk_session_t *strses = bif_strses_arg (qst, args, 0, "string_output_string");
   if (!STRSES_CAN_BE_STRING (strses))
     {
       *err_ret = STRSES_LENGTH_ERROR ("string_output_string");
@@ -10248,11 +10248,6 @@ bif_http_acl_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return http_acl (qst, err_ret, args, ACL_DEL, "http_acl_remove");
 }
-
-/* sqlprt.c */
-void trset_start (caddr_t *qst);
-void trset_printf (const char *str, ...);
-void trset_end (void);
 
 static void
 http_acl_stats ()
