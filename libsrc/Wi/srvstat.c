@@ -418,6 +418,8 @@ extern int32 c_pcre_match_limit;
 extern int32 c_pcre_match_limit_recursion;
 extern int32 pcre_max_cache_sz;
 
+extern int32 shcompo_max_cache_sz;
+
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
 void trset_end ();
@@ -1924,6 +1926,7 @@ stat_desc_t dbf_descs [] =
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
+  {"shcompo_max_cache_sz", &shcompo_max_cache_sz, SD_INT32},
     {"enable_qr_comment", &enable_qr_comment, SD_INT32},
     {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
     {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
