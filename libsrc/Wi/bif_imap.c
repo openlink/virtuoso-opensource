@@ -560,7 +560,7 @@ command_start:
 		    SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		    goto logout;
 		  }
-		session_flush_1 (msg2);
+	      session_flush (msg2);
 		if (tcpses_check_disk_error (msg2, NULL, 0))
 		  {
 		    strcpy_ck (err_text, "Server error in accessing temp file");
@@ -814,7 +814,7 @@ command_start:
 			    break;
 			  }
 		      }
-		    session_flush_1 (msg);
+		  session_flush (msg);
 		    if (tcpses_check_disk_error (msg, NULL, 0))
 		      {
 			strcpy_ck (err_text, "Server error in accessing temp file");
@@ -1044,14 +1044,13 @@ bif_imap_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t addr = bif_string_arg (qst, args, 0, "imap_get");
   caddr_t user = bif_string_arg (qst, args, 1, "imap_get");
   caddr_t pass = bif_string_arg (qst, args, 2, "imap_get");
-  caddr_t ret = NULL;
   caddr_t mode = "";
   uint32 time_out = 100;
   int time_out_is_null = 1;
   caddr_t err = NULL, fetch_flags = NULL;
   long cert = 0;
   dk_set_t volatile uidl_mes = NULL;
-  IO_SECT (qst);
+
   if (BOX_ELEMENTS (args) > 3)
     mode = bif_string_arg (qst, args, 3, "imap_get");
   if (BOX_ELEMENTS (args) > 4)
@@ -1068,22 +1067,28 @@ bif_imap_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     fetch_flags = bif_string_or_null_arg (qst, args, 7, "imap_get");
   if (BOX_ELEMENTS (args) > 8)
     time_out = (uint32) bif_long_or_null_arg (qst, args, 8, "imap_get", &time_out_is_null);
+
+  IO_SECT (qst);
   imap_get (addr, &err, user, pass, mode, (dk_set_t *) & uidl_mes, folder_id, in_uidl, qst, cert, fetch_flags, time_out,
       time_out_is_null, NULL, NULL);
   if (err)
     {
-      dk_free_tree (list_to_array (uidl_mes));
+      while (uidl_mes)
+	dk_free_tree ((caddr_t) (dk_set_pop (&uidl_mes)));
       uidl_mes = NULL;
       sqlr_resignal (err);
     }
-  END_IO_SECT (err_ret);
-  ret = list_to_array (dk_set_nreverse (uidl_mes));
-  if (*err_ret)
+  END_IO_SECT (&err);
+  if (err)
     {
-      dk_free_tree (ret);
-      ret = NULL;
+      while (uidl_mes)
+	dk_free_tree ((caddr_t) (dk_set_pop (&uidl_mes)));
+      if (NULL == err_ret)
+	sqlr_resignal (err);
+      err_ret[0] = err;
+      return NULL;
     }
-  return ret;
+  return list_to_array (dk_set_nreverse (uidl_mes));
 }
 
 void
