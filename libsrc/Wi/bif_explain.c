@@ -227,7 +227,8 @@ dv_iri_short_name (caddr_t x)
     return NULL;
   if (iri_split (name, &pref, &local))
     {
-      int len = box_length (local);
+      int len = box_length (local) - 4 /* Remember that 4 bytes of \c local is placeholder for encoding namespace prefix */ ;
+      char *pure_local = local + 4;	/* that 4 bytes, yeah */
       int inx = len - 2;
       int best_inx = 0;
       caddr_t r;
@@ -239,26 +240,29 @@ dv_iri_short_name (caddr_t x)
 	    {
 	      if ((inx <= 7) || (inx < len - 20))
 		goto inx_too_small;
-	      if (!((':' == local[inx]) || ('/' == local[inx]) || ('#' == local[inx])))
+	      if (!((':' == pure_local[inx]) || ('/' == pure_local[inx]) || ('#' == pure_local[inx])))
 		break;
 	    }
 	  for (; inx >= 0; inx--)
 	    {
-	      if ((':' == local[inx]) || ('/' == local[inx]) || ('#' == local[inx]))
+	      if ((':' == pure_local[inx]) || ('/' == pure_local[inx]) || ('#' == pure_local[inx]))
 	  break;
 	      best_inx = inx;
 	    }
 	  if (inx <= 0)
 	    goto inx_too_small;
 	}
-      while (inx > len - 5);
+      while (inx > len - 10);
     inx_too_small:
-      r = box_dv_short_nchars (local + best_inx, box_length (local) - best_inx);
+      r = box_dv_short_nchars (pure_local + best_inx, len - best_inx);
       dk_free_box (local);
       return r;
     }
+  if (20 > strlen (name))
+    return name;
+  local = box_dv_short_nchars (name + strlen (name) - 20, 20);
   dk_free_box (name);
-  return NULL;
+  return local;
 }
 
 
