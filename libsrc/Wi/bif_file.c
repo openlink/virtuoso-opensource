@@ -42,8 +42,12 @@
 #include "security.h"
 #include "sqlbif.h"
 
-#ifdef __MINGW32__
-#define P_tmpdir _P_tmpdir
+#ifndef P_tmpdir
+# ifdef _P_tmpdir               /* native Windows */
+#  define P_tmpdir _P_tmpdir
+# else
+#  define P_tmpdir "/tmp"
+# endif
 #endif
 
 #define UUID_T_DEFINED
