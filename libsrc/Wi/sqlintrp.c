@@ -2667,17 +2667,18 @@ again:
       POP_QR_RESET;
       if (reset_code == RST_ERROR || reset_code == RST_DEADLOCK)
 	{
-	  caddr_t err = ((RST_ERROR == reset_code) ? thr_get_error_code (qi->qi_thread)
-	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.") );
+	caddr_t err;
 	  CHECK_DK_MEM_RESERVE (qi->qi_trx);
 	  CHECK_SESSION_DEAD(qi->qi_trx, NULL, NULL);
-	  if (qi->qi_trx->lt_status != LT_PENDING && (
-		qi->qi_trx->lt_error == LTE_TIMEOUT ||
-		qi->qi_trx->lt_error == LTE_OUT_OF_MEM))
+	err = ((RST_ERROR == reset_code) ? thr_get_error_code (qi->qi_thread) : srv_make_new_error ("40001", "SR...",
+		"Transaction deadlock, from SQL built-in function."));
+	if (qi->qi_trx->lt_status != LT_PENDING && (qi->qi_trx->lt_error == LTE_TIMEOUT || qi->qi_trx->lt_error == LTE_OUT_OF_MEM))
 	    {
 	      sqlr_resignal (err);
 	    }
+	thr_set_error_code (qi->qi_thread, err);
 	  qi_check_trx_error (qi, NO_TRX_SIGNAL);
+	err = thr_get_error_code (qi->qi_thread);
 	  if (ins->ins_type == INS_CALL_BIF)
 	    {
 	      err_append_callstack_procname (err, ins->_.bif.proc, NULL, -1);

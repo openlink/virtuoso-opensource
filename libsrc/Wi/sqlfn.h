@@ -162,13 +162,12 @@ int err_is_anytime (caddr_t err);
 
 #define QI_CHECK_ANYTIME_RST(qi, reset_code) \
   if (RST_DEADLOCK == reset_code && (LT_PENDING == qi->qi_trx->lt_status || LT_FREEZE == qi->qi_trx->lt_status)) \
-    { reset_code = RST_ERROR; qi->qi_thread->thr_reset_code = srv_make_new_error (SQL_ANYTIME, "RC...", "Anytime in itc ctx"); }
+    { reset_code = RST_ERROR; thr_set_error_code (qi->qi_thread, srv_make_new_error (SQL_ANYTIME, "RC...", "Anytime in itc ctx")); }
 
 
 void qn_send_output (data_source_t * src, caddr_t * state);
 
-void qn_ts_send_output (data_source_t * src, caddr_t * state,
-    code_vec_t after_join_test);
+void qn_ts_send_output (data_source_t * src, caddr_t * state, code_vec_t after_join_test);
 
 void qr_resume_pending_nodes (query_t * subq, caddr_t * inst);
 caddr_t DBG_NAME(qi_handle_reset) (DBG_PARAMS  query_instance_t * qi, int reset, int *qi_is_killed_ret);

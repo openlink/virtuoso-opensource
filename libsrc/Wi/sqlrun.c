@@ -3842,8 +3842,7 @@ qr_anytime (query_t * qr, query_instance_t * qi, int reset_code)
   err = qi->qi_thread->thr_reset_code;
   if (!err_is_anytime (err))
     return;
-  qi->qi_thread->thr_reset_code = NULL;
-  dk_free_tree (err);
+  thr_set_error_code (qi->qi_thread, NULL);
   qi_qp_anytime (inst, qr);
   at_printf (("Anytime reset starts\n"));
   qi->qi_is_partial = 1;
@@ -3852,7 +3851,7 @@ qr_anytime (query_t * qr, query_instance_t * qi, int reset_code)
     {
       qr_resume_pending_nodes (qr, inst);
     }
-  qi->qi_thread->thr_reset_code = cli_anytime_error (qi->qi_client);
+  thr_set_error_code (qi->qi_thread, cli_anytime_error (qi->qi_client));
 }
 
 
