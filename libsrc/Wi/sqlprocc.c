@@ -71,8 +71,13 @@ sql_warning_add (caddr_t err, int is_comp)
     return;
 
 #ifndef NDEBUG
-  if (!IS_BOX_POINTER (err) || BOX_ELEMENTS (err) != 3)
+#ifdef SIGNAL_DEBUG
+  if (DV_ERROR_REPORT != DV_TYPE_OF (err))
     GPF_T1("invalid warning text");
+#else
+  if (!IS_BOX_POINTER (err) || BOX_ELEMENTS (err) < 3)
+    GPF_T1 ("invalid warning text");
+#endif
 #endif
 
   if (sql_warning_mode == SQW_OFF
