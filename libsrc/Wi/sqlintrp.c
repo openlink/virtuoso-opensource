@@ -610,7 +610,8 @@ ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec, &vec_defaults);
 		itc_free (ins_itc);
 	      result_qst[ha->ha_insert_itc->ssl_index] = NULL;
 	    }
-	  else log_error ("result_qst is null");
+	  else
+ 	    log_error ("result_qst is null");
 	}
       PROC_RESTORE_SAVED;
     }
@@ -814,12 +815,17 @@ ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t
     dk_free_box ((caddr_t)vec_defaults);
   if (CV_CALL_PROC_TABLE == ins->_.call.ret)
     {
-      hash_area_t *ha = (hash_area_t *)cli->cli_result_ts;
-      caddr_t *result_qst = (caddr_t *)cli->cli_result_qi;
-      it_cursor_t *ins_itc = (it_cursor_t *) result_qst[ha->ha_insert_itc->ssl_index];
-      if (ins_itc)
-	itc_free (ins_itc);
-      result_qst [ha->ha_insert_itc->ssl_index] = NULL;
+      hash_area_t *ha = (hash_area_t *) cli->cli_result_ts;
+      caddr_t *result_qst = (caddr_t *) cli->cli_result_qi;
+      if (result_qst)
+	{
+	  it_cursor_t *ins_itc = (it_cursor_t *) result_qst[ha->ha_insert_itc->ssl_index];
+	  if (ins_itc)
+	    itc_free (ins_itc);
+	  result_qst[ha->ha_insert_itc->ssl_index] = NULL;
+	}
+      else
+	log_error ("result_qst is null");
       PROC_RESTORE_SAVED;
     }
   BOX_DONE (pars, pars_auto);
@@ -3139,7 +3145,7 @@ ins_vec_agg_ord_distinct (instruction_t * ins, caddr_t * inst)
     {
       for (inx = 0; inx < n_sets; inx++)
 	{
-	  uint64 hno = *(int64*) (arg_dc->dc_values + DT_LENGTH * inx); 
+	  uint64 hno = *(int64*) (arg_dc->dc_values + DT_LENGTH * inx);
 	    ctr += prev_hno != hno;
 	    prev_hno = hno;
 	}
