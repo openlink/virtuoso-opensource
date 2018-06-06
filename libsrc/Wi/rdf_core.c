@@ -2307,8 +2307,17 @@ iri_split_ttl_qname_impl (const char * iri, caddr_t * pref_ret, caddr_t * name_r
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       unsigned char c = (unsigned char) tail[-1];
-      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80) && !(flag == SPLIT_MODE_XML && '.' == c))
+      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(flag == SPLIT_MODE_XML && '.' == c))
+        {
+          char *prev_utf8_head;
+          if (!(c & 0x80))
         break;
+          prev_utf8_head = tail-1;
+          while ((prev_utf8_head > iri) && IS_UTF8_CHAR_CONT (prev_utf8_head[0])) prev_utf8_head--;
+          if (!utf8_is_pn_chars_base (prev_utf8_head, tail))
+            break;
+          tail = prev_utf8_head;
+        }
     }
   if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
     tail = iri + iri_strlen;
@@ -3039,6 +3048,28 @@ uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connection_t * cli)
 	  dk_free_box (host);
         }
   return name;
+}
+
+int
+utf8_is_pn_chars_base (const char *head, const char *pasttail)
+{
+  const char *rest = head;
+  unichar uchr = eh_decode_char__UTF8 (&rest, pasttail);
+  if (rest != pasttail)
+    return 0;			/* encoding error resulting in too many UTF-8 continuation characters like in case of C0 BF BF BF BF BF BF */
+#define ret_1_if_in_range(uchr,a,b) do { if (((a) >= (uchr)) && ((b) <= (uchr))) return 1; } while (0)
+  ret_1_if_in_range (uchr, 0x00C0, 0x00D6);
+  ret_1_if_in_range (uchr, 0x00F8, 0x02FF);
+  ret_1_if_in_range (uchr, 0x0370, 0x037D);
+  ret_1_if_in_range (uchr, 0x037F, 0x1FFF);
+  ret_1_if_in_range (uchr, 0x200C, 0x200D);
+  ret_1_if_in_range (uchr, 0x2070, 0x218F);
+  ret_1_if_in_range (uchr, 0x2C00, 0x2FEF);
+  ret_1_if_in_range (uchr, 0x3001, 0xD7FF);
+  ret_1_if_in_range (uchr, 0xF900, 0xFDCF);
+  ret_1_if_in_range (uchr, 0xFDF0, 0xFFFD);
+  ret_1_if_in_range (uchr, 0x10000, 0xEFFFF);
+  return 0;
 }
 
 caddr_t

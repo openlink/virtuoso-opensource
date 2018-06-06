@@ -2795,8 +2795,17 @@ iri_cast_and_split_ttl_qname_impl (query_instance_t *qi, caddr_t iri, caddr_t *n
             for (tail = local + local_len; tail > local; tail--)
               {
                 unsigned char c = (unsigned char) tail[-1];
-                if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80) && !(flag == SPLIT_MODE_XML && '.' == c))
+                if (!isalnum(c) && ('_' != c) && ('-' != c) && !(flag == SPLIT_MODE_XML && '.' == c))
+                  {
+                    char *prev_utf8_head;
+                    if (!(c & 0x80))
+                      break;
+                    prev_utf8_head = tail-1;
+                    while ((prev_utf8_head > local) && IS_UTF8_CHAR_CONT (prev_utf8_head[0])) prev_utf8_head--;
+                    if (!utf8_is_pn_chars_base (prev_utf8_head, tail))
                   break;
+                    tail = prev_utf8_head;
+                  }
               }
             if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > local) && (NULL == strchr ("#/:?", tail[-1]))))
               tail = local + local_len;

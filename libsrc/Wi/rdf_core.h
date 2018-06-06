@@ -340,6 +340,8 @@ extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connect
 #define uriqa_dynamic_local_replace(name, cli) \
   (strncmp ((name), "local:", 6) ? (name) : uriqa_dynamic_local_replace_nocheck ((name), (cli)))
 
+extern int utf8_is_pn_chars_base (const char *head, const char *pasttail);
+
 /* if rb content longer than this, use md5 in rdf_obj table key */
 #define RB_BOX_HASH_MIN_LEN 50
 caddr_t mdigest5 (caddr_t str);
