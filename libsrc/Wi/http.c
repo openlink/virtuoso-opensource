@@ -9864,6 +9864,7 @@ static caddr_t
 bif_is_https_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
+  caddr_t xproto = NULL;
   int is_https = 0;
   ws_connection_t *ws = qi->qi_client->cli_ws;
 #ifdef _SSL
@@ -9876,6 +9877,12 @@ bif_is_https_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
   is_https = (NULL != ssl);
 #endif
+
+  if (ws && ws->ws_lines  && NULL != (xproto = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Proto", NULL, 1)))
+    if (!strcmp(xproto, "https"))
+       is_https = 1;
+  if (xproto) dk_free_box (xproto);
+
   return box_num(is_https ? 1 : 0);
 }
 
