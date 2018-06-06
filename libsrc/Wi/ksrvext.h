@@ -165,24 +165,33 @@ caddr_t bif_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, con
 void bif_result_inside_bif (int n, ...);
 
 
+#ifdef MALLOC_DEBUG
+#ifndef sqlr_error
+caddr_t dbg_srv_make_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...);
+void dbg_sqlr_error (const char *file, int line, const char *code, const char *msg, ...) NORETURN;
+void dbg_sqlr_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...) NORETURN;
+#define srv_make_new_error(code,virt_code,msg,...) dbg_srv_make_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
+#define sqlr_error(code,msg,...) dbg_sqlr_error (__FILE__, __LINE__, (code), (msg), ##__VA_ARGS__)
+#define sqlr_new_error(code,virt_code,msg,...) dbg_sqlr_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
+#endif
+#else
 caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
-void sqlr_error (const char *code, const char *msg,...) NORETURN;
+void sqlr_error (const char *code, const char *msg, ...) NORETURN;
 void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...) NORETURN;
+#endif
 void sqlr_resignal (caddr_t err) NORETURN;
 
-query_t * sql_compile (char *string2, client_connection_t * cli, caddr_t * err,
-    int store_procs);
+query_t *sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs);
 void qr_free_1 (query_t * qr);
 #ifdef MALLOC_DEBUG
-extern void dbg_qr_free (const char *f, int l,  query_t * qr);
+extern void dbg_qr_free (DBG_PARAMS query_t * qr);
 #define qr_free(qr) dbg_qr_free (__FILE__, __LINE__, (qr))
 #else
 extern void qr_free (query_t * qr);
 #endif
 
 caddr_t qr_rec_exec (query_t * qr, client_connection_t * cli,
-    local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts,
-    long n_pars, ...);
+    local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...);
 
 long lc_next (local_cursor_t * lc);
 caddr_t lc_nth_col (local_cursor_t * lc, int n);

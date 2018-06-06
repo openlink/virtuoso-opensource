@@ -1400,12 +1400,15 @@ sql_is_ddl (sql_tree_t * tree)
 
 #ifdef QUERY_DEBUG
 extern FILE *query_log;
+extern dk_mutex_t *query_log_mutex;
 
 void
 log_query_content (FILE *query_log, const char *title, query_t *qr)
  {
    char buf[200];
    char *eol;
+   if (NULL == qr)
+     return;
    if (NULL == qr->qr_text)
      {
        fprintf (query_log, " %s{{null}}", title);
@@ -1425,7 +1428,8 @@ log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt
   va_start (ap, fmt);
   if (NULL == cli)
     return;
-  fprintf (query_log, "\n{{{%p ", cli);
+  mutex_enter (query_log_mutex);
+  fprintf (query_log, "\n{{{CLI %p ", cli);
   vfprintf (query_log, fmt, ap);
   if (print_full_content)
     {
@@ -1441,6 +1445,7 @@ log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt
     fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
   fprintf (query_log, " }}}");
   fflush (query_log);
+  mutex_leave (query_log_mutex);
 }
 
 void
@@ -1449,9 +1454,8 @@ log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
   jmp_buf_splice *ctx;
   va_list ap;
   va_start (ap, fmt);
-  if (NULL == qr)
-    return;
-  fprintf (query_log, "\n{{{%p ", qr);
+  mutex_enter (query_log_mutex);
+  fprintf (query_log, "\n{{{QRY %p ", qr);
   vfprintf (query_log, fmt, ap);
   if (print_full_content)
     log_query_content (query_log, "", qr);
@@ -1459,6 +1463,7 @@ log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
     fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
   fprintf (query_log, " }}}");
   fflush (query_log);
+  mutex_leave (query_log_mutex);
 }
 #endif
 

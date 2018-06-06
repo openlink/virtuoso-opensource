@@ -3544,7 +3544,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = ((NULL == base_uri) ? uname___empty : base_uri);
   if (NULL == default_rdf_dtd_config)
     default_rdf_dtd_config = box_dv_short_string ("Validation=DISABLE SchemaDecl=DISABLE IdCache=DISABLE");

@@ -532,7 +532,7 @@ qi_inst_state_free (caddr_t * qi_box)
 }
 
 void
-sqlr_error (const char *code, const char *string, ...)
+DBG_NAME(sqlr_error) (DBG_PARAMS  const char *code, const char *string, ...)
 {
   du_thread_t * self;
   static char temp[2000];
@@ -542,7 +542,7 @@ sqlr_error (const char *code, const char *string, ...)
   va_start (list, string);
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
-  err = srv_make_new_error (code, "SR449", "%s", temp);
+  err = DBG_NAME (srv_make_new_error) (DBG_ARGS code, "SR449", "%s", temp);
   self = THREAD_CURRENT_THREAD;
   thr_set_error_code (self, err);
   CLAQ_UNWIND_CK;
@@ -551,7 +551,7 @@ sqlr_error (const char *code, const char *string, ...)
 
 
 void
-sqlr_new_error (const char *code, const char *virt_code, const char *string, ...)
+DBG_NAME(sqlr_new_error) (DBG_PARAMS  const char *code, const char *virt_code, const char *string, ...)
 {
   du_thread_t * self;
   static char temp[2000];
@@ -562,7 +562,7 @@ sqlr_new_error (const char *code, const char *virt_code, const char *string, ...
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
   temp[sizeof(temp)-1] = '\0';
-  err = srv_make_new_error (code, virt_code, "%s", temp);
+  err = DBG_NAME (srv_make_new_error) (DBG_ARGS code, virt_code, "%s", temp);
   self = THREAD_CURRENT_THREAD;
   thr_set_error_code (self, err);
   CLAQ_UNWIND_CK;
@@ -3870,7 +3870,7 @@ qi_txn_code (int rc, query_instance_t * caller, caddr_t detail)
 
 
 caddr_t
-DBG_NAME (qi_handle_reset) (DBG_PARAMS query_instance_t * qi, int reset, int *qi_is_killed_ret)
+DBG_NAME(qi_handle_reset) (DBG_PARAMS  query_instance_t * qi, int reset, int *qi_is_killed_ret)
 {
   /* Handle a reset into qr_exec or qr_more. Prime thread only */
   query_instance_t *caller;
@@ -3886,7 +3886,7 @@ DBG_NAME (qi_handle_reset) (DBG_PARAMS query_instance_t * qi, int reset, int *qi
     {
     case RST_KILLED:
       {
-	err = srv_make_new_error ("HY008", "SR203",
+	err = DBG_NAME(srv_make_new_error) (DBG_ARGS "HY008", "SR203",
 	    "Async statement killed by SQLCancel.%s%s",
 	    detail ? " : " : "",
 	    detail ? detail : "");
@@ -3955,6 +3955,10 @@ DBG_NAME (qi_handle_reset) (DBG_PARAMS query_instance_t * qi, int reset, int *qi
       dbg_printf (("Freak reset code %d.\n", reset));
     }
   dk_free_box (detail);
+#ifdef SIGNAL_DEBUG
+  if (ERROR_REPORT_P (err))
+    log_error_report_event (err, 0, "QI_HANDLE_RESET at %s:%d", file, line);
+#endif
   return err;
 }
 
@@ -4356,6 +4360,10 @@ DBG_NAME(qr_exec) (DBG_PARAMS  client_connection_t * cli, query_t * qr,
         list_wired_buffers (__FILE__, __LINE__, "qr_exec finish (error on run, no stmt, no lc_ret, no qi_kill at time)");
 #endif
       }
+#ifdef SIGNAL_DEBUG
+    if (ERROR_REPORT_P(res))
+      log_error_report_event (res, 0, "QR_EXEC at %s:%d", file, line);
+#endif
     return res;
   }
   END_QR_RESET;
@@ -4841,7 +4849,7 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
           qi->qi_threads = 0;
 #ifndef NDEBUG
           if (NULL == lc)
-            GPF_T1 ("qi leak in qr_subq_exec_vec");
+            GPF_T1 ("qi leak in qr_subq_exec");
 #endif
         }
     }
@@ -5041,7 +5049,7 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
           qi->qi_threads = 0;
 #ifndef NDEBUG
           if (NULL == lc)
-            GPF_T1 ("qi leak in qr_subq_exec");
+            GPF_T1 ("qi leak in qr_subq_exec_vec");
 #endif
         }
     }
@@ -5547,4 +5555,37 @@ qr_rec_exec (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret,
     lc_free (lc);
   return ret;
 }
+#endif
+
+#ifdef MALLOC_DEBUG
+#undef sqlr_new_error
+void
+sqlr_new_error (const char *code, const char *virt_code, const char *string, ...)
+{
+  static char temp[2000];
+  va_list list;
+  caddr_t err;
+  ASSERT_OUTSIDE_TXN;
+  va_start (list, string);
+  vsnprintf (temp, sizeof (temp), string, list);
+  va_end (list);
+  temp[sizeof (temp) - 1] = '\0';
+  dbg_sqlr_new_error (__FILE__, __LINE__, code, virt_code, "%s", temp);
+}
+
+#undef sqlr_error
+void
+sqlr_error (const char *code, const char *string, ...)
+{
+  static char temp[2000];
+  va_list list;
+  caddr_t err;
+  ASSERT_OUTSIDE_TXN;
+  va_start (list, string);
+  vsnprintf (temp, sizeof (temp), string, list);
+  va_end (list);
+  temp[sizeof (temp) - 1] = '\0';
+  dbg_sqlr_error (__FILE__, __LINE__, code, "%s", temp);
+}
+
 #endif

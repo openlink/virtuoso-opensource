@@ -225,17 +225,17 @@ hi_alloc_elements (hash_index_t *hi)
 
 
 hash_index_t *
-hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
+DBG_NAME (hi_allocate) (DBG_PARAMS unsigned int32 sz, int use_memcache, hash_area_t * ha)
 {
-  NEW_VARZ (hash_index_t, hi);
+  hash_index_t *hi = DK_ALLOC (sizeof (hash_index_t));
+  memzero (hi, sizeof (hash_index_t));
   if ((HA_FILL == ha->ha_op && enable_chash_join && ha->ha_ch_len)
       || (HA_GROUP == ha->ha_op && HI_CHASH == use_memcache && ha->ha_ch_len))
     return hi;
   if (!sz)
     sz = HI_INIT_SIZE;
   hi->hi_size = sz;
-  if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size)
-      || ha->ha_memcache_only)
+  if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size) || ha->ha_memcache_only)
     {
       if (HA_FILL == ha->ha_op || HI_CHASH == use_memcache || ha->ha_memcache_only)
 	{

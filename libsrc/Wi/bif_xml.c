@@ -41,7 +41,7 @@
 #include "libutil.h"
 #include "srvmultibyte.h"
 #include "multibyte.h"
-
+#include "sqlfn.h"
 #include "xml.h"
 #include "http.h"
 #include "xmltree.h"
@@ -788,7 +788,7 @@ make_tree:
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = uname___empty;
   config.root_lang_handler = lh;
   parser = VXmlParserCreate (&config);
@@ -942,7 +942,7 @@ make_tree:
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = uname___empty;
   config.root_lang_handler = lh;
   parser = VXmlParserCreate (&config);
@@ -1591,7 +1591,7 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = ((NULL == uri) ? uname___empty : uri);
   config.dtd_config = dtd_config;
   config.root_lang_handler = lh;
@@ -3036,7 +3036,7 @@ bif_xml_validate_dtd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
       config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
       config.initial_src_enc_name = enc;
       config.dtd_config = dtd_config;
       config.uri = ((NULL == uri) ? uname___empty : uri);
@@ -3105,7 +3105,7 @@ void shuric_parse_text__xmlschema (shuric_t *shuric, caddr_t uri_text_content, q
 	  config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
 	  config.uri_reader = (VXmlUriReader) xml_uri_get;
 	  config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-	  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+	  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
 	  config.initial_src_enc_name = "UTF-8";
 	  config.dtd_config = xmlschema_dflt_config;
 	  config.uri = shuric->shuric_uri;
@@ -3251,7 +3251,7 @@ bif_xml_load_schema_decl_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
       config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
       config.initial_src_enc_name = enc;
       if (NULL == dtd_config)
         dtd_config = xmlschema_dflt_config;
@@ -3570,7 +3570,7 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
       config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
       config.initial_src_enc_name = enc;
       config.dtd_config = dtd_config;
       config.uri = ((NULL == uri) ? uname___empty : uri);

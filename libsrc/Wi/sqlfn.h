@@ -397,12 +397,6 @@ extern server_lock_t server_lock;
 
 void plh_free (placeholder_t * plh);
 
-EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_code, const char *msg,...));
-#ifndef _USRDLL
-#ifdef __GNUC__
-caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...) __attribute__ ((format (printf, 3, 4)));
-#endif
-#endif
 EXE_EXPORT (void, qi_enter, (query_instance_t * qi));
 EXE_EXPORT (void, qi_leave, (query_instance_t * qi));
 
@@ -516,17 +510,31 @@ int qi_kill (query_instance_t * qi, int is_error);
 
 void qi_detach_from_stmt (query_instance_t * qi);
 
+EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_code, const char *msg,...));
 EXE_EXPORT (void, sqlr_error, (const char * code, const char * msg, ...));
 EXE_EXPORT (void, sqlr_new_error, (const char *code, const char *virt_code, const char *msg, ...));
+
 #ifdef __GNUC__
-extern void sqlr_error (const char * code, const char * msg, ...) __attribute__ ((format (printf, 2, 3))) NORETURN;
-extern void sqlr_new_error (const char *code, const char *virt_code, const char *msg, ...) __attribute__ ((format (printf, 3, 4))) NORETURN;
+extern caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg, ...)
+    __attribute__ ((format (printf, 3, 4)));
+extern void sqlr_error (const char * code, const char * msg, ...)
+    __attribute__ ((format (printf, 2, 3))) NORETURN;
+extern void sqlr_new_error (const char *code, const char *virt_code, const char *msg, ...)
+    __attribute__ ((format (printf, 3, 4))) NORETURN;
 #endif
 
-void sqlr_warning (const char *code, const char *virt_code, const char *msg, ...);
-#ifdef __GNUC__
-void sqlr_warning (const char *code, const char *virt_code, const char *msg, ...) __attribute__ ((format (printf, 3, 4)));
+#ifdef MALLOC_DEBUG
+#ifndef sqlr_error
+extern caddr_t dbg_srv_make_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...);
+extern void dbg_sqlr_error (const char *file, int line, const char *code, const char *msg, ...) NORETURN;
+extern void dbg_sqlr_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...) NORETURN;
+#define srv_make_new_error(code,virt_code,msg,...) dbg_srv_make_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
+#define sqlr_error(code,msg,...) dbg_sqlr_error (__FILE__, __LINE__, (code), (msg), ##__VA_ARGS__)
+#define sqlr_new_error(code,virt_code,msg,...) dbg_sqlr_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
 #endif
+#endif
+
+void sqlr_trx_error (lock_trx_t * lt, int lt_status, int lt_code, const char *code, const char *virt_code, const char *string, ...);
 void sqlc_warning (const char *code, const char *virt_code, const char *msg, ...);
 #ifdef __GNUC__
 void sqlc_warning (const char *code, const char *virt_code, const char *msg, ...) __attribute__ ((format (printf, 3, 4)));
@@ -1152,9 +1160,14 @@ void srv_global_unlock (client_connection_t *cli, lock_trx_t *lt);
 
 
 /* hash.c */
-uint32 key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * collation, dtp_t col_dtp, int allow_shorten_any);
+uint32 key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int *var_len, collation_t * collation, dtp_t col_dtp, int allow_shorten_any);
 caddr_t hash_cast (query_instance_t * qi, hash_area_t * ha, int inx, state_slot_t * ssl, caddr_t data);
-hash_index_t * hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha);
+
+hash_index_t * DBG_NAME (hi_allocate) (DBG_PARAMS unsigned int32 sz, int use_memcache, hash_area_t * ha);
+#ifdef MALLOC_DEBUG
+#define hi_allocate(sz,use_memcache,ha) dbg_hi_allocate (__FILE__, __LINE__, (sz), (use_memcache), (ha))
+#endif
+
 int it_hi_done (index_tree_t * it);
 index_tree_t * qst_tree (caddr_t * inst, state_slot_t * ssl, state_slot_t * set_no_ssl);
 void qst_set_tree (caddr_t * inst, state_slot_t * ssl, state_slot_t * set_no_ssl, index_tree_t * tree);
@@ -1403,8 +1416,7 @@ void sparql_init (void);
 
 query_instance_t * qi_top_qi (query_instance_t * qi);
 void fun_ref_set_defaults_and_counts (fun_ref_node_t *fref, caddr_t * inst);
-caddr_t * DBG_NAME (qi_alloc) (DBG_PARAMS  query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
-		    int auto_qi_len, int n_sets);
+caddr_t * DBG_NAME (qi_alloc) (DBG_PARAMS  query_t * qr, stmt_options_t * opts, caddr_t * auto_qi, int auto_qi_len, int n_sets);
 #ifdef MALLOC_DEBUG
 #define qi_alloc(qr,opts,auto_qi,auto_qi_len,n_sets) dbg_qi_alloc(__FILE__, __LINE__, (qr),(opts),(auto_qi),(auto_qi_len),(n_sets))
 #endif
@@ -1548,6 +1560,12 @@ void sslr_n_consec_ref (caddr_t * inst, state_slot_ref_t * sslr, int * sets, int
 void dc_reset_array (caddr_t * inst, data_source_t * qn, state_slot_t ** ssls, int new_sz);
 
 void chash_init ();
+
+index_tree_t *DBG_NAME (cha_allocate) (DBG_PARAMS setp_node_t * setp, caddr_t * inst, int64 card);
+#ifdef MALLOC_DEBUG
+#define cha_allocate(setp,inst,card) dbg_cha_allocate (__FILE__, __LINE__, (setp), (inst), (card))
+#endif
+
 int setp_chash_group (setp_node_t * setp, caddr_t * inst);
 int setp_chash_distinct (setp_node_t * setp, caddr_t * inst);
 void chash_to_memcache (caddr_t * inst, index_tree_t * it, hash_area_t * ha);

@@ -4270,7 +4270,7 @@ srv_global_init (char *mode)
 
 
 caddr_t
-srv_make_new_error (const char *code, const char *virt_code, const char *msg, ...)
+DBG_NAME(srv_make_new_error) (DBG_PARAMS const char *code, const char *virt_code, const char *msg, ...)
 {
   char temp[2000];
   va_list list;
@@ -4279,8 +4279,12 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
 #endif
   int msg_len;
   int code_len = virt_code ? (int) strlen (virt_code) : 0;
-
-  caddr_t *box = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_ERROR_REPORT);
+  caddr_t res;
+#ifdef SIGNAL_DEBUG
+  jmp_buf_splice *ctx, *ctx_iter;
+  int ctx_ctr;
+#endif
+  caddr_t *box;
   va_start (list, msg);
   vsnprintf (temp, 2000, msg, list);
   va_end (list);
@@ -4288,18 +4292,34 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
 
   if (code[1] == 'Y')
     virtuoso_sleep (0, 10000);
-
-  {
     if ('S' == code[0] || '4' == code[0])
       {
         at_printf (("Host %d make err %s %s in %s\n", local_cll.cll_this_host, code, temp, cl_thr_stat ()));
       }
+#ifdef SIGNAL_DEBUG
+  ctx = THREAD_CURRENT_THREAD->thr_reset_ctx;
+  for (ctx_ctr = 0, ctx_iter = ctx; NULL != ctx_iter; ctx_ctr++, ctx_iter = ctx_iter->j_parent) { /*do nothing*/; }
+  box = (caddr_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS (3 + ctx_ctr*2) * sizeof (caddr_t), DV_ERROR_REPORT);
+  for (ctx_ctr = 0, ctx_iter = ctx; NULL != ctx_iter; ctx_ctr++, ctx_iter = ctx_iter->j_parent)
+    {
+      caddr_t file;
+      caddr_t line = box_num (ctx_iter->j_line);
+#ifdef MALLOC_DEBUG
+      file = dbg_box_dv_short_string (ctx_iter->j_file, ctx_iter->j_line, ctx_iter->j_file);
+#else
+      file = box_dv_short_string (ctx_iter->j_file);
+#endif
+      box [3+(ctx_ctr*2)] = file;
+      box [3+(ctx_ctr*2)+1] = line;
   }
+#else
+  box = (caddr_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS 3 * sizeof (caddr_t), DV_ERROR_REPORT);
+#endif
   box[0] = (caddr_t) QA_ERROR;
-  box[1] = box_dv_short_string (code);
+  box[1] = DBG_NAME(box_dv_short_string) (DBG_ARGS code);
   if (virt_code)
     {
-      box[2] = dk_alloc_box (msg_len + code_len + 3, DV_SHORT_STRING);
+      box[2] = DBG_NAME (dk_alloc_box) (DBG_ARGS msg_len + code_len + 3, DV_SHORT_STRING);
       memcpy (box[2], virt_code, code_len);
       memcpy (box[2] + code_len, ": ", 2);
       memcpy (box[2] + code_len + 2, temp, msg_len);
@@ -4321,6 +4341,9 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
       log_info ("ERRS_0 %s %s %s", code, virt_code, temp);
     }
   log_error_report_event ((caddr_t) box, 1, "MAKE_NEW_ERROR");
+#ifdef MALLOC_DEBUG
+  dk_check_tree ((box_t)box);
+#endif
   return ((caddr_t) box);
 }
 
@@ -4424,3 +4447,17 @@ srv_make_trx_error (int code, caddr_t detail)
     }
   return err;
 }
+
+#ifdef MALLOC_DEBUG
+#undef srv_make_new_error
+caddr_t
+srv_make_new_error (const char *code, const char *virt_code, const char *msg, ...)
+{
+  char temp[2000];
+  va_list list;
+  va_start (list, msg);
+  vsnprintf (temp, 2000, msg, list);
+  va_end (list);
+  return dbg_srv_make_new_error (__FILE__, __LINE__, code, virt_code, "%s", temp);
+}
+#endif

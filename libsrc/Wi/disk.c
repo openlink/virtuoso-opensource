@@ -405,10 +405,10 @@ resource_t * it_rc;
 #define IT_INIT_HASH_SIZE (11 * IT_N_MAPS)
 
 index_tree_t *
-it_allocate (dbe_storage_t * dbs)
+DBG_NAME (it_allocate) (DBG_PARAMS dbe_storage_t * dbs)
 {
   int inx;
-  index_tree_t * tree = (index_tree_t *)dk_alloc_box_zero (sizeof (index_tree_t), DV_ITC);
+  index_tree_t *tree = (index_tree_t *) DBG_NAME (dk_alloc_box_zero) (DBG_ARGS sizeof (index_tree_t), DV_ITC);
   tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
   memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
   tree->it_lock_release_mtx = mutex_allocate ();
@@ -536,9 +536,9 @@ dbs_sys_db_check (caddr_t file)
 long tc_it_temp_free;
 
 index_tree_t *
-it_temp_allocate (dbe_storage_t * dbs)
+DBG_NAME (it_temp_allocate) (DBG_PARAMS dbe_storage_t * dbs)
 {
-  index_tree_t * tree = (index_tree_t *) resource_get (it_rc);
+  index_tree_t *tree = (index_tree_t *) DBG_NAME (resource_get) (DBG_ARGS it_rc);
   if (!tree)
     {
       int inx;
@@ -629,8 +629,8 @@ buf_unregister_itcs (buffer_desc_t * buf)
 }
 
 
-void
-it_temp_free (index_tree_t * it)
+int
+DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
 {
   /* free a temp tree */
 

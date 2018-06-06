@@ -395,7 +395,7 @@ kpd_free (key_partition_def_t * kpd)
 }
 
 void
-DBG_NAME (qr_free) (DBG_PARAMS  query_t * qr)
+DBG_NAME (qr_free) (DBG_PARAMS query_t * qr)
 {
   if (!qr)
     return;
@@ -548,7 +548,7 @@ DBG_NAME (qr_free) (DBG_PARAMS  query_t * qr)
 
 
 void
-sqlc_error (comp_context_t * cc, const char *code, const char *string,...)
+DBG_NAME (sqlc_error) (DBG_PARAMS comp_context_t * cc, const char *code, const char *string, ...)
 {
   static char temp[2000+MAX_QUAL_NAME_LEN*7];
   va_list list;
@@ -556,7 +556,7 @@ sqlc_error (comp_context_t * cc, const char *code, const char *string,...)
   va_start (list, string);
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
-  cc->cc_error = srv_make_new_error (code, "SQ200", "%s", temp);
+  cc->cc_error = DBG_NAME (srv_make_new_error) (DBG_ARGS code, "SQ200", "%s", temp);
 
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, cc->cc_error);
   lisp_throw (CATCH_LISP_ERROR, 1);
@@ -633,7 +633,7 @@ sqlc_log_error_to_file (comp_context_t * cc, const char *code, const char *virt_
 }
 
 void
-sqlc_new_error (comp_context_t * cc, const char *code, const char *virt_code, const char *string,...)
+DBG_NAME (sqlc_new_error) (DBG_PARAMS comp_context_t * cc, const char *code, const char *virt_code, const char *string, ...)
 {
 #ifdef SQLC_ERROR_DEBUG
   const char *txt;
@@ -651,7 +651,7 @@ sqlc_new_error (comp_context_t * cc, const char *code, const char *virt_code, co
   txt = ((NULL != cc) ? ((NULL != cc->cc_query) ? cc->cc_query->qr_text : "(no text, cc_query is NULL)") : "(no text, cc is NULL)");
   printf ("Internal SQL compiler error %s while processing\n-----8<-----\n%s\n-----8<-----\n", temp, txt);
 #endif
-  err = srv_make_new_error (code, virt_code, "%s", temp);
+  err = DBG_NAME (srv_make_new_error) (DBG_ARGS code, virt_code, "%s", temp);
   if (cc)
     cc->cc_error = err;
 

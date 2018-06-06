@@ -1858,7 +1858,7 @@ cha_gb_dtp (dtp_t dtp, int is_key, gb_op_t * go)
 }
 
 index_tree_t *
-cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
+DBG_NAME(cha_allocate) (setp_node_t * setp, caddr_t * inst, int64 card)
 {
   hash_area_t *ha = setp->setp_ha;
   int n_slots = BOX_ELEMENTS (ha->ha_slots), inx;
