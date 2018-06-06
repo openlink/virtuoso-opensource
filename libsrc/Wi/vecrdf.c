@@ -590,7 +590,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	  dc_set_rb (dc, out_set, dt_lang, flags, val, lng, ro_id);
 	  n_res++;
 	}
-      for (inx = 0; inx < dc->dc_n_values; inx++)
+      for (inx = 0; inx < n_sets; inx++)
 	{
 	  if (BIT_IS_SET (rb_bits, inx))
 	    {
@@ -750,7 +750,7 @@ from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_
 	  dc_set_rb (dc, out_set, dt_lang, flags, val, lng, ro_id);
 	  n_res++;
 	}
-      for (inx = 0; inx < n_sets; inx++)
+      for (inx = 0; inx < dc->dc_n_values; inx++)
 	{
 	  if (BIT_IS_SET (rb_bits, inx))
 	    { 
