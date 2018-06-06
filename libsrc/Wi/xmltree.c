@@ -7901,7 +7901,7 @@ caddr_t
 xe_mp_copy (mem_pool_t * mp, caddr_t box)
 {
   caddr_t cp = xe_make_copy (box);
-  dk_set_push (&mp->mp_trash, (void*)cp);
+  mp_trash (mp, cp);
   return cp;
 }
 
