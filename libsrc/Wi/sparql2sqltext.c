@@ -5295,7 +5295,10 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
           SPART *fromshort;
           if (ssg_valmode_is_subformat_of (native, needed))
             {
-              ssg_print_retval (ssg, tree, native, asname);
+	      if (SPAR_RETVAL == SPART_TYPE (tree))
+                ssg_print_retval (ssg, tree, native, asname);
+	      else
+		ssg_print_scalar_expn (ssg, tree, native, asname);
               return;
             }
           SPART_AUTO(fromshort,fromshort_buf,SPAR_CONV);
