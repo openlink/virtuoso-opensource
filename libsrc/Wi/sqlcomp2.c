@@ -1758,18 +1758,12 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	else
 	  *err = srv_make_new_error ("42000", "SQ075", "Unclassified SQL compilation error.");
       }
-    else
+    else if (IS_BOX_POINTER (cc_error))
       {
 #ifdef DEBUG
-	if (IS_BOX_POINTER (err))
-	  {
-	    log_error (
-		"Error compiling %.500s : %s: %s.",
-		string2,
-		((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
-
-	  }
+	log_error ("Error compiling %.500s : %s: %s.", string2, ((caddr_t *) cc_error)[QC_ERRNO], ((caddr_t *) cc_error)[QC_ERROR_STRING]);
 #endif
+	SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
 	dk_free_tree (cc_error);	/* IvAn/010411/LeakOnError */
       }
     qr = NULL;
