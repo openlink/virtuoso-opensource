@@ -1467,7 +1467,11 @@ ws_url_rewrite (ws_connection_t *ws)
 	goto error_end;
     }
   if (!url_rewrite_qr)
-    url_rewrite_qr = sql_compile_static ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      url_rewrite_qr = sql_compile_static ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto error_end;
+    }
 
   ws->ws_cli->cli_http_ses = ws->ws_strses;
   ws->ws_cli->cli_ws = ws;
@@ -3234,9 +3238,15 @@ ws_post_process (ws_connection_t * ws)
   query_t *proc;
 
   if (!http_ppr_qr)
-    http_ppr_qr = sql_compile_static ("call (?) ()", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      http_ppr_qr = sql_compile_static ("call (?) ()", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto err_ret;
+    }
+
   if ((ws && !ws->ws_map) || (ws && ws->ws_map && !ws->ws_map->hm_pfn))
     return;
+
   if (ws->ws_map && IS_STRING_DTP (DV_TYPE_OF(ws->ws_map->hm_pfn)))
     p_proc = ws->ws_map->hm_pfn;
   else
@@ -3267,7 +3277,9 @@ ws_post_process (ws_connection_t * ws)
   IN_TXN;
   if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
     {
-      /*log_info ("SQL ERROR in HTTP post process : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
+#ifdef DEBUG
+      log_debug ("SQL ERROR in HTTP post process : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));
+#endif
       lt_rollback (cli->cli_trx, TRX_CONT);
     }
   else
@@ -3373,7 +3385,7 @@ ws_auth_check (ws_connection_t * ws)
 {
 #ifdef VIRTUAL_DIR
   static query_t * http_auth_qr = NULL;
-  caddr_t err = 0, auth_proc = NULL, auth_realm;
+  caddr_t err = NULL, auth_proc = NULL, auth_realm;
   local_cursor_t * lc = NULL;
   client_connection_t * cli = ws->ws_cli;
   int rc = LTE_OK, retc = 0;
@@ -3384,7 +3396,11 @@ ws_auth_check (ws_connection_t * ws)
     return 1;
 
   if (!http_auth_qr)
-    http_auth_qr = sql_compile_static ("call (?) (?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      http_auth_qr = sql_compile_static ("call (?) (?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto error_end;
+    }
 
   if ((ws && !ws->ws_map) || (ws && ws->ws_map && !ws->ws_map->hm_afn))
     return 1;
@@ -3447,15 +3463,15 @@ ws_auth_check (ws_connection_t * ws)
   LEAVE_TXN;
 
   if (rc != LTE_OK)
-    {
       MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
-    }
 
 error_end:
   cli->cli_user = saved_user;
   if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
     {
-      /*log_info ("SQL ERROR in HTTP authentication : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
+#ifdef DEBUG
+      log_debug ("SQL ERROR in HTTP authentication : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));
+#endif
       ws_proc_error (ws, err);
       retc = 0;
     }
@@ -3571,7 +3587,11 @@ ws_check_rdf_accept (ws_connection_t *ws)
 	goto error_end;
     }
   if (!qr)
-    qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto error_end;
+    }
 
   IN_TXN;
   lt_wait_checkpoint ();
@@ -3709,6 +3729,8 @@ request_do_again:
   if (!http_call)
     {
       http_call = sql_compile_static ("call (?) (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto rec_err_end;
     }
   strses_flush (ws->ws_strses);
   IN_TXN;
@@ -4140,7 +4162,9 @@ error_in_procedure:
   IN_TXN;
   if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
   {
-    /*log_info ("SQL ERROR in HTTP : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
+#ifdef DEBUG
+    log_debug ("SQL ERROR in HTTP : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));
+#endif
     lt_rollback (cli->cli_trx, TRX_CONT);
   }
   else
