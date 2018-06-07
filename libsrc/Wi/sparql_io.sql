@@ -1722,7 +1722,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any
 }
 ;
 
-create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas any, inout rset any)
+create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas any, inout rset any, in esc_mode integer := 1)
 {
   declare varctr, varcount, resctr, rescount, ctr integer;
   declare nice_host, describe_path, about_path varchar;
@@ -1843,9 +1843,18 @@ iri_print:
 --              else				http (sprintf ('\n<a href="%U">%V%V</a></td>'	, val, split[1], split[2])	, ses);
 --            }
 
-          if (describe_path is not null)	http (sprintf ('\n<a href="%s%U">%V</a></td>'		, describe_path, val, val	)	, ses);
-          else if (about_path is not null)	http (sprintf ('\n<a href="%s%U">%V</a></td>'		, about_path, val, val		)	, ses);
-          else					http (sprintf ('\n<a href="%U">%V</a></td>'		, val, val			)	, ses);
+	  http (sprintf('<a href="', describe_path), ses);
+	  if (describe_path is not null) {
+	      http (describe_path, ses);
+	      http_escape (val, 6, ses, 1, 1);	-- encode as parameter
+	  } else {
+	      if (about_path is not null)
+	          http(about_path, ses);
+	      http_escape (val, 3, ses, 1, 1);  -- normal encode
+	  }
+	  http ('">', ses);
+	  http_escape (val, esc_mode, ses, 1, 1);
+	  http ('</a>', ses);
 
 end_of_val_print: ;
         }
