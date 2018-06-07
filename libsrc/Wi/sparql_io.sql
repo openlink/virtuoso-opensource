@@ -1733,9 +1733,9 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
   describe_path := about_path := null;
   if (isstring (nice_host))
     {
-      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
+      if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
         describe_path := 'http://' || nice_host || '/describe/?url=';
-      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/cartridges/%/resources/dav/%'))
+      else if (DB.DBA.VAD_CHECK_VERSION ('cartridges') is not null)
         about_path := 'http://' || nice_host || '/about/html/';
     }
   nsdict := dict_new (10 + cast (sqrt (0.3e0 * varcount * rescount) as integer));
