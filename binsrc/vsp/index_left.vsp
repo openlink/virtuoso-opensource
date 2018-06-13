@@ -64,6 +64,16 @@ again:
       </ul>
       <?vsp } ?>
 
+      <?vsp if (have_fct) { ?>
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/fct/" target="_top">Faceted Browser</a></li>
+      </ul>
+      <?vsp } ?>
+
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/sparql/" target="_top">SPARQL endpoint</a></li>
+      </ul>
+
       <?vsp if (have_wa) { ?>
       <ul class="left_nav">
 	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/wa/" target="_top">Web Applications</a></li>
