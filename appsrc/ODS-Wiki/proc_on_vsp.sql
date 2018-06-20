@@ -768,7 +768,7 @@ create procedure WV.WIKI.VSPCHECKWEBAUTH (
   goto auth_get;    
    --dbg_obj_print ('_su_name', _su_name);
 badname: ;
-   _reason := '. The name provided by your browser does not exists';
+   _reason := '. The name provided by your browser does not exist';
    --dbg_obj_print ('_username', _username);
 auth_get: ;
   DB.DBA.vsp_auth_get ('wiki', concat('/', aref (path, 0)),
