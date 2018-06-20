@@ -140,9 +140,9 @@ sparp_mp_sparql_cap_cbk (mem_pool_t *mp, void *cbk_env)
 {
   char digest_hex[16*2+1];
   spar_query_env_t *sparqre = (spar_query_env_t *)(mp->mp_size_cap.cbk_env);
-  sparp_dump_weird_query (sparqre, "SPARQL compiler run out of temporary memory", digest_hex);
+  sparp_dump_weird_query (sparqre, "SPARQL compiler ran out of temporary memory", digest_hex);
   if (NULL != sparqre->sparqre_dbg_sparp)
-    spar_error (sparqre->sparqre_dbg_sparp, "SPARQL compiler run out of temporary memory, report saved in %s, report ID %s", sparp_dump_weird_query_path, digest_hex);
+    spar_error (sparqre->sparqre_dbg_sparp, "SPARQL compiler ran out of temporary memory, report saved in %s, report ID %s", sparp_dump_weird_query_path, digest_hex);
 }
 
 /*#define SPAR_ERROR_DEBUG*/
@@ -422,11 +422,11 @@ spar_log_error_to_file (sparp_t *sparp, const char *msg, const char *type)
   if (NULL == f)
     return;
   fprintf (f, "Internal error report\n\n"
-"Before sending the file to support, please check it for presence of any sensitive information.\n"
-"An application may compose the query by imprinting some values into a template, these values may come from confidential data.\n"
-"If it is so, please replace these values with some similar fake values, with some caution:\n"
-"1. When one value appears in few places, please replace it with one and the same fake value in all that places;\n"
-"2. Replace different values with different fake values.\n"
+"Before sending the file to support, please check it for any sensitive information.\n"
+"An application may compose a query by imprinting some values into a template; these values may come from confidential data.\n"
+"If so, please replace these values with some similar fake values, with some caution:\n"
+"1. When one sensitive value appears in few places, please replace it with the same fake value in all those places;\n"
+"2. Replace different sensitive values with different fake values.\n"
 "3. Erase the following line before sending:\n"
 "*** This report is not edited by hands ***\n\n");
   fprintf (f, "Message: %s\n", msg);
@@ -1140,7 +1140,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp->sparp_env->spare_storage_name = t_box_dv_uname_string (value);
           sparp->sparp_storage = sparp_find_storage_by_name (sparp, sparp->sparp_env->spare_storage_name);
           if ((NULL == sparp->sparp_storage) && ('\0' != value[0]))
-            spar_error (sparp, "Quad storage <%.100s> does not exists or is in unusable state", value);
+            spar_error (sparp, "Quad storage <%.100s> does not exist or is in unusable state", value);
           if ((sparp->sparp_storage != old_storage)
             && (NULL != sparp->sparp_env->spare_context_qms)
             && ((SPART **)((ptrlong)_STAR) != sparp->sparp_env->spare_context_qms->data) )
@@ -1293,7 +1293,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
           if ((0 > val) || IS_BOX_POINTER (val))
-            spar_error (sparp, "define lang:dialect should have nonnegative integer value, a bitmask of valid bits");
+            spar_error (sparp, "define lang:dialect should have non-negative integer value, a bitmask of valid bits");
           sparp->sparp_permitted_syntax = val;
           return;
         }
@@ -1301,7 +1301,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
         {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
           if ((0 > val) || IS_BOX_POINTER (val))
-            spar_error (sparp, "define lang:exceptions should have nonnegative integer value, a bitmask of valid bits");
+            spar_error (sparp, "define lang:exceptions should have non-negative integer value, a bitmask of valid bits");
           sparp->sparp_syntax_exceptions = val;
           return;
         }
@@ -1337,7 +1337,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
       if (!strcmp (param, "sql:log-enable")) {
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
           if (0 > val)
-            spar_error (sparp, "define sql:log-enable should have nonnegative integer value");
+            spar_error (sparp, "define sql:log-enable should have non-negative integer value");
             sparp->sparp_sg->sg_sparul_log_mode = t_box_num_and_zero (val);
           return; }
       if (!strcmp (param, "sql:table-option")) {
@@ -1391,11 +1391,11 @@ sparp_configure_storage_and_macro_libs (sparp_t *sparp)
             {
               jso_rtti_t *sml_rtti = (jso_rtti_t *)gethash (smlib, jso_rttis_of_structs);
               if (NULL == sml_rtti)
-                spar_error (sparp, "Quad storage <%.100s> refers to inexisting or corrupted SPARQL macro library", sparp->sparp_env->spare_storage_name);
+                spar_error (sparp, "Quad storage <%.100s> refers to nonexistent or corrupted SPARQL macro library", sparp->sparp_env->spare_storage_name);
               sparp_compile_smllist (sparp, sml_rtti->jrtti_inst_iri, smlib);
               smllist = (SPART **)(smlib->smlList);
               if (!IS_BOX_POINTER (smllist))
-                spar_error (sparp, "Compilation error in SPARQL macro library <%.100s> refered by quad storage <%.100s>", sml_rtti->jrtti_inst_iri, sparp->sparp_env->spare_storage_name);
+                spar_error (sparp, "Compilation error in SPARQL macro library <%.100s> referenced by quad storage <%.100s>", sml_rtti->jrtti_inst_iri, sparp->sparp_env->spare_storage_name);
             }
           smllist = (SPART **)(smlib->smlList);
           DO_BOX_FAST (SPART *, new_defm, new_defm_ctr, smllist)
@@ -4058,7 +4058,7 @@ spar_make_ppath_impl (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, 
     case '^': return spar_inverse_ppath (sparp, part1);
     case '!':
       if (0 != part1->_.ppath.subtype)
-        spar_error (sparp, "The '!' property path operator can be applied only to a predicate, ^predicate and groups of them");
+        spar_error (sparp, "The '!' property path operator can be applied only to a predicate, a ^predicate, or a group of them");
       {
         SPART **p1 = part1->_.ppath.parts;
         int count1 = BOX_ELEMENTS (p1);
@@ -4391,7 +4391,7 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
   if ((SPART_GRAPH_MIN_NEGATION < subtype) && (NULL != options))
     {
       const char *fty = ((SPART_GRAPH_NAMED == subtype) ? " NAMED" : "");
-      spar_error (sparp, "NOT FROM%s <%.200s> clause can not have options, only FROM and FROM NAMED can", fty, ((NULL == iri) ? "..." : iri));
+      spar_error (sparp, "NOT FROM%s <%.200s> clause cannot have options; only FROM and FROM NAMED can", fty, ((NULL == iri) ? "..." : iri));
     }
   if ((NULL != iri) && rdf_graph_group_dict_htable->ht_count)
     {
@@ -4413,10 +4413,10 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
         case SPART_GRAPH_FROM: subtype = SPART_GRAPH_GROUP; break;
         case SPART_GRAPH_NOT_FROM: subtype = SPART_GRAPH_NOT_GROUP; break;
         case SPART_GRAPH_NAMED:
-          spar_error (sparp, "<%.200s> is graph group, not a plain graph, so it can not be used in FROM NAMED clause", iri);
+          spar_error (sparp, "<%.200s> is graph group, not a plain graph, so it cannot be used in FROM NAMED clause", iri);
           break;
         case SPART_GRAPH_NOT_NAMED:
-          spar_error (sparp, "<%.200s> is graph group, not a plain graph, so it can not be used in NOT FROM NAMED clause", iri);
+          spar_error (sparp, "<%.200s> is graph group, not a plain graph, so it cannot be used in NOT FROM NAMED clause", iri);
           break;
         }
     }
@@ -4764,10 +4764,10 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
   if (need_check_for_infection_chars)
     for (c = tail+4; '\0' != c[0]; c++)
       if (strchr ("\'\"\\()., +-/*|\t\n\r", c[0]))
-        spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt of bypassing security restrictions", fname);
+        spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt to bypass security restrictions", fname);
   return;
 restricted:
-  spar_error (sparp, "Function %.200s() can not be used in text of SPARQL query due to security restrictions", fname);
+  spar_error (sparp, "Function %.200s() cannot be used in text of SPARQL query due to security restrictions", fname);
 }
 
 caddr_t
@@ -4904,7 +4904,7 @@ aggr_checked:
             {
               int tail_mod = (argcount - metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no;
               if (tail_mod)
-                spar_error (sparp, "The XPATH function %.200s() can handle %d, %d, %d etc. arguments but the call provides %d",
+                spar_error (sparp, "The XPATH function %.200s() can handle %d, %d, %d, etc., arguments, but the call provides %d",
                   funname, (int)(metas->xpfm_main_arg_no), (int)(metas->xpfm_main_arg_no + metas->xpfm_tail_arg_no), (int)(metas->xpfm_main_arg_no + 2 * metas->xpfm_tail_arg_no),
                   argcount );
             }
@@ -5010,9 +5010,9 @@ sparp_make_builtin_call (sparp_t *sparp, ptrlong bif_id, SPART **arguments)
         continue;
       argcount = BOX_ELEMENTS_0 (arguments);
       if (argcount < sbd->sbd_minargs)
-        sparyyerror_impl (sparp, NULL, t_box_sprintf (100, "Insufficient number of arguments of a standard built-in function %s()", sbd->sbd_name));
+        sparyyerror_impl (sparp, NULL, t_box_sprintf (100, "Too few arguments for standard built-in function %s()", sbd->sbd_name));
       if (argcount > sbd->sbd_maxargs)
-        sparyyerror_impl (sparp, NULL, t_box_sprintf (100, "Too many arguments of a standard built-in function %s()", sbd->sbd_name));
+        sparyyerror_impl (sparp, NULL, t_box_sprintf (100, "Too many arguments for standard built-in function %s()", sbd->sbd_name));
       goto ofs_found; /* see below */
     }
   spar_internal_error (sparp, "sparp" "_make_builtin_call(): bad bif_id");
@@ -5104,9 +5104,9 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
       dk_set_t *opts_ptr = &(sparp->sparp_env->spare_src.ssrc_common_sponge_options);
       options = (SPART **)t_full_box_copy_tree ((caddr_t)(t_list_to_array (opts_ptr[0])));
       if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:destination"))
-        spar_error (sparp, "DEFINE get:destination ... is not applicable for SPARUL LOAD statement, use LOAD ... INTO ... form instead");
+        spar_error (sparp, "DEFINE get:destination ... is not applicable for SPARUL LOAD statement; use LOAD ... INTO ... form instead");
       if (NULL != dk_set_getptr_keyword (opts_ptr[0], "get:uri"))
-        spar_error (sparp, "DEFINE get:uri ... is not applicable for SPARUL LOAD statement, use LOAD ... INTO ... form instead");
+        spar_error (sparp, "DEFINE get:uri ... is not applicable for SPARUL LOAD statement; use LOAD ... INTO ... form instead");
     }
   if (NULL == options)
     options_vector_call = (SPART *)t_NEW_DB_NULL;
