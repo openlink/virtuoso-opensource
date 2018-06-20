@@ -518,7 +518,7 @@
                       {
                         rollback work;
                         self.vc_is_valid := 0;
-                        self.vc_error_message := 'The file does not exists or it is empty.';
+                        self.vc_error_message := 'The file does not exist or it is empty.';
                         return;
                       }
                     }
