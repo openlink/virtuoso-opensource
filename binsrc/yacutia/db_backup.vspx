@@ -387,7 +387,7 @@
                         {
                           declare exit handler for sqlstate '22023'
                           {
-                            self.vc_error_message := sprintf ('The directory %s does not exists on all cluster nodes, please select correct path.', self.t_dir.ufl_value);
+                            self.vc_error_message := sprintf ('The directory %s does not exist on all cluster nodes, please select correct path.', self.t_dir.ufl_value);
                             self.vc_is_valid := 0;
                             return;
                           };
