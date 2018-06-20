@@ -432,7 +432,7 @@
                           </tr>
                         </table>
                       </v:template>
-                      <v:validator name="vv2" test="sql" message="the specified blog does not exists (insert)">
+                      <v:validator name="vv2" test="sql" message="the specified blog does not exist (insert)">
 	         if (control.vc_focus)
     		   {
 		     ;
