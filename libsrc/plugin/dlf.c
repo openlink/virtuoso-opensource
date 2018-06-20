@@ -500,7 +500,7 @@ dlsym (void *hdl, char *sym)
    *  Note: On AIX 3.x if the object library is not built with -g compiling
    *  option, .n_type field is always 0. While on 4.x it will be 32.
    *  On AIX 4.x, if the symbol is a entry point, n_value will be 0.
-   *  However, one thing is for sure that if a symbol does not exists in the
+   *  However, one thing is for sure that if a symbol does not exist in the
    *  file, both .n_type and .n_value would be 0.
    */
   if (!nl[1].n_type && !nl[1].n_value)
