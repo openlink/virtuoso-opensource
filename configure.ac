@@ -1050,7 +1050,7 @@ AC_SUBST(openldap_LDFLAGS)
 # POP3/NNTP support --imsg                                               #
 #                                                                        #
 ##########################################################################
-AC_ARG_ENABLE(imsg,
+AC_ARG_ENABLE(imsg, [dnl
 AC_HELP_STRING([--enable-imsg], [enable POP3 and NNTP extension (default)])
 AC_HELP_STRING([--disable-imsg], [disable POP3 and NNTP extension])dnl
 ], [
@@ -2483,7 +2483,7 @@ AC_SUBST(PORT)
 AC_ARG_ENABLE([],[
 VAD Packages:],[])
 
-AC_ARG_ENABLE(bpel-vad,
+AC_ARG_ENABLE(bpel-vad, [dnl
 AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad])
 AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
 ], [
@@ -2496,7 +2496,7 @@ AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
   [ with_bpel_vad="no" ]
 )
 
-AC_ARG_ENABLE(conductor-vad,
+AC_ARG_ENABLE(conductor-vad, [dnl
 AC_HELP_STRING([--enable-conductor-vad], [enable Conductor vad package (default)])
 AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
 ], [
@@ -2509,7 +2509,7 @@ AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
   [ with_conductor_vad="yes" ]
 )
 
-AC_ARG_ENABLE(dbpedia-vad,
+AC_ARG_ENABLE(dbpedia-vad, [dnl
 AC_HELP_STRING([--enable-dbpedia-vad], [enable DBpedia vad package])
 AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])dnl
 ], [
@@ -2522,7 +2522,7 @@ AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])
   [ with_dbpedia_vad="no" ]
 )
 
-AC_ARG_ENABLE(demo-vad,
+AC_ARG_ENABLE(demo-vad, [dnl
 AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package])
 AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
 ], [
@@ -2535,7 +2535,7 @@ AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
   [ with_demo_vad="no" ]
 )
 
-AC_ARG_ENABLE(fct-vad,
+AC_ARG_ENABLE(fct-vad, [dnl
 AC_HELP_STRING([--enable-fct-vad], [enable Facet Browser vad package])
 AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package (default)])dnl
 ], [
@@ -2548,7 +2548,7 @@ AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package (default)
   [ with_fct_vad="no" ]
 )
 
-AC_ARG_ENABLE(isparql-vad,
+AC_ARG_ENABLE(isparql-vad, [dnl
 AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package])
 AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package (default)])dnl
 ], [
@@ -2561,7 +2561,7 @@ AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package (default)])
   [ with_isparql_vad="yes" ]
 )
 
-AC_ARG_ENABLE(ods-vad,
+AC_ARG_ENABLE(ods-vad, [dnl
 AC_HELP_STRING([--enable-ods-vad], [enable ODS vad packages])
 AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages (default)])dnl
 ], [
@@ -2574,7 +2574,7 @@ AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages (default)])dnl
   [ with_ods_vad="no" ]
 )
 
-AC_ARG_ENABLE(rdfmappers-vad,
+AC_ARG_ENABLE(rdfmappers-vad, [dnl
 AC_HELP_STRING([--enable-rdfmappers-vad], [enable RDF Mappers vad package])
 AC_HELP_STRING([--disable-rdfmappers-vad], [disable RDF Mappers vad package (default)])dnl
 ], [
@@ -2587,7 +2587,7 @@ AC_HELP_STRING([--disable-rdfmappers-vad], [disable RDF Mappers vad package (def
   [ with_rdfmappers_vad="no" ]
 )
 
-AC_ARG_ENABLE(rdb2rdf-vad,
+AC_ARG_ENABLE(rdb2rdf-vad, [dnl
 AC_HELP_STRING([--enable-rdb2rdf-vad], [enable Rdb2Rdf vad package])
 AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package (default)])dnl
 ], [
@@ -2600,7 +2600,7 @@ AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package (default)])
   [ with_rdb2rdf_vad="no" ]
 )
 
-AC_ARG_ENABLE(sparqldemo-vad,
+AC_ARG_ENABLE(sparqldemo-vad, [dnl
 AC_HELP_STRING([--enable-sparqldemo-vad], [enable Sparql Demo vad package])
 AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package (default)])dnl
 ], [
@@ -2613,7 +2613,7 @@ AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package (def
   [ with_sparqldemo_vad="no" ]
 )
 
-AC_ARG_ENABLE(syncml-vad,
+AC_ARG_ENABLE(syncml-vad, [dnl
 AC_HELP_STRING([--enable-syncml-vad], [enable SyncML vad package])
 AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package (default)])dnl
 ], [
@@ -2626,7 +2626,7 @@ AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package (default)])dn
   [ with_syncml_vad="no" ]
 )
 
-AC_ARG_ENABLE(tutorial-vad,
+AC_ARG_ENABLE(tutorial-vad, [dnl
 AC_HELP_STRING([--enable-tutorial-vad], [enable Tutorial vad package])
 AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)])dnl
 ], [
@@ -2640,7 +2640,7 @@ AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)
 )
 
 
-AC_ARG_ENABLE(all-vads,
+AC_ARG_ENABLE(all-vads, [dnl
 AC_HELP_STRING([--disable-all-vads], [disable building all vad packages])dnl
 ], [
      case "${enableval}" in
