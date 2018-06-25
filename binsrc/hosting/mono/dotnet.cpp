@@ -27,6 +27,8 @@
 #define uint16  unsigned short
 #define uint8   unsigned char
 
+#include <winsock2.h>
+
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -248,9 +250,9 @@ static void virt_com_error (HRESULT hr, char * err_no, char * proc_name,  EXCEPI
 	}
       else if ((hr == DISP_E_EXCEPTION) && einfo_ptr && einfo_ptr->bstrDescription)
 	{
-	  sqlr_new_error ("42000", err_no, "Com exception in %s : %sr", proc_name,
-			  CW2A(einfo_ptr->bstrDescription));
-	}
+		  sqlr_new_error("42000", err_no, "Com exception in %s : %sr", proc_name,
+			  (LPCSTR)CW2A(einfo_ptr->bstrDescription));
+	  }
       else
 	sqlr_new_error ("42000", err_no, "Com error in %s %x : Unknown error", proc_name, hr);
 }
