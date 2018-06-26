@@ -39,7 +39,7 @@ if [ -n "$rtlist" ]
 then
     echo "RUNNING tests:"
     echo "-------------------"
-    echo $rtlist
+    echo $rtlist | fmt
     echo "-------------------"
 fi
 
@@ -50,7 +50,7 @@ then
     echo
     echo "FINISHED tests:"
     echo "-------------------"
-    echo $ftlist
+    echo $ftlist | fmt
     echo "-------------------"
 
     passed=`echo $logs | xargs  egrep "^PASSED" | wc -l`
@@ -60,17 +60,17 @@ then
     if [ $failed -gt 0 ]
     then
         echo
-	echo "FAILED tests (top $head_n)"
+	echo "FAILED tests:"
 	echo "-------------------"
-	egrep "^(\*\*\*.*FAILED)" $logs | head -$head_n
+	egrep -l "^(\*\*\*.*FAILED)" $logs | fmt
 	echo "-------------------"
     fi
     if [ $aborted -gt 0 ]
     then
         echo
-	echo "ABORTED tests (top $head_n)"
+	echo "ABORTED tests:"
 	echo "-------------------"
-	egrep "^(\*\*\*.*ABORTED)" $logs | head -$head_n
+	egrep -l "^(\*\*\*.*ABORTED)" $logs | fmt
 	echo "-------------------"
     fi
 fi
@@ -99,16 +99,6 @@ then
     	    echo $logs | xargs egrep  "^\*\*\* ?FAILED"
 	    echo "-------------------"
 	fi
-    else
-	echo
-	echo all FAILED and ABORTED tests:
-	echo "-------------------"
-	for f in `egrep -ls "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" $logs 2>/dev/null` 
-	do 
-	    #basename $f .output 
-	    echo $f
-	done
-        echo "-------------------"
     fi
 fi
 
