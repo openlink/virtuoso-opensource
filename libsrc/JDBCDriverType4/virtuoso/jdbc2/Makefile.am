@@ -196,10 +196,10 @@ outstd2:
 	@mkdir outstd2/openlink/util
 
 outstd2/virtuoso/jdbc2/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outstd2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outstd2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd2/virtuoso/sql; cp ../../../$< .
@@ -233,10 +233,10 @@ outssl2:
 	@mkdir outssl2/openlink/util
 
 outssl2/virtuoso/jdbc2/%.java: %.java
-	$(CPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outssl2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outssl2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl/virtuoso/sql; cp ../../../$< .
@@ -281,16 +281,16 @@ outstd3:
 	@cp ../../java.sql.Driver3 outstd3/META-INF/services/java.sql.Driver
 
 outstd3/virtuoso/jdbc3/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 outstd3/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 outstd3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd3/virtuoso/sql; cp ../../../$< .
 
 outstd3/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 
 ###########################################
@@ -326,16 +326,16 @@ outssl3:
 	@cp ../../java.sql.Driver3 outssl3/META-INF/services/java.sql.Driver
 
 outssl3/virtuoso/jdbc3/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 outssl3/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 outssl3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl3/virtuoso/sql; cp ../../../$< .
 
 outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 
 ###########################################
@@ -380,16 +380,16 @@ outstd4:
 	@cp ../../java.sql.Driver4 outstd4/META-INF/services/java.sql.Driver
 
 outstd4/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
 
 outstd4/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
 
 outstd4/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd4/virtuoso/sql; cp ../../../$< .
 
 outstd4/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
 
 
 ###########################################
@@ -427,16 +427,16 @@ outssl4:
 	@cp ../../java.sql.Driver4 outssl4/META-INF/services/java.sql.Driver
 
 outssl4/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
 
 outssl4/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
 
 outssl4/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl4/virtuoso/sql; cp ../../../$< .
 
 outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
 
 
 ###########################################
@@ -481,16 +481,16 @@ outstd4_1:
 	@cp ../../java.sql.Driver4 outstd4_1/META-INF/services/java.sql.Driver
 
 outstd4_1/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
 
 outstd4_1/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
 
 outstd4_1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd4_1/virtuoso/sql; cp ../../../$< .
 
 outstd4_1/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
 
 
 ###########################################
@@ -528,16 +528,16 @@ outssl4_1:
 	@cp ../../java.sql.Driver4 outssl4_1/META-INF/services/java.sql.Driver
 
 outssl4_1/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
 
 outssl4_1/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
 
 outssl4_1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl4_1/virtuoso/sql; cp ../../../$< .
 
 outssl4_1/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
 
 
 ###########################################
@@ -582,16 +582,16 @@ outstd4_2:
 	@cp ../../java.sql.Driver4 outstd4_2/META-INF/services/java.sql.Driver
 
 outstd4_2/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
 
 outstd4_2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
 
 outstd4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd4_2/virtuoso/sql; cp ../../../$< .
 
 outstd4_2/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
 
 
 ###########################################
@@ -629,16 +629,16 @@ outssl4_2:
 	@cp ../../java.sql.Driver4 outssl4_2/META-INF/services/java.sql.Driver
 
 outssl4_2/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
 
 outssl4_2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
 
 outssl4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl4_2/virtuoso/sql; cp ../../../$< .
 
 outssl4_2/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
 
 
 ###########################################

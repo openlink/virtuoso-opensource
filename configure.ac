@@ -326,15 +326,14 @@ AC_SUBST(INCDIR)
 ##									##
 ##########################################################################
 
-#AC_PROG_CPP
-#actually prefer /lib/cpp : it's to be run on Java
-AC_PATH_PROG([CPP], [cpp], [/lib/cpp], [/usr/bin:/lib:$PATH])
-
 AC_PROG_CC
-AC_PROG_CC_C_O 			dnl this was AC_MINUS_C_MINUS_O
+AC_PROG_CC_C_O
 AC_LANG_C
 AC_PROG_LD
 AC_SUBST(LD)
+
+AC_PROG_CPP
+AC_PATH_PROG(JAVACPP, [cpp], [/lib/cpp], [/usr/bin:/lib:$PATH])
 
 
 ##########################################################################
