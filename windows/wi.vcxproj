@@ -190,6 +190,7 @@
     <ClCompile Include="..\libsrc\Wi\gate.c" />
     <ClCompile Include="..\libsrc\Wi\geo.c" />
     <ClCompile Include="..\libsrc\Wi\geo_shapes.c" />
+    <ClCompile Include="..\libsrc\Wi\git_head.c" />
     <ClCompile Include="..\libsrc\Wi\hash.c" />
     <ClCompile Include="..\libsrc\Wi\hosting.c" />
     <ClCompile Include="..\libsrc\Wi\http.c" />
