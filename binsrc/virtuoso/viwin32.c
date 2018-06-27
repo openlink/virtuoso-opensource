@@ -738,10 +738,20 @@ CreateApplicationConsole (void)
       fclose (stdin);
       fclose (stdout);
 
-      stdout->_file = stderr->_file = _open_osfhandle (
-	  (intptr_t) GetStdHandle (STD_ERROR_HANDLE), _O_TEXT);
-      stdin->_file = _open_osfhandle (
-	  (intptr_t) GetStdHandle (STD_INPUT_HANDLE), _O_TEXT);
+      //Redirect unbuffered STDOUT to the console
+      int SystemOutput = _open_osfhandle((intptr_t)GetStdHandle(STD_ERROR_HANDLE), _O_TEXT);
+      FILE *COutputHandle = _fdopen(SystemOutput, "w");
+      *stdout = *COutputHandle;
+      setvbuf(stdout, NULL, _IONBF, 0);
+   
+      FILE *CErrorHandle = _fdopen(SystemOutput, "w");
+      *stderr = *CErrorHandle;
+      setvbuf(stderr, NULL, _IONBF, 0);
+
+      int SystemInput = _open_osfhandle((intptr_t)GetStdHandle(STD_INPUT_HANDLE), _O_TEXT);
+      FILE *CInputHandle = _fdopen(SystemInput, "r");
+      *stdin = *CInputHandle;
+      setvbuf(stdin, NULL, _IONBF, 0);
     }
 
   return NO_ERROR;

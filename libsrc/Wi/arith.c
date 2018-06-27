@@ -1128,7 +1128,7 @@ decimal, double - if dec has more than 15 digits and not between min and max 53 
 Operands of the same type compare natively.
 */
 
-#if defined(WIN32) || defined (SOLARIS)
+#if (defined(WIN32) && _MSC_VER < 1900) || defined (SOLARIS)
 double
 trunc (double x)
 {
