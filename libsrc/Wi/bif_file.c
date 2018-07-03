@@ -6139,7 +6139,7 @@ fiop_release (caddr_t box)
   if (NULL != fiod->fiod_mutex)
     mutex_enter (fiod->fiod_mutex);
   if (0 >= fiod->fiod_refctr)
-    GPF_T1 ("filep_destroy: nonpositive refctr");
+    GPF_T1 ("filep_destroy: non-positive refctr");
   if (--(fiod->fiod_refctr))
 {
       if (NULL != fiod->fiod_mutex)

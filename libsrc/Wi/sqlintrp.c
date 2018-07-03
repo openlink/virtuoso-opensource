@@ -600,7 +600,7 @@ ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec, &vec_defaults);
     {
       if (err || qi->qi_set == qi->qi_n_sets - 1 || proc->qr_proc_vectored)
 	{
-	  /* for vectored call of non vectored proc filling proc table temp, do not drop the fill itc until there is termination from eerror of having done the last set */
+	  /* for vectored call of non vectored proc filling proc table temp, do not drop the fill itc until there is termination from error of having done the last set */
 	  hash_area_t *ha = (hash_area_t *) cli->cli_result_ts;
 	  caddr_t *result_qst = (caddr_t *) cli->cli_result_qi;
 	  if (result_qst)
