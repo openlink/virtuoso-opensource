@@ -841,15 +841,19 @@ WEBDAV.updateRdfGraph = function ()
   $('dav_name_save').value = escape($v('dav_name'));
 }
 
-WEBDAV.comboListPath = function (element, name, val)
+WEBDAV.comboListPath = function (element, name, val, onchange)
 {
-  var fld = new OAT.Combolist([], val);
+  var optionObj = (onchange)? {"onchange": onchange}: null;
+  var fld = new OAT.Combolist([], val, optionObj);
   fld.input.name = name;
   fld.input.id = name;
   fld.input.className = 'field-text';
   fld.input.value = val;
   fld.input.comboList = fld;
   fld.list.style.width = '500px';
+
+  if (onchange)
+    fld.input.onchange = onchange;
 
   fld.throbler = OAT.Dom.create("img", {display: "none"});
   fld.throbler.src = OAT.AJAX.imagePath+"Ajax_throbber.gif";
@@ -988,9 +992,9 @@ WEBDAV.loadDriveFolders = function (drive, fields)
           if (o[i] == dav_DET_path.value)
             founded = true;
         }
-        if (!founded) {
-          dav_DET_path.value = '';
-        }
+        if (!founded)
+          dav_DET_path.value = '/';
+
         if (o.length)
           OAT.Dom.show(cl.img);
       }
@@ -1024,7 +1028,7 @@ WEBDAV.loadDriveFolders = function (drive, fields)
   OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=driveFolders'+params, '', function(data){x(seqNo, drive, data);});
 }
 
-WEBDAV.dav_DET_seqNo = 0;
+WEBDAV.dav_DET_bucketNo = 0;
 WEBDAV.loadDriveBuckets = function (drive, bucketName, fields)
 {
   var needLoad = false;
@@ -1049,7 +1053,7 @@ WEBDAV.loadDriveBuckets = function (drive, bucketName, fields)
   }
   if (needLoad) {
     var x = function(seqNo, drive, data) {
-      if (seqNo < WEBDAV.dav_DET_seqNo)
+      if (seqNo < WEBDAV.dav_DET_bucketNo)
         return;
 
       var dav_DET_BucketName = $('dav_'+drive+'_'+bucketName);
@@ -1097,8 +1101,8 @@ WEBDAV.loadDriveBuckets = function (drive, bucketName, fields)
       OAT.Dom.show(cl.throbler);
     }
 
-    WEBDAV.dav_DET_seqNo += 1;
-    var seqNo = WEBDAV.dav_DET_seqNo;
+    WEBDAV.dav_DET_bucketNo += 1;
+    var seqNo = WEBDAV.dav_DET_bucketNo;
     OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=driveBuckets'+params, '', function(data){x(seqNo, drive, data);});
   }
 }

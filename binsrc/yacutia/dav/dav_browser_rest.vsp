@@ -216,8 +216,14 @@
     }
     else
     {
-      _drivePath := get_keyword ('path', params);
-      _driveParams := call ('DB.DBA.' || _drive || '__params') (DB.DBA.DAV_SEARCH_ID (_drivePath, 'C'));
+      _driveParams := call ('DB.DBA.' || _drive || '__params') (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'));
+    }
+    for (N := 0; N < length (_driveParams); N := N + 2)
+    {
+      if (not isnull (get_keyword (_driveParams[N], params)))
+      {
+        _driveParams[N+1] := get_keyword (_driveParams[N], params);
+      }
     }
     _list := call ('DB.DBA.' || _drive || '__driveFolders') (_driveParams);
 

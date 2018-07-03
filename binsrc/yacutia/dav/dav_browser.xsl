@@ -5733,10 +5733,10 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_S3_AccessKeyIDX" value="Access Key ID (*)" />
+            <v:label for="dav_S3_AccessKeyID" value="Access Key ID (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyIDX" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'AccessKeyID\', \'SecretKey\']);">
+            <v:text name="dav_S3_AccessKeyID" xhtml_id="dav_S3_AccessKeyID" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_AccessKeyID', self.dav_path, 'virt:S3-AccessKeyID', '');
@@ -5750,7 +5750,7 @@
             <v:label for="dav_S3_SecretKey" value="Secret Key (*)" />
           </th>
           <td>
-            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'AccessKeyID\', \'SecretKey\']);">
+            <v:text name="dav_S3_SecretKey" xhtml_id="dav_S3_SecretKey" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'S3\', \'BucketName\', [\'BucketName\', \'AccessKeyID\', \'SecretKey\']);">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_SecretKey', self.dav_path, 'virt:S3-SecretKey', '');
@@ -5769,8 +5769,8 @@
                 OAT.Loader.load(
                   ["ajax", "json", "drag", "combolist"],
                   function () {
-                    WEBDAV.comboListPath('td_dav_S3_BucketName', 'dav_S3_BucketName', "<?V self.get_fieldProperty ('dav_S3_BucketName', self.dav_path, 'virt:S3-BucketName', '/') ?>");
-                    WEBDAV.loadDriveBuckets('S3', 'BucketName', ['AccessKeyID', 'SecretKey']);
+                    WEBDAV.comboListPath('td_dav_S3_BucketName', 'dav_S3_BucketName', "<?V self.get_fieldProperty ('dav_S3_BucketName', self.dav_path, 'virt:S3-BucketName', '') ?>", function(){WEBDAV.loadDriveFolders('S3', ['BucketName', 'AccessKeyID', 'SecretKey']);});
+                    WEBDAV.loadDriveBuckets('S3', 'BucketName', ['BucketName', 'AccessKeyID', 'SecretKey']);
                   }
                 );
               ]]>
@@ -7057,7 +7057,7 @@
                 OAT.Loader.load(
                   ["ajax", "json", "drag", "combolist"],
                   function () {
-                    WEBDAV.comboListPath('td_dav_RACKSPACE_Container', 'dav_RACKSPACE_Container', "<?V self.get_fieldProperty ('dav_RACKSPACE_Container', self.dav_path, 'virt:RACKSPACE-Container', '/') ?>");
+                    WEBDAV.comboListPath('td_dav_RACKSPACE_Container', 'dav_RACKSPACE_Container', "<?V self.get_fieldProperty ('dav_RACKSPACE_Container', self.dav_path, 'virt:RACKSPACE-Container', '') ?>", function(){WEBDAV.loadDriveFolders('RACKSPACE', ['Type', 'User', 'Container', 'API_Key']);});
                     WEBDAV.loadDriveBuckets('RACKSPACE', 'Container', ['Type', 'User', 'Container', 'API_Key']);
                   }
                 );
