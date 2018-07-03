@@ -1723,7 +1723,7 @@ WEBDAV.mimeTypeByExt = function (name)
 
       mime.value  = txt;
     }
-    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=mimeTypeByExt&fileName='+name, x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=mimeTypeByExt&fileName='+encodeURIComponent(name), x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
   }
 }
 
@@ -1773,7 +1773,7 @@ WEBDAV.nameByMimeType = function ()
         namesDialog.show();
       }
     }
-    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=nameByMimeType&fileName='+dav_name.value+'&mimeType='+dav_mime.value, x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
+    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=nameByMimeType&fileName='+encodeURIComponent(dav_name.value)+'&mimeType='+encodeURIComponent(dav_mime.value), x, {type:OAT.AJAX.TYPE_TEXT, onstart:function(){}, onerror:function(){}});
   }
 };
 

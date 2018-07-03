@@ -3114,12 +3114,6 @@
                           <table>
                             <tr>
                               <td width="600px">
-                                <?vsp
-                                  declare N integer;
-                                  declare properties any;
-
-                                  properties := WEBDAV.DBA.DAV_PROP_LIST (self.dav_path, '%', vector ('LDP', 'virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
-                                ?>
                                 <table id="c_tbl" class="WEBDAV_formList" cellspacing="0">
                                   <tr>
                                     <th width="50%">Property</th>
@@ -3133,16 +3127,21 @@
                                       <script type="text/javascript">
                                       <?vsp
                                         declare M integer;
+                                        declare properties any;
 
-                                        M := 0;
-                                        for (N := 0; N < length (properties); N := N + 1)
+                                        properties := WEBDAV.DBA.DAV_PROP_LIST (self.dav_path, '%', vector ('LDP', 'virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
+                                        M := length (properties);
+                                        foreach (any property in properties) do
                                         {
-                                          M := M + 1;
-                                          if (self.dav_enable and self.editField ('properties') and (properties[N][0] not like 'DAV:%'))
+                                          property[0] := replace (property[0], '"', '\\"');
+                                          property[1] := replace (property[1], '"', '\\"');
+                                          if (self.dav_enable and self.editField ('properties') and (property[0] not like 'DAV:%'))
                                           {
-                                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', properties[N][0], properties[N][1]));
-                                          } else {
-                                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("c", {fld_1: {value: "%s", tdCssText: "white-space: nowrap;"}, fld_2: {value: "%s", tdCssText: "white-space: nowrap;"}});});', properties[N][0], properties[N][1]));
+                                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("c", null, {fld_1: {mode: 40, value: "%s", className: "_validate_", onbBlur: function(){validateField(this);}}, fld_2: {mode: 0, value: "%s"}});});', property[0], property[1]));
+                                          }
+                                          else
+                                          {
+                                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("c", {fld_1: {value: "%s", tdCssText: "white-space: nowrap;"}, fld_2: {value: "%s", tdCssText: "white-space: nowrap;"}});});', property[0], property[1]));
                                           }
                                         }
                                       ?>
@@ -3741,11 +3740,15 @@
                         if (not self.editField ('name'))
                           goto _exec_1;
 
-                        if (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath') <> dav_fullPath)
+                        tmp := WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath');
+                        if (tmp <> dav_fullPath)
                         {
-                          retValue := WEBDAV.DBA.DAV_SET (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath'), 'name', dav_name, self.account_name, self.account_password);
+                          retValue := WEBDAV.DBA.DAV_SET (tmp, 'name', dav_name, self.account_name, self.account_password);
                           if (WEBDAV.DBA.DAV_ERROR (retValue))
                             signal('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
+
+                          if ((self.dav_type = 'C') and (trim (self.dir_path, '/') = trim (tmp, '/')))
+                            self.dir_path := dav_fullPath;
                         }
                         self.dav_path := dav_fullPath;
 
@@ -4126,7 +4129,7 @@
                       return;
                     }
                     self.dav_action := '';
-                    self.command_pop (null);
+                    self.command_pop (case when (self.dav_type = 'C') then self.dir_path else null end);
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
@@ -4307,6 +4310,7 @@
             <div class="WEBDAV_formHeader">
               <?V self.commandName (self.command, 0) ?> listed items
             </div>
+
             <input type="hidden" name="f_command" id="f_command" value="<?V lcase (self.commandName (self.command, 1)) ?>" />
             <div id="progress_div" style="display: none; margin-bottom: 3px;">
               <table id="progress_table" cellspacing="0" width="100%">
@@ -4336,6 +4340,20 @@
                     <label>
                       <input type="checkbox" name="f_overwrite" id="f_overwrite" value="1" />
                       <b>Overwrite existing items</b>
+                    </label>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+
+            <v:template type="simple" name="template_60" condition="(self.command in (60) and WEBDAV.DBA.check_admin (self.account_id))">
+              <table id="progress_params" class="WEBDAV_formBody">
+                <tr>
+                  <th width="50%" />
+                  <td>
+                    <label>
+                      <input type="checkbox" name="f_check_locks" id="f_check_locks" value="1" checked="checked" />
+                      <b>Check Locks</b>
                     </label>
                   </td>
                 </tr>
