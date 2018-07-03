@@ -786,6 +786,9 @@ create procedure WS.WS.PROPNAMES (
   if (not isstring (_body) or _body = '')
     return null;
 
+  if (not isnull (regexp_match ('xmlns:[a-zA-Z_](\\w)*=""', _body)))
+    return null;
+
   tree := xml_tree_doc (xml_expand_refs (xml_tree (_body)));
   tmp := xpath_eval (_proppath || '/allprop', tree, 1);
   if (not isnull (tmp))
