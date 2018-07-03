@@ -3881,8 +3881,8 @@ void
 bif_string_arg_for_sprintf (caddr_t *qst, state_slot_t ** args, int arg_inx, const char *szMe, int obey_len_or_prec, int preserve_wide, caddr_t *arg_ret, caddr_t *narrow_arg_ret)
 {
   caddr_t arg = arg_ret[0] = bif_arg (qst, args, arg_inx, szMe);
-  narrow_arg_ret[0] = NULL;
   dtp_t dtp = DV_TYPE_OF (arg);
+  narrow_arg_ret[0] = NULL;
   if (DV_RDF == dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)arg;
@@ -12409,7 +12409,7 @@ bif_serialize_to_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t 
 static caddr_t
 bif_deserialize_from_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * in = bif_strses_arg (qst, args, 0, "deserialize");
+  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "deserialize");
   caddr_t ret;
   ret = (caddr_t) read_object (in);
   return ret;

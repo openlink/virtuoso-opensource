@@ -114,8 +114,6 @@ typedef struct
     const char *	bt_sql_dml_name;
   } bif_type_t;
 
-typedef struct dk_session_s dk_session_t;
-
 VIRTVARCLASS bif_type_t bt_varchar;
 VIRTVARCLASS bif_type_t bt_any;
 VIRTVARCLASS bif_type_t bt_integer;
@@ -143,7 +141,7 @@ void bif_define_typed (const char * name, bif_t bif, bif_type_t *bt);
 caddr_t bif_arg (caddr_t * qst, state_slot_t ** args, int nth, const char * func);
 caddr_t bif_string_arg (caddr_t * qst, state_slot_t ** args, int nth,
     const char * func);
-dk_session_t * bif_strses_arg (caddr_t * qst, state_slot_t ** args, int nth,
+caddr_t bif_strses_arg (caddr_t * qst, state_slot_t ** args, int nth,
     const char * func);
 struct xml_entity_s *bif_entity_arg (caddr_t * qst, state_slot_t ** args, int nth,
     const char * func);
@@ -478,6 +476,7 @@ thread_t * thread_current (void);
 #define NUMERIC_MAX_PRECISION		40
 #define NUMERIC_MAX_SCALE		15
 
+typedef struct dk_session_s dk_session_t;
 typedef struct request_rec_t request_rec;
 
 typedef struct buffer_elt_s buffer_elt_t;

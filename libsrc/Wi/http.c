@@ -7426,8 +7426,8 @@ bif_string_output (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_output_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t *strses = bif_strses_arg (qst, args, 0, "string_output_flush");
-  strses_flush (strses);
+  caddr_t strses = bif_strses_arg (qst, args, 0, "string_output_flush");
+  strses_flush ((dk_session_t *) strses);
   return (NULL);
 }
 
@@ -7447,14 +7447,14 @@ bif_http_output_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_output_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t *strses = bif_strses_arg (qst, args, 0, "string_output_string");
-  if (!STRSES_CAN_BE_STRING (strses))
+  caddr_t strses = bif_strses_arg (qst, args, 0, "string_output_string");
+  if (!STRSES_CAN_BE_STRING ((dk_session_t *) strses))
     {
       *err_ret = STRSES_LENGTH_ERROR ("string_output_string");
       return NULL;
     }
 
-  return (strses_string (strses));
+  return (strses_string ((dk_session_t *) strses));
 }
 
 static caddr_t
