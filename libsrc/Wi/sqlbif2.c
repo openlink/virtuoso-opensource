@@ -805,7 +805,7 @@ bif_sql_warnings_resignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	{
 	  if (!IS_BOX_POINTER (warning) ||
 	      DV_ERROR_REPORT != DV_TYPE_OF (warning) ||
-	      BOX_ELEMENTS (warning) != 3 ||
+	      BOX_ELEMENTS (warning) < 3 ||
 	      (((caddr_t*) warning)[0]) != (caddr_t) QA_WARNING ||
 	      (!DV_STRINGP (ERR_STATE (warning)) && DV_C_STRING != DV_TYPE_OF (ERR_STATE (warning))) ||
 	      (!DV_STRINGP (ERR_MESSAGE (warning)) && DV_C_STRING != DV_TYPE_OF (ERR_MESSAGE (warning))))
