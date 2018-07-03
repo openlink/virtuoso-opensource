@@ -3358,7 +3358,7 @@ YACUTIA_DAV_STATUS (in status integer) returns varchar
     return 'Property name is reserved (protected or private)';
 
   if (status = -11)
-    return 'Property does not exists';
+    return 'Property does not exist';
 
   if (status = -12)
     return 'Authentication failed';

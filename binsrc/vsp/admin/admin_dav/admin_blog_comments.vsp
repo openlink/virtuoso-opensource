@@ -70,7 +70,7 @@ if (http_dav_uid () <> (userid := adm_dav_check_auth (lines, 1)))
 <?vsp adm_page_header('BLOG Administration', ''); ?>
     <H4><?=blog_name?></H4>
   <noscript>
-  Your browser do not support JavaScript or it's disabled. This will not allow to preview the posts.
+  Your browser does not support JavaScript or it's disabled. This will not allow to preview the posts.
   </noscript>
 	<?vsp
 	  declare msg, dt varchar;

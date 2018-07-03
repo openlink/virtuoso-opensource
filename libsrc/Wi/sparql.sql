@@ -14415,12 +14415,12 @@ create function DB.DBA.RDF_SML_DROP (in smliri varchar, in silent integer, in co
       if (silent)
         {
           if (compose_report)
-            return report || 'SPARQL macro library <' || smliri || '> does not exists, nothing to delete';
+            return report || 'SPARQL macro library <' || smliri || '> does not exist, nothing to delete';
           else
             return 0;
         }
       else
-        signal ('22023', 'SPARQL macro library <' || smliri || '> does not exists, nothing to delete');
+        signal ('22023', 'SPARQL macro library <' || smliri || '> does not exist, nothing to delete');
     }
   DB.DBA.RDF_QM_ASSERT_JSO_TYPE (smliri, 'http://www.openlinksw.com/schemas/virtrdf#SparqlMacroLibrary');
   sparql define input:storage ""
@@ -16798,7 +16798,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       if (new_group_iri is null)
         {
           result ('ERROR', new_group_iid, new_group_iri, null, null,
-            sprintf ('Garbage in list of members of all groups: the group does not exists and group IRI ID is invalid') );
+            sprintf ('Garbage in list of members of all groups: the group does not exist and group IRI ID is invalid') );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
             {
@@ -16809,7 +16809,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       else if (exists (select 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = new_group_iri))
         {
           result ('ERROR', new_group_iid, new_group_iri, null, null,
-            sprintf ('Conflicting data in list of groups: the group does not exists, the group IRI is used in a corrupted group record') );
+            sprintf ('Conflicting data in list of groups: the group does not exist, the group IRI is used in a corrupted group record') );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
             {

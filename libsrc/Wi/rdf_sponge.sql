@@ -2163,7 +2163,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
           res_graph_iri := local_iri;
           goto graph_is_ready;
         }
-      -- dbg_obj_princ ('Does not exists, continue despite get:soft=soft');
+      -- dbg_obj_princ ('Does not exist, continue despite get:soft=soft');
     }
   else
     if (('replacing' = get_soft) or ('replace' = get_soft) or ('add' = get_soft) or ('no-sponge' = get_soft))
@@ -2244,7 +2244,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
         }
       else
 	{
-	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
+	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger does not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
           return null;
 	}
     }

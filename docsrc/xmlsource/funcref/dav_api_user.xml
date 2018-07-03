@@ -157,7 +157,7 @@
 	  <row><entry><errorcode>-10</errorcode></entry>
 	    <entry><errorname>Property name is reserved (protected or private)</errorname></entry></row>
 	  <row><entry><errorcode>-11</errorcode></entry>
-	    <entry><errorname>Property does not exists</errorname></entry></row>
+	    <entry><errorname>Property does not exist</errorname></entry></row>
 	  <row><entry><errorcode>-12</errorcode></entry>
 	    <entry><errorname>Authentication failed</errorname></entry></row>
 	  <row><entry><errorcode>-13</errorcode></entry>

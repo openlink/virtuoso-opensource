@@ -242,7 +242,7 @@ The node types are:
 	  </row>
 	  <row>
 	    <entry><errorcode>22023</errorcode></entry>
-	    <entry>The table does not exists and data is not valid XML</entry>
+	    <entry>The table does not exist and data is not valid XML</entry>
 	    <entry>XV001</entry>
 	  </row>
 	  <row>

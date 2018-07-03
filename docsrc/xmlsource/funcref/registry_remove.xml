@@ -50,7 +50,7 @@ Nobody can remove such a &quot;protected&quot; variable even if some of them can
     </refsect2>
   </refsect1>
   <refsect1 id="ret_registry_remove"><title>Return Types</title>
-    <para>The function returns the last saved value of a variable or zero if the specified variable does not exists.</para>
+    <para>The function returns the last saved value of a variable or zero if the specified variable does not exist.</para>
   </refsect1>
   <refsect1 id="errors_registry_remove">
     <title>Errors</title>

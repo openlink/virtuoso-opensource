@@ -4516,7 +4516,7 @@ check_gvector_args (int vect_elems, int block_elts, int key_ofs, const char *fun
   if (vect_elems % block_elts != 0)
     sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of argument #2", funname);
   if ((0 > key_ofs) || (key_ofs >= block_elts))
-    sqlr_new_error ("22023", "SR490", "In call of %s(), argument #3 should be nonnegative integer that is less than argument #2", funname);
+    sqlr_new_error ("22023", "SR490", "In call of %s(), argument #3 should be non-negative integer that is less than argument #2", funname);
 }
 
 caddr_t
@@ -4705,7 +4705,7 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
   if (vect_elems % block_elts != 0)
     sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of number of elements in block", funname);
   if ((0 > key_ofs) || (key_ofs >= block_elts))
-    sqlr_new_error ("22023", "SR490", "In call of %s(), offset of key in block should be nonnegative integer that is less than number of elements in block", funname);
+    sqlr_new_error ("22023", "SR490", "In call of %s(), offset of key in block should be non-negative integer that is less than number of elements in block", funname);
   group_count = vect_elems / block_elts;
   if (1 >= group_count)
     return box_num (group_count); /* No need to sort empty or single-element vector */
@@ -4971,7 +4971,7 @@ bif_rowvector_graph_partition (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   if (vect_elems % block_elts != 0)
     sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of number of elements in block", funname);
   if ((0 > key_ofs) || (key_ofs >= block_elts))
-    sqlr_new_error ("22023", "SR490", "In call of %s(), offset of key in block should be nonnegative integer that is less than number of elements in block", funname);
+    sqlr_new_error ("22023", "SR490", "In call of %s(), offset of key in block should be non-negative integer that is less than number of elements in block", funname);
 #endif
   group_count = vect_elems / block_elts;
   if (0 >= group_count)

@@ -718,7 +718,7 @@ Equivalences are touched, of course, but who cares?
 extern void sparp_flatten_join (sparp_t *sparp, SPART *parent_gp);
 
 /*! If a gp is group of non-optional triples and each triple has exactly one possible quad map then the function returns vector of tabids of triples.
-In addition, if the \c expected_triples_count argument is nonnegative then number of triples in group should be equal to that argument.
+In addition, if the \c expected_triples_count argument is non-negative then number of triples in group should be equal to that argument.
 If any condition fails, the function returns NULL.
 This function is used in breakup code generation. */
 extern caddr_t *sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_triples_count);

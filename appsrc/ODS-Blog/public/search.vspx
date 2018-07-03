@@ -160,7 +160,7 @@
           with (prefetch 1);
         goto runit;
         nfi:;
-        signal ('22023', 'The selected blog does not exists');
+        signal ('22023', 'The selected blog does not exist');
         runit:;
         if (self.opts is null)
           self.opts := vector ();

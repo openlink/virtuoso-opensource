@@ -503,7 +503,7 @@ create procedure ODS_CREATE_NEW_APP_INST (
    {
     declare exit handler for not found
            {
-            _err:='User - '||owner||' does not exists;';
+            _err:='User - '||owner||' does not exist;';
             goto report_err;
            };
 
@@ -515,7 +515,7 @@ create procedure ODS_CREATE_NEW_APP_INST (
   {
    declare exit handler for not found
           {
-           _err:='Application type - '||app_type||' does not exists; ';
+           _err:='Application type - '||app_type||' does not exist; ';
            goto report_err;
           };
    select WAT_TYPE into ty from WA_TYPES where WAT_NAME = app_type;

@@ -280,11 +280,11 @@
                 if (self.res2 = -10)
                   str_error_desc := 'Property name is reserved (protected or private)';
                 if (self.res2 = -11)
-                  str_error_desc := 'Property does not exists';
+                  str_error_desc := 'Property does not exist';
                 if (self.res2 = -12)
                   str_error_desc := 'Authentication failed';
                 if (self.res2 = -13)
-                  str_error_desc := 'Operation is forbidden (the authenticated user do not have a permissions for the action)';
+                  str_error_desc := 'Operation is forbidden (the authenticated user does not have permission for the action)';
                 if (self.res2 = -14)
                   str_error_desc := 'the target type is not valid';
                 if (self.res2 = -15)

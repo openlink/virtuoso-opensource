@@ -118,7 +118,7 @@ if ({?'wsdl'} is not null)
               return;
 	   }
     nosuchscp1:;
-    signal ('42000', 'No wsdl assigned to the given script, or script does not exists.');
+    signal ('42000', 'No wsdl assigned to the given script, or script does not exist.');
   }
 
  {

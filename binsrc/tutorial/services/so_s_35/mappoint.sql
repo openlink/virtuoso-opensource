@@ -49,7 +49,7 @@ create procedure init_point (in loc varchar) returns glocation
   tmp := map_find (loc);
   if (get_keyword ('NumberFound', tmp) < 1)
     {
-      signal ('22023', 'The specified location '|| loc || ' does not exists in the Mappoint DB');
+      signal ('22023', 'The specified location '|| loc || ' does not exist in the Mappoint DB');
     }
   if (0 and get_keyword ('NumberFound', tmp) > 1)
     {

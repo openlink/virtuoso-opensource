@@ -45,7 +45,7 @@
         <![CDATA[
           declare exit handler for not found
           {
-            signal ('22023', sprintf ('The user "%s" does not exists.', self.user_name));
+            signal ('22023', sprintf ('The user "%s" does not exist.', self.user_name));
           };
    
         ]]>

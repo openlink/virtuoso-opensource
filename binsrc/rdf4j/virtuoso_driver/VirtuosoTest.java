@@ -320,7 +320,7 @@ public class VirtuosoTest {
 				// test remove a statement
 				con.remove(kingsleyidehen, name, nameValue, (Resource) context);
 				// test statement removed
-				log("Statement does not exists");
+				log("Statement does not exist");
 				exists = con.hasStatement(kingsleyidehen, name, null, false, context);
 			}
 			catch (Exception e) {

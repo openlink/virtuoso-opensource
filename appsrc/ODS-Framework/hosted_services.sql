@@ -2542,7 +2542,7 @@ create procedure WA_USER_GET_OPTION(in _name varchar,in _key varchar)
   return _data;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -2558,7 +2558,7 @@ create procedure WA_USER_SET_OPTION(in _name varchar,in _key varchar,in _data an
   return;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -3343,7 +3343,7 @@ YACUTIA_DAV_STATUS (in status integer) returns varchar
     return 'Property name is reserved (protected or private)';
 
   if (status = -11)
-    return 'Property does not exists';
+    return 'Property does not exist';
 
   if (status = -12)
     return 'Authentication failed';
@@ -4600,7 +4600,7 @@ create procedure WA_USER_SET_INFO (in _name varchar,in _fname varchar,in _lname 
   return;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -4782,7 +4782,7 @@ create procedure WA_USER_EDIT (in _name varchar, in _key varchar, in _data any)
   return row_count ();
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -4840,7 +4840,7 @@ create procedure WA_USER_VISIBILITY (in _name varchar, in _arr any default null,
   return;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 

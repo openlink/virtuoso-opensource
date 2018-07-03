@@ -83,7 +83,7 @@ the SYS_XPF_EXTENSIONS system table.
 	  <row>
 	    <entry><errorcode>42001</errorcode></entry>
 	    <entry><errorcode>XPE01</errorcode></entry>
-	    <entry><errorname>The function &lt;procedure_name&gt; does not exists</errorname></entry>
+	    <entry><errorname>The function &lt;procedure_name&gt; does not exist</errorname></entry>
 	    <entry>if procedure to define as a XPATH extension function is not existing one.</entry>
 	  </row>
 	  <row>

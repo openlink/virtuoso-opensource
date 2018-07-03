@@ -50,8 +50,8 @@
   </refsect1>
   <refsect1 id="ret_xenc_get_key_identifier"><title>Return Types</title>
       <para>The function returns a base64 encoded string containing the key identifier.
-	  If key identifier is not available (the key have no identifier or key does not exists
-	  a NULL will be returned).
+	  If key identifier is not available (the key has no identifier or key does not exist),
+	  a NULL will be returned.
       </para>
   </refsect1>
   <refsect1 id="examples_xenc_get_key_identifier">

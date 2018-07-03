@@ -162,7 +162,7 @@ endf:;
    }
   </script>
   <noscript>
-  Your browser do not support JavaScript or it's disabled. This will not allow to preview the posts.
+  Your browser does not support JavaScript or it's disabled. This will not allow to preview the posts.
   </noscript>
     <H4><?=blog_name?></H4>
     <TABLE class="genlist" BORDER="0" CELLPADDING="0" CELLSPACING="2">

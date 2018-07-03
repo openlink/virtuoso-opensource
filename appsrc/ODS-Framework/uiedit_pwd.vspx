@@ -163,7 +163,7 @@
 
 			declare exit handler for not found
 			{
-			  signal ('22023', 'Internal error, user does not exists');
+			  signal ('22023', 'Internal error, user does not exist');
 			};
 
 			select equ (pwd_magic_calc (U_NAME, U_PASSWORD, 1), self.opwd1.ufl_value) into pwd_match
@@ -185,7 +185,7 @@
 
                         if ( length(self.npwd1.ufl_value) < 1 or length(self.npwd1.ufl_value) > 255)
                         {
-                          self.npwd1.vc_error_message := 'The password value cannot be empty or to be longer than 255 chars';
+                          self.npwd1.vc_error_message := 'The password value cannot be empty nor longer than 255 chars';
                           self.vc_is_valid := 0;
                           return;
                   }
@@ -262,7 +262,7 @@
       <v:template name="sec_tmpl_3" type="simple" enabled="-- equ (self.tab_no, 3)">
 	  <input type="hidden" value="3" name="tabNo" /> 
           <h2>Password recovery questions</h2>
-          <p class="fm_expln">Manage password recovery procedure. Set verification question / answer.</p>
+          <p class="fm_expln">Manage password recovery procedure. Set verification question and answer.</p>
 			<table>
               <tr>
               <th width="135px">

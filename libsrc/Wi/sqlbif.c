@@ -11192,7 +11192,7 @@ bif_sequence_next_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
       inc_by = (long) bif_long_arg (qst, args, 1, "sequence_next");
       if (inc_by < 1)
 	sqlr_new_error ("22023", "SR376",
-	    "sequence_next() needs an nonnegative integer as a second argument, not " BOXINT_FMT, inc_by);
+	    "sequence_next() needs an non-negative integer as a second argument, not " BOXINT_FMT, inc_by);
     }
   if (sec_check)
     check_sequence_grants (qi, name);

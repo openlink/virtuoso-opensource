@@ -117,7 +117,7 @@ create procedure WV.WIKI.EXPORT_TOPIC (
   if (__proc_exists (_proc))
 	_xhtml := call (_proc)(_topic, header, footer);
   else
-    signal ('XXXXX', 'Formatter for [' || _type || ']{' || _proc || '} does not exists');
+    signal ('XXXXX', 'Formatter for [' || _type || ']{' || _proc || '} does not exist');
 
   _xhtml := WV.WIKI.VSPXSLT (WV.WIKI.PROP(_type, 'xslt'), _xhtml, _params);
   --dbg_obj_princ (_xhtml);

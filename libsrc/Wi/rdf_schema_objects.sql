@@ -742,7 +742,7 @@ RDF_VIEW_CREATE_CLASS (in decl varchar, in _tbl varchar, in _host varchar, in qu
    sk_str := '';
 
    if (length (pks) = 0)
-     signal ('22023', sprintf ('This version do not support tables without primary key, please remove table %s from set', _tbl));
+     signal ('22023', sprintf ('This version does not support tables without primary key, please remove table %s from set', _tbl));
 
    for (declare i any, i := 0; i < length (pks) ; i := i + 1)
      {
