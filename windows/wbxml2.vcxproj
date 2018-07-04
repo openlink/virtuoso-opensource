@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5582D8D0-DB93-11DB-930B-CD6B662399AA}</ProjectGuid>
     <RootNamespace>wbxml2</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -62,7 +63,7 @@
     <ClCompile>
       <Optimization>MaxSpeed</Optimization>
       <AdditionalIncludeDirectories>..\binsrc\driver;..\libsrc\Wi;..\libsrc\langfunc;..\libsrc\Xml.new;..\libsrc\plugin;..\libsrc\Dk;..\binsrc\driver\include;..\libsrc\util\win32;..\libsrc;..\SDK\$(ShortPlatform)\sslsdk\inc32;..\SDK\$(ShortPlatform)\wbxml2;..\SDK\$(ShortPlatform)\wbxml2\expat;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_SSL;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;NDEBUG;_USRDLL;LIBWBXML2_EXPORTS;WBXML_LIB_VERBOSE;WBXML_SUPPORT_WML;WBXML_SUPPORT_WTA;WBXML_SUPPORT_SI;WBXML_SUPPORT_SL;WBXML_SUPPORT_CO;WBXML_SUPPORT_PROV;WBXML_SUPPORT_EMN;WBXML_SUPPORT_DRMREL;WBXML_SUPPORT_OTA_SETTINGS;WBXML_SUPPORT_SYNCML;WBXML_SUPPORT_WV;WBXML_ENCODER_USE_STRTBL;WBXML_WRAPPERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SSL;INPROCESS_CLIENT;_MBCS;WIN32;_WIN32;WINDOWS;_Windows;YYTOKENTYPE;DLDAPI_WINDOWS;NO_IMPORT;VIRTTP;NDEBUG;_USRDLL;LIBWBXML2_EXPORTS;WBXML_LIB_VERBOSE;WBXML_SUPPORT_WML;WBXML_SUPPORT_WTA;WBXML_SUPPORT_SI;WBXML_SUPPORT_SL;WBXML_SUPPORT_CO;WBXML_SUPPORT_PROV;WBXML_SUPPORT_EMN;WBXML_SUPPORT_DRMREL;WBXML_SUPPORT_OTA_SETTINGS;WBXML_SUPPORT_SYNCML;WBXML_SUPPORT_WV;WBXML_ENCODER_USE_STRTBL;WBXML_WRAPPERS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>
       </ExceptionHandling>

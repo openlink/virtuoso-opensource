@@ -1109,6 +1109,7 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
       }
       break;
 #endif
+
     case SQL_ATTR_ASYNC_ENABLE:
       cli_dbg_printf (("SQLSetConnectAttr(..., ASYNC_ENABLE, ...) called\n"));
       con->con_async_mode = (SQLUINTEGER) (ptrlong) ValuePtr;

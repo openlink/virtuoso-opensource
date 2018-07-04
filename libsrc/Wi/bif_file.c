@@ -50,6 +50,14 @@
 # endif
 #endif
 
+#ifndef P_tmpdir
+# ifdef _P_tmpdir /* native Windows */
+#  define P_tmpdir _P_tmpdir
+# else
+#  define P_tmpdir "/tmp"
+# endif
+#endif
+
 #define UUID_T_DEFINED
 #include "libutil.h"		/* needed by bif_cfg_* functions */
 #include "statuslog.h"

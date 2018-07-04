@@ -26,8 +26,8 @@
 #include <string.h>
 #include <time.h>
 
-#include "wbxml.h"
 #include "import_gate_virtuoso.h"
+#include "wbxml.h"
 
 #define wi_inst (wi_instance_get()[0])
 

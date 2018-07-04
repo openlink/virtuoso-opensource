@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}</ProjectGuid>
     <RootNamespace>im</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -86,7 +87,7 @@
       <AdditionalIncludeDirectories>..\libsrc\Wi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>dk1t.lib;threadw.lib;util.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;CORE_RL_wand_.lib;CORE_RL_coders_.lib;CORE_RL_magick_.lib;CORE_RL_magick++_.lib;CORE_RL_ttf_.lib;CORE_RL_bzlib_.lib;CORE_RL_zlib_.lib;CORE_RL_lcms_.lib;CORE_RL_tiff_.lib;CORE_RL_filters_.lib;CORE_RL_jpeg_.lib;CORE_RL_jbig_.lib;CORE_RL_jp2_.lib;CORE_RL_png_.lib;CORE_RL_libxml_.lib;CORE_RL_lqr_.lib;CORE_RL_webp_.lib;CORE_RL_cairo_.lib;CORE_RL_pixman_.lib;CORE_RL_librsvg_.lib;CORE_RL_glib_.lib;CORE_RL_pango_.lib;CORE_RL_croco_.lib;CORE_RL_openjpeg_.lib;CORE_RL_exr_.lib;CORE_RL_libraw_.lib;CORE_RL_ffi_.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dk1t.lib;threadw.lib;util.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;CORE_RL_bzlib_.lib;CORE_RL_cairo_.lib;CORE_RL_coders_.lib;CORE_RL_croco_.lib;CORE_RL_exr_.lib;CORE_RL_ffi_.lib;CORE_RL_filters_.lib;CORE_RL_glib_.lib;CORE_RL_jbig_.lib;CORE_RL_jp2_.lib;CORE_RL_jpeg_.lib;CORE_RL_lcms_.lib;CORE_RL_libraw_.lib;CORE_RL_librsvg_.lib;CORE_RL_libxml_.lib;CORE_RL_lqr_.lib;CORE_RL_magick_.lib;CORE_RL_Magick++_.lib;CORE_RL_openjpeg_.lib;CORE_RL_pango_.lib;CORE_RL_pixman_.lib;CORE_RL_png_.lib;CORE_RL_tiff_.lib;CORE_RL_ttf_.lib;CORE_RL_wand_.lib;CORE_RL_webp_.lib;CORE_RL_zlib_.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)im.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;../SDK/$(ShortPlatform)/ImageMagick;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

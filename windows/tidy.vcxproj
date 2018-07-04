@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{D9E130E1-7734-43DF-A7EF-15CD95E467EE}</ProjectGuid>
     <RootNamespace>tidy</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -56,7 +57,7 @@
       <Optimization>Full</Optimization>
       <OmitFramePointers>false</OmitFramePointers>
       <AdditionalIncludeDirectories>..\libsrc\Dk;..\libsrc;..\libsrc\util;..\libsrc\util\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_SSL;_LIBC;IN_LIBUTIL;_GNU_SOURCE;__WITH_LIBDK;BIF_TIDY;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SSL;_LIBC;IN_LIBUTIL;__WITH_LIBDK;_GNU_SOURCE;BIF_TIDY;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>
       </ExceptionHandling>

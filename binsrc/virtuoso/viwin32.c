@@ -731,6 +731,7 @@ ServiceCtrlMain (int cmd)
 DWORD
 CreateApplicationConsole (void)
 {
+#if 0
   if (debugFlag && AllocConsole ())
     {
       SetConsoleTitle (DISPLAY_NAME);
@@ -754,7 +755,7 @@ CreateApplicationConsole (void)
       *stdin = *CInputHandle;
       setvbuf(stdin, NULL, _IONBF, 0);
     }
-
+#endif
   return NO_ERROR;
 }
 
@@ -1254,7 +1255,6 @@ usage (void)
   char version[400];
   char line[200];
   char *p;
-  extern char *git_head;
 #if LICENSE
   int lic;
 #endif
@@ -1266,15 +1266,6 @@ usage (void)
   sprintf (line, "Version %s.%s%s%s as of %s",
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
-
-  /*
-   *  Add git SHA1 of HEAD for easier identification of code base
-   */
-  if (git_head[0])
-    {
-      sprintf (line, " (%s)", git_head);
-      p = stpcpy (p, line);
-    }
 
   sprintf (line, "\nCompiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);

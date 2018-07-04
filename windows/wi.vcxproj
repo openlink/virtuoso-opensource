@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{93051962-7797-49F0-8958-BB1CE60FFE6F}</ProjectGuid>
     <RootNamespace>wi</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -48,7 +49,7 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
-    <ExecutablePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\cygwin\bin;$(ExecutablePath)</ExecutablePath>
+    <ExecutablePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ExecutablePath);C:\cygwin64\bin;</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -190,7 +191,6 @@
     <ClCompile Include="..\libsrc\Wi\gate.c" />
     <ClCompile Include="..\libsrc\Wi\geo.c" />
     <ClCompile Include="..\libsrc\Wi\geo_shapes.c" />
-    <ClCompile Include="..\libsrc\Wi\git_head.c" />
     <ClCompile Include="..\libsrc\Wi\hash.c" />
     <ClCompile Include="..\libsrc\Wi\hosting.c" />
     <ClCompile Include="..\libsrc\Wi\http.c" />
