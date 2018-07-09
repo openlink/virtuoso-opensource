@@ -6127,9 +6127,9 @@ create procedure WEBDAV.DBA.progress_start (
                 WEBDAV.DBA.DAV_PROP_REMOVE (_path, _properties[L][0]);
               }
             }
-            for (select RES_ID from WS.WS.SYS_DAV_RES where DB.DBA.DAV_SEARCH_PATH (RES_ID, 'R') like (itemPath || '%')) do
+            for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (itemPath || '%')) do
             {
-              _path := DB.DBA.DAV_SEARCH_PATH (RES_ID, 'R');
+              _path := RES_FULL_PATH;
               _properties := WEBDAV.DBA.DAV_PROP_LIST (_path, sprintf ('virt:%s%%', _detType), vector ());
               for (L := 0; L < length (_properties); L := L + 1)
               {
