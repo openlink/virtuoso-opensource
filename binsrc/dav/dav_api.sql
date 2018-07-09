@@ -1019,6 +1019,46 @@ create function DAV_HIDE_ERROR_OR_DET (
 }
 ;
 
+--!AWK PUBLIC
+create function DB.DBA.DAV_PATH_CHECK (
+  in parts any)
+{
+  if (isstring (parts))
+    parts := split_and_decode (parts, 0, '\0\0/');
+
+  foreach (any part in parts) do
+  {
+    if ((part = '.') or (part = '..'))
+      return 0;
+  }
+  return 1;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.DAV_PATH_COMPARE (
+  in parts_1 any,
+  in parts_2 any)
+{
+  declare N integer;
+
+  if (isstring (parts_1))
+    parts_1 := split_and_decode (parts_1, 0, '\0\0/');
+
+  if (isstring (parts_2))
+    parts_2 := split_and_decode (parts_2, 0, '\0\0/');
+
+  if (length (parts_1) <> length (parts_2))
+    return 0;
+
+  for (N := 0; N < length (parts_1); N := N + 1)
+  {
+    if (parts_1[N] <> parts_2[N])
+      return 0;
+  }
+  return 1;
+}
+;
 
 --!AWK PUBLIC
 create function DAV_CONCAT_PATH (
@@ -1300,6 +1340,7 @@ create function DAV_IS_LOCKED_INT (
   in check_token varchar := '',
   in strict_mode integer := 0)
 {
+  -- dbg_obj_princ ('DAV_IS_LOCKED_INT (', id, st, check_token, strict_mode, ')');
   declare first integer;
   declare rc varchar;
 
@@ -1322,7 +1363,7 @@ create function DAV_IS_LOCKED_INT (
     return 0;
 
   first := 1;
-  while (1)
+  while (not isnull (id))
   {
     -- check on the target
     rc := (select LOCK_SCOPE from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = st and LOCK_PARENT_ID = id and DB.DBA.DAV_IS_LOCKED_COMPARE (check_token, LOCK_TOKEN, strict_mode));
@@ -1337,9 +1378,6 @@ create function DAV_IS_LOCKED_INT (
       id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = id);
     else
       id := (select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = id);
-
-    if (isnull (id))
-      return 0;
 
     first := 0;
     st := 'C';
@@ -1522,16 +1560,25 @@ create function DAV_LOCK_INT (
   if (u_token = '')
     u_token := token;
 
+  old_scope := case rc when 2 then 'X' when 1 then 'S' else '' end;
+  if ((scope = 'R') and (old_scope = ''))
+    return -1;
+
+  if ((scope <> 'R') and (old_scope = '') and (st ='C'))
+  {
+    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where WS.WS.COL_PATH (COL_ID) between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
+      return -1;
+
+    if (exists (select 1 from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_LOCK where RES_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = RES_ID))
+      return -1;
+  }
+
   -- dbg_obj_princ ('Before lock refresh: id = ', id, ', st = ', st, ', depth = ', depth, ', timeout_sec = ', timeout_sec, ' u_token = ', u_token);
   if (isarray (id))
   {
     token := u_token;
     return call (cast (id[0] as varchar) || '_DAV_LOCK') (path, id, st, locktype, scope, token, owner_name, check_token, depth, timeout_sec, auth_uid);
   }
-
-  old_scope := case rc when 2 then 'X' when 1 then 'S' else '' end;
-  if ((scope = 'R') and (old_scope = ''))
-    return -1;
 
   if (id_is_bad)
   {
@@ -3523,7 +3570,7 @@ create procedure DAV_DELETE_INT (
 
         for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
         {
-          rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
+          rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern, check_locks);
           if ((rrc <> 1) and (RES_FULL_PATH not like '%,acl'))
           {
             connection_set ('dav_store', null);
@@ -3533,7 +3580,7 @@ create procedure DAV_DELETE_INT (
         }
         for select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id do
         {
-          rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern);
+          rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern, check_locks);
           if ((rrc <> 1) and (COL_NAME not like '%,acl'))
           {
             connection_set ('dav_store', null);
@@ -3863,13 +3910,13 @@ create procedure DAV_COPY_INT (
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
 
-              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0);
+              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0, check_locks=>check_locks);
             }
           else
             {
               for (select RES_TYPE as rt, RES_CONTENT as rcnt, RES_NAME as mname from WS.WS.SYS_DAV_RES where RES_ID = id) do
                 {
-                  newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0);
+                  newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0, check_locks=>check_locks);
                 }
             }
         }
@@ -4112,10 +4159,12 @@ create procedure DAV_MOVE_INT (
     {
       if (0 <> (rc := DAV_IS_LOCKED (id , st, check_locks)))
         return rc;
+
       if (d_id is null)
         rc := DAV_IS_LOCKED (dp_id , 'C', check_locks);
       else
         rc := DAV_IS_LOCKED (d_id , st, check_locks);
+
       if (0 <> rc)
         return (case when rc = -8 then -9 else rc end);
     }
@@ -4229,7 +4278,7 @@ create procedure DAV_MOVE_INT (
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
 
-              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, dirsingle[5], dirsingle[7], dirsingle[6], extern=>0);
+              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, dirsingle[5], dirsingle[7], dirsingle[6], extern=>0, check_locks=>check_locks);
               rc := DAV_DELETE_INT (path, 1, null, null, 0);
               if (rc < 0)
                 return rc;
@@ -4279,7 +4328,7 @@ create procedure DAV_MOVE_INT (
       if (d_id is not null) -- do delete first
         {
           declare rrc integer;
-          rrc := DAV_DELETE_INT (destination, 0, auth_uname, auth_pwd, 0);
+          rrc := DAV_DELETE_INT (destination, 0, auth_uname, auth_pwd, extern=>0, check_locks=>check_locks);
           if (rrc <> 1)
             {
               rollback work;
@@ -4323,7 +4372,7 @@ create procedure DAV_MOVE_INT (
           DB.DBA.LDP_RENAME ('C', rpath, npath, rldp, nldp);
         }
 
-      rc := DAV_DELETE_INT (path, 1, null, null, 0);
+      rc := DAV_DELETE_INT (path, 1, null, null, extern=>0, check_locks=>check_locks);
       if (rc < 0)
         return rc;
 
@@ -5567,16 +5616,16 @@ again:
 }
 ;
 
-create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
+create function DAV_COL_PATH_BOUNDARY (
+  in path varchar) returns varchar
 {
-  declare res varchar;
   declare len integer;
-  res := path;
-  len := length (res);
-  if ((len = 0) or (res[len-1] <> 47))
+
+  len := length (path);
+  if ((len = 0) or (path[len-1] <> 47))
     signal ('.....', sprintf ('Bad path in DAV_COL_PATH_BOUNDARY: %s', path));
-  res := res || '\377\377\377\377';
-  return res;
+
+  return path || '\377\377\377\377';
 }
 ;
 
@@ -5637,7 +5686,7 @@ create trigger SYS_DAV_RES_LDI_AU after update (RES_FULL_PATH, RES_ID, RES_COL, 
   if (
       (_o_size <> _n_size) or
       (O.RES_FULL_PATH <> N.RES_FULL_PATH) or
-      (md5 (case when isblob (O.RES_CONTENT) then blob_to_string_output (O.RES_CONTENT) else O.RES_CONTENT end) <> md5 (case when isblob (N.RES_CONTENT) then blob_to_string_output (N.RES_CONTENT) else N.RES_CONTENT end))
+      (md5 (coalesce (case when isblob (O.RES_CONTENT) then blob_to_string_output (O.RES_CONTENT) else O.RES_CONTENT end, '')) <> md5 (coalesce (case when isblob (N.RES_CONTENT) then blob_to_string_output (N.RES_CONTENT) else N.RES_CONTENT end, '')))
      )
     DB.DBA.RDF_SINK_UPDATE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, _o_size, N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, _n_size);
 
