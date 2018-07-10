@@ -32,7 +32,9 @@
 /*
  *  Trigger odbccat.c to add DSN handling bif functions
  */
+#ifndef HAVE_ODBCINST_H
 #define HAVE_ODBCINST_H
+#endif
 
 /*
  *  Set default specification to ODBC 3.00

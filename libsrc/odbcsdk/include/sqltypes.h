@@ -81,6 +81,13 @@
 #define ODBCVER		0x0351
 #endif
 
+/*
+ *  Include Windows style defines and typedefs on Unix
+ */
+#ifndef _IODBCUNIX_H
+#include <iodbcunix.h>
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -332,7 +339,7 @@ SQL_INTERVAL_STRUCT;
  */
 #if (ODBCVER >= 0x0300)
 
-#if (_MSC_VER >= 900)
+#if defined(_MSC_VER) && (_MSC_VER >= 900)
 #  define ODBCINT64 		__int64
 #endif
 
