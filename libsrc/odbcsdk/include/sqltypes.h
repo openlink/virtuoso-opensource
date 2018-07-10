@@ -399,8 +399,12 @@ typedef unsigned short SQLWCHAR;
 #  if defined(__cplusplus)		|| \
       defined(_WCHAR_T)			|| \
       defined(_WCHAR_T_DEFINED)		|| \
-      defined(_WCHAR_T_DECLARED)        || \
-      defined(_BSD_WCHAR_T_DEFINED_)
+      defined(_WCHAR_T_DEFINED_)	|| \
+      defined(_WCHAR_T_DECLARED)	|| \
+      defined(_BSD_WCHAR_T_DEFINED_)	|| \
+      defined(_BSD_WCHAR_T_)		|| \
+      defined(_BSD_CT_RUNE_T_)      || \
+      defined(__DEFINED_wchar_t)
 typedef wchar_t SQLWCHAR;
 #  else
 #    error Please make sure your system supports the wchar_t type
