@@ -46,6 +46,7 @@ check_SCRIPTS = \
 	tcl.sh \
 	tclstart.sh \
 	tclstop.sh \
+	tdatetime.sh \
 	tdav.sh \
 	tdav_meta.sh \
 	tdbp.sh \
@@ -53,6 +54,7 @@ check_SCRIPTS = \
 	tdrop.sh \
 	test_cluster.sh \
 	test_fn.sh \
+	test_ldp.sh \
 	test_run.sh \
 	test_server.sh \
 	testall.sh \
@@ -135,6 +137,7 @@ EXTRA_DIST= \
 	*.xsl \
 	cluster-test.ini \
 	grddl-tests.tar.gz \
+	ldp/*.ttl \
 	pdd_txt.gz \
 	spanish.coll \
 	spotlight_test.tar.gz \

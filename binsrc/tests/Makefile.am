@@ -185,11 +185,11 @@ inifile.vers.c:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	davperf.sql \
+	dumptb.sql \
 	isql_win32.c \
-	tpccoci.c \
-	davperf.sql \
-	tpccddk.sql \
 	tpcc.sql \
+	tpccddk.sql \
+	tpccoci.c \
 	tpm.sql \
 	virtdriver.sql \
 	wi.cfg
