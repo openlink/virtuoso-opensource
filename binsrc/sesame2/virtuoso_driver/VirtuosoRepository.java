@@ -47,13 +47,13 @@ import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
  * and that it should be shut down before it is discarded/garbage collected.
  * Forgetting the latter can result in loss of data (depending on the Repository
  * implementation)!
- * 
+ *
  */
 public class VirtuosoRepository implements Repository {
-	
+
 	ValueFactory valueFactory = new ValueFactoryImpl();
 	File dataDir;
-	
+
         private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
 	private String url_hostlist;
 	private String user;
@@ -67,16 +67,17 @@ public class VirtuosoRepository implements Repository {
 	private DataSource _ds;
 	private ConnectionPoolDataSource _pds;
 	private XADataSource _xads;
-    
+
 	boolean useLazyAdd = true;
 	boolean insertBNodeAsVirtuosoIRI = false;
+	boolean insertStringLiteralAsSimple = false;
 	String defGraph;
 	int prefetchSize = 100;
 	int batchSize = 5000;
 	int queryTimeout = 0;
 	String ruleSet;
 	boolean useDefGraphForQueries = false;
-	
+
 	public VirtuosoRepository(ConnectionPoolDataSource ds, String defGraph, boolean useLazyAdd) {
 	        super();
 		this.defGraph = defGraph;
@@ -100,12 +101,12 @@ public class VirtuosoRepository implements Repository {
 
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters
-	 * 
+	 *
 	 * @param url_hostlist
 	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
-	 *        Virtuoso database hostlist 
+	 *        Virtuoso database hostlist
 	 *        <pre>
-	 *        "hostone:1112,hosttwo:1113" 
+	 *        "hostone:1112,hosttwo:1113"
 	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
 	 *        </pre>
 	 * @param user
@@ -114,15 +115,15 @@ public class VirtuosoRepository implements Repository {
 	 *        the user's password
 	 * @param defGraph
 	 *        a default Graph name, used for Sesame calls, when contexts list
-	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
+	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods
 	 * @param useLazyAdd
-	 *        set <tt>true</tt>  to enable using batch optimization for sequence of 
+	 *        set <tt>true</tt>  to enable using batch optimization for sequence of
 	 *        <pre>
 	 *	  add(Resource subject, URI predicate, Value object, Resource... contexts);
          *        add(Statement statement, Resource... contexts);
 	 *        </pre>
          *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
-         *        or when batch size become more than predefined batch max_size. 
+         *        or when batch size become more than predefined batch max_size.
          *        LazyAdd will be set false for XADataSource connection
          *
 	 */
@@ -138,12 +139,12 @@ public class VirtuosoRepository implements Repository {
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
-	 * 
+	 *
 	 * @param url_hostlist
 	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
-	 *        Virtuoso database hostlist 
+	 *        Virtuoso database hostlist
 	 *        <pre>
-	 *        "hostone:1112,hosttwo:1113" 
+	 *        "hostone:1112,hosttwo:1113"
 	 *     or "hostone,hosttwo" if default port=1111 is used on hosts
 	 *        </pre>
 	 * @param user
@@ -151,13 +152,13 @@ public class VirtuosoRepository implements Repository {
 	 * @param password
 	 *        the user's password
 	 * @param useLazyAdd
-	 *        set <tt>true</tt>  to enable using batch optimization for sequence of 
+	 *        set <tt>true</tt>  to enable using batch optimization for sequence of
 	 *        <pre>
 	 *	  add(Resource subject, URI predicate, Value object, Resource... contexts);
          *        add(Statement statement, Resource... contexts);
 	 *        </pre>
          *        methods, when autoCommit mode is off. The triples will be sent to DBMS on commit call
-         *        or when batch size become more than predefined batch max_size. 
+         *        or when batch size become more than predefined batch max_size.
          *        LazyAdd will be set false for XADataSource connection
          *
 	 */
@@ -168,12 +169,12 @@ public class VirtuosoRepository implements Repository {
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters.
 	 * useLazyAdd will be set to <tt>false</tt>.
-	 * 
+	 *
 	 * @param url_hostlist
 	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
-	 *        Virtuoso database hostlist 
+	 *        Virtuoso database hostlist
 	 *        <pre>
-	 *        "hostone:1112,hosttwo:1113" 
+	 *        "hostone:1112,hosttwo:1113"
 	 *     or "hostone,hosttwo" if the default port=1111 is used for hosts
 	 *        </pre>
 	 * @param user
@@ -182,7 +183,7 @@ public class VirtuosoRepository implements Repository {
 	 *        the user's password
 	 * @param defGraph
 	 *        a default Graph name, used for Sesame calls, when contexts list
-	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
+	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods
          *
 	 */
 	public VirtuosoRepository(String url_hostlist, String user, String password, String defGraph) {
@@ -193,12 +194,12 @@ public class VirtuosoRepository implements Repository {
 	 * Construct a VirtuosoRepository with a specified parameters.
 	 * <tt>useLazyAdd</tt> will be set to <tt>false</tt>.
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
-	 * 
+	 *
 	 * @param url_hostlist
 	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
-	 *        Virtuoso database hostlist 
+	 *        Virtuoso database hostlist
 	 *        <pre>
-	 *        "hostone:1112,hosttwo:1113" 
+	 *        "hostone:1112,hosttwo:1113"
 	 *     or "hostone,hosttwo" if the default port=1111 is used for hosts
 	 *        </pre>
 	 * @param user
@@ -215,7 +216,7 @@ public class VirtuosoRepository implements Repository {
 	 * updating the contents of the repository. Created connections need to be
 	 * closed to make sure that any resources they keep hold of are released. The
 	 * best way to do this is to use a try-finally-block as follows:
-	 * 
+	 *
 	 * <pre>
 	 * Connection con = repository.getConnection();
 	 * try {
@@ -225,7 +226,7 @@ public class VirtuosoRepository implements Repository {
 	 * 	con.close();
 	 * }
 	 * </pre>
-	 * 
+	 *
 	 * @return A connection that allows operations on this repository.
 	 * @throws RepositoryException
 	 *         If something went wrong during the creation of the Connection.
@@ -281,14 +282,14 @@ public class VirtuosoRepository implements Repository {
 	   				else
 	     					url = url + "roundrobin=1";
 				}
-		
+
 				if (url.toLowerCase().indexOf("log_enable=") == -1) {
 	   				if (url.charAt(url.length()-1) != '/')
 	     					url = url + "/log_enable=2";
 	   				else
 	     					url = url + "log_enable=2";
 				}
-		
+
 				java.sql.Connection connection = DriverManager.getConnection(url, user, password);
 				return new VirtuosoRepositoryConnection(this, connection);
 			}
@@ -312,12 +313,12 @@ public class VirtuosoRepository implements Repository {
 				System.out.println("Connection to " + url_hostlist + " has FAILED.");
 				throw new RepositoryException(e);
 			}
-		}	
+		}
 	}
 
 	/**
-	 * Set the buffer fetch size(default 100) 
-	 * 
+	 * Set the buffer fetch size(default 100)
+	 *
 	 * @param sz
 	 *        buffer fetch size.
 	 */
@@ -333,8 +334,8 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	/**
-	 * Set the batch size for Inserts data(default 5000) 
-	 * 
+	 * Set the batch size for Inserts data(default 5000)
+	 *
 	 * @param sz
 	 *        batch size.
 	 */
@@ -350,8 +351,8 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	/**
-	 * Set the query timeout(default 0) 
-	 * 
+	 * Set the query timeout(default 0)
+	 *
 	 * @param seconds
 	 *        queryTimeout seconds, 0 - unlimited.
 	 */
@@ -367,7 +368,7 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	/**
-	 * Set the UseLazyAdd state for connection(default true) 
+	 * Set the UseLazyAdd state for connection(default true)
 	 * for XADataSource connection set false and can't be changed
 	 * @param v
 	 *        true - useLazyAdd
@@ -385,8 +386,8 @@ public class VirtuosoRepository implements Repository {
 
 
 	/**
-	 * Set the RoundRobin state for connection(default false) 
-	 * 
+	 * Set the RoundRobin state for connection(default false)
+	 *
 	 * @param v
 	 *        true - use roundrobin
 	 */
@@ -403,8 +404,8 @@ public class VirtuosoRepository implements Repository {
 
 
 	/**
-	 * Set the insertBNodeAsURI state for connection(default false) 
-	 * 
+	 * Set the insertBNodeAsURI state for connection(default false)
+	 *
 	 * @param v
 	 *        true - insert BNode as Virtuoso IRI
 	 *        false - insert BNode as Virtuoso Native BNode
@@ -421,10 +422,32 @@ public class VirtuosoRepository implements Repository {
 	}
 
 
-	
+
+	/**
+	 * Get the insertStringLiteralAsSimple state for connection
+	 *
+	 * @return insertStringLiteralAsSimple state
+	 */
+	public boolean getInsertStringLiteralAsSimple() {
+	    return this.insertStringLiteralAsSimple;
+	}
+
+	/**
+	 * Set the insertStringLiteralAsSimple state for connection(default false)
+	 *
+	 * @param v
+	 *        true - insert String Literals as Simple Literals
+	 *        false - insert String Literals as is
+	 */
+	public void setInsertStringLiteralAsSimple(boolean v) {
+	    this.insertStringLiteralAsSimple = v;
+	}
+
+
+
 	/**
 	 * Set inference RuleSet name
-	 * 
+	 *
 	 * @param name
 	 *        RuleSet name.
 	 */
@@ -441,9 +464,9 @@ public class VirtuosoRepository implements Repository {
 		return this.ruleSet;
 	}
 
-	
+
 	/**
-	 * Use defGraph with SPARQL queries, if query default graph wasn't set (default false) 
+	 * Use defGraph with SPARQL queries, if query default graph wasn't set (default false)
 	 * @param v
 	 *        true - useDefGraphForQueries
 	 */
@@ -462,7 +485,7 @@ public class VirtuosoRepository implements Repository {
 
 	/**
 	 * Get the directory where data and logging for this repository is stored.
-	 * 
+	 *
 	 * @return the directory where data for this repository is stored.
 	 */
 	public File getDataDir() {
@@ -471,7 +494,7 @@ public class VirtuosoRepository implements Repository {
 
 	/**
 	 * Gets a ValueFactory for this Repository.
-	 * 
+	 *
 	 * @return A repository-specific ValueFactory.
 	 */
 	public ValueFactory getValueFactory() {
@@ -481,7 +504,7 @@ public class VirtuosoRepository implements Repository {
 	/**
 	 * Initializes this repository. A repository needs to be initialized before
 	 * it can be used.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 *         If the initialization failed.
 	 */
@@ -492,13 +515,13 @@ public class VirtuosoRepository implements Repository {
         /**
          * Indicates if the Repository has been initialized. Note that the
          * initialization status may change if the Repository is shut down.
-         * 
+         *
          * @return true iff the repository has been initialized.
          */
         public boolean isInitialized() {
                 return initialized;
         }
-    
+
 
 	/**
 	 * Checks whether this repository is writable, i.e. if the data contained in
@@ -516,7 +539,7 @@ public class VirtuosoRepository implements Repository {
 
 	/**
 	 * Set the directory where data and logging for this repository is stored.
-	 * 
+	 *
 	 * @param dataDir
 	 *        the directory where data for this repository is stored
 	 */

@@ -26,10 +26,10 @@ package virtuoso.sesame2.driver;
 
 public class Version {
 
-   protected static final String DRV_VER = "2.8.6";
+   protected static final String DRV_VER = "2.8.9";
 
    // The major and minor version number
-   protected static final String build_id = "1.31";
+   protected static final String build_id = "1.32";
 
    public static void main(String args[])
    {
