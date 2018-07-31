@@ -5105,7 +5105,7 @@ ssl_ctx_set_cipher_list (SSL_CTX * ctx, char *cipher_list)
   if (!cipher_list || !*cipher_list || !strcasecmp(cipher_list, "default"))
     cipher_list = VIRTUOSO_DEFAULT_CIPHER_LIST;
 
-  if (!SSL_CTX_set_cipher_list (ssl_server_ctx, cipher_list))
+  if (!SSL_CTX_set_cipher_list (ctx, cipher_list))
     {
       log_error ("SSL: Failed setting cipher list [%s]", cipher_list);
       return 0;
