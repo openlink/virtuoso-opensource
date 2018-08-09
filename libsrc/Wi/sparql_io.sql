@@ -3362,12 +3362,12 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   if (get_keyword ('nsdecl', params) is not null)
     {
-      WS.WS.sparql_predefined_nsdecl ();
+      WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (path, params, lines, user_id, 'nsdecl');
       return;
     }
   if (get_keyword ('rdfinf', params) is not null)
     {
-      WS.WS.sparql_predefined_rdfinf ();
+      WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (path, params, lines, user_id, 'rdfinf');
       return;
     }
 

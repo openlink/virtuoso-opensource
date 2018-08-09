@@ -5151,7 +5151,7 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 
       if (!strcasecmp (name, "SSLv3"))
 	opt = SSL_PROTOCOL_SSLV3;
-      else if (!strcasecmp (name, "TLSv1"))
+      else if (!strcasecmp (name, "TLSv1") || !strcasecmp (name, "TLSv1.0"))
 	opt = SSL_PROTOCOL_TLSV1;
 #if defined (SSL_OP_NO_TLSv1_1)
       else if (!strcasecmp (name, "TLSv1_1") || !strcasecmp (name, "TLSv1.1"))
@@ -5160,6 +5160,10 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 #if defined (SSL_OP_NO_TLSv1_2)
       else if (!strcasecmp (name, "TLSv1_2") || !strcasecmp (name, "TLSv1.2"))
 	opt = SSL_PROTOCOL_TLSV1_2;
+#endif
+#if defined (SSL_OP_NO_TLSv1_3)
+      else if (!strcasecmp (name, "TLSv1_3") || !strcasecmp (name, "TLSv1.3"))
+	opt = SSL_PROTOCOL_TLSV1_3;
 #endif
       else if (!strcasecmp (name, "ALL"))
 	opt = SSL_PROTOCOL_ALL;
@@ -5196,11 +5200,14 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   else
     log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vunerable");
 
+  if (!(proto & SSL_PROTOCOL_TLSV1))
+    ctx_options |= SSL_OP_NO_TLSv1;
+  else
+    log_warning ("SSL: Enabling legacy protocol TLS 1.0 which may be vunerable");
+
   /*
    *  Check rest of protocols
    */
-  if (!(proto & SSL_PROTOCOL_TLSV1))
-    ctx_options |= SSL_OP_NO_TLSv1;
 
 #if defined (SSL_OP_NO_TLSv1_1)
   if (!(proto & SSL_PROTOCOL_TLSV1_1))

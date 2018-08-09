@@ -253,8 +253,8 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
     "unsigned long",
     "integer",
     "negative integer",
-    "nonpositive integer",
-    "nonnegative integer",
+    "non-positive integer",
+    "non-negative integer",
     "positive integer" };
   int l, s = 0;
   const char *p = str;

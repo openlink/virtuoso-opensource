@@ -1607,7 +1607,7 @@ void
 rdf_box_audit_impl (rdf_box_t * rb)
 {
   if (0 >= rb->rb_ref_count)
-    GPF_T1 ("RDF box has nonpositive reference count");
+    GPF_T1 ("RDF box has non-positive reference count");
 #ifdef RDF_DEBUG
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");

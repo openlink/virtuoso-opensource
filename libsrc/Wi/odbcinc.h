@@ -61,7 +61,9 @@
 # else
 #  ifdef NO_UDBC_SDK
 #   include <iodbcinst.h>
+#   ifndef HAVE_ODBCINST_H
 #   define HAVE_ODBCINST_H
+#   endif
 #  else
 #   include "iodbcinst.h"
 #  endif

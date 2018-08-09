@@ -80,13 +80,6 @@
 #define ODBCVER		0x0351
 #endif
 
-/*
- *  Include Windows style defines and typedefs on Unix
- */
-#ifndef _IODBCUNIX_H
-#include <iodbcunix.h>
-#endif
-
 #ifndef _SQLTYPES_H
 #include <sqltypes.h>
 #endif

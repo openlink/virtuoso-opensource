@@ -3353,7 +3353,7 @@ xmlStorageSystem.geterror (in code int)
     -8, 'Target is locked',
     -9, 'Destination is locked',
     -10, 'Property name is reserved (protected or private)',
-    -11, 'Property does not exists',
+    -11, 'Property does not exist',
     -12, 'Authentication failed',
     -13, 'Operation is forbidden (the authenticated user do not have a permissions for the action)',
     -14, 'the target type is not valid',

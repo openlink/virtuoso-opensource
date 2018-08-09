@@ -194,14 +194,14 @@ typedef long long 		int64;
 #ifdef _WIN32
 
 /* VC10 */
-#include <float.h>
-#define DBL_POS_INF		((float)1e300)
-#define DBL_NEG_INF		(-DBL_POS_INF)
-#define DBL_NAN			((float)1e300 * 0.0f)
-#define isfinite(d)		_finite(d)
-#define isnan(d)		_isnan(d)
-#define IS_DOUBLE_OVERFLOW(d)	(!isfinite(d))
-#define IS_FLOAT_OVERFLOW(f)	(!isfinite(d))
+//#include <float.h>
+//#define DBL_POS_INF		((float)1e300)
+//#define DBL_NEG_INF		(-DBL_POS_INF)
+//#define DBL_NAN			((float)1e300 * 0.0f)
+//#define isfinite(d)		_finite(d)
+//#define isnan(d)		_isnan(d)
+//#define IS_DOUBLE_OVERFLOW(d)	(!isfinite(d))
+//#define IS_FLOAT_OVERFLOW(f)	(!isfinite(d))
 __inline double
 round (double x)
 {
@@ -209,12 +209,12 @@ round (double x)
 }
 
 /* VC12 */
-//#include <math.h>
-//#define DBL_POS_INF		INFINITY
-//#define DBL_NEG_INF		(-INFINITY)
-//#define DBL_NAN			NAN
-//#define IS_DOUBLE_OVERFLOW(d)	(!isfinite(d))
-//#define IS_FLOAT_OVERFLOW(f)	(!isfinite(d))
+#include <math.h>
+#define DBL_POS_INF		INFINITY
+#define DBL_NEG_INF		(-INFINITY)
+#define DBL_NAN			NAN
+#define IS_DOUBLE_OVERFLOW(d)	(!isfinite(d))
+#define IS_FLOAT_OVERFLOW(f)	(!isfinite(d))
 
 #else
 #ifndef isfinite

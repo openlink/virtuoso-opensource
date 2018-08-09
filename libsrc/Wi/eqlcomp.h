@@ -93,8 +93,15 @@ void upd_free (update_node_t * upd);
 
 void ddl_free (ddl_node_t * ddl);
 
-void sqlc_error (comp_context_t * cc, const char *st, const char *str,...);
-void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
+#ifdef MALLOC_DEBUG
+extern void dbg_sqlc_error (const char *file, int line, comp_context_t * cc, const char *st, const char *str,...);
+extern void dbg_sqlc_new_error (const char *file, int line, comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
+#define sqlc_error(cc,st,str,...) dbg_sqlc_error (__FILE__, __LINE__, (cc), (st), (str), ##__VA_ARGS__)
+#define sqlc_new_error(cc,st,virt_code,str,...) dbg_sqlc_new_error (__FILE__, __LINE__, (cc), (st), (virt_code), (str), ##__VA_ARGS__)
+#else
+extern void sqlc_error (comp_context_t * cc, const char *st, const char *str,...);
+extern void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
+#endif
 void sqlc_resignal_1 (comp_context_t * cc, caddr_t err);
 
 extern query_t *DBG_NAME (sql_compile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t * err,

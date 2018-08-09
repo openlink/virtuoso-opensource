@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -19,13 +19,13 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
-    <PlatformToolset>v110</PlatformToolset>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -86,7 +86,7 @@
       <AdditionalIncludeDirectories>..\libsrc\Wi;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>dk1t.lib;threadw.lib;util.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;CORE_RL_wand_.lib;CORE_RL_coders_.lib;CORE_RL_magick_.lib;CORE_RL_magick++_.lib;CORE_RL_ttf_.lib;CORE_RL_xlib_.lib;CORE_RL_bzlib_.lib;CORE_RL_zlib_.lib;CORE_RL_lcms_.lib;CORE_RL_tiff_.lib;CORE_RL_filters_.lib;CORE_RL_jpeg_.lib;CORE_RL_jbig_.lib;CORE_RL_jp2_.lib;CORE_RL_png_.lib;CORE_RL_wmf_.lib;CORE_RL_libxml_.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dk1t.lib;threadw.lib;util.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;CORE_RL_wand_.lib;CORE_RL_coders_.lib;CORE_RL_magick_.lib;CORE_RL_magick++_.lib;CORE_RL_ttf_.lib;CORE_RL_bzlib_.lib;CORE_RL_zlib_.lib;CORE_RL_lcms_.lib;CORE_RL_tiff_.lib;CORE_RL_filters_.lib;CORE_RL_jpeg_.lib;CORE_RL_jbig_.lib;CORE_RL_jp2_.lib;CORE_RL_png_.lib;CORE_RL_libxml_.lib;CORE_RL_lqr_.lib;CORE_RL_webp_.lib;CORE_RL_cairo_.lib;CORE_RL_pixman_.lib;CORE_RL_librsvg_.lib;CORE_RL_glib_.lib;CORE_RL_pango_.lib;CORE_RL_croco_.lib;CORE_RL_openjpeg_.lib;CORE_RL_exr_.lib;CORE_RL_libraw_.lib;CORE_RL_ffi_.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)im.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;../SDK/$(ShortPlatform)/ImageMagick;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

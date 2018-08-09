@@ -72,7 +72,6 @@ EXTRA_DIST = \
 	amiga/Makefile.sas \
 	ChangeLog \
 	configure \
-	configure.log \
 	contrib/ada/*.txt \
 	contrib/ada/buffer_demo.adb \
 	contrib/ada/mtest.adb \

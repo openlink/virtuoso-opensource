@@ -24083,7 +24083,7 @@ fi
 
 if [ ! -f "$file" -a ! -d "$file" ]
 then
-    echo "$file does not exists"
+    echo "$file does not exist"
     exit 1
 fi
 
@@ -24188,7 +24188,7 @@ fi
 
 if [ ! -f "$f" ]
 then
-    echo "$f does not exists"
+    echo "$f does not exist"
     exit
 fi
 
@@ -25864,7 +25864,7 @@ PASSED: TEST 6
 PASSED: TEST 7
 
 == TEST 8:  : Start
-   Statement does not exists
+   Statement does not exist
 == TEST 8:  : End
 PASSED: TEST 8
 

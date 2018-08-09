@@ -482,7 +482,7 @@ dlsym (void *hdl, char *sym)
    *  to working round this:
    *   1. convert to full pathname in driver manager.
    *   2. applications always pass driver's full path name.
-   *   3. if driver itself do not support SQLGetFunctions(), call it with
+   *   3. if driver itself does not support SQLGetFunctions(), call it with
    *      SQL_ALL_FUNCTIONS as flag immediately after SQLConnect(),
    *      SQLDriverConnect() and SQLBrowseConnect() to force the driver
    *      manager resolving all will be used symbols.

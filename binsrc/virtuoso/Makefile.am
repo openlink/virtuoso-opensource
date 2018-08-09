@@ -88,7 +88,7 @@ virtuoso_iodbc_t_CFLAGS += -DBUILD_THREAD_MODEL=\"-t\"
 virtuoso_iodbc_t_LDADD = \
         $(top_builddir)/libsrc/Wi/libwi_odbc.la \
 	$(server_libs) \
-	@iodbc_LDFLAGS@ \
+	@iodbc_LIBS@ \
 	@LIBS@
 
 # libvirtuoso-iodbc-t
@@ -103,7 +103,7 @@ libvirtuoso_iodbc_t_la_LDFLAGS = -static
 libvirtuoso_iodbc_t_la_LIBADD = \
         $(top_srcdir)/libsrc/Wi/libwi_odbc.la \
 	$(server_libs) \
-	@iodbc_LDFLAGS@ \
+	@iodbc_LIBS@ \
 	@LIBS@
 
 virtuoso_t_SOURCES = $(virtuoso_iodbc_t_SOURCES)

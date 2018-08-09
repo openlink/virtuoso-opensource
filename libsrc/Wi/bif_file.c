@@ -1678,7 +1678,7 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   place = bif_long_arg (qst, args, 2, "string_to_file");
   if (place < -2 /* i.e. (place<0) && (place != -1) */ )
     sqlr_new_error ("22003", "FA021",
-	"Third argument of string_to_file function, should be nonnegative offset value, -1 or -2");
+	"Third argument of string_to_file function, should be non-negative offset value, -1 or -2");
 
   if (!DV_STRINGP (string) && !DV_WIDESTRINGP (string) &&
       !IS_BLOB_HANDLE (string) && string_dtp != DV_C_STRING
@@ -6139,7 +6139,7 @@ fiop_release (caddr_t box)
   if (NULL != fiod->fiod_mutex)
     mutex_enter (fiod->fiod_mutex);
   if (0 >= fiod->fiod_refctr)
-    GPF_T1 ("filep_destroy: nonpositive refctr");
+    GPF_T1 ("filep_destroy: non-positive refctr");
   if (--(fiod->fiod_refctr))
 {
       if (NULL != fiod->fiod_mutex)
@@ -6165,7 +6165,7 @@ fiop_copy (caddr_t box)
   if (NULL != fiod->fiod_mutex)
     mutex_enter (fiod->fiod_mutex);
   if (0 >= fiod->fiod_refctr)
-    GPF_T1 ("filep_copy: nonpositive refctr");
+    GPF_T1 ("filep_copy: non-positive refctr");
   fiod->fiod_refctr++;
   if (NULL != fiod->fiod_mutex)
     mutex_leave (fiod->fiod_mutex);

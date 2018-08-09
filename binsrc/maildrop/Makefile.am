@@ -72,7 +72,7 @@ odbc_mail_LDADD = \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
 	$(top_builddir)/libsrc/util/libutil.la \
-	@iodbc_LDFLAGS@ \
+	@iodbc_LIBS@ \
 	@clntlibs@
 
 odbc_mail_vers.c: $(LIBDEPS) $(MAKEVER)

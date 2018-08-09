@@ -70,9 +70,9 @@ typedef struct jso_field_descr_s {
   struct jso_class_descr_s *	jsofd_class;	/*!< The backlink to the class where the field is declared */
 } jso_field_descr_t;
 
-/* Category of JSO class. This implementation supports only structures with fixed list of named fields and arrays with nonnegative integer indexes */
+/* Category of JSO class. This implementation supports only structures with fixed list of named fields and arrays with non-negative integer indexes */
 #define JSO_CAT_STRUCT	21	/*!< Class instances are strtuctures with fixed list of named fields */
-#define JSO_CAT_ARRAY	22	/*!< Class instances are arrays with nonnegative integer indexes */
+#define JSO_CAT_ARRAY	22	/*!< Class instances are arrays with non-negative integer indexes */
 /*#define JSO_CAT_MAP	23	*!< Class instances are sets of key-value pairs with keys and values of any types */
 
 /*! Data specific to JSO_CAT_STRUCT classes */

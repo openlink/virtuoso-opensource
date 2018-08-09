@@ -32,7 +32,7 @@ AC_REVISION($Id$)
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
 m4_define(vos_patch,	[5])
-m4_define(vos_devel,	[-rc1])
+m4_define(vos_devel,	[-rc2])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
@@ -326,15 +326,14 @@ AC_SUBST(INCDIR)
 ##									##
 ##########################################################################
 
-#AC_PROG_CPP
-#actually prefer /lib/cpp : it's to be run on Java
-AC_PATH_PROG([CPP], [cpp], [/lib/cpp], [/usr/bin:/lib:$PATH])
-
 AC_PROG_CC
-AC_PROG_CC_C_O 			dnl this was AC_MINUS_C_MINUS_O
+AC_PROG_CC_C_O
 AC_LANG_C
 AC_PROG_LD
 AC_SUBST(LD)
+
+AC_PROG_CPP
+AC_PATH_PROG(JAVACPP, [cpp], [/lib/cpp], [/usr/bin:/lib:$PATH])
 
 
 ##########################################################################
@@ -1050,7 +1049,7 @@ AC_SUBST(openldap_LDFLAGS)
 # POP3/NNTP support --imsg                                               #
 #                                                                        #
 ##########################################################################
-AC_ARG_ENABLE(imsg,
+AC_ARG_ENABLE(imsg, [dnl
 AC_HELP_STRING([--enable-imsg], [enable POP3 and NNTP extension (default)])
 AC_HELP_STRING([--disable-imsg], [disable POP3 and NNTP extension])dnl
 ], [
@@ -2091,50 +2090,96 @@ srvrlibs="$srvrlibs $LIBDL"
 ##########################################################################
 
 AC_MSG_CHECKING(for iODBC location)
-virt_iodbc_dir="libsrc/odbcsdk"
-virt_do_iodbc="no"
+virt_iodbc_dir="."
+virt_with_iodbc="no"
 AC_ARG_WITH(iodbc, [dnl
 AC_HELP_STRING([--with-iodbc(=DIR)], [build with iODBC implementation if possible])dnl
 ], [
       case "${withval}" in
-	  yes)	virt_do_iodbc="yes" ;;
-	  no)	virt_do_iodbc="no"  ;;
-	  /*)	virt_do_iodbc="yes" virt_iodbc_dir="${withval}" ;;
+	  yes)	virt_with_iodbc="yes" ;;
+	  no)	virt_with_iodbc="no"  ;;
+	  /*)	virt_with_iodbc="yes" virt_iodbc_dir="${withval}" ;;
 	  *)	AC_MSG_ERROR("Invalid value for the --with-iodbc : must be an absolute path") ;;
       esac
     ],
-    [ virt_do_iodbc="no" ])
+    [ virt_with_iodbc="no" ])
 
 AC_MSG_RESULT($virt_iodbc_dir)
 AC_DEFINE(NO_UDBC_SDK,1, [Define if using the new iODBC API])
 
 
 #
+#  Check for installed versions of iODBC
+#
+if test "x$virt_with_iodbc" = "xyes"
+then
+    AC_CHECK_PROGS(IODBC_CONFIG, iodbc-config, false, [$virt_iodbc_dir/bin:$virt_iodbc_dir:$PATH])
+    AC_CHECK_PROGS(PKG_CONFIG, pkg-config, false, [$virt_iodbc_dir/bin:$virt_iodbc_dir:$PATH])
+
+    if "$IODBC_CONFIG" --version 2>/dev/null
+    then
+	iodbc_CFLAGS=`"$IODBC_CONFIG" --cflags`
+	iodbc_LIBS=`"$IODBC_CONFIG" --libs`
+    elif "$PKG_CONFIG" --version 2>/dev/null
+    then
+	saved_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+	PKG_CONFIG_PATH="$virt_iodbc_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
+
+	if "$PKG_CONFIG" --exists libiodbc
+	then
+	    iodbc_CFLAGS=`$PKG_CONFIG libiodbc --cflags`
+	    iodbc_LIBS=`$PKG_CONFIG libiodbc --libs`
+	fi
+
+	PKG_CONFIG_PATH="$saved_PKG_CONFIG_PATH"
+    elif test -d "$virt_iodbc_dir"
+    then
+	if test -d "$virt_iodbc_dir/include"
+	then
+	    iodbc_CFLAGS="$virt_iodbc_dir/include"
+	fi
+	if test -d "$virt_iodbc_dir/lib"
+	then
+	    iodbc_LIBS="-L$virt_iodbc_dir/lib -liodbc -liodbcinst"
+	fi
+    fi
+fi
+
+
+#
 #  Only add path when using iODBC, otherwise the makefiles will
 #  get the headers from libsrc/odbcsdk/include automatically
 #
-if test "x$virt_do_iodbc" = "xyes"
+if test "x$virt_with_iodbc" = "xyes"
 then
-    iodbc_CPPFLAGS="-I$virt_iodbc_dir/include"
-
     saved_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$iodbc_CPPFLAGS $CPPFLAGS"
-    AC_CHECK_HEADERS(sql.h sqlext.h sqlucode.h iodbcext.h odbcinst.h)
-    CPPFLAGS=$saved_CPPFLAGS
+    CPPFLAGS="$iodbc_CFLAGS $CPPFLAGS"
 
-    ccincl="$iodbc_CPPFLAGS $ccincl"
+    saved_LIBS="$LIBS"
+    LIBS="$iodbc_LIBS $LIBS $DLLIB"
 
-    iodbc_LDFLAGS="-L$virt_iodbc_dir/lib -liodbc -liodbcinst $LIBDL"
-    AC_CHECK_LIB(iodbc, SQLTables,
-		 [
-		  virt_do_iodbc="yes"
-		 ],
-		 [
-		  virt_do_iodbc="no"
-		  iodbc_LDFLAGS=""
-		 ],
-		 [$iodbc_LDFLAGS])
+    AC_CHECK_HEADERS(sql.h sqlext.h sqlucode.h odbcinst.h)
 
+    AC_MSG_CHECKING(iODBC libraries)
+    AC_TRY_COMPILE([
+	#include <sql.h>
+	#include <sqlext.h>],[
+	SQLRETURN ret;
+	SQLHANDLE env_handle;
+	ret = SQLAllocHandle ( SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_handle);
+	],
+	[
+	    virt_with_iodbc=yes
+	    AC_MSG_RESULT(done)
+	],
+	[
+ 	    virt_with_iodbc=no
+	    AC_MSG_RESULT(failed)
+        ]
+    )
+
+    CPPFLAGS="$saved_CPPFLAGS"
+    LIBS="$saved_LIBS"
 else
   #
   #  we have a copy of these files internally
@@ -2143,15 +2188,20 @@ else
   AC_DEFINE(HAVE_SQLEXT_H, 1)
   AC_DEFINE(HAVE_SQLUCODE_H, 1)
   AC_DEFINE(HAVE_ODBCINST_H, 1)
-  AC_DEFINE(HAVE_IODBCEXT_H, 1)
+
+  iodbc_CFLAGS='-I$(top_srcdir)/libsrc/odbcsdk/include'
+  iodbc_LIBS="-liodbc -liodbcinst"
 fi
 
-if test "x$virt_do_iodbc" = "xyes"; then
+if test "x$virt_with_iodbc" = "xyes"
+then
   BUILD_OPTS="$BUILD_OPTS odbc"
   AC_MSG_RESULT(Will build the iODBC binaries)
 fi
-AC_SUBST(iodbc_LDFLAGS)
-AM_CONDITIONAL(WITH_IODBC, test "x$virt_do_iodbc" = "xyes" )
+
+AC_SUBST(iodbc_CFLAGS)
+AC_SUBST(iodbc_LIBS)
+AM_CONDITIONAL(WITH_IODBC, test "x$virt_with_iodbc" = "xyes" )
 
 
 ##########################################################################
@@ -2483,7 +2533,7 @@ AC_SUBST(PORT)
 AC_ARG_ENABLE([],[
 VAD Packages:],[])
 
-AC_ARG_ENABLE(bpel-vad,
+AC_ARG_ENABLE(bpel-vad, [dnl
 AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad])
 AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
 ], [
@@ -2496,7 +2546,7 @@ AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
   [ with_bpel_vad="no" ]
 )
 
-AC_ARG_ENABLE(conductor-vad,
+AC_ARG_ENABLE(conductor-vad, [dnl
 AC_HELP_STRING([--enable-conductor-vad], [enable Conductor vad package (default)])
 AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
 ], [
@@ -2509,7 +2559,7 @@ AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
   [ with_conductor_vad="yes" ]
 )
 
-AC_ARG_ENABLE(dbpedia-vad,
+AC_ARG_ENABLE(dbpedia-vad, [dnl
 AC_HELP_STRING([--enable-dbpedia-vad], [enable DBpedia vad package])
 AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])dnl
 ], [
@@ -2522,7 +2572,7 @@ AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])
   [ with_dbpedia_vad="no" ]
 )
 
-AC_ARG_ENABLE(demo-vad,
+AC_ARG_ENABLE(demo-vad, [dnl
 AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package])
 AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
 ], [
@@ -2535,7 +2585,7 @@ AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
   [ with_demo_vad="no" ]
 )
 
-AC_ARG_ENABLE(fct-vad,
+AC_ARG_ENABLE(fct-vad, [dnl
 AC_HELP_STRING([--enable-fct-vad], [enable Facet Browser vad package])
 AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package (default)])dnl
 ], [
@@ -2548,7 +2598,7 @@ AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package (default)
   [ with_fct_vad="no" ]
 )
 
-AC_ARG_ENABLE(isparql-vad,
+AC_ARG_ENABLE(isparql-vad, [dnl
 AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package])
 AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package (default)])dnl
 ], [
@@ -2561,7 +2611,7 @@ AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package (default)])
   [ with_isparql_vad="yes" ]
 )
 
-AC_ARG_ENABLE(ods-vad,
+AC_ARG_ENABLE(ods-vad, [dnl
 AC_HELP_STRING([--enable-ods-vad], [enable ODS vad packages])
 AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages (default)])dnl
 ], [
@@ -2574,7 +2624,7 @@ AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages (default)])dnl
   [ with_ods_vad="no" ]
 )
 
-AC_ARG_ENABLE(rdfmappers-vad,
+AC_ARG_ENABLE(rdfmappers-vad, [dnl
 AC_HELP_STRING([--enable-rdfmappers-vad], [enable RDF Mappers vad package])
 AC_HELP_STRING([--disable-rdfmappers-vad], [disable RDF Mappers vad package (default)])dnl
 ], [
@@ -2587,7 +2637,7 @@ AC_HELP_STRING([--disable-rdfmappers-vad], [disable RDF Mappers vad package (def
   [ with_rdfmappers_vad="no" ]
 )
 
-AC_ARG_ENABLE(rdb2rdf-vad,
+AC_ARG_ENABLE(rdb2rdf-vad, [dnl
 AC_HELP_STRING([--enable-rdb2rdf-vad], [enable Rdb2Rdf vad package])
 AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package (default)])dnl
 ], [
@@ -2600,7 +2650,7 @@ AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package (default)])
   [ with_rdb2rdf_vad="no" ]
 )
 
-AC_ARG_ENABLE(sparqldemo-vad,
+AC_ARG_ENABLE(sparqldemo-vad, [dnl
 AC_HELP_STRING([--enable-sparqldemo-vad], [enable Sparql Demo vad package])
 AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package (default)])dnl
 ], [
@@ -2613,7 +2663,7 @@ AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package (def
   [ with_sparqldemo_vad="no" ]
 )
 
-AC_ARG_ENABLE(syncml-vad,
+AC_ARG_ENABLE(syncml-vad, [dnl
 AC_HELP_STRING([--enable-syncml-vad], [enable SyncML vad package])
 AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package (default)])dnl
 ], [
@@ -2626,7 +2676,7 @@ AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package (default)])dn
   [ with_syncml_vad="no" ]
 )
 
-AC_ARG_ENABLE(tutorial-vad,
+AC_ARG_ENABLE(tutorial-vad, [dnl
 AC_HELP_STRING([--enable-tutorial-vad], [enable Tutorial vad package])
 AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)])dnl
 ], [
@@ -2640,7 +2690,7 @@ AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)
 )
 
 
-AC_ARG_ENABLE(all-vads,
+AC_ARG_ENABLE(all-vads, [dnl
 AC_HELP_STRING([--disable-all-vads], [disable building all vad packages])dnl
 ], [
      case "${enableval}" in

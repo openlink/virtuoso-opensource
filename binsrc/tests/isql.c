@@ -3374,25 +3374,33 @@ dump_all_settable_variables (TCHAR *varname_to_match)
 					 tmp1buf, TMPBUF_SIZE,
 					 NULL, 0, 1);
 	  if (NULL == value)
-	    {
 	      value = _T("NULL");
-	    }
-	  isql_fputs (structptr->name, stdout);
-	  isql_fputs (_T("\tis "), stdout);
+	  else if (!isqlt_tcscmp (value, _T("\r\n")))
+	      value = _T("\\r\\n");
+	  else if (!isqlt_tcscmp (value, _T("\r")))
+	      value = _T("\\r");
+	  else if (!isqlt_tcscmp (value, _T("\n")))
+	      value = _T("\\n");
+	  else if (!isqlt_tcscmp (value, _T("\t")))
+	      value = _T("\\t");
+
+
 	  if (in_HTML_mode () && oo_esc)
 	    {
+	      isql_fputs (structptr->name, stdout);
+	      isql_fputs (_T(" is "), stdout);
 	      html_print_escaped (value, stdout);
+	      isql_fputs (_T("\n"), stdout);
 	    }
 	  else
 	    {
-	      isql_fputs (value, stdout);
+	      isql_printf (_T("%-40") PCT_S _T(" is %") PCT_S _T("\n"), structptr->name, value);
 	    }
-	  isql_fputs (_T("\n"), stdout);
-	  fflush (stdout);
 	}
       structptr++;
     }
 
+  fflush (stdout);
   return (1);
 }
 

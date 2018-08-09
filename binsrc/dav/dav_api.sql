@@ -147,17 +147,17 @@ create procedure DAV_ADD_USER_INT (
         return -31;
 
       if (id is not null)
-        {
-          update WS.WS.SYS_DAV_USER
-             set U_GROUP = gd,
-                 U_DEF_PERMS = perms,
-                 U_FULL_NAME = full_name,
-                 U_PWD = pwd_magic_calc (uid, pwd),
-                 U_E_MAIL = email,
-                 U_ACCOUNT_DISABLED = disable,
-                 U_HOME = home
-           where U_NAME = uid;
-        }
+      {
+        update WS.WS.SYS_DAV_USER
+           set U_GROUP = gd,
+               U_DEF_PERMS = perms,
+               U_FULL_NAME = full_name,
+               U_PWD = pwd_magic_calc (uid, pwd),
+               U_E_MAIL = email,
+               U_ACCOUNT_DISABLED = disable,
+               U_HOME = home
+         where U_NAME = uid;
+      }
     }
   return id;
 }
@@ -988,33 +988,82 @@ DAV_SEARCH_SOME_ID (in path any, out what char (1)) returns any
 ;
 
 --!AWK PUBLIC
-create function
-DAV_HIDE_ERROR (in res any, in dflt any := null) returns any
+create function DAV_HIDE_ERROR (
+  in res any,
+  in dflt any := null) returns any
 {
   if (not (isinteger (res)))
     return res;
+
   if (res >= 0)
     return res;
+
   return dflt;
 }
 ;
 
 
 --!AWK PUBLIC
-create function
-DAV_HIDE_ERROR_OR_DET (in res any, in dflt_err any := null, in dflt_det any := -33) returns any
+create function DAV_HIDE_ERROR_OR_DET (
+  in res any,
+  in dflt_err any := null,
+  in dflt_det any := -33) returns any
 {
   if (not (isinteger (res)))
     return dflt_det;
+
   if (res >= 0)
     return res;
+
   return dflt_err;
 }
 ;
 
+--!AWK PUBLIC
+create function DB.DBA.DAV_PATH_CHECK (
+  in parts any)
+{
+  if (isstring (parts))
+    parts := split_and_decode (parts, 0, '\0\0/');
+
+  foreach (any part in parts) do
+  {
+    if ((part = '.') or (part = '..'))
+      return 0;
+  }
+  return 1;
+}
+;
 
 --!AWK PUBLIC
-create function DAV_CONCAT_PATH (in parts1 any, in parts2 any)
+create function DB.DBA.DAV_PATH_COMPARE (
+  in parts_1 any,
+  in parts_2 any)
+{
+  declare N integer;
+
+  if (isstring (parts_1))
+    parts_1 := split_and_decode (parts_1, 0, '\0\0/');
+
+  if (isstring (parts_2))
+    parts_2 := split_and_decode (parts_2, 0, '\0\0/');
+
+  if (length (parts_1) <> length (parts_2))
+    return 0;
+
+  for (N := 0; N < length (parts_1); N := N + 1)
+  {
+    if (parts_1[N] <> parts_2[N])
+      return 0;
+  }
+  return 1;
+}
+;
+
+--!AWK PUBLIC
+create function DAV_CONCAT_PATH (
+  in parts1 any,
+  in parts2 any)
 {
   declare strg1, strg2 varchar;
   declare len, ctr integer;
@@ -1276,319 +1325,385 @@ DAV_OWNER_ID (in uid any, in gid any, out _uid integer, out _gid integer)
 ;
 
 
-create procedure DAV_IS_LOCKED_INT (inout id any, inout type char, in owned_tokens varchar := '')
+create function DAV_IS_LOCKED_COMPARE (
+  in check_token varchar,
+  in token varchar,
+  in compare_mode integer := 0)
 {
-  declare pid, npid, res integer;
-  declare scope varchar;
-  type := upper (type);
-  if (type <> 'C' and type <> 'R')
+  return case when (compare_mode) then equ (check_token, token) else neq (check_token, token) end;
+}
+;
+
+create function DAV_IS_LOCKED_INT (
+  inout id any,
+  inout st char,
+  in check_token varchar := '',
+  in strict_mode integer := 0)
+{
+  -- dbg_obj_princ ('DAV_IS_LOCKED_INT (', id, st, check_token, strict_mode, ')');
+  declare first integer;
+  declare rc varchar;
+
+  st := upper (st);
+  if (st <> 'C' and st <> 'R')
     return -14;
+
   if (exists (select 1 from WS.WS.SYS_DAV_LOCK where datediff ('second', LOCK_TIME, now()) > LOCK_TIMEOUT))
-    {
-      delete from WS.WS.SYS_DAV_LOCK where datediff ('second', LOCK_TIME, now()) > LOCK_TIMEOUT;
-      --commit work;
-    }
+  {
+    delete from WS.WS.SYS_DAV_LOCK where datediff ('second', LOCK_TIME, now()) > LOCK_TIMEOUT;
+  }
   if (isarray (id))
-    {
-      return call (cast (id[0] as varchar) || '_DAV_IS_LOCKED') (id, type, owned_tokens);
-    }
+    return call (cast (id[0] as varchar) || '_DAV_IS_LOCKED') (id, st, check_token);
+
   if (id <= 0)
-    return -1;
+    return 0;
+
   -- is there any locks
   if (not exists (select 1 from WS.WS.SYS_DAV_LOCK))
-    {
-    --dbg_printf ('DAV_IS_LOCKED: no locks');
+    return 0;
+
+  first := 1;
+  while (not isnull (id))
+  {
+    -- check on the target
+    rc := (select LOCK_SCOPE from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = st and LOCK_PARENT_ID = id and DB.DBA.DAV_IS_LOCKED_COMPARE (check_token, LOCK_TOKEN, strict_mode));
+    if (not isnull (rc))
+      return case when (rc = 'X') then 2 else 1 end;
+
+    -- if target not locked : is there any collection locks
+    if (first and not exists (select 1 from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'C' and DB.DBA.DAV_IS_LOCKED_COMPARE (check_token, LOCK_TOKEN, strict_mode)))
       return 0;
-    }
-  -- check first on the target
-  whenever not found goto nf_target_lock;
-  select case (LOCK_SCOPE) when 'X' then 2 else 1 end into res from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = type and LOCK_PARENT_ID = id and strstr (owned_tokens, LOCK_TOKEN) is null;
-  return res;
 
-nf_target_lock:
+    if (st = 'R')
+      id := (select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = id);
+    else
+      id := (select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = id);
 
-  -- if target not locked : is there any collection locks
-  if (not exists (select 1 from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'C' and strstr (owned_tokens, LOCK_TOKEN) is null))
-    {
-    --dbg_printf ('DAV_IS_LOCKED: no collection locks');
-      return 0;
-    }
-
-  if (type = 'R')
-    pid := coalesce ((select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = id), -1);
-  else if (type = 'C')
-    pid := coalesce ((select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = id), -1);
-
-  if (pid < 0)
-    return -1;
-
-next_parent:
-
-whenever not found goto nf_parent_lock;
-  select case (LOCK_SCOPE) when 'X' then 2 else 1 end into res from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = pid and strstr (owned_tokens, LOCK_TOKEN) is null;
-  id := pid;
-  type := 'C';
-  return res;
-
-nf_parent_lock:
-  whenever not found goto nf_parent;
-  select COL_PARENT into npid from WS.WS.SYS_DAV_COL where COL_ID = pid;
-  pid := npid;
-  goto next_parent;
-nf_parent:
---dbg_printf ('DAV_IS_LOCKED: no collection locks found');
-  return 0;
+    first := 0;
+    st := 'C';
+  }
 }
 ;
 
 
 --!AWK PUBLIC
-create function DAV_IS_LOCKED (in id any, in type char, in owned_tokens any := 1) returns integer
+create function DAV_IS_LOCKED (
+  in id any,
+  in st char,
+  in check_token any := 1) returns integer
 {
-  declare res integer;
-  if (isstring (owned_tokens))
-    res := DAV_IS_LOCKED_INT (id, type, owned_tokens);
+  declare rc integer;
+
+  if (isstring (check_token))
+    rc := DB.DBA.DAV_IS_LOCKED_INT (id, st, check_token);
   else
-    res := DAV_IS_LOCKED_INT (id, type);
-  if (res > 0)
+    rc := DB.DBA.DAV_IS_LOCKED_INT (id, st);
+
+  if (rc > 0)
     return -8;
-  return res;
+
+  return rc;
 }
 ;
 
 --!AWK PUBLIC
-create function DAV_LIST_LOCKS (in id any, in type char) returns any
+create function DAV_LIST_LOCKS (
+  in id any,
+  in st char) returns any
 {
-  return DAV_LIST_LOCKS_INT (id, type);
+  return DB.DBA.DAV_LIST_LOCKS_INT (id, st);
 }
 ;
 
-create function DAV_LIST_LOCKS_INT (in id any, in type char) returns any
+create function DAV_LIST_LOCKS_INT (
+  in id any,
+  in type char) returns any
 {
-  declare res any;
-  type := upper (type);
   -- dbg_obj_princ ('DAV_LIST_LOCKS_INT (', id, type, ')');
+  declare res any;
+
+  type := upper (type);
   if (type <> 'C' and type <> 'R')
     return -14;
+
   if (isarray (id))
-    {
-      return call (cast (id[0] as varchar) || '_DAV_LIST_LOCKS') (id, type, 0);
-    }
+    return call (cast (id[0] as varchar) || '_DAV_LIST_LOCKS') (id, type, 0);
+
   if (id <= 0)
     return -1;
+
   res := vector ();
-  for select LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO
-    from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_ID = id and LOCK_PARENT_TYPE = type do {
-      res := vector_concat (res, vector (vector (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO)));
-    }
+  for (select LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO
+         from WS.WS.SYS_DAV_LOCK
+        where LOCK_PARENT_ID = id and LOCK_PARENT_TYPE = type) do
+  {
+    res := vector_concat (res, vector (vector (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO)));
+  }
   return res;
 }
 ;
 
-create function DAV_LOCK (in path any, in locktype varchar, in scope varchar, in token varchar, in owner_name varchar, in owned_tokens varchar, in depth varchar, in timeout_sec integer, in auth_uid varchar, in auth_pwd varchar) returns any
+create function DAV_LOCK (
+  in path any,
+  in locktype varchar,
+  in scope varchar,
+  in token varchar,
+  in owner_name varchar,
+  in check_token varchar,
+  in depth varchar,
+  in timeout_sec integer,
+  in auth_uid varchar,
+  in auth_pwd varchar) returns any
 {
+  -- dbg_obj_princ ('DAV_LOCK (', path, locktype, scope, token, owner_name, check_token, depth, timeout_sec, auth_uid, auth_pwd, ')');
   declare id any;
   declare st char (1);
-  -- dbg_obj_princ ('DAV_LOCK (', path, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, auth_pwd, ')');
+
   id := null;
   st := null;
-  return DAV_LOCK_INT (path, id, st, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid, auth_pwd, NULL);
+  return DB.DBA.DAV_LOCK_INT (path, id, st, locktype, scope, token, owner_name, check_token, depth, timeout_sec, auth_uid, auth_pwd, NULL);
 }
 ;
 
-create function DAV_LOCK_INT (in path any, inout id any, inout st char(1), inout locktype varchar, inout scope varchar, in token varchar, inout owner_name varchar, inout owned_tokens varchar, in depth varchar, in timeout_sec integer, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer) returns any
+create function DAV_LOCK_INT (
+  in path any,
+  inout id any,
+  inout st char(1),
+  inout locktype varchar,
+  inout scope varchar,
+  in token varchar,
+  inout owner_name varchar,
+  inout check_token varchar,
+  in depth varchar,
+  in timeout_sec integer,
+  in auth_uname varchar,
+  in auth_pwd varchar,
+  in auth_uid integer) returns any
 {
-  declare p_id any;
-  declare rc, id_is_bad integer;
-  declare u_token, old_scope, p_st varchar;
-  -- dbg_obj_princ ('DAV_LOCK_INT (', path, id, st, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uname, auth_pwd, auth_uid, ')');
-  p_id := DAV_SEARCH_ID (path, 'P');
-  if (DAV_HIDE_ERROR (p_id) is null)
+  -- dbg_obj_princ ('DAV_LOCK_INT (', path, id, st, locktype, scope, token, owner_name, check_token, depth, timeout_sec, auth_uname, auth_pwd, auth_uid, ')');
+  declare p_id, x_id any;
+  declare rc, id_is_bad, compare_mode integer;
+  declare u_token, old_scope, p_st, x_st varchar;
+
+  p_id := DB.DBA.DAV_SEARCH_ID (path, 'P');
+  if (DB.DBA.DAV_HIDE_ERROR (p_id) is null)
     return case p_id when -1 then -34 else p_id end;
+
+  p_st := 'C';
   if (id is null)
-    id := DAV_SEARCH_SOME_ID (path, st);
-  if (DAV_HIDE_ERROR (id) is null)
-    {
-      if (id <> -1)
-        return -1;
-      if ("RIGHT" (path, 1) = '/')
-        return -1; -- Can't lock a future collection;
-      st := 'R';
-      id_is_bad := 1;
-    }
+    id := DB.DBA.DAV_SEARCH_SOME_ID (path, st);
+
+  if (DB.DBA.DAV_HIDE_ERROR (id) is null)
+  {
+    if (id <> -1)
+      return -1;
+
+    if ("RIGHT" (path, 1) = '/')
+      return -1; -- Can't lock a future collection;
+
+    id_is_bad := 1;
+    st := 'R';
+    x_id := p_id;
+    x_st := p_st;
+  }
   else
+  {
     id_is_bad := 0;
-  if (id_is_bad)
-    rc := DAV_AUTHENTICATE (p_id, 'C', '11_', auth_uname, auth_pwd, auth_uid);
-  else
-    rc := DAV_AUTHENTICATE (id, st, '11_', auth_uname, auth_pwd, auth_uid);
-  if (DAV_HIDE_ERROR (rc) is null)
+    x_id := id;
+    x_st := st;
+  }
+  rc := DB.DBA.DAV_AUTHENTICATE (x_id, x_st, '11_', auth_uname, auth_pwd, auth_uid);
+  if (DB.DBA.DAV_HIDE_ERROR (rc) is null)
     return rc;
+
   if (auth_uid is null)
     auth_uid := rc;
-  if (owned_tokens is null)
-    owned_tokens := '';
+
+  if (check_token is null)
+    check_token := '';
+
   if (token is null)
     token := '';
+
   if (owner_name is null)
     owner_name := '';
+
   if (depth is null)
-    {
-      if (st = 'R')
-        depth := '0';
-      else
-        depth := 'infinity';
-    }
+  {
+    if (st = 'R')
+      depth := '0';
+    else
+      depth := 'infinity';
+  }
+
   if (timeout_sec is null or timeout_sec = 0)
     timeout_sec := 604800;  -- one week time out if is not supplied
+
+  compare_mode := case when check_token = '' then 0 else 1 end;
+
   set isolation = 'serializable';
-  p_st := 'C';
-  rc := DAV_IS_LOCKED_INT (p_id, p_st, owned_tokens);
-  if (0 <> rc)
-    {
-      if (rc < 0)
-        return rc;
+  rc := DB.DBA.DAV_IS_LOCKED_INT (x_id, x_st, check_token, compare_mode);
+  if (rc < 0)
+    return rc;
+
+  if (compare_mode = 0)
+  {
+    if (rc = 2)
       return -8;
-    }
-  if (st = 'C')
-    {
-      for select LOCK_TOKEN as _ctoken from WS.WS.SYS_DAV_LOCK
-        where
-          LOCK_PARENT_TYPE = 'C' and
-          isnull (strstr (owned_tokens, LOCK_TOKEN)) and
-          ((id = LOCK_PARENT_ID) or DAV_COL_IS_ANCESTOR_OF (id, LOCK_PARENT_ID))
-         do
-          {
-            return -8;
-          }
-    }
+
+    if ((rc = 1) and (scope = 'X'))
+      return -8;
+  }
+
   -- find lock refreshing condition
-  u_token := '';
-  if (owned_tokens <> '')
-    {
-      declare tleft, tright integer;
-      declare tmp varchar;
-      if (isnull(strstr(owned_tokens, '(<opaquelocktoken:')))
-        goto failed_parsing;
-      tleft := strchr (owned_tokens, ':');
-      --tright := strrchr (owned_tokens, '>');
-      if (tleft is null)
-        goto failed_parsing;
-      tright := strchr (substring (owned_tokens, tleft + 1, length (owned_tokens)), '>');
-      if (tright is null)
-        goto failed_parsing;
-      tright := tleft + tright;
-      tmp := substring (owned_tokens, tleft + 2, tright - tleft - 1);
-      u_token := trim(tmp);
-    }
-failed_parsing:
+  u_token := check_token;
   if (u_token = '')
     u_token := token;
 
+  old_scope := case rc when 2 then 'X' when 1 then 'S' else '' end;
+  if ((scope = 'R') and (old_scope = ''))
+    return -1;
+
+  if ((scope <> 'R') and (old_scope = '') and (st ='C'))
+  {
+    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where WS.WS.COL_PATH (COL_ID) between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
+      return -1;
+
+    if (exists (select 1 from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_LOCK where RES_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = RES_ID))
+      return -1;
+  }
+
   -- dbg_obj_princ ('Before lock refresh: id = ', id, ', st = ', st, ', depth = ', depth, ', timeout_sec = ', timeout_sec, ' u_token = ', u_token);
   if (isarray (id))
+  {
+    token := u_token;
+    return call (cast (id[0] as varchar) || '_DAV_LOCK') (path, id, st, locktype, scope, token, owner_name, check_token, depth, timeout_sec, auth_uid);
+  }
+
+  if (id_is_bad)
+  {
+    -- dbg_obj_print ('Unmapped resource');
+    declare parent_det, new_res_name varchar;
+
+    parent_det := DB.DBA.DAV_PROP_GET_INT (p_id, 'C', ':virtdet', 0);
+    if (parent_det is not null)
     {
       token := u_token;
-      rc := call (cast (id[0] as varchar) || '_DAV_LOCK') (path, id, st, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid);
-      return rc;
+      return call (parent_det || '_DAV_LOCK') (path, id, st, locktype, scope, token, owner_name, check_token, depth, timeout_sec, auth_uid);
     }
-  if (id_is_bad)
-    {
-      declare parent_det, new_res_name varchar;
-      parent_det := DAV_PROP_GET_INT (p_id, 'C', ':virtdet', 0);
-      if (parent_det is not null)
-        {
-          token := u_token;
-          rc := call (parent_det || '_DAV_LOCK') (path, id, st, locktype, scope, token, owner_name, owned_tokens, depth, timeout_sec, auth_uid);
-          return rc;
-        }
-      new_res_name := subseq (path, strrchr (path, '/') + 1);
-      if (exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_PARENT = p_id and COL_NAME = new_res_name))
-        return -26;
-      id := WS.WS.GETID ('R');
-      insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP, RES_FULL_PATH)
-        values (id, new_res_name, p_id, now (), now (), auth_uid, '110000000NN', http_nogroup_gid(), path);
-      old_scope := '';
-    }
-  else
+
+    new_res_name := subseq (path, strrchr (path, '/') + 1);
+    if (exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_PARENT = p_id and COL_NAME = new_res_name))
+      return -26;
+
+    id := WS.WS.GETID ('R');
+    insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_CR_TIME, RES_MOD_TIME, RES_OWNER, RES_PERMS, RES_GROUP, RES_FULL_PATH)
+      values (id, new_res_name, p_id, now (), now (), auth_uid, '110000000NN', http_nogroup_gid (), path);
+
     old_scope := coalesce ((select LOCK_SCOPE from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = st and LOCK_PARENT_ID = id), '');
+  }
+  else if (scope <> 'R')
+  {
+    old_scope := coalesce ((select LOCK_SCOPE from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = st and LOCK_PARENT_ID = id), '');
+    x_id := id;
+    x_st := st;
+  }
+
   -- dbg_obj_princ ('Plain lock: rc = ', old_scope);
-  if ((old_scope = 'S' or old_scope = 'X') and u_token <> '')
-    {
-      -- dbg_obj_princ ('Plain lock refresh');
-      declare c cursor for select LOCK_OWNER_INFO from WS.WS.SYS_DAV_LOCK where LOCK_TOKEN = u_token and LOCK_PARENT_TYPE = st and LOCK_PARENT_ID = id for update;
-      declare old_owner_name varchar;
-      whenever not found goto nothing_to_refresh;
-      open c;
-      fetch c into old_owner_name;
-      if (owner_name = '')
-        owner_name := old_owner_name;
-      scope := old_scope;
-      update WS.WS.SYS_DAV_LOCK set LOCK_TIME = now (), LOCK_TIMEOUT = timeout_sec, LOCK_OWNER_INFO = owner_name where current of c;
-      close c;
-      return u_token;
-nothing_to_refresh:
-      close c;
-      return -35;
-    }
+  if ((scope = 'R' or old_scope = 'S' or old_scope = 'X') and (u_token <> ''))
+  {
+    -- dbg_obj_princ ('Plain lock refresh');
+    declare c cursor for select LOCK_OWNER_INFO from WS.WS.SYS_DAV_LOCK where LOCK_TOKEN = u_token and LOCK_PARENT_TYPE = x_st and LOCK_PARENT_ID = x_id for update;
+    declare old_owner_name varchar;
+    whenever not found goto nothing_to_refresh;
+
+    open c;
+    fetch c into old_owner_name;
+    if (owner_name = '')
+      owner_name := old_owner_name;
+
+    scope := old_scope;
+    update WS.WS.SYS_DAV_LOCK set LOCK_TIME = now (), LOCK_TIMEOUT = timeout_sec, LOCK_OWNER_INFO = owner_name where current of c;
+    close c;
+    return u_token;
+
+  nothing_to_refresh:
+    close c;
+    return -35;
+  }
+
   if ((old_scope = '') or (old_scope = 'S' and scope = 'S'))
+  {
+    if (token = '')
     {
-      if (token = '')
-        token := WS.WS.OPLOCKTOKEN();
-      else
-        {
-          if (exists (select top 1 1 from WS.WS.SYS_DAV_LOCK where LOCK_TOKEN = token and (LOCK_PARENT_TYPE <> st or LOCK_PARENT_ID <> id)))
-            return -35;
-        }
-      -- dbg_obj_princ ('Plain lock insert: token = ', token);
-      insert into WS.WS.SYS_DAV_LOCK (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_PARENT_TYPE,
-        LOCK_PARENT_ID, LOCK_TIME, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO)
-        values (locktype, scope, token, st, id, now(), timeout_sec, auth_uid, owner_name);
-      return token;
+      token := WS.WS.OPLOCKTOKEN();
     }
+    else
+    {
+      if (exists (select top 1 1 from WS.WS.SYS_DAV_LOCK where LOCK_TOKEN = token and (LOCK_PARENT_TYPE <> st or LOCK_PARENT_ID <> id)))
+        return -35;
+    }
+    -- dbg_obj_princ ('Plain lock insert: token = ', token);
+    insert into WS.WS.SYS_DAV_LOCK (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_PARENT_TYPE, LOCK_PARENT_ID, LOCK_TIME, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO)
+      values (locktype, scope, token, st, id, now(), timeout_sec, auth_uid, owner_name);
+
+    return token;
+  }
   if (old_scope = 'X' or (old_scope = 'S' and scope = 'X'))
     return -8;
+
   return -35;
 }
 ;
 
-create function DAV_UNLOCK (in path varchar, in token varchar, in auth_uname varchar, in auth_pwd varchar) returns any
+create function DAV_UNLOCK (
+  in path varchar, in token varchar,
+  in auth_uname varchar,
+  in auth_pwd varchar) returns any
 {
   declare id any;
   declare st char (1);
-  id := DAV_SEARCH_SOME_ID (path, st);
-  if (DAV_HIDE_ERROR (id) is null)
+
+  id := DB.DBA.DAV_SEARCH_SOME_ID (path, st);
+  if (DB.DBA.DAV_HIDE_ERROR (id) is null)
     return -1;
-  return DAV_UNLOCK_INT (id, st, token, auth_uname, auth_pwd, null);
+
+  return DB.DBA.DAV_UNLOCK_INT (id, st, token, auth_uname, auth_pwd, null);
 }
 ;
 
 
-create function DAV_UNLOCK_INT (in id any, in st char(1), in token varchar, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer) returns any
+create function DAV_UNLOCK_INT (
+  in id any,
+  in st char(1),
+  in token varchar,
+  in auth_uname varchar,
+  in auth_pwd varchar,
+  in auth_uid integer) returns any
 {
+  -- dbg_obj_princ ('DAV_UNLOCK_INT (', id, st, token, auth_uname, auth_pwd, auth_uid, ')');
   declare rc, _left, _right integer;
   declare cur_token varchar;
-  declare l_cur cursor for select LOCK_TOKEN from WS.WS.SYS_DAV_LOCK
-      where LOCK_PARENT_ID = id and LOCK_PARENT_TYPE = st and LOCK_TOKEN = token;
-  -- dbg_obj_princ ('DAV_UNLOCK_INT (', id, st, token, auth_uname, auth_pwd, auth_uid, ')');
-  auth_uid := DAV_AUTHENTICATE (id, st, '11_', auth_uname, auth_pwd, auth_uid);
+  declare l_cur cursor for select LOCK_TOKEN
+                             from WS.WS.SYS_DAV_LOCK
+                            where LOCK_PARENT_ID = id and LOCK_PARENT_TYPE = st and LOCK_TOKEN = token;
+
+  auth_uid := DB.DBA.DAV_AUTHENTICATE (id, st, '11_', auth_uname, auth_pwd, auth_uid);
   if (auth_uid < 0)
     return auth_uid;
---                       0         1
---                       01234567890123456
-  _left := strstr(token,'opaquelocktoken:');
+
+  _left := strstr (token, 'opaquelocktoken:');
   if (_left is not null)
-    {
-      _left := _left + 15;
-      _right :=  strrchr(token,'>');
-      if (_left < _right)
-        token := trim (substring (token, _left + 2, _right - _left - 1));
-    }
+  {
+    _left := _left + 15;
+    _right := strrchr (token, '>');
+    if (_left < _right)
+      token := trim (substring (token, _left + 2, _right - _left - 1));
+  }
+
   if (isarray (id))
-    {
-      rc := call (cast (id[0] as varchar) || '_DAV_UNLOCK')(id, st, token, auth_uid);
-      return rc;
-    }
+    return call (cast (id[0] as varchar) || '_DAV_UNLOCK')(id, st, token, auth_uid);
+
   whenever not found goto not_locked_t;
   open l_cur (exclusive, prefetch 1);
   fetch l_cur into cur_token;
@@ -1609,7 +1724,6 @@ create function DAV_REQ_CHARS_TO_BITMASK (
   return 4 * equ (req[0], 49) + 2 * equ (req[1], 49) + equ (req[2], 49);
 }
 ;
-
 
 --!
 -- Get all user details for the given uid.
@@ -3456,7 +3570,7 @@ create procedure DAV_DELETE_INT (
 
         for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
         {
-          rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
+          rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern, check_locks);
           if ((rrc <> 1) and (RES_FULL_PATH not like '%,acl'))
           {
             connection_set ('dav_store', null);
@@ -3466,7 +3580,7 @@ create procedure DAV_DELETE_INT (
         }
         for select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id do
         {
-          rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern);
+          rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern, check_locks);
           if ((rrc <> 1) and (COL_NAME not like '%,acl'))
           {
             connection_set ('dav_store', null);
@@ -3796,13 +3910,13 @@ create procedure DAV_COPY_INT (
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
 
-              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0);
+              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0, check_locks=>check_locks);
             }
           else
             {
               for (select RES_TYPE as rt, RES_CONTENT as rcnt, RES_NAME as mname from WS.WS.SYS_DAV_RES where RES_ID = id) do
                 {
-                  newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0);
+                  newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, permissions, ouid, ogid, extern=>0, check_locks=>check_locks);
                 }
             }
         }
@@ -4045,10 +4159,12 @@ create procedure DAV_MOVE_INT (
     {
       if (0 <> (rc := DAV_IS_LOCKED (id , st, check_locks)))
         return rc;
+
       if (d_id is null)
         rc := DAV_IS_LOCKED (dp_id , 'C', check_locks);
       else
         rc := DAV_IS_LOCKED (d_id , st, check_locks);
+
       if (0 <> rc)
         return (case when rc = -8 then -9 else rc end);
     }
@@ -4162,7 +4278,7 @@ create procedure DAV_MOVE_INT (
               if (DAV_HIDE_ERROR (rc) is null)
                 return rc;
 
-              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, dirsingle[5], dirsingle[7], dirsingle[6], extern=>0);
+              newid := DB.DBA.DAV_RES_UPLOAD_STRSES_INT (destination, rcnt, rt, dirsingle[5], dirsingle[7], dirsingle[6], extern=>0, check_locks=>check_locks);
               rc := DAV_DELETE_INT (path, 1, null, null, 0);
               if (rc < 0)
                 return rc;
@@ -4212,7 +4328,7 @@ create procedure DAV_MOVE_INT (
       if (d_id is not null) -- do delete first
         {
           declare rrc integer;
-          rrc := DAV_DELETE_INT (destination, 0, auth_uname, auth_pwd, 0);
+          rrc := DAV_DELETE_INT (destination, 0, auth_uname, auth_pwd, extern=>0, check_locks=>check_locks);
           if (rrc <> 1)
             {
               rollback work;
@@ -4256,7 +4372,7 @@ create procedure DAV_MOVE_INT (
           DB.DBA.LDP_RENAME ('C', rpath, npath, rldp, nldp);
         }
 
-      rc := DAV_DELETE_INT (path, 1, null, null, 0);
+      rc := DAV_DELETE_INT (path, 1, null, null, extern=>0, check_locks=>check_locks);
       if (rc < 0)
         return rc;
 
@@ -4743,13 +4859,13 @@ DAV_PROP_SET_RAW_INNER (
                     }
             }
     }
-  update WS.WS.SYS_DAV_PROP set PROP_VALUE = propvalue where PROP_NAME = propname
-      and PROP_PARENT_ID = id and PROP_TYPE = st;
+
+  update WS.WS.SYS_DAV_PROP set PROP_VALUE = propvalue where PROP_NAME = propname and PROP_PARENT_ID = id and PROP_TYPE = st;
   if (row_count() = 0)
-    {
-      insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
-          values (pid, propname, propvalue, id, st);
-    }
+  {
+    insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
+      values (pid, propname, propvalue, id, st);
+  }
   return pid;
 }
 ;
@@ -5500,16 +5616,16 @@ again:
 }
 ;
 
-create function DAV_COL_PATH_BOUNDARY (in path varchar) returns varchar
+create function DAV_COL_PATH_BOUNDARY (
+  in path varchar) returns varchar
 {
-  declare res varchar;
   declare len integer;
-  res := path;
-  len := length (res);
-  if ((len = 0) or (res[len-1] <> 47))
+
+  len := length (path);
+  if ((len = 0) or (path[len-1] <> 47))
     signal ('.....', sprintf ('Bad path in DAV_COL_PATH_BOUNDARY: %s', path));
-  res := res || '\377\377\377\377';
-  return res;
+
+  return path || '\377\377\377\377';
 }
 ;
 
@@ -5570,7 +5686,7 @@ create trigger SYS_DAV_RES_LDI_AU after update (RES_FULL_PATH, RES_ID, RES_COL, 
   if (
       (_o_size <> _n_size) or
       (O.RES_FULL_PATH <> N.RES_FULL_PATH) or
-      (md5 (case when isblob (O.RES_CONTENT) then blob_to_string_output (O.RES_CONTENT) else O.RES_CONTENT end) <> md5 (case when isblob (N.RES_CONTENT) then blob_to_string_output (N.RES_CONTENT) else N.RES_CONTENT end))
+      (md5 (coalesce (case when isblob (O.RES_CONTENT) then blob_to_string_output (O.RES_CONTENT) else O.RES_CONTENT end, '')) <> md5 (coalesce (case when isblob (N.RES_CONTENT) then blob_to_string_output (N.RES_CONTENT) else N.RES_CONTENT end, '')))
      )
     DB.DBA.RDF_SINK_UPDATE (null, O.RES_FULL_PATH, O.RES_ID, O.RES_COL, _o_size, N.RES_FULL_PATH, N.RES_ID, N.RES_COL, N.RES_TYPE, N.RES_OWNER, N.RES_GROUP, _n_size);
 

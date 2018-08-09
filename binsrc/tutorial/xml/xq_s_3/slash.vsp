@@ -27,6 +27,6 @@
 ?>
 <html>
   <body>
-    <a href="/DAV/xmlsql/slash.xml?contenttype=text/html">If your browser do not supports redirect please click on this link</a>
+    <a href="/DAV/xmlsql/slash.xml?contenttype=text/html">If your browser does not support redirect please click on this link</a>
   </body>
 </html>

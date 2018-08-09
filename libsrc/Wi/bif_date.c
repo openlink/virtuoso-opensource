@@ -629,7 +629,7 @@ bif_merge_nasa_tjd_to_datetime (caddr_t * qst, caddr_t * err_ret, state_slot_t *
       double frac = bif_double_arg (qst, args, 1, "merge_nasa_tjd_to_datetime");
       boxint frac_microsec = frac * (60*60*24*1000000.0);
       if ((0 > frac_microsec) || (60*60*24*(boxint)(1000000) <= frac_microsec))
-        sqlr_new_error ("22023", "SR644", "Fraction of julian day should be nonnegative and less than 1");
+        sqlr_new_error ("22023", "SR644", "Fraction of julian day should be non-negative and less than 1");
       DT_SET_FRACTION (res, (frac_microsec % 1000000) * 1000);
       frac_microsec = frac_microsec / 1000000;
       DT_SET_SECOND (res, (frac_microsec % 60));

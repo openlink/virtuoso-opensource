@@ -37,7 +37,7 @@ create table WS.WS.SYS_DAV_COL
   COL_MOD_TIME        datetime,
   COL_ADD_TIME        datetime,
   COL_PERMS           char (11),
-  COL_DET             varchar,
+  COL_DET             varchar (64),
   COL_ACL             long varbinary,
   COL_IID             IRI_ID_8,
   COL_AUTO_VERSIONING char(1),
@@ -74,6 +74,7 @@ alter table WS.WS.SYS_DAV_COL add COL_ADD_TIME datetime
 
 alter table WS.WS.SYS_DAV_COL add COL_CREATOR IRI_ID_8
 ;
+
 
 -- WebDAV Resource
 create table WS.WS.SYS_DAV_RES

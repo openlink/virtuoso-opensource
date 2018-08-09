@@ -117,14 +117,16 @@ create procedure c_cp (in uri varchar, in dst varchar)
 
 create procedure c_lck (in uri varchar, inout lck varchar)
 {
-  declare hdr, body any;
+  declare hdr, body, content any;
   declare code integer;
   declare h_line varchar;
   if (isstring (lck))
     h_line := sprintf ('If: (%s)\r\nAuthorization: Basic ZGF2OmRhdg==\r\nTimeout: Second-120', lck);
   else
     h_line := sprintf ('Authorization: Basic ZGF2OmRhdg==\r\nTimeout: Second-120');
-  body := http_get (uri, hdr, 'LOCK', h_line);
+
+  content := '<lockinfo xmlns="DAV:"><lockscope><exclusive/></lockscope><locktype><write/></locktype><owner>litmus test suite</owner></lockinfo>';
+  body := http_get (uri, hdr, 'LOCK', h_line, content);
   code := c_resp (hdr, body);
   if (code > 199 and code < 300)
     {
