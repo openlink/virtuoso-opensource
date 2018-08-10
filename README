@@ -54,17 +54,16 @@ Introduction
 This document explains steps to take after obtaining a Virtuoso source
 snapshot or git clone.
 
-These sections explain how to compile, test and install and what
-components are produced by the make process and how one can interact
-with them.
+These sections explain how to compile, test, and install; what components
+are produced by the make process; and how one can interact with them.
 
 
 Package Dependencies
 ====================
 
 To generate the configure script and all other build files necessary,
-please make sure the following packages and recommended versions are
-installed on your system.
+please make sure the following packages and recommended versions (and
+any GNU packages required by these) are installed on your system.
 
     Package  Version                         From
     -------  -------                         ----
@@ -77,18 +76,18 @@ installed on your system.
     gawk     3.1.1              http://www.gnu.org/software/gawk/
     m4       1.4.1              http://www.gnu.org/software/m4/
     make     3.79.1             http://www.gnu.org/software/make/
-    OpenSSL  0.9.7i             http://www.openssl.org/
+    OpenSSL  0.9.7i (max 1.0.x)  http://www.openssl.org/
 
-and any GNU packages required by these. The autogen.sh and configure
-scripts check for the presence and right version of some of the required
-components.
+The `autogen.sh` and `configure` scripts check the presence and version
+of some of the required components.
 
 The above version are the minimum recommended versions of these packages.
 Older version of these packages can sometimes be used, but could cause
-build problems.
+build problems. Newer versions are usually fine, with exceptions as
+discussed below (e.g., OpenSSL).
 
-To check the version number of the tools installed on your system,
-use one of the following commands:
+To check the version number of the tools installed on your system, you
+can use the following commands:
 
     $ autoconf --version
     $ automake --version
@@ -101,73 +100,99 @@ use one of the following commands:
     $ make --version
     $ openssl version
 
-If you have an older version than automake version 1.9 you can edit
-the configure.ac script around line 47 using the examples provided for
+If you have an `automake` version older than 1.9, you can edit the
+`configure.ac` script around line 47 using the examples provided for
 each version.
 
-Note that uptodate operating systems (particularly all Linux distibutions)
-split some of these packages into runtime and development
-packages, so users of these platforms may need to run e.g.:
+Note that current operating systems (particularly all Linux distibutions)
+split some of these packages into runtime and development packages, so
+users of these platforms may need to run, for instance, one of the
+following commands to get development headers & libraries for OpenSSL,
+even if OpenSSL runtime components are already present:
 
     apt-get install libssl-dev
 
-or
+-- or --
 
-    yum install openssl-devel 
+    yum install openssl-devel
 
-to get development headers & libraries for OpenSSL.
+**NOTE** OpenSSL 1.1 cannot currently be used to build Virtuoso, due to
+significant changes relative to prior versions.  The necessary commands
+to get the OpenSSL 1.0 development tools vary with the specific Linux
+distribution and package manager.  For instance --
+
+* apt (common on Debian) --
+
+    sudo apt install libssl1.0-dev
+
+  -- or --
+
+    sudo apt-get install libssl1.0-dev
+
+* yum (common on older versions of Fedora)
+
+    yum install openssl-devel
+
+* dnf (common on recent versions of Fedora) --
+
+  - before building Virtuoso --
+
+       sudo dnf install compat-openssl10-devel --allowerasing
+
+  - after building Virtuoso, before building anything else that
+    requires OpenSSL 1.1 --
+
+       sudo dnf install openssl-devel --allowerasing
 
 
 Diskspace Requirements
 ======================
 
-The build produces a demo database and Virtuoso application packages
-that are quite large. At least 800 MB of free space should be available
-in the build file system.
+The complete build produces a demo database and Virtuoso application
+packages that are quite large. At least 800 MB of free space should be
+available in the build file system.
 
-When running `make install', the target file system should have about 460
-MB free. By default, the install target directories are under /usr/local/,
-but you can specify
+When running `make install`, the target file system should have about
+460 MB free. By default, the install target directories are under
+`/usr/local/`, but you can specify something different with --
 
     ./configure --prefix=/path/to/dir
 
-instead.
-
 The minimum working configuration consists of the server executable
-and config files plus database, no more than a few MB for the server
-executable, depending on platform and options.
+(generally only a few MB, depending on platform and options) and
+config files plus database.
 
 
 Make FAQ
 ========
 
-In the root directory of the checkout perform the following commands:
+In the root directory of the checkout, perform the following commands
+to produce the default binaries, VAD packages, and demo database:
 
     ./autogen.sh        # should only be needed in git clone
     ./configure
     make
 
-to produce the default binaries, VAD packages and demo database. This
-takes some time, principally due to building and filling the demo
-database, rendering the XML documentation into several target formats
-and composing various Virtuoso application packages. It takes about 30
-minutes on a 2GHz machine.
+This will take some time, principally due to building and filling the
+demo database, rendering the XML documentation into several target
+formats, and composing various Virtuoso application packages. It takes
+about 30 minutes on a 2GHz machine.
 
-The default configure does not enable most of the runtime-hosting and
-extension features. See the links on the building page for instructions
-on how to enable these and what additional software is required.
+The default `configure` does not enable most of the runtime-hosting and
+extension features. See the building page for instructions on how to
+enable these and for notes about what additional software is required.
 
-Some builds require additional C compiler and other environment flags to
-be set before running the configure command, especially when building
-64-bit versions of the server. If your system is not in this list,
-please try to run the configure command without any environment settings.
+Some builds require additional `C` compiler and other environment flags
+to be set before running the configure command, especially when building
+64-bit versions of the server. If your system is not in the list below,
+try running the `configure` command without any environment settings.
 
-Warning: if VAD or other packages fail to be built, especially on
-64-bit Linux platforms, ensure you're not using excessive optimization.
-CFLAGS="-O2" is known to work but there are reports of -O3 failing.
+Warning: Some packages may fail to build, especially on 64-bit Linux
+platforms, when using excessive optimization.  `CFLAGS="-O2"` is known
+to work, but there are reports of `CFLAGS="-O3"` failing.
 
-If your system requires additional flags not listed below, please contact
-us at <vos.admin@openlinksw.com>.
+If your system requires additional flags not listed below, please
+contact us at <vos.admin@openlinksw.com>.
 
 Generic build environment
 -------------------------
@@ -292,7 +317,7 @@ Mac OS X 10.5 64-bit
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.5 Universal 
+Mac OS X 10.5 Universal
 -----------------------
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.5.sdk -arch ppc -arch i386 -arch ppc64 -arch x86_64 -mmacosx-version-min=10.5"
     export CFLAGS
@@ -310,7 +335,7 @@ Mac OS X 10.6 64-bit
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.6 Universal 
+Mac OS X 10.6 Universal
 -----------------------
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.6.sdk -arch i386 -arch x86_64 -mmacosx-version-min=10.6"
     export CFLAGS
@@ -328,7 +353,7 @@ Mac OS X 10.7 64-bit
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.7 Universal 
+Mac OS X 10.7 Universal
 -----------------------
     CFLAGS="-O -arch i386 -arch x86_64 -mmacosx-version-min=10.7"
     export CFLAGS
@@ -336,9 +361,8 @@ Mac OS X 10.7 Universal
 
 Solaris 2.x i386 32-bit
 -----------------------
-Note: on Solaris or Open Solaris we recommend you use gmake either from
-/usr/ sfw/bin/ or install it from sunfreeware, as long as it's version
-3.80 or better.
+Note: on Solaris or Open Solaris we recommend you use gmake version
+3.80 or better, from /usr/sfw/bin/ or installed from sunfreeware.
 
     CC=cc
     CFLAGS="-O"
@@ -381,104 +405,111 @@ Solaris 2.8 and above SPARC 32-bit
 Installation
 ============
 
-After running configure && make,
+After running `configure` and `make`, running the following command at
+the root of the build tree copies the files to the location specified by
+the `--prefix` option to `configure`:
 
     make install
 
-at the root of the build tree copies the files to the locations
-specified by the --prefix option to configure. The default of --prefix
-is /usr/local/. You can override this by specifying `make install
-prefix=/home/virtuoso' instead, for example.
+You can override the `--prefix` set with `configure` (including the
+default, `/usr/local/`) for the `make install` with a command like --
 
-These subdirectories are all appended to the specified prefix,
-i.e. /usr/local/ by default:
+    make install prefix=/home/virtuoso
+
+Several subdirectories are created and/or populated below the specified
+prefix (whether `/usr/local/`, `/home/virtuoso/`, or otherwise), with
+contents as noted:
 
  * share/virtuoso/doc/html
  * share/virtuoso/doc/pdf
- * share/virtuoso/vad - VAD packages BPEL, Conductor, tutorials, documentation
+ * share/virtuoso/vad - VAD packages including BPEL, Conductor, tutorials,
+   and documentation
  * var/lib/virtuoso/db - Empty database
- * var/lib/virtuoso/demo - Demo database - obsolete as of version 5.0.3
- * bin/ - The virtuoso-t, isql, isqlw, virt_mail, virtuoso-sample-t, inifile
-    executables
- * lib/ - libvirtuoso-t.a libvirtuoso-t.la virtodbc32.a virtodbc32.la
-    virtodbc32 r.a virtodbc32_r.la virtodbc_r.so wikiv.so, plus any plugins
-    that may be enabled.
- * lib/virtuoso - hosting sample.a hosting_sample.la hosting_sample.so
-    plugin_sample.a plugin_sample.so
+ * var/lib/virtuoso/demo - Demo database; obsolete as of version 5.0.3
+ * bin/ - Primarily executables such as virtuoso-t, isql, isqlw, virt_mail,
+   virtuoso-sample-t, and inifile
+ * lib/ - libvirtuoso-t.a, libvirtuoso-t.la, virtodbc32.a, virtodbc32.la,
+   virtodbc32_r.a, virtodbc32_r.la, virtodbc_r.so, and wikiv.so, plus any
+   plugins that may be enabled.
+ * lib/virtuoso - hosting_sample.a, hosting_sample.la, hosting_sample.so,
+   plugin_sample.a, plugin_sample.so
 
-Note: as of version 5.0.2, the ./configure script supports different
-subdirectory structures with the --with-layout= parameter. If you've
-specified something other than the default, the above may differ
-accordingly.
+Note: As of version 5.0.2, the `./configure` script supports different
+subdirectory structures which may be specified with the `--with-layout=`
+parameter. If you've specified a layout other than the default, the above
+will differ accordingly.
 
-As of version 5.0.3, the demo is a VAD package, not a separate directory.
+As of version 5.0.3, the demo database is delivered as a VAD package,
+not a separate directory.
 
 
 Test Suite
 ==========
 
-Optionally, you can run
+Optionally, you can run the following at the root of the build tree to
+start the automated test suite:
 
     make check
 
-at the root of the build tree to start the automated test suite. This
-takes about an hour on a 2GHz machine and requires approximately 1 GB
-of free disk space.
+This requires approximately 1 GB of free disk space and takes about an
+hour on a 2GHz machine.
 
 
 Getting Started
 ===============
 
-Run
+Run the following to start the server in the background (albeit in
+foreground mode):
 
-    cd var/lib/virtuoso/db 
+    cd var/lib/virtuoso/db
     virtuoso-t -f &
 
-to start the server in the background. It will not detach from the shell,
-so you see the startup messages.
+It will not detach from the shell, so you will see the startup messages.
 
-By default, when no -c parameter is specified, virtuoso will use the
-virtuoso.ini file in this directory, which is generated as part of
-`make install'.
+By default (i.e., when no `-c` parameter is specified), Virtuoso will use
+the `virtuoso.ini` config file in the present working directory.  A default
+config file is generated in the `{prefix}/var/lib/virtuoso/db` directory as
+part of `make install`.
 
-The first time it's run, it will create the empty database (no special
-commands required) and install the Conductor VAD package. From here, you
-can access http://localhost:8890/ and http://localhost:8890/conductor/ and
-use the System Administration / Packages page to install other packages
-such as Demo and the ODS suite (addressbook, weblog, feeds manager and
-other applications) etc. 
+The first time Virtuoso is run (no special commands are required), it will
+create an empty database and install the Conductor VAD package. You can then
+access <http://localhost:8890/> and/or <http://localhost:8890/conductor/>
+and use the `System Administration` -> `Packages` page to install more VAD
+packages such as the Demo catalog/database, or the ODS application suite
+(addressbook, weblog, feeds manager, etc.).
 
-The default login is `dba' with a password of `dba' for the Conductor and
-isql (for DAV functions, the default login is `dav' with a password of
-`dav').
+The default username is `dba` with a password of `dba` for the Conductor
+and iSQL. For DAV functions, the default username is `dav` with a password
+of `dav`.
 
-You will see a checkpoint in the terminal for each package selected:
+You will see a `checkpoint` in the terminal for each package you install:
 
     15:33:54 INFO: Checkpoint made, log reused
 
-To connect with the command line SQL tool,
+To connect with the command line iSQL tool (i.e., to get a `SQL>` prompt),
+run --
 
-    isql 1112 dba dba
+    isql 1111 dba dba
 
-gives a SQL> prompt.
+If you've installed the `demo` VAD containing the Microsoft Northwind
+sample tables, you can type the following at the `SQL>` prompt to switch
+to the demo database:
 
-If you've installed the demo VAD above, type
-    SQL> use Demo;
+    use Demo;
 
-to switch to the demo database, containing the Microsoft Northwind sample
-tables. The `help' command in isql gives further instructions.
+The simple `help` command in iSQL will get further instructions.
 
 
-To use the web admin interface, point the browser to: 
+To use the HTTP browser-based admin interface, point your browser to --
 
     http://localhost:8890/conductor
 
-To read the documents online: 
+To read the local documentation, visit --
 
     http://localhost:8890/doc/html
 
-To experiment with online tutorials you can use the conductor to install
-the Tutorial vad package into your database, then point the browser to:
+To experiment with online tutorials, you can use the Conductor to install
+the Tutorial VAD package, then point your browser to --
 
     http://localhost:8890/tutorial
 
@@ -486,16 +517,15 @@ the Tutorial vad package into your database, then point the browser to:
 VAD Packages
 ============
 
-The different VAD packages can be installed via ISQL using the following
-command (if the installation packages reside in the filesystem):
+Any VAD package accessible in the filesystem (and contained within the
+list of `DirsAllowed` specified in the `[Parameters]` section of the
+config file) can be installed via iSQL using the following command form
+at the `SQL>` prompt:
 
-    SQL> vad_install ('file/system/path/package-name.vad', 0);
+    vad_install ('file/system/path/package-name.vad', 0);
 
-Alternatively, you can copy VAD packages to Virtuoso's DAV repository
-and then execute the following command (also from ISQL):
+Alternatively, you can copy VAD packages into Virtuoso's DAV repository,
+and then execute the following command (also at the `SQL>` prompt):
 
-    SQL> vad_install ('webdav/path>/package-name.vad', 1);
+    vad_install ('DAV/webdav/path/package-name.vad', 1);
 
-at the isql command line. Note that the DirsAllowed parameter of the
-Parameters section of the ini-file must allow access to the directory
-where the package file is located.
