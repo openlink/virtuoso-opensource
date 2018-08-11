@@ -336,6 +336,7 @@ dk_set_t dbg_t_set_diff (const char *file, int line, dk_set_t s1, dk_set_t s2);
 caddr_t *dbg_t_list_to_array (const char *file, int line, dk_set_t list);
 caddr_t *dbg_t_revlist_to_array (const char *file, int line, dk_set_t list);
 int dbg_t_set_delete (const char *file, int line, dk_set_t * set, void *item);
+void * dbg_t_set_delete_nth (const char *file, int line, dk_set_t * set, int nth);
 dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define mp_set_push(mp,set,elt)			dbg_mp_set_push (__FILE__, __LINE__, (mp), (set), (elt))
 #define t_cons(car,cdr)				dbg_t_cons (__FILE__, __LINE__, (car), (cdr))
@@ -349,6 +350,7 @@ dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define t_list_to_array(list)			dbg_t_list_to_array (__FILE__, __LINE__, (list))
 #define t_revlist_to_array(list)		dbg_t_revlist_to_array (__FILE__, __LINE__, (list))
 #define t_set_delete(set,item)			dbg_t_set_delete (__FILE__, __LINE__, (set), (item))
+#define t_set_delete_nth(set,nth)		dbg_t_set_delete_nth (__FILE__, __LINE__, (set), (nth))
 #define t_set_copy(s)				dbg_t_set_copy (__FILE__, __LINE__, (s))
 #else
 void mp_set_push (mem_pool_t * mp, dk_set_t * set, void *elt);
@@ -363,6 +365,7 @@ dk_set_t t_set_diff (dk_set_t s1, dk_set_t s2);
 caddr_t *t_list_to_array (dk_set_t list);
 caddr_t *t_revlist_to_array (dk_set_t list);
 int t_set_delete (dk_set_t * set, void *item);
+void * t_set_delete_nth (dk_set_t * set, int nth);
 dk_set_t t_set_copy (dk_set_t s);
 #endif
 #define mp_set_nreverse(mp,s) dk_set_nreverse((s))
