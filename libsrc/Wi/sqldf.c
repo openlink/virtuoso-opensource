@@ -5313,6 +5313,8 @@ int32 enable_dt_card = 1;
 float
 dfe_arity_with_supers (df_elt_t * dfe)
 {
+  df_elt_t * dfe2 = dfe;
+  int loop_ctr = 0;
   float sub_arity = 1;
   if (!dfe)
     return 1;
@@ -5335,9 +5337,14 @@ dfe_arity_with_supers (df_elt_t * dfe)
       if (enable_dt_card && DFE_DT == dfe->dfe_type && !dfe->_.sub.is_being_placed && dfe->dfe_unit)
 	sub_arity *= dfe->dfe_arity;
       dfe = dfe->dfe_prev;
+      if ((loop_ctr++) % 2)
+        dfe2 = dfe2->dfe_prev;
+      if (dfe2 == dfe)
+        sqlc_new_error (dfe->dfe_sqlo->so_sc->sc_cc, "42000", "SQI01", "Internal error in SQL compiler: loop in dfe_next (dfe_arity_with_supers())");
     }
+/* Useless loop ? A break is forgotten before?
   while (dfe->dfe_prev)
-    dfe = dfe->dfe_prev;
+    dfe = dfe->dfe_prev; */
   return (sub_arity * dfe_arity_with_supers (dfe->dfe_super));
 }
 
