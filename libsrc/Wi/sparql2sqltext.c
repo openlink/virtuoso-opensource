@@ -4971,6 +4971,8 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
         ssg_puts ("\"RIGHT\"");
       else if (!strcasecmp(name, "log"))
         ssg_puts ("\"LOG\"");
+      else if (strchr (name, ' ') || strchr (name, ':') || strchr (name, '-'))
+        ssg_prin_id (ssg, name);
       else
         ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
