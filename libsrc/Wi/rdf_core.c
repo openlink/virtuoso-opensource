@@ -1194,6 +1194,21 @@ ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, cad
 }
 
 void
+ttlp_triples_for_prefix (ttlp_t *ttlp_arg, caddr_t prefix, caddr_t ns, int lineno)
+{
+  triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
+  caddr_t bnode_iid = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+static caddr_t empty_string = NULL;
+  if (NULL == empty_string)
+    empty_string = box_dv_short_nchars ("", 0);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_prefix, (NULL != prefix) ? prefix : empty_string, NULL, NULL);
+  tf_triple (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_iri, ns);
+  if (NULL != ttlp_arg->ttlp_base_uri)
+    tf_triple_l (tf, prefix, uname_virtrdf_ns_uri_namespace_base, ttlp_arg->ttlp_base_uri, NULL, NULL);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_row, box_num_nonull (lineno), NULL, NULL);
+}
+
+void
 ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;

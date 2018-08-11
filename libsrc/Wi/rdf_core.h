@@ -283,6 +283,7 @@ extern void ttlp_triple_process_prepared (ttlp_t *ttlp_arg);
 extern void ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int is_reverse);
 extern void ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse);
 extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label);
+extern void ttlp_triples_for_prefix (ttlp_t *ttlp_arg, caddr_t prefix, caddr_t ns, int lineno);
 
 #define RDFXML_COMPLETE		0
 #define RDFXML_OMIT_TOP_RDF	1
