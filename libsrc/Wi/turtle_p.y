@@ -213,22 +213,30 @@ prefix_clause
 		  }
 		if (NULL != old_uri_ptr)
 		  {
-		    /*
-		    int err = strcmp (old_uri_ptr[0], ns);
-		    dk_free_box (prefix);
-		    dk_free_box (ns);
-		    if (err)
-		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
-		    */
-		    dk_free_box (prefix);
-		    dk_free_box (old_uri_ptr[0]);
-		    old_uri_ptr[0] = ns;
+		    ttlp_arg->ttlp_last_q_save = NULL;
+		    if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		      {
+		        int err = strcmp (old_uri_ptr[0], ns);
+		        dk_free_box (prefix);
+		        dk_free_box (ns);
+		        if (err)
+		          ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI; this is OK in common case but not compatible with flag 4096 mode of Turtle parser");
+		      }
+		    else
+		      {
+		        dk_free_box (prefix);
+		        dk_free_box (old_uri_ptr[0]);
+		        old_uri_ptr[0] = ns;
+		      }
 		  }
 		else
-		  id_hash_set (local_hash_ptr[0], (caddr_t)(&prefix), (caddr_t)(&ns));
-		ttlp_arg->ttlp_last_q_save = NULL;
-		if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
-		  ttlp_triples_for_prefix (ttlp_arg, prefix, ns, ttlp_arg->ttlp_lexlineno); }
+		  {
+		    id_hash_set (local_hash_ptr[0], (caddr_t)(&prefix), (caddr_t)(&ns));
+		    ttlp_arg->ttlp_last_q_save = NULL;
+		    if (TTLP_DEBUG_BNODES & ttlp_arg->ttlp_flags)
+		      ttlp_triples_for_prefix (ttlp_arg, prefix, ns, ttlp_arg->ttlp_lexlineno);
+		  }
+		}
 	| prefix_kwd QNAME_NS error { dk_free_box ($2); ttlp_arg->ttlp_last_q_save = NULL; ttlyyerror_action ("A namespace IRI is expected after prefix in namepace declaration"); }
 	| prefix_kwd _COLON Q_IRI_REF	{
 		if (ttlp_arg->ttlp_default_ns_uri != ttlp_arg->ttlp_default_ns_uri_saved)
