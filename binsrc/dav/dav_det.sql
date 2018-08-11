@@ -104,11 +104,25 @@ create function DB.DBA.DAV_DET_PATH (
 create function DB.DBA.DAV_DET_PATH_NAME (
   in path varchar)
 {
-  path := trim (path, '/');
-  if (isnull (strrchr (path, '/')))
+  declare pos, l integer;
+
+  if (isvector (path))
+  {
+    l := length (path);
+    if ((l > 1) and path[l-1] = '')
+      return path[l-2];
+
+    if (l > 0)
+      return path[l-1];
+
+    return null;
+  }
+  path := rtrim (path, '/');
+  pos := strrchr (path, '/');
+  if (isnull (pos))
     return path;
 
-  return right (path, length (path)-strrchr (path, '/')-1);
+  return subseq (path, pos+1);
 }
 ;
 
@@ -201,7 +215,7 @@ create function DB.DBA.DAV_DET_PROPPATCH (
     else
       service_name := lcase (det);
 
-    qry := ' select TOP 1 CS_SID                        \n' ||
+    qry := 'select TOP 1 CS_SID                         \n' ||
            '  from OAUTH.DBA.CLI_SESSIONS,              \n' ||
            '       DB.DBA.WA_USER_OL_ACCOUNTS           \n' ||
            ' where CS_SID = WUO_OAUTH_SID               \n' ||

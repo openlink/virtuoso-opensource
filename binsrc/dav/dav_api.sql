@@ -2703,7 +2703,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
     {
       WS.WS.SPARQL_QUERY_POST (path, content, uid, dav_call);
     }
-    else if (type = 'text/turtle')
+    else if ((type = 'text/turtle') and not DB.DBA.DAV_MAC_METAFILE (path))
     {
       rc := WS.WS.TTL_QUERY_POST (path, content, DB.DBA.LDP_ENABLED (DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_DET_PATH_PARENT (path, 1), 'C')));
       if (isnull (DAV_HIDE_ERROR (rc)))
