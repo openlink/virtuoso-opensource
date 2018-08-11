@@ -4432,8 +4432,8 @@ rdf_core_init (void)
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
   if (enable_iri_prefix_nic_n)
     nic_set_n_ways (iri_prefix_cache, 64);
-  rdf_lang_cache = nic_allocate (1000, 0, 0);
-  rdf_type_cache = nic_allocate (1000, 0, 0);
+  rdf_lang_cache = nic_allocate (16000, 0, 0);
+  rdf_type_cache = nic_allocate (16000, 0, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
   rdf_obj_ft_rules_mtx = mutex_allocate ();
