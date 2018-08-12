@@ -3658,7 +3658,7 @@ create procedure WEBDAV.DBA.DAV_ERROR (in code any)
 create procedure WEBDAV.DBA.DAV_SET (
   in path varchar,
   in property varchar,
-  in value varchar,
+  in value any,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {

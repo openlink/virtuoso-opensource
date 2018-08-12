@@ -388,7 +388,7 @@
   else if (action = 'prefixes')
   {
     declare _pos1, _pos2 integer;
-    declare _prefix, _ns, _msg varchar;
+    declare _prefix, _msg varchar;
     declare _graph, _content, _ns, _dictionary, _triples any;
 
     returnData := vector ();
