@@ -72,7 +72,8 @@
               OAT.Loader.load(["ajax", "json", "drag", "dialog", "tab", "combolist"]);
               var davOptions = {
                 imagePath: OAT.Preferences.imagePath,
-                path: "/DAV/home/",
+                pathHome: "/home/",
+                pathHome: "/home/<?V connection_get ('vspx_user') ?>/",
                 user: "<?V connection_get ('vspx_user') ?>",
                 connectionHeaders: {Authorization: "<?V WEBDAV.DBA.account_basicAuthorization (connection_get ('vspx_user')) ?>"}
               };
@@ -646,13 +647,13 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
                 retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expiretexm', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expiretexm', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if (detClass = 'HostFS')
                 retValue := vector ('source', 'name', 'mime', 'fileSize', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
@@ -661,13 +662,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
               else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -790,6 +791,15 @@
               }
 
               return retValue;
+            ]]>
+          </v:method>
+
+          <v:method name="itemHasCreator" arglist="in item any">
+            <![CDATA[
+              if ((length (item) <= 12) or isnull (item[12]))
+                return 0;
+
+              return 1;
             ]]>
           </v:method>
 
@@ -2696,6 +2706,16 @@
                               ]]>
                             </v:before-data-bind>
                           </v:label></b>
+                        </td>
+                      </tr>
+                    </v:template>
+                    <v:template name="tf_8b" type="simple" enabled="-- case when self.viewField ('creator') and self.itemHasCreator (self.dav_item) and (self.command_mode = 10) then 1 else 0 end">
+                      <tr id="davRow_creator">
+                        <th width="30%" valign="top">
+                          Creator
+                        </th>
+                        <td>
+                          <b><?vsp http (WEBDAV.DBA.ui_creator (WEBDAV.DBA.DAV_GET (self.dav_item, 'creator'))); ?></b>
                         </td>
                       </tr>
                     </v:template>
@@ -5500,7 +5520,6 @@
                                          not DB.DBA.IS_REDIRECT_REF (path)
                                        )
                                     {
-                                      declare S varchar;
                                       if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')))
                                       {
                                         http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
