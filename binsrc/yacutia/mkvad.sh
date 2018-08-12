@@ -498,7 +498,7 @@ fi
 #
 #  Clean ups
 #
-rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb
+rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb virtuoso.pxa
 rm -f xddl.xsd xddl_diff.xsl xddl_exec.xsl xddl_procs.xsd xddl_views.xsd xddl_tables.xsd
 rm -rf vad
 
