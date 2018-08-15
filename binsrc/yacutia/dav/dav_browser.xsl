@@ -6166,10 +6166,10 @@
                           <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s" xhtml_disabled="disabled">
                             <v:on-post>
                               <![CDATA[
-                                declare path varchar;
+                                declare _path varchar;
 
-                                path := (control.vc_parent as vspx_row_template).te_column_value('c0');
-                                if (WEBDAV.DBA.permission(path) = '')
+                                _path := (control.vc_parent as vspx_row_template).te_column_value('c0');
+                                if (WEBDAV.DBA.permission (_path) = '')
                                 {
                                   self.vc_error_message := 'You have not rights to read this folder/file!';
                                   self.vc_is_valid := 0;
