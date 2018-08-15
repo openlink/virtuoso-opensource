@@ -16,7 +16,7 @@ You need the following development tools and software installed:
 	gawk      3.1.1
 
   * Active Perl, available from http://www.activestate.com/ActivePerl
-  * OpenSSL version 0.97 static libraries for Windows and header files.
+  * OpenSSL version 1.0.2 static libraries for Windows and header files.
 
 Optionally you may want to install:
 

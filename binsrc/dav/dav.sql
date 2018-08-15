@@ -445,7 +445,7 @@ next_response:
     href := href || '/';
 
   parent_col := DAV_SEARCH_ID (href, 'P');
-  http ('<D:response xmlns:D="DAV:" xmlns:i0="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
+  http ('<D:response xmlns:D="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
   http (sprintf ('<D:href>%V</D:href>\n', DB.DBA.DAV_HREF_URL (href)));
   http ('<D:propstat>\n');
   http ('<D:prop>\n');
@@ -487,9 +487,9 @@ next_response:
       http (sprintf ('<D:getcontenttype>%V</D:getcontenttype>\n', mime_type));
       found_sprop := 1;
     }
-    else if (prop = ':getcontentlength' and st = 'R')
+    else if (prop = ':getcontentlength')
     {
-      http (sprintf ('<D:getcontentlength>%d</D:getcontentlength>\n', res_len));
+      http (sprintf ('<D:getcontentlength>%d</D:getcontentlength>\n', case when (st = 'R') then res_len else 0 end));
       found_sprop := 1;
     }
     else if (prop = 'urn:ietf:params:xml:ns:caldav:supported-calendar-component-set')
@@ -728,7 +728,7 @@ next_response:
         }
         else
         {
-          mis_prop := concat (mis_prop, sprintf ('<i0%s />\n', prop));
+          mis_prop := concat (mis_prop, sprintf ('<D%s />\n', prop));
         }
       }
     }
@@ -1588,8 +1588,12 @@ del_col_end:
 }
 ;
 
-create procedure WS.WS."DELETE" (in path varchar, inout params varchar, in lines varchar)
+create procedure WS.WS."DELETE" (
+  in path varchar,
+  inout params varchar,
+  in lines varchar)
 {
+  -- dbg_obj_princ ('WS.WS.DELETE (', path, params, lines, ')');
   declare depth, len integer;
   declare src_id any;
   declare uname, upwd, _perms varchar;
@@ -2001,7 +2005,7 @@ create procedure WS.WS.PUT (
       return;
     }
   }
-  else if (content_type = 'text/turtle')
+  else if ((content_type = 'text/turtle') and not DB.DBA.DAV_MAC_METAFILE (full_path))
   {
     declare gr, newg, newpath, link, arr, is_container any;
 
@@ -2563,9 +2567,7 @@ again:
     }
   }
 
-  if (not (http_map_get ('executable')
-     --and WS.WS.IS_ACTIVE_CONTENT (http_path ())
-     ))
+  if (not http_map_get ('executable'))
   {
     declare tgt_type, tgt_perms varchar;
     declare tgt_id integer;
@@ -2768,11 +2770,6 @@ again:
   if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
     return;
 
-  --for select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = _col do
-  --  {
-  --    collection_owner := COL_OWNER;
-  --  }
-
   -- special extensions can be executed if special flag is set
   if ((http_map_get ('executable') and webid_check_rc >= 0) or (exec_safety_level and is_admin_owned_res))
     exec_safety_level := 2;
@@ -2846,8 +2843,6 @@ again:
     commit work;
     if (stat = '00000')
     {
-      stat := '00000';
-      msg := '';
       p_comm := sprintf ('call "%s"."%s"."%s" (?, ?, ?)',
       http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
       exec (p_comm, stat, msg, vector (path, params, lines));
@@ -3349,6 +3344,14 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   declare gr, as_part varchar;
   declare id_ integer;
   declare pref_mime varchar;
+
+  -- macOS WebDAV request
+  if (strstr (WS.WS.FINDPARAM (lines, 'User-Agent'), 'WebDAVFS') is not null)
+    return 0;
+
+  -- macOS metadata files
+  if (DB.DBA.DAV_MAC_METAFILE (path))
+    return 0;
 
   if (isarray (_res_id) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_res_id)))
     return 0;
@@ -3986,6 +3989,7 @@ create procedure WS.WS."LOCK" (
   inout params varchar,
   in lines varchar)
 {
+  -- dbg_obj_princ ('WS.WS.LOCK (', path, params, lines, ')');
   declare id, p_id, rc any;
   declare timeout, owner integer;
   declare st, uname, upwd, _perms varchar;
@@ -4117,6 +4121,7 @@ create procedure WS.WS."UNLOCK" (
   inout params varchar,
   in lines varchar)
 {
+  -- dbg_obj_princ ('WS.WS.UNLOCK (', path, params, lines, ')');
   declare uname, upwd, _perms, token, name, location varchar;
   declare st char;
   declare rc, id integer;
@@ -6857,6 +6862,10 @@ create procedure DB.DBA.LDP_CREATE_COL (
   -- dbg_obj_princ ('LDP_CREATE_COL (', path, ')');
   declare graph any;
 
+  -- macOS metadata files
+  if (DB.DBA.DAV_MAC_METAFILE (path))
+    return;
+
   if (isnull (id_parent))
     id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
 
@@ -6877,6 +6886,10 @@ create procedure DB.DBA.LDP_CREATE_RES (
   -- dbg_obj_princ ('LDP_CREATE_RES (', path, ')');
   declare graph any;
 
+  -- macOS metadata files
+  if (DB.DBA.DAV_MAC_METAFILE (path))
+    return;
+
   if (isnull (id_parent))
     id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
 
@@ -6896,6 +6909,10 @@ create procedure DB.DBA.LDP_CREATE (
 {
   -- dbg_obj_princ ('LDP_CREATE (', path, ')');
   declare path_parent, graph, graph_parent varchar;
+
+  -- macOS metadata files
+  if (DB.DBA.DAV_MAC_METAFILE (path))
+    return;
 
   if (isnull (id_parent))
     id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
@@ -6918,6 +6935,10 @@ create procedure DB.DBA.LDP_DELETE (
   -- dbg_obj_princ ('LDP_DELETE (', path, ')');
   declare graph varchar;
   declare graphIdn any;
+
+  -- macOS metadata files
+  if (DB.DBA.DAV_MAC_METAFILE (path))
+    return;
 
   graph := WS.WS.DAV_IRI (path);
   graphIdn := __i2idn (graph);
@@ -7142,5 +7163,13 @@ create procedure DB.DBA.DAV_HREF_URL (
 
   return charset_recode (href, 'UTF-8', '_WIDE_');
 
+}
+;
+
+-- macOS metadata files
+create procedure DB.DBA.DAV_MAC_METAFILE (
+  in path varchar)
+{
+  return case when (DB.DBA.DAV_DET_PATH_NAME (path) like '._%') then 1 else 0 end;
 }
 ;

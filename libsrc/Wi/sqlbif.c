@@ -3878,7 +3878,7 @@ box_sprintf_escaped (ccaddr_t str, int is_id)
 }
 
 void
-bif_string_arg_for_sprintf (caddr_t *qst, state_slot_t ** args, int arg_inx, const char *szMe, int obey_len_or_prec, int preserve_wide, caddr_t *arg_ret, caddr_t *narrow_arg_ret)
+bif_string_arg_for_sprintf (caddr_t *qst, state_slot_t ** args, int arg_inx, const char *szMe, int arg_len, int arg_prec, int preserve_wide, caddr_t *arg_ret, caddr_t *narrow_arg_ret)
 {
   caddr_t arg = arg_ret[0] = bif_arg (qst, args, arg_inx, szMe);
   dtp_t dtp = DV_TYPE_OF (arg);
@@ -3919,14 +3919,20 @@ bif_string_arg_for_sprintf (caddr_t *qst, state_slot_t ** args, int arg_inx, con
         "Function %s needs a string or a value that can be casted to a string or NULL as argument %d, not an arg of type %s (%d)",
         szMe, arg_inx, dv_type_title (dtp), dtp );
     }
-  if (obey_len_or_prec)
+  if (arg_len || arg_prec)
     {
-      if (box_length (arg) - 1 > SPRINTF_BUF_SPACE)
+      int arg_actual_len = box_length (arg) - 1;
+      int final_len = arg_actual_len;
+      if (arg_prec && (final_len > arg_prec))
+        final_len = arg_prec;
+      if (arg_len && (final_len < abs (arg_len)))
+        final_len = abs (arg_len);
+      if (final_len > SPRINTF_BUF_SPACE)
         {
           if (narrow_arg_ret[0])
             dk_free_box (narrow_arg_ret[0]);
           sqlr_new_error ("22026", "SR035",
-              "The length of the data for %s argument %d exceed the maximum of %d, so neither length nor precision format modifiers are supported for it", szMe, arg_inx, SPRINTF_BUF_SPACE);
+              "The length of the data for %s() argument %d is %d(%d) chars before(after) formatting so it exceed the maximum of %d, so neither length nor precision format modifiers are supported for it", szMe, arg_inx, arg_actual_len, final_len, SPRINTF_BUF_SPACE);
         }
     }
 }
@@ -4175,7 +4181,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case 's':
 	{
 	  caddr_t arg, narrow_arg;
-          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, arg_len, arg_prec, 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
 	      snprintf (tmp, SPRINTF_BUF_SPACE, format, arg);
@@ -4195,7 +4201,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case 'R': /* replace spaces with modifier character */
 	{
 	  caddr_t arg, narrow_arg;
-          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 1, 0, &arg, &narrow_arg);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, MAX_BOX_LENGTH, 0, &arg, &narrow_arg);
 	  if (modifier)
 	    {
 	      size_t pos = strspn (arg, " ");
@@ -4222,7 +4228,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case 'S':
 	{
           caddr_t arg, narrow_arg;
-          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, arg_len, arg_prec, 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
               char tmp2[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
@@ -4244,7 +4250,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case 'I':
 	{
           caddr_t arg, narrow_arg;
-          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, (arg_len || arg_prec), 0, &arg, &narrow_arg);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, arg_len, arg_prec, 0, &arg, &narrow_arg);
 	  if (arg_len || arg_prec)
 	    {
               char tmp2[SPRINTF_BUF_SPACE + SPRINTF_BUF_MARGIN + 1];
@@ -4268,7 +4274,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  caddr_t arg, narrow_arg;
 	  if (arg_len || arg_prec)
 	    sqlr_new_error ("22025", "SR036", "The 'URL escaping' sprintf escape %d does not support modifiers", arg_inx);
-          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 1, &arg, &narrow_arg);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 0, 1, &arg, &narrow_arg);
 	  http_value_esc (qst, ses, arg, NULL, DKS_ESC_URI);
 	  if (narrow_arg)
 	    dk_free_box (narrow_arg);
@@ -4281,7 +4287,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  caddr_t arg, narrow_arg;
 	  if (arg_len || arg_prec)
             sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d does not support modifiers", arg_inx);
-          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 1, &arg, &narrow_arg);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 0, 1, &arg, &narrow_arg);
           http_value_esc (qst, ses, arg, NULL, DKS_ESC_PTEXT);
           if (narrow_arg)
             dk_free_box (narrow_arg);

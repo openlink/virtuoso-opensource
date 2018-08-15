@@ -1,48 +1,69 @@
-Using Virtuoso Open Source Edition CVS Tree
+Using Virtuoso Open Source Edition GIT Tree
 ===========================================
 
 Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>
 
 
-NOTICE
-======
-
-The Virtuoso Open Source development team has decided to stop using
-CVS in favour of GIT. The VOS 6.1.5 version will be the last version
-in CVS tree on sourceforge.net. Users who are tracking the Virtuoso
-Open Source project or want to aid in it's development are encouraged
-to move with us to github via:
-
-  https://github.com/openlink/virtuoso-opensource
-
-For information about GIT see also README.GIT
-
-
 Introduction
 ============
 
-This document describes how to checkout a copy of the CVS tree for
+This document describes how to checkout a copy of the git tree for
 development purposes. It also lists the packages that need to be
 installed prior to generating the necessary scripts and Makefiles to
 build the project.
 
-CVS access is only needed for developers who want to actively track
+Git access is only needed for developers who want to actively track
 progress of the Virtuoso source code and contribute bugfixes or
-enhancements to the project. It requires basic knowledge about the
-general layout of open source and GNU projects, the use of autoconf and
-automake etc, which is beyond the scope of this document. If you have
-any questions, please email us at .
+enhancements to the project. It requires basic knowledge of git
+itself, the general layout of open source and GNU projects, the use
+of autoconf and automake etc, which is beyond the scope of this
+document. 
+
+If you have any questions, please email us at <vos.admin@openlinksw.com>.
 
 
-CVS Archive Server Access
+Git Archive Server Access
 =========================
 
-OpenLink currently provides read-only CVS Archive access through the
-SourceForge.net servers:
+For main development OpenLink Software will publish the Virtuoso
+Open Source tree to GitHub and encourage everyone who is interested
+in tracking the project, to make an account there.
 
-    $ cvs -d:pserver:anonymous@virtuoso.cvs.sourceforge.net:/cvsroot/virtuoso login
-    (The password is blank)
-    $ cvs -z3 -d:pserver:anonymous@virtuoso.cvs.sourceforge.net:/cvsroot/virtuoso co virtuoso-opensource
+Users who mainly just want to track the code can use the following
+command to get a copy of the tree:
+
+    $ git clone git://github.com/openlink/virtuoso-opensource.git
+
+
+At this point you can create your own work branch based on any of
+the branches available, create bugfixes and commit them to your own
+branch and then use the 'git format-patch' command to generate the
+appropriate diffs to send to:
+
+    vos.admin@openlinksw.com
+
+
+Developers are encouraged to fork the project using GitHub, create
+their own branches to make enhancements/bugfixes and then send pull
+requests using the excellent GitHub interface for the OpenLink team
+to examine and incorporate the fixes into the master tree for an
+upcoming release.
+
+Github has excellent documentation on how to fork a project, send
+pull requests, track the project etc. on:
+
+    http://help.github.com/
+
+
+OpenLink Software will continue to use sourceforge.net for the
+source tarball releases and certain binary releases, and for
+completenes will also provides read-only Git Archive access.
+
+For more information read:
+
+   https://sourceforge.net/scm/?type=git&group_id=161622
+
+
 
 
 Package Dependencies
@@ -62,7 +83,7 @@ installed on your system.
     gawk      3.1.1    http://www.gnu.org/software/gawk/
     m4        1.4.1    http://www.gnu.org/software/m4/
     make      3.79.1   http://www.gnu.org/software/make/
-    OpenSSL   0.9.7    http://www.openssl.org/
+    OpenSSL   0.9.8e   http://www.openssl.org/
 
 and any GNU packages required by these. The autogen.sh and configure
 scripts check for the presence and right version of some of the required
@@ -90,6 +111,21 @@ If you have an older version than automake version 1.9 you can edit
 the configure.ac script around line 47 using the examples provided for
 each version.
 
+Mac OS X 10.10
+--------------
+Apple removed a number of programs from their Xcode.app commandline
+installation including the autoconf, automake, libtool, gperf and
+some other tools needed to build Virtuoso from a newly checked out
+GIT tree. We suggest using the HomeBrew package manager from
+http://brew.sh/ to install these tools.
+
+RedHat Enterprise Linux 7
+-------------------------
+On RedHat 7, the gperf tool is no longer available from the default
+repos, but can be installed using the following command:
+
+  $ sudo yum --enablerepo=rhui-REGION-rhel-server-optional info gperf
+
 
 Diskspace Requirements
 ======================
@@ -114,8 +150,8 @@ executable, depending on platform and options.
 Generate build files
 ====================
 
-To generate the configure script and all related build files, use use
-the supplied script in your CVS checkout directory:
+To (re)generate the configure script and all related build files,
+use use the supplied script in your working directory:
 
     $ ./autogen.sh
 
@@ -129,18 +165,3 @@ flag is added to configure.
 
 Please read the files INSTALL and README in this directory for further
 information on how to configure the package and install it on your system.
-
-
-Submitting fixes and enhancements
-=================================
-
-Patches and new contributions can be submitted as diffs from the current
-CVS archive by:
-
-    $ cvs add newfiles $ cvs -z3 diff -uN > diffs
-
-Patches and contributions can be send to the OpenLink Virtuoso source
-archive manager at <vos.admin@openlinksw.com> to be included the next
-distribution.  Please provide accompanying documentation on which bugs
-are fixed or new features are introduced.
-

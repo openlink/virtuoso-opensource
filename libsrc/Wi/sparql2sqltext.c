@@ -4971,6 +4971,8 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
         ssg_puts ("\"RIGHT\"");
       else if (!strcasecmp(name, "log"))
         ssg_puts ("\"LOG\"");
+      else if (strchr (name, ' ') || strchr (name, ':') || strchr (name, '-'))
+        ssg_prin_id (ssg, name);
       else
         ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
@@ -5424,7 +5426,7 @@ ssg_print_bool_of_plain_box (spar_sqlgen_t *ssg, caddr_t val)
     case DV_LONG_INT: ssg_puts (unbox (val) ? " 1" : " 0"); ssg_puts_comment ("int as bool"); break;
     case DV_SINGLE_FLOAT:  ssg_puts (unbox_float (val) ? " 1" : " 0"); ssg_puts_comment ("real as bool"); break;
     case DV_DOUBLE_FLOAT:  ssg_puts (unbox_double (val) ? " 1" : " 0"); ssg_puts_comment ("double as bool"); break;
-    case DV_NUMERIC:  ssg_puts (num_is_zero ((numeric_t)(val)) ? " 1" : " 0"); ssg_puts_comment ("decimal as bool"); break;
+    case DV_NUMERIC:  ssg_puts (num_is_zero ((numeric_t)(val)) ? " 0" /* not 1! */ : " 1" /* not 0! */); ssg_puts_comment ("decimal as bool"); break;
     case DV_DATETIME: case DV_XML_ENTITY: case DV_GEO: ssg_puts (" 1"); ssg_puts_comment ("atom as bool"); break;
     case DV_STRING: case DV_BIN: ssg_puts ((1 < box_length (val)) ? " 1" : " 0"); ssg_puts_comment ("string as bool"); break;
     case DV_WIDE:  ssg_puts ((sizeof(wchar_t) < box_length (val)) ? " 1" : " 0"); ssg_puts_comment ("wide as bool"); break;
