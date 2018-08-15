@@ -1,5 +1,8 @@
 Virtuoso and OpenSSL
 ====================
+
+*Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>*
+
 Virtuoso Open Source Edition uses the OpenSSL libraries for cryptographic operations as well as
 handling both client-side and server-side secure connections for both HTTPS as well as iSQL/ODBC
 transport layers.

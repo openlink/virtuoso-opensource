@@ -32,7 +32,8 @@ dist_doc_DATA = \
 	$(srcdir)/INSTALL \
 	$(srcdir)/LICENSE \
 	$(srcdir)/NEWS \
-	$(srcdir)/README*
+	$(srcdir)/README* \
+	$(srcdir)/*.md
 
 # ----------------------------------------------------------------------
 #
@@ -84,6 +85,7 @@ snapshot:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	$(srcdir)/*.md \
 	$(srcdir)/README* \
 	$(srcdir)/autogen.sh \
 	$(srcdir)/bin/makever \
