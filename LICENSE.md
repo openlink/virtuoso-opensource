@@ -1,13 +1,16 @@
-OpenLink Software's Virtuoso Open-Source (VOS) project
-Copyright (C) 1998-2018 OpenLink Software
+License
+=======
 
+*Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>*
+
+OpenLink Software's Virtuoso Open-Source (VOS) project
+------------------------------------------------------
 This software is licensed under the GNU General Public License (see
-COPYING).
+[COPYING](COPYING.md)).
 
 Note that the only valid version of the GPL license as far as this project
 is concerned is the original GNU General Public License Version 2, dated
 June 1991.
-
 
 OpenSSL exemption
 -----------------
@@ -30,5 +33,5 @@ Client Protocol Driver exemptions
     permission to use the unmodified client libraries (ODBC, JDBC,
     ADO.NET, OleDB, Jena, Sesame and Redland providers) in your own
     application whether open-source or not, with no obligation to use
-    the GPL on the resulting application. In all other respects you 
+    the GPL on the resulting application. In all other respects you
     must abide by the terms of the GPL.

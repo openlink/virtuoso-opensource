@@ -1,5 +1,8 @@
-August 15, 2018, V7.2.5:
+NEWS
+====
 
+August 15, 2018, v7.2.5
+-----------------------
   * Virtuoso Engine
     - Added support for application/n-triples mime type
     - Added support for modifying size of SQL compiler cache
@@ -103,8 +106,8 @@ August 15, 2018, V7.2.5:
     - Added LODmilla browser
 
 
-April 25, 2016, V7.2.4:
-
+April 25, 2016, v7.2.4
+----------------------
   * Virtuoso Engine
     - Added "obvious" index choice
     - Added new bif http_redirect_from for getting initial path from internal redirect
@@ -199,8 +202,8 @@ April 25, 2016, V7.2.4:
     - Fixed the http://mementoarchive.lanl.gov link
 
 
-December 09, 2015, V7.2.2:
-
+December 09, 2015, v7.2.2
+-------------------------
   * Virtuoso Engine
     - Added support for reading bzip2 compressed files
     - Added support for reading xz/lzma compressed files
@@ -318,7 +321,8 @@ December 09, 2015, V7.2.2:
     - Fixed timezone bug with S3 DET
 
 
-June 24, 2015, V7.2.1:
+June 24, 2015, v7.2.1
+---------------------
   * Virtuoso Engine
     - Added support for datetime without timezone
     - Added new implementation of xsd:boolean logic
@@ -409,7 +413,8 @@ June 24, 2015, V7.2.1:
     - Fixed issues with subfolders of DETs type ResFilter and CatFilter
     - Fixed labels
 
-February 17, 2015, V7.2.0:
+February 17, 2015, v7.2.0
+-------------------------
   * Virtuoso Engine
     - Added new threadsafe / reentrant SQL parser
     - Added support for using TLSF library for page-maps
@@ -523,7 +528,8 @@ February 17, 2015, V7.2.0:
     - Fixed labels
     - Fixed links
 
-February 17, 2014, V7.1.0:
+February 17, 2014, v7.1.0
+-------------------------
   * Engine
     - Enhancements to cost based optimizer
     - Added optimization when splitting on scattered inserts
@@ -631,14 +637,16 @@ February 17, 2014, V7.1.0:
     - Changed describe mode for PivotViewer link
 
 
-August 02, 2013, V7.0.0:
+August 02, 2013, v7.0.0
+-----------------------
   * First official release of Virtuoso Open Source Edition v7.0
 
   NOTE: At this point in time the engine is only buildable in 64bit mode
 
 
-July 12, 2011, V7.0.0-alpha1:
-  * First release of the experimental V7 branch.
+July 12, 2011, v7.0.0-alpha
+---------------------------
+  * First release of the experimental v7 branch.
 
   NOTE: This version is unstable and should not be used for any production
         data. The database format may still change during the next couple

@@ -1,16 +1,11 @@
-#
-#  $Id$
-#
-#  CREDITS
-#
-#  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
-#  project.
-#
-#  Copyright (C) 1998-2018 OpenLink Software
-#
+Credits
+=======
+
+*Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>*
+
 
 Included Functionality
-======================
+----------------------
 
 The OpenLink Software Virtuoso Open-Source Edition (VOS) project wishes to
 acknowledge incorporation of code from the following projects:
@@ -112,8 +107,7 @@ DocBook stylesheets
 
 
 Optional functionality
-======================
-
+----------------------
 OpenLink Software Virtuoso Open-Source Edition contains optional
 functionality that may require libraries from some of the following
 projects:
