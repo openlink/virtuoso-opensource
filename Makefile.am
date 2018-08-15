@@ -28,12 +28,27 @@ SUBDIRS = . docsrc libsrc binsrc appsrc
 dist_doc_DATA = \
 	$(srcdir)/AUTHORS \
 	$(srcdir)/COPYING \
+	$(srcdir)/COPYING.md \
 	$(srcdir)/CREDITS \
+	$(srcdir)/CREDITS.md \
 	$(srcdir)/INSTALL \
+	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE \
+	$(srcdir)/LICENSE.md \
 	$(srcdir)/NEWS \
-	$(srcdir)/README* \
-	$(srcdir)/*.md
+	$(srcdir)/NEWS.md \
+	$(srcdir)/README \
+	$(srcdir)/README.GIT.md \
+	$(srcdir)/README.hibernate.md \
+	$(srcdir)/README.jena.md \
+	$(srcdir)/README.jsse.md \
+	$(srcdir)/README.MACOSX.md \
+	$(srcdir)/README.OpenSSL.md \
+	$(srcdir)/README.php5.md \
+	$(srcdir)/README.sesame2.md \
+	$(srcdir)/README.sesame3.md \
+	$(srcdir)/README.UPGRADE.md \
+	$(srcdir)/README.WINDOWS.md
 
 # ----------------------------------------------------------------------
 #
@@ -87,13 +102,33 @@ snapshot:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	$(srcdir)/*.md \
-	$(srcdir)/README* \
+	$(srcdir)/AUTHORS \
+	$(srcdir)/COPYING \
+	$(srcdir)/COPYING.md \
+	$(srcdir)/CREDITS.md \
+	$(srcdir)/INSTALL.md \
+	$(srcdir)/LICENSE.md \
+	$(srcdir)/NEWS.md \
+	$(srcdir)/README \
+	$(srcdir)/README.GIT.md \
+	$(srcdir)/README.MACOSX.md \
+	$(srcdir)/README.OpenSSL.md \
+	$(srcdir)/README.UPGRADE.md \
+	$(srcdir)/README.WINDOWS.md \
+	$(srcdir)/README.hibernate.md \
+	$(srcdir)/README.jena.md \
+	$(srcdir)/README.jsse.md \
+	$(srcdir)/README.php5.md \
+	$(srcdir)/README.sesame2.md \
+	$(srcdir)/README.sesame3.md \
 	$(srcdir)/autogen.sh \
-	$(srcdir)/bin/makever \
 	$(srcdir)/bin/generate \
-	$(srcdir)/bin/libtool.macosx \
 	$(srcdir)/bin/installer/virtuoso.ini bin/installer/demo.ini \
+	$(srcdir)/bin/libtool.macosx \
+	$(srcdir)/bin/makever \
+	$(srcdir)/debian/NEWS.Debian \
+	$(srcdir)/debian/README.Debian \
+	$(srcdir)/debian/TODO.Debian \
 	$(srcdir)/debian/changelog \
 	$(srcdir)/debian/compat \
 	$(srcdir)/debian/control \
@@ -102,22 +137,19 @@ EXTRA_DIST = \
 	$(srcdir)/debian/docs \
 	$(srcdir)/debian/libvirtjdbc0.dirs \
 	$(srcdir)/debian/libvirtjdbc0.install \
+	$(srcdir)/debian/libvirtmono0-cil.install \
 	$(srcdir)/debian/libvirtodbc0.config \
 	$(srcdir)/debian/libvirtodbc0.dirs \
 	$(srcdir)/debian/libvirtodbc0.install \
 	$(srcdir)/debian/libvirtodbc0.postinst \
 	$(srcdir)/debian/libvirtodbc0.prerm \
 	$(srcdir)/debian/libvirtodbc0.templates \
-	$(srcdir)/debian/libvirtmono0-cil.install \
-	$(srcdir)/debian/NEWS.Debian \
 	$(srcdir)/debian/odbc.ini \
 	$(srcdir)/debian/odbcinst.ini \
 	$(srcdir)/debian/po/*.po \
 	$(srcdir)/debian/po/POTFILES.in \
 	$(srcdir)/debian/po/templates.pot \
-	$(srcdir)/debian/README.Debian \
 	$(srcdir)/debian/rules \
-	$(srcdir)/debian/TODO.Debian \
 	$(srcdir)/debian/virtuoso-mono.pc \
 	$(srcdir)/debian/virtuoso-opensource-7-bin.install \
 	$(srcdir)/debian/virtuoso-opensource-7-common.install \
