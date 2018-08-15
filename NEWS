@@ -1,3 +1,108 @@
+August 15, 2018, V7.2.5:
+
+  * Virtuoso Engine
+    - Added support for application/n-triples mime type
+    - Added support for modifying size of SQL compiler cache
+    - Added better version checking for OpenSSL to configure
+    - Added support for timeout on socket connect
+    - Added new debug code to audit SPARQL/SQL errors
+    - Added new code for MALLOC_DEBUG
+    - Added support for LDAPS
+    - Added support for TLSext Server Name Indication to http_client
+    - Remove TLSv1 protocol from default protocol list
+    - Fixed initial DB.DBA.RDF_DEFAULT_USER_PERMS_SET for user 'nobody' so /sparql endpoint
+      can query all graphs without any performance penalty
+    - Fixed scheduler errors should be emailed every time the event fails
+    - Fixed issue replaying table rename due to dereference of NULL result
+    - Fixed issue returning correct user after TLS login
+    - Fixed issues with HTTP PATCH command changing resource permissions
+    - Fixed check for infinite loop in SQL compiler
+    - Fixed XMLA service to select TIMESTAMP, XML_ENTITY, IRI_ID columns
+    - Fixed issue with shcompo cache size
+    - Fixed memory leaks
+    - Fixed portability issues and compiler warnings
+    - Fixed issues building Windows binaries using VS2017
+
+  * SPARQL
+    - Added new option 'Explain' to /sparql endpoint
+    - Added new help page for RDF views to /sparql endpoint
+    - Fixed initial fill of language and datatype caches after server restart
+    - Fixed SPARQL DELETE for quads which failed on booleans and other inlined RDF boxes
+    - Fixed SPARQL 1.1 SUBSTR()
+    - Fixed issues with PATCH not returning an error after a SPARQL error
+    - Fixed SPARQL_CONSTRUCT_ACC could get fixed-value variables referred to in 'stats' argument
+    - Fixed Turtle 1.1 permits multiple semicolons without predicate-object pairs between them
+    - Fixed handling for timezone date values from sparql queries
+    - Fixed readability and indentation of EXPLAIN output
+    - Fixed issue encoding urls in SPARQL/FED
+    - Fixed st_contains and other geo predicates
+    - Fixed issue with cast numeric to bool
+    - Fixed issues with Turtle and JSON;LD_CTX
+
+  * Jena & Sesame
+    - Added method to Sesame provider to query across all RDF graphs in Quad Store
+    - Added set/getIsolationLevel to VirtDataset
+    - Update using of DB proc rdf_insert_triple_c()
+    - Fixed baseURI parameter not handled properly by RDF4J provider
+    - Fixed issue with Jena object values that are URLs
+    - Fixed providers Jena/RDF4J set/getNamespaces in global cache instead of connection cache
+    - Fixed xsd:boolean literals returned as xsd:string literals
+    - Fixed VirtDataset class for properly handle transaction
+
+  * JDBC Driver
+    - Added support for concurency mode CONCUR_VALUES
+    - Added support for SSL truststore
+    - Fixed binding/conversion of Unicode characters
+    - Fixed handling of SPARQL negative dates
+    - Fixed Sql Workbench/J csv file import in Virtuoso fails on empty numeric fields
+    - Fixed exception handling
+
+  * ADO.NET
+    - Fixed support for SPARQL Negative Dates, Concurrency modes, Connection option "Log_enable"
+    - Fixed compilation warnings and errors on Mono and .NET versions on Windows
+    - Fixed error in CompareTo() methods
+    - Fixed issue ADO.NET for DateTime types and TZ
+
+  * Faceted Browser
+    - Fixed incorrect UTF-8 character IRI handling in Namespaces
+
+  * Conductor
+    - Added option to delete locked files by admin users
+    - Added support for JSON and JSON-LD in rewrite rules for SPARQL query output
+    - Added support for importing PEM and DER formats
+    - Updated Conductor UI to support new redirection options
+    - Moved 'OAuth Service Binding' to 'Web Services'
+    - Optimized handling of vspx session expiration
+    - Fixed issue creating new user accounts with conductor using user with dba and administrator roles
+    - Fixed a missing CA chain does not mean .p12 file is bad
+    - Fixed issue with 'Next' time in Scheduler
+    - Fixed selection of category in the database browser page
+    - Fixed rewrite rule export format
+    - Fixed CSV importer
+    - Fixed crawler functions to work with HTTPS sources
+    - Fixed issues with Rewrite Rule export function
+    - Fixed issues in R2RML
+
+  * DAV
+    - Added item creator as a field in the properties when not empty
+    - Added overwrite flag for DynaRes creation
+    - Optimized calls to some APIs using user/password properties
+    - Fixed issues related to the LITMUS testsuite for DAV
+    - Fixed issues with Mac OS X WebDAV mapping
+    - Fixed issues with WEBdav browser and folder selection
+    - Fixed issue deleting Smart folders
+    - Fixed issue with permissions for PUT command
+    - Fixed bug with PROPFIND and bad XML (without correct namespace) as body
+    - Fixed issue with DAV authentication
+    - Fixed issues with set/update LDP related data
+    - Fixed response code to 204 for PATCH command
+    - Fixed return 406 if no matching Accept header found
+    - Fixed issue retrieving user's profile data with RDFData DET
+
+  * DBpedia
+    - Added LODmilla browser
+
+
 April 25, 2016, V7.2.4:
 
   * Virtuoso Engine
@@ -235,7 +340,7 @@ June 24, 2015, V7.2.1:
   * SPARQL
     - Added support for SPARQL GROUPING SETS
     - Added support for SPARQL 1.1 EBV (Efficient Boolean Value)
-    - Added support for define input:with-fallback-graph_uri 
+    - Added support for define input:with-fallback-graph_uri
     - Added support for define input:target-fallback-graph-uri
     - Fixed SPARQL queries with sub-selects
     - Fixed SPARQL abs() should not convert result to integer
@@ -307,7 +412,7 @@ June 24, 2015, V7.2.1:
 February 17, 2015, V7.2.0:
   * Virtuoso Engine
     - Added new threadsafe / reentrant SQL parser
-    - Added support for using TLSF library for page-maps 
+    - Added support for using TLSF library for page-maps
     - Added support for setting SSL Protocols and Ciphers
     - Added support for new Unicode-3 based collations
     - Added support for custom HTTPLogFormat
@@ -490,7 +595,7 @@ February 17, 2014, V7.1.0:
   * Jena & Sesame
     - Improved speed of batch delete
     - Removed unnecessary check that graph exists after remove
-    - Removed unnecessary commits 
+    - Removed unnecessary commits
     - Replaced n.getLiteralValue().toString() with n.getLiteralLexicalForm()
 
   * JDBC Driver
