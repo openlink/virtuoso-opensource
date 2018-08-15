@@ -220,6 +220,7 @@ Global
 		{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}.Release|Win32.ActiveCfg = Release|Win32
 		{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}.Release|Win32.Build.0 = Release|Win32
 		{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}.Release|x64.ActiveCfg = Release|x64
+		{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}.Release|x64.Build.0 = Release|x64
 		{C152ADCC-CF7A-11DA-85E2-A4E5714C712A}.Release|x86.ActiveCfg = Release|x64
 		{C6C66924-CF7A-11DA-85E2-A4E5714C712A}.Debug|Any CPU.ActiveCfg = Release|x64
 		{C6C66924-CF7A-11DA-85E2-A4E5714C712A}.Debug|Win32.ActiveCfg = Release|x64
@@ -551,5 +552,8 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B157B88D-A07E-4CEB-81E2-EC5F3EFC4E1D}
 	EndGlobalSection
 EndGlobal
