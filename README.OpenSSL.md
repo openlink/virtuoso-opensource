@@ -39,7 +39,7 @@ And at configure time you can use the following:
       --enable-openssl=/usr/local/opt/openssl/
 ```
 
-More information on porting VOS on Mac OS X can be found in [README.MACOSX.md]()
+More information on porting VOS on Mac OS X can be found in [README.MACOSX.md](README.MACOSX.md)
 
 
 Ubuntu 18.04 LTS
@@ -106,7 +106,7 @@ switches instead of the "/MD" and "/MDd".
 Finally the libeay32.lib and ssleay32.lib from /out32 and files from /inc32/
 openssl must be copied to the <Virtuoso Open Source dir>/win32/openssl/
 
-More notes on porting Virtuoso on Windows can be found in [README.WINDOWS]().
+More notes on porting Virtuoso on Windows can be found in [README.WINDOWS](README.WINDOWS).
 
 
 Custom installation
