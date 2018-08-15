@@ -5198,12 +5198,12 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   if (!(proto & SSL_PROTOCOL_SSLV3))
     ctx_options |= SSL_OP_NO_SSLv3;
   else
-    log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vunerable");
+    log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vulnerable");
 
   if (!(proto & SSL_PROTOCOL_TLSV1))
     ctx_options |= SSL_OP_NO_TLSv1;
   else
-    log_warning ("SSL: Enabling legacy protocol TLS 1.0 which may be vunerable");
+    log_warning ("SSL: Enabling legacy protocol TLS 1.0 which may be vulnerable");
 
   /*
    *  Check rest of protocols
