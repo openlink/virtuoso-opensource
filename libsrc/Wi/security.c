@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -189,8 +189,7 @@ sec_tb_is_owner (dbe_table_t * tb, query_instance_t * qi, char * tb_name, oid_t 
       char * name;
       name = ddl_complete_table_name (qi, tb_name);
       owner = &o_tmp[0];
-      if (!name)
-	name = tb_name;
+      /*if (!name) name = tb_name;  --- this happens in ddl_complete_table_name */
       sch_split_name (NULL, name, q_tmp, o_tmp, n_tmp);
     }
   else
@@ -977,7 +976,7 @@ sec_new_u_id (query_instance_t * qi)
   caddr_t col;
   oid_t u_id;
   caddr_t err;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
 
   if (!qi || (CALLER_LOCAL == qi))	/* Added by AK 20-FEB-97. */
     {
@@ -992,7 +991,10 @@ sec_new_u_id (query_instance_t * qi)
 
   err = qr_rec_exec (last_id_qr, cli, &lc, qi, NULL, 0);
   if (err != SQL_SUCCESS)
-    sqlr_resignal (err);
+    {
+      LC_FREE (lc);
+      sqlr_resignal (err);
+    }
   if (!lc_next (lc))
     {
       lc_free (lc);
@@ -1453,7 +1455,7 @@ sec_usr_member_ids_add (user_t *gr, user_t *memb)
         return 0;
       break;
     }
-  new_buf = (ptrlong *)dk_alloc_box (len+1, DV_CUSTOM);
+  new_buf = (ptrlong *)dk_alloc_box ((len+1) * sizeof(ptrlong), DV_CUSTOM);
   if (len)
     {
       memcpy (new_buf, gr->usr_member_ids, ctr * sizeof (ptrlong));
@@ -1484,7 +1486,7 @@ sec_usr_member_ids_del (user_t *gr, user_t *memb)
   return 0;
 del_at_ctr:
   sec_usr_flatten_g_ids_stale (gr);
-  new_buf = (ptrlong *)dk_alloc_box (len-1, DV_CUSTOM);
+  new_buf = (ptrlong *)dk_alloc_box ((len-1) * sizeof(ptrlong), DV_CUSTOM);
   memcpy (new_buf, gr->usr_member_ids, ctr * sizeof (ptrlong));
   memcpy (new_buf + ctr, gr->usr_member_ids + ctr + 1, (len - (ctr+1)) * sizeof (ptrlong));
   dk_free_box ((caddr_t)(gr->usr_member_ids));
@@ -1694,7 +1696,7 @@ sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
     char *table, int only_execute_gr)
 {
   dbe_schema_t * sc;
-  caddr_t err;
+  caddr_t err = NULL;
   local_cursor_t *lc = NULL;
   sqlc_set_client (cli);
   if (!sec_initialized)
@@ -1721,8 +1723,7 @@ sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
     }
   if (err)
     {
-      if (lc)
-	lc_free (lc);
+      LC_FREE (lc);
       return err;
     }
   while (lc_next (lc))
@@ -1731,10 +1732,20 @@ sec_read_grants (client_connection_t * cli, query_instance_t * caller_qi,
       int op = (int) unbox (lc_nth_col (lc, 1));
       char *object = lc_nth_col (lc, 2);
       char *column = lc_nth_col (lc, 3);
-
-      sec_dd_grant (sc, object, column, 1, op, grantee);
+      QR_RESET_CTX_T (((query_instance_t *)(lc->lc_inst))->qi_thread)
+        {
+          sec_dd_grant (sc, object, column, 1, op, grantee);
+          dk_free_tree (err); /* Can't remember more than 1 error anyway */
+          err = lc->lc_error;
+        }
+      QR_RESET_CODE
+        {
+          dk_free_tree (err); /* Can't remember more than 1 error anyway */
+          err = thr_get_error_code (THREAD_CURRENT_THREAD);
+          POP_QR_RESET;
+        }
+      END_QR_RESET;
     }
-  err = lc->lc_error;
   lc_free (lc);
   if (!caller_qi)
     local_commit (bootstrap_cli);
@@ -2658,8 +2669,7 @@ sec_read_tb_rls (client_connection_t * cli, query_instance_t * caller_qi, char *
     }
   if (err)
     {
-      if (lc)
-	lc_free (lc);
+      LC_FREE (lc);
       return err;
     }
   while (lc_next (lc))

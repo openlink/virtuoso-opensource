@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2018 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="registries"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Registry Keys &amp; Values</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="c_mode" type="varchar" default="'C/browse'"/>
+
+      <v:variable name="f_how" type="varchar" default="4"/>
+      <v:variable name="f_value" type="varchar" default="''"/>
+      <v:variable name="f_filter" type="varchar" default="''"/>
+
+      <v:variable name="r_key" type="varchar" default="''"/>
+      <v:variable name="r_value" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Registry Keys &amp; Values"/>
+    </vm:menu>
+    <vm:header caption="Registry Keys &amp; Values">
+    </vm:header>
+    <vm:pagebody>
+      <div class="clear"></div>
+      <v:form name="frm1" method="POST" type="simple">
+        <vm:if test="self.c_mode = 'C/browse'">
+          <div style="padding-bottom: 1em; width: 100%;">
+            <div style="float: left; display: inline;">
+              <v:button name="add1" value="Add" action="simple">
+                <v:on-post>
+                  <![CDATA[
+                    self.c_mode := 'C/add';
+
+                    self.r_key := '';
+                    self.r_value := '';
+
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+
+            <div style="float: right; display: inline;">
+              Show
+              <v:select-list name="how" xhtml_id="how" value="--self.f_how">
+                <v:item name="Starting with" value="1" />
+                <v:item name="Containing" value="2" />
+                <v:item name="Ending with" value="3" />
+                <v:item name="Exact match" value="4" />
+              </v:select-list>
+              <v:text name="value" xhtml_id="value" value="--self.f_value"/>
+              <v:button action="simple" value="Filter" xhtml_class="button">
+                <v:on-post>
+                  <![CDATA[
+                    self.f_how := self.how.ufl_value;
+                    self.f_value := self.value.ufl_value;
+
+                    self.ds1.vc_reset ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Clear" xhtml_class="button">
+                <v:on-post>
+                  <![CDATA[
+                    self.f_how := '4';
+                    self.f_value := '';
+
+                    self.ds1.vc_reset ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+          </div>
+          <br />
+          <table class="listing">
+            <tr class="listing_header_row">
+              <th width="50%">Prefix</th>
+              <th width="50%">URI</th>
+              <th width="1%">Action</th>
+            </tr>
+
+            <v:data-source name="dsrc" expression-type="sql" nrows="20" initial-offset="0">
+              <v:before-data-bind>
+                <![CDATA[
+                  self.f_filter := case self.f_how
+                                     when '1' then self.f_value || '%'
+                                     when '2' then '%' || self.f_value || '%'
+                                     when '3' then '%' || self.f_value
+                                     else self.f_value
+                                   end;
+                  if (self.f_filter = '')
+                    self.f_filter := '%';
+
+                  self.f_filter := replace (self.f_filter, '%%', '%');
+
+                  control.ds_sql := 'select rs.* from DB.DBA.y_registries (rs1)(c0 varchar, c1 varchar) rs where rs1 = ? order by rs.c0';
+                  control.ds_parameters := null;
+                  control.add_parameter (self.f_filter);
+                ]]>
+              </v:before-data-bind>
+              <v:after-data-bind>
+                control.ds_make_statistic ();
+              </v:after-data-bind>
+            </v:data-source>
+
+            <v:data-set name="ds1" data-source="self.dsrc" scrollable="1">
+              <v:template type="repeat" name="dst1">
+
+                <v:template type="if-not-exists" name="dst2">
+                  <tr>
+                    <td align="center" colspan="3">No rows selected</td>
+                  </tr>
+                </v:template>
+
+                <v:template type="browse" name="dst3">
+                  <tr>
+                    <td valign="top">
+                      <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
+                          ]]>
+                        </v:before-render>
+                        <v:on-post>
+                          <![CDATA[
+                            self.r_key := (control.vc_parent as vspx_row_template).te_rowset[0];
+                            self.r_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+
+                            self.c_mode := 'C/edit';
+                            self.vc_data_bind (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                    <td>
+                      <?V control.te_rowset[1] ?>
+                    </td>
+                    <td valign="top" nowrap="nowrap">
+                      <v:button name="delete" action="simple" style="url" value="''">
+                        <v:before-render>
+                          <![CDATA[
+                            control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                          ]]>
+                        </v:before-render>
+                        <v:on-post>
+                          <![CDATA[
+                            registry_remove ((control.vc_parent as vspx_row_template).te_rowset[0]);
+                            self.vc_data_bind (e);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                  </tr>
+                </v:template>
+              </v:template>
+
+              <v:template type="simple" name="dst4">
+                <tr class="browse_button_row">
+                  <td colspan="3" align="center"  class="listing_col_action">
+                    <vm:ds-navigation data-set="ds1"/>
+                  </td>
+                </tr>
+              </v:template>
+            </v:data-set>
+          </table>
+        </vm:if>
+
+        <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
+          <div class="fm">
+            <fieldset>
+              <br />
+              <label for="x_key">Key</label>
+              <v:text name="x_key" xhtml_id="x_key" value="--self.r_key" xhtml_size="100" />
+              <br />
+              <br />
+              <label for="x_value">Value</label>
+              <v:text name="x_value" xhtml_id="x_value" value="--self.r_value" xhtml_size="100" />
+              <br />
+              <br />
+              <div style="margin-left: 180px; width: 100%">
+                <v:button name="cancel1" value="Cancel" action="simple">
+                  <v:on-post>
+                    <![CDATA[
+                      self.c_mode := 'C/browse';
+                      self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+
+                <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                  <v:on-post>
+                    <![CDATA[
+                      declare _key, _value varchar;
+                      declare tmp any;
+
+                      _key := trim (self.x_key.ufl_value);
+                      _value := trim (self.x_value.ufl_value);
+                      if ((length (_key) = 0) or (length (_value) = 0))
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'Key and Value not be empty strings';
+                        return;
+                      }
+                      if (self.c_mode = 'C/add')
+                      {
+                        tmp := registry_get (_key);
+                        if (isinteger (_key) and (_key = 0))
+                        {
+                          self.vc_is_valid := 0;
+                          self.vc_error_message := 'Key already exist';
+                          return;
+                        }
+                      }
+                      else if (self.c_mode = 'C/edit')
+                      {
+                        if ((self.r_key = _key) and (self.r_value = _value))
+                        {
+                          goto _exit;
+                        }
+                      }
+                      registry_set (_key, _value);
+                      if (self.r_key <> _key)
+                        registry_remove (self.r_key);
+
+                      self.r_key := _key;
+                      self.r_value := _value;
+
+                    _exit:;
+
+                      self.c_mode := 'C/browse';
+                      self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </fieldset>
+          </div>
+        </vm:if>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

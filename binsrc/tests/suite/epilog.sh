@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -45,18 +45,19 @@ KILL_TEST_INSTANCES
 #
 #  Check if the tests logged any failures
 #
-
 logs=`find . -type f -name "*.output" | grep -v testall`
 #logs=`ls *.{test,ro,co,clro,clco}/*.output | grep -v testall`
-if egrep -q "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" $logs
+if egrep "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" $logs >/dev/null
 then
     ECHO ""
     LINE
     ECHO "=  WARNING: Some tests failed. See *.output in test directories under " `pwd`
-    ECHO "=  Some aborted tests:"
-    egrep "^(\*\*\*.*ABORTED)" $logs | head -n 5
-    ECHO "=  Some failed tests:"
-    egrep "^(\*\*\*.*FAILED)" $logs | head -n 5
+    ECHO "="
+    ECHO "=  ABORTED tests:"
+    egrep "^(\*\*\*.*ABORTED)" $logs
+    ECHO "="
+    ECHO "=  FAILED tests:"
+    egrep "^(\*\*\*.*FAILED)" $logs
     LINE
     rm -f audit.txt
     exit 3;

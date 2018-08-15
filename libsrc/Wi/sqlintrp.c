@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -292,7 +292,7 @@ ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 #if 0
       sqlr_new_error ("42000", "SR184", "Vectored Built-in function is not allowed");
 #else
-      ins_tmp = *ins;
+      memcpy (&ins_tmp, ins, INS_LEN (ins));
       ins_to_use = &ins_tmp;
       ins_tmp._.bif.bif = bif_find (ins->_.bif.proc);
 #endif
@@ -600,7 +600,7 @@ ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec, &vec_defaults);
     {
       if (err || qi->qi_set == qi->qi_n_sets - 1 || proc->qr_proc_vectored)
 	{
-	  /* for vectored call of non vectored proc filling proc table temp, do not drop the fill itc until there is termination from eerror of having done the last set */
+	  /* for vectored call of non vectored proc filling proc table temp, do not drop the fill itc until there is termination from error of having done the last set */
 	  hash_area_t *ha = (hash_area_t *) cli->cli_result_ts;
 	  caddr_t *result_qst = (caddr_t *) cli->cli_result_qi;
 	  if (result_qst)
@@ -610,7 +610,8 @@ ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec, &vec_defaults);
 		itc_free (ins_itc);
 	      result_qst[ha->ha_insert_itc->ssl_index] = NULL;
 	    }
-	  else log_error ("result_qst is null");
+	  else
+ 	    log_error ("result_qst is null");
 	}
       PROC_RESTORE_SAVED;
     }
@@ -814,12 +815,17 @@ ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t
     dk_free_box ((caddr_t)vec_defaults);
   if (CV_CALL_PROC_TABLE == ins->_.call.ret)
     {
-      hash_area_t *ha = (hash_area_t *)cli->cli_result_ts;
-      caddr_t *result_qst = (caddr_t *)cli->cli_result_qi;
-      it_cursor_t *ins_itc = (it_cursor_t *) result_qst[ha->ha_insert_itc->ssl_index];
-      if (ins_itc)
-	itc_free (ins_itc);
-      result_qst [ha->ha_insert_itc->ssl_index] = NULL;
+      hash_area_t *ha = (hash_area_t *) cli->cli_result_ts;
+      caddr_t *result_qst = (caddr_t *) cli->cli_result_qi;
+      if (result_qst)
+	{
+	  it_cursor_t *ins_itc = (it_cursor_t *) result_qst[ha->ha_insert_itc->ssl_index];
+	  if (ins_itc)
+	    itc_free (ins_itc);
+	  result_qst[ha->ha_insert_itc->ssl_index] = NULL;
+	}
+      else
+	log_error ("result_qst is null");
       PROC_RESTORE_SAVED;
     }
   BOX_DONE (pars, pars_auto);
@@ -1123,7 +1129,7 @@ qi_bunion_error_row (query_instance_t * qi, query_t * qr, caddr_t err)
 
 
 caddr_t
-qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq)
+qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq, int *qi_is_killed_ret)
 {
   int err_row;
   caddr_t err = NULL;
@@ -1151,10 +1157,9 @@ qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq)
       if (RST_ERROR == reset_code)
 	goto bunion_next;
       if (is_subq)
-	return (subq_handle_reset (qi, reset_code));
+        return (subq_handle_reset (qi, reset_code));
       else
-	return (qi_handle_reset (qi, reset_code));
-
+        return (qi_handle_reset (qi, reset_code, qi_is_killed_ret));
     }
   END_QR_RESET;
   return (SQL_BUNION_COMPLETE);
@@ -1240,8 +1245,9 @@ subq_next (query_t * subq, caddr_t * inst, int cr_state)
   }
   QR_RESET_CODE
   {
+    int qi_is_killed__stub = 0;
     POP_QR_RESET;
-    QI_BUNION_RESET (qi, subq, 1);
+    QI_BUNION_RESET (qi, subq, 1, &qi_is_killed__stub);
     cli_restore_slice (cli, old_csl);
     return (subq_handle_reset (qi, reset_code));
   }
@@ -1946,6 +1952,9 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
   QNCAST (query_instance_t, qi, inst);
   int inx, inx2;
   int len = -1;
+#ifdef MALLOC_DEBUG
+  dk_hash_t *known = NULL;
+#endif
   DO_BOX (state_slot_t *, arg, inx, ins->_.for_vect.in_values)
     {
       caddr_t * arr = (caddr_t*)qst_get (inst, arg);
@@ -1965,6 +1974,11 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	  DC_CHECK_LEN (dc, len - 1);
 	  DO_BOX (caddr_t, in, inx2, arr)
 	    {
+#ifdef MALLOC_DEBUG
+              if (DV_CUSTOM == DV_TYPE_OF (in))
+                GPF_T1 ("DV_CUSTOM comes to dc_values");
+              dk_check_tree_iter (in, NULL, &known);
+#endif
 	      ((caddr_t*)dc->dc_values)[inx2] = in;
 	      arr[inx2] = NULL;
 	      if (IS_BOX_POINTER (in) && DV_DB_NULL == box_tag (in))
@@ -1977,12 +1991,21 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	{
 	  DO_BOX (caddr_t, in, inx2, arr)
 	    {
+#ifdef MALLOC_DEBUG
+	  if (DV_CUSTOM == DV_TYPE_OF (in))
+	    GPF_T1 ("DV_CUSTOM comes to dc_values");
+	  dk_check_tree_iter (in, NULL, &known);
+#endif
 	    dc_append_box (dc, in);
 	    }
 	  END_DO_BOX;
 	}
     }
   END_DO_BOX;
+#ifdef MALLOC_DEBUG
+  if (NULL != known)
+    hash_table_free (known);
+#endif
   qi->qi_n_sets = len;
   qi->qi_set_mask = NULL;
   if (len)
@@ -2650,17 +2673,18 @@ again:
       POP_QR_RESET;
       if (reset_code == RST_ERROR || reset_code == RST_DEADLOCK)
 	{
-	  caddr_t err = RST_ERROR == reset_code ? thr_get_error_code (qi->qi_thread)
-	    : srv_make_new_error ("40001", "SR...", "Transaction deadlock, from SQL built-in function.");
+	caddr_t err;
 	  CHECK_DK_MEM_RESERVE (qi->qi_trx);
 	  CHECK_SESSION_DEAD(qi->qi_trx, NULL, NULL);
-	  if (qi->qi_trx->lt_status != LT_PENDING && (
-		qi->qi_trx->lt_error == LTE_TIMEOUT ||
-		qi->qi_trx->lt_error == LTE_OUT_OF_MEM))
+	err = ((RST_ERROR == reset_code) ? thr_get_error_code (qi->qi_thread) : srv_make_new_error ("40001", "SR...",
+		"Transaction deadlock, from SQL built-in function."));
+	if (qi->qi_trx->lt_status != LT_PENDING && (qi->qi_trx->lt_error == LTE_TIMEOUT || qi->qi_trx->lt_error == LTE_OUT_OF_MEM))
 	    {
 	      sqlr_resignal (err);
 	    }
+	thr_set_error_code (qi->qi_thread, err);
 	  qi_check_trx_error (qi, NO_TRX_SIGNAL);
+	err = thr_get_error_code (qi->qi_thread);
 	  if (ins->ins_type == INS_CALL_BIF)
 	    {
 	      err_append_callstack_procname (err, ins->_.bif.proc, NULL, -1);
@@ -3121,7 +3145,7 @@ ins_vec_agg_ord_distinct (instruction_t * ins, caddr_t * inst)
     {
       for (inx = 0; inx < n_sets; inx++)
 	{
-	  uint64 hno = *(int64*) (arg_dc->dc_values + DT_LENGTH * inx); 
+	  uint64 hno = *(int64*) (arg_dc->dc_values + DT_LENGTH * inx);
 	    ctr += prev_hno != hno;
 	    prev_hno = hno;
 	}
@@ -3504,7 +3528,7 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 		ins_call_bif_vec ((instruction_t *) ins, qst, code_vec, &use_scalar);
 		if (use_scalar)
 		  {
-		    ins_tmp = *ins;
+		    memcpy (&ins_tmp, ins, INS_LEN (ins));
 		    ins_to_use = &ins_tmp;
 		    ins_tmp._.bif.bif = bif_find (ins->_.bif.proc);
 		    goto scalar_case;

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -144,7 +144,7 @@ struct thread_s
   struct lock_trx_s *	thr_lt; /* use to access lt during checkpoint wait */
 #ifndef NDEBUG
   void *		thr_pg_dbg;
-#endif  
+#endif
 };
 
 
@@ -229,10 +229,10 @@ struct mutex_s
 
 #ifdef MTX_DEBUG
     thread_t *		mtx_owner;
-    char *	mtx_entry_file;
-    int		mtx_entry_line;
-    char *	mtx_leave_file;
-    int		mtx_leave_line;
+    const char *	mtx_entry_file;
+    int			mtx_entry_line;
+    const char *	mtx_leave_file;
+    int			mtx_leave_line;
     mtx_entry_check_t	mtx_entry_check;
     void *		mtx_entry_check_cd;
 #endif
@@ -281,5 +281,5 @@ extern thread_queue_t _waitq;		/* simulated threads only */
 extern timer_queue_t *_timerq;		/* simulated threads only */
 extern int _num_runnables;		/* simulated threads only */
 
-extern char *build_thread_model;
+extern const char *build_thread_model;
 #endif

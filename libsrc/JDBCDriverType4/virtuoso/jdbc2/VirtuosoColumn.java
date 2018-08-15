@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -287,7 +287,11 @@ class VirtuosoColumn
 	return Types.LONGVARBINARY;
 
       case VirtuosoTypes.DV_BLOB_WIDE:
-	return -10; /* SQL_WLONGVARCHAR */
+#if JDK_VER >= 16
+        return Types.LONGNVARCHAR;
+#else
+	return -16; /* SQL_WLONGVARCHAR */
+#endif
 
       case VirtuosoTypes.DV_DATE:
 	return Types.DATE;
@@ -306,7 +310,11 @@ class VirtuosoColumn
 
       case VirtuosoTypes.DV_WIDE:
       case VirtuosoTypes.DV_LONG_WIDE:
+#if JDK_VER >= 16
+        return Types.NVARCHAR;
+#else
 	return -9; /* SQL_NVARCHAR */
+#endif
 
       /* custom cases follow */
       case VirtuosoTypes.DV_DB_NULL:

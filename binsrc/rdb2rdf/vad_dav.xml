@@ -7,7 +7,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@
     <name package="rdb2rdf">
       <prop name="Title" value="RDB2RDF support"/>
       <prop name="Developer" value="OpenLink Software"/>
-      <prop name="Copyright" value="(C) 2014-2016 OpenLink Software"/>
+      <prop name="Copyright" value="(C) 2014-2018 OpenLink Software"/>
       <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdb2rdf/download"/>
       <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdb2rdf/download"/>
     </name>
@@ -45,7 +45,7 @@
     <sql purpose="post-install"></sql>
   </procedures>
   <ddls>
-    <sql purpose="pre-install">if (lt (sys_stat ('st_dbms_ver'), '06.01.3127')) { result ('ERROR', 'The RDB2RDF package requires server version 06.01.3127 or greater'); signal ('FATAL', 'The conductor package requires server version 06.01.3127 or greater'); } </sql>
+    <sql purpose="pre-install">if (lt (sys_stat ('st_dbms_ver'), '07.02.3218')) { result ('ERROR', 'The RDB2RDF package requires server version 07.02.3218 or greater'); signal ('FATAL', 'The RDB2RDF package requires server version 07.02.3218 or greater'); } </sql>
     <sql purpose="post-install">
       "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/ovl.sql', 1, 'report', 1);
       "DB"."DBA"."VAD_LOAD_SQL_FILE"('/DAV/VAD/rdb2rdf/r2rml.sql', 1, 'report', 1);

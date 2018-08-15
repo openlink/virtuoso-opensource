@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -417,7 +417,7 @@ void
 rbuf_test ()
 {
   rbuf_t rb;
-  int inx, ctr;
+  ptrlong inx, ctr;
   int xx = 0;
   memset (&rb, 0, sizeof (rb));
   for (inx = 0; inx < 1000000; inx++)
@@ -446,7 +446,7 @@ rbuf_test ()
     }
   rbuf_delete_all (&rb);
   for (inx = 1; inx < 100000; inx++)
-    rbuf_add (&rb, (void*)(ptrlong)inx);
+    rbuf_add (&rb, (void*)inx);
   rbuf_rewrite (&rb);
   DO_RBUF (ptrlong, x, rbe, rbe_inx, &rb)
     {
@@ -459,17 +459,63 @@ rbuf_test ()
   if (rb.rb_count != 99000) GPF_T1 ("bad rewrite");
 }
 
+#ifdef MALLOC_DEBUG
+dk_mutex_t *spare_rbufs_mtx = NULL;
+dk_set_t spare_rbufs;
+#endif
+
+void
+rc_destr_rbuf (void *rbuf)
+{
+#ifdef MALLOC_DEBUG
+  if (DV_RBUF != DV_TYPE_OF (rbuf))
+    GPF_T1 ("non-DV_RBUF rbuf");
+#endif
+  rbuf_destroy (rbuf);
+#ifdef MALLOC_DEBUG
+  mutex_enter (spare_rbufs_mtx);
+  dk_set_push (&spare_rbufs, rbuf);
+  mutex_leave (spare_rbufs_mtx);
+  return;
+#endif
+  box_tag_modify (rbuf, DV_CUSTOM);
+  dk_free_box (rbuf);
+}
 
 int
 rbuf_free_cb (rbuf_t * rb)
 {
   rbuf_destroy (rb);
+#ifdef MALLOC_DEBUG
+  if (NULL != rb->rb_origin)
+    {
+      resource_t *orig = (resource_t *)rb->rb_origin;
+      int stored = resource_store (orig, rb);
+      if (stored)
+        return 1;
+    }
+  mutex_enter (spare_rbufs_mtx);
+  dk_set_push (&spare_rbufs, rb);
+  mutex_leave (spare_rbufs_mtx);
+  return 1;
+#endif
   return 0;
 }
 
 rbuf_t *
 rbuf_allocate ()
 {
+#ifdef MALLOC_DEBUG
+  rbuf_t *res;
+  mutex_enter (spare_rbufs_mtx);
+  res = (rbuf_t *)dk_set_pop_or_null (&spare_rbufs);
+  mutex_leave (spare_rbufs_mtx);
+  if (NULL != res)
+    {
+      res->rb_origin = NULL;
+      return res;
+    }
+#endif
   return (rbuf_t*) dk_alloc_box_zero (sizeof (rbuf_t), DV_RBUF);
 }
 
@@ -514,7 +560,8 @@ rbuf_append (rbuf_t * dest, rbuf_t * src)
 
 
 
-void rbuf_rewrite (rbuf_t * rb)
+void
+rbuf_rewrite (rbuf_t * rb)
 {
   rb->rb_rewrite_last = rb->rb_first;
   rb->rb_rewrite = rb->rb_first->rbe_read;

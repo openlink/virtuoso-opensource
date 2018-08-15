@@ -1,10 +1,9 @@
 /*
- *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -149,7 +148,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        {
 	 Object[] args = new Object[6];
 	 openlink.util.Vector vect = new openlink.util.Vector(1);
-         if (future != null) 
+         if (future != null)
            {
              connection.removeFuture(future);
              future = null;
@@ -265,7 +264,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	 args[4] = null;
 	 try
 	   {
-             if (future != null) 
+             if (future != null)
                {
 	         connection.removeFuture(future);
 	         future = null;
@@ -321,6 +320,15 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       if(vresultSet != null)
          return vresultSet.getMetaData();
       throw new VirtuosoException("Prepared statement closed",VirtuosoException.CLOSED);
+   }
+
+
+   /**
+    * Method runs when the garbage collector want to erase the object
+    */
+   public void finalize() throws Throwable
+   {
+      close();
    }
 
    /**
@@ -807,10 +815,16 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) throws VirtuosoException
    {
+      if(x == null) { 
+          this.setNull(parameterIndex, Types.OTHER);
+          return;
+      }
+
       //System.err.println ("setObject (" + parameterIndex + ", " + x + ", " + targetSqlType + ", " + scale);
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
+
       if (x instanceof VirtuosoExplicitString)
 	{
 	  objparams.setElementAt(x, parameterIndex - 1);
@@ -825,12 +839,20 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
          return;
       }
       // Else create a Blob
-      if(x == null) this.setNull(parameterIndex, Types.OTHER);
       x = VirtuosoTypes.mapJavaTypeToSqlType (x, targetSqlType, scale);
       if (x instanceof java.io.Serializable)
 	{
-	  //System.err.println ("setObject2 (" + parameterIndex + ", " + x + ", " + targetSqlType + ", " + scale);
-	  objparams.setElementAt (x, parameterIndex - 1);
+	  if (x instanceof String && parameters != null 
+	       && parameters.elementAt(parameterIndex - 1) instanceof openlink.util.Vector)
+	    {
+	      openlink.util.Vector pd = (openlink.util.Vector)parameters.elementAt(parameterIndex - 1);
+	      int dtp = ((Number)pd.elementAt (0)).intValue();
+	      VirtuosoExplicitString ret;
+	      ret = new VirtuosoExplicitString ((String)x, dtp, connection);
+	      objparams.setElementAt (ret, parameterIndex - 1);
+	    }
+	  else
+	    objparams.setElementAt (x, parameterIndex - 1);
 	}
       else
 	throw new VirtuosoException ("Object " + x.getClass().getName() + " not serializable", "22023",
@@ -885,9 +907,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	    }
 	  else
 	    {
-	    objparams.setElementAt(x,parameterIndex - 1);
+	      objparams.setElementAt(x,parameterIndex - 1);
 	    }
-        }
+	}
    }
 
    protected void setString(int parameterIndex, VirtuosoExplicitString x) throws VirtuosoException

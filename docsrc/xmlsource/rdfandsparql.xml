@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -6477,7 +6477,7 @@ are directly and unambiguously connected to equivalent vertexes by identical pre
 </orderedlist>
 <programlisting><![CDATA[
 -- Fast Approximate RDF Graph Equivalence Test
--- (C) 2009-2016 OpenLink Software
+-- (C) 2009-2018 OpenLink Software
 -- License: GNU General Public License (only version 2 of the license).
 -- No warranty, even implied warranty
 
@@ -12404,7 +12404,7 @@ click "Run".</listitem>
 	<graphic fileref="ui/rdfinsert2.png"/>
       </figure>
         </listitem>
-        <listitem>To view the crawled data, go for instance to public SPARQL Endpoint ex. http:/host:port/sparql:
+        <listitem>To view the crawled data, go for instance to public SPARQL Endpoint ex. http://host:port/sparql:
           <figure id="rdfinsertwebdav21" float="1">
             <title>Using Virtuoso Crawler</title>
 	          <graphic fileref="ui/rdfinsert21.png"/>
@@ -16011,7 +16011,7 @@ create procedure DB.DBA.RDF_LOAD_MQL (in graph_iri varchar, in new_origin_uri va
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -23905,7 +23905,7 @@ cl_exec ('checkpoint');
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -24083,7 +24083,7 @@ fi
 
 if [ ! -f "$file" -a ! -d "$file" ]
 then
-    echo "$file does not exists"
+    echo "$file does not exist"
     exit 1
 fi
 
@@ -24188,7 +24188,7 @@ fi
 
 if [ ! -f "$f" ]
 then
-    echo "$f does not exists"
+    echo "$f does not exist"
     exit
 fi
 
@@ -25864,7 +25864,7 @@ PASSED: TEST 6
 PASSED: TEST 7
 
 == TEST 8:  : Start
-   Statement does not exists
+   Statement does not exist
 == TEST 8:  : End
 PASSED: TEST 8
 

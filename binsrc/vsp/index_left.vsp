@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -63,6 +63,16 @@ again:
 	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/conductor/" target="_top">Conductor UI</a></li>
       </ul>
       <?vsp } ?>
+
+      <?vsp if (have_fct) { ?>
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/fct/" target="_top">Faceted Browser</a></li>
+      </ul>
+      <?vsp } ?>
+
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/sparql/" target="_top">SPARQL endpoint</a></li>
+      </ul>
 
       <?vsp if (have_wa) { ?>
       <ul class="left_nav">

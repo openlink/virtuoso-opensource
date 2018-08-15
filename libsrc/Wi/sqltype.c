@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -654,6 +654,9 @@ udt_free_internals_of_class_def (sql_class_t * udt)
       udt->scl_methods = (sql_method_t *) list(0);
       while (mtd_inx--)
 	{
+#ifdef QUERY_DEBUG
+      log_query_event (methods[mtd_inx].scm_qr, 1, "DEPRECATION by udt_free_internals_of_class_def()");
+#endif
 	  dk_free_box (methods[mtd_inx].scm_name);
 	  dk_free_box (methods[mtd_inx].scm_specific_name);
 	  dk_free_tree ((box_t) methods[mtd_inx].scm_param_names);
@@ -808,7 +811,7 @@ udt_drop_obsoleted_types (query_instance_t * qi, sql_class_t *udt)
   static query_t *select_qr = NULL, *drop_qr = NULL;
   client_connection_t *cli = qi->qi_client;
   char subtype_name [MAX_QUAL_NAME_LEN];
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
   caddr_t err = NULL;
 
   if (!select_qr)
@@ -831,7 +834,10 @@ udt_drop_obsoleted_types (query_instance_t * qi, sql_class_t *udt)
   err = qr_rec_exec (select_qr, cli, &lc, qi, NULL, 1,
       ":0", subtype_name, QRP_STR);
   if (err)
-    sqlr_resignal (err);
+    {
+      LC_FREE (lc);
+      sqlr_resignal (err);
+    }
   while (lc_next (lc))
     {
       long id = (long) unbox (lc_nth_col (lc, 0));
@@ -1032,7 +1038,10 @@ udt_read_methods_qrs (sql_class_t *udt, caddr_t *err_ret, query_instance_t *qi, 
   *err_ret = qr_rec_exec (rdproc, bootstrap_cli, &lc, qi, NULL, 1,
       ":0", (ptrlong) (udt->scl_id - 1), QRP_INT);
   if (*err_ret)
-    return;
+    {
+      LC_FREE (lc);
+      return;
+    }
   org_user = bootstrap_cli->cli_user;
   org_qual = bootstrap_cli->cli_qualifier;
   org_schema = bootstrap_cli->cli_new_schema;
@@ -1078,18 +1087,21 @@ static caddr_t
 qi_read_type_schema_1 (query_instance_t * qi, char *read_udt,
     dbe_schema_t * sc, sql_class_t *udt)
 {
-  local_cursor_t *lc = NULL;
   caddr_t err = NULL;
   lock_trx_t * lt = qi->qi_trx;
 
   sch_drop_type (sc, read_udt, udt);
   if (!udt)
     {
+      local_cursor_t *lc = NULL;
       err = qr_rec_exec (udt_read_qr, qi->qi_client, &lc, qi, NULL, 1,
 	  ":0", read_udt, QRP_STR);
 
       if (err)
-	return err;
+        {
+          LC_FREE (lc);
+          return err;
+        }
       /* make */
       while (lc_next (lc))
 	{
@@ -3504,7 +3516,7 @@ bif_udt_method_changed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t org_qual = cli->cli_qualifier;
   query_t *proc_qr, *rdproc;
   caddr_t err;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
 
   rdproc = sql_compile (
       "select blob_to_string (M_TEXT), M_OWNER, M_QUAL "
@@ -4253,7 +4265,7 @@ static caddr_t
 udo_new_object_ref (caddr_t udi)
 {
    object_space_t *udo;
-   caddr_t ref = dk_alloc_box (sizeof (int32) * 2, DV_REFERENCE);
+   caddr_t ref = dk_alloc_box_zero (sizeof (int32) * 2, DV_REFERENCE);
    OBJECT_SPACE_GET (udo);
    LONG_SET (ref, 0);
    LONG_SET (ref + IE_FIRST_KEY, (long) udo->os_next_serial);
@@ -4517,14 +4529,17 @@ static UST *
 udt_get_parse_tree (query_instance_t *qi, char *name, long id)
 {
   caddr_t err = NULL;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
   UST *ret;
 
   err = qr_rec_exec (udt_get_tree_by_id_qr, qi->qi_client, &lc, qi, NULL, 2,
       ":0", name, QRP_STR,
       ":1", (ptrlong) (id - 1), QRP_INT);
   if (err)
-    sqlr_resignal (err);
+    {
+      LC_FREE (lc);
+      sqlr_resignal (err);
+    }
 
   if (!lc_next (lc))
     {
@@ -4878,6 +4893,7 @@ udt_alter_class_def (query_instance_t *qi, ST *_tree)
 	      dk_free_tree ((box_t) udt_old_tree);
 	      dk_free_tree ((box_t) udt_tree);
 	      dk_set_free (derived_udts);
+              LC_FREE (lc);
 	      sqlr_resignal (err);
 	    }
 	  if (!lc_next (lc))

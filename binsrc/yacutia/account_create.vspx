@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -25,7 +23,6 @@
 <v:page name="account_create_page"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
-        vm:owner="yacutia_accounts_page"
         fast-render="1"
         xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
@@ -70,143 +67,27 @@
       <vm:help id="account_create" sect="" />
       <script tyep="text/javascript">
         <![CDATA[
-          function onExitUserName()
-          {
-            // no action yet
-            // with (document.account_form) t_repository_path.value = "/DAV/home/" + t_login_name.value;
-          }
           function onExitAccountName()
           {
-            with (document.account_form) t_login_name.value = t_full_name.value;
+            var f = document.account_form;
+            f.t_login_name.value = f.t_full_name.value;
           }
           function swHomeDir (cb)
           {
-            var l, h;
-            with (document.account_form) l = t_login_name.value;
-            with (document.account_form) h = t_repository_path.value;
-            if (cb.checked == true && h.length == 0 && l.length > 0)
+            var f = document.account_form;
+            var l = f.t_login_name.value;
+            var h = f.t_repository_path.value;
+            if (cb.checked === true && h.length === 0 && l.length > 0)
             {
-              with (document.account_form) t_repository_path.value = "/DAV/home/" + l + "/";
+              f.t_repository_path.value = "/DAV/home/" + l + "/";
             }
-            else if (cb.checked == false)
+            else if (cb.checked === false)
             {
-              with (document.account_form) t_repository_path.value = "";
+              f.t_repository_path.value = "";
             }
           }
         ]]>
       </script>
-      <v:before-data-bind>
-        <![CDATA[
-          declare user_id varchar;
-          declare params any;
-
-          params := self.vc_event.ve_params;
-          self.default_group_name := get_keyword ('dl_default_group', params, self.default_group_name);
-          self.mode := get_keyword ('mode', params, self.mode);
-          self.user_name := get_keyword ('user_name', params, '');
-          select U_NAME into user_id from SYS_USERS where U_ID = 0;
-
-          if (self.mode = 'edit' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
-          {
-            http_request_status ('HTTP/1.1 302 Found');
-            http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
-            return;
-          }
-
-          if (self.mode = 'create' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
-          {
-            http_request_status  ('HTTP/1.1 302 Found');
-            http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
-            return;
-          }
-
-          if (self.mode = 'edit')
-          {
-            declare _u_id, _u_group integer;
-            declare _all_opts, ldapo varchar;
-
-            whenever not found goto nf_user;
-
-            select u_id, u_full_name, u_e_mail,
-                   encode_base64 (u_password), u_group, u_account_disabled,
-                   u_dav_enable, u_sql_enable, u_def_perms, u_home,
-                   u_def_qual, deserialize (blob_to_string (u_opts))
-              into _u_id, self.full_name, self.e_mail,
-                   self.enc_password, _u_group, self.account_disabled,
-                   self.dav_enable, self.sql_enable, self.def_perms, self.homedir,
-                   self.def_qual, _all_opts
-              from SYS_USERS
-             where U_NAME = self.user_name;
-
-            self.dav_quota := coalesce (DB.DBA.USER_GET_OPTION (self.user_name, 'DAVQuota'), 5242880);
-            self._webid := (select top 1 UW_WEBID from DB.DBA.SYS_USER_WEBID where UW_U_NAME = self.user_name);
-            if (self._webid is null)
-              self._webid := '';
-
-            ldapo := USER_GET_OPTION (self.user_name, 'LDAPServer');
-            if (isarray (ldapo) and length (ldapo) > 1)
-            {
-              self.ldap_auth.ufl_value := ldapo[1];
-              self.ldap_auth_s.ufl_value := ldapo[0];
-            }
-
-            if (_u_id = _u_group)
-              self.user_group := 'none';
-            else
-              select U_NAME into self.user_group from SYS_USERS where U_ID = _u_group;
-
-            if (_all_opts is not NULL)
-            {
-              self.os_password := get_keyword ('SYSTEM_UPASS', _all_opts, '');
-              self.os_name := get_keyword ('SYSTEM_UNAME', _all_opts, '');
-              self.os_password := pwd_magic_calc (self.user_name, self.os_password, 1);
-              self.os_name := pwd_magic_calc (self.user_name, self.os_name, 1);
-            }
-            else
-            {
-              self.os_name := '';
-              self.os_password := '';
-            }
-
-            select U_NAME
-              into self.default_group_name
-              from DB.DBA.SYS_USERS
-             where U_ID = _u_group;
-
-            self.roles_grant_list := vector ();
-            if (isstring (self.user_name))
-            {
-              for (select GI_GRANT from SYS_ROLE_GRANTS where GI_SUPER = _u_id and GI_DIRECT = '1') do
-              {
-                declare gp varchar;
-
-                whenever not found goto nf_role;
-                select U_NAME into gp from DB.DBA.SYS_USERS where U_ID = GI_GRANT;
-                self.roles_grant_list := vector_concat (self.roles_grant_list, vector (gp));
-              nf_role:;
-              }
-            }
-          nf_user:;
-          }
-          else if (self.mode = 'create')
-          {
-            self.roles_grant_list := vector ();
-            self.user_name := '';
-            self.default_group_name := '';
-            self.full_name := '';
-            self.enc_password := '';
-            self.account_disabled := 0;
-            self.dav_enable := 0;
-            self.sql_enable := 0;
-            self.def_perms := '110100000R';
-            self.homedir := '';
-            self.def_qual := '';
-            self.os_name := '';
-            self.os_password := '';
-            self.e_mail := '';
-          }
-        ]]>
-      </v:before-data-bind>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -214,37 +95,24 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                       <td class="page_tab_selected" align="center">
-                        <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
+                        <v:url name="b_url31" value="Users" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
+                        <v:url name="b_url32" value="Roles" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url14" value="Grants"  url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
+                        <v:url name="b_url14" value="Grants" url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url15" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
+                        <v:url name="b_url15" value="LDAP Import" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center">
-                        <v:url name="b_url15" value="LDAP Servers"  url="ldap_server.vspx" xhtml_class="uddi"/>
+                        <v:url name="b_url15" value="LDAP Servers" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%">
-                            </td>
-                          </tr>
-                        </table>
+                        &nbsp;
                       </td>
                     </tr>
                   </table>
@@ -252,12 +120,96 @@
                     <tr>
                       <td valign="top">
                         <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
+                          <v:before-data-bind>
+                            <![CDATA[
+                              declare params any;
+
+                              params := self.vc_event.ve_params;
+                              self.default_group_name := get_keyword ('dl_default_group', params, self.default_group_name);
+                              self.mode := get_keyword ('mode', params, self.mode);
+                              self.user_name := get_keyword ('user_name', params, '');
+                              if (self.mode = 'edit')
+                              {
+                                declare _u_id, _u_group integer;
+                                declare _all_opts, ldapo varchar;
+
+                                whenever not found goto nf_user;
+
+                                select u_id, u_full_name, u_e_mail,
+                                       encode_base64 (u_password), u_group, u_account_disabled,
+                                       u_dav_enable, u_sql_enable, u_def_perms, u_home,
+                                       u_def_qual, deserialize (blob_to_string (u_opts))
+                                  into _u_id, self.full_name, self.e_mail,
+                                       self.enc_password, _u_group, self.account_disabled,
+                                       self.dav_enable, self.sql_enable, self.def_perms, self.homedir,
+                                       self.def_qual, _all_opts
+                                  from DB.DBA.SYS_USERS
+                                 where U_NAME = self.user_name;
+
+                                self.dav_quota := coalesce (DB.DBA.USER_GET_OPTION (self.user_name, 'DAVQuota'), 5242880);
+                                self._webid := (select top 1 UW_WEBID from DB.DBA.SYS_USER_WEBID where UW_U_NAME = self.user_name);
+                                if (self._webid is null)
+                                  self._webid := '';
+
+                                ldapo := USER_GET_OPTION (self.user_name, 'LDAPServer');
+                                if (isarray (ldapo) and length (ldapo) > 1)
+                                {
+                                  self.ldap_auth.ufl_value := ldapo[1];
+                                  self.ldap_auth_s.ufl_value := ldapo[0];
+                                }
+
+                                if (_u_id = _u_group)
+                                  self.user_group := 'none';
+                                else
+                                  select U_NAME into self.user_group from SYS_USERS where U_ID = _u_group;
+
+                                if (_all_opts is not NULL)
+                                {
+                                  self.os_password := get_keyword ('SYSTEM_UPASS', _all_opts, '');
+                                  self.os_name := get_keyword ('SYSTEM_UNAME', _all_opts, '');
+                                  self.os_password := pwd_magic_calc (self.user_name, self.os_password, 1);
+                                  self.os_name := pwd_magic_calc (self.user_name, self.os_name, 1);
+                                }
+                                else
+                                {
+                                  self.os_name := '';
+                                  self.os_password := '';
+                                }
+
+                                self.default_group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _u_group), '');
+
+                                self.roles_grant_list := vector ();
+                                for (select U_NAME from DB.DBA.SYS_ROLE_GRANTS, DB.DBA.SYS_USERS where U_ID = GI_GRANT and GI_SUPER = _u_id and GI_DIRECT = '1') do
+                                {
+                                  self.roles_grant_list := vector_concat (self.roles_grant_list, vector (U_NAME));
+                                }
+                              nf_user:;
+                              }
+                              else if (self.mode = 'create')
+                              {
+                                self.roles_grant_list := vector ();
+                                self.user_name := '';
+                                self.default_group_name := '';
+                                self.full_name := '';
+                                self.enc_password := '';
+                                self.account_disabled := 0;
+                                self.dav_enable := 0;
+                                self.sql_enable := 0;
+                                self.def_perms := '110100000R';
+                                self.homedir := '';
+                                self.def_qual := '';
+                                self.os_name := '';
+                                self.os_password := '';
+                                self.e_mail := '';
+                              }
+                            ]]>
+                          </v:before-data-bind>
                           <table class="main_page_area" style="valign: top">
                             <tr valign="top">
                               <td>
                                 <table> <!-- left side -->
                                   <tr>
-                                    <td><label for="u_full_name">Account Name</label></td>
+                                    <th><label for="u_full_name">Account Name</label></th>
                                     <td>
                                       <v:text name="t_full_name"
                                               value="--y_utf2wide (self.full_name)"
@@ -267,18 +219,17 @@
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td><label for="u_login" class="req">User Login</label></td>
+                                    <th><label for="u_login" class="req">User Login</label></th>
                                     <td>
                                       <v:text name="t_login_name"
                                               value="--y_utf2wide (self.user_name)"
                                               xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"
-                                              xhtml_onblur="onExitUserName()"
                                               xhtml_id="u_login"
                                               xhtml_tabindex="2"/>
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td><label for="u_passwd" class="req">Password</label></td>
+                                    <th><label for="u_passwd" class="req">Password</label></th>
                                     <td>
                                       <v:text name="t_user_password"
                                               value="--self.enc_password"
@@ -289,7 +240,7 @@
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td><label for="u_passwd_conf" class="req">Confirm Password</label></td>
+                                    <th><label for="u_passwd_conf" class="req">Confirm Password</label></th>
                                     <td>
                                       <v:text name="t_user_password_conf"
                                               value="--self.enc_password"
@@ -304,7 +255,7 @@
                                     {
                                   ?>
                                   <tr>
-                                    <td><label for="u_os_name">OS user name</label></td>
+                                    <th><label for="u_os_name">OS user name</label></th>
                                     <td>
                                       <v:text name="t_os_name"
                                               value="--self.os_name"
@@ -313,7 +264,7 @@
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td><label for="u_os_password">OS Password</label></td>
+                                    <th><label for="u_os_password">OS Password</label></th>
                                     <td>
                                       <v:text name="t_os_password"
                                               value="--self.os_password"
@@ -339,9 +290,9 @@
                                       </td>
                                     </tr>
                                     <tr>
-                                      <td>
+                                      <th>
                                         <label for="sel_user_type">User type</label>
-                                      </td>
+                                      </th>
                                       <td>
                                         <v:select-list xhtml_id="sel_user_type"
                                                        name="sel_user_type"
@@ -364,7 +315,7 @@
                                       </td>
                                     </tr>
                                     <tr>
-                                      <td><label for="u_dl_default_qualifier">Default Qual/Catalog</label></td>
+                                      <th><label for="u_dl_default_qualifier">Default Qual/Catalog</label></th>
                                       <td>
                                         <v:data-list xhtml_id="u_dl_default_qualifier"
                                                      name="dl_default_qualifier"
@@ -377,7 +328,7 @@
                                       </td>
                                     </tr>
                                     <tr>
-                                      <td><label for="u_p_role" class="req">Primary Role</label></td>
+                                      <th><label for="u_p_role" class="req">Primary Role</label></th>
                                       <td>
                                         <v:data-list xhtml_id="u_p_role" name="dl_default_group"
                                                      sql="select ' __none' as UNAME, 'none' as UFNAME from DB.DBA.SYS_USERS union select U_NAME, U_NAME from DB.DBA.SYS_USERS where U_ID = 0 union select U_NAME, U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 order by UNAME" key-column="UNAME" value-column="UFNAME"
@@ -418,7 +369,7 @@
                               <td>
                                 <table> <!-- right side -->
                                   <tr>
-                                    <td><label for="u_email">E-mail</label></td>
+                                    <th><label for="u_email">E-mail</label></th>
                                     <td>
                                       <v:text name="t_e_mail"
                                               value="--self.e_mail"
@@ -427,7 +378,7 @@
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td>DAV Home Path</td>
+                                    <th>DAV Home Path</th>
                                     <td>
                                       <v:text name="t_repository_path"
                                               value="--self.homedir"
@@ -438,7 +389,7 @@
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td><label for="u_def_perms">Default Permissions</label></td>
+                                    <th><label for="u_def_perms">Default Permissions</label></th>
                                     <td>
                                       <table class="ctl_grp">
                                         <tr align="center">
@@ -487,7 +438,7 @@
                                     <td colspan="2" />
                                   </tr>
                                   <tr>
-                                    <td><label for="t_dav_quota">Quota</label></td>
+                                    <th><label for="t_dav_quota">Quota</label></th>
                                     <td>
                                       <v:text name="u_dav_quota" xhtml_tabindex="20" value="" xhtml_size="8" xhtml_id="t_dav_quota">
                                         <v:after-data-bind>
@@ -505,7 +456,7 @@
                                     <tr><td/><td><span class="note">DAV quota not enforced due to virtuoso ini setting</span></td></tr>
                                   </v:template>
                                   <tr>
-                                    <td><label for="t_ldap">LDAP Authentication</label></td>
+                                    <th><label for="t_ldap">LDAP Authentication</label></th>
                                     <td>
                                       <v:select-list name="ldap_auth" value="">
                                         <v:item name="disabled" value="-1" />
@@ -515,7 +466,7 @@
                                     </td>
                                   </tr>
                                   <tr>
-                                    <td><label for="t_ldap_s">LDAP Server</label></td>
+                                    <th><label for="t_ldap_s">LDAP Server</label></th>
                                     <td>
                                       <v:data-list name="ldap_auth_s"
                                                    value=""
@@ -530,7 +481,7 @@
                             </tr>
                             <tr>
                               <td colspan="2">
-                                <label for="webid">WebID for ODBC/SQL authentication</label>
+                                <label for="webid"><strong>WebID for ODBC/SQL authentication</strong></label>
                                 <!--v:text name="webid" value="-#-self._webid" xhtml_size="80" /-->
                                 <div id="cmb1">
                                   <![CDATA[
@@ -560,7 +511,7 @@
                             <tr>
                               <td colspan="2">
                                 <table class="complex_selector">
-                                  <caption style="text-align:left;">Account Roles</caption>
+                                  <caption style="text-align:left;"><strong>Account Roles</strong></caption>
                                   <tr>
                                     <td style="width:216" align="left" valign="bottom">Available</td>
                                     <td/>
@@ -682,9 +633,9 @@
                             </tr> <!-- account roles row -->
                             <?vsp if (self.mode = 'edit') { ?>
                             <tr>
-                              <td>
+                              <td valign="top">
                                 <table class="complex_selector" width="90%">
-                                  <caption style="text-align:left;">Cryptographic Keys</caption>
+                                  <caption style="text-align:left;"><strong>Cryptographic Keys</strong></caption>
                                   <?vsp
                                     declare i int;
 
@@ -708,7 +659,7 @@
                                     }
                                     if (i = 0)
                                     {
-                                      http ('<tr><td colspan="2">~no keys available~</td></tr>');
+                                      http ('<tr><td colspan="2">~ no keys available ~</td></tr>');
                                     }
                                   ?>
                                 </table>
@@ -717,11 +668,11 @@
                                   <v:button action="simple" name="del_key" value="Remove Selected Keys" xhtml_tabindex="21">
                                     <v:on-post>
                                       <![CDATA[
-				        declare username any;
+                                        declare username any;
                                         if (self.vc_is_valid = 0)
                                           return;
 
-					username:= self.t_login_name.ufl_value;
+                                        username := self.t_login_name.ufl_value;
                                         set_user_id (username);
                                         set_qualifier ('DB');
                                         for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
@@ -729,36 +680,166 @@
                                           if (params[i] = 'cb_key')
                                             xenc_key_remove (params[i+1]);
                                         }
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
                                   <?vsp } ?>
                                 </td>
                                 <td>
-                                  <label>Key Name</label>
-                                  <v:text name="k_name" value="" />
-                                  <br />
-                                  <label>Key Password</label>
-                                  <v:text name="k_pwd" type="password" value="" />
-                                  <br />
-                                  <label>PKCS12 file:</label>
-                                  <input type="file" name="k_value" value="Select Key"/>
+                                  <table> <!-- right side -->
+                                    <tr>
+                                      <th width="130px"><label for="k_name">Key Name</label></th>
+                                      <td><v:text name="k_name" id="k_name" value="" /></td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="k_pwd">Password</label></th>
+                                      <td><v:text name="k_pwd" id="k_pwd" type="password" value="" /></td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="k_type">File Format</label></th>
+                                      <td>
+				  <v:select-list xhtml_id="k_type" name="k_type">
+				      <v:item name="PKCS12" value="PKCS12" />
+				      <v:item name="PEM" value="PEM" />
+				      <v:item name="DER" value="DER" />
+				  </v:select-list>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="k_value">Import File</label></th>
+                                      <td><input type="file" name="k_value" id="k_value" /></td>
+                                    </tr>
+                                  </table>
                                   <v:button action="simple" name="imp_key" value="Import Key">
                                     <v:on-post>
                                       <![CDATA[
 				        declare username any;
                                         if (self.vc_is_valid = 0)
                                           return;
+
                                         declare exit handler for sqlstate '*', not found
                                         {
                                           self.vc_error_message := __SQL_MESSAGE;
                                           self.vc_is_valid := 0;
                                           return;
                                         };
-					username:= self.t_login_name.ufl_value;
+                                        username := self.t_login_name.ufl_value;
                                         set_user_id (username);
-                                        USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
-                                        exec (make_cert_stmt (self.k_name.ufl_value));
+                                        USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', self.k_type.ufl_value, self.k_pwd.ufl_value, null, 1);
+                                        EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              </tr>
+                            <?vsp } ?>
+                            <?vsp if (self.mode = 'edit') { ?>
+                            <tr>
+                              <td valign="top">
+                                <table class="complex_selector" width="90%">
+                                  <caption style="text-align:left;"><strong>Certificates</strong></caption>
+                                  <?vsp
+                                    declare i integer;
+                                    declare username, certs, cert_subjects any;
+
+                                    username := y_wide2utf (self.t_login_name.ufl_value);
+                                    certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+                                    cert_subjects := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS'), vector ());
+                                    for (i := 0; i < length (certs); i := i + 1)
+                                    {
+                                  ?>
+                                  <tr>
+                                    <td nowrap="nowrap">
+                                      <input type="checkbox" name="cb_ca" value="<?V i ?>" />
+                                      <?vsp
+                                        declare subject varchar;
+
+                                        subject := get_keyword (certs[i], cert_subjects);
+                                        http_value (coalesce (subject, certs[i]), 'b');
+                                      ?>
+                                    </td>
+                                  </tr>
+                                  <?vsp
+                                    }
+                                    if (length (certs) = 0)
+                                    {
+                                      http ('<tr><td colspan="2">~ no certificates available ~</td></tr>');
+                                    }
+                                  ?>
+                                </table>
+                                <br />
+                                <?vsp if (i > 0) { ?>
+                                  <v:button action="simple" name="del_ca" value="Remove Selected Keys" xhtml_tabindex="21">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare username, cert, certs any;
+
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        username := y_wide2utf (self.t_login_name.ufl_value);
+                                        certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+                                        set_user_id (username);
+                                        set_qualifier ('DB');
+                                        for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
+                                        {
+                                          if (params[i] = 'cb_ca')
+                                          {
+                                            cert := certs[atoi(params[i+1])];
+                                            USER_CERT_UNREGISTER (username, cert);
+                                          }
+                                        }
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <?vsp } ?>
+                                </td>
+                                <td>
+                                  <table> <!-- right side -->
+                                    <tr>
+                                      <th width="130px"><label for="ca_pwd">Password</label></th>
+                                      <td><v:text name="ca_pwd" id="ca_pwd" type="password" value="" /></td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="ca_type">File Format</label></th>
+                                      <td>
+                                        <v:select-list xhtml_id="ca_type" name="ca_type">
+                                          <v:item name="PKCS12" value="PKCS12" />
+                                          <v:item name="PEM" value="PEM" />
+                                          <v:item name="DER" value="DER" />
+                                        </v:select-list>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="ca_value">Import File</label></th>
+                                      <td><input type="file" name="ca_value" id="ca_value" /></td>
+                                    </tr>
+                                  </table>
+                                  <v:button action="simple" name="imp_ca" value="Import Certificate">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare username any;
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        declare exit handler for sqlstate '*', not found
+                                        {
+                                          self.vc_error_message := __SQL_MESSAGE;
+                                          self.vc_is_valid := 0;
+                                          return;
+                                        };
+                                        username := y_wide2utf (self.t_login_name.ufl_value);
+                                        set_user_id (username);
+                                        USER_CERT_REGISTER (username, get_keyword ('ca_value', params), self.ca_pwd.ufl_value, self.ca_type.ufl_value);
+
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -890,9 +971,7 @@
         attr := vector_concat (attr, vector ('DAV_ENABLE', case when self.sel_user_type.ufl_value = '1' or self.sel_user_type.ufl_value = '2' then 1 else 0 end ));
 
         if (os_name <> '' and os_password <> '')
-          {
             DB.DBA.SET_USER_OS_ACOUNT (user_name, os_name, os_password, 1);
-          }
 
         USER_CREATE (user_name, user_pwd, attr);
 
@@ -925,12 +1004,14 @@
                          'LOGIN_QUALIFIER',
                          case when self.dl_default_qualifier.ufl_value=' __none'
                               then NULL
-                              else self.dl_default_qualifier.ufl_value end );
+                                                                else self.dl_default_qualifier.ufl_value
+                                                           end );
             USER_SET_OPTION (user_name,
                          'PRIMARY_GROUP',
                          case when self.dl_default_group.ufl_value=' __none'
                               then NULL
-            else self.dl_default_group.ufl_value end );
+                                                                else self.dl_default_group.ufl_value
+                                                           end );
           }
         if (check_grants (connection_get ('vspx_user'), '') = 1)
           {
@@ -969,16 +1050,16 @@
     if (check_grants (connection_get ('vspx_user'), '') = 1)
       {
         select distinct U_ID into u_ident
-          from SYS_USERS
+                                          from DB.DBA.SYS_USERS
           where U_NAME= user_name and
                 U_IS_ROLE = 0;
 
         for select UG_UID, UG_GID
-              from SYS_USER_GROUP
+                                              from DB.DBA.SYS_USER_GROUP
               where UG_UID = u_ident do
           {
             select distinct U_NAME into g_name
-              from SYS_USERS
+                                            from DB.DBA.SYS_USERS
               where U_ID = UG_GID and U_IS_ROLE = 1;
 
             if (g_name <> '' and g_name <> coalesce (self.dl_default_group.ufl_value, ''))
@@ -990,12 +1071,12 @@
 
         cnt := length(self.roles_grant_list);
         i := 0;
-
         while (i < cnt)
           {
             if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value or self.dl_default_group.ufl_value is null)
         {
-          if (not exists (select 1 from SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS u
+                                            if (not exists (select 1
+                                                              from DB.DBA.SYS_ROLE_GRANTS, DB.DBA.SYS_USERS g, DB.DBA.SYS_USERS u
       where g.U_NAME = self.roles_grant_list[i] and gi_super = u.u_id and u.u_name = user_name and gi_grant = g.u_id))
                   USER_GRANT_ROLE(user_name, self.roles_grant_list[i]);
         }
@@ -1013,11 +1094,12 @@
             declare davpass varchar;
 
             select pwd_magic_calc ('dav', u_password, 1) into davpass
-              from sys_users where u_name='dav' and u_is_role = 0;
+                                            from DB.DBA.SYS_USERS
+                                           where u_name='dav' and u_is_role = 0;
             {
               declare home_vec any;
               declare cur_path varchar;
-              declare i integer;
+
               user_home := trim (user_home, '/');
               home_vec := split_and_decode (user_home, 0, '\0\0/');
               i := 1;
@@ -1028,10 +1110,8 @@
 
                   if (cast (DB.DBA.DAV_SEARCH_ID (cur_path, 'c') as int) < 0)
                     {
-
                       if (i < length (home_vec) - 1)
                         {
-
                           if (cast (DB.DBA.DAV_COL_CREATE (cur_path,
                                                            '110100100R',
                                                            'dav',
@@ -1046,7 +1126,6 @@
                         }
                       else
                         {
-
                           if (cast (DB.DBA.DAV_COL_CREATE (cur_path,
                                                            user_perm,
                                                            user_name,
@@ -1072,7 +1151,6 @@
       {
         control.vc_parent.vc_error_message := msg;
         self.vc_is_valid := 0;
-        return;
       }
     else if (check_grants(connection_get ('vspx_user'), '') = 1)
       {

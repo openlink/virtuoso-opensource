@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -170,6 +170,7 @@
 	   if (self.vhost = vhost and lhost = self.lhost)
 	     goto same_host;
 
+	   set triggers off;
 	   for select
 	       HP_HOST, HP_LISTEN_HOST, HP_PPATH, HP_LPATH,
 	       HP_AUTH_FUNC, HP_AUTH_OPTIONS, HP_DEFAULT, HP_STORE_AS_DAV,
@@ -195,6 +196,7 @@
                   }
 	     }
 	    commit work;
+	    set triggers on;
 	    same_host:
             self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));
                       ]]>

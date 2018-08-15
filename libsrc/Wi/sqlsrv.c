@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,6 +58,7 @@
 #include "shuric.h"
 #include "srvstat.h"
 #include "sqloinv.h"
+#include "ltrx.h"
 #include "uname_const_decl.h"
 
 #ifdef WIN32
@@ -467,6 +468,9 @@ client_connection_create (void)
   cli->cli_user_info = NULL;
   cli->cli_slice = QI_NO_SLICE;
   thr_set_tlsf (self, save_tlsf);
+#ifdef QUERY_DEBUG
+  log_cli_event (cli, 0, "CLI_CREATE");
+#endif
   return cli;
 }
 
@@ -493,7 +497,12 @@ cli_scrap_cached_statements (client_connection_t * cli)
 	  if (!sst->sst_query->qr_ref_count)
 	    log_error ("Suspect to have query assigned to stmt but 0 ref count on query");
 	  else
-	    sst->sst_query->qr_ref_count--;
+            {
+#ifdef QUERY_DEBUG
+             log_query_event (sst->sst_query, 1, "QR_REF_COUNT-- by stmt_scrap_cached_statements, client connection %p", cli);
+#endif
+	      sst->sst_query->qr_ref_count--;
+            }
 	  LEAVE_CLL;
 	}
       if (client_trace_flag)
@@ -520,27 +529,29 @@ cli_scrap_cached_statements (client_connection_t * cli)
 	   (* text)[79] = 0;
 	 logit (L_DEBUG, "%s", *text);
        }
-
+#ifdef QUERY_DEBUG
+      log_query_event (qr[0], 1, "CLI_SCRAP_CACHED by stmt_scrap_cached_statements, client connection %p", cli);
+#endif
       qr_free (*qr);
 
     }
 }
 
 lock_trx_t *
-cli_set_new_trx (client_connection_t *cli)
+DBG_NAME(cli_set_new_trx) (DBG_PARAMS  client_connection_t *cli)
 {
   if (!cli->cli_trx)
-    cli_set_trx (cli, lt_start ());
+    cli_set_trx (cli, DBG_NAME(lt_start) (DBG_ARGS_0));
   else
     cli_set_trx (cli, cli->cli_trx);
   return cli->cli_trx;
 }
 
 lock_trx_t *
-cli_set_new_trx_no_wait_cpt (client_connection_t *cli)
+DBG_NAME(cli_set_new_trx_no_wait_cpt) (DBG_PARAMS  client_connection_t *cli)
 {
   if (!cli->cli_trx)
-    cli_set_trx (cli, lt_start_inner (0));
+    cli_set_trx (cli, DBG_NAME(lt_start_inner) (DBG_ARGS  0));
   else
     cli_set_trx (cli, cli->cli_trx);
   return cli->cli_trx;
@@ -593,6 +604,9 @@ client_connection_set_worker_ses (client_connection_t *cli, dk_session_t *ses)
 void
 client_connection_free (client_connection_t * cli)
 {
+#ifdef QUERY_DEBUG
+  log_cli_event (cli, 1, "CLI_FREE_START");
+#endif
   if (DO_LOG_INT(LOG_VUSER))
     {
       LOG_GET
@@ -680,6 +694,9 @@ client_connection_free (client_connection_t * cli)
     }
   dk_free_box ((caddr_t)cli->cli_ql_strses);
   dk_free ((caddr_t) cli, sizeof (client_connection_t));
+#ifdef QUERY_DEBUG
+  log_cli_event (cli, 0, "CLI_FREE_DONE");
+#endif
 }
 
 
@@ -738,33 +755,64 @@ itc_flush_client (it_cursor_t * itc)
 
 
 long dbev_enable = 1;
+long fastdown_in_progress = 0;
 
 void
-dbev_disconnect (client_connection_t * cli)
+dbev_exec_action (client_connection_t * cli, const char *proc_name, int disconnect)
 {
   caddr_t err;
-  caddr_t * params;
-  query_t * proc;
-  if (!dbev_enable)
-    return;
-  proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_DISCONNECT");
+  caddr_t *params;
+  query_t *proc;
+
+  proc = sch_proc_exact_def (wi_inst.wi_schema, proc_name);
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling %s(): %s %s", proc_name, ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (0);
   lt_enter_anyway (cli->cli_trx);
-  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   IN_TXN;
   lt_commit (cli->cli_trx, TRX_CONT);
   lt_leave (cli->cli_trx);
   LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in DBEV_DISCONNECT: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    {
+      log_error ("Error executing %s(): %s %s", proc_name, ERR_STATE (err), ERR_MESSAGE (err));
+
+      if (disconnect)
+        PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
+
+      dk_free_tree (err);
+
+      if (disconnect)
+        PrpcDisconnect (cli->cli_session);
+    }
 }
 
+void
+dbev_disconnect (client_connection_t * cli)
+{
+  if (fastdown_in_progress)
+    return;
+
+  if (dbev_enable)
+    dbev_exec_action (cli, "DB.DBA.DBEV_DISCONNECT", 0);
+}
 
 void
 cli_clear_globals (client_connection_t * cli)
@@ -985,32 +1033,8 @@ srv_client_session_died (dk_session_t * ses)
 void
 dbev_connect (client_connection_t * cli)
 {
-  caddr_t err;
-  /*DELME: stmt_options_t * opts; */
-  caddr_t * params;
-  query_t * proc;
-  if (!dbev_enable)
-    return;
-  proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_CONNECT");
-  if (!proc)
-    return;
-  if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
-  params = (caddr_t *) list (0);
-  lt_enter_anyway (cli->cli_trx);
-  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
-  dk_free_box ((caddr_t) params);
-  IN_TXN;
-  lt_commit (cli->cli_trx, TRX_CONT);
-  lt_leave (cli->cli_trx);
-  LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    {
-      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
-      dk_free_tree (err);
-      PrpcDisconnect (cli->cli_session);
-    }
+  if (dbev_enable)
+    dbev_exec_action (cli, "DB.DBA.DBEV_CONNECT", 1);
 }
 
 caddr_t *
@@ -1049,6 +1073,9 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
   if (SESSION_IS_INPROCESS (client))
     {
       cli = DKS_DB_DATA (client);
+#ifdef QUERY_DEBUG
+      log_cli_event (cli, 0, "SF_SQL_CONNECT_INPROCESS");
+#endif
       return make_login_answer (cli);
     }
 #endif
@@ -1103,6 +1130,9 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
     password = box_dv_short_string ("");
 
   cli = client_connection_create ();
+#ifdef QUERY_DEBUG
+      log_cli_event (cli, 0, "SF_SQL_CONNECT");
+#endif
   if (info)
     {
       cli->cli_user_info = box_dv_short_string (info[LGID_APP_NAME]);
@@ -1138,6 +1168,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
     {
       caddr_t err;
       client_connection_free (cli);
+      sqlc_set_client (NULL);
       DKS_DB_DATA (client) = NULL;
       dk_free_box (cli_ver);
       if (!user || !sec_user_has_group (0, user->usr_g_id))
@@ -1279,6 +1310,9 @@ long qr_cache_entries = 100;
 void
 cli_qr_remove_from_stmt_cache (client_connection_t * cli, query_t * qr)
 {
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "OUT OF CACHED by cli_qr_remove_from_stmt_cache");
+#endif
   id_hash_remove (cli->cli_text_to_query, (caddr_t) &qr->qr_text);
 }
 
@@ -1363,6 +1397,9 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 	  dk_free_tree (err);
 	  return (caddr_t) SQL_ERROR;
 	}
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "CACHED REPLACING by stmt_set_query");
+#endif
       id_hash_set (cli->cli_text_to_query, (caddr_t) &qr->qr_text, (caddr_t) &qr);
       L2_DELETE (cli->cli_first_query, cli->cli_last_query, old_qr, qr_);
       cli_drop_old_query (cli);
@@ -1382,15 +1419,28 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 	  return (caddr_t) SQL_ERROR;
 	}
       if (!qr->qr_is_ddl)
-	id_hash_set (cli->cli_text_to_query, (caddr_t) & qr->qr_text, (caddr_t) & qr);
+        {
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "CACHED NEW by stmt_set_query");
+#endif
+	  id_hash_set (cli->cli_text_to_query, (caddr_t) & qr->qr_text, (caddr_t) & qr);
+        }
       cli_drop_old_query (cli);
       L2_PUSH (cli->cli_first_query, cli->cli_last_query, qr, qr_);
     }
   dk_free_box (text);
 
   if (stmt->sst_query)
-    stmt->sst_query->qr_ref_count--;
+    {
+#ifdef QUERY_DEBUG
+      log_query_event (stmt->sst_query, 1, "QR_REF_COUNT-- by stmt_set_query");
+#endif
+      stmt->sst_query->qr_ref_count--;
+    }
   stmt->sst_query = qr;
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT++ by stmt_set_query");
+#endif
   qr->qr_ref_count++;
   if (qr != cli->cli_first_query)
     {
@@ -1600,7 +1650,13 @@ stmt_check_recompile (srv_stmt_t * stmt)
 	  dk_free_tree (err);
 	  return (caddr_t) SQL_ERROR;
 	}
+#ifdef QUERY_DEBUG
+      log_query_event (stmt->sst_query, 1, "QR_REF_COUNT-- by stmt_check_recompile");
+#endif
       stmt->sst_query->qr_ref_count--;
+#ifdef QUERY_DEBUG
+      log_query_event (qr, 1, "QR_REF_COUNT++ by stmt_check_recompile");
+#endif
       qr->qr_ref_count++;
       stmt->sst_query = qr;
     }
@@ -2447,7 +2503,12 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
 
       mutex_enter (cli->cli_mtx);
       if (stmt->sst_query)
-	stmt->sst_query->qr_ref_count--;
+        {
+#ifdef QUERY_DEBUG
+          log_query_event (stmt->sst_query, 1, "QR_REF_COUNT-- by sf_sql_free_stmt");
+#endif
+	  stmt->sst_query->qr_ref_count--;
+        }
       id_hash_remove (cli->cli_statements, (caddr_t) & stmt->sst_id);
       mutex_leave (cli->cli_mtx);
       dk_free_box (stmt->sst_id);
@@ -2788,28 +2849,51 @@ cov_store (void)
   query_t * proc;
   if (!(pl_debug_all & 2) || !pl_debug_cov_file)
     return;
+
   proc = sch_proc_def (wi_inst.wi_schema, "DB.DBA.COV_STORE");
   if (!proc)
     return;
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.COV_STORE(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   lt_enter (bootstrap_cli->cli_trx);
   IN_TXN;
   lt_threads_set_inner (bootstrap_cli->cli_trx, 1);
   lt_rollback (bootstrap_cli->cli_trx, TRX_CONT);
   LEAVE_TXN;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.COV_STORE(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (2, box_dv_short_string (pl_debug_cov_file), box_num(0));
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
   IN_TXN;
   lt_leave (bootstrap_cli->cli_trx);
   LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in COV_STORE: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    log_error ("Error executing DB.DBA.COV_STORE(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 #endif
 
@@ -2819,26 +2903,40 @@ dbev_shutdown (void)
   caddr_t err;
   caddr_t * params;
   query_t * proc;
+
   proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_SHUTDOWN");
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.DBEV_SHUTDOWN(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   lt_enter (bootstrap_cli->cli_trx);
   IN_TXN;
   lt_threads_set_inner (bootstrap_cli->cli_trx, 1);
   lt_rollback (bootstrap_cli->cli_trx, TRX_CONT);
   LEAVE_TXN;
+
   params = (caddr_t *) list (0);
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
   IN_TXN;
   lt_leave (bootstrap_cli->cli_trx);
   LEAVE_TXN;
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in DBEV_SHUTDOWN: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    log_error ("Error executing DB.DBA.DBEV_SHUTDOWN(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 
 
@@ -2847,6 +2945,7 @@ sf_fastdown (lock_trx_t * trx)
 {
   long ena = dbev_enable;
   dbev_enable = 0;
+  fastdown_in_progress = 1;
   PrpcDisconnectAll ();
 #ifdef PLDBG
   cov_store ();
@@ -3434,20 +3533,34 @@ dbev_startup (void)
   caddr_t err;
   caddr_t * params;
   query_t * proc;
+
   if (!dbev_enable)
     return;
+
   proc = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.DBEV_STARTUP");
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.DBEV_STARTUP(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (0);
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in DBEV_startup: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+
+  if (err)
+    log_error ("Error executing DB.DBA.DBEV_STARTUP(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 
 #ifdef PLDBG
@@ -3459,18 +3572,30 @@ cov_load (void)
   query_t * proc;
   if (!(pl_debug_all & 2) || !pl_debug_cov_file)
     return;
+
   proc = sch_proc_def (wi_inst.wi_schema, "DB.DBA.COV_LOAD");
   if (!proc)
     return;
+
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	{
+	  log_error ("Error compiling DB.DBA.COV_LOAD(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+	  dk_free_tree (err);
+	  return;
+	}
+    }
+
   params = (caddr_t *) list (1, box_dv_short_string (pl_debug_cov_file));
-  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL,
-		 params, NULL, 0);
+  err = qr_exec (bootstrap_cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
+
   local_commit (bootstrap_cli);
-  if (IS_BOX_POINTER (err))
-    log_error ("Error in COV_LOAD: %s %s", ERR_STATE (err), ERR_MESSAGE (err));
+  if (err)
+    log_error ("Error executing DB.DBA.COV_LOAD(): %s %s", ERR_STATE (err), ERR_MESSAGE (err));
 }
 #endif
 
@@ -4145,7 +4270,7 @@ srv_global_init (char *mode)
 
 
 caddr_t
-srv_make_new_error (const char *code, const char *virt_code, const char *msg, ...)
+DBG_NAME(srv_make_new_error) (DBG_PARAMS const char *code, const char *virt_code, const char *msg, ...)
 {
   char temp[2000];
   va_list list;
@@ -4154,9 +4279,12 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
 #endif
   int msg_len;
   int code_len = virt_code ? (int) strlen (virt_code) : 0;
-
-  caddr_t *box = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t),
-      DV_ARRAY_OF_POINTER);
+  caddr_t res;
+#ifdef SIGNAL_DEBUG
+  jmp_buf_splice *ctx, *ctx_iter;
+  int ctx_ctr;
+#endif
+  caddr_t *box;
   va_start (list, msg);
   vsnprintf (temp, 2000, msg, list);
   va_end (list);
@@ -4164,18 +4292,34 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
 
   if (code[1] == 'Y')
     virtuoso_sleep (0, 10000);
-
-  {
     if ('S' == code[0] || '4' == code[0])
       {
         at_printf (("Host %d make err %s %s in %s\n", local_cll.cll_this_host, code, temp, cl_thr_stat ()));
       }
+#ifdef SIGNAL_DEBUG
+  ctx = THREAD_CURRENT_THREAD->thr_reset_ctx;
+  for (ctx_ctr = 0, ctx_iter = ctx; NULL != ctx_iter; ctx_ctr++, ctx_iter = ctx_iter->j_parent) { /*do nothing*/; }
+  box = (caddr_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS (3 + ctx_ctr*2) * sizeof (caddr_t), DV_ERROR_REPORT);
+  for (ctx_ctr = 0, ctx_iter = ctx; NULL != ctx_iter; ctx_ctr++, ctx_iter = ctx_iter->j_parent)
+    {
+      caddr_t file;
+      caddr_t line = box_num (ctx_iter->j_line);
+#ifdef MALLOC_DEBUG
+      file = dbg_box_dv_short_string (ctx_iter->j_file, ctx_iter->j_line, ctx_iter->j_file);
+#else
+      file = box_dv_short_string (ctx_iter->j_file);
+#endif
+      box [3+(ctx_ctr*2)] = file;
+      box [3+(ctx_ctr*2)+1] = line;
   }
+#else
+  box = (caddr_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS 3 * sizeof (caddr_t), DV_ERROR_REPORT);
+#endif
   box[0] = (caddr_t) QA_ERROR;
-  box[1] = box_dv_short_string (code);
+  box[1] = DBG_NAME(box_dv_short_string) (DBG_ARGS code);
   if (virt_code)
     {
-      box[2] = dk_alloc_box (msg_len + code_len + 3, DV_SHORT_STRING);
+      box[2] = DBG_NAME (dk_alloc_box) (DBG_ARGS msg_len + code_len + 3, DV_SHORT_STRING);
       memcpy (box[2], virt_code, code_len);
       memcpy (box[2] + code_len, ": ", 2);
       memcpy (box[2] + code_len + 2, temp, msg_len);
@@ -4196,7 +4340,10 @@ srv_make_new_error (const char *code, const char *virt_code, const char *msg, ..
     {
       log_info ("ERRS_0 %s %s %s", code, virt_code, temp);
     }
-
+  log_error_report_event ((caddr_t) box, 1, "MAKE_NEW_ERROR");
+#ifdef MALLOC_DEBUG
+  dk_check_tree ((box_t)box);
+#endif
   return ((caddr_t) box);
 }
 
@@ -4300,3 +4447,17 @@ srv_make_trx_error (int code, caddr_t detail)
     }
   return err;
 }
+
+#ifdef MALLOC_DEBUG
+#undef srv_make_new_error
+caddr_t
+srv_make_new_error (const char *code, const char *virt_code, const char *msg, ...)
+{
+  char temp[2000];
+  va_list list;
+  va_start (list, msg);
+  vsnprintf (temp, 2000, msg, list);
+  va_end (list);
+  return dbg_srv_make_new_error (__FILE__, __LINE__, code, virt_code, "%s", temp);
+}
+#endif

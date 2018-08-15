@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -45,7 +45,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
   if ('list' = mode)
     {
       --http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
-      http ('Find entities ', txt);
+      http ('Find entity ', txt);
     }
   if ('list-count' = mode)
     {

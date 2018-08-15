@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -102,6 +102,12 @@ typedef struct id_hash_iterator_s
   long 			hit_dict_version;
 } id_hash_iterator_t;
 
+extern caddr_t dict_bitor_or_put_impl (id_hash_iterator_t *hit, caddr_t key, boxint bits_to_set, int signal_unsafe_args);
+extern caddr_t dict_dec_or_remove_impl (id_hash_iterator_t *hit, caddr_t key, boxint dec_val, int signal_unsafe_args);
+extern caddr_t dict_inc_or_put_impl (id_hash_iterator_t *hit, caddr_t key, boxint inc_val, int signal_unsafe_args);
+extern caddr_t dict_put_impl (id_hash_iterator_t *hit, caddr_t key, caddr_t val, int signal_unsafe_args);
+extern caddr_t dict_remove_impl (id_hash_iterator_t *hit, caddr_t key);
+extern caddr_t dict_zap_impl (id_hash_iterator_t *hit, ptrlong destructive, int signal_unsafe_args);
 
 /* The structure of the bucket array is this:
    char key [key_length bytes]

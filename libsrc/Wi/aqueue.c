@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -947,7 +947,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
 	  return NULL;
 	}
     }
-  if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+  if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_g_id, cli->cli_user->usr_id))
     {
       user_t * usr = cli->cli_user;
       *err_ret = srv_make_new_error ("42000", "SR186:SECURITY", "No permission to execute %s in aq_request() with user ID %d, group ID %d",
@@ -1193,7 +1193,7 @@ aq_thr_mem_cache_clear ()
 void
 bif_aq_init ()
 {
-  dk_mem_hooks (DV_ASYNC_QUEUE, (box_copy_f) aq_copy, (box_destr_f) aq_free, 0);
+  dk_mem_hooks (DV_ASYNC_QUEUE, (box_copy_f) aq_copy, (box_destr_f) aq_free, 1);
   PrpcSetWriter (DV_ASYNC_QUEUE, (ses_write_func) aq_serialize);
   bif_define ("async_queue", bif_async_queue);
   bif_define ("aq_request", bif_aq_request);

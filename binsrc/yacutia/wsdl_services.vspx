@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="databases" decor="yacutia_decor.vspx"
@@ -45,13 +42,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                       <v:template name="tabTemplate1" type="simple" enabled="--case  when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
                         <td class="page_tab_selected" align="center">
@@ -61,12 +51,7 @@
                           <v:url name="b_url13" value="--'Export'" format="%s" url="--'wsdl_services.vspx?page=3'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
+                          &npsp;
                         </td>
                       </v:template>
                       <v:template name="tabTemplate4" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3' ) then 1 else 0 end">
@@ -77,12 +62,7 @@
                           Export
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
+                          &npsp;
                         </td>
                       </v:template>
                     </tr>

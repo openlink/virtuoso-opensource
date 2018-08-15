@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -921,6 +921,27 @@ http_cli_connect (http_cli_ctx * ctx)
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
 	  if (ctx->hcctx_timeout > 0)
 	    to.to_sec = ctx->hcctx_timeout;
+
+#ifndef OPENSSL_NO_TLSEXT
+	  {
+	    char sni_host[1024];
+	    char *p;
+
+	    /* Remove :PORT from host */
+	    strncpy (sni_host, ctx->hcctx_host, sizeof (sni_host));
+	    sni_host[1023] = '\0';
+	    if ((p = strrchr (sni_host, ':')) != NULL)
+	      *p = '\0';
+
+	    /* Set hostname in TLSext SNI */
+	    if ((ssl_err = SSL_set_tlsext_host_name (ctx->hcctx_ssl, sni_host)) != 1)
+	      {
+		ctx->hcctx_err = srv_make_new_error ("22023", "HTS04", "Unable to set TLSext Server Name Indication");
+		goto error_in_ssl;
+	      }
+	  }
+#endif
+
 	  session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
 	  SSL_set_fd (ctx->hcctx_ssl, dst);
 
@@ -989,33 +1010,52 @@ http_cli_get_method_string (http_cli_ctx * ctx)
   return (http_get_method_string (ctx->hcctx_method));
 }
 
-char*
+/*
+ *  This function should return the original URL of the request(long) , or just the path (short) depending on proxy and protocol
+ *  e.g.
+ *
+ *   long  = http://host:port/sparql
+ *   short = /sparql
+ *
+ *   URL pattern	No proxy	HTTP proxy	socks4		socks5
+ *   http://		short		long		short		short
+ *   https://		short		short		short		short
+ *   other		long		long		long		long
+ */
+char *
 http_cli_get_doc_str (http_cli_ctx * ctx)
 {
-  char* s = NULL;
+  char *s = NULL;
 
-  if (NULL != ctx->hcctx_proxy.hcp_proxy && 0 == ctx->hcctx_proxy.hcp_socks_ver)
-    return ctx->hcctx_url;
-
+  /*
+   *  Check protocol
+   */
   if (!strnicmp (ctx->hcctx_url, "http://", 7))
-    s = ctx->hcctx_url + 7;
-  else if (!strnicmp (ctx->hcctx_url, "https://", 8))
-    s = ctx->hcctx_url + 8;
+    {
+      if (NULL != ctx->hcctx_proxy.hcp_proxy && 0 == ctx->hcctx_proxy.hcp_socks_ver)
+	goto ret_long_url;
 
+      s = ctx->hcctx_url + 7;
+    }
+  else if (!strnicmp (ctx->hcctx_url, "https://", 8))
+    {
+      s = ctx->hcctx_url + 8;	/* HTTPS proxy always uses the short url form */
+    }
+
+  /*  Try to short URL by looking for the first / after the hostname */
   if (s)
     {
       s = strchr (s, '/');
       if (!s)
-	{
-	  return ("/");
-	}
+	return ("/");
       else
-	{
-	  return (s);
-	}
+	return (s);
     }
+
+ret_long_url:
   return (ctx->hcctx_url);
 }
+
 
 HC_RET
 http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)

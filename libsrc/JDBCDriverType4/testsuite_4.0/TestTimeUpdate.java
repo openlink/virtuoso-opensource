@@ -2,7 +2,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -119,7 +119,7 @@ public class TestTimeUpdate
 
          System.out.print("Sending a 1972-07-29 15:30:45.000012 timestamp");
 	 ps = c.prepareStatement ("select cast (? as varchar)");
-	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 12));
+	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 12000));
 	 rs = ps.executeQuery();
 	 rs.next();
 	 String q = rs.getString(1);
@@ -132,7 +132,7 @@ public class TestTimeUpdate
 
          System.out.print("Sending a 1972-07-29 15:30:45.123456 timestamp");
 	 ps = c.prepareStatement ("select cast (? as varchar)");
-	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 123456));
+	 ps.setTimestamp (1, new java.sql.Timestamp(72, 6, 29, 15, 30, 45, 123456000));
 	 rs = ps.executeQuery();
 	 rs.next();
 	 q = rs.getString(1);

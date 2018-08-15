@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -809,7 +809,7 @@ case $1 in
 
    # Prepare GRDDL tests to run locally
    gzip -c -d $VIRTUOSO_TEST/grddl-tests.tar.gz | tar xf -
-   if grep -r ":14300" grddl-tests/* > /dev/null
+   if grep ":14300" grddl-tests/*.* > /dev/null
    then
        echo "The port number to replace is correct."
    else

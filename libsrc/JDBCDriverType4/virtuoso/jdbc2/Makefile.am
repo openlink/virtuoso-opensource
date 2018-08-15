@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -168,9 +168,9 @@ sqlfiles = \
 # JDBC 2.x
 ###########################################
 std2javafiles = \
-        $(utilfiles:%.java=outstd2/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd2/virtuoso/sql/%.java) \
-    	$(infiles:%.java=outstd2/virtuoso/jdbc2/%.java)
+	$(utilfiles:%.java=outstd2/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd2/virtuoso/sql/%.java) \
+	$(infiles:%.java=outstd2/virtuoso/jdbc2/%.java)
 
 
 .PHONY: doc2
@@ -196,10 +196,10 @@ outstd2:
 	@mkdir outstd2/openlink/util
 
 outstd2/virtuoso/jdbc2/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outstd2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outstd2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd2/virtuoso/sql; cp ../../../$< .
@@ -233,10 +233,10 @@ outssl2:
 	@mkdir outssl2/openlink/util
 
 outssl2/virtuoso/jdbc2/%.java: %.java
-	$(CPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outssl2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
+	$(JAVACPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
 
 outssl2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl/virtuoso/sql; cp ../../../$< .
@@ -246,12 +246,12 @@ outssl2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 # JDBC 3.x
 ###########################################
 std3javafiles = \
-        $(utilfiles:%.java=outstd3/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd3/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd3/openlink/util/%.java) \
-    	$(in3files:%.java=outstd3/virtuoso/jdbc3/%.java) \
-    	$(infiles:%.java=outstd3/virtuoso/jdbc3/%.java) \
-        $(javaxfiles:%.java=outstd3/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd3/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd3/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd3/openlink/util/%.java) \
+	$(in3files:%.java=outstd3/virtuoso/jdbc3/%.java) \
+	$(infiles:%.java=outstd3/virtuoso/jdbc3/%.java) \
+	$(javaxfiles:%.java=outstd3/virtuoso/javax/%.java)
 
 
 .PHONY: doc3
@@ -281,28 +281,28 @@ outstd3:
 	@cp ../../java.sql.Driver3 outstd3/META-INF/services/java.sql.Driver
 
 outstd3/virtuoso/jdbc3/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 outstd3/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 outstd3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd3/virtuoso/sql; cp ../../../$< .
 
 outstd3/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
 
 
 ###########################################
 # JDBC 3.x (SSL)
 ###########################################
 ssl3javafiles = \
-        $(utilfiles:%.java=outssl3/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl3/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl3/openlink/util/%.java) \
-    	$(in3files:%.java=outssl3/virtuoso/jdbc3/%.java) \
-    	$(infiles:%.java=outssl3/virtuoso/jdbc3/%.java) \
-        $(javaxfiles:%.java=outssl3/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl3/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl3/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl3/openlink/util/%.java) \
+	$(in3files:%.java=outssl3/virtuoso/jdbc3/%.java) \
+	$(infiles:%.java=outssl3/virtuoso/jdbc3/%.java) \
+	$(javaxfiles:%.java=outssl3/virtuoso/javax/%.java)
 
 .PHONY: ssl3
 ssl3: ../../virtjdbc3ssl.jar
@@ -326,30 +326,30 @@ outssl3:
 	@cp ../../java.sql.Driver3 outssl3/META-INF/services/java.sql.Driver
 
 outssl3/virtuoso/jdbc3/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 outssl3/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 outssl3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl3/virtuoso/sql; cp ../../../$< .
 
 outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 
 ###########################################
 # JDBC 4.x
 ###########################################
 std4javafiles = \
-        $(utilfiles:%.java=outstd4/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd4/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd4/openlink/util/%.java) \
-        $(util4files:%.java=outstd4/openlink/util/%.java) \
-    	$(in3files:%.java=outstd4/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outstd4/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outstd4/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outstd4/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd4/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd4/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd4/openlink/util/%.java) \
+	$(util4files:%.java=outstd4/openlink/util/%.java) \
+	$(in3files:%.java=outstd4/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outstd4/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outstd4/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outstd4/virtuoso/javax/%.java)
 
 
 .PHONY: doc4
@@ -380,30 +380,30 @@ outstd4:
 	@cp ../../java.sql.Driver4 outstd4/META-INF/services/java.sql.Driver
 
 outstd4/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
 
 outstd4/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
 
 outstd4/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd4/virtuoso/sql; cp ../../../$< .
 
 outstd4/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
 
 
 ###########################################
 # JDBC 4.x (SSL)
 ###########################################
 ssl4javafiles = \
-        $(utilfiles:%.java=outssl4/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl4/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl4/openlink/util/%.java) \
-        $(util4files:%.java=outssl4/openlink/util/%.java) \
-    	$(in3files:%.java=outssl4/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outssl4/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outssl4/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outssl4/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl4/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl4/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl4/openlink/util/%.java) \
+	$(util4files:%.java=outssl4/openlink/util/%.java) \
+	$(in3files:%.java=outssl4/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outssl4/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outssl4/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outssl4/virtuoso/javax/%.java)
 
 .PHONY: ssl4
 ssl4: ../../virtjdbc4ssl.jar
@@ -427,30 +427,30 @@ outssl4:
 	@cp ../../java.sql.Driver4 outssl4/META-INF/services/java.sql.Driver
 
 outssl4/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
 
 outssl4/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
 
 outssl4/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl4/virtuoso/sql; cp ../../../$< .
 
 outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
 
 
 ###########################################
 # JDBC 4.1
 ###########################################
 std4_1javafiles = \
-        $(utilfiles:%.java=outstd4_1/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd4_1/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd4_1/openlink/util/%.java) \
-        $(util4files:%.java=outstd4_1/openlink/util/%.java) \
-    	$(in3files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outstd4_1/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd4_1/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd4_1/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd4_1/openlink/util/%.java) \
+	$(util4files:%.java=outstd4_1/openlink/util/%.java) \
+	$(in3files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outstd4_1/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outstd4_1/virtuoso/javax/%.java)
 
 
 .PHONY: doc4_1
@@ -481,30 +481,30 @@ outstd4_1:
 	@cp ../../java.sql.Driver4 outstd4_1/META-INF/services/java.sql.Driver
 
 outstd4_1/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
 
 outstd4_1/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
 
 outstd4_1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd4_1/virtuoso/sql; cp ../../../$< .
 
 outstd4_1/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
 
 
 ###########################################
 # JDBC 4.1 (SSL)
 ###########################################
 ssl4_1javafiles = \
-        $(utilfiles:%.java=outssl4_1/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl4_1/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl4_1/openlink/util/%.java) \
-        $(util4files:%.java=outssl4_1/openlink/util/%.java) \
-    	$(in3files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outssl4_1/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl4_1/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl4_1/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl4_1/openlink/util/%.java) \
+	$(util4files:%.java=outssl4_1/openlink/util/%.java) \
+	$(in3files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outssl4_1/virtuoso/javax/%.java)
 
 .PHONY: ssl4_1
 ssl4_1: ../../virtjdbc4_1ssl.jar
@@ -528,30 +528,30 @@ outssl4_1:
 	@cp ../../java.sql.Driver4 outssl4_1/META-INF/services/java.sql.Driver
 
 outssl4_1/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
 
 outssl4_1/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
 
 outssl4_1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl4_1/virtuoso/sql; cp ../../../$< .
 
 outssl4_1/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
 
 
 ###########################################
 # JDBC 4.2
 ###########################################
 std4_2javafiles = \
-        $(utilfiles:%.java=outstd4_2/openlink/util/%.java) \
-        $(sqlfiles:%.java=outstd4_2/virtuoso/sql/%.java) \
-        $(util3files:%.java=outstd4_2/openlink/util/%.java) \
-        $(util4files:%.java=outstd4_2/openlink/util/%.java) \
-    	$(in3files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outstd4_2/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outstd4_2/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd4_2/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd4_2/openlink/util/%.java) \
+	$(util4files:%.java=outstd4_2/openlink/util/%.java) \
+	$(in3files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outstd4_2/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outstd4_2/virtuoso/javax/%.java)
 
 
 .PHONY: doc4_2
@@ -582,30 +582,30 @@ outstd4_2:
 	@cp ../../java.sql.Driver4 outstd4_2/META-INF/services/java.sql.Driver
 
 outstd4_2/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
 
 outstd4_2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
 
 outstd4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outstd4_2/virtuoso/sql; cp ../../../$< .
 
 outstd4_2/virtuoso/javax/%.java: ../javax/%.java
-	$(CPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
 
 
 ###########################################
 # JDBC 4.2 (SSL)
 ###########################################
 ssl4_2javafiles = \
-        $(utilfiles:%.java=outssl4_2/openlink/util/%.java) \
-        $(sqlfiles:%.java=outssl4_2/virtuoso/sql/%.java) \
-        $(util3files:%.java=outssl4_2/openlink/util/%.java) \
-        $(util4files:%.java=outssl4_2/openlink/util/%.java) \
-    	$(in3files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-    	$(in4files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-    	$(infiles:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-        $(javaxfiles:%.java=outssl4_2/virtuoso/javax/%.java)
+	$(utilfiles:%.java=outssl4_2/openlink/util/%.java) \
+	$(sqlfiles:%.java=outssl4_2/virtuoso/sql/%.java) \
+	$(util3files:%.java=outssl4_2/openlink/util/%.java) \
+	$(util4files:%.java=outssl4_2/openlink/util/%.java) \
+	$(in3files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outssl4_2/virtuoso/javax/%.java)
 
 .PHONY: ssl4_2
 ssl4_2: ../../virtjdbc4_2ssl.jar
@@ -629,16 +629,16 @@ outssl4_2:
 	@cp ../../java.sql.Driver4 outssl4_2/META-INF/services/java.sql.Driver
 
 outssl4_2/virtuoso/jdbc4/%.java: %.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
 
 outssl4_2/openlink/util/%.java: ../../openlink/util/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
 
 outssl4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 	cd outssl4_2/virtuoso/sql; cp ../../../$< .
 
 outssl4_2/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
+	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
 
 
 ###########################################

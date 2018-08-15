@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -44,6 +44,7 @@ public class VirtuosoArray implements Array {
         types.put("character", Types.CHAR);
         types.put("nvarchar", Types.VARCHAR);
         types.put("char", Types.CHAR);
+        types.put("nchar", Types.CHAR);
         types.put("numeric", Types.NUMERIC);
         types.put("decimal", Types.DECIMAL);
         types.put("integer", Types.INTEGER);
@@ -61,15 +62,42 @@ public class VirtuosoArray implements Array {
     }
 
 
-    public VirtuosoArray(String typeName, Object[] arr_data) throws VirtuosoException{
+    public VirtuosoArray(VirtuosoConnection conn, String typeName, Object[] arr_data) throws VirtuosoException{
         this.typeName = typeName;
         Integer typeId =  types.get(typeName.toLowerCase());
         typeCode = typeId!=null?typeId.intValue():Types.OTHER;
 
-        if (arr_data!=null){
+        if (arr_data!=null) {
             this.data = new ArrayList<Object>(arr_data.length);
-            for(int i=0; i< arr_data.length; i++)
-                this.data.add(VirtuosoTypes.mapJavaTypeToSqlType(arr_data[i], typeCode));
+            for(int i=0; i< arr_data.length; i++) {
+                Object x = VirtuosoTypes.mapJavaTypeToSqlType(arr_data[i], typeCode);
+                if (x instanceof String)
+                {
+                    switch(typeCode){
+                        case Types.CHAR:
+                        case Types.VARCHAR:
+                        case Types.LONGVARCHAR:
+                        case Types.CLOB:
+                        case Types.OTHER:
+                            this.data.add(new VirtuosoExplicitString((String)x, VirtuosoTypes.DV_ANY,conn));
+                            break;
+#if JDK_VER >= 16
+                        case Types.NCHAR:
+                        case Types.NVARCHAR:
+                        case Types.LONGNVARCHAR:
+                        case Types.NCLOB:
+                            this.data.add(new VirtuosoExplicitString((String)x, VirtuosoTypes.DV_WIDE,conn));
+                            break;
+#endif
+                        default:
+                            this.data.add(x);
+                            break;
+                    }
+                }
+                else {
+                    this.data.add(x);
+                }
+            }
         }
     }
 

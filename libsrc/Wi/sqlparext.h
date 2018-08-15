@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -869,31 +869,6 @@ extern long sqlp_bin_op_serial;
   (ST *) t_list (6, \
 		 (ptrlong) pred, (caddr_t) left, (ST *) subq, (ptrlong) cmp_, (ptrlong) flags, NULL)
 
-
-#define ARRAYP(a) \
-  (IS_BOX_POINTER(a) && DV_ARRAY_OF_POINTER == box_tag((caddr_t) a))
-
-#define SYMBOLP(a) \
-  (IS_BOX_POINTER(a) && DV_SYMBOL == box_tag((caddr_t) a))
-
-#define LITERAL_P(a) \
-  (! IS_BOX_POINTER (a) \
-   || DV_SHORT_STRING == box_tag((caddr_t) a) \
-   || DV_LONG_STRING == box_tag((caddr_t) a) \
-   || DV_WIDE == box_tag((caddr_t) a) \
-   || DV_LONG_WIDE == box_tag((caddr_t) a) \
-   || DV_LONG_INT == box_tag((caddr_t) a) \
-   || DV_DB_NULL == box_tag((caddr_t) a) \
-   || DV_SINGLE_FLOAT == box_tag((caddr_t) a) \
-   || DV_NUMERIC == box_tag((caddr_t) a) \
-   || DV_DOUBLE_FLOAT == box_tag((caddr_t) a) \
-   || DV_BIN == box_tag((caddr_t) a) \
-   || DV_UNAME == box_tag((caddr_t) a) \
-   || DV_IRI_ID == box_tag((caddr_t) a) \
-   || DV_RDF == box_tag((caddr_t) a) \
-   || DV_DATETIME == box_tag((caddr_t) a) \
-   || DV_GEO == box_tag((caddr_t) a) \
-   || DV_XPATH_QUERY == box_tag((caddr_t) a) )
 
 #define ST_P(s, tp) \
   (ARRAYP (s) && BOX_ELEMENTS (s) > 0 && (s)->type == tp)

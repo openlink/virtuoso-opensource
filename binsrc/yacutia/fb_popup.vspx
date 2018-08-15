@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@
       <v:template condition="self.pageno = 2 and length (self.api_key.ufl_value)" type="simple">
 	  <h2>In the frame bellow follow instructions and when one-time access code is shown enter in the form bellow</h2>
 	  <iframe src="http://www.facebook.com/code_gen.php?v=1.0&api_key=<?U self.api_key.ufl_value ?>" height="480" width="800">
-	      Your browser do not support IFRAMEs
+	      Your browser does not support IFRAMEs
 	  </iframe>
       </v:template>
       <v:form type="simple" method="POST" action="">

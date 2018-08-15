@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -340,7 +340,7 @@ create procedure ODS.ODS_API."wiki.topic.edit" (
 
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exists');
+    signal ('22023', 'The topic does not exist');
   connection_set('WikiUser', uname);
   topic.ti_update_text (content, uname);
 
@@ -371,7 +371,7 @@ create procedure ODS.ODS_API."wiki.topic.delete" (
   upassword := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exists');
+    signal ('22023', 'The topic does not exist');
   connection_set('WikiUser', uname);
   rc := DB.DBA.DAV_DELETE (DB.DBA.DAV_SEARCH_PATH (topic.ti_res_id, 'R'), 0, uname, upassword);
   if (ODS.ODS_API.dav_error (rc))
@@ -403,7 +403,7 @@ create procedure ODS.ODS_API."wiki.topic.sync" (
   upassword := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
   topic := ODS.ODS_API."wiki.topic.internal" (inst_id, name);
   if (not topic.ti_id)
-    signal ('22023', 'The topic does not exists');
+    signal ('22023', 'The topic does not exist');
   if (0 = WV.WIKI.GETLOCK (DB.DBA.DAV_SEARCH_PATH (topic.ti_res_id, 'R'), uname))
   {
     connection_set('WikiUser', uname);
@@ -613,7 +613,7 @@ create procedure ODS.ODS_API."wiki.comment.new" (
 
   topicObj := ODS.ODS_API."wiki.topic.internal" (inst_id, topic);
   if (not topicObj.ti_id)
-    signal ('37000', 'The topic does not exists');
+    signal ('37000', 'The topic does not exist');
   connection_set('WikiUser', uname);
 
   insert into WV.WIKI.COMMENT (C_TOPIC_ID, C_PARENT_ID, C_SUBJECT, C_TEXT, C_AUTHOR, C_EMAIL, C_DATE, C_HOME)

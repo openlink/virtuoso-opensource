@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -89,7 +89,10 @@ public class ConnectionWrapper implements java.sql.Connection {
   }
 
   public void finalize () throws Throwable {
-    close();
+      VirtuosoPooledConnection pc = pconn;
+      if (pc!=null) 
+        pc.sendCloseEvent();
+      pconn = null;
   }
 
   // reuse the physical connection

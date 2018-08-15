@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,3 +33,6 @@ EXE_EXPORT (void *	, dbg_calloc, (const char *file, u_int line, size_t num, size
 EXE_EXPORT (void	, dbg_free, (const char *file, u_int line, void *data));
 EXE_EXPORT (char *	, dbg_strdup, (const char *file, u_int line, const char *str));
 EXE_EXPORT (void *	, dbg_realloc, (const char *file, u_int line, void *old, size_t size));
+#define wi_inst (wi_instance_get()[0])
+#define bootstrap_cli (get_bootstrap_cli())
+#define log_proc_overwrite 1

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,10 +19,16 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_rdf_objects" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+<v:page name="db_rdf_objects"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
   button-anchors="1">
+
   <vm:pagetitle>Virtuoso Database Management</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
@@ -51,7 +55,8 @@
 		);
             }
 	</v:on-init>
-	<v:on-post><![CDATA[
+      <v:on-post>
+        <![CDATA[
               self.base_start := self.browse_cat;
 		]]>
 	</v:on-post>
@@ -61,7 +66,7 @@
       <v:form name="f1" method="POST" type="simple">
     <table class="listing">
       <tr>
-	      <td>Select Qualifier</td>
+            <th width="100px">Select Qualifier</th>
 	      <td>
 		  <v:data-list name="qual" sql="select distinct name_part (KEY_TABLE, 0) as qual from SYS_KEYS where KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL" key-column="qual" value-column="qual" defvalue="--self.browse_cat" auto-submit="1">
 		      <v:on-post>
@@ -75,15 +80,12 @@
 	      </td>
       </tr>
       <tr>
-	      <td>Base URL</td>
-	      <td><?vsp http ('http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/'); ?>
-		  <input type="text" name="base_start" value="<?V self.base_start ?>"/></td>
-      </tr>
-      <!--tr>
-	      <td>Generate Statistics</td>
+            <th>Base URL</th>
 	      <td>
-		  <input type="checkbox" name="cb1" value="1"/></td>
-      </tr-->
+              <?vsp http ('http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/'); ?>
+              <input type="text" name="base_start" value="<?V self.base_start ?>"/>
+            </td>
+          </tr>
       <tr>
 	  <td colspan="2">
 	  <div class="scroll_area">
@@ -92,18 +94,25 @@
             sql="select distinct KEY_TABLE as table_name from SYS_KEYS
             where upper(name_part (KEY_TABLE, 0)) like upper(:self.browse_cat)
             and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL and (KEY_TABLE not like '%__Total' and KEY_TABLE not like '%Count') order by 1"
-	    nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
+                          nrows="1000"
+                          scrollable="1"
+                          cursor-type="keyset"
+                          edit="0"
+                          width="80"
+                          initial-enable="1">
+
             <v:template name="temp_ds_tables_header" type="simple">
-                <colgroup/><colgroup/><colgroup/>
                 <thead>
-                  <tr class="listing_row_odd">
-		      <th  style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All"
-			      onclick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/>All</th>
+                        <tr class="listing_header_row">
+                          <th class="checkbox">
+                            <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/>
+                          </th>
                      <th>Name</th>
-                     <th>Action</th>
+                          <th class="action">Action</th>
                   </tr>
                 </thead>
             </v:template>
+
             <v:template name="temp_ds_tables_repeat" type="repeat">
               <v:template name="temp_ds_tables_empty" type="if-not-exists">
                   <tr>
@@ -112,25 +121,24 @@
               </v:template>
 
               <v:template name="temp_ds_tables_browse" type="browse">
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
-                    <td class="listing_col">
+                        <tr>
+                          <td class="checkbox">
                       <v:check-box name="cb_tables_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
                     </td>
                     <td class="listing_col">
                       <img src="images/icons/table_16.png" alt="Table" title="Table"/>
                       <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
                     </td>
-                    <td class="listing_col">
+                          <td class="action">
 		      <v:button name="b_table_def" value="Generate Single Mapping" action="simple" style="url">
-                        <v:on-post><![CDATA[
-			self.vc_redirect (sprintf('db_rdf_class.vspx?mode=definition&name=%U',
-				(control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:on-post>
+                              <v:on-post>
+                                <![CDATA[
+                                  self.vc_redirect (sprintf('db_rdf_class.vspx?mode=definition&name=%U', (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                ]]>
+                              </v:on-post>
                       </v:button>
                     </td>
-                  <?vsp http ('</tr>'); ?>
+                        </tr>
               </v:template>
             </v:template>
 	  </v:data-set>
@@ -140,89 +148,8 @@
   </tr>
       <tr>
 	  <td class="listing_col_action" colspan="2">
-	      <!--v:button action="simple" value="Generate Mappings" name="create_basic">
-		  <v:on-post>
-		      <v:script>
-			  <![CDATA[
-			  declare i, arr any;
-			  declare chil vspx_control;
-			  declare cb vspx_check_box;
-			  declare tb varchar;
-			  declare ds vspx_data_set;
-			  declare host, st varchar;
-
-			  ds := self."ds_tables";
-			  i := 0;
-			  arr := vector ();
-			  while ((chil := ds.ds_iterate_rows (i)) is not null)
-			    {
-			      cb := chil.vc_find_control ('cb_tables_select');
-			      tb := get_keyword (cb.vc_instance_name, e.ve_params);
-			      if (tb is not null)
-			        arr := vector_concat (arr, vector (tb));
-			    }
-
-			  host := get_keyword ('base_start', e.ve_params, '');
-			  st := get_keyword ('cb1', e.ve_params, '0');
-
-			  if (length (arr) > 0)
-			   {
-			     arr := encode_base64 (serialize (arr));
-			     self.db_object_to_process := arr;
-			     self.vc_redirect (sprintf ('db_rdf_class.vspx?list=%U&host=%U&st=%s', arr, host, st));
-			   }
-			 else
-			   {
-			     self.vc_error_message := 'There are no object selected to perform operation.';
-			     self.vc_is_valid := 0;
-			   }
-			  ]]>
-		      </v:script>
-		  </v:on-post>
-
-	      </v:button>
-	      <v:button action="simple" value="Generate Ontology" name="generate_owl">
-		  <v:on-post>
-		      <v:script>
-			  <![CDATA[
-			  declare i, arr any;
-			  declare chil vspx_control;
-			  declare cb vspx_check_box;
-			  declare tb varchar;
-			  declare ds vspx_data_set;
-			  declare host varchar;
-
-			  ds := self."ds_tables";
-			  i := 0;
-			  arr := vector ();
-			  while ((chil := ds.ds_iterate_rows (i)) is not null)
-			    {
-			      cb := chil.vc_find_control ('cb_tables_select');
-			      tb := get_keyword (cb.vc_instance_name, e.ve_params);
-			      if (tb is not null)
-			        arr := vector_concat (arr, vector (tb));
-			    }
-
-			  host := get_keyword ('base_start', e.ve_params, '');
-
-			  if (length (arr) > 0)
-			   {
-			     arr := encode_base64 (serialize (arr));
-			     self.db_object_to_process := arr;
-			     self.vc_redirect (sprintf ('db_rdf_owl.vspx?list=%U&host=%U', arr, host));
-			   }
-			 else
-			   {
-			     self.vc_error_message := 'There are no object selected to perform operation.';
-			     self.vc_is_valid := 0;
-			   }
-			  ]]>
-		      </v:script>
-		  </v:on-post>
-	      </v:button-->
 	      <v:button action="simple" value="Generate via Wizard" name="create_all">
 		  <v:on-post>
-		      <v:script>
 			  <![CDATA[
 			  declare i, arr any;
 			  declare chil vspx_control;
@@ -257,12 +184,10 @@
 			     self.vc_is_valid := 0;
 			   }
 			  ]]>
-		      </v:script>
 		  </v:on-post>
 	      </v:button>
 	      <v:button action="simple" value="Generate &amp; Publish" name="create_all_at_once">
 		  <v:on-post>
-		      <v:script>
 			  <![CDATA[
 			  declare i, arr any;
 			  declare chil vspx_control;
@@ -297,11 +222,8 @@
 			     self.vc_is_valid := 0;
 			   }
 			  ]]>
-		      </v:script>
 		  </v:on-post>
-
 	      </v:button>
-
 	  </td>
       </tr>
     </table>

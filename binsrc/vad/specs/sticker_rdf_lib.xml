@@ -6,7 +6,7 @@
   <name package="rdf_lib">
    <prop name="Title" value="RDF Support Library" />
    <prop name="Developer" value="OpenLink Software" />
-   <prop name="Copyright" value="(C) 1998-2016 OpenLink Software" />
+   <prop name="Copyright" value="(C) 1998-2018 OpenLink Software" />
    <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
    <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
   </name>

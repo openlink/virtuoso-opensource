@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -173,7 +173,7 @@ mem_pool_alloc (void)
   mp->mp_size = 0x100;
   mp->mp_allocs = (caddr_t *) DK_ALLOC (sizeof (caddr_t) * mp->mp_size);
   mp->mp_unames = hash_table_allocate (11);
-  hash_table_init (&mp->mp_large, 121);
+  DBG_NAME(hash_table_init) (DBG_ARGS  &mp->mp_large, 121);
   mp->mp_large.ht_rehash_threshold = 2;
   mp_register (mp);
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
@@ -205,10 +205,10 @@ mp_free (mem_pool_t * mp)
       const char *err;
       mp->mp_fill -= 1;
       buf = mp->mp_allocs[mp->mp_fill];
-      err = dbg_find_allocation_error (buf, mp);
+      err = dk_find_alloc_error (buf, mp);
       if (NULL != err)
 	GPF_T1 (err);
-      dbg_freep (__FILE__, __LINE__, buf, mp);
+      dk_freep (buf, mp);
     }
   maphash (mp_uname_free, mp->mp_unames);
   hash_table_free (mp->mp_unames);
@@ -231,7 +231,7 @@ mp_check (mem_pool_t * mp)
       const char *err;
       fill -= 1;
       buf = mp->mp_allocs[fill];
-      err = dbg_find_allocation_error (buf, mp);
+      err = dk_find_alloc_error (buf, mp);
       if (NULL != err)
 	GPF_T1 (err);
     }
@@ -242,16 +242,16 @@ void
 mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
 {
 #ifdef DOUBLE_ALIGN
-  const char *err = dbg_find_allocation_error (box - 8, mp);
+  const char *err = dk_find_alloc_error (box - 8, mp);
 #else
-  char *err = dbg_find_allocation_error (box - 4, mp);
+  const char *err = dk_find_alloc_error (box - 4, mp);
 #endif
   if (NULL != err)
     {
 #ifdef DOUBLE_ALIGN
-      dbg_find_allocation_error (box - 8, mp); /* This is here to put a convenient breakpoint and look at the broken magic bytes with comfort */
+      dk_find_alloc_error (box - 8, mp); /* This is here to put a convenient breakpoint and look at the broken magic bytes with comfort */
 #else
-      dbg_find_allocation_error (box - 4, mp); /* You can put only a breakpoint two lines above and not worry about #ifdef-s: if this branch is enabled then the debugger will move the breakpoint down */
+      dk_find_alloc_error (box - 4, mp); /* You can put only a breakpoint two lines above and not worry about #ifdef-s: if this branch is enabled then the debugger will move the breakpoint down */
 #endif
       GPF_T1 (err);
     }
@@ -273,7 +273,7 @@ mem_pool_alloc (void)
 {
   NEW_VARZ (mem_pool_t, mp);
   mp->mp_block_size = ALIGN_8 ((mp_block_size));
-  hash_table_init (&mp->mp_large, 121);
+  DBG_NAME(hash_table_init) (DBG_ARGS  &mp->mp_large, 121);
   mp->mp_large.ht_rehash_threshold = 2;
   mp->mp_unames = DBG_NAME (hash_table_allocate) (DBG_ARGS 11);
   mp_register (mp);
@@ -333,10 +333,36 @@ size_t mp_large_min = 80000;
 caddr_t
 DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
 {
+  dtp_t *new_alloc;
   dtp_t *ptr;
-  size_t len, hlen;
+  size_t len;
+#ifndef LACERATED_POOL
+  size_t hlen;
   int bh_len;
-  caddr_t new_alloc;
+  mem_block_t *mb = NULL, *f;
+  if (DV_NON_BOX  == dtp && len1 > mp_large_min && len1 > mp->mp_block_size / 2)
+    return (caddr_t)mp_large_alloc (mp, len1);
+  else if (len1 > mp_large_min  && len1 > mp->mp_block_size / 2)
+    {
+      ptr = (dtp_t*) mp_large_alloc (mp, len1 + 8);
+      ptr += 4;
+      WRITE_BOX_HEADER (ptr, len1, dtp);
+      memzero (ptr, len1);
+      return (caddr_t)ptr;
+    }
+#elif 0
+
+  if (len1 > mp_large_min)
+    {
+      if (DV_NON_BOX == dtp)
+        return (caddr_t)mp_large_alloc (mp, len1);
+      ptr = (caddr_t)mp_large_alloc (mp, len1 + 8);
+      ptr += 4;
+      WRITE_BOX_HEADER (ptr, len1, dtp);
+      memzero (ptr, len1);
+      return (caddr_t)ptr;
+    }
+#endif
 #ifdef LACERATED_POOL
 #ifdef DOUBLE_ALIGN
   len = ALIGN_8 (len1 + 8);
@@ -344,7 +370,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   len = ALIGN_4 (len1 + 4);
 #endif
 #if defined (MALLOC_DEBUG)
-  new_alloc = dbg_mallocp (file, line, len, mp);
+  new_alloc = (dtp_t *)dbg_mallocp (file, line, len, mp);
 #else
   new_alloc = DK_ALLOC (len);
 #endif
@@ -358,7 +384,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
       dk_free (mp->mp_allocs, (mp->mp_size / 2) * sizeof (caddr_t));
       mp->mp_allocs = newallocs;
     }
-  mp->mp_allocs[mp->mp_fill] = new_alloc;
+  mp->mp_allocs[mp->mp_fill] = ptr = new_alloc;
   mp->mp_fill += 1;
 #ifdef DOUBLE_ALIGN
   ptr = new_alloc + 4;
@@ -366,7 +392,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   ptr = new_alloc;
 #endif
 #else
-  mem_block_t *mb = NULL, *f;
+#if 0
   if (len1 > mp_large_min && len1 > mp->mp_block_size / 2)
     {
       if (DV_NON_BOX == dtp)
@@ -377,6 +403,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
       memzero (ptr, len1);
       return (caddr_t)ptr;
     }
+#endif
   bh_len = (dtp != DV_NON_BOX ? 8 : 0);
   len = ALIGN_8 (len1 + bh_len);
   mb = NULL;
@@ -1220,6 +1247,29 @@ DBG_NAME (t_set_delete) (DBG_PARAMS dk_set_t * set, void *item)
   return 0;
 }
 
+void *
+DBG_NAME (t_set_delete_nth) (DBG_PARAMS dk_set_t * set, int idx)
+{
+  s_node_t *node = *set;
+  dk_set_t *previous = set;
+  if (0 > idx)
+    return NULL;
+  while (node)
+    {
+      if (0 == idx)
+	{
+	  void *res = node->data;
+	  *previous = node->next;
+	  return res;
+	}
+      previous = &(node->next);
+      node = node->next;
+      idx--;
+    }
+  return NULL;
+}
+
+
 
 dk_set_t
 DBG_NAME (t_set_copy) (DBG_PARAMS dk_set_t s)
@@ -1267,19 +1317,54 @@ mp_check_tree (mem_pool_t * mp, box_t box)
 caddr_t
 t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail)
 {
-  char *tmpbuf;
   int res_len;
   caddr_t res;
   buflen_eval &= 0xFFFFFF;
-  tmpbuf = (char *) dk_alloc (buflen_eval);
+  if (buflen_eval < 1000)
+    {
+      char autobuf[1000];
+      res_len = vsnprintf (autobuf, buflen_eval, format, tail);
+      if (res_len >= buflen_eval)
+        GPF_T;
+      res = t_box_dv_short_nchars (autobuf, res_len);
+    }
+  else
+    {
+      char *tmpbuf = (char *) dk_alloc (buflen_eval);
   res_len = vsnprintf (tmpbuf, buflen_eval, format, tail);
   if (res_len >= buflen_eval)
     GPF_T;
   res = t_box_dv_short_nchars (tmpbuf, res_len);
   dk_free (tmpbuf, buflen_eval);
+    }
   return res;
 }
 
+caddr_t
+t_box_vsprintf_uname (size_t buflen_eval, const char *format, va_list tail)
+{
+  int res_len;
+  caddr_t res;
+  buflen_eval &= 0xFFFFFF;
+  if (buflen_eval < 1000)
+    {
+      char autobuf[1000];
+      res_len = vsnprintf (autobuf, buflen_eval, format, tail);
+      if (res_len >= buflen_eval)
+        GPF_T;
+      res = t_box_dv_uname_nchars (autobuf, res_len);
+    }
+  else
+    {
+      char *tmpbuf = (char *) dk_alloc (buflen_eval);
+      res_len = vsnprintf (tmpbuf, buflen_eval, format, tail);
+      if (res_len >= buflen_eval)
+        GPF_T;
+      res = t_box_dv_uname_nchars (tmpbuf, res_len);
+      dk_free (tmpbuf, buflen_eval);
+    }
+  return res;
+}
 
 caddr_t
 t_box_sprintf (size_t buflen_eval, const char *format, ...)
@@ -1288,6 +1373,17 @@ t_box_sprintf (size_t buflen_eval, const char *format, ...)
   caddr_t res;
   va_start (tail, format);
   res = t_box_vsprintf (buflen_eval, format, tail);
+  va_end (tail);
+  return res;
+}
+
+caddr_t
+t_box_sprintf_uname (size_t buflen_eval, const char *format, ...)
+{
+  va_list tail;
+  caddr_t res;
+  va_start (tail, format);
+  res = t_box_vsprintf_uname (buflen_eval, format, tail);
   va_end (tail);
   return res;
 }
@@ -1555,7 +1651,7 @@ mp_by_address (uint64 ptr)
 	  int64 start = (int64) rc->rc_items[inx2];
 	  if (ptr >= start && ptr < start + mm_sizes[inx])
 	    {
-	      printf ("Address %x is %Ld bytes indes arc cached block start %p size %Ld\n", (void*)ptr, ptr - start, (void*)start, (long long)(mm_sizes[inx]));
+	      printf ("Address %p is %Ld bytes indes arc cached block start %p size %Ld\n", (void*)ptr, (long long)(ptr - start), (void*)start, (long long)(mm_sizes[inx]));
 	      return;
 	    }
 	}
@@ -1938,7 +2034,9 @@ mp_large_report ()
 	    min_age = age;
 	  age_sum += age;
 	}
-      printf ("size %d fill %d max %d  gets %d stores %d full %d empty %d ages %d/%d/%d\n", mm_sizes[inx], rc->rc_fill, rc->rc_size, rc->rc_gets, rc->rc_stores, rc->rc_n_full, rc->rc_n_empty,
+      printf ("size %lu fill %lu max %lu  gets %lu stores %lu full %lu empty %lu ages %d/%d/%d\n",
+        (unsigned long)(mm_sizes[inx]), (unsigned long)(rc->rc_fill), (unsigned long)(rc->rc_size),
+        (unsigned long)(rc->rc_gets), (unsigned long)(rc->rc_stores), (unsigned long)(rc->rc_n_full), (unsigned long)(rc->rc_n_empty),
 	      fill ? min_age : 0, fill ? age_sum / fill : 0, max_age);
       bytes += mm_sizes[inx] * rc->rc_fill;
     }
@@ -1951,7 +2049,7 @@ mp_reuse_large (mem_pool_t * mp, void * ptr)
 {
   int nth = -1;
   size_t sz = (size_t)gethash (ptr, &mp->mp_large);
-  if (!sz)
+  if (!sz || !mp_local_rc_sz)
     return 0;
   mm_next_size (sz, &nth);
   if (-1 == nth || nth >= mm_n_large_sizes)
@@ -1990,9 +2088,8 @@ mp_reserve (mem_pool_t * mp, size_t inc)
   return ret;
 }
 
-
 void
-mp_comment (mem_pool_t * mp, char * str1, char * str2)
+mp_comment (mem_pool_t * mp, const char * str1, const char * str2)
 {
 #ifndef NDEBUG
   int len1 = (str1 ? strlen (str1) : 0);

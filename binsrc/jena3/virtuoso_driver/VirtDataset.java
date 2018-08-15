@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,9 +25,7 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import javax.sql.*;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 
 import org.apache.jena.graph.*;
@@ -43,15 +41,15 @@ import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.util.Context;
 import org.apache.jena.query.ReadWrite;
 
-import virtuoso.jdbc4.VirtuosoDataSource;
 
 public class VirtDataset extends VirtGraph implements Dataset {
 
     /**
      * Default model - may be null - according to Javadoc
      */
-    Model defaultModel = null;
+    private Model defaultModel = null;
     private Context m_context = new Context();
+    private final HashSet<VirtGraph> graphs = new HashSet<>();
 
 
     public VirtDataset() {
@@ -90,6 +88,8 @@ public class VirtDataset extends VirtGraph implements Dataset {
         this.password = g.getGraphPassword();
         this.roundrobin = g.roundrobin;
         setFetchSize(g.getFetchSize());
+        setMacroLib(g.getMacroLib());
+        setRuleSet(g.getRuleSet());
         this.connection = g.getConnection();
     }
 
@@ -100,7 +100,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
     /**
      * Get the default graph as a Jena Model
      */
-    public Model getDefaultModel() {
+    public synchronized Model getDefaultModel() {
+        if (defaultModel==null) {
+            VirtGraph g = new VirtGraph(null, this);
+            defaultModel = new VirtModel(g);
+            addLink(g);
+        }
         return defaultModel;
     }
 
@@ -108,22 +113,23 @@ public class VirtDataset extends VirtGraph implements Dataset {
      * Set the background graph.  Can be set to null for none.
      */
     public void setDefaultModel(Model model) {
-        if (!(model instanceof VirtDataset))
-            throw new IllegalArgumentException("VirtDataSource supports only VirtModel as default model");
-        defaultModel = model;
+        if (model instanceof VirtModel && ((VirtGraph)model.getGraph()).getConnection()==this.connection ){
+            VirtGraph g = (VirtGraph)model.getGraph();
+            defaultModel = model;
+            removeLink(g);
+        } else
+            throw new IllegalArgumentException("VirtDataset supports only VirtModel with the same DB connection");
     }
 
     /**
      * Get a graph by name as a Jena Model
      */
-    public Model getNamedModel(String name) {
+    public synchronized Model getNamedModel(String name) {
         try {
-            DataSource _ds = getDataSource();
-            if (_ds != null)
-                return new VirtModel(new VirtGraph(name, _ds));
-            else
-                return new VirtModel(new VirtGraph(name, this.getGraphUrl(),
-                        this.getGraphUser(), this.getGraphPassword()));
+            VirtGraph g = new VirtGraph(name, this);
+            VirtModel m = new VirtModel(g);
+            addLink(g);
+            return m;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -139,7 +145,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
         checkOpen();
         try {
-            java.sql.PreparedStatement ps = prepareStatement(query);
+            java.sql.PreparedStatement ps = prepareStatement(query, false);
             ps.setString(1, name);
             rs = ps.executeQuery();
             if (rs.next())
@@ -163,7 +169,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
         checkOpen();
         if (checkExists) {
             try {
-                java.sql.PreparedStatement ps = prepareStatement(query);
+                java.sql.PreparedStatement ps = prepareStatement(query, false);
                 ps.setString(1, name);
                 rs = ps.executeQuery();
                 if (rs.next())
@@ -197,7 +203,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
         checkOpen();
         try {
-            java.sql.Statement stmt = createStatement();
+            java.sql.Statement stmt = createStatement(true);
             stmt.executeQuery(exec_text);
             stmt.close();
         } catch (Exception e) {
@@ -229,7 +235,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
         try {
             List<String> names = new LinkedList<String>();
 
-            java.sql.Statement stmt = createStatement();
+            java.sql.Statement stmt = createStatement(false);
             rs = stmt.executeQuery(exec_text);
             while (rs.next())
                 names.add(rs.getString(1));
@@ -240,7 +246,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
         }
     }
 
-    Lock lock = null;
+    private Lock lock = null;
 
     /**
      * Get the lock for this dataset
@@ -265,12 +271,18 @@ public class VirtDataset extends VirtGraph implements Dataset {
         return handler.transactionsXASupported();
     }
 
+    public boolean supportsTransactionAbort() {
+        TransactionHandler handler = getTransactionHandler();
+        return handler.transactionsSupported();
+    }
+
+
     /**
      * Start either a READ or WRITE transaction
      */
     public void begin(ReadWrite readWrite) {
-        TransactionHandler handler = getTransactionHandler();
-        handler.begin();
+        VirtTransactionHandler handler = getTransactionHandler();
+        handler.begin(readWrite);
     }
 
 
@@ -302,6 +314,16 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
     }
 
+    public void setIsolationLevel(VirtIsolationLevel level){
+        VirtTransactionHandler handler = getTransactionHandler();
+        handler.setIsolationLevel(level);
+    }
+
+    public VirtIsolationLevel getIsolationLevel(){
+        VirtTransactionHandler handler = getTransactionHandler();
+        return handler.getIsolationLevel();
+    }
+
     /**
      * Finish the transaction - if a write transaction and commit() has not been called, then abort
      */
@@ -314,6 +336,35 @@ public class VirtDataset extends VirtGraph implements Dataset {
  getConnection().setAutoCommit(true);
  } catch (Exception e) {}
  **/
+    }
+
+    public synchronized void close() {
+        synchronized (graphs){
+            HashSet<VirtGraph> copy = (HashSet<VirtGraph>) graphs.clone();
+            for (VirtGraph g : copy)
+                try {
+                    g.close();
+                } catch (Exception e) {
+                }
+            graphs.clear();
+            copy.clear();
+        }
+        super.close();
+    }
+
+    protected void addLink(VirtGraph obj)
+    {
+        synchronized (graphs) {
+            graphs.add(obj);
+        }
+    }
+
+
+    protected void removeLink(VirtGraph obj)
+    {
+        synchronized (graphs) {
+            graphs.remove(obj);
+        }
     }
 
     /**
@@ -358,7 +409,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             try {
                 List<Node> names = new LinkedList<Node>();
 
-                java.sql.Statement stmt = vd.createStatement();
+                java.sql.Statement stmt = vd.createStatement(false);
                 rs = stmt.executeQuery(exec_text);
                 while (rs.next())
                     names.add(NodeFactory.createURI(rs.getString(1))); //NodeFactory.createURI()
@@ -473,7 +524,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 vd.checkOpen();
                 try {
 
-                    stmt = vd.createStatement();
+                    stmt = vd.createStatement(false);
                     rs = stmt.executeQuery(exec_text);
                     while (rs.next())
                         vd.delete_match(rs.getString(1), t);
@@ -503,7 +554,6 @@ public class VirtDataset extends VirtGraph implements Dataset {
         /**
          * Find matching quads in the dataset - may include wildcards, Node.ANY or null
          *
-         * @see Graph#find(TripleMatch)
          */
         public Iterator<Quad> find(Quad quad) {
             return find(quad.getGraph(), quad.getSubject(), quad.getPredicate(), quad.getObject());
@@ -571,6 +621,57 @@ public class VirtDataset extends VirtGraph implements Dataset {
         protected boolean isWildcard(Node g) {
             return g == null || Node.ANY.equals(g);
         }
+
+
+        /**
+         * A {@code DatasetGraph} supports tranactions if it provides {@link #begin}/
+         * {@link #commit}/{@link #end}. There core storage {@code DatasetGraph} that
+         * provide fully serialized transactions.  {@code DatasetGraph} that provide
+         * functionality acorss independent systems can not provide such strong guarantees.
+         * For example, they may use MRSW locking and some isolation control.
+         * Specifically, they do not necessarily provide {@link #abort}.
+         * <p>
+         * See {@link #supportsTransactionAbort()} for {@link #abort}.
+         * In addition, check details of a specific implementation.
+         */
+        public boolean supportsTransactions() {
+            return vd.supportsTransactions();
+        }
+
+        /** Declare whether {@link #abort} is supported.
+         *  This goes along with clearing up after exceptions inside application transaction code.
+         */
+        public boolean supportsTransactionAbort() {
+            return vd.supportsTransactionAbort();
+        }
+
+
+        /** Say whether inside a transaction. */ 
+        public boolean isInTransaction() {
+            return vd.isInTransaction();
+        }
+
+        /** Start either a READ or WRITE transaction */ 
+        public void begin(ReadWrite readWrite) {
+            vd.begin(readWrite);
+        }
+    
+        /** Commit a transaction - finish the transaction and make any changes permanent (if a "write" transaction) */  
+        public void commit() {
+            vd.commit();
+        }
+    
+        /** Abort a transaction - finish the transaction and undo any changes (if a "write" transaction) */  
+        public void abort() {
+            vd.abort();
+        }
+
+        /** Finish the transaction - if a write transaction and commit() has not been called, then abort */  
+        public void end() {
+            vd.end();
+        }
+
+
 
     }
 

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,9 +19,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="robot_sites_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="robot_export"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -49,13 +52,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                         <td class="page_tab" align="center" nowrap="1">
                           <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
@@ -70,12 +66,7 @@
 			  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
+                        &nbsp;
                         </td>
                     </tr>
                   </table>
@@ -92,26 +83,9 @@
 	                }
 		      </v:on-post>
 	<table class="ctl_grp" border="0" cellpadding="0">
-	  <tr><td>Selected Site</td><td><b><?V self.site_name  ?></b></td></tr>
-	  <!--tr><td colspan="2">Select Method</td></tr>
-	  <tr>
-	    <td>
-	    </td>
-	    <td>
-	      <table size="100%">
 		<tr>
-		  <td>
-		    <v:radio-button xhtml_id="emethod1" name="emethod1" value="fs" group-name="emethod" initial-checked="1"/>
-		  </td>
-		  <td><label for="emethod1">File System</label></td>
+                              <td>Selected Site</td><td><b><?V self.site_name  ?></b></td>
 		</tr>
-		<tr>
-		  <td>
-		    <v:radio-button xhtml_id="emethod2" name="emethod2" value="dav" group-name="emethod"/>
-		  </td>
-		  <td><label for="emethod2">WebDAV</label></td>
-		</tr>
-	      </table></td></tr-->
       <tr>
 	<td colspan="2" align="left">
 	  <v:check-box xhtml_id="t_src" name="src_type" value="1" auto-submit="1">
@@ -127,11 +101,7 @@
 		<td>
 		  <v:text value="" name="dst" xhtml_size="60%"/>
 		              <?vsp
-			        if (self.is_dav_src)
-				  {
-				    ;
-				  }
-				else
+                                  if (not self.is_dav_src)
 				  {
 		              ?>
                               <vm:file_browser ses_type="yacutia"
@@ -162,8 +132,10 @@
                       </v:on-post>
                     </v:button>
 		    <v:button action="simple" value="Export" name="exportb">
-		      <v:on-post><![CDATA[
+                                  <v:on-post>
+                                    <![CDATA[
     declare _host, _root, _url, _dst, _rc, _method any;
+
     _rc := 0;
     _host := self.host;
     _root := self.root;
@@ -183,14 +155,14 @@
 
 	if (_method = 'fs')
 	  {
-	    DECLARE EXIT HANDLER FOR sqlexception { _rc := __SQL_MESSAGE; };
+                                          declare exit handler for sqlexception { _rc := __SQL_MESSAGE; };
 	    {
 	      _rc := WS.WS.LFS_EXP (_host, _url, _root, _dst);
 	    }
 	  }
        else if (_method = 'dav')
 	  {
-	    DECLARE EXIT HANDLER FOR sqlexception { _rc := __SQL_MESSAGE; };
+                                          declare exit handler for sqlexception { _rc := __SQL_MESSAGE; };
 	    _rc := WS.WS.DAV_EXP (_host, _url, _root, _dst);
 	  }
 	if (_rc <> 0)
@@ -227,7 +199,8 @@
 	    self.vc_error_message := 'Destination path/URL must be supplied.';
 	    self.vc_is_valid := 0;
       }
-      ]]></v:on-post>
+                                    ]]>
+                                  </v:on-post>
 		    </v:button>
 		    </td>
 		  </tr>

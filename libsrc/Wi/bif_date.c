@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,7 +47,7 @@
 
 
 caddr_t
-bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func)
+bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
   caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
@@ -59,7 +59,7 @@ bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func)
 }
 
 caddr_t
-bif_date_arg_rb_type (caddr_t * qst, state_slot_t ** args, int nth, char *func, int *rb_type_ret)
+bif_date_arg_rb_type (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *rb_type_ret)
 {
   rdf_box_t *src_rdf_box;
   caddr_t arg = bif_arg_unrdf_ext (qst, args, nth, func, (caddr_t *)(&src_rdf_box));
@@ -629,7 +629,7 @@ bif_merge_nasa_tjd_to_datetime (caddr_t * qst, caddr_t * err_ret, state_slot_t *
       double frac = bif_double_arg (qst, args, 1, "merge_nasa_tjd_to_datetime");
       boxint frac_microsec = frac * (60*60*24*1000000.0);
       if ((0 > frac_microsec) || (60*60*24*(boxint)(1000000) <= frac_microsec))
-        sqlr_new_error ("22023", "SR644", "Fraction of julian day should be nonnegative and less than 1");
+        sqlr_new_error ("22023", "SR644", "Fraction of julian day should be non-negative and less than 1");
       DT_SET_FRACTION (res, (frac_microsec % 1000000) * 1000);
       frac_microsec = frac_microsec / 1000000;
       DT_SET_SECOND (res, (frac_microsec % 60));

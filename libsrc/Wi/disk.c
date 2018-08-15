@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -405,10 +405,10 @@ resource_t * it_rc;
 #define IT_INIT_HASH_SIZE (11 * IT_N_MAPS)
 
 index_tree_t *
-it_allocate (dbe_storage_t * dbs)
+DBG_NAME (it_allocate) (DBG_PARAMS dbe_storage_t * dbs)
 {
   int inx;
-  index_tree_t * tree = (index_tree_t *)dk_alloc_box_zero (sizeof (index_tree_t), DV_ITC);
+  index_tree_t *tree = (index_tree_t *) DBG_NAME (dk_alloc_box_zero) (DBG_ARGS sizeof (index_tree_t), DV_ITC);
   tree->it_maps = dk_alloc (sizeof (it_map_t) * IT_N_MAPS);
   memset (tree->it_maps, 0, sizeof (it_map_t) * IT_N_MAPS);
   tree->it_lock_release_mtx = mutex_allocate ();
@@ -467,7 +467,7 @@ it_temp_tree_check ()
       void * dp;
       buffer_desc_t * buf;
       int inx;
-      GPF_T ("function not complete");
+      GPF_T1 ("function not complete");
       for (inx = 0; inx < IT_N_MAPS; inx++)
 	{
 	  it_map_t * itm = &it->it_maps[inx];
@@ -536,9 +536,9 @@ dbs_sys_db_check (caddr_t file)
 long tc_it_temp_free;
 
 index_tree_t *
-it_temp_allocate (dbe_storage_t * dbs)
+DBG_NAME (it_temp_allocate) (DBG_PARAMS dbe_storage_t * dbs)
 {
-  index_tree_t * tree = (index_tree_t *) resource_get (it_rc);
+  index_tree_t *tree = (index_tree_t *) DBG_NAME (resource_get) (DBG_ARGS it_rc);
   if (!tree)
     {
       int inx;
@@ -629,8 +629,8 @@ buf_unregister_itcs (buffer_desc_t * buf)
 }
 
 
-void
-it_temp_free (index_tree_t * it)
+int
+DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
 {
   /* free a temp tree */
 
@@ -648,9 +648,9 @@ it_temp_free (index_tree_t * it)
   buffer_desc_t * buf;
   dk_hash_iterator_t hit;
   if (!it)
-    return;
+    return 0;
   if (it->it_hi && it_hi_done (it))
-    return;  /* a reusable hash temp ref dropped */
+    return 0;			/* a reusable hash temp ref dropped */
   TC (tc_it_temp_free);
   if (it->it_hi_signature)
     GPF_T1 ("freeing hash without invalidating it first");
@@ -663,7 +663,9 @@ it_temp_free (index_tree_t * it)
       if (n < 0) GPF_T1 ("neg ref count of oby temp");
       LEAVE_HIC;
       if (n)
-	return;
+	{
+	  return 0;
+	}
     }
   ITC_INIT (itc, NULL, NULL);
   itc_from_it (itc, it);
@@ -738,6 +740,7 @@ it_temp_free (index_tree_t * it)
       if (!resource_store (it_rc, (void*) it))
 	it_free (it);
     }
+  return 1;
 }
 
 
@@ -2228,6 +2231,9 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
   OFF_T rc;
   OFF_T off;
   dp_addr_t dest = (phys_dp_to ? phys_dp_to : buf->bd_physical_page);
+#ifdef VALGRIND
+  memzero (c_buf, sizeof(c_buf));
+#endif
   if (buf->bd_tree && buf->bd_tree->it_key)
     buf->bd_tree->it_key->key_write++;
 #ifdef O_DIRECT
@@ -3653,8 +3659,9 @@ dbs_open_disks (dbe_storage_t * dbs)
 }
 
 
+
 void
-wi_close()
+wi_close(void)
 {
   int inx;
 
@@ -3748,7 +3755,6 @@ dbs_sync_disks (dbe_storage_t * dbs)
   if (!dst_sync_sem)
     dst_sync_sem = semaphore_allocate (0);
 #ifdef HAVE_FSYNC
-  int inx;
 
   if (dbf_fast_cpt)
     return;
@@ -3768,6 +3774,7 @@ dbs_sync_disks (dbe_storage_t * dbs)
     default:
       if (dbs->dbs_disks)
 	{
+	  int inx;
 	  dk_set_t iqs = NULL;
 	  dk_set_t args = NULL;
 	  DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)

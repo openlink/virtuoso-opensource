@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2016 OpenLink Software
+//  Copyright (C) 1998-2018 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,13 @@ namespace OpenLink.Data.VirtuosoClient
 namespace OpenLink.Data.Virtuoso
 #endif
 {
+        public enum CommandConcurrency
+        {
+		CONCUR_DEFAULT = 1007,     //CONCUR_READ_ONLY
+		CONCUR_PESSIMISTIC = 1008, //CONCUR_LOCK
+		CONCUR_OPTIMISTIC = 1009   //CONCUR_VALUES
+        }
+
 	internal enum BoxTag
 	{
 		DV_NULL = 180,

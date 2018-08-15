@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,6 +69,8 @@ extern caddr_t uname__srcfile;
 extern caddr_t uname__srcline;
 extern caddr_t uname__txt;
 extern caddr_t uname__xslt;
+extern caddr_t uname_at_id;
+extern caddr_t uname_at_num;
 extern caddr_t uname_SPECIAL_cc_bif_c_AVG;
 extern caddr_t uname_SPECIAL_cc_bif_c_COUNT;
 extern caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
@@ -89,6 +91,8 @@ extern caddr_t uname_false;
 extern caddr_t uname_lang;
 extern caddr_t uname_nil;
 extern caddr_t uname_nodeID_ns;
+extern caddr_t uname_nodeID_ns_0;
+extern caddr_t uname_nodeID_ns_8192;
 extern caddr_t uname_rdf_ns_uri;
 extern caddr_t uname_rdf_ns_uri_Description;
 extern caddr_t uname_rdf_ns_uri_ID;
@@ -142,8 +146,13 @@ extern caddr_t uname_virtrdf_ns_uri_dialect_exceptions;
 extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 extern caddr_t uname_virtrdf_ns_uri_loadAs;
-extern caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+extern caddr_t uname_virtrdf_ns_uri_namespace_base;
+extern caddr_t uname_virtrdf_ns_uri_namespace_iri;
+extern caddr_t uname_virtrdf_ns_uri_namespace_prefix;
+extern caddr_t uname_virtrdf_ns_uri_namespace_row;
 extern caddr_t uname_virtrdf_ns_uri_rdf_repl_all;
+extern caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+extern caddr_t uname_virtrdf_ns_uri_rdf_repl_world;
 extern caddr_t uname_xhv_ns_uri;
 extern caddr_t uname_xhv_ns_uri_alternate;
 extern caddr_t uname_xhv_ns_uri_appendix;

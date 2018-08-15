@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -149,10 +149,12 @@ stat_desc_t rdf_preset_datatypes_descs [] =
 caddr_t boxed_iid_of_virtrdf_ns_uri = NULL;
 caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_all = NULL;
 caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_graph_group = NULL;
+caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_world = NULL;
 
 iri_id_t iid_of_virtrdf_ns_uri = 0;
 iri_id_t iid_of_virtrdf_ns_uri_rdf_repl_all = 0;
 iri_id_t iid_of_virtrdf_ns_uri_rdf_repl_graph_group = 0;
+iri_id_t iid_of_virtrdf_ns_uri_rdf_repl_world = 0;
 
 void
 rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
@@ -169,6 +171,7 @@ rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_all)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_graph_group)
+  RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_world)
 }
 
 iri_id_t bnode_t_treshold = ~((iri_id_t)0);
@@ -176,56 +179,31 @@ iri_id_t bnode_t_treshold = ~((iri_id_t)0);
 int
 rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname)
 {
-  if (uname_xmlschema_ns_uri_hash_byte == dt_uname)
-    return rb_type__xsd_byte;
-  if (uname_xmlschema_ns_uri_hash_decimal == dt_uname)
-    return rb_type__xsd_decimal;
-  if (uname_xmlschema_ns_uri_hash_double == dt_uname)
-    return rb_type__xsd_double;
-  if (uname_xmlschema_ns_uri_hash_float == dt_uname)
-    return rb_type__xsd_float;
-  if (uname_xmlschema_ns_uri_hash_int == dt_uname)
-    return rb_type__xsd_int;
-  if (uname_xmlschema_ns_uri_hash_integer == dt_uname)
-    return rb_type__xsd_integer;
-  if (uname_xmlschema_ns_uri_hash_long == dt_uname)
-    return rb_type__xsd_long;
-  if (uname_xmlschema_ns_uri_hash_negativeInteger == dt_uname)
-    return rb_type__xsd_negativeInteger;
-  if (uname_xmlschema_ns_uri_hash_nonNegativeInteger == dt_uname)
-    return rb_type__xsd_nonNegativeInteger;
-  if (uname_xmlschema_ns_uri_hash_nonPositiveInteger == dt_uname)
-    return rb_type__xsd_nonPositiveInteger;
-  if (uname_xmlschema_ns_uri_hash_positiveInteger == dt_uname)
-    return rb_type__xsd_positiveInteger;
-  if (uname_xmlschema_ns_uri_hash_short == dt_uname)
-    return rb_type__xsd_short;
-  if (uname_xmlschema_ns_uri_hash_unsignedByte == dt_uname)
-    return rb_type__xsd_unsignedByte;
-  if (uname_xmlschema_ns_uri_hash_unsignedInt == dt_uname)
-    return rb_type__xsd_unsignedInt;
-  if (uname_xmlschema_ns_uri_hash_unsignedLong == dt_uname)
-    return rb_type__xsd_unsignedLong;
-  if (uname_xmlschema_ns_uri_hash_unsignedShort == dt_uname)
-    return rb_type__xsd_unsignedShort;
-  if (uname_xmlschema_ns_uri_hash_boolean == dt_uname)
-    return rb_type__xsd_boolean;
-  if (uname_xmlschema_ns_uri_hash_date == dt_uname)
-    return rb_type__xsd_date;
-  if (uname_xmlschema_ns_uri_hash_duration == dt_uname)
-    return rb_type__xsd_duration;
-  if (uname_xmlschema_ns_uri_hash_gDay == dt_uname)
-    return rb_type__xsd_gDay;
-  if (uname_xmlschema_ns_uri_hash_gMonth == dt_uname)
-    return rb_type__xsd_gMonth;
-  if (uname_xmlschema_ns_uri_hash_gMonthDay == dt_uname)
-    return rb_type__xsd_gMonthDay;
-  if (uname_xmlschema_ns_uri_hash_gYear == dt_uname)
-    return rb_type__xsd_gYear;
-  if (uname_xmlschema_ns_uri_hash_gYearMonth == dt_uname)
-    return rb_type__xsd_gYearMonth;
-  if (uname_xmlschema_ns_uri_hash_yearMonthDuration == dt_uname)
-    return rb_type__xsd_yearMonthDuration;
+  if (uname_xmlschema_ns_uri_hash_byte			== dt_uname) return rb_type__xsd_byte			;
+  if (uname_xmlschema_ns_uri_hash_decimal		== dt_uname) return rb_type__xsd_decimal		;
+  if (uname_xmlschema_ns_uri_hash_double		== dt_uname) return rb_type__xsd_double			;
+  if (uname_xmlschema_ns_uri_hash_float			== dt_uname) return rb_type__xsd_float			;
+  if (uname_xmlschema_ns_uri_hash_int			== dt_uname) return rb_type__xsd_int			;
+  if (uname_xmlschema_ns_uri_hash_integer		== dt_uname) return rb_type__xsd_integer		;
+  if (uname_xmlschema_ns_uri_hash_long			== dt_uname) return rb_type__xsd_long			;
+  if (uname_xmlschema_ns_uri_hash_negativeInteger	== dt_uname) return rb_type__xsd_negativeInteger	;
+  if (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname) return rb_type__xsd_nonNegativeInteger	;
+  if (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname) return rb_type__xsd_nonPositiveInteger	;
+  if (uname_xmlschema_ns_uri_hash_positiveInteger	== dt_uname) return rb_type__xsd_positiveInteger	;
+  if (uname_xmlschema_ns_uri_hash_short			== dt_uname) return rb_type__xsd_short			;
+  if (uname_xmlschema_ns_uri_hash_unsignedByte		== dt_uname) return rb_type__xsd_unsignedByte		;
+  if (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname) return rb_type__xsd_unsignedInt		;
+  if (uname_xmlschema_ns_uri_hash_unsignedLong		== dt_uname) return rb_type__xsd_unsignedLong		;
+  if (uname_xmlschema_ns_uri_hash_unsignedShort		== dt_uname) return rb_type__xsd_unsignedShort		;
+  if (uname_xmlschema_ns_uri_hash_boolean		== dt_uname) return rb_type__xsd_boolean		;
+  if (uname_xmlschema_ns_uri_hash_date			== dt_uname) return rb_type__xsd_date			;
+  if (uname_xmlschema_ns_uri_hash_duration		== dt_uname) return rb_type__xsd_duration		;
+  if (uname_xmlschema_ns_uri_hash_gDay			== dt_uname) return rb_type__xsd_gDay			;
+  if (uname_xmlschema_ns_uri_hash_gMonth		== dt_uname) return rb_type__xsd_gMonth			;
+  if (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname) return rb_type__xsd_gMonthDay		;
+  if (uname_xmlschema_ns_uri_hash_gYear			== dt_uname) return rb_type__xsd_gYear			;
+  if (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname) return rb_type__xsd_gYearMonth		;
+  if (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) return rb_type__xsd_yearMonthDuration	;
 
   /* (uname_xmlschema_ns_uri_hash_dayTimeDuration       == dt_uname) */
   /* (uname_xmlschema_ns_uri_hash_dateTime              == dt_uname) */
@@ -556,7 +534,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           return bcopy;
         }
 /* The following three rows are intentionally duplicated from above in order to get different location of memory leaks for two cases: a string lost after being returned "as is" and string lost in rb_box field */
-      bcopy = box_copy (box); 
+      bcopy = box_copy (box);
       if (BF_IRI & box_flags(bcopy))
         box_flags(bcopy) = BF_UTF8;
     }
@@ -2264,7 +2242,13 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rb_dt_lang_check(rb);
   if (((RDF_BOX_DEFAULT_TYPE == rb->rb_type) && (RDF_BOX_DEFAULT_LANG == rb->rb_lang))
     || ((1 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 1, "__rdf_sqlval_of_obj")) )
-    return box_copy_tree (rb->rb_box);
+    {
+      caddr_t res;
+      res = box_copy_tree (rb->rb_box);
+      if (DV_STRING == DV_TYPE_OF (res))
+	box_flags (res) |= BF_UTF8;
+      return res;
+    }
   return box_copy (rb);
 }
 
@@ -2811,8 +2795,17 @@ iri_cast_and_split_ttl_qname_impl (query_instance_t *qi, caddr_t iri, caddr_t *n
             for (tail = local + local_len; tail > local; tail--)
               {
                 unsigned char c = (unsigned char) tail[-1];
-                if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80) && !(flag == SPLIT_MODE_XML && '.' == c))
+                if (!isalnum(c) && ('_' != c) && ('-' != c) && !(flag == SPLIT_MODE_XML && '.' == c))
+                  {
+                    char *prev_utf8_head;
+                    if (!(c & 0x80))
+                      break;
+                    prev_utf8_head = tail-1;
+                    while ((prev_utf8_head > local) && IS_UTF8_CHAR_CONT (prev_utf8_head[0])) prev_utf8_head--;
+                    if (!utf8_is_pn_chars_base (prev_utf8_head, tail))
                   break;
+                    tail = prev_utf8_head;
+                  }
               }
             if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > local) && (NULL == strchr ("#/:?", tail[-1]))))
               tail = local + local_len;
@@ -2962,7 +2955,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
       int ctr;
       caddr_t *tmp;
 /*INDENT-OFF*/
-      tmp = (caddr_t *)list (30*2,
+      tmp = (caddr_t *) list (31 * 2,
         "text/rdf+n3"				, "TTL"			, /*  0 */
         "text/rdf+ttl"				, "TTL"			, /*  1 */
         "text/rdf+turtle"			, "TTL"			, /*  2 */
@@ -2974,12 +2967,12 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/json"			, "JSON"		, /*  8 */
         "application/soap+xml"			, "SOAP"		, /*  9 */
         "application/soap+xml;11"		, "SOAP"		, /* 10 */
-        "application/sparql-results+xml"		, "XML"			, /* 11 */
+        "application/sparql-results+xml"	, "XML"			, /* 11 */
         "text/html"				, "HTML"		, /* 12 */
         "application/vnd.ms-excel"		, "HTML"		, /* 13 */
         "application/javascript"		, "JS"			, /* 14 */
         "application/rdf+json"			, "JSON;TALIS"		, /* 15 */
-        "application/x-rdf+json"			, "JSON;TALIS"		, /* 16 */
+        "application/x-rdf+json"		, "JSON;TALIS"		, /* 16 */
         "application/rdf+xml"			, "RDFXML"		, /* 17 */
         "application/atom+xml"			, "ATOM;XML"		, /* 18 */
         "application/odata+json"		, "JSON;ODATA"		, /* 19 */
@@ -2992,7 +2985,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/tab-separated-values"		, "TSV"			, /* 26 */
         "application/x-nice-turtle"		, "NICE_TTL"		, /* 27 */
         "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	, /* 28 */
-        "text/x-html+tr"				, "HTML;TR"		); /* 29 Increase count in this list() call when add more MIME types! */
+	"text/x-html+tr"			, "HTML;TR"		, /* 29 */
+	"application/n-triples"			, "NT"			/* 30 */
+	  );			/* Increase count in this list() call when add more MIME types! */
 /*INDENT-ON*/
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
@@ -3003,8 +2998,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
       int ctr;
       caddr_t *tmp;
 /*INDENT-OFF*/
-      tmp = (caddr_t *)list (41*2,
-        "application/x-trig"			, "TRIG"		, /*  0 */
+      tmp = (caddr_t *) list (43 * 2,
+	"application/x-trig"			, "TRIG"		, /*  0 */
         "text/rdf+n3"				, "TTL"			, /*  1 */
         "text/rdf+ttl"				, "TTL"			, /*  2 */
         "text/rdf+turtle"			, "TTL"			, /*  3 */
@@ -3014,9 +3009,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/x-turtle"			, "TTL"			, /*  7 */
         "application/json"			, "JSON"		, /*  8 */
         "application/rdf+json"			, "JSON;TALIS"		, /*  9 */
-        "application/x-rdf+json"			, "JSON;TALIS"		, /* 10 */
-        "application/soap+xml"			, "SOAP"		, /* 11 */
-        "application/soap+xml;11"		, "SOAP"		, /* 12 */
+        "application/x-rdf+json"		, "JSON;TALIS"		, /* 10 */
+        "application/soap+xml;11"		, "SOAP"		, /* 11 */
+        "application/soap+xml"			, "SOAP"		, /* 12 */
         "application/rdf+xml"			, "RDFXML"		, /* 13 */
         "text/rdf+nt"				, "NT"			, /* 14 */
         "application/xhtml+xml"			, "RDFA;XHTML"		, /* 15 */
@@ -3027,24 +3022,26 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "application/javascript"		, "JS"			, /* 20 */
         "application/atom+xml"			, "ATOM;XML"		, /* 21 */
         "application/odata+json"		, "JSON;ODATA"		, /* 22 */
-        "application/sparql-results+xml"		, "XML"			, /* 23 */
+        "application/sparql-results+xml"	, "XML"			, /* 23 */
         "text/cxml+qrcode"			, "CXML;QRCODE"		, /* 24 */
         "text/cxml"				, "CXML"		, /* 25 */
-        "text/x-html+ul"				, "HTML;UL"		, /* 26 */
-        "text/x-html+tr"				, "HTML;TR"		, /* 27 */
+        "text/x-html+ul"			, "HTML;UL"		, /* 26 */
+        "text/x-html+tr"			, "HTML;TR"		, /* 27 */
         "text/md+html"				, "HTML;MICRODATA"	, /* 28 */
         "text/microdata+html"			, "HTML;MICRODATA"	, /* 29 */
         "application/microdata+json"		, "JSON;MICRODATA"	, /* 30 */
-        "application/x-json+ld"			, "JSON;LD"		, /* 31 */
-        "application/ld+json"			, "JSON;LD"		, /* 32 */
-        "text/ntriples"				, "NT"			, /* 33 */
-        "text/csv"				, "CSV"			, /* 34 */
-        "text/tab-separated-values"		, "TSV"			, /* 35 */
-        "application/x-nice-turtle"		, "NICE_TTL"		, /* 36 */
-        "application/x-nice-microdata"		, "HTML;NICE_MICRODATA"	, /* 37 */
-        "text/x-html-script-ld+json"		, "HTML;SCRIPT_LD_JSON"	, /* 38 */
-        "text/x-html-script-turtle"		, "HTML;SCRIPT_TTL"	, /* 39 */
-        "text/x-html-nice-turtle"		, "HTML;NICE_TTL"	/* 40 Increase count in this list() call when add more MIME types! */
+        "application/x-json+ld+ctx"		, "JSON;LD_CTX"		, /* 31 */
+        "application/x-json+ld"			, "JSON;LD"		, /* 32 */
+        "application/ld+json"			, "JSON;LD"		, /* 33 */
+        "text/ntriples"				, "NT"			, /* 34 */
+        "text/csv"				, "CSV"			, /* 35 */
+        "text/tab-separated-values"		, "TSV"			, /* 36 */
+        "application/x-nice-turtle"		, "NICE_TTL"		, /* 37 */
+        "application/x-nice-microdata"		, "HTML;NICE_MICRODATA"	, /* 38 */
+        "text/x-html-script-ld+json"		, "HTML;SCRIPT_LD_JSON"	, /* 39 */
+        "text/x-html-script-turtle"		, "HTML;SCRIPT_TTL"	, /* 40 */
+	"text/x-html-nice-turtle"		, "HTML;NICE_TTL"	, /* 41 */
+	"application/n-triples"			, "NT"			  /* 42  Increase count in this list() call when add more MIME types! */
         );
 /*INDENT-ON*/
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
@@ -4084,7 +4081,7 @@ typedef struct nt_env_s {
 } nt_env_t;
 
 void
-nt_http_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri, int esc)
+http_nt_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri, int esc)
 {
   caddr_t uri = ti->uri;
   if (NULL == uri)
@@ -4114,9 +4111,29 @@ nt_http_write_ref_1 (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t
 }
 
 void
-nt_http_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
+http_nt_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti, caddr_t dflt_uri)
 {
-  nt_http_write_ref_1 (ses, env, ti, dflt_uri, 0);
+  http_nt_write_ref_1 (ses, env, ti, dflt_uri, 0);
+}
+
+void
+http_sparql_write_ref (dk_session_t *ses, nt_env_t *env, ttl_iriref_t *ti)
+{
+  caddr_t uri = ti->uri;
+  if (NULL == uri)
+    sqlr_new_error ("22023", "SR655", "SPARQL serialization of RDF data has got NULL instead of an URI");
+  if (ti->is_bnode)
+    {
+      session_buffered_write (ses, uri, strlen (uri));
+      return;
+    }
+#ifndef NDEBUG
+  if (NULL != ti->prefix)
+    GPF_T;
+#endif
+  session_buffered_write_char ('<', ses);
+  dks_esc_write (ses, uri, box_length (uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_QNAME_11);
+  session_buffered_write_char ('>', ses);
 }
 
 static void
@@ -4150,7 +4167,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         if (DV_RDF != obj_dtp)
           {
             session_buffered_write (ses, "^^", 2);
-            nt_http_write_ref (ses, env, dt_ptr, NULL);
+            http_nt_write_ref (ses, env, dt_ptr, NULL);
           }
         break;
       }
@@ -4180,7 +4197,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         ewkt_print_sf12 ((geo_t *)obj_box_value, ses);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, "^^", 2);
-        nt_http_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
+        http_nt_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
         return;
       }
     default:
@@ -4227,7 +4244,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
         {
           session_buffered_write (ses, "^^", 2);
-          nt_http_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
+          http_nt_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
         }
     }
 }
@@ -4269,12 +4286,12 @@ bif_http_nt_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
-  nt_http_write_ref (ses, env, &(tii.s), subj);
+  http_nt_write_ref (ses, env, &(tii.s), subj);
   session_buffered_write_char ('\t', ses);
-  nt_http_write_ref (ses, env, &(tii.p), pred);
+  http_nt_write_ref (ses, env, &(tii.p), pred);
   session_buffered_write_char ('\t', ses);
   if (obj_is_iri)
-    nt_http_write_ref (ses, env, &(tii.o), obj);
+    http_nt_write_ref (ses, env, &(tii.o), obj);
   else
     http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
   SES_PRINT (ses, " .\n");
@@ -4389,7 +4406,47 @@ bif_http_nt_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
   if (obj_is_iri)
-    nt_http_write_ref (ses, &env, &(tii.o), obj);
+    http_nt_write_ref (ses, &env, &(tii.o), obj);
+  else
+    http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
+fail:
+  dk_free_box (tii.o.uri);
+  dk_free_box (tii.dt.uri);
+  return (caddr_t)(ptrlong)(status);
+}
+
+caddr_t
+bif_http_sparql_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  nt_env_t env;
+  caddr_t obj = bif_arg (qst, args, 0, "http_sparql_object");
+  dk_session_t *ses = http_session_no_catch_arg (qst, args, 1, "http_sparql_object");
+  int status = 0;
+  int obj_is_iri = 0;
+  dtp_t obj_dtp = 0;
+  ttl_iriref_items_t tii;
+  memset (&tii,0, sizeof (ttl_iriref_items_t));
+  env.ne_out_ses = ses;
+  obj_dtp = DV_TYPE_OF (obj);
+  switch (obj_dtp)
+    {
+    case DV_DB_NULL: session_buffered_write (ses, "UNDEF", 5); return NULL;
+    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
+    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    default: obj_is_iri = 0; break;
+    }
+  if (obj_is_iri)
+    {
+      if (!iri_cast_nt_absname (qi, obj, &tii.o.uri, &tii.o.is_bnode))
+        goto fail; /* see below */
+    }
+  else
+    {
+      http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
+    }
+  if (obj_is_iri)
+    http_sparql_write_ref (ses, &env, &(tii.o));
   else
     http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
 fail:
@@ -4438,16 +4495,16 @@ bif_http_nquad (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
-  nt_http_write_ref (ses, env, &(tii.s), subj);
+  http_nt_write_ref (ses, env, &(tii.s), subj);
   session_buffered_write_char ('\t', ses);
-  nt_http_write_ref (ses, env, &(tii.p), pred);
+  http_nt_write_ref (ses, env, &(tii.p), pred);
   session_buffered_write_char ('\t', ses);
   if (obj_is_iri)
-    nt_http_write_ref (ses, env, &(tii.o), obj);
+    http_nt_write_ref (ses, env, &(tii.o), obj);
   else
     http_nt_write_obj (ses, env, qi, obj, obj_dtp, &tii.dt, DKS_ESC_TTL_DQ);
   session_buffered_write_char ('\t', ses);
-  nt_http_write_ref (ses, env, &(tii.g), graph);
+  http_nt_write_ref (ses, env, &(tii.g), graph);
   SES_PRINT (ses, " .\n");
 fail:
   dk_free_box (tii.s.uri);
@@ -4489,7 +4546,7 @@ bif_http_rdf_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       http_ttl_or_nt_prepare_obj (qi, obj, obj_dtp, &tii.dt);
     }
   if (obj_is_iri)
-    nt_http_write_ref (ses, &env, &(tii.o), obj);
+    http_nt_write_ref (ses, &env, &(tii.o), obj);
   else
     http_nt_write_obj (ses, &env, qi, obj, obj_dtp, &tii.dt, esc_mode);
 fail:
@@ -4768,8 +4825,50 @@ fail:
 #define ld_json_env_t talis_json_env_t
 #define iri_cast_ld_json_qname iri_cast_talis_json_qname
 
+static int
+http_ld_json_obj_can_be_simplified (query_instance_t *qi, caddr_t obj)
+{
+  caddr_t obj_box_value;
+  dtp_t obj_box_value_dtp;
+  caddr_t type_uri = NULL;
+  switch (DV_TYPE_OF (obj))
+    {
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)obj;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+        obj_box_value = rb->rb_box;
+        obj_box_value_dtp = DV_TYPE_OF (obj_box_value);
+        rb_dt_lang_check(rb);
+        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+          return 0;
+        if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
+          {
+            if (DV_STRING == obj_box_value_dtp)
+              return 1;
+            if (DV_WIDE== obj_box_value_dtp)
+              return 1;
+            return 0;
+          }
+        type_uri = rdf_type_twobyte_to_iri (rb->rb_type);
+        if ((NULL != type_uri) && !strcmp (type_uri, uname_xmlschema_ns_uri_hash_boolean) && (DV_LONG_INT == obj_box_value_dtp))
+          return 1;
+        return 0;
+      }
+    case DV_LONG_INT: case DV_DOUBLE_FLOAT: case DV_WIDE:
+      return 1;
+    case DV_STRING:
+      if (BF_IRI & box_flags (obj))
+        return 0;
+      return 1;
+    default:
+      return 0;
+    }
+}
+
 static void
-http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp)
+http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, int obj_can_be_simplified)
 {
   caddr_t obj_box_value;
   dtp_t obj_box_value_dtp;
@@ -4792,7 +4891,9 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
       switch (obj_box_value_dtp)
         {
         case DV_LONG_INT:
-        case DV_DOUBLE_PREC:
+        case DV_SINGLE_FLOAT:
+        case DV_DOUBLE_FLOAT:
+        case DV_NUMERIC:
           {
             caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
             session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
@@ -4808,6 +4909,31 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
         session_buffered_write (ses, "false", 5);
       dk_free_box (type_uri);
       return;
+    }
+  if (obj_can_be_simplified)
+    {
+      switch (obj_box_value_dtp)
+        {
+        case DV_STRING:
+          session_buffered_write_char ('\"', ses);
+          dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write_char ('\"', ses);
+          return;
+        case DV_WIDE:
+          session_buffered_write_char ('\"', ses);
+          dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write_char ('\"', ses);
+          return;
+        case DV_LONG_INT:
+        case DV_SINGLE_FLOAT:
+        case DV_DOUBLE_FLOAT:
+        case DV_NUMERIC:
+          {
+            caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
+            session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
+            return;
+          }
+        }
     }
                              /* 0          1     */
                              /* 01.2345678.90123 */
@@ -4896,28 +5022,89 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
   session_buffered_write (ses, " }", 2);
 }
 
-caddr_t
-bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+typedef struct ld_json_env2_s
 {
-  query_instance_t *qi = (query_instance_t *)qst;
-  ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple");
-  caddr_t subj_iri_or_id = bif_arg (qst, args, 1, "http_ld_json_triple");
-  caddr_t pred_iri_or_id = bif_arg (qst, args, 2, "http_ld_json_triple");
-  caddr_t obj = bif_arg (qst, args, 3, "http_ld_json_triple");
-  dk_session_t *ses = http_session_no_catch_arg (qst, args, 4, "http_ld_json_triple");
-  int status = 0;
+  query_instance_t *qi;
+  dk_session_t *ses;
+  caddr_t **batch;
+  int triple_count;
+  int single_subject_only;
+  int first_triple_idx;
+  int obj_is_single;
+  int obj_can_be_simplified;
+  id_hash_t *bnode_usage;
+  caddr_t printed_triples_mask;
+  id_hash_iterator_t *ctx_iter;
+  int ctx_flags;
+  int nesting_level;
+  const char *fname;
+}
+ld_json_env2_t;
+
+int bif_http_ld_json_triple_batch_impl (ld_json_env_t *env, ld_json_env2_t *e2);
+
+int
+bif_http_ld_json_first_subj_triple_idx (ld_json_env2_t *e2, caddr_t obj, int return_only_if_has_parent, iri_id_t *parent_iid_ret)
+{
+  caddr_t *obj_u;
+  caddr_t obj_iid;
+  caddr_t **obj_u_ptr;
+  caddr_t err = NULL;
+  if (NULL == e2->bnode_usage) return -2;
+  obj_iid = ((DV_IRI_ID == DV_TYPE_OF (obj)) ? obj : iri_to_id ((caddr_t *)(e2->qi), obj, 0, &err));
+  if (NULL != err)
+    {
+      dk_free_box (err);
+      return -3;
+    }
+  obj_u_ptr = (caddr_t **)id_hash_get (e2->bnode_usage, (caddr_t)(&obj_iid));
+  if (DV_IRI_ID != DV_TYPE_OF (obj))
+    dk_free_box (obj_iid);
+  if (NULL == obj_u_ptr)
+    return -4;
+  obj_u = obj_u_ptr[0];
+  if (NULL != parent_iid_ret)
+    {
+      if (DV_IRI_ID == DV_TYPE_OF (obj_u[0]))
+        parent_iid_ret[0] = unbox_iri_id (obj_u[0]);
+      else
+        parent_iid_ret[0] = 0;
+    }
+  if (DV_LONG_INT != DV_TYPE_OF (obj_u[1]))
+    return -5;
+  if (return_only_if_has_parent)
+    {
+      if (DV_IRI_ID != DV_TYPE_OF (obj_u[0]))
+        return -5;
+    }
+  return unbox (obj_u[1]);
+}
+
+/* obj_is_single is 0 to print one triple of sequence belonging to a same subject-predicate pair or nonzero if that's really one triple with value of that predicate for that subject. */
+ptrlong
+bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t subj_iri_or_id, caddr_t pred_iri_or_id, caddr_t p_shorthand, caddr_t obj)
+{
+#define TAB_WS_INDENT(ses,n) do { \
+  int indent_n = n; \
+  int indent_ctr; \
+  if (64 < (indent_n)) (indent_n) = 64; \
+  for (indent_ctr = 0; indent_ctr < (indent_n & ~7); indent_ctr += 8) \
+    session_buffered_write_char ('\t', (ses)); \
+  for (; indent_ctr < indent_n; indent_ctr++) \
+    session_buffered_write_char (' ', (ses)); \
+  } while (0);
   int obj_is_iri = 0;
   dtp_t obj_dtp = 0;
   caddr_t subj_iri = NULL, pred_iri = NULL, obj_iri = NULL;
-  int subj_iri_is_new = 0, pred_iri_is_new = 0, obj_iri_is_new = 0;
+  int subj_iri_is_new = 0, pred_iri_is_new = 0, obj_iri_is_new = 0, pred_is_type = 0;
   int is_bnode, obj_is_bnode;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (ld_json_env_t) != box_length ((caddr_t)env)) ||
-    ((DV_STRING == DV_TYPE_OF (env->tje_prev_subj)) && (DV_STRING != DV_TYPE_OF (env->tje_prev_pred))) )
-    sqlr_new_error ("22023", "SR607", "Argument 1 of http_ld_json_triple() should be an array of special format");
-  if (!iri_cast_ld_json_qname (qi, subj_iri_or_id, &subj_iri, &subj_iri_is_new, &is_bnode /* never used after return */))
+    ((DV_STRING == DV_TYPE_OF (env->tje_prev_subj)) && (DV_STRING != DV_TYPE_OF (env->tje_prev_pred)) && ((caddr_t)((ptrlong)1) != env->tje_prev_pred)) )
+    sqlr_new_error ("22023", "SR607", "Argument 1 of %.500s() should be an array of special format", e2->fname);
+  if (!iri_cast_ld_json_qname (e2->qi, subj_iri_or_id, &subj_iri, &subj_iri_is_new, &is_bnode /* never used after return */))
     goto fail; /* see below */
-  if (!iri_cast_ld_json_qname (qi, pred_iri_or_id, &pred_iri, &pred_iri_is_new, &is_bnode /* never used after return */))
+  if (!iri_cast_ld_json_qname (e2->qi, pred_iri_or_id, &pred_iri, &pred_iri_is_new, &is_bnode /* never used after return */))
     goto fail; /* see below */
   obj_dtp = DV_TYPE_OF (obj);
   switch (obj_dtp)
@@ -4928,72 +5115,321 @@ bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (obj_is_iri)
     {
-      if (!iri_cast_ld_json_qname (qi, obj, &obj_iri, &obj_iri_is_new, &obj_is_bnode /* used ;) */))
+      if (!iri_cast_ld_json_qname (e2->qi, obj, &obj_iri, &obj_iri_is_new, &obj_is_bnode /* used ;) */))
         goto fail; /* see below */
     }
   if ((DV_STRING != DV_TYPE_OF (env->tje_prev_subj)) && (DV_UNAME != DV_TYPE_OF (env->tje_prev_subj)))
     {
-      dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
-      dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
+      dk_free_tree (env->tje_prev_subj);	 env->tje_prev_subj = NULL;
+      dk_free_tree (env->tje_prev_pred);	 env->tje_prev_pred = NULL;
     }
   if ((NULL == env->tje_prev_subj) || strcmp (env->tje_prev_subj, subj_iri))
     {
       if (NULL != env->tje_prev_pred)
-        {                            /* 012345.678901 */
-          session_buffered_write (ses, " ] } ,\n    ", 11);
+        {
+          if ((caddr_t)((ptrlong)1) == env->tje_prev_pred)
+                                             /* 012.34 */
+              session_buffered_write (e2->ses, " },\n", 4);
+          else                              /* 01234.56 */
+            session_buffered_write (e2->ses, " ] },\n", 6);
+          TAB_WS_INDENT (e2->ses, e2->nesting_level);
           dk_free_tree (env->tje_prev_subj);	env->tje_prev_subj = NULL;
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
-                                 /* 01.2345.678.90 */
-      session_buffered_write (ses, "{ \"@id\": \"", 10);
-      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-                                 /* .01.23456789 */
-      session_buffered_write (ses, "\",\n      ", 9);
+                                     /* 01.2345.678.90 */
+      session_buffered_write (e2->ses, "{ \"@id\": \"", 10);
+      dks_esc_write (e2->ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+                                     /* .01.23 */
+      session_buffered_write (e2->ses, "\",\n", 3);
+      TAB_WS_INDENT (e2->ses, e2->nesting_level + 2);
       env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
     }
-  if ((NULL == env->tje_prev_pred) || strcmp (env->tje_prev_pred, pred_iri))
+  if (!strcmp (pred_iri, uname_rdf_ns_uri_type))
+    pred_is_type = 1;
+  else if ((pred_iri_or_id != p_shorthand) && !((DV_RDF == obj_dtp) && (RDF_BOX_DEFAULT_LANG != ((rdf_box_t *)obj)->rb_lang)))
+    e2->obj_can_be_simplified = 1;
+  if (e2->obj_is_single || (NULL == env->tje_prev_pred) || ((caddr_t)((ptrlong)1) == env->tje_prev_pred) || strcmp (env->tje_prev_pred, p_shorthand))
     {
       if (NULL != env->tje_prev_pred)
-        {                            /* 0123.45678901 */
-          session_buffered_write (ses, " ] ,\n      ", 11);
+        {
+          if ((caddr_t)((ptrlong)1) == env->tje_prev_pred)
+                                           /* 0.12 */
+            session_buffered_write (e2->ses, ",\n", 2);
+          else                             /* 012.34 */
+            session_buffered_write (e2->ses, " ],\n", 4);
+          TAB_WS_INDENT (e2->ses, e2->nesting_level + 2);
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
-      session_buffered_write_char ('\"', ses);
-      if (!strcmp (pred_iri, uname_rdf_ns_uri_type))
-        session_buffered_write (ses, "@type", 5);
+      session_buffered_write_char ('\"', e2->ses);
+      if (pred_is_type)
+        session_buffered_write (e2->ses, "@type", 5);
+      else if (pred_iri_or_id != p_shorthand)
+        dks_esc_write (e2->ses, p_shorthand, box_length (p_shorthand) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
       else
-        dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-                                 /* .0123456 */
-      session_buffered_write (ses, "\" : [ ", 6);
-      env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri); pred_iri_is_new = 0;
-    }
-  else                         /* 01.2345678901 */
-    session_buffered_write (ses, " ,\n        ", 11);
-  if (obj_is_iri)
-    {
-      if (!strcmp (pred_iri, uname_rdf_ns_uri_type)) /* Fix for 17108: values of @type should be printed without { "@id" : ... } enclosing */
+        dks_esc_write (e2->ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      if (e2->obj_is_single)
         {
-          session_buffered_write_char ('\"', ses);
-          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-          session_buffered_write_char ('\"', ses);
+                                         /* .0123 */
+          session_buffered_write (e2->ses, "\": ", 3);
+          env->tje_prev_pred = (caddr_t)((ptrlong)1);
         }
       else
-        {                            /* 01 2345 678 90*/
-          session_buffered_write (ses, "{ \"@id\": \"", 10);
-          dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-          session_buffered_write (ses, "\"}", 2);
+        {
+                                         /* .012345 */
+          session_buffered_write (e2->ses, "\": [ ", 5);
+          if (pred_iri_or_id != p_shorthand)
+            env->tje_prev_pred = box_copy (p_shorthand);
+          else
+            {
+              env->tje_prev_pred = (pred_iri_is_new ? pred_iri : box_copy (pred_iri));
+              pred_iri_is_new = 0;
+            }
+        }
+      if (pred_iri_is_new)
+        {
+          dk_free_box (pred_iri);
+          pred_iri_is_new = 0;
         }
     }
   else
-    http_ld_json_write_literal_obj (ses, qi, obj, obj_dtp);
-  status = 1;
+    {                                /* 0.12 */
+      session_buffered_write (e2->ses, ",\n", 2);
+      TAB_WS_INDENT (e2->ses, e2->nesting_level + 8);
+    }
+  if (obj_is_iri)
+    {
+      int first_subj_triple_idx = (pred_is_type ? -1 : bif_http_ld_json_first_subj_triple_idx (e2, obj, 1, NULL));
+      if (0 <= first_subj_triple_idx)
+        {
+          caddr_t saved_subj = env->tje_prev_subj;
+          caddr_t saved_pred = env->tje_prev_pred;
+          int sub_nesting;
+          ld_json_env2_t sub_e2 = e2[0];
+          QI_CHECK_STACK(e2->qi, &sub_e2, 10000);
+          sub_e2.first_triple_idx = first_subj_triple_idx;
+          sub_e2.single_subject_only = 1;
+          sub_e2.nesting_level = e2->nesting_level + ((e2->obj_is_single) ? 4 : 8);
+          env->tje_prev_subj = NULL;
+          env->tje_prev_pred = NULL;
+          session_buffered_write_char ('\n', e2->ses);
+          TAB_WS_INDENT (e2->ses, sub_e2.nesting_level);
+          sub_nesting = bif_http_ld_json_triple_batch_impl (env, &sub_e2);
+          env->tje_prev_subj = saved_subj;
+          env->tje_prev_pred = saved_pred;
+          if (sub_nesting > 1)
+            session_buffered_write (e2->ses, " ]", 2);
+          if (sub_nesting)
+            session_buffered_write (e2->ses, " }", 2);
+        }
+      else if (pred_is_type || (pred_iri_or_id != p_shorthand)) /* Fix for 17108: values of @type should be printed without { "@id" : ... } enclosing */
+        {
+          session_buffered_write_char ('\"', e2->ses);
+          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write_char ('\"', e2->ses);
+        }
+      else
+        {                                /* 01 2345 678 90*/
+          session_buffered_write (e2->ses, "{ \"@id\": \"", 10);
+          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          session_buffered_write (e2->ses, "\"}", 2);
+        }
+    }
+  else
+    http_ld_json_write_literal_obj (e2->ses, e2->qi, obj, obj_dtp, e2->obj_can_be_simplified);
 fail:
   if (subj_iri_is_new) dk_free_box (subj_iri);
   if (pred_iri_is_new) dk_free_box (pred_iri);
   if (obj_iri_is_new) dk_free_box (obj_iri);
-  return (caddr_t)((ptrlong)status);
+  return ((NULL == env->tje_prev_pred) ? ((NULL == env->tje_prev_subj) ? 0 : 1) : (((caddr_t)((ptrlong)1) == env->tje_prev_pred) ? 1 : 2));
 }
 
+caddr_t
+bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  ld_json_env2_t e2;
+  ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple");
+  caddr_t subj_iri_or_id = bif_arg (qst, args, 1, "http_ld_json_triple");
+  caddr_t pred_iri_or_id = bif_arg (qst, args, 2, "http_ld_json_triple");
+  caddr_t obj = bif_arg (qst, args, 3, "http_ld_json_triple");
+  memset (&e2, 0, sizeof (ld_json_env2_t));
+  e2.qi = (query_instance_t *)qst;
+  e2.ses = http_session_no_catch_arg (qst, args, 4, "http_ld_json_triple");
+  e2.fname = "http_ld_json_triple";
+  return box_num (bif_http_ld_json_triple_impl (env, &e2, subj_iri_or_id, pred_iri_or_id, pred_iri_or_id, obj));
+}
+
+caddr_t
+ld_json_ctx_get_shorthand (query_instance_t *qi, caddr_t pred_iri_or_id, caddr_t obj, id_hash_iterator_t *ctx_iter, int *found_ret)
+{
+  caddr_t obj_type_uname;
+  char *key_area[2 * sizeof (caddr_t) + BOX_AUTO_OVERHEAD];
+  caddr_t *key;
+  caddr_t val_ptr, *val;
+  switch (DV_TYPE_OF (obj))
+    {
+    case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC: obj_type_uname = uname_at_num; break;
+    case DV_IRI_ID: case DV_UNAME: obj_type_uname = uname_at_id; break;
+    case DV_STRING: obj_type_uname = ((BF_IRI & box_flags (obj)) ? uname_at_id : uname_xmlschema_ns_uri_hash_string); break;
+    default:
+      {
+        caddr_t obj_type_str = xsd_type_of_box (obj);
+        switch (DV_TYPE_OF (obj_type_str))
+          {
+          case DV_UNAME: obj_type_uname = obj_type_str; break;
+          case DV_STRING: obj_type_uname = box_dv_uname_string (obj_type_str); dk_free_box (obj_type_str); break;
+          default: obj_type_uname = uname_xmlschema_ns_uri_hash_string; break;
+          }
+        if ((uname_xmlschema_ns_uri_hash_integer == obj_type_uname)
+          || (uname_xmlschema_ns_uri_hash_float == obj_type_uname)
+          || (uname_xmlschema_ns_uri_hash_double == obj_type_uname)
+          || (uname_xmlschema_ns_uri_hash_decimal == obj_type_uname) )
+          obj_type_uname = uname_at_num;
+        else if (uname_xmlschema_ns_uri_hash_string == obj_type_uname)
+          obj_type_uname = uname_xmlschema_ns_uri_hash_string;
+        else if (uname_xmlschema_ns_uri_hash_boolean == obj_type_uname)
+          obj_type_uname = uname_xmlschema_ns_uri_hash_boolean;
+        break;
+      }
+    }
+  BOX_AUTO_TYPED (caddr_t *, key, key_area, 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  key[0] = pred_iri_or_id;
+  key[1] = obj_type_uname;
+  val_ptr = id_hash_get (ctx_iter->hit_hash, (caddr_t)(&key));
+  if (NULL == val_ptr)
+    {
+      found_ret[0] = 0;
+      return pred_iri_or_id;
+    }
+  found_ret[0] = 1;
+  val = ((caddr_t **)val_ptr)[0];
+  return val[0];
+}
+
+int
+bif_http_ld_json_triple_batch_impl (ld_json_env_t *env, ld_json_env2_t *e2)
+{
+  int triple_ctr, nesting;
+  char next_sp_pair_is_distinct_YN0 = 'Y';
+  int try_parent = (!e2->single_subject_only) && (NULL != e2->printed_triples_mask);
+  caddr_t prev_p_shorthand = NULL;
+  caddr_t next_p_shorthand = NULL;
+  for (triple_ctr = e2->first_triple_idx; triple_ctr < e2->triple_count; triple_ctr++)
+    {
+      caddr_t *triple = e2->batch [triple_ctr];
+      caddr_t subj_iri_or_id = triple[0], pred_iri_or_id = triple[1], obj = triple[2];
+      caddr_t p_shorthand = next_p_shorthand;
+      char prev_sp_pair_is_distinct_YN0 = next_sp_pair_is_distinct_YN0;
+      char next_s_is_distinct_YN0 = 0;
+      int found;
+again:
+      if ((NULL != e2->printed_triples_mask) && (' ' != e2->printed_triples_mask [triple_ctr]))
+        continue;
+      if (try_parent)
+        {
+          ld_json_env2_t sub_e2;
+          iri_id_t parent_iid = 0;
+          int best_triple_idx = bif_http_ld_json_first_subj_triple_idx (e2, subj_iri_or_id, 1, &parent_iid);
+          if ((0 <= best_triple_idx) && (' ' == e2->printed_triples_mask [best_triple_idx]))
+            {
+              do {
+                  caddr_t boxed_parent_iid = box_iri_id (parent_iid);
+                  iri_id_t candidate_iid = 0;
+                  int candidate_triple_idx = bif_http_ld_json_first_subj_triple_idx (e2, boxed_parent_iid, 0, &candidate_iid);
+                  dk_free_box (boxed_parent_iid);
+                  if ((0 <= candidate_triple_idx) && (' ' == e2->printed_triples_mask [candidate_triple_idx]))
+                    {
+                      best_triple_idx = candidate_triple_idx;
+                      parent_iid = candidate_iid;
+                    }
+                  else
+                    break;
+                } while (0);
+              sub_e2 = e2[0];
+              sub_e2.first_triple_idx = best_triple_idx;
+              sub_e2.single_subject_only = 1;
+              bif_http_ld_json_triple_batch_impl (env, &sub_e2);
+              try_parent = 1;
+              goto again;
+            }
+          else
+            try_parent = 0;
+        }
+      next_sp_pair_is_distinct_YN0 = 0;
+      next_p_shorthand = NULL;
+/* For purposes of this routine, any invalid iri-or-ids "differs" */
+#define FLD_DIFFERS(x,y) ((DV_TYPE_OF(x) != DV_TYPE_OF(y)) || \
+  ((DV_IRI_ID == DV_TYPE_OF(x)) ? (unbox_iri_id(x) != unbox_iri_id(y)) : \
+    ((DV_UNAME == DV_TYPE_OF(x)) ? ((x) != (y)) : \
+      ((DV_STRING == DV_TYPE_OF(x)) ? strcmp ((x), (y)) : \
+      1 ) ) ) )
+      if (NULL == p_shorthand)
+        p_shorthand = ((NULL == e2->ctx_iter) ? pred_iri_or_id : ld_json_ctx_get_shorthand (e2->qi, pred_iri_or_id, obj, e2->ctx_iter, &found));
+      if (p_shorthand != pred_iri_or_id)
+        e2->obj_can_be_simplified = 1;
+      if (!e2->obj_can_be_simplified)
+        e2->obj_can_be_simplified = http_ld_json_obj_can_be_simplified (e2->qi, obj);
+      if (0 == prev_sp_pair_is_distinct_YN0)
+        {
+          prev_sp_pair_is_distinct_YN0 = ((FLD_DIFFERS (prev_p_shorthand, p_shorthand) || FLD_DIFFERS (e2->batch[triple_ctr-1][0], subj_iri_or_id)) ? 'Y' : 'N');
+        }
+      if (('Y' == prev_sp_pair_is_distinct_YN0) || e2->single_subject_only || (!e2->single_subject_only))
+        {
+          if ((e2->triple_count-1 == triple_ctr) || ((NULL != e2->printed_triples_mask) && (' ' != e2->printed_triples_mask [triple_ctr+1])))
+            next_s_is_distinct_YN0 = next_sp_pair_is_distinct_YN0 = 'Y';
+          else
+            {
+              next_s_is_distinct_YN0 = (FLD_DIFFERS (e2->batch[triple_ctr+1][0], subj_iri_or_id) ? 'Y' : 'N');
+              next_p_shorthand = ((NULL == e2->ctx_iter) ? e2->batch[triple_ctr+1][1] : ld_json_ctx_get_shorthand (e2->qi, e2->batch[triple_ctr+1][1], e2->batch[triple_ctr+1][2], e2->ctx_iter, &found));
+              next_sp_pair_is_distinct_YN0 = (('Y' == next_s_is_distinct_YN0) || (FLD_DIFFERS (next_p_shorthand, p_shorthand)) ? 'Y' : 'N');
+            }
+        }
+      e2->obj_is_single = (('Y' == prev_sp_pair_is_distinct_YN0) && ('Y' == next_sp_pair_is_distinct_YN0));
+      if (NULL != e2->printed_triples_mask)
+        e2->printed_triples_mask [triple_ctr] = 'p';
+      nesting = bif_http_ld_json_triple_impl (env, e2,subj_iri_or_id, pred_iri_or_id, p_shorthand, obj);
+      prev_p_shorthand = p_shorthand;
+      if (e2->single_subject_only && ('Y' == next_s_is_distinct_YN0))
+        break;
+      if ('Y' == next_s_is_distinct_YN0)
+        try_parent = (!e2->single_subject_only) && (NULL != e2->printed_triples_mask);
+    }
+  return nesting;
+}
+
+caddr_t
+bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  ld_json_env2_t e2;
+  int triple_ctr;
+  ptrlong nesting = 0;
+  int n_args = BOX_ELEMENTS (args);
+  id_hash_iterator_t *bnode_usage_iter = ((5 < n_args) ? bif_dict_iterator_arg (qst, args, 5, "http_ld_json_triple_batch", 0) : NULL);
+  ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple_batch");
+  memset (&e2, 0, sizeof (ld_json_env2_t));
+  e2.qi = (query_instance_t *)qst;
+  e2.ses = http_session_no_catch_arg (qst, args, 2, "http_ld_json_triple_batch");
+  e2.batch = (caddr_t **)bif_array_of_pointer_arg (qst, args, 1, "http_ld_json_triple_batch");
+  e2.ctx_iter = ((3 < n_args) ? bif_dict_iterator_or_null_arg (qst, args, 3, "http_ld_json_triple_batch", 0) : NULL);
+  e2.ctx_flags = ((4 < n_args) ? bif_long_arg (qst, args, 4, "http_ld_json_triple_batch") : 0);
+  e2.bnode_usage = ((NULL != bnode_usage_iter) ? bnode_usage_iter->hit_hash : NULL);
+  e2.printed_triples_mask = ((6 < n_args) ? bif_string_arg (qst, args, 6, "http_ld_json_triple_batch") : NULL);
+  e2.triple_count = BOX_ELEMENTS (e2.batch);
+  e2.nesting_level = 4;
+  for (triple_ctr = 0; triple_ctr < e2.triple_count; triple_ctr++)
+    {
+      caddr_t *triple = e2.batch [triple_ctr];
+      if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (triple)) || (3 > BOX_ELEMENTS (triple)))
+        sqlr_new_error ("22023", "SR607", "Argument 2 of http_ld_json_triple_batch() should be vector of triples");
+    }
+  if ((NULL != e2.printed_triples_mask) && (e2.triple_count != box_length (e2.printed_triples_mask) - 1))
+    sqlr_new_error ("22023", "SR607", "Argument 5 of http_ld_json_triple_batch() should be a mask string with length matching to the vector of triples");
+  if ((NULL != e2.bnode_usage) && (e2.bnode_usage->ht_mutex))
+    mutex_enter (e2.bnode_usage->ht_mutex);
+  nesting = bif_http_ld_json_triple_batch_impl (env, &e2);
+  if ((NULL != e2.bnode_usage) && (e2.bnode_usage->ht_mutex))
+    mutex_leave (e2.bnode_usage->ht_mutex);
+  return box_num (nesting);
+}
 
 caddr_t
 bif_sparql_rset_ttl_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -5147,7 +5583,7 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       SES_PRINT (ses, colid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#variable> \""); dks_esc_write (ses, col_ti->colname, strlen (col_ti->colname), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ); SES_PRINT (ses, "\" .\n");
       SES_PRINT (ses, colid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#value> ");
       if (col_ti->is_iri)
-        nt_http_write_ref (ses, env, col_ti, obj);
+        http_nt_write_ref (ses, env, col_ti, obj);
       else
         http_nt_write_obj (ses, env, qi, obj, obj_dtp, col_ti, DKS_ESC_TTL_DQ);
       SES_PRINT (ses, " .\n");
@@ -5897,7 +6333,7 @@ bif_rgs_impl_graph_set_userdetails (caddr_t * qst, state_slot_t ** args, const c
       switch (DV_TYPE_OF (user_and_cbk))
         {
         case DV_LONG_INT: ud_ret->ud_orig_id = unbox((void *)user_and_cbk); break;
-        case DV_STRING: ud_ret->ud_orig_name = (void *)user_and_cbk; break;
+        case DV_STRING: ud_ret->ud_orig_name = (caddr_t)user_and_cbk; break;
         }
     }
     }
@@ -6020,6 +6456,7 @@ bif_rdf_repl_uid (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 /*! This returns nonzero if the graph in question should be replicated. The \c answer_is_one_for_all_ret is fileld with zero if this decision is "individual"
 and nonzero if the reason is as common as replication not enabled or \c REPLICATION_SUPPORT is not enabled in the build or vica versa the replication is
 enabled and enable for all by putting virtrdf:rdf_repl_all to the replication group.
+Even if all graphs are "world", virtrdf:rdf_repl_world does not affect \c answer_is_one_for_all_ret when added to the replication group.
 However care should be taken in case of positive returned result combined with nonzero answer_is_one_for_all_ret.
 This combination does not mean that all graphs can be replicated. An additional check should be made for virtrdf: that should never be replicated. */
 int
@@ -6067,7 +6504,8 @@ bif_rgs_prepare_del_or_ins (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   data_to_drop = (caddr_t **)((void *)(list (5, NULL /* place for good_repl_idxs */, all_flds[0], all_flds[1], all_flds[2], all_flds[3])));
   for (quad_ctr = 0; quad_ctr < quad_count; quad_ctr++)
     {
-      caddr_t graph = quads[quad_ctr][3];
+      int quad_has_graph = (3 < BOX_ELEMENTS (quads[quad_ctr]));
+      caddr_t graph = (quad_has_graph ? quads[quad_ctr][3] : dflt_graph_boxed_iid);
       caddr_t graph_boxed_iid = ((DV_DB_NULL == DV_TYPE_OF (graph)) ? dflt_graph_boxed_iid : bif_rgs_impl_graph_boxed_iid (qst, graph, 1));
       caddr_t err;
       iri_id_t graph_iid;
@@ -6139,7 +6577,7 @@ bif_rgs_prepare_del_or_ins (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
           quads[quad_ctr][fldctr] = NULL;
         }
       all_flds[3][quad_ctr] = (graph_boxed_iid == dflt_graph_boxed_iid) ? box_copy (graph_boxed_iid) : graph_boxed_iid;
-      if (graph_boxed_iid == graph)
+      if (quad_has_graph && (all_flds[3][quad_ctr] == quads[quad_ctr][3]))
         quads[quad_ctr][3] = NULL;
       continue;
 
@@ -6646,29 +7084,21 @@ rdf_box_init ()
   bif_define_ex ("rdf_box_needs_digest", bif_rdf_box_needs_digest, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_strcmp", bif_rdf_box_strcmp, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, BMD_RET_TYPE, &bt_integer, BMD_DONE);
-  bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE, 
-      &bt_any, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE, &bt_any, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_make_complete", bif_rdf_box_make_complete, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);
-  bif_define_ex ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, BMD_ALIAS, "__ro2sq", BMD_VECTOR_IMPL, bif_ro2sq_vec, BMD_RET_TYPE,
-      &bt_any, BMD_USES_INDEX, BMD_DONE);
-  bif_define_ex ("sparql_ebv", bif_sparql_ebv, BMD_ALIAS, "sparql_ebv_of_sqlval", BMD_ALIAS, "sparql_ebv_of_obj", BMD_ALIAS,
-      "__ro2ebv", /*BMD_VECTOR_IMPL, bif_ro2ebv_vec, */ BMD_RET_TYPE, &bt_any_box, BMD_USES_INDEX, BMD_DONE);
-  bif_define_ex ("sparql_ebv_int", bif_sparql_ebv_int, BMD_ALIAS, "sparql_ebv_int_of_sqlval", BMD_ALIAS, "sparql_ebv_int_of_obj",
-      BMD_ALIAS, "__ro2ebv_int", /*BMD_VECTOR_IMPL, bif_ro2ebv_int_vec, */ BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
-  bif_define_ex ("sparql_ebv_pure", bif_sparql_ebv_pure, /*BMD_VECTOR_IMPL, bif_ro2ebv_vec, */ BMD_RET_TYPE, &bt_any_box,
-      BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sparql_ebv_int_pure", bif_sparql_ebv_int_pure, /*BMD_VECTOR_IMPL, bif_ro2ebv_int_vec, */ BMD_RET_TYPE,
-      &bt_integer, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_varchar, BMD_USES_INDEX,
-      BMD_DONE);
+  bif_define_ex ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, BMD_ALIAS, "__ro2sq", BMD_VECTOR_IMPL, bif_ro2sq_vec, BMD_RET_TYPE, &bt_any, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("sparql_ebv", bif_sparql_ebv, BMD_ALIAS, "sparql_ebv_of_sqlval", BMD_ALIAS, "sparql_ebv_of_obj", BMD_ALIAS, "__ro2ebv", /*BMD_VECTOR_IMPL, bif_ro2ebv_vec,*/ BMD_RET_TYPE, &bt_any_box, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("sparql_ebv_int", bif_sparql_ebv_int, BMD_ALIAS, "sparql_ebv_int_of_sqlval", BMD_ALIAS, "sparql_ebv_int_of_obj", BMD_ALIAS, "__ro2ebv_int", /*BMD_VECTOR_IMPL, bif_ro2ebv_int_vec,*/ BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("sparql_ebv_pure", bif_sparql_ebv_pure, /*BMD_VECTOR_IMPL, bif_ro2ebv_vec,*/ BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sparql_ebv_int_pure", bif_sparql_ebv_int_pure, /*BMD_VECTOR_IMPL, bif_ro2ebv_int_vec,*/ BMD_RET_TYPE, &bt_integer, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_varchar, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_set_uses_index (bif_rdf_long_to_ttl);
   bif_define_ex ("__rq_iid_of_o", bif_rq_iid_of_o, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("__rdf_long_from_batch_params", bif_rdf_long_from_batch_params);
   bif_define_ex ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-  bif_define_ex ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, BMD_ALIAS, "__rdf_redu_deser_long", BMD_RET_TYPE, &bt_any,
-      BMD_DONE);
+  bif_define_ex ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, BMD_ALIAS, "__rdf_redu_deser_long", BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_sys_find_best_sparql_accept", bif_http_sys_find_best_sparql_accept);
   bif_define ("http_ttl_prefixes", bif_http_ttl_prefixes);
@@ -6687,10 +7117,14 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_talis_json_triple);
   bif_define ("http_ld_json_triple", bif_http_ld_json_triple);
   bif_set_uses_index (bif_http_ld_json_triple);
+  bif_define ("http_ld_json_triple_batch", bif_http_ld_json_triple_batch);
+  bif_set_uses_index (bif_http_ld_json_triple_batch);
   bif_define ("http_ttl_value", bif_http_ttl_value);
   bif_set_uses_index (bif_http_ttl_value);
   bif_define ("http_nt_object", bif_http_nt_object);
   bif_set_uses_index (bif_http_nt_object);
+  bif_define ("http_sparql_object", bif_http_sparql_object);
+  bif_set_uses_index (bif_http_sparql_object);
   bif_define ("http_rdf_object", bif_http_rdf_object);
   bif_set_uses_index (bif_http_rdf_object);
   bif_define_ex ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);

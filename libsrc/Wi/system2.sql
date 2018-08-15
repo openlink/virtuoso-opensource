@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1034,7 +1034,7 @@ create procedure DB.DBA.isJsonObject (
 create procedure DB.DBA.array2obj (
   in V any)
 {
-  return vector_concat (jsonObject (), V);
+  return vector_concat (DB.DBA.jsonObject (), V);
 }
 ;
 
@@ -1162,11 +1162,11 @@ create procedure DB.DBA.obj2xml (
   {
     retValue := datestring (o);
   }
-  else if (isJsonObject (o))
+  else if (DB.DBA.isJsonObject (o))
   {
     for (N := 2; N < length(o); N := N + 2)
     {
-      if (not isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      if (not DB.DBA.isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
       {
         retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
       } else {
@@ -1174,7 +1174,7 @@ create procedure DB.DBA.obj2xml (
         {
           nsArray := null;
           S := '';
-          if ((attributePrefix <> '') and isJsonObject (o[N+1]))
+          if ((attributePrefix <> '') and DB.DBA.isJsonObject (o[N+1]))
           {
             for (M := 2; M < length(o[N+1]); M := M + 2)
             {
@@ -1200,7 +1200,7 @@ create procedure DB.DBA.obj2xml (
       } else {
         nsArray := null;
         S := '';
-        if (not isnull (attributePrefix) and isJsonObject (o[N]))
+        if (not isnull (attributePrefix) and DB.DBA.isJsonObject (o[N]))
         {
           for (M := 2; M < length(o[N]); M := M + 2)
           {
@@ -1655,7 +1655,6 @@ create procedure VALIDATE.DBA.validate (
   in params any := null)
 {
   declare valueType, valueClass, valueName, valueMessage, tmp any;
-
   declare exit handler for SQLSTATE '*'
   {
     if (not is_empty_or_null(valueMessage))
@@ -1689,7 +1688,9 @@ create procedure VALIDATE.DBA.validate (
     signal ('NV099', 'Unknown validation error!<>');
   };
 
-  value := trim(value);
+  if (isstring (value))
+    value := trim (value);
+
   if (is_empty_or_null(params))
     return value;
 
@@ -1718,7 +1719,7 @@ create procedure VALIDATE.DBA.validate (
     return value;
   }
 
-  value := VALIDATE.DBA.validate_internal (valueClass, value);
+  value := VALIDATE.DBA.validate_internal (valueClass, cast (value as varchar));
   if (valueType = 'integer')
   {
     tmp := get_keyword ('minValue', params);
@@ -1759,7 +1760,8 @@ create procedure VALIDATE.DBA.validate_internal (
   in propertyType varchar,
   in propertyValue varchar)
 {
-  declare exit handler for SQLSTATE '*' {
+  declare exit handler for SQLSTATE '*'
+  {
     if (__SQL_STATE = 'CLASS')
       resignal;
 
@@ -1812,7 +1814,29 @@ create procedure VALIDATE.DBA.validate_internal (
   {
     if (isnull (regexp_match('^(0[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
       goto _error;
-    return cast (propertyValue as datetime);
+
+    return VALIDATE.DBA.dt_deformat (propertyValue, 'D.M.Y');
+  }
+  else if (propertyType = 'date-dd.MM.yyyy')
+  {
+    if (isnull (regexp_match('^(0[1-9]|[1-9]|[12][0-9]|3[01])[- /.](0[1-9]|[1-9]|1[012])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
+      goto _error;
+
+    return VALIDATE.DBA.dt_deformat (propertyValue, 'D.M.Y');
+  }
+  else if (propertyType = 'date-MM/dd/yyyy')
+  {
+    if (isnull (regexp_match('^(0[1-9]|[1-9]|1[012])[- /.](0[1-9]|[1-9]|[12][0-9]|3[01])[- /.]((?:19|20)[0-9][0-9])\$', propertyValue)))
+      goto _error;
+
+    return VALIDATE.DBA.dt_deformat (propertyValue, 'M.D.Y');
+  }
+  else if (propertyType = 'date-yyyy/MM/dd')
+  {
+    if (isnull (regexp_match('^((?:19|20)[0-9][0-9])[- /.](0[1-9]|[1-9]|1[012])[- /.](0[1-9]|[1-9]|[12][0-9]|3[01])\$', propertyValue)))
+      goto _error;
+
+    return VALIDATE.DBA.dt_deformat (propertyValue, 'Y.M.D');
   }
   else if (propertyType = 'time')
   {
@@ -1828,7 +1852,7 @@ create procedure VALIDATE.DBA.validate_internal (
   }
   else if ((propertyType = 'uri') or (propertyType = 'anyuri'))
   {
-    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+    if (isnull (regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:~]*)?\$', propertyValue)))
       goto _error;
   }
   else if (propertyType = 'email')
@@ -1838,8 +1862,13 @@ create procedure VALIDATE.DBA.validate_internal (
   }
   else if (propertyType = 'free-text')
   {
-    if (length (propertyValue))
-      vt_parse (propertyValue);
+    if (length (propertyValue) and (not VALIDATE.DBA.validate_ftexts (propertyValue)))
+      goto _error;
+  }
+  else if (propertyType = 'free-text-expression')
+  {
+    if (length (propertyValue) and (not VALIDATE.DBA.validate_ftext (propertyValue)))
+      goto _error;
   }
   else if (propertyType = 'tags')
   {
@@ -1864,6 +1893,24 @@ create procedure VALIDATE.DBA.validate_ftext (
     return 1;
 
   return 0;
+}
+;
+
+create procedure VALIDATE.DBA.validate_ftexts (
+  in S any)
+{
+  declare w varchar;
+
+  w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', S, 1);
+  while (w is not null)
+  {
+    w := trim (w, '"'' ');
+    if (not VALIDATE.DBA.validate_ftext (w))
+      return 0;
+
+    w := regexp_match ('["][^"]+["]|[''][^'']+['']|[^"'' ]+', S, 1);
+  }
+  return 1;
 }
 ;
 
@@ -1935,6 +1982,57 @@ create procedure VALIDATE.DBA.validate_tags2unique(
 }
 ;
 
+
+create procedure VALIDATE.DBA.dt_deformat (
+  in pString varchar,
+  in pFormat varchar := 'D.M.Y')
+{
+  declare y, m, d integer;
+  declare N, I integer;
+  declare ch varchar;
+
+  N := 1;
+  I := 0;
+  d := 0;
+  m := 0;
+  y := 0;
+  while (N <= length (pFormat))
+  {
+    ch := upper (substring (pFormat, N, 1));
+    if (ch = 'M')
+      m := VALIDATE.DBA.dt_deformat_tmp (pString, I);
+    else if (ch = 'D')
+      d := VALIDATE.DBA.dt_deformat_tmp (pString, I);
+    else if (ch = 'Y')
+    {
+      y := VALIDATE.DBA.dt_deformat_tmp (pString, I);
+      if (y < 50)
+        y := 2000 + y;
+      else if (y < 100)
+        y := 1900 + y;
+    }
+    N := N + 1;
+  }
+  return stringdate (concat (cast (m as varchar), '.', cast (d as varchar), '.', cast (y as varchar)));
+}
+;
+
+create procedure VALIDATE.DBA.dt_deformat_tmp (
+  in S varchar,
+  inout N integer)
+{
+  declare V any;
+
+  V := regexp_parse('[0-9]+', S, N);
+  if (length (V) > 1)
+  {
+    N := V[1];
+    return atoi (subseq (S, V[0], V[1]));
+  }
+  N := N + 1;
+  return 0;
+}
+;
 
 create procedure DPIPE_DEFINE_SRV (in n varchar, in tb varchar, in k varchar, in srv varchar, in is_upd int, in cproc varchar := null, in cbif varchar := null, in extra any := null)
 {

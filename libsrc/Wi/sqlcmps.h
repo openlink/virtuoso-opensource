@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -240,11 +240,11 @@ typedef struct sql_comp_s
     char		sc_is_first_of_qf;
     char		sc_no_distinct_colocate; /* if distinct is for except or intersect, do not put inside a qf even if colocatable */
     char		sc_in_ins_replacing;
-    char		sc_re_emit_code; /* in conditional expressions, repeating code must be generated for each branch even if overlap */
+  char sc_re_emit_code;		/*!< In conditional expressions, repeating code must be generated for each branch even if overlap */
     char		sc_is_first_cond; /* true if doing 1st condition in a conditional exp, i.e. will always execute */
     char		sc_delay_colocate; /* do not do cluster colocating qr by qr, the qrs may be modified and only then located */
-    dk_set_t		sc_re_emitted_dfes; /* dfes assigned in cond part, not defined after the cond part */
-    dk_set_t		sc_cond_defd_dfes; /* stack for saving the containing cond enps'sc_re_emitted_dfes */
+  dk_set_t sc_re_emitted_dfes;	/*!< Set of dfes assigned in conditional part (i.e., between calls of \c sqlg_cond_start() and \c sqlg_cond_end()) , not defined after the conditional part */
+  dk_set_t sc_cond_defd_dfes;	/*!< stack for saving the containing cond expns' \c sc_re_emitted_dfes */
     rdf_inf_slots_t *	sc_rdf_inf_slots;
     caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
     dk_set_t		sc_vec_pred;
@@ -547,6 +547,7 @@ void qr_set_local_code_and_funref_flag (query_t * qr);
 state_slot_t * scalar_exp_generate_typed (sql_comp_t * sc,
     ST * tree, dk_set_t * code, sql_type_t * expect);
 
+/*! Starts a fragment of temporary-only assignments. Assignments in code generated between this and the matching \c sqlg_cond_end() call are not guaranteed to be defined after the \c sqlg_cond_end() */
 void sqlg_cond_start (sql_comp_t * sc);
 void sqlg_cond_end (sql_comp_t * sc);
 

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -68,6 +68,9 @@ public class VirtuosoRepositorySchema {
 	/** <tt>http://www.openrdf.org/config/repository/virtuoso#insertBNodeAsVirtuosoIRI</tt> */
 	public final static URI INSERTBNodeAsVirtuosoIRI;
 
+	/** <tt>http://www.openrdf.org/config/repository/virtuoso#useDefGraphForQueries</tt> */
+	public final static URI USE_DEF_GRAPH_FOR_QUERIES;
+
 	static {
 		ValueFactory factory = ValueFactoryImpl.getInstance();
 		HOSTLIST   = factory.createURI(NAMESPACE, "hostList");
@@ -80,6 +83,7 @@ public class VirtuosoRepositorySchema {
 		RULESET    = factory.createURI(NAMESPACE, "ruleSet");
 		BATCHSIZE  = factory.createURI(NAMESPACE, "batchSize");
 		INSERTBNodeAsVirtuosoIRI  = factory.createURI(NAMESPACE, "insertBNodeAsVirtuosoIRI");
+		USE_DEF_GRAPH_FOR_QUERIES = factory.createURI(NAMESPACE, "useDefGraphForQueries");
 	}
 }
 

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -35,6 +35,7 @@
       <v:variable name="vhost" default="null" type="varchar" persist="temp" param-name="vhost" />
       <v:variable name="lhost" default="null" type="varchar" persist="temp" param-name="lhost" />
       <v:variable name="sponger_async_threshold" default="null" type="varchar" persist="temp" param-name="sponger_async_threshold" />
+      <v:variable name="cartridge_acl_mode" type="varchar" default="''" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="Configuration"/>
@@ -95,6 +96,18 @@
                         DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/data');
                         DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/data/entity');
                       }
+
+		      self.cartridge_acl_mode := registry_get ('__sponger_cartridge_acl_mode__');
+		      if (self.cartridge_acl_mode = 0) -- Registry entry is not set
+		      {
+			if (__proc_exists ('DB.DBA.RM_CARTRIDGE_ACL_MODE_REG_KEY_INIT') is not null)
+			{
+			  DB.DBA.RM_CARTRIDGE_ACL_MODE_REG_KEY_INIT ();
+			  self.cartridge_acl_mode := registry_get ('__sponger_cartridge_acl_mode__');
+			}
+			else
+			  self.cartridge_acl_mode := 'none';
+		      }
                     ]]>
                   </v:on-init>
                   <table class="tab_page">
@@ -105,18 +118,7 @@
                           <legend>Settings</legend>
                           <v:form name="frm1" type="simple" method="POST">
                             <label>
-                              <v:check-box name="rdf_use" value="1" xhtml_id="rdf_use">
-                                <v:before-data-bind>
-                                  <![CDATA[
-                                    control.ufl_selected := case when registry_get ('__rdf_mappers_use_VAL') = '1' then 1 else 0 end;
-                                    control.vc_data_bound := 1;
-                                  ]]>
-                                </v:before-data-bind>
-                              </v:check-box> Use VAL with Sponger Cartridges
-                            </label>
-			    <br />
-                            <label>
-			      Asynchronous mode - content length threshold (Minimum 8192 bytes): <!-- See {LDGEN|LDENR}.DBA.Extractor_isLongRunning() -->
+			      Asynchronous transformation mode - content length threshold (Minimum 8192 bytes): <!-- See {LDGEN|LDENR}.DBA.Extractor_isLongRunning() -->
 			      <v:text name="sponger_async_mode_threshold" value="--self.sponger_async_threshold"  xhtml_size="20" xhtml_id="spngr_async_thrshld">
                                 <v:before-data-bind>
                                   <![CDATA[
@@ -134,6 +136,69 @@
                                 </v:before-data-bind>
                               </v:text>
                             </label>
+			    <span style="padding-left: 10px"><a href="#" title=
+				"Content being transformed through the /ext Sponger endpoint will be transformed asynchronously if the content length exceeds this threshold."
+				><img src="images/icons/help_16.png" alt="Async transformation mode threshold - Help" border="0"/></a></span>
+			    <br/>
+                            <label>
+                              <v:check-box name="rdf_use" value="1" xhtml_id="rdf_use">
+                                <v:before-data-bind>
+                                  <![CDATA[
+                                    control.ufl_selected := case when registry_get ('__rdf_mappers_use_VAL') = '1' then 1 else 0 end;
+                                    control.vc_data_bound := 1;
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:check-box> Sponger OAuth Binding - Use VAL OAuth
+                            </label>
+			    <span style="padding-left: 10px"><a href="#" title=
+				"Check to use VAL&apos;s OAuth support for OAuth-using cartridges (recommended) or leave unchecked to use the pre-VAL OAuth support."
+				><img src="images/icons/help_16.png" alt="Sponger OAuth Binding - Help" border="0"/></a></span>
+			    <br />
+			    <div>
+			      <label>
+			      Cartridge ACL mode: 
+			      </label>
+
+			      <v:radio-button name="rb_cartridge_acl_mode_abac" value="abac" group-name="choice_cartridge_acl_mode" 
+				xhtml_id="choice_cartridge_acl_mode_abac"
+				xhtml_disabled="--case when 0 = 0 then 'disabled' else '@@hidden@@' end"
+			      >
+				<v:before-data-bind>
+				  <![CDATA[
+				  control.ufl_selected := case when (self.cartridge_acl_mode = 'abac') then 1 else 0 end;
+				  control.vc_data_bound := 1;
+				  ]]>
+				</v:before-data-bind>
+			      </v:radio-button>
+			      <label for="choice_cartridge_acl_mode_abac">ABAC</label>
+
+			      <v:radio-button name="rb_cartridge_acl_mode_rbac" value="rbac" group-name="choice_cartridge_acl_mode" 
+				xhtml_id="choice_cartridge_acl_mode_rbac"
+			      >
+				<v:before-data-bind>
+				  <![CDATA[
+				  control.ufl_selected := case when (self.cartridge_acl_mode = 'rbac') then 1 else 0 end;
+				  control.vc_data_bound := 1;
+				  ]]>
+				</v:before-data-bind>
+			      </v:radio-button>
+			      <label for="choice_cartridge_acl_mode_rbac">RBAC</label>
+
+			      <v:radio-button name="rb_cartridge_acl_mode_none" value="none" group-name="choice_cartridge_acl_mode" 
+				xhtml_id="choice_cartridge_acl_mode_none"
+			      >
+				<v:before-data-bind>
+				  <![CDATA[
+				  control.ufl_selected := case when (self.cartridge_acl_mode = 'none') then 1 else 0 end;
+				  control.vc_data_bound := 1;
+				  ]]>
+				</v:before-data-bind>
+			      </v:radio-button>
+			      <label for="choice_cartridge_acl_mode_none">None</label>
+			      <span style="padding-left: 10px"><a href="#" title=
+				"ABAC: Use VAL-based cartridge ACLs. RBAC: Use SQL-role-based cartridge ACLs. None: Disable cartridge ACLs. "
+				><img src="images/icons/help_16.png" alt="Cartridge ACL Mode - Help" border="0"/></a></span>
+			    </div>
                             <br /><br />
                             <v:button action="simple" name="save1" value="Save Settings">
                               <v:on-post>
@@ -158,6 +223,11 @@
 				    -- Remove registry setting to fallback to default of 8192 bytes
                                     registry_remove ('__ldgen_long_running_threshold');
                                   }
+
+				  declare cartridge_acl_mode varchar;
+				  cartridge_acl_mode := get_keyword ('choice_cartridge_acl_mode', control.vc_page.vc_event.ve_params);
+				  self.cartridge_acl_mode := cartridge_acl_mode;
+                                  registry_set ('__sponger_cartridge_acl_mode__', cartridge_acl_mode);
 
                                   self.vc_data_bind (self.vc_page.vc_event);
                                 ]]>

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -162,25 +162,27 @@ int err_is_anytime (caddr_t err);
 
 #define QI_CHECK_ANYTIME_RST(qi, reset_code) \
   if (RST_DEADLOCK == reset_code && (LT_PENDING == qi->qi_trx->lt_status || LT_FREEZE == qi->qi_trx->lt_status)) \
-    { reset_code = RST_ERROR; qi->qi_thread->thr_reset_code = srv_make_new_error (SQL_ANYTIME, "RC...", "Anytime in itc ctx"); }
+    { reset_code = RST_ERROR; thr_set_error_code (qi->qi_thread, srv_make_new_error (SQL_ANYTIME, "RC...", "Anytime in itc ctx")); }
 
 
 void qn_send_output (data_source_t * src, caddr_t * state);
 
-void qn_ts_send_output (data_source_t * src, caddr_t * state,
-    code_vec_t after_join_test);
+void qn_ts_send_output (data_source_t * src, caddr_t * state, code_vec_t after_join_test);
 
 void qr_resume_pending_nodes (query_t * subq, caddr_t * inst);
-caddr_t qi_handle_reset (query_instance_t * qi, int reset);
+caddr_t DBG_NAME(qi_handle_reset) (DBG_PARAMS  query_instance_t * qi, int reset, int *qi_is_killed_ret);
+#ifdef MALLOC_DEBUG
+#define qi_handle_reset(qi,reset,qi_is_killed_ret) dbg_qi_handle_reset (__FILE__, __LINE__, (qi), (reset), (qi_is_killed_ret))
+#endif
 void subq_init (query_t * subq, caddr_t * inst);
 void qn_init (table_source_t * ts, caddr_t * inst);
 
-#define QI_BUNION_RESET(qi, qr, is_subq) \
+#define QI_BUNION_RESET(qi,qr,is_subq,qi_is_killed_ret) \
   if (RST_AT_END == reset_code) \
     goto qr_complete; \
   if (qr->qr_bunion_node && RST_ERROR == reset_code) \
     { \
-      caddr_t bun_ret = qi_bunion_reset (qi, qr, is_subq); \
+      caddr_t bun_ret = qi_bunion_reset (qi, qr, is_subq, qi_is_killed_ret); \
       if (SQL_BUNION_COMPLETE == bun_ret) \
 	goto qr_complete; \
       return bun_ret; \
@@ -189,11 +191,14 @@ void qn_init (table_source_t * ts, caddr_t * inst);
 /* SQL_BUNION_COMPLETE must be different from SQL_SUCCESS, SQL_ERROR et al */
 #define SQL_BUNION_COMPLETE ((caddr_t) -11)
 
-caddr_t qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq);
-
+caddr_t qi_bunion_reset (query_instance_t * qi, query_t * qr, int is_subq, int *qi_is_killed_ret);
 
 
 EXE_EXPORT (caddr_t, qr_exec, (client_connection_t * cli, query_t * qr, query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt, local_cursor_t ** ret, caddr_t * parms, stmt_options_t * opts, int named_params));
+#ifdef MALLOC_DEBUG
+extern caddr_t DBG_NAME(qr_exec) (DBG_PARAMS  client_connection_t * cli, query_t * qr, query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt, local_cursor_t ** ret, caddr_t * parms, stmt_options_t * opts, int named_params);
+#define qr_exec(cli,qr,caller,cr_name,stmt,ret,parms,opts,named_params) dbg_qr_exec(__FILE__,__LINE__,(cli),(qr),(caller),(cr_name),(stmt),(ret),(parms),(opts),(named_params))
+#endif
 
 caddr_t qr_dml_array_exec (client_connection_t * cli, query_t * qr,
 			   query_instance_t * caller, caddr_t cr_name, srv_stmt_t * stmt,
@@ -226,8 +231,13 @@ caddr_t lc_get_col (local_cursor_t * lc, char * name);
 
 EXE_EXPORT (void, lc_free, (local_cursor_t * lc));
 EXE_EXPORT (long, lc_next, (local_cursor_t * lc));
-#define LC_FREE(lc) if (lc) \
-    		      lc_free (lc)
+#define LC_FREE(lc) do { \
+  if (lc) \
+    { \
+      lc_free ((lc)); \
+      lc = NULL; \
+    } \
+  } while (0)
 
 caddr_t qr_quick_exec (query_t * qr, client_connection_t * cli, char * id,
 		       local_cursor_t ** lc_ret, long n_pars, ...);
@@ -348,6 +358,7 @@ void ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state);
 void read_proc_and_trigger_tables (int remotes);
 void read_utd_method_tables (void);
 void ddl_read_constraints (char *spec_tb_name, caddr_t *qst);
+void ddl_redo_undefined_triggers (void);
 
 void ddl_init_schema (void);
 
@@ -385,12 +396,6 @@ extern server_lock_t server_lock;
 
 void plh_free (placeholder_t * plh);
 
-EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_code, const char *msg,...));
-#ifndef _USRDLL
-#ifdef __GNUC__
-caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...) __attribute__ ((format (printf, 3, 4)));
-#endif
-#endif
 EXE_EXPORT (void, qi_enter, (query_instance_t * qi));
 EXE_EXPORT (void, qi_leave, (query_instance_t * qi));
 
@@ -450,6 +455,11 @@ EXE_EXPORT (int, lt_leave, (lock_trx_t * lt));
 #endif
 int lt_enter_anyway (lock_trx_t * lt);
 
+#ifdef DK_ALLOC_BOX_DEBUG
+extern void dk_check_trees_of_qi (query_instance_t *qi);
+#else
+#define dk_check_trees_of_qi(qi)
+#endif
 
 void qi_free (caddr_t * inst);
 void qi_inst_state_free_rsts (caddr_t *qi);
@@ -499,17 +509,31 @@ int qi_kill (query_instance_t * qi, int is_error);
 
 void qi_detach_from_stmt (query_instance_t * qi);
 
+EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_code, const char *msg,...));
 EXE_EXPORT (void, sqlr_error, (const char * code, const char * msg, ...));
 EXE_EXPORT (void, sqlr_new_error, (const char *code, const char *virt_code, const char *msg, ...));
+
 #ifdef __GNUC__
-extern void sqlr_error (const char * code, const char * msg, ...) __attribute__ ((format (printf, 2, 3)));
-extern void sqlr_new_error (const char *code, const char *virt_code, const char *msg, ...) __attribute__ ((format (printf, 3, 4)));
+extern caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg, ...)
+    __attribute__ ((format (printf, 3, 4)));
+extern void sqlr_error (const char * code, const char * msg, ...)
+    __attribute__ ((format (printf, 2, 3))) NORETURN;
+extern void sqlr_new_error (const char *code, const char *virt_code, const char *msg, ...)
+    __attribute__ ((format (printf, 3, 4))) NORETURN;
 #endif
 
-void sqlr_warning (const char *code, const char *virt_code, const char *msg, ...);
-#ifdef __GNUC__
-void sqlr_warning (const char *code, const char *virt_code, const char *msg, ...) __attribute__ ((format (printf, 3, 4)));
+#ifdef MALLOC_DEBUG
+#ifndef sqlr_error
+extern caddr_t dbg_srv_make_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...);
+extern void dbg_sqlr_error (const char *file, int line, const char *code, const char *msg, ...) NORETURN;
+extern void dbg_sqlr_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...) NORETURN;
+#define srv_make_new_error(code,virt_code,msg,...) dbg_srv_make_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
+#define sqlr_error(code,msg,...) dbg_sqlr_error (__FILE__, __LINE__, (code), (msg), ##__VA_ARGS__)
+#define sqlr_new_error(code,virt_code,msg,...) dbg_sqlr_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
 #endif
+#endif
+
+void sqlr_trx_error (lock_trx_t * lt, int lt_status, int lt_code, const char *code, const char *virt_code, const char *string, ...);
 void sqlc_warning (const char *code, const char *virt_code, const char *msg, ...);
 #ifdef __GNUC__
 void sqlc_warning (const char *code, const char *virt_code, const char *msg, ...) __attribute__ ((format (printf, 3, 4)));
@@ -549,9 +573,13 @@ EXE_EXPORT (void, sqlr_resignal, (caddr_t err));
 #define GET_IMMEDIATE_CLIENT_OR_NULL \
 	((client_connection_t *)(IMMEDIATE_CLIENT_OR_NULL && IMMEDIATE_CLIENT ? DKS_DB_DATA (IMMEDIATE_CLIENT) : THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT)))
 
+#if 0				/* no longer in use */
 #define TA_REPORT_BUFFER	1212
 #define TA_REPORT_PTR		1213
 #define TA_REPORT_QST		1214
+#else
+#define TA_REPORT_CTX	1212
+#endif
 #define TA_SQLC_ASG_SET 1215
 #define TA_DBG_STR 1216
 #define TA_STAT_INST 1217
@@ -559,8 +587,7 @@ EXE_EXPORT (void, sqlr_resignal, (caddr_t err));
 
 void update_node_input (update_node_t * del, caddr_t * inst, caddr_t * state);
 
-void current_of_node_input (current_of_node_t * del, caddr_t * inst,
-    caddr_t * state);
+void current_of_node_input (current_of_node_t * del, caddr_t * inst, caddr_t * state);
 caddr_t upd_nth_value (update_node_t * upd, caddr_t * state, int nth);
 int upd_n_cols  (update_node_t * upd, caddr_t * state);
 oid_t upd_nth_col  (update_node_t * upd, caddr_t * state, int inx);
@@ -570,11 +597,18 @@ dk_set_t  upd_ha_pre (update_node_t * upd, query_instance_t * qi);
 void lt_hi_row_change (lock_trx_t * lt, key_id_t key, int log_op, db_buf_t log_entry);
 int  it_hi_done (index_tree_t * it);
 void cli_set_trx (client_connection_t * cli, lock_trx_t * trx);
-lock_trx_t * cli_set_new_trx (client_connection_t *cli);
-lock_trx_t * cli_set_new_trx_no_wait_cpt (client_connection_t *cli);
+lock_trx_t * DBG_NAME(cli_set_new_trx) (DBG_PARAMS  client_connection_t *cli);
+lock_trx_t * DBG_NAME(cli_set_new_trx_no_wait_cpt) (DBG_PARAMS  client_connection_t *cli);
+#ifdef MALLOC_DEBUG
+#define cli_set_new_trx(cli) dbg_cli_set_new_trx(__FILE__, __LINE__, (cli))
+#define cli_set_new_trx_no_wait_cpt(cli) dbg_cli_set_new_trx_no_wait_cpt(__FILE__, __LINE__, (cli))
+#endif
 
-
-void qr_free (query_t * qr);
+extern void DBG_NAME(qr_free) (DBG_PARAMS  query_t * qr);
+#ifdef MALLOC_DEBUG
+#define qr_free(qr) dbg_qr_free (__FILE__, __LINE__, (qr))
+#endif
+extern void qr_free_1 (query_t * qr);
 
 void upd_insert_2nd_key (dbe_key_t * key, it_cursor_t * ins_itc,
 			 row_delta_t * rd);
@@ -689,6 +723,11 @@ void ssl_alias (state_slot_t * alias, state_slot_t * real);
 void ssl_copy_types (state_slot_t * to, state_slot_t * from);
 
 EXE_EXPORT (caddr_t, qr_rec_exec, (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...));
+#ifdef MALLOC_DEBUG
+caddr_t DBG_NAME (qr_rec_exec) (DBG_PARAMS  query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...);
+#define qr_rec_exec(qr,cli,lc_ret,caller,opts,n_pars, ...) dbg_qr_rec_exec (__FILE__, __LINE__, (qr),(cli),(lc_ret),(caller),(opts),(n_pars), ##__VA_ARGS__)
+#endif
+
 
 EXE_EXPORT (caddr_t, lc_nth_col, (local_cursor_t * lc, int n));
 
@@ -773,6 +812,11 @@ EXE_EXPORT (void, local_start_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_commit_end_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_rollback_end_trx, (client_connection_t * cli));
 
+extern void DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli);
+#ifdef MALLOC_DEBUG
+#define local_start_trx(cli) dbg_local_start_trx (__FILE__, __LINE__, (cli))
+#endif
+
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
 #define CV_THIS_SET_ONLY -1
@@ -792,8 +836,8 @@ void vdb_enter_lt (lock_trx_t * lt);
 void vdb_enter_lt_1 (lock_trx_t * lt, caddr_t * err_ret, int enter_always);
 void vdb_leave_lt (lock_trx_t * lt, caddr_t *err_ret);
 
-void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
-    caddr_t * state);
+void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst, caddr_t * state);
+void rts_free (remote_table_source_t * rts);
 void rts_skip_to_set (remote_table_source_t * rts, caddr_t * inst, int set);
 int  rts_target_set (remote_table_source_t * rts, caddr_t * inst, state_slot_t * set_ssl, int set_no);
 void file_source_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
@@ -1115,9 +1159,14 @@ void srv_global_unlock (client_connection_t *cli, lock_trx_t *lt);
 
 
 /* hash.c */
-uint32 key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * collation, dtp_t col_dtp, int allow_shorten_any);
+uint32 key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int *var_len, collation_t * collation, dtp_t col_dtp, int allow_shorten_any);
 caddr_t hash_cast (query_instance_t * qi, hash_area_t * ha, int inx, state_slot_t * ssl, caddr_t data);
-hash_index_t * hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha);
+
+hash_index_t * DBG_NAME (hi_allocate) (DBG_PARAMS unsigned int32 sz, int use_memcache, hash_area_t * ha);
+#ifdef MALLOC_DEBUG
+#define hi_allocate(sz,use_memcache,ha) dbg_hi_allocate (__FILE__, __LINE__, (sz), (use_memcache), (ha))
+#endif
+
 int it_hi_done (index_tree_t * it);
 index_tree_t * qst_tree (caddr_t * inst, state_slot_t * ssl, state_slot_t * set_no_ssl);
 void qst_set_tree (caddr_t * inst, state_slot_t * ssl, state_slot_t * set_no_ssl, index_tree_t * tree);
@@ -1157,7 +1206,7 @@ const char *dv_type_title (int type);
 /* sqlbif.c */
 void connection_set (client_connection_t *cli, caddr_t name, caddr_t val);
 void sprintf_escaped_table_name (char *out, char *name);
-void sprintf_escaped_str_literal (caddr_t str, char *out, dk_session_t *ses);
+void sprintf_escaped_str_literal (const char *str, char *out, dk_session_t *ses);
 extern caddr_t get_keyword_int_zero (caddr_t * arr, char * item, const char * me, int * is_null);
 extern caddr_t get_keyword_int (caddr_t * arr, char * item, const char * me);
 extern caddr_t get_keyword_ucase_int (caddr_t * arr, const char * item, caddr_t dflt);
@@ -1207,7 +1256,8 @@ void db_replay_registry_setting (caddr_t ent, caddr_t *err_ret);
 dk_session_t * dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli);
 
 boxint safe_atoi (const char *data, caddr_t *err_ret);
-double safe_atof (const char *data, caddr_t *err_ret);
+double safe_atof (const char *data, caddr_t *err_ret, int allow_non_finite);
+double box_to_double (caddr_t data, dtp_t dtp);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
 caddr_t box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap, int ser_flags);
 caddr_t mp_box_to_any_1 (caddr_t data, caddr_t * err_ret, mem_pool_t *ap, int ser_flags);
@@ -1365,8 +1415,10 @@ void sparql_init (void);
 
 query_instance_t * qi_top_qi (query_instance_t * qi);
 void fun_ref_set_defaults_and_counts (fun_ref_node_t *fref, caddr_t * inst);
-caddr_t * qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
-		    int auto_qi_len, int n_sets);
+caddr_t * DBG_NAME (qi_alloc) (DBG_PARAMS  query_t * qr, stmt_options_t * opts, caddr_t * auto_qi, int auto_qi_len, int n_sets);
+#ifdef MALLOC_DEBUG
+#define qi_alloc(qr,opts,auto_qi,auto_qi_len,n_sets) dbg_qi_alloc(__FILE__, __LINE__, (qr),(opts),(auto_qi),(auto_qi_len),(n_sets))
+#endif
 
 data_source_t * qn_next (data_source_t * qn);
 data_source_t * qn_last (data_source_t * qn);
@@ -1420,7 +1472,7 @@ void itc_assert_no_reg (it_cursor_t * itc);
 void qn_result (data_source_t * qn, caddr_t * inst, int set_no);
 void ssl_result (state_slot_t * ssl, caddr_t * inst, int set_no);
 void itc_pop_last_out (it_cursor_t * itc, caddr_t * inst, v_out_map_t * om, buffer_desc_t * buf);
-void qi_vec_init (query_instance_t * qi, int n_sets);
+void DBG_NAME(qi_vec_init) (DBG_PARAMS  query_instance_t * qi, int n_sets);
 void itc_vec_new_results (it_cursor_t * itc);
 void ks_vec_new_results (key_source_t * ks, caddr_t * inst, it_cursor_t * itc);
 int qi_free_cb (caddr_t qi);
@@ -1449,7 +1501,11 @@ void select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * 
 void set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state);
 void ins_vec_exists (instruction_t * ins, caddr_t * inst, db_buf_t next_mask, int * n_true, int * n_false);
 void ins_vec_subq (instruction_t * ins, caddr_t * inst);
-int * qn_extend_sets (data_source_t * qn, caddr_t * inst, int n);
+int * DBG_NAME(qn_extend_sets) (DBG_PARAMS  data_source_t * qn, caddr_t * inst, int n);
+#ifdef MALLOC_DEBUG
+#define qi_vec_init(qi,n_sets) dbg_qi_vec_init (__FILE__, __LINE__, (qi), (n_sets))
+#define qn_extend_sets(qn,inst,n) dbg_qn_extend_sets (__FILE__, __LINE__, (qn), (inst), (n))
+#endif
 #define QN_CHECK_SETS(qn, inst, n) \
   if (box_length (QST_BOX (caddr_t, inst, ((data_source_t*)qn)->src_sets)) < n * sizeof (int)) \
     qn_extend_sets ((data_source_t*)qn, inst, n);
@@ -1472,7 +1528,10 @@ void itc_fetch_col (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, 
 #define FC_APPEND -1
 #define FC_APPEND_PRESENT -2
 #define FC_FROM_CEIC -3 /* the ceic contains updates to the page for itc_fetch_col.  If a col is updated in the ceic, use that instead of the value on the page. */
+
 void itc_col_search (it_cursor_t * itc, buffer_desc_t * buf);
+void dc_wide_tags (data_col_t * dc, int from);
+void dc_xml_entities (it_cursor_t * itc, dbe_col_loc_t * cl, data_col_t * dc, int from);
 void key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins);
 int ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, caddr_t value);
 int itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);
@@ -1500,6 +1559,12 @@ void sslr_n_consec_ref (caddr_t * inst, state_slot_ref_t * sslr, int * sets, int
 void dc_reset_array (caddr_t * inst, data_source_t * qn, state_slot_t ** ssls, int new_sz);
 
 void chash_init ();
+
+index_tree_t *DBG_NAME (cha_allocate) (DBG_PARAMS setp_node_t * setp, caddr_t * inst, int64 card);
+#ifdef MALLOC_DEBUG
+#define cha_allocate(setp,inst,card) dbg_cha_allocate (__FILE__, __LINE__, (setp), (inst), (card))
+#endif
+
 int setp_chash_group (setp_node_t * setp, caddr_t * inst);
 int setp_chash_distinct (setp_node_t * setp, caddr_t * inst);
 void chash_to_memcache (caddr_t * inst, index_tree_t * it, hash_area_t * ha);

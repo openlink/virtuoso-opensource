@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1467,7 +1467,11 @@ ws_url_rewrite (ws_connection_t *ws)
 	goto error_end;
     }
   if (!url_rewrite_qr)
-    url_rewrite_qr = sql_compile_static ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      url_rewrite_qr = sql_compile_static ("DB.DBA.HTTP_URLREWRITE (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto error_end;
+    }
 
   ws->ws_cli->cli_http_ses = ws->ws_strses;
   ws->ws_cli->cli_ws = ws;
@@ -1959,10 +1963,14 @@ ws_split_ac_header (const caddr_t header)
       sep = strchr (tok, ';');
       if (NULL != sep)
 	{
-	  char * eq = strchr (sep, '=');
-	  if (eq)
-	    q = atof (++eq);
+	  char * eq;
           *sep = 0;
+          sep ++;
+          while (sep && isspace (*sep))
+            sep ++;
+          eq  = strchr (sep, '=');
+	  if (eq && (0 == strnicmp (sep, "q=", 2) || 0 == strnicmp (sep, "level=", 6)))
+	    q = atof (++eq);
 	  tmp = sep > tok ? sep - 1 : NULL;
 	}
       else if (tok_s)
@@ -2076,12 +2084,12 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   DO_BOX_FAST_STEP2 (caddr_t, p, caddr_t, q, inx, asked)
     {
       float qf = unbox_float (q);
-      p = ws_get_mime_variant (p, &found);
-      if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
+      const char *mime_of_p = ws_get_mime_variant (p, &found);
+      if (DVC_MATCH == cmp_like (mime, mime_of_p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  if (qf > maxq)
 	    {
-	      match = p;
+	      match = mime;
 	      maxq = qf;
 	    }
 	}
@@ -2107,7 +2115,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 	}
       check_only = 0;
     }
-  if (NULL != found && ws->ws_header && nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:") != NULL)
+  if (NULL != match && ws->ws_header && nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:") != NULL)
     {
       caddr_t * headers = ws_header_line_to_array (ws->ws_header);
       dk_session_t * ses = strses_allocate ();
@@ -2118,7 +2126,16 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 	  SES_PRINT (ses, h);
 	}
       END_DO_BOX;
-      SES_PRINT (ses, "Content-Type: "); SES_PRINT (ses, found); SES_PRINT (ses, "\r\n");
+
+      SES_PRINT (ses, "Content-Type: ");
+      SES_PRINT (ses, match);
+      if (cenc)
+        {
+          SES_PRINT (ses, "; charset=");
+          SES_PRINT (ses, cenc);
+        }
+      SES_PRINT (ses, "\r\n");
+
       dk_free_tree (ws->ws_header);
       ws->ws_header = strses_string (ses);
       dk_free_tree (headers);
@@ -2938,7 +2955,7 @@ ws_file (ws_connection_t * ws)
   caddr_t etag_in = NULL;
   caddr_t fname = ws->ws_file;
   char *lfname = (char *) (ws->ws_path_string ? ws->ws_path_string : "/");
-  char * ctype;
+  const char * ctype;
   int fd;
   STAT_T st;
 
@@ -3221,9 +3238,15 @@ ws_post_process (ws_connection_t * ws)
   query_t *proc;
 
   if (!http_ppr_qr)
-    http_ppr_qr = sql_compile_static ("call (?) ()", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      http_ppr_qr = sql_compile_static ("call (?) ()", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto err_ret;
+    }
+
   if ((ws && !ws->ws_map) || (ws && ws->ws_map && !ws->ws_map->hm_pfn))
     return;
+
   if (ws->ws_map && IS_STRING_DTP (DV_TYPE_OF(ws->ws_map->hm_pfn)))
     p_proc = ws->ws_map->hm_pfn;
   else
@@ -3254,7 +3277,9 @@ ws_post_process (ws_connection_t * ws)
   IN_TXN;
   if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
     {
-      /*log_info ("SQL ERROR in HTTP post process : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
+#ifdef DEBUG
+      log_debug ("SQL ERROR in HTTP post process : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));
+#endif
       lt_rollback (cli->cli_trx, TRX_CONT);
     }
   else
@@ -3306,7 +3331,7 @@ ws_connection_vars_clear (client_connection_t * cli)
   while (hit_next (&it, (caddr_t *) &name, (caddr_t *) &val))
 	{
 	  dk_free_tree (*val);
-	  dk_free_box (*name);
+	  dk_free_tree (*name);
 	}
   id_hash_clear (cli->cli_globals);
   cli->cli_globals_dirty = 0;
@@ -3360,7 +3385,7 @@ ws_auth_check (ws_connection_t * ws)
 {
 #ifdef VIRTUAL_DIR
   static query_t * http_auth_qr = NULL;
-  caddr_t err = 0, auth_proc = NULL, auth_realm;
+  caddr_t err = NULL, auth_proc = NULL, auth_realm;
   local_cursor_t * lc = NULL;
   client_connection_t * cli = ws->ws_cli;
   int rc = LTE_OK, retc = 0;
@@ -3371,7 +3396,11 @@ ws_auth_check (ws_connection_t * ws)
     return 1;
 
   if (!http_auth_qr)
-    http_auth_qr = sql_compile_static ("call (?) (?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      http_auth_qr = sql_compile_static ("call (?) (?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto error_end;
+    }
 
   if ((ws && !ws->ws_map) || (ws && ws->ws_map && !ws->ws_map->hm_afn))
     return 1;
@@ -3434,15 +3463,15 @@ ws_auth_check (ws_connection_t * ws)
   LEAVE_TXN;
 
   if (rc != LTE_OK)
-    {
       MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
-    }
 
 error_end:
   cli->cli_user = saved_user;
   if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
     {
-      /*log_info ("SQL ERROR in HTTP authentication : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
+#ifdef DEBUG
+      log_debug ("SQL ERROR in HTTP authentication : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));
+#endif
       ws_proc_error (ws, err);
       retc = 0;
     }
@@ -3558,7 +3587,11 @@ ws_check_rdf_accept (ws_connection_t *ws)
 	goto error_end;
     }
   if (!qr)
-    qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+    {
+      qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto error_end;
+    }
 
   IN_TXN;
   lt_wait_checkpoint ();
@@ -3696,6 +3729,8 @@ request_do_again:
   if (!http_call)
     {
       http_call = sql_compile_static ("call (?) (?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto rec_err_end;
     }
   strses_flush (ws->ws_strses);
   IN_TXN;
@@ -4127,7 +4162,9 @@ error_in_procedure:
   IN_TXN;
   if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
   {
-    /*log_info ("SQL ERROR in HTTP : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
+#ifdef DEBUG
+    log_debug ("SQL ERROR in HTTP : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));
+#endif
     lt_rollback (cli->cli_trx, TRX_CONT);
   }
   else
@@ -4216,6 +4253,8 @@ do_file:
 	      else
 		ws->ws_params = (caddr_t *) dk_alloc_box (0, DV_ARRAY_OF_POINTER);
 	      strses_flush (ws->ws_strses);
+	      if (err)
+		dk_free_tree (err);
 	      goto request_do_again;
 	    }
 	}
@@ -5131,7 +5170,7 @@ bif_http_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* IO_SECT (qst); */
   if (DV_DB_NULL == dtp)
     return NULL;
-  if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING || dtp == DV_BIN)
+  if (dtp == DV_STRING || dtp == DV_UNAME || dtp == DV_C_STRING || dtp == DV_BIN)
     session_buffered_write (out, string, box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
   else if (dtp == DV_BLOB_HANDLE)
     {
@@ -5540,12 +5579,11 @@ again:
 caddr_t
 bif_http_lock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t pass = bif_string_arg (qst, args, 0, "http_lock");
+  caddr_t pass = BOX_ELEMENTS (args) > 0 ? bif_string_arg (qst, args, 0, "http_lock") : "";
   user_t * user = sec_name_to_user ("dba");
 
-  if (strcmp (pass, user->usr_pass))
+  if (strcmp (pass, user->usr_pass) && !sec_bif_caller_is_dba ((query_instance_t *) qst))
     sqlr_new_error ("22023", "HT042", "Invalid DBA credentials");
-  sec_check_dba ((query_instance_t *) qst, "http_lock");
 
   if (!www_maintenance_page)
     sqlr_new_error ("22023", "HTERR", "The maintenance page is not specified, must have MaintenancePage setting in the HTTPServer section of the INI");
@@ -5563,12 +5601,12 @@ bif_http_lock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_unlock (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t pass = bif_string_arg (qst, args, 0, "http_lock");
+  caddr_t pass = BOX_ELEMENTS (args) > 0 ? bif_string_arg (qst, args, 0, "http_unlock") : "";
   user_t * user = sec_name_to_user ("dba");
 
-  if (strcmp (pass, user->usr_pass))
+  if (strcmp (pass, user->usr_pass) && !sec_bif_caller_is_dba ((query_instance_t *) qst))
     sqlr_new_error ("22023", "HT042", "Invalid DBA credentials");
-  sec_check_dba ((query_instance_t *) qst, "http_unlock");
+
   if (MAINTENANCE)
     www_maintenance = 0;
   else
@@ -5904,6 +5942,8 @@ remove_old_cached_sessions (void)
   http_trace (("-------- END HTTP PROXY CACHE -------\n"));
 }
 
+int http_connect_timeout = 10;
+
 dk_session_t *
 http_dks_connect (char * host2, caddr_t * err_ret)
 {
@@ -5930,6 +5970,9 @@ http_dks_connect (char * host2, caddr_t * err_ret)
       *err_ret = srv_make_new_error ("2E000", "HT015", "Cannot resolve host %s in http_get", host);
       return NULL;
     }
+
+  ses->dks_connect_timeout.to_sec = http_connect_timeout;
+
   rc = session_connect (ses->dks_session);
 
   if (!_thread_sched_preempt)
@@ -5937,6 +5980,7 @@ http_dks_connect (char * host2, caddr_t * err_ret)
       timeout = dks_fibers_blocking_read_default_to;
       ses->dks_read_block_timeout = timeout;
     }
+
 
   if (SER_SUCC != rc)
     {
@@ -9771,8 +9815,10 @@ bif_http_body_read (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     sqlr_new_error ("42000", "HT053", "Function http_body_read() not allowed outside http context");
   if ((0 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 0, "http_body_read"))
     {
-      ses = strses_allocate ();
+      ses = NULL; /* not ses = strses_allocate (); because ws_http_body_read() allocates the resulting session itself */
       ws_http_body_read (ws, &ses);
+      if (NULL == ses)
+        ses = strses_allocate ();
     }
   else if (ws->ws_req_body)
     {
@@ -9818,6 +9864,7 @@ static caddr_t
 bif_is_https_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
+  caddr_t xproto = NULL;
   int is_https = 0;
   ws_connection_t *ws = qi->qi_client->cli_ws;
 #ifdef _SSL
@@ -9830,6 +9877,12 @@ bif_is_https_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
   is_https = (NULL != ssl);
 #endif
+
+  if (ws && ws->ws_lines  && NULL != (xproto = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Proto", NULL, 1)))
+    if (!strcmp(xproto, "https"))
+       is_https = 1;
+  if (xproto) dk_free_box (xproto);
+
   return box_num(is_https ? 1 : 0);
 }
 
@@ -10195,11 +10248,6 @@ bif_http_acl_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return http_acl (qst, err_ret, args, ACL_DEL, "http_acl_remove");
 }
-
-/* sqlprt.c */
-void trset_start (caddr_t *qst);
-void trset_printf (const char *str, ...);
-void trset_end (void);
 
 static void
 http_acl_stats ()

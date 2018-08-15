@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -738,10 +738,20 @@ CreateApplicationConsole (void)
       fclose (stdin);
       fclose (stdout);
 
-      stdout->_file = stderr->_file = _open_osfhandle (
-	  (intptr_t) GetStdHandle (STD_ERROR_HANDLE), _O_TEXT);
-      stdin->_file = _open_osfhandle (
-	  (intptr_t) GetStdHandle (STD_INPUT_HANDLE), _O_TEXT);
+      //Redirect unbuffered STDOUT to the console
+      int SystemOutput = _open_osfhandle((intptr_t)GetStdHandle(STD_ERROR_HANDLE), _O_TEXT);
+      FILE *COutputHandle = _fdopen(SystemOutput, "w");
+      *stdout = *COutputHandle;
+      setvbuf(stdout, NULL, _IONBF, 0);
+   
+      FILE *CErrorHandle = _fdopen(SystemOutput, "w");
+      *stderr = *CErrorHandle;
+      setvbuf(stderr, NULL, _IONBF, 0);
+
+      int SystemInput = _open_osfhandle((intptr_t)GetStdHandle(STD_INPUT_HANDLE), _O_TEXT);
+      FILE *CInputHandle = _fdopen(SystemInput, "r");
+      *stdin = *CInputHandle;
+      setvbuf(stdin, NULL, _IONBF, 0);
     }
 
   return NO_ERROR;
@@ -1243,20 +1253,29 @@ usage (void)
   char version[400];
   char line[200];
   char *p;
+  extern char *git_head;
 #if LICENSE
   int lic;
 #endif
 
   sprintf (line, "%s %s\n", PACKAGE_NAME,
-	build_thread_model[0] == '-' && build_thread_model[1] == 'f' ?
-	PACKAGE_FIBER : PACKAGE_THREAD);
+      build_thread_model[0] == '-' && build_thread_model[1] == 'f' ? PACKAGE_FIBER : PACKAGE_THREAD);
   p = stpcpy (version, line);
 
-  sprintf (line, "Version %s.%s%s%s as of %s\n",
+  sprintf (line, "Version %s.%s%s%s as of %s",
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
 
-  sprintf (line, "Compiled for %s (%s)\n", build_opsys_id, build_host_id);
+  /*
+   *  Add git SHA1 of HEAD for easier identification of code base
+   */
+  if (git_head[0])
+    {
+      sprintf (line, " (%s)", git_head);
+      p = stpcpy (p, line);
+    }
+
+  sprintf (line, "\nCompiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);
 
   if (build_special_server_model && strlen(build_special_server_model) > 1)

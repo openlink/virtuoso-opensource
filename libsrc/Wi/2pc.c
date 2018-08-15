@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,7 @@
 #include "2pc_client.h"
 
 #include "msdtc.h"
+#include "sqlfn.h"
 
 /* initial count number for dtransact,
 	 to be erased at checkpoint */
@@ -855,6 +856,7 @@ exec_trx_sql_1 (client_connection_t * cli, char *pl_call_text, int params,
     {
       if (err_ret)
 	*err_ret = err;
+      LC_FREE (lc);
       goto failed;
     }
   if (lc)

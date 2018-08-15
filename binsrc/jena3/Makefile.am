@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2015 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -45,6 +45,7 @@ JENA_SRC= \
 	virtuoso_driver/VirtGraph.java \
 	virtuoso_driver/VirtInfGraph.java \
 	virtuoso_driver/VirtModel.java \
+	virtuoso_driver/VirtIsolationLevel.java \
 	virtuoso_driver/VirtPrefixMapping.java \
 	virtuoso_driver/VirtResSetIter.java \
 	virtuoso_driver/VirtResSetIter2.java \
@@ -60,7 +61,7 @@ TESTSUITE_SRC= \
 	testsuite/VirtuosoTestGraph.java
 
 
-JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/jena-arq-3.0.0.jar:lib/jena-iri-3.0.0.jar:lib/jena-core-3.0.0.jar:lib/jena-base-3.0.0.jar:lib/jena-core-3.0.0-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar:lib/jcl-over-slf4j-1.7.12.jar:lib/log4j-1.2.17.jar:lib/slf4j-api-1.7.12.jar:lib/slf4j-log4j12-1.7.12.jar:lib/xercesImpl-2.11.0.jar:lib/xml-apis-1.4.01.jar:lib/jena-shaded-guava-3.0.0.jar:lib/commons-lang3-3.3.2.jar
+JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/jena-arq-3.1.1.jar:lib/jena-iri-3.1.1.jar:lib/jena-core-3.1.1.jar:lib/jena-base-3.1.1.jar:lib/jena-core-3.1.1-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar:lib/jcl-over-slf4j-1.7.21.jar:lib/log4j-1.2.17.jar:lib/slf4j-api-1.7.21.jar:lib/slf4j-log4j12-1.7.21.jar:lib/xercesImpl-2.11.0.jar:lib/xml-apis-1.4.01.jar:lib/jena-shaded-guava-3.1.1.jar:lib/commons-lang3-3.4.jar
 
 
 

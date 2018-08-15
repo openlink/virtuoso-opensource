@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -283,7 +283,7 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		      goto error_end;
 		    }
 		}
-	      session_flush_1 (msg);
+	    strses_flush (msg);
 	      if (tcpses_check_disk_error (msg, NULL, 0))
 		{
 		  strcpy_ck (err_text, "Server error in accessing temp file");
@@ -297,7 +297,12 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		  msg = strses_allocate ();
 		}
 	      else
-		dk_set_push (ret_v, list (2, my_list[inx - 1], strses_string (msg)));
+	      {
+		caddr_t val = strses_string (msg);
+		caddr_t lst = list (2, my_list[inx - 1], val);
+		strses_flush (msg);
+		dk_set_push (ret_v, lst);
+	      }
 	      my_list[inx - 1] = NULL;
 	    }
 	  FAILED
@@ -356,13 +361,11 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t user = bif_string_arg (qst, args, 1, "pop3_get");
   caddr_t pass = bif_string_arg (qst, args, 2, "pop3_get");
   long end_size = (long) bif_long_arg (qst, args, 3, "pop3_get");
-  caddr_t ret = NULL;
 
   caddr_t mode = "";
   caddr_t err = NULL;
   long cert = 0;
   dk_set_t volatile uidl_mes = NULL;
-  IO_SECT (qst);
 
   if (BOX_ELEMENTS (args) > 4)
     mode = bif_string_arg (qst, args, 4, "pop3_get");
@@ -377,22 +380,27 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (BOX_ELEMENTS (args) > 6)
     cert = bif_long_arg (qst, args, 6, "pop3_get");
 
+  IO_SECT (qst);
+
   pop3_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) & uidl_mes, in_uidl, qst, cert);
 
   if (err)
     {
-      dk_free_tree (list_to_array (uidl_mes));
-      uidl_mes = NULL;
+      while (uidl_mes)
+	dk_free_tree ((caddr_t) (dk_set_pop (&uidl_mes)));
       sqlr_resignal (err);
     }
-  END_IO_SECT (err_ret);
-  ret = list_to_array (dk_set_nreverse (uidl_mes));
-  if (*err_ret)
+  END_IO_SECT (&err);
+  if (err)
     {
-      dk_free_tree (ret);
-      ret = NULL;
+      while (uidl_mes)
+	dk_free_tree ((caddr_t) (dk_set_pop (&uidl_mes)));
+      if (NULL == err_ret)
+	sqlr_resignal (err);
+      err_ret[0] = err;
+      return NULL;
     }
-  return ret;
+  return list_to_array (dk_set_nreverse (uidl_mes));
 }
 
 static caddr_t

@@ -1,28 +1,28 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2016 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2018 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 -- get id of currently logged-on user
 
-create procedure 
+create procedure
 adm_dav_br_get_uid (in lines any)
 {
   return 0;
@@ -31,7 +31,7 @@ adm_dav_br_get_uid (in lines any)
 
 -- return null if the user has no read privileges on the collection
 
-create procedure 
+create procedure
 adm_dav_user_can_read_col_p (in uid integer, in col_id integer)
 {
   dbg_printf ('WARNING: adm_dav_user_can_read_col_p is a stub procedure');
@@ -77,7 +77,7 @@ adm_fdate_for_humans (in d datetime)
           return ('less than a minute ago');
         }
       else if (min_diff < 60)
-	{ 
+	{
 	  return (sprintf ('%d minutes ago', min_diff));
 	}
       else return (sprintf ('today at %d:%d', hour (d), minute (d)));
@@ -100,16 +100,16 @@ adm_dav_br_uid_to_user (in uid integer)
 
   if (uid is null)
     return ('DB NULL');
-  
+
   if (not exists (select 1 from "WS"."WS"."SYS_DAV_USER" where U_ID = uid))
     {
 --      dbg_printf ('A collection/resource with non-existing owner, strange!\n');
       return (sprintf ('%d', uid));
     }
 
-  select coalesce (U_NAME, '') 
-    into _u_name 
-    from WS.WS.SYS_DAV_USER 
+  select coalesce (U_NAME, '')
+    into _u_name
+    from WS.WS.SYS_DAV_USER
     where U_ID = uid;
 
   if (isnull (_u_name))
@@ -121,7 +121,7 @@ adm_dav_br_uid_to_user (in uid integer)
 }
 ;
 
-create procedure 
+create procedure
 adm_dav_br_fmt_perm (in obj_perm varchar)
 {
   dbg_printf ('WARNING: adm_dav_br_fmt_priv is a stub procedure');
@@ -130,9 +130,9 @@ adm_dav_br_fmt_perm (in obj_perm varchar)
 }
 ;
 
-create procedure 
-adm_dav_br_list_error (in message varchar, 
-		       in cur_col integer, 
+create procedure
+adm_dav_br_list_error (in message varchar,
+		       in cur_col integer,
 		       in new_col integer,
 		       in uid integer)
 {
@@ -143,7 +143,7 @@ adm_dav_br_list_error (in message varchar,
 
 -- Map mime type to file icon href
 
-create procedure 
+create procedure
 adm_dav_br_map_icon (in type varchar)
 {
   if ('folder' = type)
@@ -173,8 +173,8 @@ adm_dav_br_map_icon (in type varchar)
 -- format a collection row in the list
 --
 
-create procedure 
-adm_dav_br_fmt_col (in obj_name varchar, 
+create procedure
+adm_dav_br_fmt_col (in obj_name varchar,
 		    in col_id integer,
 		    in obj_size integer,
 		    in owner_uid integer,
@@ -192,7 +192,7 @@ adm_dav_br_fmt_col (in obj_name varchar,
 --  dbg_printf ('obj_name (%d)\ncol_id (%d) \nobj_size (%d) \nowner_uid (%d) \nmod_time (%d) \nobj_perm (%d) \nlst_mode (%d) \nbrowse_mode (%d)\n', __TAG(obj_name), __TAG(col_id), __TAG(obj_size), __TAG(owner_uid), __TAG(owner_gid), __TAG(mod_time), __TAG(obj_perm), __TAG(lst_mode), __TAG(browse_mode));
 
 
-  img_tag := sprintf ('<img class="davfilelisticon" src="%s" />', 
+  img_tag := sprintf ('<img class="davfilelisticon" src="%s" />',
 		       adm_dav_br_map_icon ('folder'));
 
   exec_anchor := sprintf ('<a class="imglink" href="javascript:dav_cd (%d)">', col_id);
@@ -200,7 +200,7 @@ adm_dav_br_fmt_col (in obj_name varchar,
 
   if (1 = lst_mode)
     {
-      
+
       return concat ('<td width="16" class="davfilelisticon">',
 		     exec_anchor,
 		     img_tag,
@@ -230,7 +230,7 @@ adm_dav_br_fmt_col (in obj_name varchar,
 		     '<td class="davfilelistmodtime">',
 		     "LEFT" (cast (mod_time as varchar), 19),
                      '</td>\n',
-		     
+
 		     '<td class="davfilelistpriv">',
 		     adm_dav_format_perms (obj_perm),
 		     '</td>\n');
@@ -242,9 +242,9 @@ adm_dav_br_fmt_col (in obj_name varchar,
 -- format a collection row in the list
 --
 
-create procedure 
+create procedure
 adm_dav_br_fmt_res (in res_type varchar,
-		    in res_name varchar, 
+		    in res_name varchar,
 		    in res_full_path varchar,
 		    in res_id integer,
 		    in res_size integer,
@@ -258,19 +258,19 @@ adm_dav_br_fmt_res (in res_type varchar,
   declare img_tag varchar;
   declare exec_anchor varchar;
 
-  img_tag := sprintf ('<img class="davfilelisticon" src="%s" />', 
+  img_tag := sprintf ('<img class="davfilelisticon" src="%s" />',
 		       adm_dav_br_map_icon (res_type));
 
   if ('STANDALONE' = browse_mode)
     {
-      exec_anchor := 
-        sprintf ('<a class="imglink" href="javascript:dav_res_view (''%s'')">', 
+      exec_anchor :=
+        sprintf ('<a class="imglink" href="javascript:dav_res_view (''%s'')">',
 	          res_full_path);
     }
   else
     {
-      exec_anchor := 
-        sprintf ('<a class="imglink" href="javascript:dav_res_select (''%s'', %d, ''%s'')">', 
+      exec_anchor :=
+        sprintf ('<a class="imglink" href="javascript:dav_res_select (''%s'', %d, ''%s'')">',
                   res_name, res_id, res_full_path);
     }
 
@@ -279,7 +279,7 @@ adm_dav_br_fmt_res (in res_type varchar,
 
   if (1 = lst_mode)
     {
-      
+
       return concat ('<td width="16" class="davfilelisticon">',
 		     exec_anchor,
 		     img_tag,
@@ -309,7 +309,7 @@ adm_dav_br_fmt_res (in res_type varchar,
 		     '<td class="davfilelistmodtime">',
 		     "LEFT" (cast (res_mod_time as varchar), 19),
                      '</td>\n',
-		     
+
 		     '<td class="davfilelistpriv">',
 		     adm_dav_format_perms (res_perm),
 		     '</td>\n');
@@ -318,8 +318,8 @@ adm_dav_br_fmt_res (in res_type varchar,
 ;
 
 
-create procedure 
-adm_dav_br_gen_col_c_listing (in cur_col integer, 
+create procedure
+adm_dav_br_gen_col_c_listing (in cur_col integer,
 			      in par_col integer,
 			      in uid integer,
 			      in flt_pat varchar,
@@ -364,16 +364,16 @@ dbg_printf ('cur_col: %d', cur_col);
   http ('<tbody class="wfilelistbodygrp">');
 
 
-  if (cur_col <> 1) 
+  if (cur_col <> 1)
     {
       http ('  <tr class="wfilelistrow">\n');
 
-      select COL_OWNER, COL_GROUP, COL_MOD_TIME, COL_PERMS 
+      select COL_OWNER, COL_GROUP, COL_MOD_TIME, COL_PERMS
 	into parent_owner, parent_group, parent_mod_time, parent_perms
 	from "WS"."WS"."SYS_DAV_COL"
 	where COL_ID = par_col;
 
-     
+
 
       http (adm_dav_br_fmt_col ('..', par_col, 'N/A',
 				     parent_owner, parent_group, parent_mod_time,
@@ -381,29 +381,29 @@ dbg_printf ('cur_col: %d', cur_col);
       http ('  </tr>\n');
     }
 
-  for select COL_ID, COL_NAME, COL_OWNER, COL_GROUP, COL_MOD_TIME, COL_PERMS 
-         from "WS"."WS"."SYS_DAV_COL" 
+  for select COL_ID, COL_NAME, COL_OWNER, COL_GROUP, COL_MOD_TIME, COL_PERMS
+         from "WS"."WS"."SYS_DAV_COL"
          where COL_PARENT = cur_col order by COL_NAME do
     {
 
       http ('  <tr class="wfilelistrow">\n');
       http (adm_dav_br_fmt_col (COL_NAME, COL_ID, 'N/A',
-				COL_OWNER, COL_GROUP, COL_MOD_TIME, 
+				COL_OWNER, COL_GROUP, COL_MOD_TIME,
 				COL_PERMS, lst_mode, browse_mode));
       http ('  </tr>');
     }
 
 -- Then produce list of resources
 
-  for select RES_ID, RES_NAME, RES_CONTENT, RES_OWNER, RES_GROUP, 
+  for select RES_ID, RES_NAME, RES_CONTENT, RES_OWNER, RES_GROUP,
 	       RES_COL, RES_TYPE, RES_MOD_TIME, RES_PERMS, RES_FULL_PATH
 	  from "WS"."WS"."SYS_DAV_RES"
 	  where RES_COL=cur_col and RES_NAME like flt_pat order by RES_NAME do
     {
       http ('  <tr class="wfilelistrow">\n');
-      http (adm_dav_br_fmt_res (RES_TYPE, RES_NAME, RES_FULL_PATH, 
+      http (adm_dav_br_fmt_res (RES_TYPE, RES_NAME, RES_FULL_PATH,
 				RES_ID, length (RES_CONTENT),
-				RES_OWNER, RES_GROUP, RES_MOD_TIME, 
+				RES_OWNER, RES_GROUP, RES_MOD_TIME,
 				RES_PERMS, lst_mode, browse_mode));
       http ('  </tr>');
 

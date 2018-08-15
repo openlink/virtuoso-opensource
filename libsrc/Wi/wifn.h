@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,7 +41,7 @@ void const_length_init (void);
 extern numeric_t num_int64_max;
 extern numeric_t num_int64_min;
 void db_buf_length  (unsigned char * buf, long * head_ret, long * len_ret);
-int box_serial_length (caddr_t box, dtp_t dtp);
+extern int box_serial_length (caddr_t box, dtp_t dtp);
 #define SERIAL_LENGTH_APPROX 1	/*!< A special fake dtp to indicate that box_serial_length() do not have to return an accurate value and some overestimated number is OK */
 int rb_serial_length (caddr_t x);
 
@@ -117,7 +117,11 @@ int itc_next_set (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 int64 itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, int angle);
 int64 itc_sample (it_cursor_t * it);
 int64 itc_local_sample (it_cursor_t * it);
+float itc_row_selectivity (it_cursor_t * itc, int64 inx_est);
 unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
+extern void col_stat_free (col_stat_t *cs);
+extern void col_stat_free_ext_int (col_stat_t *cs, boxint *min_ret, boxint *max_ret);
+extern void col_stat_free_ext_box (col_stat_t *cs, caddr_t *min_box_ret, caddr_t *max_box_ret);
 void itc_col_stat_free (it_cursor_t * itc, int upd_col, float est);
 void cs_new_page (dk_hash_t * cols);
 int key_n_partitions (dbe_key_t * key);
@@ -136,12 +140,12 @@ buffer_desc_t * itc_set_by_placeholder (it_cursor_t * itc, placeholder_t * pl);
 
 void itc_sqlr_error (it_cursor_t * itc, buffer_desc_t * buf, const char * code, const char * msg, ...)
 #ifdef __GNUC__
-                __attribute__ ((format (printf, 4, 5)))
+                __attribute__ ((format (printf, 4, 5))) NORETURN
 #endif
 ;
 void itc_sqlr_new_error (it_cursor_t * itc, buffer_desc_t * buf, const char * code, const char *virt_code, const char * msg, ...)
 #ifdef __GNUC__
-                __attribute__ ((format (printf, 5, 6)))
+                __attribute__ ((format (printf, 5, 6))) NORETURN
 #endif
 ;
 
@@ -430,6 +434,7 @@ void dbs_free_disk_page (dbe_storage_t * dbs, dp_addr_t dp);
 buffer_desc_t * dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag);
 void bp_write_dirty (buffer_pool_t * bp, int force, int is_in_page_map, int n_oldest);
 
+void wi_close(void);
 void dbs_sync_disks (dbe_storage_t * dbs);
 
 extern int n_oldest_flushable;
@@ -543,10 +548,14 @@ void * pm_get (buffer_desc_t * buf, size_t sz);
 
 /* tree.c */
 
-
-index_tree_t * it_allocate (dbe_storage_t *);
-index_tree_t * it_temp_allocate (dbe_storage_t *);
-void it_temp_free (index_tree_t * it);
+index_tree_t *DBG_NAME (it_allocate) (DBG_PARAMS dbe_storage_t *);
+index_tree_t *DBG_NAME (it_temp_allocate) (DBG_PARAMS dbe_storage_t *);
+int DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it);	/*!< \returns zero is the \c it is actually kept, just with smaller it_ref_count; non-zero means real free */
+#ifdef MALLOC_DEBUG
+#define it_allocate(s) dbg_it_allocate (__FILE__, __LINE__, (s))
+#define it_temp_allocate(s) dbg_it_temp_allocate (__FILE__, __LINE__, (s))
+#define it_temp_free(it) dbg_it_temp_free(__FILE__, __LINE__, (it))
+#endif
 int it_temp_tree (index_tree_t * it);
 #if !defined (__APPLE__)
 void it_not_in_any (du_thread_t * self, index_tree_t * except);
@@ -623,6 +632,7 @@ void pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
 #define PAGE_WRITE_ORG 1
 #define PAGE_WRITE_COPY 2
 int page_prepare_write (buffer_desc_t * buf, db_buf_t * copy, int * copy_fill, int page_compress);
+void page_after_read (buffer_desc_t * buf);
 
 int page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t value);
 #define page_col_cmp(buf, row, cl, val) \
@@ -916,6 +926,7 @@ int dbs_dirty_count ();
 void buf_cancel_write (buffer_desc_t * buf);
 void buf_release_read_waits (buffer_desc_t * buf, int itc_state);
 void mt_write_start (int n_oldest);
+void dbs_mtwrite_init (dbe_storage_t * dbs);
 void mt_write_init (void);
 io_queue_t * db_io_queue (dbe_storage_t * dbs, dp_addr_t dp);
 extern dk_mutex_t * mt_write_mtx;
@@ -1173,7 +1184,7 @@ void sched_set_thread_count (void);
 caddr_t box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
     dtp_t to_dtp, ptrlong prec, unsigned char scale, caddr_t *err_ret);
 
-caddr_t box_sprintf_escaped (caddr_t str, int is_id);
+caddr_t box_sprintf_escaped (ccaddr_t str, int is_id);
 
 void dp_set_backup_flag (dbe_storage_t * dbs, dp_addr_t page, int on);
 int dp_backup_flag (dbe_storage_t * dbs, dp_addr_t page);
@@ -1390,6 +1401,7 @@ void em_free (extent_map_t * em);
 void em_rename (extent_map_t * em, char * name);
 void it_rename_col_ems (index_tree_t * it, char * key_name);
 void dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd);
+dp_addr_t em_free_count (extent_map_t * em, int type);
 void dbs_ec_enter (dbe_storage_t * dbs);
 void dbs_ec_leave (dbe_storage_t * dbs);
 void clear_old_root_images  ();

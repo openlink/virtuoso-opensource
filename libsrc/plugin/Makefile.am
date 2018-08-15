@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -93,16 +93,16 @@ generated_code = \
 	export_gate_virtuoso.c import_gate_virtuoso.c import_gate_virtuoso.h \
 	export_plugin_lang25.c import_plugin_lang25.c import_plugin_lang25.h
 
-$(generated_code): .generated
+BUILT_SOURCES	= .generated
+DISTCLEANFILES	= .generated
 
-.generated: Makefile.am gen_all_gates.sh gen_gate.sh gate_virtuoso.h plugin_lang25.h plugin_msdtc.h
-	cd $(top_srcdir)/libsrc/plugin; $(SHELL) $(srcdir)/gen_all_gates.sh
-	-rm -rf tmp
-	touch .generated
+.generated: FORCE
+	@echo "* Generating plugin gate headers and sources"
+	@cd $(top_srcdir)/libsrc/plugin; $(SHELL) $(srcdir)/gen_all_gates.sh
+	@-rm -rf tmp
+	@touch .generated
 
-BUILT_SOURCES	= $(generated_code)
-DISTCLEANFILES	= $(generated_code) .generated
-
+FORCE:
 
 # ----------------------------------------------------------------------
 #

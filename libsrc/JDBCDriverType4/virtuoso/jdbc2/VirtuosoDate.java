@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -67,12 +67,22 @@ public class VirtuosoDate extends java.sql.Date
     public String toXSD_String ()
     {
         StringBuilder sb = new StringBuilder();
-        DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd");
+        DateFormat formatter;
         String timeZoneString = null;
+        java.util.Calendar cal = new java.util.GregorianCalendar ();
+
+        cal.setTime(this);
+
+        if (cal.get(Calendar.ERA) == GregorianCalendar.BC) {
+            sb.append('-');
+            formatter = new SimpleDateFormat("yyy-MM-dd");
+        }
+        else
+            formatter = new SimpleDateFormat("yyyy-MM-dd");
 
         if (with_timezone)
         {
-            StringBuffer s = new StringBuffer();
+            StringBuilder s = new StringBuilder();
             s.append(timezone>0?'+':'-');
 
             int tz = Math.abs(timezone);
@@ -93,6 +103,10 @@ public class VirtuosoDate extends java.sql.Date
             formatter.setTimeZone(TimeZone.getTimeZone("GMT"+timeZoneString));
         }
         sb.append(formatter.format(this));
+
+        if (with_timezone && timezone!=0)
+            sb.append(timeZoneString);
+
         return sb.toString();
     }
 

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -24,54 +24,60 @@
 
 #egrep "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" *.test/*.output
 detailed=0
+head_n=5
 if [ "$1" = -d ]
 then
     detailed=1
 fi
 TEST_DIR_SUFFIXES="ro co clro clco"
 
-tlist=`ls -d *.ro *.co *.clro *.clco 2>/dev/null | cut -d "." -f 1,2 --output-delimiter="-" | sort`
-rtlist=`ps -A -F | grep "\.\/test_run.sh" | awk 'BEGIN{FS="test_run.sh ";}{ print $NF }' | awk '{ print $2 "-" $1 }' | sort`
+tlist=`ls -1d *.ro *.co *.clro *.clco 2>/dev/null | sort`
+rtlist=`ps -ef | grep "\.\/test_run.sh" | awk 'BEGIN{FS="test_run.sh ";}{ print $NF }' | awk '{ print $2 "-" $1 }' | sort`
 ftlist=`echo $rtlist $rtlist $tlist | tr -s '[:blank:]' '\n' | sort | uniq -u`
 
 if [ -n "$rtlist" ]
 then
     echo "RUNNING tests:"
     echo "-------------------"
-    echo $rtlist
+    echo $rtlist | fmt
     echo "-------------------"
 fi
 
 if [ -n "$ftlist" ]
 then
     logs=`find . -type f -name "*.output" | grep -v testall`
+
+    echo
     echo "FINISHED tests:"
     echo "-------------------"
-    echo $ftlist
+    echo $ftlist | fmt
     echo "-------------------"
 
-    passed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^PASSED" | wc -l`
-    failed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?FAILED" | wc -l`
-    aborted=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?ABORTED" | wc -l`
+    passed=`echo $logs | xargs  egrep "^PASSED" | wc -l`
+    failed=`echo $logs | xargs  egrep "^\*\*\* ?FAILED" | wc -l`
+    aborted=`echo $logs | xargs egrep "^\*\*\* ?ABORTED" | wc -l`
 
     if [ $failed -gt 0 ]
     then
-	echo "    some of failed:"
+        echo
+	echo "FAILED tests:"
 	echo "-------------------"
-	egrep "^(\*\*\*.*FAILED)" $logs | head -n 5
+	egrep -l "^(\*\*\*.*FAILED)" $logs | fmt
 	echo "-------------------"
     fi
     if [ $aborted -gt 0 ]
     then
-	echo "    some of aborted:"
+        echo
+	echo "ABORTED tests:"
 	echo "-------------------"
-	egrep "^(\*\*\*.*ABORTED)" $logs | head -n 5
+	egrep -l "^(\*\*\*.*ABORTED)" $logs | fmt
 	echo "-------------------"
     fi
 fi
 
 if [ -n "$tlist" -a -z "$rtlist" ]
 then 
+    echo 
     echo "Total PASSED  : $passed"
     echo "Total FAILED  : $failed"
     echo "Total ABORTED : $aborted"
@@ -80,23 +86,19 @@ then
     then
 	if (expr $failed + $aborted \> 0 > /dev/null)
 	then
+	    echo
+	    echo "ABORTED tests:"
     	    echo "-------------------"
-	    echo "Aborted tests:"
-    	    find . -mindepth 1 -type f -name "core*" -print0 | xargs -0 -I "{}" echo "Got a core: {}"
-    	    find . -mindepth 1 -type f -name "*.output" -print0 | xargs -0 grep -EnH "^\*\*\* ?ABORTED"
+    	    find . -type f -name "core*" -print | xargs -I "{}" echo "Got a core: {}"
+    	    echo $logs | xargs egrep  "^\*\*\* ?ABORTED"
 	    echo "-------------------"
-    	    echo "Failed tests:"
+
+	    echo
+    	    echo "FAILED tests:"
 	    echo "-------------------"
-    	    find . -mindepth 1 -type f -name "*.output" -print0 | xargs -0 grep -EnH "^\*\*\* ?FAILED"
+    	    echo $logs | xargs egrep  "^\*\*\* ?FAILED"
+	    echo "-------------------"
 	fi
-    else
-	echo all FAILED and ABORTED tests:
-	echo "-------------------"
-	for f in `egrep -ls "^(\*\*\*.*FAILED|\*\*\*.*ABORTED)" *.test/*.output *.ro/*.output *.co/*.output *.clro/*.output *.clco/*.output` 
-	do 
-	    #basename $f .output 
-	    echo $f
-	done
     fi
 fi
 

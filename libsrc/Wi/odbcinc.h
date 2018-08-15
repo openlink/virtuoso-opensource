@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -61,7 +61,9 @@
 # else
 #  ifdef NO_UDBC_SDK
 #   include <iodbcinst.h>
+#   ifndef HAVE_ODBCINST_H
 #   define HAVE_ODBCINST_H
+#   endif
 #  else
 #   include "iodbcinst.h"
 #  endif

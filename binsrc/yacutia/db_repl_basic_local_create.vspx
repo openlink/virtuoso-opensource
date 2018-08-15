@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="db_repl_basic_local_create"
@@ -64,57 +61,24 @@
     </vm:menu>
     <vm:header caption="Create Basic Snapshot Replication"/>
     <vm:pagebody vdb_check="1">
+
       <v:method name="check_query" arglist="in source varchar,inout state varchar, inout message varchar" returns="integer">
         declare src_comp any;
-        if (-1 = exec(source, state, message, vector(), 1, src_comp, null)) {
+
+        if (-1 = exec(source, state, message, vector(), 1, src_comp, null))
+        {
           message := sprintf('Checking source query : %s', message);
           return 0;
   			}
-  			if (not(src_comp) or aref(src_comp, 1) = 0) {
+        if (not(src_comp) or aref(src_comp, 1) = 0)
+        {
   			  state := 'CRSN1';
           message := 'The source query is not an select statement';
           return 0;
-  			};
+        }
   			return 1;
       </v:method>
-    <script language="JavaScript">
-      function selectAllCheckboxes (form, btn)
-      {
-        var i;
-        for (i =0; i &lt; form.elements.length; i++)
-        {
-          var contr = form.elements[i];
-          if (contr != null &amp;&amp; contr.type == "checkbox")
-          {
-            contr.focus();
-            if (contr != btn)
-              contr.checked = btn.checked;
-          }
-        }
-        btn.focus();
-      };
-      function dsns_chg(sel)
-      {
-        var i, _new, old;
-        if (sel.selectedIndex == -1)
-        {
-          document.link_form.dsn.value = '';
-          document.link_form.uid.value = '';
-          document.link_form.pwd.value = '';
-          return (0);
-        }
-        for (i = 0; i &lt; sel.length; i++)
-        {
-          if (sel.options[i].selected)
-          {
-            if (sel.options[i].text == document.link_form.dsn.value)
-              sel.options[i].selected = false;
-            else
-              document.link_form.dsn.value = sel.options[i].text;
-          }
-        }
-      };
-    </script>
+
     <v:on-init>
       if (self.repl_basic_local_sources is null)
         self.repl_basic_local_sources := vector ();
@@ -124,14 +88,6 @@
 
       <!-- Stage 0 -->
       <table cellpadding="0" cellspacing="0" border="0">
-        <colgroup>
-          <col/>
-          <col/>
-          <col/>
-          <col/>
-          <col/>
-          <col/>
-        </colgroup>
         <tr>
           <td class="page_tab" align="center">
             <v:url name="b_url31" value="Query(Table select) to Remote" url="db_repl_basic.vspx"/>
@@ -140,8 +96,10 @@
           <td class="page_tab_empty"></td>
         </tr>
       </table>
-      <table class="tab_page"><tr><td>
 
+      <table class="tab_page">
+        <tr>
+          <td>
       <v:template name="scr_list_template" type="simple" enabled="-- equ(self.repl_basic_local_stage, 0)">
         <h3>Step 1: Add Source Queries</h3>
         <v:form name="frm2" action="db_repl_basic_local_create.vspx" method="POST" type="simple">
@@ -150,36 +108,33 @@
               <div class="listing_top_ctl_grp">
                 <v:button action="simple" value="Add queries from tables" name="add_src_tables">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.selcust := vector();
                         self.dsrws  := vector();
                         self.repl_basic_local_stage := 11;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
+
                 <v:button action="simple" value="Add custom query" name="add_src_query">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.open_edit_templ := -1;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </div>
 	      <?vsp http('<div class="scroll_area">'); ?>
 		<table class="listing" rules="groups">
-                <colgroup/>
                 <thead>
                   <tr class="listing_header_row">
                      <th>Source Queries</th>
-                     <th>Action</th>
+                          <th class="action">Action</th>
                   </tr>
                 </thead>
+
                 <v:template name="query_add" type="simple" name-to-remove="" set-to-remove="" enabled="--equ(self.open_edit_templ,-1)">
                   <tr class="listing_row_odd">
                     <td class="listing_col">
@@ -201,20 +156,22 @@
                       <v:button name="ds_src_add" action="simple" value="add">
                         <v:on-post>
                           declare _arr any;
-
                           declare _sql_query,state,message varchar;
-                          _sql_query := self.row_add_query.ufl_value;
 
-                          if (self.check_query(_sql_query,state,message)) {
+                                _sql_query := self.row_add_query.ufl_value;
+                                if (self.check_query(_sql_query,state,message))
+                                {
                             _arr := self.repl_basic_local_sources;
                             _arr := vector_concat(_arr,vector(_sql_query));
                             self.repl_basic_local_sources := _arr;
                             self.open_edit_templ := null;
                             self.vc_data_bind(e);
-                          } else {
+                                }
+                                else
+                                {
                             self.vc_is_valid := 0;
                             self.vc_error_message := message;
-                          };
+                                }
                         </v:on-post>
                       </v:button>
                     </td>
@@ -226,16 +183,14 @@
               <v:template name="temp_ds_src_list_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                 <table> <!-- dummy -->
                   <tr>
-                    <td colspan="10" class="Attention">No sources</td>
+                          <td colspan="2" class="Attention">No sources</td>
                   </tr>
                 </table>
               </v:template>
 
               <v:template name="temp_ds_src_list_browse" type="browse" name-to-remove="table" set-to-remove="both">
                 <table> <!-- dummy -->
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
+                        <tr>
                     <v:template name="query_edit" type="simple" name-to-remove="" set-to-remove="" enabled="--equ(self.open_edit_templ,self.ds_src_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr)">
                       <td class="listing_col">
                         <v:textarea name="row_edit_query" xhtml_id="isql_query_return" value="--(control.vc_parent.vc_parent as vspx_row_template).te_rowset" xhtml_cols="80" xhtml_rows="5">
@@ -262,16 +217,19 @@
                             declare _sql_query,state,message varchar;
                             _sql_query := (control.vc_parent.vc_parent.vc_find_control('query_edit').vc_find_control('row_edit_query') as vspx_textarea).ufl_value;
 
-                            if (self.check_query(_sql_query,state,message)) {
+                                  if (self.check_query(_sql_query,state,message))
+                                  {
                               _arr := self.repl_basic_local_sources;
                               aset(_arr,_inx,_sql_query);
                               self.repl_basic_local_sources := _arr;
                               self.open_edit_templ := null;
                               self.vc_data_bind(e);
-                            } else {
+                                  }
+                                  else
+                                  {
                               self.vc_is_valid := 0;
                               self.vc_error_message := message;
-                            };
+                                  }
                           </v:on-post>
                         </v:button>
                       </td>
@@ -300,20 +258,24 @@
                         </v:button>
                       </td>
                     </v:template>
-                  <?vsp http ('</tr>'); ?>
+
+                        </tr>
                 </table>
               </v:template>
+
             </v:template>
+
             <v:template name="temp_ds_src_list_footer" type="simple" name-to-remove="table" set-to-remove="top">
               <table>
                 <tr>
-                  <td colspan="3"  class="listing_col_action">
+                        <td colspan="2"  class="listing_col_action">
             		    <vm:ds-navigation data-set="ds_src_list"/>
                   </td>
-                  <td/>
                 </tr>
 	      </table>
+
 	      <?vsp http ('</div>'); ?>
+
               <div class="listing_bot_ctl_grp">
                 <v:button name="can1_basic_local" action="simple" value="Cancel">
                   <v:on-post>
@@ -339,7 +301,8 @@
                       declare _val, _tbname, ltbq, ltbo, ltbn, _fqb_name varchar;
 
                       self.repl_basic_local_destinations := vector();
-		      for (declare i any, i := 0; i < length(self.repl_basic_local_sources) ; i := i + 1){
+                            for (declare i any, i := 0; i < length(self.repl_basic_local_sources) ; i := i + 1)
+                            {
 		        _tbname := y_get_first_table_name (self.repl_basic_local_sources[i]);
 		        if (_tbname is null)
 			  _tbname := '';
@@ -379,7 +342,6 @@
         <h3>Step 1: Add Source Queries - Add Queries From Tables</h3>
         <v:form name="db_filter_form" type="simple" method="POST" action="db_repl_basic_local_create.vspx">
           <v:on-post>
-            <v:script>
               <![CDATA[
               self.repl_basic_local_stage := 11;
 
@@ -396,7 +358,6 @@ self.ds_tables.vc_reset();
 self.ds_tables.vc_data_bind(e);
 self.vc_data_bind(e);
               ]]>
-            </v:script>
           </v:on-post>
           <table class="ctl_grp">
             <tr>
@@ -495,15 +456,15 @@ self.vc_data_bind(e);
         	      self.selcust := sel;
       	      ]]>
       	    </v:on-post>
+
             <v:template name="temp_ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
               <table class="listing" rules="groups">
-                <colgroup/><colgroup/>
                 <thead>
                   <tr class="listing_header_row">
-                     <th>
+                           <th class="checkbox">
                        <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>
                      </th>
-                     <th/>
+                           <th width="16px"/>
                      <th>Name</th>
                   </tr>
                 </thead>
@@ -513,16 +474,14 @@ self.vc_data_bind(e);
               <v:template name="temp_ds_tables_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                 <table> <!-- dummy -->
                   <tr>
-                    <td colspan="10" class="Attention">No tables match the criteria</td>
+                          <td colspan="3" class="Attention">No tables match the criteria</td>
                   </tr>
                 </table>
               </v:template>
 
               <v:template name="temp_ds_tables_browse" type="browse" name-to-remove="table" set-to-remove="both">
                 <table> <!-- dummy -->
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
+                        <tr>
                     <td class="listing_col">
                 			<v:check-box name="cb01" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" group-name="tbl">
                 			  <v:before-render>
@@ -539,7 +498,7 @@ self.vc_data_bind(e);
                     <td class="listing_col">
                       <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
                     </td>
-                  <?vsp http ('</tr>'); ?>
+                        </tr>
                 </table>
               </v:template>
             </v:template>
@@ -549,7 +508,6 @@ self.vc_data_bind(e);
                   <td colspan="3"  class="listing_col_action">
             		    <vm:ds-navigation data-set="ds_tables"/>
                   </td>
-                  <td/>
                 </tr>
               </table>
             </v:template>
@@ -704,9 +662,8 @@ self.vc_data_bind(e);
               </div>
 	      <?vsp http('<div class="scroll_area">'); ?>
               <table class="listing" rules="groups">
-                <colgroup/><colgroup/>
                 <thead>
-                  <tr>
+                        <tr class="listing_header_row">
                     <th>Source Query</th>
                     <th>
                       <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)" checked="checked"/>
@@ -719,16 +676,14 @@ self.vc_data_bind(e);
               <v:template name="temp_ds_dst_list_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
                 <table> <!-- dummy -->
                   <tr>
-                    <td colspan="10" class="Attention">No sources</td>
+                          <td colspan="2" class="Attention">No sources</td>
                   </tr>
                 </table>
               </v:template>
 
               <v:template name="temp_ds_dst_list_browse" type="browse" name-to-remove="table" set-to-remove="both">
                 <table> <!-- dummy -->
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
+                        <tr>
                     <td class="listing_col">
                       <v:label name="l_dst_item" value="--(control.vc_parent as vspx_row_template).te_rowset" format="%s"/>
                     </td>
@@ -770,19 +725,21 @@ self.vc_data_bind(e);
                 			  </v:before-render>
                 			</v:text>
                     </td>
-                  <?vsp http ('</tr>'); ?>
+                        </tr>
                 </table>
               </v:template>
+
             </v:template>
+
             <v:template name="temp_ds_dst_list_footer" type="simple" name-to-remove="table" set-to-remove="top">
               <table>
                 <tr>
-                  <td colspan="3"  class="listing_col_action">
+                        <td colspan="2" class="listing_col_action">
             		    <vm:ds-navigation data-set="ds_dst_list"/>
                   </td>
-                  <td/>
                 </tr>
               </table>
+
 	      <?vsp http ('</div>'); ?>
               <div class="listing_bot_ctl_grp">
                 <v:button name="can3_basic_local" action="simple" value="Cancel">
@@ -793,9 +750,9 @@ self.vc_data_bind(e);
                     ]]>
                   </v:on-post>
                 </v:button>
+
                 <v:button action="simple" value="Create" name="snap">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.vc_user_post_link2_form (self.ds_dst_list, e);
                         declare _idx integer;
@@ -847,7 +804,7 @@ self.vc_data_bind(e);
                               goto _start;
                             };
                             _chk_idx := _chk_idx + 1;
-                          };
+                              }
 
                           if (exists(select 1 from SYS_SNAPSHOT where SN_NAME = _local_fqtb))
                           {
@@ -856,29 +813,26 @@ self.vc_data_bind(e);
                               self.vc_is_valid := 0;
                               _error := 1;
                               goto _start;
-                          };
+                              }
 
                           _tables := vector_concat(_tables,vector(vector('',_local_qual,_local_owner,_local_name)));
-
                           registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),'Pending');
-
                           i := i + 1;
-                        };
+                            }
 
                         _start:;
                         if (_error = 1)
+                            {
                           self.vc_data_bind(e);
+                            }
                         else
                         {
-                          --self.repl_basic_local_sources := _tables;
-
                           self.repl_basic_local_stage := 3;
                           self.repl_basic_local_running := 1;
                           self.vc_page.vc_data_bind(e);
                           self.vc_redirect('db_repl_basic_local_start.vspx');
-                        };
+                            }
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </div>
@@ -905,9 +859,9 @@ self.vc_data_bind(e);
                 else
                   {
                     _header := concat(_header, _line);
-                  };
+                      }
                 http_header(_header);
-              };
+                    }
             ]]>
           </v:before-render>
           <?vsp
@@ -930,11 +884,9 @@ self.vc_data_bind(e);
               Replication done.
               <v:button action="simple" value="OK" name="ok" enabled="-- equ(self.repl_basic_local_running , 0)">
                 <v:on-post>
-                  <v:script>
                     <![CDATA[
                       self.vc_redirect('db_repl_basic_local.vspx');
                     ]]>
-                  </v:script>
                 </v:on-post>
               </v:button>
             </v:template>
@@ -942,20 +894,16 @@ self.vc_data_bind(e);
                 autorefresh:
                 <v:select-list name="autorefresh_list" auto-submit="1">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.repl_basic_local_autorefresh := cast(control.ufl_value as integer);
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                   <v:after-data-bind>
-                    <v:script>
                       <![CDATA[
                         control.ufl_value := self.repl_basic_local_autorefresh;
                         control.vs_set_selected ();
                       ]]>
-                    </v:script>
                   </v:after-data-bind>
                   <v:item name="no refresh" value="0"/>
                   <v:item name="5" value="5"/>
@@ -966,10 +914,10 @@ self.vc_data_bind(e);
                 <v:button action="simple" value="Manual Refresh" name="manual_refresh"/>
             </v:template>
           </div>
+
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/>
           <thead>
-            <tr>
+                    <tr class="listing_header_row">
               <th>Source Query</th>
               <th>Destination Table</th>
               <th>State</th>
@@ -978,11 +926,13 @@ self.vc_data_bind(e);
             <?vsp
               declare _tables any;
               declare _state varchar;
-              _tables := self.repl_basic_local_sources;
 
-              if (_tables) {
-                for (declare _i any, _i := 0; _i < length(_tables) ; _i := _i + 1){
-                    http(sprintf ('<tr class="%s">', case when mod (_i, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                    _tables := self.repl_basic_local_sources;
+                    if (_tables)
+                    {
+                      for (declare _i any, _i := 0; _i < length(_tables) ; _i := _i + 1)
+                      {
+                        http('<tr>');
                     _state := cast(registry_get(sprintf('REPL_COUNT_%s_%s_%s',self.repl_basic_local_destinations[_i][2],self.repl_basic_local_destinations[_i][3],self.repl_basic_local_destinations[_i][4])) as varchar);
                     if (regexp_match('^[0-9]*$',_state))
                       _state := _state || ' record processed.';
@@ -990,28 +940,32 @@ self.vc_data_bind(e);
                     http(sprintf('<td>%V</td>', sprintf('%s.%s.%s',self.repl_basic_local_destinations[_i][2],self.repl_basic_local_destinations[_i][3],self.repl_basic_local_destinations[_i][4])));
                     http(sprintf('<td>%V</td>', _state));
                     http('</tr>');
-                };
-              } else {
-                http('No Tables in list.');
-              };
-
-              if (equ(self.repl_basic_local_running , 0)) {
+                      }
+                    }
+                    else
+                    {
+                      http ('<tr><td colspan="3">No Tables in list.</td></tr>');
+                    }
+                    if (equ(self.repl_basic_local_running , 0))
+                    {
                 self.repl_basic_local_sources := vector();
                 self.repl_basic_local_destinations := vector();
-              };
+                    }
             ?>
           </table>
 
         </v:form>
+
       </v:template>
-      <table>
-        <tr align="left">
-          <td class="SubInfo">
+
+            <div>
+              <hr />
 	    <vm:url name="db_repl_basic_local_ref" format="%s" value="Back to Snapshot Replication List" url="--'db_repl_basic_local.vspx'"/>
+            </div>
+
           </td>
         </tr>
       </table>
-      </td></tr></table>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

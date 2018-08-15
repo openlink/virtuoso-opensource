@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -113,11 +113,17 @@ alter index DB_DBA_RDF_DATATYPE_UNQC_RDT_TWOBYTE   on RDF_DATATYPE partition clu
 alter index DB_DBA_RDF_DATATYPE_UNQC_RDT_QNAME on RDF_DATATYPE partition cluster replicated
 ;
 
+select count (rdf_cache_id ('t', RDT_QNAME, RDT_TWOBYTE)) from DB.DBA.RDF_DATATYPE
+;
+
 create table DB.DBA.RDF_LANGUAGE (
   RL_ID varchar not null primary key,
   RL_TWOBYTE integer not null unique )
 alter index RDF_LANGUAGE on RDF_LANGUAGE  partition cluster replicated
 alter index DB_DBA_RDF_LANGUAGE_UNQC_RL_TWOBYTE on RDF_LANGUAGE  partition cluster replicated
+;
+
+select count (rdf_cache_id ('l', RL_ID, RL_TWOBYTE)) from DB.DBA.RDF_LANGUAGE
 ;
 
 create table DB.DBA.SYS_SPARQL_HOST (
@@ -4110,7 +4116,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TALIS_JSON (inout triples any, inout ses 
 create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any)
 {
   declare env any;
-  declare tcount, tctr, status integer;
+  declare tcount, tctr, nesting integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_LD:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   if (0 = tcount)
@@ -4124,14 +4130,428 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD (inout triples any, inout ses any
   rowvector_subj_sort (triples, 0, 1);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   http ('{ "@graph": [\n    ', ses);
-  status := 0;
+  nesting := http_ld_json_triple_batch (env, triples, ses);
+  if (nesting > 1)
+    http (' ]', ses);
+  if (nesting)
+    http (' }\n', ses);
+  http ('] }\n', ses);
+}
+;
+
+-- The function calculates data needed for writing triples in nested form, resulting in dominance subgraphs.
+-- If \c trees4all is nonzero then both named and blank nodes may form hierarchies and uses of one node as an object for multiple subjects does not prevent from making trees.
+-- If \c trees4all is zero then only blank nodes may form hierarchies and hierarchy is built only if a bnode is used as an object for a single triple.
+create procedure DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (inout triples any, in trees4all integer, out bnode_usage_dict_ret any, out tail_to_head_dict_ret any, out printed_triples_mask_ret varchar)
+{
+  declare bnode_usage_dict any;
+-- Keys of bnode_usage_dict are IRI_IDs of all blank nodes of the \c triples,
+-- values are vectors of six items
+-- [0]:
+--     If \c trees4all is nonzero then
+--       NULL if key node is not used as object OR IRI_ID of some subject such that the key node is object.
+--     If \c trees4all is zero then
+--       NULL if key bnode is not used as object OR IRI_ID of subject of a single triple such that the key bnode is object OR an empty string UNAME if the key bnode is used as object many times or makes a loop made of anonymous bnodes.
+-- [1]: Index of first triple where the bnode appears as a subject, NULL if there are no such.
+-- [2]: temporary integer to check for loops
+-- [3]: NULL if key bnode does not have rdf:first property OR an integer index of that rdf:first triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:first or non-list predicates.
+-- [4]: NULL if key bnode does not have rdf:rest property OR an integer index of that rdf:rest triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:rest or non-list predicates.
+-- [5]: NULL if not in the list or not yet checked OR an integer that indicates the length of proper tail of the list OR an empty string UNAME if the list is ended up with cycle or something weird.
+  declare tail_to_head_dict any;
+-- Keys of tail_to_head_dict are last bnodes of lists, values are first bnodes of (valid parts of) lists OR empty string UNAME for last bnodes that were later proven to be inappropriate.
+  declare printed_triples_mask varchar;
+  declare rdf_first_iid, rdf_rest_iid, rdf_nil_iid IRI_ID;
+  declare all_bnodes any;
+  declare tcount, tctr, bnode_ctr integer;
+  declare tail_bnode, head_bnode IRI_ID;
+  tcount := length (triples);
+  printed_triples_mask := space (tcount);
+  rowvector_obj_sort (triples, 2, 1);
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+  rdf_first_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#first');
+  rdf_rest_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest');
+  rdf_nil_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil');
+-- First of all we gather info into bnode_usage_dict, except items #2 and #5 of values
+  bnode_usage_dict := dict_new (13 + (tcount / 100));
+  tail_to_head_dict := dict_new (13 + (tcount / 1000));
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
-      if (http_ld_json_triple (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses))
-        status := 1;
+      declare s_iid, o_iid IRI_ID;
+      -- dbg_obj_princ ('Gathering ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
+      if (triples[tctr][0] is null or triples[tctr][1] is null or triples[tctr][2] is null)
+        {
+          printed_triples_mask[tctr] := ascii ('N');
+          goto triple_skipped;
+        }
+      s_iid := iri_to_id_nosignal (triples[tctr][0]);
+      o_iid := iri_to_id_nosignal (triples[tctr][2]);
+      if (trees4all or is_bnode_iri_id (s_iid))
+        {
+          declare p_iid IRI_ID;
+          declare u any;
+          p_iid := iri_to_id_nosignal (triples[tctr][1]);
+          u := dict_get (bnode_usage_dict, s_iid, null);
+          if (u is null)
+            u := vector (null, tctr, null, null, null, null);
+          else if (u[1] is null)
+            u[1] := tctr;
+          if (trees4all)
+            goto s_iid_done;
+          if (rdf_first_iid = p_iid)
+            {
+              if (u[3] is null)
+                {
+                  u[3] := tctr;
+                  goto s_iid_done;
+                }
+              else
+                goto bad_for_list;
+            }
+          else if (rdf_rest_iid = p_iid)
+            {
+              if (u[4] is not null)
+                goto bad_for_list;
+              else if (rdf_nil_iid = o_iid)
+                {
+                  dict_put (tail_to_head_dict, s_iid, s_iid);
+                  u[4] := tctr;
+                  goto s_iid_done;
+                }
+              else if (is_bnode_iri_id (o_iid))
+                {
+                  u[4] := tctr;
+                  goto s_iid_done;
+                }
+              else
+                goto bad_for_list;
+            }
+bad_for_list:
+          u[3] := UNAME'';
+          u[4] := UNAME'';
+          if (dict_get (tail_to_head_dict, s_iid, null) is not null)
+            dict_put (tail_to_head_dict, s_iid, UNAME'');
+s_iid_done:
+          dict_put (bnode_usage_dict, s_iid, u);
+        }
+      if (trees4all or is_bnode_iri_id (o_iid))
+        {
+          declare u any;
+          u := dict_get (bnode_usage_dict, o_iid, null);
+          if (u is null)
+            dict_put (bnode_usage_dict, o_iid, vector (s_iid, null, null, null, null, null));
+          else
+            {
+              if (u[0] is null)
+                u[0] := s_iid;
+              else
+                u[0] := UNAME'';
+              dict_put (bnode_usage_dict, o_iid, u);
+            }
+        }
+triple_skipped: ;
     }
-  if (status)
-    http (' ] }\n', ses);
+-- Now it's possible to check for loops
+  all_bnodes := dict_list_keys (bnode_usage_dict, 0);
+  gvector_sort (all_bnodes, 1, 0, 1);
+  for (bnode_ctr := length (all_bnodes) - 1; bnode_ctr >= 0; bnode_ctr := bnode_ctr - 1)
+    {
+      declare top_bn_iid, next_bn_iid IRI_ID;
+      declare u, top_u, next_u any;
+      top_bn_iid := all_bnodes[bnode_ctr];
+      u := dict_get (bnode_usage_dict, top_bn_iid, null);
+next_loop_check:
+      if (u[5] is not null)
+        goto bn_iid_done;
+      if (u[2] = bnode_ctr)
+        {
+          while (u[5] is not null)
+            {
+              -- dbg_obj_princ ('Marking as part of a loop: ', top_bn_iid, u);
+              next_bn_iid := u[0];
+              u[5] := UNAME'';
+              dict_put (bnode_usage_dict, top_bn_iid, u);
+              top_bn_iid := next_bn_iid;
+              u := dict_get (bnode_usage_dict, top_bn_iid, null);
+            }
+          goto bn_iid_done;
+        }
+      next_bn_iid := u[0];
+      u[2] := bnode_ctr;
+      dict_put (bnode_usage_dict, top_bn_iid, u);
+      if (not case trees4all when 0 then is_bnode_iri_id (next_bn_iid) else isiri_id (next_bn_iid) end)
+        goto bn_iid_done;
+      next_u := dict_get (bnode_usage_dict, next_bn_iid, null);
+      top_bn_iid := next_bn_iid;
+      u := next_u;
+      goto next_loop_check;
+bn_iid_done: ;
+    }
+-- Now it is possible to check list nodes
+  if (not trees4all)
+    {
+      dict_iter_rewind (tail_to_head_dict);
+      while (dict_iter_next (tail_to_head_dict, tail_bnode, head_bnode))
+        {
+          declare u, next_u any;
+          declare last_good_head_bnode, next_bn_iid IRI_ID;
+          declare len_ctr integer;
+          len_ctr := 0;
+          last_good_head_bnode := head_bnode;
+          -- dbg_obj_princ ('Loop from ', tail_bnode, ' to ', head_bnode);
+          while (is_bnode_iri_id (head_bnode))
+            {
+              u := dict_get (bnode_usage_dict, head_bnode, null);
+              if (isinteger (u[3]) and isinteger (u[4]) and u[5] is null)
+                {
+                  -- dbg_obj_princ ('Reached ', head_bnode, u, ' from ', last_good_head_bnode);
+                  last_good_head_bnode := head_bnode;
+                  u[5] := len_ctr;
+                  len_ctr := len_ctr + 1;
+                  dict_put (bnode_usage_dict, head_bnode, u);
+                  next_bn_iid := u[0];
+                  next_u := dict_get (bnode_usage_dict, next_bn_iid, null);
+                  if (next_u is not null and isinteger (next_u[4]) and (triples[next_u[4]][2] = head_bnode))
+                    {
+                      head_bnode := next_bn_iid;
+                      u := next_u;
+                    }
+                  else
+                    {
+                      -- dbg_obj_princ ('Rejected ', head_bnode, u, ' from last goood ', last_good_head_bnode);
+                      head_bnode := null;
+                    }
+                }
+              else
+                {
+                  -- dbg_obj_princ ('Rejected ', head_bnode, u, ' from ', last_good_head_bnode);
+                  u[5] := UNAME'';
+                  dict_put (bnode_usage_dict, head_bnode, u);
+                  head_bnode := null;
+                }
+            }
+        }
+    }
+  bnode_usage_dict_ret := bnode_usage_dict;
+  tail_to_head_dict_ret := tail_to_head_dict;
+  printed_triples_mask_ret := printed_triples_mask;
+}
+;
+
+create function DB.DBA.JSON_LD_CTX_USED_NAMES (in ctx_dict any)
+{
+  declare used_names any;
+  declare k,v any;
+  used_names := dict_new (dict_size (ctx_dict));
+  dict_iter_rewind (ctx_dict);
+  while (dict_iter_next (ctx_dict, k, v))
+    if (k[3] is not null)
+      {
+        declare prev_use any;
+        prev_use := dict_get (used_names, v[0], null);
+        if (k[3] is not null and prev_use is not null)
+          signal ('22023', 'JSON-LD context dictionary is invalid, it uses shortcut "' || dict_get (used_names, v[0], null)
+            || '" for both <' || k[0] || '> with ' || k[3] || ' and <' || prev_use[0] || '> with ' || prev_use[3] );
+        dict_put (used_names, v[0], k);
+      }
+  return used_names;
+}
+;
+
+create function DB.DBA.JSON_LD_CTX_MAKE_NEW_SHORTCUT (in p varchar, in otype varchar, in used_names any)
+{
+  declare old_k any;
+  declare p_tail, otype_tail integer;
+  declare orig_p, shortcut, short2, o_suffix varchar;
+  orig_p := p;
+  otype_tail := strrchr (otype, '#');
+  if (otype_tail is null)
+    o_suffix := otype;
+  else
+    {
+      o_suffix := subseq (otype, otype_tail+1);
+      if (o_suffix = '')
+        o_suffix := otype;
+    }
+again:
+  p_tail := strrchr (p, '#');
+  if (p_tail is null)
+    p_tail := strrchr (p, '/');
+  if (p_tail is not null)
+    {
+      shortcut := subseq (p, p_tail+1);
+      if (o_suffix = '')
+        {
+          p := subseq (p, 0, p_tail);
+          goto again;
+        }
+      old_k := dict_get (used_names, shortcut, null);
+      if (old_k is null or (orig_p = old_k[0] and otype = old_k[1]))
+        return shortcut;
+      short2 := shortcut || o_suffix;
+      old_k := dict_get (used_names, short2, null);
+      if (old_k is null or (orig_p = old_k[0] and otype = old_k[1]))
+        return short2;
+      p [p_tail] := ascii ('_');
+      goto again;
+    }
+  return 'x' || tree_md5 (vector (orig_p, otype), 1);
+}
+;
+
+-- ctx_dict is a dictionary of JSON_LD shortcut names and at the same time the dictionary of preset types for some predicates.
+-- The keys of the dictionary are either vector (predicate, type) or vector (predicate, NULL); first variant is for shortcuts and second one is for checking types.
+-- The values are vector (shortcut, reserved-for-future) for first variant and vector (first-type, can-add-more-types) for second one.
+-- ctx_mode tells what to do with the context dictionary:
+-- bit 1 = create dictionary if not exists.
+-- bit 2 = if needed, extend the existing or newly created dictionary by new properties (but not create the dictionary if bit 1 is not set).
+-- bit 4 = if needed, extend the existing or newly created dictionary by new object types for known properties (otherwise only new properties can be edited, or none at all if bit 2 is not set).
+-- bit 8 = signal an error if type of object does not match the type in dictionary (if not set then plain notation is used).
+-- bit 256 = 100% accuracy in types, different numeric types get different entries in dictionary (or results in an error).
+-- bit 512 = signal an error if the property in triples is not listed in the dictionary (if not set then plain notation is used).
+-- Note then now bits 1 2 4 are more or less ok, but not higher.
+
+create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses any, in ctx_dict any := null, in ctx_mode integer := 255)
+{
+  declare bnode_usage_dict any;
+  declare tail_to_head_dict any;
+  declare env any;
+  declare printed_triples_mask varchar;
+  declare tcount, tctr, nesting integer;
+  tcount := length (triples);
+  -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX with mode ', ctx_mode, ':'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  if (0 = tcount)
+    {
+      http ('{ }\n', ses);
+      return;
+    }
+  env := vector (0, 0, 0, null);
+  if (214 <> __tag (ctx_dict))
+    {
+      if (bit_and (ctx_mode, 1))
+        ctx_dict := dict_new (31);
+      else if (bit_and (ctx_mode, 2+4))
+        signal ('22023', 'JSON-LD context dictionary is required but neither provided nor allowed to be created (bit 1 of context mode is not set)');
+    }
+  DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (triples, 0, bnode_usage_dict, tail_to_head_dict, printed_triples_mask);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
+  if (bit_and (ctx_mode, 2+4))
+    {
+      declare used_names any;
+      declare prev_p, prev_otype any;
+      declare fixed_otype_of_p any;
+      used_names := DB.DBA.JSON_LD_CTX_USED_NAMES (ctx_dict);
+      prev_p := '';
+      prev_otype := '@:)';
+      fixed_otype_of_p := null;
+      for (tctr := 0; tctr < tcount; tctr := tctr + 1)
+        {
+          declare p, obj, raw_otype, otype any;
+          if (ascii(' ') <> printed_triples_mask[tctr])
+            {
+              -- dbg_obj_princ ('skipping ', triples[tctr], ' due to mask ', printed_triples_mask[tctr]);
+              goto skip_shortcut_calc; -- see below;
+            }
+          p := id_to_iri (triples[tctr][1]);
+          obj := triples[tctr][2];
+          otype := raw_otype := case __tag(obj)
+            when __tag of rdf_box then UNAME'@@lit'
+            when __tag of integer then UNAME'@num'
+            when __tag of real then UNAME'@num'
+            when __tag of double precision then UNAME'@num'
+            when __tag of decimal then UNAME'@num'
+            when __tag of IRI_ID then UNAME'@id'
+            when __tag of UNAME then UNAME'@id'
+            when __tag of varchar then case when (bit_and (__box_flags (obj), 1)) then UNAME'@id' else UNAME'http://www.w3.org/2001/XMLSchema#string' end
+            when __tag of nvarchar then UNAME'http://www.w3.org/2001/XMLSchema#string'
+            else uname(__xsd_type (obj)) end;
+          -- dbg_obj_princ ('was ', prev_p, prev_otype, '; now ', p, obj, otype);
+          if (otype = UNAME'@@lit')
+            {
+              otype := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)), UNAME'http://www.w3.org/2001/XMLSchema#string');
+              if (otype in ('http://www.w3.org/2001/XMLSchema#integer', 'http://www.w3.org/2001/XMLSchema#float', 'http://www.w3.org/2001/XMLSchema#double', 'http://www.w3.org/2001/XMLSchema#decimal'))
+                otype := UNAME'@num';
+              else
+                otype := uname(otype);
+            }
+          if (((p <> prev_p) or (otype <> prev_otype)) and (p <> UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#type'))
+            {
+              declare shortcut_etc any;
+              declare shortcut varchar;
+              shortcut_etc := dict_get (ctx_dict, vector (p, otype), null);
+              -- dbg_obj_princ ('dict_get (ctx_dict, ', vector (p, otype), ') returned ', shortcut_etc);
+              if (p <> prev_p)
+                {
+                  fixed_otype_of_p := dict_get (ctx_dict, vector (p, null), null);
+                  -- dbg_obj_princ ('dict_get (ctx_dict, ', vector (p, null), ') returned ', fixed_otype_of_p);
+                  if (fixed_otype_of_p is null)
+                    {
+                      if (fixed_otype_of_p is not null and (fixed_otype_of_p <> otype))
+                        signal ('22023', 'JSON-LD context is not suitable for data: property <' || p || '> is supposed to have values of type " || fixed_otype_of_p || " but the data contain value of type "' || otype || '".');
+                    }
+                }
+              if (shortcut_etc is null)
+                {
+                  if (bit_and (ctx_mode, 4) or fixed_otype_of_p is null)
+                    {
+                      shortcut := DB.DBA.JSON_LD_CTX_MAKE_NEW_SHORTCUT (p, otype, used_names);
+                      -- dbg_obj_princ ('dict_put (ctx_dict, ', vector (p, otype), vector (shortcut));
+                      dict_put (ctx_dict, vector (p, otype), vector (shortcut));
+                      dict_put (used_names, shortcut, vector (p, otype));
+                    }
+                }
+            }
+          prev_p := p;
+          prev_otype := otype;
+skip_shortcut_calc: ;
+        }
+    }
+  if (214 <> __tag (ctx_dict))
+    http ('{ "@graph": [\n    ', ses);
+  else
+    {
+      declare need_comma integer;
+      declare k,v any;
+      http ('{ "@context": {', ses);
+      dict_iter_rewind (ctx_dict);
+      need_comma := 0;
+      while (dict_iter_next (ctx_dict, k, v))
+        {
+          if (k[1] is not null)
+            {
+              if (need_comma)
+                http (',', ses);
+              else
+                need_comma := 1;
+              http ('\n    "', ses);
+              http (v[0], ses);
+              http ('": { "@id": "', ses);
+              http (id_to_iri (k[0]), ses);
+              if (k[1] not in (UNAME'@num', UNAME'http://www.w3.org/2001/XMLSchema#string'))
+                {
+                  http ('", "@type": "', ses);
+                  http (k[1], ses);
+                  http ('" }', ses);
+                }
+              else
+                {
+            -- Uncomment either
+                  --http ('" /*, "@type": "', ses);
+                  --http (k[1], ses);
+                  --http ('"*/ }', ses);
+            -- or
+                  http ('" }', ses);
+            -- but not both
+                }
+            }
+        }
+      http (' },\n  "@graph": [\n    ', ses);
+    }
+  nesting := http_ld_json_triple_batch (env, triples, ses, ctx_dict, ctx_mode, bnode_usage_dict, printed_triples_mask);
+  if (nesting > 1)
+    http (' ]', ses);
+  if (nesting)
+    http (' }\n', ses);
   http ('] }\n', ses);
 }
 ;
@@ -6250,164 +6670,17 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL (inout triples any, inout ses an
 
 create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (inout triples any, in env_flags integer, inout ses any)
 {
-  declare env, printed_triples_mask any;
-  declare rdf_first_iid, rdf_rest_iid, rdf_nil_iid IRI_ID;
   declare bnode_usage_dict any;
--- Keys of bnode_usage_dict are IRI_IDs of all blank nodes of the \c triples,
--- values are vectors of five items
--- #0: NULL if key bnode is not used as object OR IRI_ID of single subject such that the key bnode is object OR an empty string UNAME if the key bnode is used as object many times or makes a loop made of anonymous bnodes.
--- #1: NULL if key bnode does not have rdf:first property OR an integer index of that rdf:first triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:first or non-list predicates.
--- #2: NULL if key bnode does not have rdf:rest property OR an integer index of that rdf:rest triple in \c triples OR an empty string UNAME if the key bnode has many values of rdf:rest or non-list predicates.
--- #3: NULL if not in the list or not yet checked OR an integer that indicates the length of proper tail of the list OR an empty string UNAME if the list is ended up with cycle or something weird.
--- #4: Index of first triple where the bnode appears as a subject, NULL if there are no such.
   declare tail_to_head_dict any;
--- Keys of tail_to_head_dict are last bnodes of lists, values are first bnodes of (valid parts of) lists OR empty string UNAME for last bnodes that were later proven to be inappropriate.
-  declare all_bnodes any;
+  declare env, printed_triples_mask any;
   declare tcount, tctr, bnode_ctr integer;
-  declare tail_bnode, head_bnode IRI_ID;
   declare prefixes_are_printed integer;
   declare prev_s, prev_p varchar;
-  tcount := length (triples);
-  rowvector_obj_sort (triples, 2, 1);
-  rowvector_subj_sort (triples, 1, 1);
-  rowvector_subj_sort (triples, 0, 1);
-  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, env_flags, 0, ses);
-  rdf_first_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#first');
-  rdf_rest_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest');
-  rdf_nil_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil');
-  printed_triples_mask := space (tcount);
--- First of all we gather info into bnode_usage_dict, except items #3 of values
-  bnode_usage_dict := dict_new (13 + (tcount / 100));
-  tail_to_head_dict := dict_new (13 + (tcount / 1000));
-  for (tctr := 0; tctr < tcount; tctr := tctr + 1)
-    {
-      declare s_iid, o_iid IRI_ID;
-      -- dbg_obj_princ ('Gathering ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
-      if (triples[tctr][0] is null or triples[tctr][1] is null or triples[tctr][2] is null)
-        {
-          printed_triples_mask[tctr] := ascii ('N');
-          goto triple_skipped;
-        }
-      s_iid := iri_to_id_nosignal (triples[tctr][0]);
-      o_iid := iri_to_id_nosignal (triples[tctr][2]);
-      if (is_bnode_iri_id (s_iid))
-        {
-          declare p_iid IRI_ID;
-          declare u any;
-          p_iid := iri_to_id_nosignal (triples[tctr][1]);
-          u := dict_get (bnode_usage_dict, s_iid, null);
-          if (u is null)
-            u := vector (null, null, null, null, tctr);
-          else if (u[4] is null)
-            u[4] := tctr;
-          if (rdf_first_iid = p_iid)
-            {
-              if (u[1] is null)
-                {
-                  u[1] := tctr;
-                  goto s_iid_done;
-                }
-              else
-                goto bad_for_list;
-            }
-          else if (rdf_rest_iid = p_iid)
-            {
-              if (u[2] is not null)
-                goto bad_for_list;
-              else if (rdf_nil_iid = o_iid)
-                {
-                  dict_put (tail_to_head_dict, s_iid, s_iid);
-                  u[2] := tctr;
-                  goto s_iid_done;
-                }
-              else if (is_bnode_iri_id (o_iid))
-                {
-                  u[2] := tctr;
-                  goto s_iid_done;
-                }
-              else
-                goto bad_for_list;
-            }
-bad_for_list:
-          u[1] := UNAME'';
-          u[2] := UNAME'';
-          if (dict_get (tail_to_head_dict, s_iid, null) is not null)
-            dict_put (tail_to_head_dict, s_iid, UNAME'');
-s_iid_done:
-          dict_put (bnode_usage_dict, s_iid, u);
-        }
-      if (is_bnode_iri_id (o_iid))
-        {
-          declare u any;
-          u := dict_get (bnode_usage_dict, o_iid, null);
-          if (u is null)
-            dict_put (bnode_usage_dict, o_iid, vector (s_iid, null, null, null, null));
-          else
-            {
-              if (u[0] is null)
-                u[0] := s_iid;
-              else
-                u[0] := UNAME'';
-              dict_put (bnode_usage_dict, o_iid, u);
-            }
-        }
-triple_skipped: ;
-    }
--- Now it's possible to check for loops of anonymous cycles
-  all_bnodes := dict_list_keys (bnode_usage_dict, 0);
-  gvector_sort (all_bnodes, 1, 0, 1);
-  foreach (IRI_ID bn_iid in all_bnodes) do
-    {
-      declare top_bn_iid IRI_ID;
-      top_bn_iid := bn_iid;
-      while (is_bnode_iri_id (top_bn_iid))
-        {
-          declare u any;
-          u := dict_get (bnode_usage_dict, top_bn_iid, null);
-          if (u[0] = bn_iid)
-            {
-              u := dict_get (bnode_usage_dict, bn_iid, null);
-              u[0] := UNAME'';
-              dict_put (bnode_usage_dict, bn_iid, u);
-              goto bn_iid_done;
-            }
-          top_bn_iid := u[0];
-        }
-bn_iid_done: ;
-    }
--- Now it is possible to check list nodes
-  dict_iter_rewind (tail_to_head_dict);
-  while (dict_iter_next (tail_to_head_dict, tail_bnode, head_bnode))
-    {
-      declare last_good_head_bnode IRI_ID;
-      declare len_ctr integer;
-      len_ctr := 0;
-      last_good_head_bnode := head_bnode;
-      -- dbg_obj_princ ('Loop from ', tail_bnode, ' to ', head_bnode);
-      while (is_bnode_iri_id (head_bnode))
-        {
-          declare u any;
-          u := dict_get (bnode_usage_dict, head_bnode, null);
-          -- dbg_obj_princ (head_bnode, ' has ', u);
-          if (isinteger (u[1]) and isinteger (u[2]) and u[3] is null and (u[0] is null or isiri_id (u[0])))
-            {
-              -- dbg_obj_princ ('Reached ', last_good_head_bnode);
-              last_good_head_bnode := head_bnode;
-              u[3] := len_ctr;
-              len_ctr := len_ctr + 1;
-              dict_put (bnode_usage_dict, head_bnode, u);
-              head_bnode := u[0];
-            }
-          else
-            {
-              u[3] := UNAME'';
-              dict_put (bnode_usage_dict, head_bnode, u);
-              head_bnode := null;
-            }
-        }
-    }
+  DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (triples, 0, bnode_usage_dict, tail_to_head_dict, printed_triples_mask);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
 -- Start the actual serialization
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, env_flags, 0, ses);
+  tcount := length (triples);
   prefixes_are_printed := 0;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     prefixes_are_printed := prefixes_are_printed + http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
@@ -6422,7 +6695,6 @@ bn_iid_done: ;
       declare s, p, o any;
       if (ascii (' ') <> printed_triples_mask[tctr])
         goto done_triple;
-      -- dbg_obj_princ ('Printing ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
       s := triples[tctr][0];
       p := triples[tctr][1];
       o := triples[tctr][2];
@@ -6433,8 +6705,12 @@ bn_iid_done: ;
           declare u any;
           u := dict_get (bnode_usage_dict, s_iid, null);
           if (isiri_id (u[0]))
-            goto done_triple;
+            {
+              -- dbg_obj_princ ('Skipping ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2], ': subj has ', u);
+              goto done_triple;
+            }
         }
+      -- dbg_obj_princ ('Printing ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
       if (s <> prev_s)
         {
           if (prev_s <> '')
@@ -6481,7 +6757,7 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
       http_ttl_value (env, s_bnode_iid, 2, ses);
       return;
     }
-  if (isinteger (u[3]))
+  if (isinteger (u[5]))
     {
       -- dbg_obj_princ ('Printing list from ', s_bnode_iid, ' u=', u);
       http ('(', ses);
@@ -6489,25 +6765,25 @@ create procedure DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (inout triples any, ino
         {
           declare itm any;
           declare itm_iid IRI_ID;
-          itm := triples[u[1]][2];
+          itm := triples[u[3]][2];
           itm_iid := iri_to_id_nosignal (itm);
-          if (ascii (' ') <> printed_triples_mask[u[1]]) signal ('OBLOM', 'Corrupted CAR in list');
-          if (ascii (' ') <> printed_triples_mask[u[2]]) signal ('OBLOM', 'Corrupted CDR in list');
-          printed_triples_mask[u[1]] := ascii ('A');
+          if (ascii (' ') <> printed_triples_mask[u[3]]) signal ('OBLOM', 'Corrupted CAR in list');
+          if (ascii (' ') <> printed_triples_mask[u[4]]) signal ('OBLOM', 'Corrupted CDR in list');
+          printed_triples_mask[u[3]] := ascii ('A');
           http (' ', ses);
           if (is_bnode_iri_id (itm_iid))
             DB.DBA.RDF_TRIPLE_OBJ_BNODE_TO_NICE_TTL (triples, printed_triples_mask, itm_iid, env, bnode_usage_dict, depth + 1, ses);
           else
             http_ttl_value (env, itm, 2, ses);
-          printed_triples_mask[u[2]] := ascii ('D');
-          s_bnode_iid := iri_to_id_nosignal (triples[u[2]][2]);
+          printed_triples_mask[u[4]] := ascii ('D');
+          s_bnode_iid := iri_to_id_nosignal (triples[u[4]][2]);
           u := dict_get (bnode_usage_dict, s_bnode_iid, null);
           -- dbg_obj_princ ('next node ', s_bnode_iid, ' u=', u);
         }
       http (' )', ses);
       return;
     }
-  tctr := u[4];
+  tctr := u[1];
   if (tctr is null)
     {
       -- dbg_obj_princ ('Printing empty bnode ', s_bnode_iid, ' u=', u);
@@ -6627,6 +6903,21 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD (inout triples_dict any
   else
     triples := dict_list_keys (triples_dict, 1);
   DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, ses);
+  return ses;
+}
+;
+
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX (inout triples_dict any, in ctx_dict any := null) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    {
+      triples := vector ();
+    }
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (triples, ses, ctx_dict);
   return ses;
 }
 ;
@@ -8156,8 +8447,6 @@ create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any,
                 delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
               else
                 {
-                  declare o_val any array;
-                  declare o_dt_and_lang_twobyte integer;
                   if (__tag of rdf_box = __tag (a_o) and rdf_box_ro_id (a_o)) -- was if (__tag of rdf_box = __tag (a_o) and rdf_box_is_complete (a_o))
                     {
                       -- dbg_obj_princ ('delete by O=a_o because the box has ro_id');
@@ -8165,13 +8454,25 @@ create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any,
                     }
                   else
                     {
+                      declare o_val any array;
+                      declare o_dt_and_lang_twobyte integer;
                       declare search_fields_are_ok integer;
                       search_fields_are_ok := __rdf_box_to_ro_id_search_fields (a_o, o_val, o_dt_and_lang_twobyte);
                       -- dbg_obj_princ ('__rdf_box_to_ro_id_search_fields (', a_o, ') returned ', search_fields_are_ok, o_val, o_dt_and_lang_twobyte);
                       if (search_fields_are_ok)
                         {
-                          -- dbg_obj_princ ('delete by search fields, ro_id will be ', (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte));
-                          delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
+                          declare rb_of_ro_id any;
+                          rb_of_ro_id := (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
+                          if (rb_of_ro_id is not null)
+                            {
+                              -- dbg_obj_princ ('delete by search fields, ro_id will be ', rb_of_ro_id);
+                              delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = rb_of_ro_id and rdf_box_dt_and_lang(O) = o_dt_and_lang_twobyte;
+                            }
+                          else
+                            {
+                              -- dbg_obj_princ ('delete by O=a_o as a fallback for missing search fields');
+                              delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
+                            }
                         }
                       else if (isstring (a_o)) /* it should be string IRI otherwise it's in RDF_OBJ */
                         {
@@ -8306,8 +8607,6 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
       __rgs_prepare_del_or_ins (quads, uid, dflt_graph_iri, all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv);
       for vectored (in a_s any array := all_sv, in a_p any array := all_pv, in a_o any array := all_ov, in a_g any array := all_gv)
         {
-          declare o_val any array;
-          declare o_dt_and_lang_twobyte integer;
           if (not isinteger (a_g))
             {
               if (not isiri_id (a_s))
@@ -8317,16 +8616,36 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
               if (isiri_id (a_s) and isiri_id (a_p))
                 {
                   if (isiri_id (a_o))
-                    delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
+                    {
+                      -- dbg_obj_princ ('delete of plain iri_id ', a_o);
+                      delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
+                    }
+                  else if (__tag of rdf_box = __tag (a_o) and rdf_box_ro_id (a_o))
+                    {
+                      -- dbg_obj_princ ('delete by O=a_o because the box has ro_id');
+                      delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
+                    }
               else
                     {
+                      declare o_val any array;
+                      declare o_dt_and_lang_twobyte integer;
                       declare search_fields_are_ok integer;
                       search_fields_are_ok := __rdf_box_to_ro_id_search_fields (a_o, o_val, o_dt_and_lang_twobyte);
                       -- dbg_obj_princ ('__rdf_box_to_ro_id_search_fields (', a_o, ') returned ', search_fields_are_ok, o_val, o_dt_and_lang_twobyte);
                       if (search_fields_are_ok)
                         {
-                          -- dbg_obj_princ ('delete by search fields, ro_id will be ', (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte));
-                          delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
+                          declare rb_of_ro_id any;
+                          rb_of_ro_id := (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
+                          if (rb_of_ro_id is not null)
+                            {
+                              -- dbg_obj_princ ('delete by search fields, ro_id will be ', rb_of_ro_id);
+                              delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = rb_of_ro_id and rdf_box_dt_and_lang(O) = o_dt_and_lang_twobyte;
+                            }
+                          else
+                            {
+                              -- dbg_obj_princ ('delete by O=a_o as a fallback for missing search fields');
+                              delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = a_o;
+                            }
                         }
                       else if (isstring (a_o)) /* it should be string IRI otherwise it's in RDF_OBJ */
                         {
@@ -8374,6 +8693,7 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
     return del_count;
 }
 ;
+
 
 create function DB.DBA.SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS (in dflt_graph_iri any, in del_quads_dict any, in ins_quads_dict any, in uid integer, in log_mode integer := null, in compose_report integer := 0) returns any
 {
@@ -8689,7 +9009,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
       else
         _env := dict_new (31);
       if (0 < length (stats))
-        DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vector(), vector(), use_dict_limit);
+        DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vars, vector(), use_dict_limit);
     }
   blank_ids := 0;
   for (triple_ctr := length (opcodes) - 1; triple_ctr >= 0; triple_ctr := triple_ctr-1)
@@ -12144,6 +12464,8 @@ create function DB.DBA.RDF_QM_DEFINE_IRI_CLASS_FORMAT (in classiri varchar, in i
           type_name := lower (arglist[argctr][2]);
           dtp := case (type_name)
             when 'integer' then __tag of integer
+            when 'smallint' then __tag of integer
+            when 'bigint' then __tag of integer
             when 'varchar' then __tag of varchar
             when 'date' then __tag of date
             when 'datetime' then __tag of datetime
@@ -12516,6 +12838,8 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_FORMAT (in classiri varchar, 
           type_name := lower (arglist[argctr][2]);
           dtp := case (type_name)
             when 'integer' then __tag of integer
+            when 'smallint' then __tag of integer
+            when 'bigint' then __tag of integer
             when 'varchar' then __tag of varchar
             when 'date' then __tag of date
             when 'datetime' then __tag of datetime
@@ -13393,8 +13717,9 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when __tag of time then 'time'
         when __tag of long varbinary then 'longvarbinary'
         when __tag of varbinary then 'longvarbinary'
-        when 188 then 'integer'
         when __tag of integer then 'integer'
+        when __tag of smallint then 'integer'
+        when __tag of smallint then 'integer'
         when __tag of varchar then 'varchar'
         when __tag of real then 'double precision' -- actually single precision float
         when __tag of double precision then 'double precision'
@@ -14096,12 +14421,12 @@ create function DB.DBA.RDF_SML_DROP (in smliri varchar, in silent integer, in co
       if (silent)
         {
           if (compose_report)
-            return report || 'SPARQL macro library <' || smliri || '> does not exists, nothing to delete';
+            return report || 'SPARQL macro library <' || smliri || '> does not exist, nothing to delete';
           else
             return 0;
         }
       else
-        signal ('22023', 'SPARQL macro library <' || smliri || '> does not exists, nothing to delete');
+        signal ('22023', 'SPARQL macro library <' || smliri || '> does not exist, nothing to delete');
     }
   DB.DBA.RDF_QM_ASSERT_JSO_TYPE (smliri, 'http://www.openlinksw.com/schemas/virtrdf#SparqlMacroLibrary');
   sparql define input:storage ""
@@ -16479,7 +16804,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       if (new_group_iri is null)
         {
           result ('ERROR', new_group_iid, new_group_iri, null, null,
-            sprintf ('Garbage in list of members of all groups: the group does not exists and group IRI ID is invalid') );
+            sprintf ('Garbage in list of members of all groups: the group does not exist and group IRI ID is invalid') );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
             {
@@ -16490,7 +16815,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       else if (exists (select 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = new_group_iri))
         {
           result ('ERROR', new_group_iid, new_group_iri, null, null,
-            sprintf ('Conflicting data in list of groups: the group does not exists, the group IRI is used in a corrupted group record') );
+            sprintf ('Conflicting data in list of groups: the group does not exist, the group IRI is used in a corrupted group record') );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
             {
@@ -16694,7 +17019,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2015-12-09 0001v7';
+  ver := '2017-03-22 0001v7';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
@@ -16867,6 +17192,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_LD to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_TSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML to SPARQL_SELECT',
@@ -16908,6 +17234,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL to SPARQL_SELECT',
@@ -17697,11 +18024,23 @@ create procedure GEO_FILL_SRV  (in arr any, in fill int)
       l := aref_set_0 (arr, inx);
       gs[inx]  := aref_set_0 (l, 0);
       ss[inx] := aref_set_0 (l, 1);
+      {
+	  -- can have some bad input so skip and do next
+	  declare exit handler for sqlstate '*' {
+	  os[inx] := null;
+	  goto next;
+	};
       os[inx] := st_point (aref_set_0 (l, 2), aref_set_0 (l, 3));
+    }
+      next:;
     }
   for vectored (in g1 iri_id_8 := gs, in s1 iri_id_8 := ss, in o1 any array := os)
     {
-      insert soft rdf_quad (g, s, p, o) values ("g1", "s1", geop, rdf_geo_add (rdf_box (o1, 256, 257, 0, 1)));
+      if (o1 is not null)
+	{
+	  insert soft rdf_quad (g, s, p, o) values ("g1", "s1", geop,
+	      rdf_geo_add (rdf_box (o1, 256, 257, 0, 1)));
+	}
     }
 }
 ;
@@ -17715,8 +18054,11 @@ create procedure rdf_geo_fill (in threads int := null, in batch int := 100000)
   fill := 0;
   ctr := 0;
   log_enable (2, 1);
-  for select "s", "long", "lat", "g" from (sparql define output:valmode "LONG" select ?g ?s ?long ?lat where {
-    graph ?g { ?s geo:long ?long . ?s geo:lat ?lat}}) f  do
+  for (select "s", "long", "lat", "g" from (sparql define output:valmode "LONG"
+      prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+      select ?g ?s ?long ?lat where {
+          graph ?g {
+              ?s geo:long ?long . ?s geo:lat ?lat . } } ) as f) do
     {
       declare lat2, long2 any;
       long2 := num_or_null (rdf_box_data ("long"));

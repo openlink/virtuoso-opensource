@@ -8,7 +8,7 @@
  *  The iODBC driver manager.
  *  
  *  Copyright (C) 1995 by Ke Jin <kejin@empress.com> 
- *  Copyright (C) 1996-2016 OpenLink Software <iodbc@openlinksw.com>
+ *  Copyright (C) 1996-2018 OpenLink Software <iodbc@openlinksw.com>
  *  All Rights Reserved.
  *
  *  This software is released under the terms of either of the following
@@ -78,13 +78,6 @@
  */
 #ifndef ODBCVER
 #define ODBCVER		0x0351
-#endif
-
-/*
- *  Include Windows style defines and typedefs on Unix
- */
-#ifndef _IODBCUNIX_H
-#include <iodbcunix.h>
 #endif
 
 #ifndef _SQLTYPES_H

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -54,6 +54,7 @@ public class VirtGraph extends GraphBase {
         VirtuosoQueryEngine.register();
     }
 
+    static final String xsd_string = "http://www.w3.org/2001/XMLSchema#string";
     static final protected String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
 //    static final protected String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
     static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
@@ -78,14 +79,17 @@ public class VirtGraph extends GraphBase {
     protected int prefetchSize = 100;
     protected int batchSize = BATCH_SIZE;
     protected Connection connection = null;
+    protected VirtDataset parent_dataset = null;
     protected String ruleSet = null;
+    protected String macroLib = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
-    protected boolean useReprepare = true;
+    protected boolean useReprepare = false;
     protected String sparqlPrefix = null;
     protected boolean insertBNodeAsVirtuosoIRI = false;
     protected boolean resetBNodesDictAfterCall = false;
     protected boolean resetBNodesDictAfterCommit = true;
+    protected boolean insertStringLiteralAsSimple = false;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
@@ -101,6 +105,29 @@ public class VirtGraph extends GraphBase {
     java.sql.Statement stInsert_Cmd = null;
     int psInsert_Count = 0;
 
+
+    protected VirtGraph(String _graphName, VirtDataset ds) {
+        super();
+        this.graphName = _graphName == null ? DEFAULT : _graphName;
+        this.connection = ds.getConnection();
+        this.parent_dataset = ds;
+
+        this.url_hostlist = ds.getGraphUrl();
+        this.user = ds.getGraphUser();
+        this.password = ds.getGraphPassword();
+        this.roundrobin = ds.roundrobin;
+        setMacroLib(ds.getMacroLib());
+        setRuleSet(ds.getRuleSet());
+        setFetchSize(ds.getFetchSize());
+
+        try {
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
+        } catch (Exception e) {
+            throw new JenaException(e);
+        }
+    }
 
     public VirtGraph() {
         this(null, "jdbc:virtuoso://localhost:1111/charset=UTF-8", null, null, false);
@@ -139,8 +166,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -169,8 +196,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -202,8 +229,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -265,8 +292,8 @@ public class VirtGraph extends GraphBase {
             TypeMapper tm = TypeMapper.getInstance();
 
             virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-            if (drv.getMajorVersion() >= 3 && drv.getMinorVersion() >= 72)
-                useReprepare = false;
+            if (drv.getMajorVersion() <= 3 && drv.getMinorVersion() < 72)
+                useReprepare = true;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -415,6 +442,25 @@ public class VirtGraph extends GraphBase {
     }
 
 
+    /**
+     * Get the insertStringLiteralAsSimple state for connection
+     */
+    public boolean getInsertStringLiteralAsSimple() {
+        return this.insertStringLiteralAsSimple;
+    }
+
+    /**
+     * Set the insertStringLiteralAsSimple state for connection(default false) 
+     * 
+     * @param v
+     *        true - insert String Literals as Simple Literals
+     *        false - insert String Literals as is
+     */
+    public void setInsertStringLiteralAsSimple(boolean v) {
+        this.insertStringLiteralAsSimple = v;
+    }
+
+
 
     public int getCount() {
         return size();
@@ -445,6 +491,14 @@ public class VirtGraph extends GraphBase {
 
     public void setRuleSet(String _ruleSet) {
         ruleSet = _ruleSet;
+    }
+
+    public String getMacroLib() {
+        return macroLib;
+    }
+
+    public void setMacroLib(String _macroLib) {
+        macroLib = _macroLib;
     }
 
     public boolean getSameAs() {
@@ -553,6 +607,9 @@ public class VirtGraph extends GraphBase {
         if (ruleSet != null)
             sb.append(" define input:inference '" + ruleSet + "'\n ");
 
+        if (macroLib != null)
+            sb.append(" define input:macro-lib '" + macroLib + "'\n ");
+
         if (sparqlPrefix != null) {
             sb.append(sparqlPrefix);
             sb.append('\n');
@@ -603,9 +660,11 @@ public class VirtGraph extends GraphBase {
             }
             ltype = n.getLiteralDatatypeURI();
             if (!llang_exists && ltype != null && ltype.length() > 0) {
-                sb.append("^^<");
-                sb.append(ltype);
-                sb.append(">");
+                if (!(insertStringLiteralAsSimple && ltype.equals(xsd_string))) {
+                    sb.append("^^<");
+                    sb.append(ltype);
+                    sb.append(">");
+                }
             }
             return sb.toString();
         } else {
@@ -640,9 +699,11 @@ public class VirtGraph extends GraphBase {
                 }
                 ltype = n.getLiteralDatatypeURI();
                 if (!llang_exists && ltype != null && ltype.length() > 0) {
-                    sb.append("^^<");
-                    sb.append(ltype);
-                    sb.append(">");
+                    if (!(insertStringLiteralAsSimple && ltype.equals(xsd_string))) {
+                        sb.append("^^<");
+                        sb.append(ltype);
+                        sb.append(">");
+                    }
                 }
                 return sb.toString();
             } else {
@@ -693,9 +754,15 @@ public class VirtGraph extends GraphBase {
                 ps.setString(col + 1, n.getLiteralLexicalForm());
                 ps.setString(col + 2, n.getLiteralLanguage());
             } else if (ltype != null && ltype.length() > 0) {
-                ps.setInt(col, 4);
-                ps.setString(col + 1, n.getLiteralLexicalForm());
-                ps.setString(col + 2, n.getLiteralDatatypeURI());
+                if (!(insertStringLiteralAsSimple && ltype.equals(xsd_string))) {
+                    ps.setInt(col, 4);
+                    ps.setString(col + 1, n.getLiteralLexicalForm());
+                    ps.setString(col + 2, n.getLiteralDatatypeURI());
+                } else {
+                    ps.setInt(col, 3);
+                    ps.setString(col + 1, n.getLiteralLexicalForm());
+                    ps.setNull(col + 2, java.sql.Types.VARCHAR);
+                } 
             } else {
                 ps.setInt(col, 3);
                 ps.setString(col + 1, n.getLiteralLexicalForm());
@@ -973,8 +1040,12 @@ public class VirtGraph extends GraphBase {
     public void close() {
         try {
             super.close(); // will set closed = true
-            if (connection != null)
-                connection.close();
+            if (connection != null) {
+               if (parent_dataset!=null)
+                   parent_dataset.removeLink(this);
+               else
+                   connection.close();
+            }
             connection = null;
             xa_connection = null;
         } catch (Exception e) {
@@ -1206,11 +1277,14 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                flushDelayAdd_batch(psInsert, psInsert_Count);
-                stopBatchAdd();
+                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
+                if (ps==null)
+                    psInsert_Count = 0;
 
             } catch (Exception e) {
                 throw new JenaException(e);
+            } finally {
+                stopBatchAdd();
             }
         }
     }
@@ -1235,10 +1309,14 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                flushDelayAdd_batch(psInsert, psInsert_Count);
-                stopBatchAdd();
+                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
+                if (ps==null)
+                    psInsert_Count = 0;
 
             } catch (Exception e) {
+                throw new JenaException(e);
+            } finally {
+                stopBatchAdd();
             }
         }
     }
@@ -1616,8 +1694,13 @@ public class VirtGraph extends GraphBase {
                 ps.setString(4, s_lang);
                 ps.setInt(5, 2);
             } else if (s_type != null && s_type.length() > 0) {
-                ps.setString(4, s_type);
-                ps.setInt(5, 3);
+                if (!(insertStringLiteralAsSimple && s_type.equals(xsd_string))) {
+                    ps.setString(4, s_type);
+                    ps.setInt(5, 3);
+                } else {
+                    ps.setNull(4, java.sql.Types.VARCHAR);
+                    ps.setInt(5, 1);
+                }
             } else {
                 ps.setNull(4, java.sql.Types.VARCHAR);
                 ps.setInt(5, 1);

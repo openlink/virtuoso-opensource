@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3310,9 +3310,9 @@ txs_next (text_node_t * txs, caddr_t * qst, int first_time)
   search_stream_t * sst = (search_stream_t *) qst_get (qst, txs->txs_sst);
   d_id_t d_id;
   int score_limit = txs->txs_score_limit ? (int) unbox (qst_get (qst, txs->txs_score_limit)) : 0;
-  d_id_set_box (&d_id, qst_get (qst, txs->txs_d_id));
   if (!txs->txs_is_driving)
     {
+      d_id_set_box (&d_id, qst_get (qst, txs->txs_d_id));
       if (D_AT_END (&d_id))
 	return ((caddr_t) SQL_NO_DATA_FOUND);
       sst_next (sst, &d_id, 1);

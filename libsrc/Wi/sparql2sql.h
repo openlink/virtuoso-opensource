@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -169,6 +169,7 @@ typedef struct sparp_equiv_s
 #ifdef DEBUG
     ptrlong e_dbg_merge_dest;	/*!< After the merge of equiv into some destination equiv, \c e_dbg_merge_dest keeps destination */
     SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to save the pointer after \c e_gp is set to NULL */
+    sparp_t *e_dbg_allocator;	/*!< The sparp where the equiv is created. This is to differentiate equivs with same gp selids from, e.g., three different variants of grabbing query */
 #endif
   } sparp_equiv_t;
 
@@ -717,7 +718,7 @@ Equivalences are touched, of course, but who cares?
 extern void sparp_flatten_join (sparp_t *sparp, SPART *parent_gp);
 
 /*! If a gp is group of non-optional triples and each triple has exactly one possible quad map then the function returns vector of tabids of triples.
-In addition, if the \c expected_triples_count argument is nonnegative then number of triples in group should be equal to that argument.
+In addition, if the \c expected_triples_count argument is non-negative then number of triples in group should be equal to that argument.
 If any condition fails, the function returns NULL.
 This function is used in breakup code generation. */
 extern caddr_t *sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_triples_count);

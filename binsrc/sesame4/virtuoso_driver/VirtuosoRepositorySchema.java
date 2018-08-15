@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -64,6 +64,15 @@ public class VirtuosoRepositorySchema {
     /** <tt>http://www.openrdf.org/config/repository/virtuoso#insertBNodeAsVirtuosoIRI</tt> */
     public final static IRI INSERTBNodeAsVirtuosoIRI;
 
+    /** <tt>http://www.openrdf.org/config/repository/virtuoso#macroLib</tt> */
+    public final static IRI MACROLIB;
+
+    /** <tt>http://www.openrdf.org/config/repository/virtuoso#concurrency</tt> */
+    public final static IRI CONCURRENCY;
+
+    /** <tt>http://www.openrdf.org/config/repository/virtuoso#useDefGraphForQueries</tt> */
+    public final static IRI USE_DEF_GRAPH_FOR_QUERIES;
+
     static {
         ValueFactory factory = SimpleValueFactory.getInstance();
         HOSTLIST   = factory.createIRI(NAMESPACE, "hostList");
@@ -76,5 +85,8 @@ public class VirtuosoRepositorySchema {
         RULESET    = factory.createIRI(NAMESPACE, "ruleSet");
         BATCHSIZE  = factory.createIRI(NAMESPACE, "batchSize");
         INSERTBNodeAsVirtuosoIRI  = factory.createIRI(NAMESPACE, "insertBNodeAsVirtuosoIRI");
+        MACROLIB    = factory.createIRI(NAMESPACE, "macroLib");
+        CONCURRENCY    = factory.createIRI(NAMESPACE, "concurrency");
+	USE_DEF_GRAPH_FOR_QUERIES = factory.createIRI(NAMESPACE, "useDefGraphForQueries");
     }
 }

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -768,6 +768,20 @@ xmla_make_xsd (inout mdta any)
       declare _type, _type_name, nill int;
       _name := mdta[i][0];
       _type := mdta[i][1];
+
+      -- TIMESTAMP
+      if (isinteger(_type) and _type = 128)
+        {
+          _type := 211;
+          mdta[i][1] := 211;
+        }
+      -- IRI_ID
+      else if (isinteger(_type) and _type = 243)
+        {
+          _type := 182;
+          mdta[i][1] := 182;
+        }
+
       if (length (mdta[i]) > 4)
         nill := mdta[i][4];
       else
@@ -778,6 +792,7 @@ xmla_make_xsd (inout mdta any)
 	    _type_name := _type;
 	  else
             _type_name := dv_to_soap_type (_type);
+
           http (sprintf ('<element name="%V" type="%s" sql:field="%s" nillable="%d" />\n', _name, _type_name, _name, nill), ses);
 	}
       else
@@ -830,7 +845,11 @@ xmla_make_element (in mdta any, in dta any)
   while (i < l)
     {
       aset (res, i1, mdta[i][0]);
-      if (mdta[i][1] = 131 and not isblob(dta[i]))
+      if (mdta[i][1] = 243)
+	 aset (res, i2, cast (dta[i] as varchar));
+      else if (mdta[i][1] = 125 and isentity(dta[i]))
+	 aset (res, i2, serialize_to_UTF8_xml(dta[i]));
+      else if (mdta[i][1] = 131 and not isblob(dta[i]))
 	 aset (res, i2, cast (dta[i] as varbinary));
       else if (mdta[i][1] = 219 and 219 <> __tag (dta[i]))
 	 aset (res, i2, cast (dta[i] as decimal));

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -66,26 +66,121 @@
     ]]>
   </v:method>
 
+  <v:method name="ttl_mimes" arglist="">
+    <![CDATA[
+      declare retValue varchar;
+
+      retValue := registry_get ('__WebDAV_ttl_mimes__');
+      if (isInteger (retValue))
+      {
+        retValue := vector ('text/turtle');
+      }
+      else
+      {
+        retValue := deserialize (retValue);
+      }
+
+      return retValue;
+    ]]>
+  </v:method>
+
+  <v:method name="ttl_app" arglist="">
+    <![CDATA[
+      declare retValue varchar;
+
+      retValue := registry_get ('__WebDAV_ttl_app__');
+      if (isInteger (retValue))
+        retValue :=  case when (isnull (DB.DBA.VAD_CHECK_VERSION ('fct'))) then 'sponger' else 'fct' end;
+
+      return retValue;
+    ]]>
+  </v:method>
+
+  <v:method name="ttl_app_option" arglist="">
+    <![CDATA[
+      declare retValue, ttl_app, ttl_sponge varchar;
+
+      ttl_app := self.ttl_app ();
+      retValue := registry_get ('__WebDAV_ttl_app_option__');
+      if (isInteger (retValue))
+      {
+        retValue := '';
+        if (ttl_app = 'fct')
+        {
+          ttl_sponge := self.ttl_sponge ();
+          if ((ttl_sponge = 'yes') or (ttl_sponge = 'add'))
+          {
+            retValue := '&sponger:get=add';
+          }
+          else if (ttl_sponge = 'soft')
+          {
+            retValue := '&sponger:get=soft';
+          }
+          else if (ttl_sponge = 'replace')
+          {
+            retValue := '&sponger:get=replace';
+          }
+        }
+      }
+
+      if (DB.DBA.is_empty_or_null (retValue))
+      {
+        if (ttl_app = 'sponger')
+        {
+          retValue := '&sponger:get=soft';
+        }
+        else if (ttl_app = 'fct')
+        {
+          retValue := '&sponger:get=soft';
+        }
+        else if (ttl_app = 'osde')
+        {
+          retValue := '&view=statements';
+        }
+      }
+
+      return retValue;
+    ]]>
+  </v:method>
+
+  <v:method name="ttl_sponge" arglist="">
+    <![CDATA[
+      declare retValue varchar;
+
+      retValue := registry_get ('__WebDAV_sponge_ttl__');
+      if (isinteger (retValue))
+      {
+        retValue := 'no';
+      }
+      else if (retValue = 'yes')
+      {
+        retValue := 'add';
+      }
+
+      return retValue;
+    ]]>
+  </v:method>
+
       <v:variable name="inter" type="integer" default="10" persist="0"/>
       <v:variable name="chk" type="integer" default="0" persist="0"/>
   <v:variable name="skin" type="integer" default="0" persist="0"/>
   <v:variable name="sse" type="integer" default="0" persist="0"/>
   <v:variable name="ttl" type="integer" default="0" persist="0"/>
   <v:variable name="ttl_prefixes" type="integer" default="0" persist="0"/>
-  <v:variable name="ttl_sp_enable" type="varchar" default="'no'" persist="0"/>
+  <v:variable name="mimeTypes" type="any" default="null" persist="0"/>
       <v:variable name="c_text" type="varchar" default="''" persist="0"/>
       <v:before-data-bind>
           <![CDATA[
-            declare _idx integer;
       declare _mode, _skin, _key varchar;
-            declare _u_id, _mode1 integer;
+      declare N, _mode1 integer;
       declare params any;
 
+
       params := control.vc_page.vc_event.ve_params;
-            _idx := 0;
+
+      self.mimeTypes := vector ('text/n3', 'text/turtle', 'text/rdf+n3', 'text/rdf+ttl', 'text/rdf+turtle', 'application/rdf+xml', 'application/rdf+n3', 'application/rdf+turtle', 'application/turtle', 'application/x-turtle', 'application/ld+json');
             self.chk := 0;
             self.c_text := '';
-
             _mode := registry_get('DELAY_UPDATE_WS_WS_SYS_DAV_RES');
             if (_mode = 'OFF')
               self.chk := 0;
@@ -156,12 +251,29 @@
         -- .TTL redirect
         if (atoi (get_keyword ('ttl_enable', params)) = 1)
         {
+          declare mimeTypes any;
+
           registry_set ('__WebDAV_ttl__', 'yes');
+
+          mimeTypes := vector ();
+          for (N := 0; N < length (params); N := N + 2)
+          {
+            if (params[N] like 'mimeType_%')
+              mimeTypes := vector_concat (mimeTypes, vector (params[N+1]));
+          }
+          registry_set ('__WebDAV_ttl_mimes__', serialize (mimeTypes));
+
+          registry_set ('__WebDAV_ttl_app__', get_keyword ('ttl_app', params, ''));
+          registry_set ('__WebDAV_ttl_app_option__', get_keyword ('ttl_app_option', params, ''));
         }
         else
         {
           registry_set ('__WebDAV_ttl__', 'no');
+          registry_remove ('__WebDAV_ttl_mimes__');
+          registry_remove ('__WebDAV_ttl_app__');
+          registry_remove ('__WebDAV_ttl_app_option__');
         }
+        registry_remove ('__WebDAV_sponge_ttl__');
 
         if (atoi (get_keyword ('ttl_prefixes_enable', params)) = 1)
         {
@@ -173,7 +285,6 @@
         }
         self.ttl_prefixes := self.ttl_prefixes_enabled2 ();
 
-        registry_set ('__WebDAV_sponge_ttl__', get_keyword ('ttl_sp_enable', params));
         self.ttl := self.ttl_enabled2 ();
             }
       if ((self.sse = 1) and not self.sse_check_key ())
@@ -186,24 +297,11 @@
           ]]>
       </v:before-data-bind>
       <v:form name="inx_form" type="simple" method="POST" action="cont_page.vspx?page=3">
-    <v:before-data-bind>
-      <![CDATA[
-        self.ttl_sp_enable := registry_get ('__WebDAV_sponge_ttl__');
-        if (isinteger (self.ttl_sp_enable))
-        {
-          self.ttl_sp_enable := 'no';
-        }
-        if (self.ttl_sp_enable = 'yes')
-        {
-          self.ttl_sp_enable := 'add';
-        }
-      ]]>
-    </v:before-data-bind>
         <table class="SubData" border="0" cellpadding="3" cellspacing="0">
           <tr>
-        <td style="width: 20%;">
+        <th style="width: 20%;">
           Text Indexing
-        </td>
+        </th>
         <td width="1px">
               <v:radio-button name="persist_enable" value="0" group-name="choice_source" xhtml_id="choice_source1">
                 <v:before-data-bind>
@@ -242,12 +340,12 @@
         </td>
       </tr>
       <tr>
-        <td nowrap="nowrap" valign="top">
-          Enable redirection for RDF-Turtle files
-        </td>
+        <th nowrap="nowrap" valign="top">
+          Redirect "text/html" requests on RDF docs
+        </th>
         <td colspan="2">
           <label>
-            <v:check-box name="ttl_enable" value="1" xhtml_id="ttl_enable">
+            <v:check-box name="ttl_enable" value="1" xhtml_id="ttl_enable" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'ttl_enable_1\', \'ttl_enable_2\', \'ttl_enable_3\']}, \'unchecked\': {\'hide\': [\'ttl_enable_1\', \'ttl_enable_2\', \'ttl_enable_3\']}});" >
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_selected := case when (self.ttl = 0) then 0 else 1 end;
@@ -258,10 +356,59 @@
           </label>
         </td>
       </tr>
-      <tr>
-        <td nowrap="nowrap" valign="top">
-          Enable adding automatically missed prefixes for RDF-Turtle files
+      <tr id="ttl_enable_1" style="display: none;">
+        <th nowrap="nowrap" valign="top">
+          Select RDF redirection mime types
+        </th>
+        <td colspan="2">
+          <?vsp
+            declare N integer;
+            declare S, mimeType varchar;
+            declare V any;
+
+            V := self.ttl_mimes ();
+            for (N := 0; N < length (self.mimeTypes); N := N + 1)
+            {
+              mimeType := self.mimeTypes[N];
+              S := case when (position (mimeType, V)) then 'checked="checked"' else '' end;
+              http (sprintf ('<label><input type="checkbox" name="mimeType_%d" value="%s" %s /> %s</label><br />', N, mimeType, S, mimeType));
+            }
+          ?>
         </td>
+      </tr>
+      <tr id="ttl_enable_2" style="display: none;">
+        <th nowrap="nowrap" valign="top">
+          Select RDF Data Browser Application for redirection
+        </th>
+        <td colspan="2">
+          <select name="ttl_app" id ="ttl_app" onchange="turtleRedirectAppChange(this);">
+          <?vsp
+            declare V any;
+
+            V := self.ttl_app ();
+
+            http (sprintf ('<option value="sponger" %s>Sponger About</option>', case when V = 'sponger' then 'selected="selected"' else '' end));
+            if (not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+              http (sprintf ('<option value="fct" %s>Faceted Browser</option>', case when V = 'fct' then 'selected="selected"' else '' end));
+
+            if (not isnull (DB.DBA.VAD_CHECK_VERSION ('rdf-editor')))
+              http (sprintf ('<option value="osde" %s>OSDE</option>', case when V = 'osde' then 'selected="selected"' else '' end));
+          ?>
+          </select>
+        </td>
+      </tr>
+      <tr id="ttl_enable_3" style="display: none;">
+        <th nowrap="nowrap" valign="top">
+          RDF Data Browser Application options
+        </th>
+        <td colspan="2">
+          <input type="text" name="ttl_app_option" id="ttl_app_option" value="<?V self.ttl_app_option() ?>" size="50" />
+        </td>
+      </tr>
+      <tr>
+        <th nowrap="nowrap" valign="top">
+          Automatically add missing @prefix declarations for RDF-Turtle documents
+        </th>
         <td colspan="2">
           <label>
             <v:check-box name="ttl_prefixes_enable" value="1" xhtml_id="ttl_prefixes_enable">
@@ -275,81 +422,15 @@
           </label>
         </td>
       </tr>
-      <tr>
-        <td valign="top">
-          Sponger options for RDF-Turtle redirection
-        </td>
-        <td colspan="2">
-          <label>
-            <v:radio-button xhtml_id="ttl_sp_enable_0" name="ttl_sp_enable_0" value="no" group-name="ttl_sp_enable">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_selected := case when (self.ttl_sp_enable = 'no') then 1 else 0 end;
-                  control.vc_data_bound := 1;
-                ]]>
-              </v:before-data-bind>
-            </v:radio-button>
-            No
-          </label>
-        </td>
-      </tr>
-      <tr>
-        <td valign="top"></td>
-        <td colspan="2">
-          <label>
-            <v:radio-button xhtml_id="ttl_sp_enable_1" name="ttl_sp_enable_1" value="add" group-name="ttl_sp_enable">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_selected := case when (self.ttl_sp_enable = 'add') then 1 else 0 end;
-                  control.vc_data_bound := 1;
-                ]]>
-              </v:before-data-bind>
-            </v:radio-button>
-            Add (get:soft "add")
-          </label>
-        </td>
-      </tr>
-      <tr>
-        <td valign="top"></td>
-        <td colspan="2">
-          <label>
-            <v:radio-button xhtml_id="ttl_sp_enable_2" name="ttl_sp_enable_2" value="soft" group-name="ttl_sp_enable">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_selected := case when (self.ttl_sp_enable = 'soft') then 1 else 0 end;
-                  control.vc_data_bound := 1;
-                ]]>
-              </v:before-data-bind>
-            </v:radio-button>
-            Soft (get:soft "soft")
-          </label>
-        </td>
-      </tr>
-      <tr>
-        <td valign="top"></td>
-        <td colspan="2">
-          <label>
-            <v:radio-button xhtml_id="ttl_sp_enable_3" name="ttl_sp_enable_3" value="replace" group-name="ttl_sp_enable">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_selected := case when (self.ttl_sp_enable = 'replace') then 1 else 0 end;
-                  control.vc_data_bound := 1;
-                ]]>
-              </v:before-data-bind>
-            </v:radio-button>
-            Replace (get:soft "replace")
-          </label>
-        </td>
-      </tr>
       <?vsp
         -- only for Conductor DAV VADs
         if (__proc_exists ('WS.WS.SSE_ENABLED'))
         {
       ?>
       <tr>
-        <td valign="top">
+        <th valign="top">
           Server side encryption
-        </td>
+        </th>
         <td colspan="2">
           <v:check-box name="sse_enable" value="1" xhtml_id="sse_enable">
             <v:before-data-bind>
@@ -374,9 +455,9 @@
         {
       ?>
       <tr>
-        <td>
+        <th>
           WebDAV Skin
-        </td>
+        </th>
         <td width="1px">
           <v:radio-button name="vspx_enable" value="1" group-name="choice_skin" xhtml_id="choice_skin1">
             <v:before-data-bind>
@@ -436,5 +517,20 @@
             }
           ?>
         </table>
+    <script type="text/javascript">
+      <![CDATA[
+        function turtleRedirectAppChange(obj)
+        {
+          if (obj.value == 'sponger')
+            $('ttl_app_option').value = '&sponger:get=soft';
+          else if (obj.value == 'fct')
+            $('ttl_app_option').value = '&sponger:get=soft';
+          else if (obj.value == 'osde')
+            $('ttl_app_option').value = '&view=statements';
+        }
+
+        OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('ttl_enable'), {'checked': {'show': ['ttl_enable_1', 'ttl_enable_2', 'ttl_enable_3']}, 'unchecked': {'hide': ['ttl_enable_1', 'ttl_enable_2', 'ttl_enable_3']}})});
+      ]]>
+    </script>
       </v:form>
 </v:page>

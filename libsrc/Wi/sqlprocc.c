@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -71,8 +71,13 @@ sql_warning_add (caddr_t err, int is_comp)
     return;
 
 #ifndef NDEBUG
-  if (!IS_BOX_POINTER (err) || BOX_ELEMENTS (err) != 3)
+#ifdef SIGNAL_DEBUG
+  if (DV_ERROR_REPORT != DV_TYPE_OF (err))
     GPF_T1("invalid warning text");
+#else
+  if (!IS_BOX_POINTER (err) || BOX_ELEMENTS (err) < 3)
+    GPF_T1 ("invalid warning text");
+#endif
 #endif
 
   if (sql_warning_mode == SQW_OFF
@@ -93,7 +98,9 @@ sql_warning_add (caddr_t err, int is_comp)
     }
   if (sql_warnings_to_syslog)
     log_debug ("SQL warning : [%.5s] %s", ERR_STATE (err), ERR_MESSAGE (err));
-
+#ifdef SIGNAL_DEBUG
+  log_error_report_event (err, 0, "SQL_WARNING_ADD stores to TA_SQL_WARNING_SET");
+#endif
   ((caddr_t *)err)[0] = (caddr_t) QA_WARNING;
   self = THREAD_CURRENT_THREAD;
   warnings_set = (dk_set_t) THR_ATTR (self, TA_SQL_WARNING_SET);
@@ -1604,7 +1611,7 @@ sqlc_trigger_decl (sql_comp_t * sc, ST * tree)
   if (!tb)
     sqlc_new_error (sc->sc_cc, "42S02", "SQ090", "Bad table %s in trigger %s definition",
 	tree->_.trigger.table, tree->_.trigger.name);
-  if (usr && !sec_tb_check (tb, usr->usr_id, usr->usr_id, GR_SELECT)) /*XXX: let check is the all columns granted to the creator */
+  if (usr && !sec_tb_check (tb, usr->usr_g_id, usr->usr_id, GR_SELECT)) /*XXX: let check is the all columns granted to the creator */
     sqlc_new_error (sc->sc_cc, "42000", "SQ092", "Access denied for table %s", tb->tb_name);
   qr->qr_trig_dbe_table = tb;
   qr->qr_proc_name = box_string (tree->_.trigger.name);

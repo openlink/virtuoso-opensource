@@ -1,24 +1,24 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2016 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2018 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 
 
@@ -59,7 +59,7 @@ dav_target_form ()
 
 
 
-function 
+function
 dav_cd (col_id)
 {
 
@@ -71,7 +71,7 @@ dav_cd (col_id)
   of.submit();
 }
 
-function 
+function
 os_cd (os_name)
 {
 
@@ -82,7 +82,7 @@ os_cd (os_name)
   of.submit();
 }
 
-function 
+function
 dav_up ()
 {
   var of;
@@ -119,7 +119,7 @@ dav_go_path (path)
 //{
 //  var of = dav_object_form ();
 //
-// of = 
+// of =
 //
 //}
 
@@ -172,7 +172,7 @@ dav_send_result ()
   window.top.close ();
 }
 
-function 
+function
 dav_newflt (flt_string)
 {
   var of = dav_object_form();
@@ -181,13 +181,13 @@ dav_newflt (flt_string)
   of.submit ();
 }
 
-function 
+function
 dav_res_view (url)
 {
   window.open (url, 'Viewer', 'menubar=no, scrollbars=yes');
 }
 
-function 
+function
 dav_res_select (_name, _res, _path)
 {
 //  var str;
@@ -198,9 +198,9 @@ dav_res_select (_name, _res, _path)
 //  str += '\n\nWindow name: ' + window.top.name;
 //
 //  alert (str);
-  
+
   var bf = dav_bot_form ();
-  
+
   bf.sel_name.value = _name;
   bf.RES.value = _res;
   bf.PATH.value = _path;
@@ -208,8 +208,8 @@ dav_res_select (_name, _res, _path)
 //  alert (window.top.frames[2].document.bot_form.res_name);
 }
 
-function 
-dav_launch_browser (browse_mode, lst_mode, xfer_mode, 
+function
+dav_launch_browser (browse_mode, lst_mode, xfer_mode,
                     cur_col, new_col, flt_pat)
 {
   var launch_url;
@@ -228,5 +228,5 @@ dav_launch_browser (browse_mode, lst_mode, xfer_mode,
 
   window.open (launch_url,
 	       'dav_browser',
-	       'resizable=yes, status=no, menubar=no, scrollbars=no, width=640, height=400'); 
+	       'resizable=yes, status=no, menubar=no, scrollbars=no, width=640, height=400');
 }

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -35,6 +35,7 @@ public class VirtuosoExplicitString
   private byte[] bytes;
   private String str;
   private VirtuosoConnection con;
+
 
   protected VirtuosoExplicitString (byte [] bytes, int dtp)
     {
@@ -71,22 +72,48 @@ public class VirtuosoExplicitString
 		this.dtp = VirtuosoTypes.DV_LONG_WIDE;
 	      this.str = str;
 	    }
-	  else if (dtp == VirtuosoTypes.DV_STRING || dtp == VirtuosoTypes.DV_SHORT_STRING_SERIAL ||
-	      dtp == VirtuosoTypes.DV_STRICT_STRING || dtp == VirtuosoTypes.DV_C_STRING ||
-	      dtp == VirtuosoTypes.DV_BLOB || dtp == VirtuosoTypes.DV_ANY)
+	  else if (dtp == VirtuosoTypes.DV_STRING || 
+	      dtp == VirtuosoTypes.DV_SHORT_STRING_SERIAL ||
+	      dtp == VirtuosoTypes.DV_STRICT_STRING || 
+	      dtp == VirtuosoTypes.DV_C_STRING ||
+	      dtp == VirtuosoTypes.DV_BLOB)
 	    {
 	      // If it's an narrow parameter
  	      if (con != null && con.charset_utf8)
 	        bytes = str.getBytes ("UTF8");
 	      else if (con != null && con.charset != null)
-		  bytes = con.charsetBytes(str);
+		bytes = con.charsetBytes(str);
 	      else
 		cli_wide_to_narrow (str, con != null ? con.client_charset_hash : null);
 
-	      if (bytes.length < 256)
-		this.dtp = VirtuosoTypes.DV_SHORT_STRING_SERIAL;
+	      this.dtp = (bytes.length < 256) ? VirtuosoTypes.DV_SHORT_STRING_SERIAL : VirtuosoTypes.DV_STRING;
+	    }
+	  else if (dtp == VirtuosoTypes.DV_ANY)
+	    {
+	      if (con != null && (con.charset != null || con.charset_utf8))
+	        {
+		  bytes = (con.charset_utf8) ? str.getBytes ("UTF8") : con.charsetBytes(str);
+		  this.dtp = (bytes.length < 256) ? VirtuosoTypes.DV_SHORT_STRING_SERIAL : VirtuosoTypes.DV_STRING;
+	        }
 	      else
-		this.dtp = VirtuosoTypes.DV_STRING;
+		{
+		  boolean wide = false;
+                  for (int i = 0; i < str.length(); i++)
+                    if (str.charAt(i) > 127) {
+                      wide = true;
+                      break;
+                    }
+
+                  if (wide) {
+		    bytes = str.getBytes ("UTF8");
+		    this.dtp = (bytes.length < 256) ? VirtuosoTypes.DV_WIDE : VirtuosoTypes.DV_LONG_WIDE;
+		    this.str = str;
+                  } 
+                  else {
+		    cli_wide_to_narrow (str, con != null ? con.client_charset_hash : null);
+	            this.dtp = (bytes.length < 256) ? VirtuosoTypes.DV_SHORT_STRING_SERIAL : VirtuosoTypes.DV_STRING;
+                  }
+		}
 	    }
 	  else if (dtp == VirtuosoTypes.DV_BLOB_BIN || dtp == VirtuosoTypes.DV_BIN)
 	    {
@@ -147,12 +174,12 @@ public class VirtuosoExplicitString
 	}
 
       bytes = new byte[str.length()];
-      if (charset_ht == null) 
-	  {
+      if (charset_ht == null)
+       {
         for (int i = 0; i < str.length(); i++)
-	    bytes[i] = (byte)str.charAt(i);
-	  }
-      else 
+	  bytes[i] = (byte)str.charAt(i);
+       }
+      else
        {
         for (int i = 0; i < str.length(); i++)
 	  {
@@ -167,7 +194,7 @@ public class VirtuosoExplicitString
 	    else
 	      bytes[i] = (byte) b.intValue();
 	  }
-      }
+       }
       return ret;
     }
 
@@ -196,7 +223,7 @@ public class VirtuosoExplicitString
 	      if (b == null)
 		{
 		  strbuf.append ("\\x");
-		  strbuf.append (Integer.toString (ch.charValue(), 16));
+                  strbuf.append (String.format("%04x", (int) ch.charValue()));
 		}
 	      else
 		{
@@ -205,10 +232,10 @@ public class VirtuosoExplicitString
 	    }
 	  else
 	    {
-	      if (((int)curr) > 256)
+	      if (((int)curr) > 255)
 		{
 		  strbuf.append ("\\x");
-		  strbuf.append (Integer.toString ((int) curr, 16));
+		  strbuf.append (String.format("%04x", (int) curr));
 		}
 	      else
 		strbuf.append (curr);
@@ -235,7 +262,7 @@ public class VirtuosoExplicitString
 	os.write (bytes.length);
       else
 	os.writelongint (bytes.length);
-	os.write (bytes, 0, bytes.length);
+      os.write (bytes, 0, bytes.length);
     }
 
   public String toString ()

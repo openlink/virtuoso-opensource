@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -395,7 +395,7 @@ kpd_free (key_partition_def_t * kpd)
 }
 
 void
-qr_free (query_t * qr)
+DBG_NAME (qr_free) (DBG_PARAMS query_t * qr)
 {
   if (!qr)
     return;
@@ -411,6 +411,10 @@ qr_free (query_t * qr)
 	}
       LEAVE_CLL;
     }
+#ifdef QUERY_DEBUG
+  if ((NULL == qr->qr_super) || (NULL != qr->qr_text) || (qr->qr_text_is_constant))
+    log_query_event (qr, 1, "FREE at %s:%d", file, line);
+#endif
   qr_drop_dependencies (qr);
   while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
   while (NULL != qr->qr_used_udts) dk_free_tree (dk_set_pop (&(qr->qr_used_udts)));
@@ -534,6 +538,8 @@ qr_free (query_t * qr)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
     static_qr_dllist_remove (qr);
 #endif
+  if ((NULL != qr->qr_proc_grants) && !qr->qr_proc_grants_is_reused)
+    hash_table_free (qr->qr_proc_grants);
   if (!qr->qr_text_is_constant)
     dk_free_box (qr->qr_text);
   qr->qr_nodes = (dk_set_t)-1;
@@ -542,7 +548,7 @@ qr_free (query_t * qr)
 
 
 void
-sqlc_error (comp_context_t * cc, const char *code, const char *string,...)
+DBG_NAME (sqlc_error) (DBG_PARAMS comp_context_t * cc, const char *code, const char *string, ...)
 {
   static char temp[2000+MAX_QUAL_NAME_LEN*7];
   va_list list;
@@ -550,7 +556,7 @@ sqlc_error (comp_context_t * cc, const char *code, const char *string,...)
   va_start (list, string);
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
-  cc->cc_error = srv_make_new_error (code, "SQ200", "%s", temp);
+  cc->cc_error = DBG_NAME (srv_make_new_error) (DBG_ARGS code, "SQ200", "%s", temp);
 
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, cc->cc_error);
   lisp_throw (CATCH_LISP_ERROR, 1);
@@ -564,9 +570,74 @@ sqlc_resignal_1 (comp_context_t * cc, caddr_t err)
   lisp_throw (CATCH_LISP_ERROR, 1);
 }
 
+int32 enable_sqlc_logfile = 0;
+int error_report_file_ctr = 0;
+int error_info_file_ctr = 0;
+
 void
-sqlc_new_error (comp_context_t * cc, const char *code, const char *virt_code, const char *string,...)
+sqlc_log_error_to_file (comp_context_t * cc, const char *code, const char *virt_code, const char *msg, const char *type,
+    int local_info_only)
 {
+  char filename[100];
+  FILE *f;
+  if (!enable_sqlc_logfile)
+    return;
+  if (local_info_only)
+    {
+      if (1000 <= error_info_file_ctr++)
+	return;
+      sprintf (filename, "error_info_%03d_%s.txt", error_info_file_ctr, type);
+      f = fopen (filename, "w");
+      if (NULL == f)
+	return;
+      fprintf (f, "Query compilation error report\n\n"
+	  "This report is about failed query compilation but not about internal compiler error.\n"
+	  "By default, it is not for sending to support but for local database admin only\n\n");
+    }
+  else
+    {
+      if (1000 <= error_report_file_ctr++)
+	return;
+      sprintf (filename, "error_report_%03d_%s.txt", error_report_file_ctr, type);
+      f = fopen (filename, "w");
+      if (NULL == f)
+	return;
+      fprintf (f, "Internal error report\n\n"
+	  "Before sending the file to support, please check it for presence of any sensitive information.\n"
+	  "An application may compose the query by imprinting some values into a template, these values may come from confidential data.\n"
+	  "If it is so, please replace these values with some similar fake values, with some caution:\n"
+	  "1. When one value appears in few places, please replace it with one and the same fake value in all that places;\n"
+	  "2. Replace different values with different fake values.\n"
+	  "3. Erase the following line before sending:\n" "*** This report is not edited by hands ***\n\n");
+    }
+  fprintf (f, "Message: %s\n", msg);
+  if (NULL == cc)
+    {
+      fprintf (f, "cc is NULL\n");
+    }
+  else if (NULL == cc->cc_query)
+    {
+      fprintf (f, "cc_query is NULL\n");
+    }
+  else
+    {
+      if (NULL != cc->cc_query->qr_qualifier)
+	fprintf (f, "qr_qualifier:%s\n", cc->cc_query->qr_qualifier);
+      if (NULL != cc->cc_query->qr_owner)
+	fprintf (f, "qr_owner:%s\n", cc->cc_query->qr_owner);
+      fprintf (f, "qr_proc_owner:%d\n", (int) (cc->cc_query->qr_proc_owner));
+      if (NULL != cc->cc_query->qr_text)
+	fprintf (f, "qr_text:\n%s\n\n", cc->cc_query->qr_text);
+    }
+  fclose (f);
+}
+
+void
+DBG_NAME (sqlc_new_error) (DBG_PARAMS comp_context_t * cc, const char *code, const char *virt_code, const char *string, ...)
+{
+#ifdef SQLC_ERROR_DEBUG
+  const char *txt;
+#endif
   static char temp[2000+MAX_QUAL_NAME_LEN*7];
   va_list list;
   caddr_t err = NULL;
@@ -574,7 +645,13 @@ sqlc_new_error (comp_context_t * cc, const char *code, const char *virt_code, co
   va_start (list, string);
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
-  err = srv_make_new_error (code, virt_code, "%s", temp);
+  sqlc_log_error_to_file (cc, code, virt_code, temp, "sqlc", ((NULL == strstr (string, "report"))
+	  || (NULL == strstr (string, "support"))));
+#ifdef SQLC_ERROR_DEBUG
+  txt = ((NULL != cc) ? ((NULL != cc->cc_query) ? cc->cc_query->qr_text : "(no text, cc_query is NULL)") : "(no text, cc is NULL)");
+  printf ("Internal SQL compiler error %s while processing\n-----8<-----\n%s\n-----8<-----\n", temp, txt);
+#endif
+  err = DBG_NAME (srv_make_new_error) (DBG_ARGS code, virt_code, "%s", temp);
   if (cc)
     cc->cc_error = err;
 
@@ -2152,6 +2229,9 @@ upd_free (update_node_t * upd)
   dk_free_box ((caddr_t) upd->upd_var_cl);
   dk_free_box ((caddr_t) upd->upd_trigger_args);
   dk_free_box ((caddr_t) upd->upd_fixed_cl);
+  dk_free_box ((caddr_t) upd->upd_vec_cast);
+  dk_free_box ((caddr_t) upd->upd_vec_source);
+  dk_free_box ((caddr_t) upd->upd_vec_cast_cl);
   ik_array_free (upd->upd_keys);
   qr_free (upd->upd_policy_qr);
 }

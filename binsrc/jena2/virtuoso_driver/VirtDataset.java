@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,9 +25,7 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import javax.sql.*;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 
 import com.hp.hpl.jena.graph.*;
@@ -43,15 +41,14 @@ import com.hp.hpl.jena.sparql.core.Quad;
 import com.hp.hpl.jena.sparql.util.Context;
 import com.hp.hpl.jena.query.ReadWrite;
 
-import virtuoso.jdbc4.VirtuosoDataSource;
-
 public class VirtDataset extends VirtGraph implements Dataset {
 
     /**
      * Default model - may be null - according to Javadoc
      */
-    Model defaultModel = null;
+    private Model defaultModel = null;
     private Context m_context = new Context();
+    private final HashSet<VirtGraph> graphs = new HashSet<>();
 
 
     public VirtDataset() {
@@ -100,7 +97,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
     /**
      * Get the default graph as a Jena Model
      */
-    public Model getDefaultModel() {
+    public synchronized Model getDefaultModel() {
+        if (defaultModel==null) {
+            VirtGraph g = new VirtGraph(null, this);
+            defaultModel = new VirtModel(g);
+            addLink(g);
+        }
         return defaultModel;
     }
 
@@ -108,22 +110,23 @@ public class VirtDataset extends VirtGraph implements Dataset {
      * Set the background graph.  Can be set to null for none.
      */
     public void setDefaultModel(Model model) {
-        if (!(model instanceof VirtDataset))
-            throw new IllegalArgumentException("VirtDataSource supports only VirtModel as default model");
-        defaultModel = model;
+        if (model instanceof VirtModel && ((VirtGraph)model.getGraph()).getConnection()==this.connection ){
+            VirtGraph g = (VirtGraph)model.getGraph();
+            defaultModel = model;
+            removeLink(g);
+        } else
+            throw new IllegalArgumentException("VirtDataset supports only VirtModel with the same DB connection");
     }
 
     /**
      * Get a graph by name as a Jena Model
      */
-    public Model getNamedModel(String name) {
+    public synchronized Model getNamedModel(String name) {
         try {
-            DataSource _ds = getDataSource();
-            if (_ds != null)
-                return new VirtModel(new VirtGraph(name, _ds));
-            else
-                return new VirtModel(new VirtGraph(name, this.getGraphUrl(),
-                        this.getGraphUser(), this.getGraphPassword()));
+            VirtGraph g = new VirtGraph(name, this);
+            VirtModel m = new VirtModel(g);
+            addLink(g);
+            return m;
         } catch (Exception e) {
             throw new JenaException(e);
         }
@@ -240,7 +243,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
         }
     }
 
-    Lock lock = null;
+    private Lock lock = null;
 
     /**
      * Get the lock for this dataset
@@ -316,6 +319,36 @@ public class VirtDataset extends VirtGraph implements Dataset {
  **/
     }
 
+    public synchronized void close() {
+        synchronized (graphs){
+            HashSet<VirtGraph> copy = (HashSet<VirtGraph>) graphs.clone();
+            for (VirtGraph g : copy)
+                try {
+                    g.close();
+                } catch (Exception e) {
+                }
+            graphs.clear();
+            copy.clear();
+        }
+        super.close();
+    }
+
+    protected void addLink(VirtGraph obj)
+    {
+        synchronized (graphs) {
+            graphs.add(obj);
+        }
+    }
+
+
+    protected void removeLink(VirtGraph obj)
+    {
+        synchronized (graphs) {
+            graphs.remove(obj);
+        }
+    }
+
+    
     /**
      * Get the dataset in graph form
      */

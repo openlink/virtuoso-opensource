@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -19,6 +19,7 @@
 --  
 --  
 
+-- For debugging, try registry_set ('OVL_internal_debug', '1');
 
 DB.DBA.XML_SET_NS_DECL (	'OVL'	, 'http://www.openlinksw.com/schemas/OVL#'		, 2)
 ;
@@ -37,13 +38,32 @@ create function DB.DBA.OVL_NODE_NAME (in source_g_iri varchar, in node_iid varch
         return '<' || id_to_iri (node_iid) || '>';
       bnlabel := (sparql define input:storage "" select ?l where { graph `iri(?:source_g_iri)` { `iri(?:node_iid)` virtrdf:bnode-label ?l }});
       if (bnlabel is not null)
-        return '_:' || bnlabel;
+        bnlabel := '_:' || bnlabel;
+      else
+        bnlabel := replace (id_to_iri (node_iid), 'nodeID://', '_:');
       bnrow := (sparql define input:storage "" select ?r where { graph `iri(?:source_g_iri)` { `iri(?:node_iid)` virtrdf:bnode-row ?r }});
       if (bnrow is not null)
-        return 'bnode at row ' || cast (bnrow as varchar);
-      return id_to_iri (node_iid);
+        return 'bnode ' || bnlabel || ' at row ' || cast (bnrow as varchar);
+      return bnlabel;
     }
   return 'literal ' || cast (node_iid as varchar);
+}
+;
+
+grant execute on DB.DBA.OVL_NODE_NAME to public
+;
+
+create function DB.DBA.OVL_REPORT_CONTAINS_ERRORS (inout res any)
+{
+  foreach (any err in res) do
+    {
+      if ('Info' <> err[1])
+        {
+          -- dbg_obj_princ ('DB.DBA.OVL_REPORT_CONTAINS_ERRORS () returns 1');
+          return 1;
+        }
+    }
+  return 0;
 }
 ;
 
@@ -52,35 +72,56 @@ create function DB.DBA.OVL_EXEC_SPARQL (in source_g_iri varchar, in extras_g_iri
   declare full_qry, state, msg varchar;
   declare qry_params, rset, metas any;
   state := '00000';
-  full_qry := concat ('sparql define input:storage "" define input:default-graph-uri <', source_g_iri, '> define input:default-graph-uri <', extras_g_iri, '> define input:named-graph-uri <', rules_g_iri, '> ', qry);
+  full_qry := concat ('sparql define input:storage "" define input:default-graph-uri <', source_g_iri, '> define input:default-graph-uri <', extras_g_iri, '> define input:named-graph-uri <', rules_g_iri, '> ', ' prefix OVL: <http://www.openlinksw.com/schemas/OVL#> ', qry);
   qry_params := vector (':source_g_iri', source_g_iri, ':extras_g_iri', extras_g_iri, ':rules_g_iri', rules_g_iri);
   -- dbg_obj_princ ('DB.DBA.OVL_EXEC_SPARQL () executes ', full_qry, ' with params ', qry_params);
   exec (full_qry, state, msg, qry_params, 1000, metas, rset);
   if (state <> '00000')
     {
       -- dbg_obj_princ ('DB.DBA.OVL_EXEC_SPARQL () signals ', state, msg);
-      return vector (vector (null, 'Error', 'OVL validation has signalled ' || state || ': ' || msg || ' on query ' || qry));
+      rset := vector (vector (null, 'Error', 'OVL validation has signalled ' || state || ': ' || msg || ' on query ' || qry));
     }
-  -- dbg_obj_princ ('DB.DBA.OVL_EXEC_SPARQL () makes the result ', rset);
-  if (not isvector (metas) or 3 <> length (metas[0]) or ('severity' <> metas[0][1][0]))
-    return vector ();
+  else
+    {
+      -- dbg_obj_princ ('DB.DBA.OVL_EXEC_SPARQL () makes the result ', rset);
+      if (not isvector (metas))
+        rset := vector ();
+      else if ((3 <> length (metas[0]) or ('severity' <> metas[0][1][0])) and (0 < length (rset)))
+        {
+          if (isstring (registry_get ('OVL_internal_debug')))
+            rset := vector (vector ('', 'Info', 'Returned data: ' || cast (rset[0][0] as varchar)));
+          else
+            rset := vector ();
+        }
+      else
+        rset := vector ();
+    }
+  if (isstring (registry_get ('OVL_internal_debug')))
+    rset := vector_concat (vector (vector (NULL, 'Info', 'DB.DBA.OVL_EXEC_SPARQL (' || WS.WS.STR_SQL_APOS (source_g_iri) || ', ' || WS.WS.STR_SQL_APOS (extras_g_iri) || ', ' || WS.WS.STR_SQL_APOS (rules_g_iri) || ', ' || WS.WS.STR_SQL_APOS (qry) || ')')), rset);
   return rset;
 }
 ;
 
 create function DB.DBA.OVL_DERIVE_EXTRAS (in source_g_iri varchar, in extras_g_iri varchar, in rules_g_iri varchar) returns any
 {
+#pragma prefix OVL: <http://www.openlinksw.com/schemas/OVL#>
   declare baserules, err_agg any;
   declare old_extras_count, new_extras_count integer;
   vectorbld_init (err_agg);
   baserules := vector (
-    ' select ?s, ("Error") as ?severity,
-        bif:concat ("Nothing to validate, graph <", ?::source_g_iri, "> is totally empty") as ?message
-      where { filter not exists { ?s ?p ?o . } } limit 1',
-    ' select ?s, ("Error") as ?severity,
-        bif:concat ("No graph with validation data, graph <", ?::rules_g_iri, "> is totally empty") as ?message
-      where {
-          filter not exists { graph `iri(?::rules_g_iri)` { ?s ?p ?o . } } } limit 1',
+--    ' select ?s, ("Error") as ?severity,
+--        bif:concat ("Nothing to validate, graph <", ?::source_g_iri, "> is totally empty") as ?message
+--      where { filter not exists { ?s ?p ?o . } } limit 1',
+--    ' select ?s, ("Error") as ?severity,
+--        bif:concat ("No graph with validation data, graph <", ?::rules_g_iri, "> is totally empty") as ?message
+--      where {
+--          filter not exists { graph `iri(?::rules_g_iri)` { ?s ?p ?o . } } } limit 1',
+    ' select sample (?s), (if (count (1), "Info", "Error")) as ?severity,
+        bif:concat ("Graph <", ?::source_g_iri, "> contains ", count (1), " triples") as ?message
+      where { ?s ?p ?o } limit 1',
+    ' select sample (?s), (if (count (1), "Info", "Error")) as ?severity,
+        bif:concat ("Graph <", ?::rules_g_iri, "> with validation data contains ", count (1), " triples") as ?message
+      where { graph `iri(?::rules_g_iri)` { ?s ?p ?o . } } limit 1',
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> is obsolete. ", bif:coalesce(str(?prop_cmt), ""))) as ?message
       where {
@@ -128,14 +169,14 @@ create function DB.DBA.OVL_DERIVE_EXTRAS (in source_g_iri varchar, in extras_g_i
           filter not exists { ?prop_obj a ?t }
           filter (isREF (?prop_obj)) }
     ',
---    ' select ?s, ("Info") as ?severity, bif:concat("Node <", str (?prop_obj), "> will get type <", str (?range), "> because it is in range of <", str (?prop), ">") as ?message
+--    ' select ?s, ("Info") as ?severity, bif:concat("Object ", sql:OVL_NODE_NAME (?::source_g_iri, ?prop_obj), " will get type <", str (?range), "> because it is in range of <", str (?prop), ">") as ?message
 --       where {
 --          graph `iri(?::rules_g_iri)` { ?prop a rdf:Property, OVL:InferTypeFromRange ; rdfs:range ?range }
 --          ?s ?prop ?prop_obj .
 --          filter not exists { ?prop_obj a ?t }
 --          filter (isREF (?prop_obj)) }
 --    ',
-    ' insert in graph iri(?::extras_g_iri) { ?prop_obj a ?range ; OVL:info `bif:concat("Node <", str (?prop_obj), "> gets type <", str (?range), "> because it is in range of <", str (?prop), ">")` }
+    ' insert in graph iri(?::extras_g_iri) { ?prop_obj a ?range ; OVL:info `bif:concat("Object ", sql:OVL_NODE_NAME (?::source_g_iri, ?prop_obj), " gets type <", str (?range), "> because it is in range of <", str (?prop), ">")` }
        where {
           graph `iri(?::rules_g_iri)` { ?prop a rdf:Property, OVL:InferTypeFromRange ; rdfs:range ?range }
           ?s ?prop ?prop_obj .
@@ -147,14 +188,16 @@ next_round:
   foreach (varchar qry in baserules) do
     {
       declare new_errs any;
+      declare has_errs integer;
       new_errs := DB.DBA.OVL_EXEC_SPARQL (source_g_iri, extras_g_iri, rules_g_iri, qry);
-      if (length (new_errs))
-        {
-          vectorbld_concat_acc (err_agg, new_errs);
-          goto no_more_rounds;
-        }
+      has_errs := DB.DBA.OVL_REPORT_CONTAINS_ERRORS (new_errs);
+      vectorbld_concat_acc (err_agg, new_errs);
+      if (has_errs)
+        goto no_more_rounds;
     }
   new_extras_count := (sparql define input:storage "" select count (*) where { graph `iri(?:extras_g_iri)` { ?s ?p ?o }});
+  if (isstring (registry_get ('OVL_internal_debug')))
+    vectorbld_concat_acc (err_agg, vector (vector (NULL, 'Info', 'OVL_DERIVE_EXTRAS (' || WS.WS.STR_SQL_APOS (source_g_iri) || ', ' || WS.WS.STR_SQL_APOS (extras_g_iri) || ', ' || WS.WS.STR_SQL_APOS (rules_g_iri) || ' had ' || old_extras_count || ' triples, now ' || new_extras_count)));
   if (new_extras_count <= old_extras_count)
     goto no_more_rounds;
   old_extras_count := new_extras_count;
@@ -167,6 +210,7 @@ no_more_rounds:
 
 create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras_g_iri varchar, in rules_g_iri varchar) returns any
 {
+#pragma prefix OVL: <http://www.openlinksw.com/schemas/OVL#>
   declare baserules, err_agg any;
   if (extras_g_iri is null)
     extras_g_iri := 'http://virtuoso.openlinksw.com/tmp/OVL/' || DB.DBA.R2RML_MD5_IRI (vector (source_g_iri, rules_g_iri));
@@ -174,7 +218,7 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
   baserules := vector (
 -- Checks for ranges:
     ' select ?s, ("Error") as ?severity,
-        (bif:concat ("Property <", str(?prop), "> has range <", str (?prop_range), "> but the actual type of its object <", str (?o), "> is <", str (?t), ">")) as ?message
+        (bif:concat ("Property <", str(?prop), "> has range <", str (?prop_range), "> but the actual type of its object ", sql:OVL_NODE_NAME (?::source_g_iri, ?o), " is <", str (?t), ">")) as ?message
       where {
           ?s ?prop ?o . ?o a ?t .
           graph `iri(?::rules_g_iri)` {
@@ -183,7 +227,7 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
           filter (?t != ?prop_range) }
       group by ?s ?t ?prop ?prop_range ?o order by asc (str(?s)) asc (str(?prop))',
     ' select ?s, ("Error") as ?severity,
-        (bif:concat ("Property <", str(?prop), "> has range <", str (?prop_range), "> but the actual type of its object <", str (?o), "> is not specified")) as ?message
+        (bif:concat ("Property <", str(?prop), "> has range <", str (?prop_range), "> but the actual type of its object ", sql:OVL_NODE_NAME (?::source_g_iri, ?o), " is not specified")) as ?message
       where {
           ?s ?prop ?o .
           filter not exists { ?o a ?t }
@@ -286,22 +330,9 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
 }
 ;
 
-create function DB.DBA.OVL_REPORT_CONTAINS_ERRORS (inout res any)
-{
-  foreach (any err in res) do
-    {
-      if ('Info' <> err[1])
-        {
-          -- dbg_obj_princ ('DB.DBA.OVL_REPORT_CONTAINS_ERRORS () returns 1');
-          return 1;
-        }
-    }
-  return 0;
-}
-;
-
 create procedure DB.DBA.OVL_VALIDATE (in source_g_iri varchar, in rules_g_iri varchar)
 {
+#pragma prefix OVL: <http://www.openlinksw.com/schemas/OVL#>
   declare extras_g_iri varchar;
   declare err_agg, res any;
   declare SUBJ, SEVERITY, MESSAGE varchar;

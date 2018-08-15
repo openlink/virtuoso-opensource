@@ -178,6 +178,9 @@
     <Compile Include="DTC.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Era.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="ExplicitString.cs">
       <SubType>Code</SubType>
     </Compile>

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="msg_news_conf_page"
@@ -136,7 +133,7 @@
               <tr>
                 <td align="right" nowrap="1">
                   <v:button active="--(1)" action="simple" value="Delete" width="64" height="24" name="data_set_delete_delete" style="button" xhtml_style="width:60px">
-                    <v:on-post width="0" height="16">
+                    <v:on-post>
                       <v:script><![CDATA[
 for(select NG_GROUP from DB.DBA.NEWS_GROUPS where NG_SERVER = self.ns_id) do {
   DB.DBA.MSG_NEWS_CLEAR_MESSAGES(self.ns_id, NG_GROUP, 'clear all');
@@ -153,7 +150,7 @@ self.vc_data_bind(e);
                 </td>
                 <td align="left" nowrap="1">
                   <v:button active="--(1)" action="simple" value="Cancel" width="64" height="24" name="data_set_delete_cancel" style="button" xhtml_style="width:60px">
-                    <v:on-post width="0" height="16">
+                    <v:on-post>
                       <v:script><![CDATA[
                       self.mode := 'browse';
                       self.vc_data_bind(e);
@@ -248,7 +245,7 @@ self.vc_data_bind(e);
 		      xhtml_alt="Delete"
 		      xhtml_title="Delete"
 		      text="&nbsp;Delete" >
-                    <v:on-post width="0" height="16">
+                    <v:on-post>
                       <v:script><![CDATA[
           self.ns_id := self.data_set_browse.ds_current_row.te_rowset[0];
           self.mode := 'delete_confirm';

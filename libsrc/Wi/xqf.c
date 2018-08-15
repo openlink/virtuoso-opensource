@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,6 +58,8 @@
 
 sql_tree_tmp * st_double;
 double virt_rint (double x);
+
+int32 simple_rdf_numbers = 0;
 
 int
 utf8_strlen (const unsigned char *str)
@@ -251,8 +253,8 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
     "unsigned long",
     "integer",
     "negative integer",
-    "nonpositive integer",
-    "nonnegative integer",
+    "non-positive integer",
+    "non-negative integer",
     "positive integer" };
   int l, s = 0;
   const char *p = str;
@@ -3597,6 +3599,13 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   if (DV_STRING != arg_dtp)
     {
       caddr_t err = NULL;
+      if (simple_rdf_numbers && DV_NUMERIC == desc->p_dest_dtp && DV_NUMERIC == arg_dtp)
+	{
+	  double d;
+	  numeric_to_double ((numeric_t)arg, &d);
+	  res = box_double (d);
+	  goto res_ready;
+	}
       if (desc->p_dest_dtp == arg_dtp)
         {
           res = box_copy_tree (arg);

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,8 @@ dist_doc_DATA = \
 	$(srcdir)/INSTALL \
 	$(srcdir)/LICENSE \
 	$(srcdir)/NEWS \
-	$(srcdir)/README*
+	$(srcdir)/README* \
+	$(srcdir)/*.md
 
 # ----------------------------------------------------------------------
 #
@@ -50,9 +51,11 @@ if MAINTAINER_MODE
 #
 binary-tar:
 	-mkdir @build@
-	$(MAKE) install DESTDIR="`pwd`/@build@/tmp/" prefix=..
-	tar cvf @build@.tar @build@
-	gzip -9vf @build@.tar
+	$(MAKE) install DESTDIR="`pwd`/@build@/$(PACKAGE)/tmp/" prefix=..
+	(cd @build@/$(PACKAGE) && rm -f hosting/*.a hosting/*.la lib/*.a lib/*.la)
+	(cd @build@/$(PACKAGE)/database && mv virtuoso.ini virtuoso.ini.sample)
+	(cd @build@ && tar cvf ../$(PACKAGE).@build@.tar virtuoso-opensource)
+	gzip -9vf $(PACKAGE).@build@.tar
 	rm -rf @build@
 
 
@@ -84,6 +87,7 @@ snapshot:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	$(srcdir)/*.md \
 	$(srcdir)/README* \
 	$(srcdir)/autogen.sh \
 	$(srcdir)/bin/makever \

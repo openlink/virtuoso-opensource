@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,6 @@
 
       <v:variable name="f_how" type="varchar" default="4"/>
       <v:variable name="f_value" type="varchar" default="''"/>
-      <v:variable name="f_filter" type="varchar" default="''"/>
 
       <v:variable name="c_pref" type="varchar" default="''"/>
       <v:variable name="c_uri" type="varchar" default="''"/>
@@ -79,6 +78,7 @@
                     self.f_how := self.how.ufl_value;
                     self.f_value := self.value.ufl_value;
 
+                    self.ds1.vc_reset ();
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
@@ -88,6 +88,8 @@
                   <![CDATA[
                     self.f_how := '4';
                     self.f_value := '';
+
+                    self.ds1.vc_reset ();
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
@@ -104,19 +106,20 @@
             <v:data-source name="dsrc1" expression-type="sql" nrows="20" initial-offset="0">
             <v:before-data-bind>
               <![CDATA[
-                  self.f_filter := case self.f_how
+                  declare f_filter varchar;
+
+                  f_filter := case self.f_how
                                      when '1' then self.f_value || '%'
                                      when '2' then '%' || self.f_value || '%'
                                      when '3' then '%' || self.f_value
                                      else self.f_value
                                    end;
-                  if (self.f_filter = '')
-                  {
-                    self.f_filter := '%';
-                  }
-                  self.f_filter := replace (self.f_filter, '%%', '%');
+                  if (f_filter = '')
+                    f_filter := '%';
 
-                  control.ds_sql := sprintf ('select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where (upper (NS_PREFIX) like upper(\'%s\')) order by NS_PREFIX', self.f_filter);
+                  f_filter := upper (replace (f_filter, '%%', '%'));
+
+                  control.ds_sql := sprintf ('select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL where (upper (NS_PREFIX) like \'%s\') or (upper (NS_URL) like \'%s\') order by NS_PREFIX', f_filter, f_filter);
               ]]>
             </v:before-data-bind>
               <v:after-data-bind>
@@ -153,7 +156,7 @@
                       </v:button>
                     </td>
                     <td>
-                      <?V control.te_rowset[1] ?>
+                      <?V y_utf2wide (control.te_rowset[1]) ?>
                     </td>
                   <td nowrap="nowrap">
                       <v:button name="delete" action="simple" style="url" value="''">
@@ -190,10 +193,10 @@
             <fieldset>
               <br />
               <label for="pref">Prefix</label>
-              <v:text name="pref" xhtml_id="pref" value="--self.c_pref" xhtml_size="10" />
+              <v:text name="pref" xhtml_id="pref" value="--y_utf2wide (self.c_pref)" format="%s" xhtml_size="10" />
         <br />
               <label for="uri">URI</label>
-              <v:text name="uri" xhtml_id="uri" value="--self.c_uri" xhtml_size="100" />
+              <v:text name="uri" xhtml_id="uri" value="--y_utf2wide (self.c_uri)" format="%s" xhtml_size="100" />
         <br />
         <br />
               <div style="margin-left: 180px; width: 100%">

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -85,7 +85,7 @@ long tc_slow_temp_lookup;
 
 #define HA_MEMCACHE(ha) \
   (HA_PROC_FILL == ha->ha_op ? 0 : HA_FILL == ha->ha_op ? enable_mem_hash_join : \
-   HA_GROUP == ha->ha_op ? 1 : 0)
+   HA_GROUP == ha->ha_op && enable_chash_gb > 0 ? 1 : 0)
 
 #define set_dbg_fprintf(x)
 #define retr_dbg_fprintf(x)
@@ -225,17 +225,17 @@ hi_alloc_elements (hash_index_t *hi)
 
 
 hash_index_t *
-hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
+DBG_NAME (hi_allocate) (DBG_PARAMS unsigned int32 sz, int use_memcache, hash_area_t * ha)
 {
-  NEW_VARZ (hash_index_t, hi);
+  hash_index_t *hi = DK_ALLOC (sizeof (hash_index_t));
+  memzero (hi, sizeof (hash_index_t));
   if ((HA_FILL == ha->ha_op && enable_chash_join && ha->ha_ch_len)
       || (HA_GROUP == ha->ha_op && HI_CHASH == use_memcache && ha->ha_ch_len))
     return hi;
   if (!sz)
     sz = HI_INIT_SIZE;
   hi->hi_size = sz;
-  if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size)
-      || ha->ha_memcache_only)
+  if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size) || ha->ha_memcache_only)
     {
       if (HA_FILL == ha->ha_op || HI_CHASH == use_memcache || ha->ha_memcache_only)
 	{

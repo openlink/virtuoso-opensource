@@ -8,7 +8,7 @@
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
@@ -25,7 +25,7 @@
  *
  */
 
-%pure_parser
+%pure-parser
 %parse-param {yyscan_t scanner}
 %lex-param {yyscan_t scanner}
 /*%parse-param {sql_comp_context_t* scs_arg}*/
@@ -2068,15 +2068,15 @@ query_spec
 
 
 breakup_term
-	: '(' select_scalar_exp_commalist  ')' { $$ = dk_set_conc ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
+	: '(' select_scalar_exp_commalist  ')' { $$ = t_NCONC ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
 	| '(' select_scalar_exp_commalist WHERE search_condition ')' {
 	  ST * cond = (ST*) t_list (5, BOP_AS, t_list (2, SEARCHED_CASE, t_list (4, $4, (caddr_t)1,  t_list (2, QUOTE, NULL), 0)), NULL, t_box_string ("__brkup_cond"), NULL);
-	  $$ = dk_set_conc ($2, t_CONS (cond, NULL)); }
+	  $$ = t_NCONC ($2, t_CONS (cond, NULL)); }
 	;
 
 breakup_list
-	: breakup_term { $$ = t_CONS ($1, NULL);}
-	| breakup_list breakup_term { $$ = t_NCONC ($1, t_CONS ($2, NULL)); }
+	: breakup_term { $$ = t_CONS (t_list_to_array ($1), NULL); }
+	| breakup_list breakup_term { $$ = t_NCONC ($1, t_CONS (t_list_to_array ($2), NULL)); }
 	;
 
 selection

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -134,7 +134,7 @@ cu_rl_local_exec (cucurbit_t * cu)
 	if (err)
 	  sqlr_resignal (err);
       }
-    if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+    if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_g_id, cli->cli_user->usr_id))
       {
 	user_t *usr = cli->cli_user;
 	sqlr_new_error ("42000", "SR186:SECURITY", "No permission to execute dpipe %s with user ID %d, group ID %d",
@@ -417,8 +417,10 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
 	  caddr_t x = row[5];
 	  QNCAST (rdf_box_t, rb, x);
 	  int is_rb = DV_RDF == DV_TYPE_OF (x) && rb->rb_is_complete && rb->rb_ro_id;
-	  if (DV_DB_NULL == DV_TYPE_OF (x) || DV_STRING == DV_TYPE_OF (x) || IS_WIDE_STRING_DTP (DV_TYPE_OF (x)))
-	    sqlr_new_error ("42000",  "CL...",  "NULL and string not allowed for O column value");
+	  dtp_t dtp = DV_TYPE_OF (x); 
+	  if (DV_DB_NULL == dtp || DV_STRING == dtp || IS_WIDE_STRING_DTP (dtp))
+	    sqlr_new_error ("42000",  "CL...",  "%s not allowed for O column value S=" BOXINT_FMT 
+		" P=" BOXINT_FMT , (DV_DB_NULL == dtp ? "NULL" : "string"), unbox_iri_id (quad[1]), unbox_iri_id (quad[2]));
 	  if (is_rb)
 	    rb->rb_is_complete = 0;
 	  dc_append_box (o_dc, x);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -650,10 +650,11 @@ void xslt_includes_recursion (xslt_sheet_t *xsh, caddr_t **sheet_tree_ptr, query
 	  new_sheet_tree = xte_insert_inc (sheet_tree, inx, inctree);
 #ifdef DK_ALLOC_BOX_DEBUG
 	  {
-	    dk_hash_t *known = hash_table_allocate (4096);
-	    dk_check_tree_iter (sheet_tree, BADBEEF_BOX, known);
-	    dk_check_tree_iter (inctree, BADBEEF_BOX, known);
-	    dk_check_tree_iter (new_sheet_tree, BADBEEF_BOX, known);
+	    dk_hash_t *known = NULL;
+	    dk_check_tree_iter (sheet_tree, BADBEEF_BOX, &known);
+	    dk_check_tree_iter (inctree, BADBEEF_BOX, &known);
+	    dk_check_tree_iter (new_sheet_tree, BADBEEF_BOX, &known);
+            if (NULL != known)
 	    hash_table_free (known);
 	  }
 #endif

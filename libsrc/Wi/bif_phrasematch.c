@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1620,7 +1620,7 @@ void appi_markup_html (ap_proc_inst_t *appi, int is_html, caddr_t *err_ret)
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = /*((NULL == uri) ?*/ uname___empty /*: uri)*/;
   config.dtd_config = mp_box_string (appi->appi_mp, "Validation=DISABLE ErrorContext=DISABLE BuildStandalone=DISABLE Include=DISABLE");
   config.root_lang_handler = appi->appi_lh;
@@ -1892,7 +1892,7 @@ bif_ap_debug_langhandler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   caddr_t source_UTF8 = bif_string_arg (qst, args, 0, "ap_debug_langhandler");
   caddr_t lang_name = bif_string_arg (qst, args, 1, "ap_debug_langhandler");
   caddr_t *set_ids = (caddr_t *)bif_array_arg (qst, args, 2, "ap_debug_langhandler");
-  dk_session_t *out_ses = (dk_session_t *)bif_strses_arg (qst, args, 3, "ap_debug_langhandler");
+  dk_session_t *out_ses = (dk_session_t *) bif_strses_arg (qst, args, 3, "ap_debug_langhandler");
   ap_set_t **sets;
   lang_handler_t *lh;
   ap_proc_inst_t *appi;

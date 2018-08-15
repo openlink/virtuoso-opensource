@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -49,7 +49,6 @@ ssl_load_privkey (const char *keyname, const void *keypass)
 {
   EVP_PKEY *pkey = NULL;
   BIO *bio_in;
-  char *s;
 
   if ((bio_in = BIO_new_file (keyname, "r")) != NULL)
     {

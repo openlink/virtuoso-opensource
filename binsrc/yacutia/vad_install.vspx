@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,15 +19,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="vad_install_page"
-  decor="yacutia_decor.vspx"
-  style="yacutia_style.xsl"
-  fast-render="1"
-  xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso Application Deployment</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -46,7 +43,6 @@
     <vm:header caption="Install new package"/>
     <vm:pagebody>
       <v:on-init>
-        <v:script>
           <![CDATA[
             declare state, msg, pack_name, pack_vers, pack_fullname, pkg_date varchar;
             declare exit handler for sqlstate '*', not found
@@ -67,14 +63,17 @@
             self.pack_vers := pack_vers;
             self.pack_fullname := pack_fullname;
           ]]>
-        </v:script>
       </v:on-init>
+
       <v:template type="simple" enabled= "--case when (self.pack_ready = 1) then 1 else 0 end">
       <div class="clear">
 	<img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
-            Installing a VAD package will put the database in atomic mode, halting other client threads<br/>
-            for duration of the installation. If the installation encounters a fatal error such as running<br/>
-	    out of disk, you will get an error message and the server will exit. If this happens:<br/>
+          Installing a VAD package will put the database in atomic mode, halting other client threads
+          <br/>
+          for duration of the installation. If the installation encounters a fatal error such as running
+          <br/>
+          out of disk, you will get an error message and the server will exit. If this happens:
+          <br/>
 	    <ul>
 	      <li>Virtuoso server will have to be restarted manually</li>
 	      <li>the Virtuoso Conductor will not be available until the server has restarted</li>
@@ -92,10 +91,14 @@
           <td><?V self.pack_fullname ?></td>
         </tr>
         <tr>
-          <th>Version: </th>
+              <th>New version: </th>
           <td><?V self.pack_vers ?></td>
         </tr>
         <tr>
+              <th>Old version: </th>
+              <td><?V coalesce (DB.DBA.VAD_CHECK_VERSION (self.pack_name), 'N/A') ?></td>
+            </tr>
+            <tr>
           <th>Short name: </th>
           <td><?V self.pack_name ?></td>
 	</tr>
@@ -108,37 +111,20 @@
                 <![CDATA[
                   declare state, message, meta, result any;
                   declare res varchar;
+
                   exec('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector(self.pack_path, self.pack_mode, 1), 0, meta, result);
 		  set_qualifier ('DB');
-                  declare l integer;
-                  l := length(result);
-                  res := '';
-		  if (result[0][0] <> '00000')
-                  {
-                    res := concat(res, result[0][1]);
-                  }
-                  else
-                  {
-                    res := 'Installation complete';
-                  }
-
-                  if (aref(aref(result, l - 2), 1) = 'FATAL')
+                    res := case when (result[0][0] <> '00000') then result[0][1] else 'Installation complete' end;
+                    if (result[length(result)-2][1] = 'FATAL')
 		  {
 		    http_rewrite ();
 		    http_header ('Content-Type: text/plain\r\n');
 		    foreach (any elm in result) do
 		    {
 		      declare stat, msg any;
-		      if (not isstring (elm[0]))
-		        stat := '';
-	              else
-                        stat := elm[0];
 
-		      if (not isstring (elm[1]))
-		        msg := '';
-	              else
-                        msg := elm[1];
-
+                        stat := case when (not isstring (elm[0])) then '' else elm[0] end;
+                        msg := case when  (not isstring (elm[1])) then '' else elm[1] end;
 		      http (sprintf ('%5s', stat) || ' ' || msg || '\r\n');
 		    }
 		    http_flush();

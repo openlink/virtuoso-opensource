@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -288,5 +288,43 @@
 #endif
 #define SQL_WCHARTYPE_NOCONVERT      0
 #define SQL_WCHARTYPE_DEFAULT        SQL_WCHARTYPE_NOCONVERT
+
+
+/******************* Virtuoso ODBC Extensions *******************/
+
+/*
+ *  ODBC extensions for SQLGetDescField
+ */
+#define SQL_DESC_COL_DV_TYPE		1057L
+#define SQL_DESC_COL_DT_DT_TYPE		1058L
+#define SQL_DESC_COL_LITERAL_ATTR	1059L
+#define SQL_DESC_COL_BOX_FLAGS		1060L
+#define SQL_DESC_COL_LITERAL_LANG	1061L
+#define SQL_DESC_COL_LITERAL_TYPE	1062L
+
+
+/*
+ *  Virtuoso - ODBC SQL_DESC_COL_DV_TYPE
+ */
+#define VIRTUOSO_DV_DATE		129
+#define VIRTUOSO_DV_DATETIME		211
+#define VIRTUOSO_DV_DOUBLE_FLOAT	191
+#define VIRTUOSO_DV_IRI_ID		243
+#define VIRTUOSO_DV_LONG_INT		189
+#define VIRTUOSO_DV_NUMERIC		219
+#define VIRTUOSO_DV_RDF			246
+#define VIRTUOSO_DV_SINGLE_FLOAT	190
+#define VIRTUOSO_DV_STRING		182
+#define VIRTUOSO_DV_TIME		210
+#define VIRTUOSO_DV_TIMESTAMP		128
+#define VIRTUOSO_DV_TIMESTAMP_OBJ	208
+
+
+/*
+ *  Virtuoso - ODBC SQL_DESC_COL_DT_DT_TYPE
+ */
+#define VIRTUOSO_DT_TYPE_DATETIME	1
+#define VIRTUOSO_DT_TYPE_DATE		2
+#define VIRTUOSO_DT_TYPE_TIME		3
 
 #endif /* _IODBCEXT_H */

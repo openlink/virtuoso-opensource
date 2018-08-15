@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -50,6 +50,10 @@ import java.sql.DriverManager;
  */
 public class VirtuosoRepository implements Repository {
 
+    public static final int CONCUR_DEFAULT = 0;
+    public static final int CONCUR_PESSIMISTIC = 1;
+    public static final int CONCUR_OPTIMISTIC = 2;
+
     ValueFactory valueFactory = SimpleValueFactory.getInstance();
     File dataDir;
 
@@ -69,11 +73,15 @@ public class VirtuosoRepository implements Repository {
 
     boolean useLazyAdd = true;
     boolean insertBNodeAsVirtuosoIRI = false;
+    boolean insertStringLiteralAsSimple = false;
     String defGraph;
     int prefetchSize = 100;
     int batchSize = 5000;
     int queryTimeout = 0;
     String ruleSet;
+    String macroLib;
+    int concurencyMode = CONCUR_DEFAULT;
+    boolean useDefGraphForQueries = false;
 
 
     public VirtuosoRepository(ConnectionPoolDataSource ds, String defGraph, boolean useLazyAdd) {
@@ -238,7 +246,7 @@ public class VirtuosoRepository implements Repository {
                 return new VirtuosoRepositoryConnection(this, connection);
             }
             catch (Exception e) {
-                System.out.println("Connection to " + url_hostlist + " is FAILED.");
+                System.out.println("Connection has FAILED.");
                 throw new RepositoryException(e);
             }
         }
@@ -249,7 +257,7 @@ public class VirtuosoRepository implements Repository {
                 return new VirtuosoRepositoryConnection(this, connection);
             }
             catch (Exception e) {
-                System.out.println("Connection to " + url_hostlist + " is FAILED.");
+                System.out.println("Connection has FAILED.");
                 throw new RepositoryException(e);
             }
         }
@@ -259,7 +267,7 @@ public class VirtuosoRepository implements Repository {
                 return new VirtuosoRepositoryConnection(this, connection);
             }
             catch (Exception e) {
-                System.out.println("Connection to " + url_hostlist + " is FAILED.");
+                System.out.println("Connection has FAILED.");
                 throw new RepositoryException(e);
             }
         }
@@ -283,16 +291,16 @@ public class VirtuosoRepository implements Repository {
 
                 if (url.toLowerCase().indexOf("log_enable=") == -1) {
                     if (url.charAt(url.length()-1) != '/')
-                        url = url + "/log_enable=2";
+                        url = url + "/log_enable=1";
                     else
-                        url = url + "log_enable=2";
+                        url = url + "log_enable=1";
                 }
 
                 java.sql.Connection connection = DriverManager.getConnection(url, user, password);
                 return new VirtuosoRepositoryConnection(this, connection);
             }
             catch (Exception e) {
-                System.out.println("Connection to " + url_hostlist + " is FAILED.");
+                System.out.println("Connection to " + url_hostlist + " has FAILED.");
                 throw new RepositoryException(e);
             }
         }
@@ -308,7 +316,7 @@ public class VirtuosoRepository implements Repository {
                 return new VirtuosoRepositoryConnection(this, connection);
             }
             catch (Exception e) {
-                System.out.println("Connection to " + url_hostlist + " is FAILED.");
+                System.out.println("Connection to " + url_hostlist + " has FAILED.");
                 throw new RepositoryException(e);
             }
         }
@@ -327,6 +335,8 @@ public class VirtuosoRepository implements Repository {
 
     /**
      * Get the buffer fetch size
+     *
+     * @return buffer fetch size
      */
     public int getFetchSize() {
         return this.prefetchSize;
@@ -344,6 +354,8 @@ public class VirtuosoRepository implements Repository {
 
     /**
      * Get the batch size for Insert data
+     *
+     * @return batch size for Insert data
      */
     public int getBatchSize() {
         return this.batchSize;
@@ -361,6 +373,8 @@ public class VirtuosoRepository implements Repository {
 
     /**
      * Get the query timeout seconds
+     *
+     * @return query timeout
      */
     public int getQueryTimeout() {
         return this.queryTimeout;
@@ -378,6 +392,8 @@ public class VirtuosoRepository implements Repository {
 
     /**
      * Get the UseLazyAdd state for connection
+     *
+     * @return useLazyAdd state
      */
     public boolean getUseLazyAdd() {
         return this.useLazyAdd;
@@ -396,6 +412,8 @@ public class VirtuosoRepository implements Repository {
 
     /**
      * Get the RoundRobin state for connection
+     *
+     * @return roundrobin state
      */
     public boolean getRoundrobin() {
         return this.roundrobin;
@@ -415,9 +433,33 @@ public class VirtuosoRepository implements Repository {
 
     /**
      * Get the insertBNodeAsURI state for connection
+     *
+     * @return insertBNodeAsURI state
      */
     public boolean getInsertBNodeAsVirtuosoIRI() {
         return this.insertBNodeAsVirtuosoIRI;
+    }
+
+
+
+    /**
+     * Get the insertStringLiteralAsSimple state for connection
+     *
+     * @return insertStringLiteralAsSimple state
+     */
+    public boolean getInsertStringLiteralAsSimple() {
+        return this.insertStringLiteralAsSimple;
+    }
+
+    /**
+     * Set the insertStringLiteralAsSimple state for connection(default false) 
+     * 
+     * @param v
+     *        true - insert String Literals as Simple Literals
+     *        false - insert String Literals as is
+     */
+    public void setInsertStringLiteralAsSimple(boolean v) {
+        this.insertStringLiteralAsSimple = v;
     }
 
 
@@ -435,11 +477,75 @@ public class VirtuosoRepository implements Repository {
     }
 
     /**
-     * Get the RoundRobin state for connection
+     * Get the inference RuleSet name
+     *
+     * @return ruleSet name
      */
     public String getRuleSet() {
         return this.ruleSet;
     }
+
+
+    /**
+     * Set inference MacroLib name
+     *
+     * @param name
+     *        macroLib name.
+     */
+    public void setMacroLib(String name) {
+        if (name != null && name.equals("null"))
+            name = null;
+        this.macroLib = name;
+    }
+
+    /**
+     * Get the inference MacroLib name
+     *
+     * @return macroLib name
+     */
+    public String getMacroLib() {
+        return this.macroLib;
+    }
+
+    /**
+     * Set the concurrency mode for Insert/Update/Delete operations and SPARUL queries
+     *
+     * @param mode
+     *        Concurrency mode
+     */
+    public void setConcurrencyMode(int mode) throws RepositoryException
+    {
+        if (mode != CONCUR_DEFAULT && mode != CONCUR_OPTIMISTIC && mode != CONCUR_PESSIMISTIC)
+            throw new IllegalArgumentException("Unsupported concurrency mode: "+mode);
+
+        this.concurencyMode = mode;
+    }
+
+    /**
+     * Get the concurrency mode for Insert/Update/Delete operations and SPARUL queries
+     *
+     * @return concurrency mode
+     */
+    public int getConcurrencyMode() {
+        return this.concurencyMode;
+    }
+
+    /**
+     * Use defGraph with SPARQL queries, if query default graph wasn't set (default false) 
+     * @param v
+     *        true - useDefGraphForQueries
+     */
+    public void setUseDefGraphForQueries(boolean v) {
+	this.useDefGraphForQueries = v;
+    }
+
+    /**
+     * Get the UseDefGraphForQueries state for connection
+     */
+    public boolean getUseDefGraphForQueries() {
+	return this.useDefGraphForQueries;
+    }
+
 
 
     /**
@@ -525,6 +631,15 @@ public class VirtuosoRepository implements Repository {
     }
 ***/
 
+    /**
+     * Create ruleSet in DBMS
+     *
+     * @param ruleSetName
+     * @param uriGraphRuleSet
+     *
+     * @throws RepositoryException
+     *         If something went wrong during the creation of the Connection.
+     */
     public void createRuleSet(String ruleSetName, String uriGraphRuleSet) throws RepositoryException
     {
         java.sql.Connection con = ((VirtuosoRepositoryConnection)getConnection()).getQuadStoreConnection();

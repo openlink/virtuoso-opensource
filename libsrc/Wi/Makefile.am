@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -67,6 +67,7 @@ noinst_HEADERS = \
 
 
 generated_code = \
+	git_head.c \
 	json_l.c \
 	json_p.c \
 	json_p.h \
@@ -184,6 +185,7 @@ libwi_la_SOURCES = \
 	eqlcomp.c \
 	extent.c \
 	gate.c \
+	git_head.c \
 	hash.c \
 	hosting.c \
 	http.c \
@@ -332,6 +334,7 @@ libwi_odbc_la_SOURCES = \
 	eqlcomp.c \
 	extent.c \
 	gate.c \
+	git_head.c \
 	hash.c \
 	hosting.c \
 	http.c \
@@ -586,6 +589,7 @@ libwic_la_SOURCES = \
 	datesupp.c \
 	multibyte.c \
 	numeric.c \
+	sqlver.c \
 	wirpc.c \
 	wi_xid.c
 
@@ -598,6 +602,7 @@ libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc
 libwic_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
+libwic_la_CFLAGS  += -DOPSYS=\"@OPSYS@\" -DHOST=\"@host@\"
 libwic_la_LDLAGS  = -static
 
 ###################################################################
@@ -646,7 +651,6 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_PropFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_RDFData.sql \
-	$(top_srcdir)/binsrc/dav/DET_S3.sql \
 	$(top_srcdir)/binsrc/dav/DET_DynaRes.sql \
 	$(top_srcdir)/binsrc/dav/Versioning/DET_Versioning.sql \
 	$(srcdir)/xml_view.sql
@@ -751,6 +755,9 @@ SQL_FILES_WS		= \
 	$(top_srcdir)/binsrc/vspx/vspx.xsd \
 	$(top_srcdir)/binsrc/vspx/vspx.xsl
 
+
+git_head.c:FORCE
+	@-$(SHELL) ./mkgit_head.sh
 
 json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 	@$(GEN) $(YACC) -o json_p.c -vd -pjsonyy $(srcdir)/json.y
@@ -1088,3 +1095,5 @@ EXTRA_DIST = \
 	sparqlwords.gperf \
 	ssl.c \
 	string_tmpl.c
+
+FORCE:

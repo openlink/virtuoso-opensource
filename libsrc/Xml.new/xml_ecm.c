@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1146,7 +1146,8 @@ static void xmlparser_msglog_validate (dk_set_t msglog)
 
 
 
-int xmlparser_logprintf (vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...)
+int
+DBG_NAME(xmlparser_logprintf) (DBG_PARAMS  vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...)
 {
   dtd_config_t *cfg = &(parser->validator.dv_curr_config);
   va_list tail;
@@ -1189,7 +1190,7 @@ int xmlparser_logprintf (vxml_parser_t *parser, ptrlong errlevel, size_t buflen_
   if ((XCFG_ERROR >= errlevel) &&
     (XCFG_ENABLE == cfg->dc_signal_on_error) &&
     (DEAD_HTML != parser->cfg.input_is_html) )
-    parser->cfg.error_reporter ("42000", "%.1500s", VXmlFullErrorMessage (parser));
+    parser->cfg.error_reporter (DBG_ARGS  "42000", "%.1500s", VXmlFullErrorMessage (parser));
   return res;
 }
 

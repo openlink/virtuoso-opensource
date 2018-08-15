@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -787,6 +787,10 @@ xsd_start_element_handler (void *parser_v,
           if (NULL == pool)
 	    {
 	      parser->processor.sp_schema->pool = pool = mem_pool_alloc();
+#ifdef MP_MAP_CHECK
+              mp_comment (pool, "xsd ", ((NULL != schema->sp_target_ns_uri) ? schema->sp_target_ns_uri : " NULL sp_target_ns_uri"));
+#endif
+
 #ifdef XS_POOL_DEBUG
 	      xs_pool_allocs++;
 #endif

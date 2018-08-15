@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2545,6 +2545,7 @@ dk_session_allocate (int sesclass)
 
   dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
   dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_connect_timeout.to_sec = 20;
   dk_ses->dks_read_block_timeout.to_sec = 100;
 
   return dk_ses;
@@ -2569,6 +2570,7 @@ dk_session_alloc_box (int sesclass, int in_len)
   dk_ses->dks_in_length = in_len;
   dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
   dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_connect_timeout.to_sec = 20;
   dk_ses->dks_read_block_timeout.to_sec = 100;
   dk_ses->dks_refcount = 1;
   return dk_ses;
@@ -2595,6 +2597,7 @@ dk_session_clear (dk_session_t * ses)
   ses->dks_in_length = DKSES_IN_BUFFER_LENGTH;
   ses->dks_out_buffer = out;
   ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  ses->dks_connect_timeout.to_sec = 20;
   ses->dks_read_block_timeout.to_sec = 100;
   ses->dks_mtx = mtx;
   ses->dks_session = dks_ses;
@@ -3730,10 +3733,6 @@ void PrpcRegisterServiceDescPostProcess (service_desc_t * desc, server_func f, p
 #endif
 
 SERVICE_1 (s_caller_identification, _sci, "caller_identification", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER, DV_C_STRING, 1);
-
-#ifndef NO_THREAD
-extern char *build_thread_model;
-#endif
 
 void
 PrpcInitialize (void)
@@ -5090,7 +5089,7 @@ ssl_thread_setup ()
 #define SSL_PROTOCOL_TLSV1_2 (1<<4)
 
 #if OPENSSL_VERSION_NUMBER >= 0x1000100FL
-#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1|SSL_PROTOCOL_TLSV1_1|SSL_PROTOCOL_TLSV1_2)
+#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1_1|SSL_PROTOCOL_TLSV1_2)
 #else
 #define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1)
 #endif
@@ -5152,7 +5151,7 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 
       if (!strcasecmp (name, "SSLv3"))
 	opt = SSL_PROTOCOL_SSLV3;
-      else if (!strcasecmp (name, "TLSv1"))
+      else if (!strcasecmp (name, "TLSv1") || !strcasecmp (name, "TLSv1.0"))
 	opt = SSL_PROTOCOL_TLSV1;
 #if defined (SSL_OP_NO_TLSv1_1)
       else if (!strcasecmp (name, "TLSv1_1") || !strcasecmp (name, "TLSv1.1"))
@@ -5161,6 +5160,10 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 #if defined (SSL_OP_NO_TLSv1_2)
       else if (!strcasecmp (name, "TLSv1_2") || !strcasecmp (name, "TLSv1.2"))
 	opt = SSL_PROTOCOL_TLSV1_2;
+#endif
+#if defined (SSL_OP_NO_TLSv1_3)
+      else if (!strcasecmp (name, "TLSv1_3") || !strcasecmp (name, "TLSv1.3"))
+	opt = SSL_PROTOCOL_TLSV1_3;
 #endif
       else if (!strcasecmp (name, "ALL"))
 	opt = SSL_PROTOCOL_ALL;
@@ -5195,13 +5198,16 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   if (!(proto & SSL_PROTOCOL_SSLV3))
     ctx_options |= SSL_OP_NO_SSLv3;
   else
-    log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vunerable");
+    log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vulnerable");
+
+  if (!(proto & SSL_PROTOCOL_TLSV1))
+    ctx_options |= SSL_OP_NO_TLSv1;
+  else
+    log_warning ("SSL: Enabling legacy protocol TLS 1.0 which may be vulnerable");
 
   /*
    *  Check rest of protocols
    */
-  if (!(proto & SSL_PROTOCOL_TLSV1))
-    ctx_options |= SSL_OP_NO_TLSv1;
 
 #if defined (SSL_OP_NO_TLSv1_1)
   if (!(proto & SSL_PROTOCOL_TLSV1_1))
@@ -5437,7 +5443,7 @@ end:
 int
 ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
 {
-  int /*session_id_context = 2, */ i;
+  int i, j;
   FILE *fi;
   PKCS12 *p12 = NULL;
   EVP_PKEY *pkey;
@@ -5474,9 +5480,9 @@ ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
     i = SSL_check_private_key (ssl);
   if (i)
     {
-      for (i = 0; i < sk_X509_num (ca_list); i++)
+      for (j = 0; j < sk_X509_num (ca_list); j++)
 	{
-	  X509 *ca = (X509 *) sk_X509_value (ca_list, i);
+	  X509 *ca = (X509 *) sk_X509_value (ca_list, j);
 	  SSL_add_client_CA (ssl, ca);
 	  X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca);
 	}

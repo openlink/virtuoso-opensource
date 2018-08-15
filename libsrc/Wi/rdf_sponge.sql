@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -392,8 +392,7 @@ out_of_limit:
 }
 ;
 
-create procedure
-DB.DBA.RDF_GRAB (
+create procedure DB.DBA.RDF_GRAB (
   in app_params any, in grab_params any, in seed varchar, in iter varchar, in final varchar, in ret_limit integer,
   in const_iris any, in depth integer, in plain_ret integer, in uid any )
 {
@@ -408,7 +407,7 @@ DB.DBA.RDF_GRAB (
   all_params := vector_concat (vector (grab_params), app_params);
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB (', app_params, grab_params, ',..., ', ret_limit, const_iris, depth, doc_limit, plain_ret, uid, ')');
   DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() begins its work with limit on number of documents set to %d, depth limit is %d', doc_limit, depth);
-  aq := async_queue (8);
+  aq := async_queue (sys_stat ('enable_qp'));
   grabbed := dict_new ();
   foreach (any val in const_iris) do
     {
@@ -671,7 +670,7 @@ alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
 ;
 --#ENDIF
 
-create table RDF_WEBID_ACL_GROUPS (
+create table DB.DBA.RDF_WEBID_ACL_GROUPS (
 	AG_WEBID varchar,
 	AG_GROUP varchar,
 primary key (AG_WEBID, AG_GROUP)
@@ -1701,6 +1700,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
   dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
   
   sparql define input:storage "" 
+    define sql:table-option "index G"
     insert in iri(?:graph) { 
       `iri(?:graph)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
       `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` 
@@ -1713,6 +1713,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
     }
   };
   sparql define input:storage "" 
+    define sql:table-option "index G"
     insert in graph iri(?:graph) { 
       `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
       <http://www.w3.org/ns/formats/media_type> `?:mimetype` ;
@@ -2162,7 +2163,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
           res_graph_iri := local_iri;
           goto graph_is_ready;
         }
-      -- dbg_obj_princ ('Does not exists, continue despite get:soft=soft');
+      -- dbg_obj_princ ('Does not exist, continue despite get:soft=soft');
     }
   else
     if (('replacing' = get_soft) or ('replace' = get_soft) or ('add' = get_soft) or ('no-sponge' = get_soft))
@@ -2172,7 +2173,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       }
   else
     signal ('RDFZZ', sprintf (
-      'This version of Virtuoso supports only "soft", "replacing" and "add" values of "define get:soft ...", not "%.500s"',
+      'This version of Virtuoso supports only "soft", "replacing", "add" and "no-sponge" values of "define get:soft ...", not "%.500s"',
       get_soft ) );
   get_private := get_keyword_ucase ('get:private', options, null);
   if (get_private is not null)
@@ -2243,7 +2244,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
         }
       else
 	{
-	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
+	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger does not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
           return null;
 	}
     }
@@ -2276,6 +2277,142 @@ create function DB.DBA.RDF_SPONGE_UP_LIST (in sources any)
 }
 ;
 
+-- API
+
+create function DB.DBA.SPONGER_DOCUMENT_IS_SPONGED (in doc varchar)
+{
+  if (exists (select 1 from DB.DBA.SYS_HTTP_SPONGE where HS_ORIGIN_URI = doc))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.SPONGER_DOCUMENT_EXPIRATION (in graph varchar)
+{
+  declare ret datetime;
+  ret := null;
+  for select HS_EXPIRATION from DB.DBA.SYS_HTTP_SPONGE where HS_ORIGIN_URI = graph do
+    {
+      ret := HS_EXPIRATION;
+    }
+  return ret;
+}
+;
+
+create procedure DB.DBA.SPONGER_CACHE_CHECK (in url varchar, in top_url varchar, out old_etag varchar, out old_last_modified any)
+{
+  declare old_exp_is_true, old_expiration, old_read_count any;
+  whenever not found goto no_record;
+  select HS_EXP_IS_TRUE, HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG, HS_READ_COUNT
+      into old_exp_is_true, old_expiration, old_last_modified, old_etag, old_read_count
+      from DB.DBA.SYS_HTTP_SPONGE where HS_FROM_IRI = url and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
+  -- as we are at point we load everything we always do re-load
+no_record:
+  return 0;
+}
+;
+
+create procedure DB.DBA.SPONGER_CACHE_REGISTER (in url varchar, in top_url varchar, inout hdr any,
+                   in old_last_modified any, in download_size int, in load_msec int)
+{
+  declare explicit_refresh, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+      ret_dt_date, ret_dt_expires, ret_dt_last_modified any;
+
+  if (not isarray (hdr))
+    return;
+
+  url := WS.WS.EXPAND_URL (top_url, url);
+  explicit_refresh := null;
+  new_expiration := now ();
+  DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS (explicit_refresh, old_last_modified,
+      hdr, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+       ret_dt_date, ret_dt_expires, ret_dt_last_modified);
+  insert replacing DB.DBA.SYS_HTTP_SPONGE (
+      HS_LAST_LOAD,
+      HS_LAST_ETAG,
+      HS_LAST_READ,
+      HS_EXP_IS_TRUE,
+      HS_EXPIRATION,
+      HS_LAST_MODIFIED,
+      HS_DOWNLOAD_SIZE,
+      HS_DOWNLOAD_MSEC_TIME,
+      HS_READ_COUNT,
+      HS_SQL_STATE,
+      HS_SQL_MESSAGE,
+      HS_LOCAL_IRI,
+      HS_PARSER,
+      HS_ORIGIN_URI,
+      HS_ORIGIN_LOGIN,
+      HS_FROM_IRI)
+      values
+      (
+       now (),
+       ret_etag,
+       now(),
+       case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
+       coalesce (ret_dt_expires, new_expiration, now()),
+       ret_dt_last_modified,
+       download_size,
+       load_msec,
+       1,
+       NULL,
+       NULL,
+       url,
+       'DB.DBA.RDF_LOAD_HTTP_RESPONSE',
+       url,
+       NULL,
+       top_url
+       );
+
+  return;
+}
+;
+
+-- scheduler task if needed to keep volume under certain limit
+create procedure DB.DBA.SPONGE_CLEAN_SPONGE (in d int := 30, in n int := 2000)
+{
+  declare res, stat, msg varchar;
+  declare inx int;
+
+  declare exit handler for sqlstate '*'
+    {
+      log_enable (1);
+      resignal;
+    }
+  ;
+  log_enable (2);
+  inx := 0;
+  for select HS_LOCAL_IRI as graph from DB.DBA.SYS_HTTP_SPONGE where HS_EXPIRATION < dateadd ('day', -1*d, now ()) do
+    {
+       inx := inx + 1;
+       stat := '00000';
+       exec ('sparql clear graph <'||graph||'>', stat, msg);
+       if (inx > n)
+         goto endp;
+    }
+ endp:
+  log_enable (1);
+}
+;
+
+create procedure DB.DBA.SPONGER_GET_GRAPHS_LIKE (in graph_pattern varchar)
+{
+  declare ret any;
+  ret := (select VECTOR_AGG (HS_ORIGIN_URI) from DB.DBA.SYS_HTTP_SPONGE where regexp_match (graph_pattern, HS_ORIGIN_URI) is not null);
+  return ret;
+}
+;
+
+create procedure DB.DBA.SPONGER_GET_EXPIRY_INFO (in graph varchar)
+{
+  declare ret any;
+  ret := (select VECTOR_AGG (vector (HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG))
+      from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI =  graph and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE');
+  return ret;
+}
+;
+
+-- end API
 
 create procedure DB.DBA.RDF_GRANT_SPONGE ()
 {
@@ -2293,7 +2430,13 @@ create procedure DB.DBA.RDF_GRANT_SPONGE ()
     'grant execute on DB.DBA.SPARQL_EVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_SPONGE',
     'grant execute on DB.DBA.RDF_SPONGE_UP_1 to SPARQL_SPONGE',
-    'grant execute on DB.DBA.RDF_SPONGE_UP_LIST to SPARQL_SPONGE' );
+    'grant execute on DB.DBA.RDF_SPONGE_UP_LIST to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_DOCUMENT_IS_SPONGED to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_DOCUMENT_EXPIRATION to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_CACHE_CHECK to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_CLEAN_SPONGE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_GET_GRAPHS_LIKE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_GET_EXPIRY_INFO to SPARQL_SPONGE');
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);

@@ -4,26 +4,26 @@
 --  $Id$
 --
 --  Site-copy robot DB.
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2016 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2018 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 use WS
 ;
@@ -40,7 +40,7 @@ create table WS.WS.VFS_URL (
     VU_RES_ID   int,
     primary key (VU_HOST, VU_URL, VU_ROOT))
 create index VU_HOST_ROOT on WS.WS.VFS_URL (VU_HOST, VU_ROOT)
-create index VFS_URL_RES_ID on WS.WS.VFS_URL (VU_RES_ID)    
+create index VFS_URL_RES_ID on WS.WS.VFS_URL (VU_RES_ID)
 ;
 
 
@@ -61,13 +61,13 @@ create table WS.WS.VFS_QUEUE (
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
 create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS, VQ_URL)
 create index VQ_TS on WS.WS.VFS_QUEUE (VQ_TS)
-create index VQ_ORIGIN on WS.WS.VFS_QUEUE (VQ_ORIGIN)    
+create index VQ_ORIGIN on WS.WS.VFS_QUEUE (VQ_ORIGIN)
 ;
 
 
 -- Site setting
 create table WS.WS.VFS_SITE (
-    VS_ID	integer identity,	
+    VS_ID	integer identity,
     VS_DESCR	varchar,
     VS_HOST 	varchar,
     VS_URL	varchar,

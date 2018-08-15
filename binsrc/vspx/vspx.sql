@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -43,6 +43,7 @@ create table DB.DBA.VSPX_SESSION
       VS_EXPIRY datetime,
       VS_IP varchar,
       primary key (VS_REALM, VS_SID))
+create index VSPX_SESSION_TS on DB.DBA.VSPX_SESSION (VS_EXPIRY)
 ;
 --#pragma end session
 
@@ -2182,7 +2183,7 @@ text_split_complete:
   return;
 
 run_error:
-    self.vc_error_message := vector_concat( self.vc_error_message, vector(vector(__sql_state,__sql_message)) );
+    self.vc_error_message := vector_concat( self.vc_error_message, vector(vector(__SQL_STATE,__SQL_MESSAGE)) );
     self.isql_mtd := vector_concat( self.isql_mtd, vector(0) );
     self.isql_res := vector_concat( self.isql_res, vector(vector()) );
     self.isql_stmts := vector_concat(self.isql_stmts, vector (self.isql_text));
@@ -2241,8 +2242,11 @@ vspx_result_tbl_hdrs (in m_dta any)
 ;
 
 
-create procedure
-vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset varchar := 'UTF-8')
+create procedure vspx_result_row_render (
+  in result any,
+  in m_dta any,
+  in inx int := 0,
+  in cset varchar := 'UTF-8')
 {
   declare jnx integer;
   declare res_row varchar;
@@ -2255,58 +2259,66 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
   n_cols := length (aref (m_dta, 0));
   dt_nfo := aref(m_dta, 0);
 
-      http (sprintf ('<tr class="%s">', case when mod(inx, 2) then 'resrowodd' else 'resroweven' end));
+  http (sprintf ('<tr class="%s">', case when mod(inx, 2) then 'resrowodd' else 'resroweven' end));
 
-      res_row := result;
-      res_cols := length (res_row);
+  res_row := result;
+  res_cols := length (res_row);
+  jnx := 0;
+  while (jnx < res_cols)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      http ('Can''t display result');
+      goto next;
+    };
 
-      jnx := 0;
+    http ('<td class="resdata"> &nbsp;');
+    res_col := aref (res_row, jnx);
+    col_type := aref (aref (dt_nfo, jnx), 1);
 
+  again:
+    if (__tag (res_col) = 193)
+    {
+      http_value (concat ('(', vector_print (res_col), ')'));
+    }
+    else if (__tag (res_col) = 230 and res_col is not null)
+    {
+      declare ses any;
+      ses := string_output ();
+      http_value (res_col, NULL, ses);
+      http_value (string_output_string (ses));
+    }
+    else if (__tag (res_col) = 246 and res_col is not null)
+    {
+      declare dat any;
+      dat := __rdf_sqlval_of_obj (res_col, 1);
+      res_col := dat;
+      goto again;
+    }
+    else
+    {
+      declare res any;
 
-      while (jnx < res_cols)
-	{
-	  declare exit handler for sqlstate '*'
-	    {
-	      http ('Can\'t display result');
-	      goto next;
-	    };
-	  http ('<td class="resdata"> &nbsp;');
-	  res_col := aref (res_row, jnx);
-	  col_type := aref (aref (dt_nfo, jnx), 1);
-	  again:
-	  if (__tag (res_col) = 193)
-	    http_value (concat ('(', vector_print (res_col), ')'));
-	  else if (__tag (res_col) = 230 and res_col is not null)
-	    {
-	      declare ses any;
-	      ses := string_output ();
-	      http_value (res_col, NULL, ses);
-	      http_value (string_output_string (ses));
-	    }
-	  else if (__tag (res_col) = 246 and res_col is not null)
-	    {
-	      declare dat any;
-	      dat := __rdf_sqlval_of_obj (res_col, 1);
-	      res_col := dat;
-	      goto again;
-	    }
-	  else
-	    {
-	      declare res any;
-	      res := 0;
-	      if (__tag (res_col) = 182 and cset is not null)
-		res := charset_recode (res_col, cset, '_WIDE_');
-              if (res <> 0)
-	        res_col := res;
-	      http_value (coalesce (res_col, '<DB NULL>'));
-	    }
-	  next:
-	  http ('</td>');
-	  jnx := jnx + 1;
-	}
-      http ('</tr>\n');
+      res := 0;
+      if (__tag (res_col) = 225)
+        res_col := cast (res_col as varchar);
+
+      if (__tag (res_col) = 182 and cset is not null)
+        res := charset_recode (res_col, cset, '_WIDE_');
+
+      if (res <> 0)
+        res_col := res;
+
+      http_value (coalesce (res_col, '<DB NULL>'));
+    }
+  next:
+    http ('</td>');
+    jnx := jnx + 1;
+  }
+  http ('</tr>\n');
 }
 ;
+
 
 create constructor method vspx_field_value (in name varchar, inout parent vspx_control) for vspx_field_value
 {
@@ -5562,7 +5574,7 @@ create procedure vspx_base_url (in f varchar)
   if (http_map_get ('is_dav'))
     return concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:',f);
   else
-    return concat ('file://', f);
+    return concat ('file://', ltrim (f, '/'));
 }
 ;
 
@@ -6259,7 +6271,7 @@ create procedure
 VSPX_EXPIRE_SESSIONS ()
 {
   delete from VSPX_SESSION where VS_EXPIRY is null;
-  delete from VSPX_SESSION where datediff ('minute', VS_EXPIRY, now()) > 30;
+  delete from VSPX_SESSION where VS_EXPIRY < dateadd ('minute', -30, now());
   --if (row_count () > 0)
   --  log_message (sprintf ('%d VSPX session entries erased', row_count ()));
 }

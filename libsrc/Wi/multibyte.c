@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -298,23 +298,21 @@ virt_wcschr (const wchar_t *wcs, wchar_t wc)
 
 
 const wchar_t *
-virt_wcsrchr (const wchar_t *wcs, wchar_t wc)
+virt_wcsrchr (const wchar_t * wcs, wchar_t wc)
 {
-  wchar_t *wcs_end = (wchar_t *)wcs;
-  if (wcs && *wcs)
+  const wchar_t *best_hit = NULL;
+  if (NULL == wcs)
+    return NULL;
+  for (;;)
     {
-      while (*wcs_end)
-	wcs_end++;
-      wcs_end -= 1;
-      while (wcs_end >= wcs)
-	{
-	  if (*wcs == wc)
-	    return ((wchar_t *)wcs);
-	  wcs--;
-	}
+      if (wc == wcs[0])
+	best_hit = wcs;
+      if ('\0' == wcs[0])
+	return best_hit;
+      wcs++;
     }
-  return NULL;
 }
+
 
 size_t
 virt_wcslen (const wchar_t *wcs)

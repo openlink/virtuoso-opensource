@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -256,7 +256,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
       if (err_ret[0])
         return;
     }
-  if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+  if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_g_id, cli->cli_user->usr_id))
     {
       err_ret[0] = srv_make_new_error ("42000", "SR575:SECURITY", "No permission to execute %.300s as callback of %.100s() with user ID %d, group ID %d",
         full_name, funname, (int)(cli->cli_user->usr_id), (int)(cli->cli_user->usr_g_id) );
@@ -1194,6 +1194,21 @@ ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, cad
 }
 
 void
+ttlp_triples_for_prefix (ttlp_t *ttlp_arg, caddr_t prefix, caddr_t ns, int lineno)
+{
+  triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
+  caddr_t bnode_iid = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+static caddr_t empty_string = NULL;
+  if (NULL == empty_string)
+    empty_string = box_dv_short_nchars ("", 0);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_prefix, (NULL != prefix) ? prefix : empty_string, NULL, NULL);
+  tf_triple (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_iri, ns);
+  if (NULL != ttlp_arg->ttlp_base_uri)
+    tf_triple_l (tf, prefix, uname_virtrdf_ns_uri_namespace_base, ttlp_arg->ttlp_base_uri, NULL, NULL);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_row, box_num_nonull (lineno), NULL, NULL);
+}
+
+void
 ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
@@ -1705,10 +1720,13 @@ resource_t * prefix_nic_rc;
 void
 nic_done (resource_t * rc, name_id_cache_t * nic)
 {
-  if (11 == nic->nic_name_to_id->ht_buckets)
+  if (30 > nic->nic_name_to_id->ht_buckets)
     resource_store (rc, (void*) nic);
   else
-    nic_free (nic);
+    {
+      resource_track_delete (nic);
+      nic_free (nic);
+    }
 }
 
 
@@ -1881,7 +1899,10 @@ lt_nic_set (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name, boxint id)
 	    {
 	      lt->lt_rdf_iri = (name_id_cache_t*) resource_get (iri_nic_rc);
 	      if (!lt->lt_rdf_iri)
-		lt->lt_rdf_iri = nic_allocate (140000, 1, 11);
+ 		{
+		  lt->lt_rdf_iri = nic_allocate (140000, 1, 11);
+		  resource_track_new (lt->lt_rdf_iri);
+		}
 	      lt->lt_commit_hook = lt_nic_commit_hook;
 	      lt->lt_rollback_hook = lt_nic_rollback_hook;
 	    }
@@ -1898,7 +1919,10 @@ lt_nic_set (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name, boxint id)
 	    {
 	      lt->lt_rdf_prefix = (name_id_cache_t*) resource_get (prefix_nic_rc);
 	      if (!lt->lt_rdf_prefix)
-		lt->lt_rdf_prefix = nic_allocate (4000, 0, 11);
+		{
+		  lt->lt_rdf_prefix = nic_allocate (4000, 0, 11);
+                  resource_track_new (lt->lt_rdf_prefix);
+		}
 	      lt->lt_commit_hook = lt_nic_commit_hook;
 	      lt->lt_rollback_hook = lt_nic_rollback_hook;
 	    }
@@ -2298,8 +2322,17 @@ iri_split_ttl_qname_impl (const char * iri, caddr_t * pref_ret, caddr_t * name_r
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       unsigned char c = (unsigned char) tail[-1];
-      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80) && !(flag == SPLIT_MODE_XML && '.' == c))
+      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(flag == SPLIT_MODE_XML && '.' == c))
+        {
+          char *prev_utf8_head;
+          if (!(c & 0x80))
         break;
+          prev_utf8_head = tail-1;
+          while ((prev_utf8_head > iri) && IS_UTF8_CHAR_CONT (prev_utf8_head[0])) prev_utf8_head--;
+          if (!utf8_is_pn_chars_base (prev_utf8_head, tail))
+            break;
+          tail = prev_utf8_head;
+        }
     }
   if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
     tail = iri + iri_strlen;
@@ -2925,7 +2958,10 @@ bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL != err)
     {
       if (!strcmp (ERR_STATE(err), "RDFXX"))
-        return NEW_DB_NULL;
+        {
+          dk_free_tree (err);
+          return NEW_DB_NULL;
+        }
       sqlr_resignal (err);
     }
   if (NULL == res)
@@ -3029,6 +3065,28 @@ uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connection_t * cli)
   return name;
 }
 
+int
+utf8_is_pn_chars_base (const char *head, const char *pasttail)
+{
+  const char *rest = head;
+  unichar uchr = eh_decode_char__UTF8 (&rest, pasttail);
+  if (rest != pasttail)
+    return 0;			/* encoding error resulting in too many UTF-8 continuation characters like in case of C0 BF BF BF BF BF BF */
+#define ret_1_if_in_range(uchr,a,b) do { if (((a) >= (uchr)) && ((b) <= (uchr))) return 1; } while (0)
+  ret_1_if_in_range (uchr, 0x00C0, 0x00D6);
+  ret_1_if_in_range (uchr, 0x00F8, 0x02FF);
+  ret_1_if_in_range (uchr, 0x0370, 0x037D);
+  ret_1_if_in_range (uchr, 0x037F, 0x1FFF);
+  ret_1_if_in_range (uchr, 0x200C, 0x200D);
+  ret_1_if_in_range (uchr, 0x2070, 0x218F);
+  ret_1_if_in_range (uchr, 0x2C00, 0x2FEF);
+  ret_1_if_in_range (uchr, 0x3001, 0xD7FF);
+  ret_1_if_in_range (uchr, 0xF900, 0xFDCF);
+  ret_1_if_in_range (uchr, 0xFDF0, 0xFFFD);
+  ret_1_if_in_range (uchr, 0x10000, 0xEFFFF);
+  return 0;
+}
+
 caddr_t
 key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 {
@@ -3036,6 +3094,8 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
   lock_trx_t * lt = qi ? qi->qi_trx : NULL;
   lock_trx_t * nic_lt = lt ? lt : bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
+  if (0 == iri_id_no) return uname_nodeID_ns_0;
+  if (8192 == iri_id_no) return uname_nodeID_ns_8192;
   local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
   if (!local)
     {
@@ -3093,6 +3153,29 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
   return name;
 }
 
+caddr_t
+key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no)
+{
+  boxint pref_id;
+  lock_trx_t * nic_lt = bootstrap_cli->cli_trx;
+  caddr_t local, prefix, name;
+  if (0 == iri_id_no) return uname_nodeID_ns_0;
+  if (8192 == iri_id_no) return uname_nodeID_ns_8192;
+  local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
+  if (!local)
+    return NULL;
+  pref_id = LONG_REF_NA (local);
+  prefix = nic_id_name (iri_prefix_cache, pref_id);
+  if (!prefix)
+    return NULL;
+  name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
+  /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
+  memcpy (name, prefix, box_length (prefix) - 1);
+  memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
+  dk_free_box (prefix);
+  dk_free_box (local);
+  return name;
+}
 
 caddr_t
 key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
@@ -3187,6 +3270,24 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
   return 1;
 }
 
+void
+rdf_handle_invalid_iri_id (caddr_t * qst, const char *msg, iri_id_t iid)
+{
+  sqlr_new_error ("42000", "SR673", "%s" BOXINT_FMT "", msg, (boxint)iid);
+}
+
+caddr_t
+bif_rdf_handle_invalid_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t msg = bif_string_arg (qst, args, 0, "__rdf_handle_invalid_iri_id");
+  iri_id_t iid = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
+  if (0 == iid) return uname_nodeID_ns_0;
+  if (8192 == iid) return uname_nodeID_ns_8192;
+  rdf_handle_invalid_iri_id (qst, msg, iid);
+  return NULL; /* never reached */
+}
+
 caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -3200,15 +3301,20 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       {
 	iri_id_t iid = unbox_iri_id (iid_box);
 	caddr_t iri;
-	if (0L == iid)
-	  return NEW_DB_NULL;
 	if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
 	  iri = BNODE_IID_TO_LABEL (iid);
 	else
 	  {
 	    iri = key_id_to_iri (qi, iid);
 	    if (!iri)
-	      return NEW_DB_NULL;
+	      {
+		if (0 == iid)
+		  return uname_nodeID_ns_0;
+		if (8192 == iid)
+		  return uname_nodeID_ns_8192;
+		rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+		return NULL;	/* never reached */
+	      }
 	  }
 	box_flags (iri) = BF_IRI;
 	return iri;
@@ -3247,7 +3353,10 @@ bif_id_to_canonicalized_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
           {
             iri = key_id_to_canonicalized_iri (qi, iid);
             if (!iri)
-              return NEW_DB_NULL;
+              {
+                rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+                return NULL; /* never reached */
+              }
           }
         box_flags (iri) = BF_IRI;
         return iri;
@@ -3284,7 +3393,14 @@ bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  {
 	    iri = key_id_to_iri (qi, iid);
 	    if (!iri)
-	      return NEW_DB_NULL;
+	      {
+		if (0 == iid)
+		  return uname_nodeID_ns_0;
+		if (8192 == iid)
+		  return uname_nodeID_ns_8192;
+		rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+		return NULL;	/* never reached */
+	      }
 	  }
 	box_flags (iri) = BF_IRI;
 	return iri;
@@ -4016,6 +4132,7 @@ bif_iri_cache_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   nic_clear (iri_name_cache);
   nic_clear (iri_prefix_cache);
+  return NULL;
 }
 
 
@@ -4052,6 +4169,7 @@ void rdf_inf_init ();
 
 int iri_cache_size = 0;
 int32 enable_iri_nic_n = 1;
+int32 enable_iri_prefix_nic_n = 1;
 
 
 dbe_key_t *
@@ -4272,6 +4390,7 @@ rdf_core_init (void)
   bif_set_uses_index (bif_iri_canonicalize);
   bif_define_ex ("iri_to_id_nosignal", bif_iri_to_id_nosignal, BMD_ALIAS, "__i2idn", BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("iri_to_id_if_cached", bif_iri_to_id_if_cached, BMD_ALIAS, "__i2idc", BMD_RET_TYPE, &bt_iri_id, BMD_DONE);
+  bif_define_ex ("__rdf_handle_invalid_iri_id"	, bif_rdf_handle_invalid_iri_id, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("id_to_iri"			, bif_id_to_iri	, BMD_ALIAS, "__id2i"	, BMD_VECTOR_IMPL, bif_id2i_vec, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("id_to_canonicalized_iri"	, bif_id_to_canonicalized_iri	, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
@@ -4311,9 +4430,10 @@ rdf_core_init (void)
   if (enable_iri_nic_n)
     nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
-  nic_set_n_ways (iri_prefix_cache, 64);
-  rdf_lang_cache = nic_allocate (1000, 0, 0);
-  rdf_type_cache = nic_allocate (1000, 0, 0);
+  if (enable_iri_prefix_nic_n)
+    nic_set_n_ways (iri_prefix_cache, 64);
+  rdf_lang_cache = nic_allocate (16000, 0, 0);
+  rdf_type_cache = nic_allocate (16000, 0, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
   rdf_obj_ft_rules_mtx = mutex_allocate ();

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,21 +28,6 @@
         xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
-  <v:after-data-bind>
-    <v:script>
-      <![CDATA[
-        if (check_grants (connection_get ('vspx_user'), '') <> 1 )
-        {
-          http_request_status ('HTTP/1.1 302 Found');
-          http_header (sprintf ('Location: account_create.vspx?mode=edit&user_name=%s&sid=%s&realm=%s\r\n',
-                                connection_get ('vspx_user'),
-                                self.sid,
-                                self.realm));
-          return;
-        }
-      ]]>
-    </v:script>
-  </v:after-data-bind>
   <v:variable persist="1" name="account_folder_mask" type="varchar" default="'00000000000000000000000000'"/>
   <v:variable persist="1" name="search_mask" type="varchar" default="'%'"/>
   <v:variable persist="1" name="pattern_value" type="varchar" default="'%'"/>

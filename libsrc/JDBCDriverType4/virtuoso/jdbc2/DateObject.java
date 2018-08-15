@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -59,13 +59,12 @@ class DateObject
           java.util.Calendar cal_gmt = new java.util.GregorianCalendar(TimeZone.getTimeZone("GMT"));
 
           num2date(day, cal_gmt);
-          if (type!=VirtuosoTypes.DT_TYPE_DATE) 
-          {
-             cal_gmt.set (Calendar.HOUR_OF_DAY, hour);
-             cal_gmt.set (Calendar.MINUTE, minute);
-             cal_gmt.set (Calendar.SECOND, second);
-             cal_gmt.set (Calendar.MILLISECOND, fraction/1000);
-          }
+
+          cal_gmt.set (Calendar.HOUR_OF_DAY, hour);
+          cal_gmt.set (Calendar.MINUTE, minute);
+          cal_gmt.set (Calendar.SECOND, second);
+          cal_gmt.set (Calendar.MILLISECOND, fraction/1000);
+
           // Convert to Local GMT
           cal_dat.setTime(cal_gmt.getTime());
        }
@@ -99,13 +98,11 @@ class DateObject
           }
 
           num2date(day, cal_dat);
-          if (type!=VirtuosoTypes.DT_TYPE_DATE) 
-          {
-             cal_dat.set (Calendar.HOUR_OF_DAY, hour);
-             cal_dat.set (Calendar.MINUTE, minute);
-             cal_dat.set (Calendar.SECOND, second);
-             cal_dat.set (Calendar.MILLISECOND, fraction/1000);
-          }
+
+          cal_dat.set (Calendar.HOUR_OF_DAY, hour);
+          cal_dat.set (Calendar.MINUTE, minute);
+          cal_dat.set (Calendar.SECOND, second);
+          cal_dat.set (Calendar.MILLISECOND, fraction/1000);
        }
 
        switch(type)
@@ -117,7 +114,11 @@ class DateObject
          default:
            {
               Timestamp ts = new VirtuosoTimestamp(cal_dat.getTime().getTime(), tz, sparql_executed);
-              ts.setNanos(fraction * 1000);
+              int nanos = fraction * 1000;
+              if (nanos > 999999999)
+                ts.setNanos(fraction);
+              else
+                ts.setNanos(nanos);
               return ts;
            }
        }
@@ -130,62 +131,70 @@ class DateObject
        return (day * SPERDAY + hour * 60 * 60 + min * 60 + sec);
      }
 
-   public static void num2date(int julian_days, Calendar date)
-   {
-      double x;
-      int i, year;
-      boolean sign = false;
 
-      if ((julian_days & 0x800000)!=0){
-        sign = true;
-        julian_days = ((~julian_days)+1)& 0xFFFFFF;
-      }
+    void
+    num2date (int julian_days,  Calendar date)
+    {
+        long y_civ, m_civ, d_civ;
+        long midhignt_jdn;
+        long mj, g, dg, c, dc, b, db, a, da, y, m, d;
+        long /*c, d, m,*/ e;
+        midhignt_jdn = julian_days + 1721423;
 
-      if(julian_days > 577737)
-         julian_days += 10;
-      x = ((double)julian_days) / 365.25;
-      i = (int)x;
-      if((double)i != x)
-         year = i + 1;
-      else
-	{
-	  year = i;
-	  i--;
-	}
-      if(julian_days > 577737)
-      {
-         julian_days -= ((year / 400) - (1582 / 400));
-         julian_days += ((year / 100) - (1582 / 100));
-         x = ((double)julian_days) / 365.25;
-         i = (int)x;
-         if((double)i != x)
-            year = i + 1;
-         else
-	   {
-	     year = i;
-	     i--;
-	   }
-         if((year % 400) != 0 && (year % 100) == 0)
-            julian_days--;
-      }
-      i = (int)(julian_days - ((int) (i * 365.25)));
-      if((year > 1582)
-	  && (year % 400) != 0
-	  && (year % 100) == 0
-	  && (i < ((year / 100) - (1582 / 100)) - ((year / 400) - (1582 / 400))))
-	i++;
-      if (sign)
-        date.set(Calendar.ERA, GregorianCalendar.BC);
-      date.set (Calendar.YEAR, year);
-      //System.out.println ("Year=" + year);
-      yearday2date(i,(VirtuosoOutputStream.days_in_february(year) == 29),date);
-   }
+        if (2299161 <= midhignt_jdn)
+        {
+            mj = midhignt_jdn + 32044;
+            g = mj / 146097;
+            dg = mj % 146097;
+            c = (dg / 36524 + 1) * 3 / 4;
+            dc = dg - c * 36524;
+            b = dc / 1461;
+            db = dc % 1461;
+            a = (db / 365 + 1) * 3 / 4;
+            da = db - a * 365;
+            y = g * 400 + c * 100 + b * 4 + a;
+            m = (da * 5 + 308) / 153 - 2;
+            d = da - (m + 4) * 153 / 5 + 122;
+            y_civ = y - 4800 + (m+2)/12;
+            m_civ = (m+2)%12 + 1;
+            d_civ = d+1;
+        }
+        else if (1722884 == midhignt_jdn)
+        {
+            d_civ = m_civ = 1; y_civ = 5;
+        }
+        else
+        {
+            c = midhignt_jdn + 32082;
+            d = (4*c+3)/1461;
+            e = c - (1461*d)/4;
+            m = (5*e+2)/153;
+            d_civ = e - (153*m+2)/5+1;
+            m_civ = m + 3 - 12 * (m/10);
+            y_civ = d - 4800 + m/10;
+            if (y_civ < 0)
+                y_civ--;
+        }
+        if (y_civ < 0) {
+            date.set(Calendar.ERA, GregorianCalendar.BC);
+            date.set (Calendar.YEAR, (int)-y_civ);
+        }
+        else
+            date.set (Calendar.YEAR, (int)y_civ);
 
+        date.set(Calendar.MONTH, (int)m_civ - 1);
+        date.set(Calendar.DAY_OF_MONTH, (int)d_civ);
+    }
+
+
+
+   
    static final int GREG_JDAYS = 577737;
    static final int GREG_LAST_DAY = 14;
    static final int GREG_FIRST_DAY = 5;
    static final int GREG_MONTH = 10;
    static final int GREG_YEAR = 1582;
+
    static final int DAY_LAST = 365;
    static final int DAY_MIN = 1;
    static final int MONTH_MIN = 1;

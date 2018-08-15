@@ -807,8 +807,8 @@ STATIC int regrepeat (char *p);
 
 #ifdef DEBUG
 int regnarrate = 0;
-void regdump ();
-STATIC char *regprop ();
+void regdump (regexp *r);
+STATIC char *regprop (char *op);
 #endif
 
 /*
@@ -1201,7 +1201,7 @@ regnext (register char *p)
 
 #ifdef DEBUG
 
-STATIC char *regprop ();
+STATIC char *regprop (char *op);
 
 /*
  - regdump - dump a regexp onto stdout in vaguely comprehensible form

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,10 +74,6 @@ public class VirtuosoConnectionPoolDataSource
 #endif
     private long  propEnforceTime = 0;
 
-
-  public synchronized void finalize () throws Throwable {
-    close ();
-  }
 
 
   public VirtuosoConnectionPoolDataSource() {
@@ -602,20 +598,19 @@ public class VirtuosoConnectionPoolDataSource
     }
 
     public void run() {
-      if (connPool.cacheSize.get() >= count || 
-          (maxPoolSize != 0 && connPool.cacheSize.get() >= maxPoolSize))
+      int cacheSize = connPool.cacheSize.get();
+      if (cacheSize >= count ||
+          (maxPoolSize != 0 && cacheSize >= maxPoolSize))
         return;
 
       for(int i = 0; i < count; i++)
         try {
-
-          VirtuosoConnection conn = new VirtuosoConnection (conn_url, "localhost", 1111, info);
-          connPool.addPooledConnection(new VirtuosoPooledConnection(conn, connKey), false);
-          if ((minPoolSize != 0 && connPool.cacheSize.get() >= minPoolSize) 
-              || (maxPoolSize != 0 && connPool.cacheSize.get() >= maxPoolSize))
+          connPool.tryAddConnection(conn_url, connKey, info);
+          cacheSize = connPool.cacheSize.get();
+          if ((minPoolSize != 0 && cacheSize >= minPoolSize)
+              || (maxPoolSize != 0 && cacheSize >= maxPoolSize))
             return;
-        } catch (Exception e) {
-        }
+        } catch (Exception e) { }
     }
 
   }
@@ -623,14 +618,14 @@ public class VirtuosoConnectionPoolDataSource
 
   private class CloseHelper extends Thread {
 
-    private LinkedList connList;
+    private List connList;
     private PooledConnection pconn;
 
     private CloseHelper() {
       setName("Virtuoso CloseHelper");
     }
 
-    protected CloseHelper(LinkedList _connList) {
+    protected CloseHelper(List _connList) {
       this();
       connList = _connList;
     }
@@ -642,15 +637,21 @@ public class VirtuosoConnectionPoolDataSource
 
     public void run() {
       if (connList != null) {
-        for(ListIterator i = connList.listIterator(); i.hasNext(); )
+        for(ListIterator i = connList.listIterator(); i.hasNext(); ) {
           try {
             ((VirtuosoPooledConnection)i.next()).close();
-          } catch (Exception e) { }
+          } catch (Exception e) { 
+          } finally {
+            connPool.cacheSize.decrementAndGet();
+          }
+        }
         connList.clear();
       } else {
         try {
           pconn.close();
         } catch (Exception e) {
+        } finally {
+          connPool.cacheSize.decrementAndGet();
         }
       }
     }
@@ -662,6 +663,7 @@ public class VirtuosoConnectionPoolDataSource
     AtomicInteger cacheSize;
     LinkedList<VirtuosoPooledConnection> unUsed;
     ConcurrentHashMap<VirtuosoPooledConnection,VirtuosoPooledConnection> in_Use;
+    Object lck_new = new Object();
 
     private VirtuosoConnectionPoolDataSource cpds;
 
@@ -672,8 +674,35 @@ public class VirtuosoConnectionPoolDataSource
       cpds = _cpds;
     }
 
+
+    public void finalize () throws Throwable {
+      clear ();
+    }
+
+
+    private void tryAddConnection(String conn_url, String connKey, Properties info) {
+      VirtuosoConnection conn = null;
+      VirtuosoPooledConnection pconn;
+
+      if (checkForNewConn()) {
+        // establish a new Connection
+        try {
+          conn = new VirtuosoConnection (conn_url, "localhost", 1111, info);
+          pconn = new VirtuosoPooledConnection(conn, connKey, cpds);
+          connPool.addPooledConnection(pconn, true);
+        } catch(SQLException e) {
+          cacheSize.decrementAndGet();
+          if (conn!=null) {
+            try {
+              conn.close();
+            } catch(Exception e1) { }
+          }
+        }
+      }
+    }
+
     //add a new connection to pool
-    private void addPooledConnection(VirtuosoPooledConnection pconn, boolean reuse) 
+    private void addPooledConnection(VirtuosoPooledConnection pconn, boolean reuse)
         throws java.sql.SQLException
     {
       if (isClosed)
@@ -715,12 +744,12 @@ public class VirtuosoConnectionPoolDataSource
         unUsed.clear();
       }
 
-      cacheSize.set(0);  
+      cacheSize.set(0);
     }
 
 
-    private void reusePooledConnection(VirtuosoPooledConnection pconn) 
-    	throws SQLException 
+    private void reusePooledConnection(VirtuosoPooledConnection pconn)
+    	throws SQLException
     {
       if (isClosed)
           throw new VirtuosoException("Cache was closed", VirtuosoException.OK);
@@ -736,7 +765,6 @@ public class VirtuosoConnectionPoolDataSource
 
       if (maxPoolSize != 0  &&  cacheSize.get() > maxPoolSize) {
         // System.out.println("close pconn....");
-        cacheSize.decrementAndGet();
         CloseHelper helpThread = new CloseHelper(pconn);
         helpThread.start();
 
@@ -749,8 +777,8 @@ public class VirtuosoConnectionPoolDataSource
     }
 
 
-    private void closePooledConnection(VirtuosoPooledConnection pconn) 
-    	throws SQLException 
+    private void closePooledConnection(VirtuosoPooledConnection pconn)
+    	throws SQLException
     {
       if (isClosed)
           throw new VirtuosoException("Cache was closed", VirtuosoException.OK);
@@ -762,8 +790,11 @@ public class VirtuosoConnectionPoolDataSource
       if ((pooledConn = (VirtuosoPooledConnection)in_Use.remove(pconn)) == null)
           throw new VirtuosoException("Unexpected state of cache", VirtuosoException.OK);
 
-      cacheSize.decrementAndGet();
-      pconn.close();
+      try {
+        pconn.close();
+      } finally {
+        cacheSize.decrementAndGet();
+      } 
     }
 
 
@@ -773,7 +804,7 @@ public class VirtuosoConnectionPoolDataSource
       if (isClosed)
           throw new VirtuosoException("Cache was closed", VirtuosoException.OK);
 
-      LinkedList<VirtuosoPooledConnection> closeTmp = new LinkedList<VirtuosoPooledConnection>();
+      ArrayList<VirtuosoPooledConnection> closeTmp = new ArrayList<VirtuosoPooledConnection>();
       VirtuosoPooledConnection pooledConn;
       int _hashKey = _Key.hashCode();
 
@@ -784,7 +815,6 @@ public class VirtuosoConnectionPoolDataSource
             if (pooledConn.hashConnURL == _hashKey && pooledConn.connURL.equals(_Key)) {
               iterator.remove();
 	      if (pooledConn.isConnectionLost(1)) {
-                cacheSize.decrementAndGet();
                 closeTmp.add(pooledConn);
 	      } else {
                 return pooledConn;
@@ -794,7 +824,7 @@ public class VirtuosoConnectionPoolDataSource
         }
 
         return null;
-    
+
       } finally {
         if (closeTmp.size() > 0) {
           // close connections
@@ -804,6 +834,17 @@ public class VirtuosoConnectionPoolDataSource
       }
     }
 
+
+    private boolean checkForNewConn() {
+      synchronized(lck_new) 
+      {
+        if (maxPoolSize == 0 || cacheSize.get() < maxPoolSize) {
+          cacheSize.incrementAndGet();
+          return true;
+        } else
+          return false;
+      }
+    }
 
     // get connection from cache or create a new connection
     private PooledConnection getPooledConnection(Properties info,
@@ -815,7 +856,7 @@ public class VirtuosoConnectionPoolDataSource
           throw new VirtuosoException("Cache was closed", VirtuosoException.OK);
 
       VirtuosoPooledConnection pconn = null;
-      VirtuosoConnection conn;
+      VirtuosoConnection conn = null;
 
     //try to find an unused Connection
       if ((pconn = lookup(connKey)) != null) {
@@ -826,12 +867,22 @@ public class VirtuosoConnectionPoolDataSource
       }
 
     // if couldn't found an unused Connection
-      if (maxPoolSize == 0 || cacheSize.get() < maxPoolSize) {
+      if (checkForNewConn()) {
         // establish a new Connection
-        conn = new VirtuosoConnection (conn_url, "localhost", 1111, info);
-        pconn = new VirtuosoPooledConnection(conn, connKey, cpds);
+        try {
+          conn = new VirtuosoConnection (conn_url, "localhost", 1111, info);
+          pconn = new VirtuosoPooledConnection(conn, connKey, cpds);
+        } catch(SQLException e) {
+          cacheSize.decrementAndGet();
+          if (conn!=null) {
+            try {
+              conn.close();
+            } catch(Exception e1) {
+            }
+          }
+          throw e;
+        }
         in_Use.put(pconn, pconn);
-        cacheSize.incrementAndGet();
         return pconn;
       }
 
@@ -874,7 +925,7 @@ public class VirtuosoConnectionPoolDataSource
 
     private void checkPool() {
       VirtuosoPooledConnection pooledConn;
-      LinkedList<Object> closeTmp = new LinkedList<Object>();
+      ArrayList<Object> closeTmp = new ArrayList<Object>();
       ListIterator l_iter;
 
       if (maxIdleTime != 0) {
@@ -887,7 +938,6 @@ public class VirtuosoConnectionPoolDataSource
             if (pooledConn.tmClosed < minTime) {
                closeTmp.add(pooledConn);
                l_iter.remove();
-               cacheSize.decrementAndGet();
             }
           }
         }
@@ -900,7 +950,6 @@ public class VirtuosoConnectionPoolDataSource
            for(l_iter = unUsed.listIterator(); l_iter.hasNext() && count > 0; count--) {
              closeTmp.add(l_iter.next());
              l_iter.remove();
-             cacheSize.decrementAndGet();
            }
          }
       }

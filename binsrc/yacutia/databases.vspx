@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,959 +19,1035 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  button-anchors="1">
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        button-anchors="1">
   <vm:pagetitle>Virtuoso Database Management</vm:pagetitle>
   <vm:pagewrapper>
-  <vm:variables>
-    <v:variable persist="1" name="browse_cat" type="varchar" default="'DB'"/>
-    <v:variable persist="1" name="browse_sch" type="varchar" default="'%'"/>
-    <v:variable persist="1" name="q_mask" type="varchar" default="'%'"/>
-    <v:variable persist="1" name="browse_mask" type="varchar" default="'%'"/>
-    <v:variable persist="1" name="browse_table" type="integer" default="0"/>
-    <v:variable persist="1" name="browse_view" type="integer" default="0"/>
-    <v:variable persist="1" name="browse_proc" type="integer" default="0"/>
-    <v:variable persist="1" name="browse_udt" type="integer" default="0"/>
-    <v:variable persist="temp" name="row_count" type="integer" default="1"/>
-    <v:variable persist="1" name="db_object_to_drop" type="any" default="null"/>
-    <v:variable persist="1" name="db_object_to_grant" type="any" default="null"/>
-    <v:variable name="db_tree_state" persist="session" type="any" default="null" />
-    <v:variable name="db_ds_state" persist="session" type="any" default="null" />
-    <v:variable name="last_bmk" persist="session" type="varchar" default="null" />
-    <v:variable name="rdf_obj" persist="temp" type="varchar" default="null" param-name="rdf_obj"/>
-  </vm:variables>
-  <vm:menu>
-    <vm:menuitem value="Schema Objects Management"/>
-  </vm:menu>
-  <vm:header caption="Schema Objects"/>
-  <vm:pagebody>
-    <v:method name="drop_sel" arglist="inout ds vspx_data_set, in typ varchar, inout e vspx_event"><![CDATA[
-	declare i, arr any;
-	declare chil vspx_control;
-	declare cb vspx_check_box;
- 	declare tb varchar;
-
-	i := 0;
-	arr := vector (typ);
-	while ((chil := ds.ds_iterate_rows (i)) is not null)
-	  {
-	    cb := chil.vc_find_control ('cb_'||typ||'s_select');
-	    tb := get_keyword (cb.vc_instance_name, e.ve_params);
-	    if (tb is not null)
-	      arr := vector_concat (arr, vector (tb));
-	  }
-	 if (length (arr) > 0)
-	  {
-	    self.db_object_to_drop := arr;
-	    self.vc_redirect ('db_drop_conf.vspx');
-	  }
-	else
-          {
-	    self.vc_error_message := 'There are no object selected to perform operation delete.';
-	    self.vc_is_valid := 0;
-          }
-	  ]]></v:method>
-    <v:method name="grant_sel" arglist="inout ds vspx_data_set, in typ varchar, inout e vspx_event"><![CDATA[
-	declare i, arr any;
-	declare chil vspx_control;
-	declare cb vspx_check_box;
- 	declare tb varchar;
-
-	i := 0;
-	arr := vector (typ);
-	while ((chil := ds.ds_iterate_rows (i)) is not null)
-	  {
-	    cb := chil.vc_find_control ('cb_'||typ||'s_select');
-	    tb := get_keyword (cb.vc_instance_name, e.ve_params);
-	    if (tb is not null)
-	      arr := vector_concat (arr, vector (tb));
-	  }
-	 if (length (arr) > 1)
-	  {
-	    self.db_object_to_grant := arr;
-	    self.vc_redirect ('db_grant_many.vspx');
-	  }
-	else
-          {
-	    self.vc_error_message := 'There are no object selected to perform privileges operations.';
-	    self.vc_is_valid := 0;
-          }
-	  ]]></v:method>
-	<v:method name="open_tmpl" arglist="inout node vspx_tree_node, in cmp any">
-	  if (node.tn_open and node.tn_level and node.tn_value = cmp)
-	    return 1;
-	  return 0;
-	</v:method>
-	<v:on-init>
-	  if (self.db_ds_state is null)
-	    {
-	      self.db_ds_state := vector (
-	    	null, null,
-	    	null, null,
-	    	null, null,
-	    	null, null
-		);
-            }
-	</v:on-init>
-	<!-- keep a position of the button in a page state, so have a session one that will restore it
-	if referer is under current position
-       	-->
-	<v:on-post>
-	  if (e.ve_button is not null)
-	    {
-	      declare btn vspx_button;
-	      btn := null;
-	      if (e.ve_button.vc_name = 'tr1_toggle')
-	        btn := e.ve_button;
-	      else
-	        {
-	          declare tnode vspx_tree_node;
-		  tnode := e.ve_button.vc_find_parent (e.ve_button, 'vspx_tree_node');
-		  if (tnode is not null)
-		    btn := tnode.vc_find_control ('tr1_toggle');
-		}
-	      if (btn is not null)
-	        self.btn_bmk := 'btn_' || btn.vc_get_name ();
-	      else
-	        self.btn_bmk := null;
-	    }
-	</v:on-post>
-	<v:after-data-bind>
-	  if (not e.ve_is_post)
-	    {
-	      declare refr, hf any;
-	      refr := http_request_header (e.ve_lines, 'Referer');
-	      if (refr is not null and isstring (refr))
-	        {
-		  hf := WS.WS.PARSE_URI (refr);
-		  if (adm_belongs_to (http_path (), hf[2]))
-		    {
-		      self.btn_bmk := self.last_bmk;
-		    }
-	        }
-              else
-                self.last_bmk := null;
-	    }
-	</v:after-data-bind>
+    <vm:variables>
+      <v:variable persist="1" name="browse_cat" type="varchar" default="'DB'"/>
+      <v:variable persist="1" name="browse_sch" type="varchar" default="'%'"/>
+      <v:variable persist="1" name="q_mask" type="varchar" default="'%'"/>
+      <v:variable persist="1" name="browse_mask" type="varchar" default="'%'"/>
+      <v:variable persist="1" name="browse_table" type="integer" default="0"/>
+      <v:variable persist="1" name="browse_view" type="integer" default="0"/>
+      <v:variable persist="1" name="browse_proc" type="integer" default="0"/>
+      <v:variable persist="1" name="browse_udt" type="integer" default="0"/>
+      <v:variable persist="temp" name="row_count" type="integer" default="1"/>
+      <v:variable persist="1" name="db_object_to_drop" type="any" default="null"/>
+      <v:variable persist="1" name="db_object_to_grant" type="any" default="null"/>
+      <v:variable name="db_tree_state" persist="session" type="any" default="null" />
+      <v:variable name="db_ds_state" persist="session" type="any" default="null" />
+      <v:variable name="last_bmk" persist="session" type="varchar" default="null" />
+      <v:variable name="rdf_obj" persist="temp" type="varchar" default="null" param-name="rdf_obj"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Schema Objects Management"/>
+    </vm:menu>
+    <vm:header caption="Schema Objects"/>
+    <vm:pagebody>
+      <v:method name="drop_sel" arglist="inout ds vspx_data_set, in typ varchar, inout e vspx_event">
         <![CDATA[
-	<script language="JavaScript" src="admin_utils.js"></script>
+          declare i, arr any;
+          declare chil vspx_control;
+          declare cb vspx_check_box;
+          declare tb varchar;
+
+          i := 0;
+          arr := vector (typ);
+          while ((chil := ds.ds_iterate_rows (i)) is not null)
+          {
+            cb := chil.vc_find_control ('cb_'||typ||'s_select');
+            tb := get_keyword (cb.vc_instance_name, e.ve_params);
+            if (tb is not null)
+              arr := vector_concat (arr, vector (tb));
+          }
+          if (length (arr) > 0)
+          {
+            self.db_object_to_drop := arr;
+            self.vc_redirect ('db_drop_conf.vspx');
+          }
+          else
+          {
+            self.vc_error_message := 'There are no object selected to perform operation delete.';
+            self.vc_is_valid := 0;
+          }
         ]]>
-    <table class="page_cmd_row">
-      <tr class="page_cmd_row">
-        <td class="page_cmd_col">
-          <v:url name="crntabl"
-                 value="Create Table"
-                 url="--'databases_table_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
-        </td>
-        <td class="page_cmd_col">
-          <v:url name="crnview"
-                 value="Create View"
-                 url="--'databases_view_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
-        </td>
-        <td class="page_cmd_col">
-          <v:url name="crnproc"
-                 value="Create Procedure"
-                 url="--'databases_proc_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
-        </td>
-        <td class="page_cmd_col">
-          <v:url name="crnudt"
-                 value="Create User Defined Type"
-                 url="--'databases_udt_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
-        </td>
-        <td class="page_cmd_col">
-          <v:url name="crnudt"
-                 value="Export Schema"
-                 url="--sprintf ('databases_export.vspx?cat=%U&sch=%U', self.browse_cat , self.browse_sch)"/>
-        </td>
-      </tr>
-    </table>
-    <table class="sub_page_area">
-      <tr>
-	<td align="left" colspan="2">
-          <v:form name="db_filter_form" type="simple" method="POST" action="databases.vspx">
-            <!--v:on-post>
-              <v:script>
+      </v:method>
+
+      <v:method name="grant_sel" arglist="inout ds vspx_data_set, in typ varchar, inout e vspx_event">
+        <![CDATA[
+          declare i, arr any;
+          declare chil vspx_control;
+          declare cb vspx_check_box;
+          declare tb varchar;
+
+          i := 0;
+          arr := vector (typ);
+          while ((chil := ds.ds_iterate_rows (i)) is not null)
+          {
+            cb := chil.vc_find_control ('cb_'||typ||'s_select');
+            tb := get_keyword (cb.vc_instance_name, e.ve_params);
+            if (tb is not null)
+              arr := vector_concat (arr, vector (tb));
+          }
+          if (length (arr) > 1)
+          {
+            self.db_object_to_grant := arr;
+            self.vc_redirect ('db_grant_many.vspx');
+          }
+          else
+          {
+            self.vc_error_message := 'There are no object selected to perform privileges operations.';
+            self.vc_is_valid := 0;
+          }
+        ]]>
+      </v:method>
+
+      <v:method name="open_tmpl" arglist="inout node vspx_tree_node, in cmp any">
+        if (node.tn_open and node.tn_level and node.tn_value = cmp)
+          return 1;
+
+        return 0;
+      </v:method>
+
+      <v:on-init>
+        if (self.db_ds_state is null)
+        {
+          self.db_ds_state := vector (null, null, null, null, null, null, null, null);
+        }
+      </v:on-init>
+        <!-- keep a position of the button in a page state, so have a session one that will restore it
+          if referer is under current position
+        -->
+      <v:on-post>
+        if (e.ve_button is not null)
+        {
+          declare btn vspx_button;
+
+          btn := null;
+          if (e.ve_button.vc_name = 'tr1_toggle')
+          {
+             btn := e.ve_button;
+          }
+          else
+          {
+            declare tnode vspx_tree_node;
+
+            tnode := e.ve_button.vc_find_parent (e.ve_button, 'vspx_tree_node');
+            if (tnode is not null)
+              btn := tnode.vc_find_control ('tr1_toggle');
+          }
+          if (btn is not null)
+            self.btn_bmk := 'btn_' || btn.vc_get_name ();
+          else
+            self.btn_bmk := null;
+        }
+      </v:on-post>
+
+      <v:after-data-bind>
+        if (not e.ve_is_post)
+        {
+          declare refr, hf any;
+          refr := http_request_header (e.ve_lines, 'Referer');
+          if (refr is not null and isstring (refr))
+          {
+            hf := WS.WS.PARSE_URI (refr);
+            if (adm_belongs_to (http_path (), hf[2]))
+              self.btn_bmk := self.last_bmk;
+          }
+          else
+          {
+            self.last_bmk := null;
+          }
+        }
+      </v:after-data-bind>
+
+      <![CDATA[
+        <script language="JavaScript" src="admin_utils.js"></script>
+      ]]>
+
+      <table class="page_cmd_row">
+        <tr class="page_cmd_row">
+          <td class="page_cmd_col">
+            <v:url name="crntabl"
+                   value="Create Table"
+                   url="--'databases_table_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
+          </td>
+          <td class="page_cmd_col">
+            <v:url name="crnview"
+                   value="Create View"
+                   url="--'databases_view_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
+          </td>
+          <td class="page_cmd_col">
+            <v:url name="crnproc"
+                   value="Create Procedure"
+                   url="--'databases_proc_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
+          </td>
+          <td class="page_cmd_col">
+            <v:url name="crnudt"
+                   value="Create User Defined Type"
+                   url="--'databases_udt_edit.vspx?mode=create&cat='|| case when self.browse_cat='%' then '[CATALOG]' else self.browse_cat end ||'&sch='|| case when self.browse_sch='%' then '[SCHEMA]' else self.browse_sch end"/>
+          </td>
+          <td class="page_cmd_col">
+            <v:url name="crnudt"
+                   value="Export Schema"
+                   url="--sprintf ('databases_export.vspx?cat=%U&sch=%U', self.browse_cat , self.browse_sch)"/>
+          </td>
+        </tr>
+      </table>
+
+      <table class="sub_page_area">
+        <tr>
+          <td align="left" colspan="2">
+            <v:form name="db_filter_form" type="simple" method="POST" action="databases.vspx">
+              <!--v:on-post>
                 <![CDATA[
-  -##- XXX: disabled until local filter is introduced
-  self.browse_sch := self.dl_schema.ufl_value;
-  self.browse_mask := case when self.t_mask.ufl_value='' then '%' else self.t_mask.ufl_value end;
-  self.vc_data_bind(e);
+                -##- XXX: disabled until local filter is introduced
+                self.browse_sch := self.dl_schema.ufl_value;
+                self.browse_mask := case when self.t_mask.ufl_value='' then '%' else self.t_mask.ufl_value end;
+                self.vc_data_bind(e);
                 ]]>
-              </v:script>
-            </v:on-post -->
-	    <table class="ctl_grp">
-	      <!--
-              <tr>
-                <td>
-                  <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
-                </td>
-                <td>
-                  Schema
-                </td>
-                <td>
-                  <v:data-list name="dl_schema"
-                               sql="select '%' AS sch_name FROM DB.DBA.SYS_KEYS UNION
+              </v:on-post -->
+              <table class="ctl_grp">
+              <!--
+                <tr>
+                  <td>
+                    <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
+                  </td>
+                  <td>
+                    Schema
+                  </td>
+                  <td>
+                    <v:data-list name="dl_schema"
+                                 sql="select '%' AS sch_name FROM DB.DBA.SYS_KEYS UNION
 SELECT distinct name_part (KEY_TABLE, 1) from DB.DBA.SYS_KEYS WHERE name_part (KEY_TABLE, 0) LIKE self.browse_cat UNION
 SELECT distinct name_part (P_NAME, 1) from DB.DBA.SYS_PROCEDURES  WHERE name_part (P_NAME, 0) LIKE self.browse_cat
 ORDER BY sch_name"
-                               key-column="sch_name" value-column="sch_name" defvalue="- -self.browse_sch"
-                               xhtml_onchange="javascript:doPost(\'db_filter_form\', \'apply_filter\');"
-                  />
-                </td>
-                <td>
-                </td>
-                <td>
-                  <v:button action="simple" name="apply_filter" value="Update Display">
-                  </v:button>
-                </td>
-	      </tr>
-	      -->
+                                 key-column="sch_name" value-column="sch_name" defvalue="- -self.browse_sch"
+                                 xhtml_onchange="javascript:doPost(\'db_filter_form\', \'apply_filter\');"
+                    />
+                  </td>
+                  <td>
+                  </td>
+                  <td>
+                    <v:button action="simple" name="apply_filter" value="Update Display">
+                    </v:button>
+                  </td>
+                </tr>
+              -->
+                <tr>
+                  <td>
+                    <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
+                  </td>
+                  <td>
+                    <!-- Name mask -->
+                    Catalog mask
+                  </td>
+                  <td>
+                    <!--v:text name="t_mask" value="- -self.browse_mask"/-->
+                    <v:text name="q_mask1" value="--self.q_mask"/>
+                  </td>
+                  <td>
+                  </td>
+                  <td>
+                    <v:button action="simple" name="apply_filter" value="Update Display">
+                      <v:on-post>
+                        if (not self.vc_is_valid)
+                          return;
+                        self.q_mask := self.q_mask1.ufl_value;
+                        self.last_bmk := null;
+                        self.btn_bmk := null;
+                        self.db_tree_state := null;
+                        self.db_ds_state := vector ( null, null, null, null, null, null, null, null);
+                        self.tr1.vc_data_bind (e);
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" name="clear_filter" value="Clear">
+                      <v:on-post>
+                        if (not self.vc_is_valid)
+                          return;
+                        self.q_mask := '%';
+                        self.q_mask1.ufl_value := '%';
+                        self.last_bmk := null;
+                        self.btn_bmk := null;
+                        self.db_tree_state := null;
+                        self.db_ds_state := vector ( null, null, null, null, null, null, null, null);
+                        self.tr1.vc_data_bind (e);
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="5"/>
+                </tr>
+              </table>
+            </v:form>
+          </td>
+        </tr>
+      </table>
+
+      <table class="listing">
+        <tr class="listing_header_row">
+          <th> </th>
+          <th>Catalog/Object Type</th>
+        </tr>
+        <v:form name="f1" method="POST" type="simple">
+          <v:tree name="tr1"
+                  orientation="vertical"
+                  multi-branch="0"
+                  start-path="--self.q_mask"
+                  root="db_root"
+                  child-function="db_child">
+            <v:before-render>
+              self.db_tree_state := control.vc_get_state ();
+            </v:before-render>
+            <v:before-data-bind>
+              if (self.db_tree_state is not null and not e.ve_is_post)
+                control.vc_set_control_state (self.db_tree_state);
+            </v:before-data-bind>
+            <v:node-template name="nt1">
               <tr>
-                <td>
-                  <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
-	        </td>
-                <td>
-		  <!-- Name mask -->
-		  Catalog mask
-                </td>
-                <td>
-                  <!--v:text name="t_mask" value="- -self.browse_mask"/-->
-                  <v:text name="q_mask1" value="--self.q_mask"/>
-                </td>
-                <td>
-                </td>
-                <td>
-		  <v:button action="simple" name="apply_filter" value="Update Display">
-		    <v:on-post>
-		      if (not self.vc_is_valid)
-		        return;
-		      self.q_mask := self.q_mask1.ufl_value;
-		      self.last_bmk := null;
-		      self.btn_bmk := null;
-		      self.db_tree_state := null;
-		      self.db_ds_state := vector ( null, null, null, null, null, null, null, null);
-		      self.tr1.vc_data_bind (e);
-		    </v:on-post>
-                  </v:button>
-		  <v:button action="simple" name="clear_filter" value="Clear">
-		    <v:on-post>
-		      if (not self.vc_is_valid)
-		        return;
-		      self.q_mask := '%';
-		      self.q_mask1.ufl_value := '%';
-		      self.last_bmk := null;
-		      self.btn_bmk := null;
-		      self.db_tree_state := null;
-		      self.db_ds_state := vector ( null, null, null, null, null, null, null, null);
-		      self.tr1.vc_data_bind (e);
-		    </v:on-post>
-                  </v:button>
-	        </td>
-              </tr>
-              <tr>
-                <td/>
-                <td/>
-                <td/>
-                <td>
-                </td>
-                <td>
+                <td colspan="2">
+                  <div style="margin-left: <?V control.tn_level*16 ?>px;">
+                    <v:button name="tr1_toggle"
+                              action="simple"
+                              style="image"
+                              value="--concat('images/icons/', case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'foldr_16.png' else 'open_16.png' end)"
+                              xhtml_alt="Toggle"
+                              xhtml_title="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'Click to open' else 'Click to close' end">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          control.bt_text := '&nbsp;' || (control.vc_parent as vspx_tree_node).tn_value;
+                        ]]>
+                      </v:after-data-bind>
+                      <v:on-post>
+                        if ((control.vc_parent as vspx_tree_node).tn_level = 0)
+                          self.browse_cat := cast ((control.vc_parent as vspx_tree_node).tn_value as varchar);
+                      </v:on-post>
+                    </v:button>
+                  </div>
                 </td>
               </tr>
-            </table>
-          </v:form>
-        </td>
-      </tr>
-    </table>
-    <table class="listing">
-      <tr class="listing_header_row">
-	<th> </th>
-	<th>Catalog/Object Type</th>
-      </tr>
-      <v:form name="f1" method="POST" type="simple">
-      <v:tree name="tr1" orientation="vertical" multi-branch="0"
-	start-path="--self.q_mask"
-	root="db_root"
-	child-function="db_child">
-	    <v:before-render>
-		self.db_tree_state := control.vc_get_state ();
-	    </v:before-render>
-	    <v:before-data-bind>
-	      if (self.db_tree_state is not null and not e.ve_is_post)
-	        {
-	          control.vc_set_control_state (self.db_tree_state);
-		}
-	    </v:before-data-bind>
-	<v:node-template name="nt1">
-	  <tr>
-	    <td colspan="2"><div style="margin-left: <?V control.tn_level*16 ?>px;">
-	    <v:button name="tr1_toggle" action="simple" style="image"
-	      value="--concat('images/icons/', case (control.vc_parent as vspx_tree_node).tn_open
-	      when 0 then 'foldr_16.png' else 'open_16.png' end)"
-	      xhtml_alt="Toggle" xhtml_title="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'Click to open' else 'Click to close' end">
-	      <v:on-post>
-		if ((control.vc_parent as vspx_tree_node).tn_level = 0)
-		  {
-		    self.browse_cat := cast ((control.vc_parent as vspx_tree_node).tn_value as varchar);
-		  }
-	      </v:on-post>
-	    </v:button>
-	    <a name="<?V control.vc_instance_name ?>">
-	    <v:label name="tr1_l1" value="--(control.vc_parent as vspx_tree_node).tn_value"/>
-	    </a>
-	    </div>
-	    </td>
-	  </tr>
-	  <!-- MAIN -->
-      <v:template name="tp_tables" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Tables')">
-      <tr>
-	<td>
-	</td>
-	<td align="left">
-	  <div class="scroll_area">
-          <v:data-set name="ds_tables"
-            sql="select distinct KEY_TABLE as table_name from SYS_KEYS
-            where upper(name_part (KEY_TABLE, 0)) like upper(:self.browse_cat) and upper(name_part (KEY_TABLE, 1)) like upper(:self.browse_sch) and upper(name_part (KEY_TABLE, 2)) like upper(:self.browse_mask)
-            and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL and not exists (select 1 from DB.DBA.SYS_VIEWS where V_NAME = KEY_TABLE) order by 1"
-	    nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
-	    <v:before-data-bind>
-	      if (self.db_ds_state is not null and not e.ve_is_post)
-	        {
-	          declare nam, st any;
-		  nam := self.db_ds_state[0];
-		  st := self.db_ds_state[1];
-		  if (nam = control.vc_get_name ())
-		    {
-		      declare e1 vspx_event;
-		      e1 := new vspx_event ();
-		      e1.ve_is_post := 1;
-		      control.vc_set_control_state (st);
-		      control.vc_set_view_state (e1);
-		    }
-		}
-	    </v:before-data-bind>
-	    <v:before-render>
-	      declare tmp, st any;
-	      tmp := self.db_ds_state;
-	      st := control.vc_get_control_state (null);
-	      tmp[0] := control.vc_get_name ();
-	      tmp[1] := st;
-	      self.db_ds_state := tmp;
-	    </v:before-render>
-            <v:template name="temp_ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table class="listing" rules="groups">
-                <colgroup/><colgroup/><colgroup/>
-                <thead>
-                  <tr class="listing_row_odd">
-		     <th  style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/>All</th>
-                     <th>Name</th>
-                     <th>Action</th>
-                  </tr>
-                </thead>
-              </table>
-            </v:template>
-            <v:template name="temp_ds_tables_repeat" type="repeat" name-to-remove="" set-to-remove="">
-              <v:template name="temp_ds_tables_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
-                  <tr>
-                    <td colspan="10" class="Attention">No tables match the criteria</td>
-                  </tr>
-                </table>
-              </v:template>
-
-              <v:template name="temp_ds_tables_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
-                    <td class="listing_col">
-                      <v:check-box name="cb_tables_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
-                    </td>
-                    <td class="listing_col">
-                      <img src="images/icons/table_16.png" alt="Table" title="Table"/>
-                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-                    </td>
-                    <td class="listing_col">
-		      <v:button name="b_table_def" value="Definition" action="simple" style="url">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=definition&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                      <v:button name="b_table_idx"
-                      value="-- 'Indexes(' || (select cast(count(*) as varchar) from db.dba.sql_table_indexes where tablename=(control.vc_parent as vspx_row_template).te_rowset[0]) || ')'"
-                      action="simple"  style="url">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=indexes&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                      <v:button name="b_table_trg"  style="url"
-                      value="--'Triggers('|| (select cast( count(*) as varchar) from SYS_TRIGGERS where T_TABLE = (control.vc_parent as vspx_row_template).te_rowset[0]) || ')'"
-                      action="simple">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=triggers&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                      <v:button name="b_table_cnst"
-                      value="-- 'Constraints ('|| cast(
-                                (SELECT count(distinct FK_NAME) from SYS_FOREIGN_KEYS where FK_TABLE = (control.vc_parent as vspx_row_template).te_rowset[0]) +
-                                (SELECT count(*) FROM DB.DBA.SYS_CONSTRAINTS WHERE C_TABLE = (control.vc_parent as vspx_row_template).te_rowset[0])
-                                as varchar)
-                                || ')'"
-                      action="simple"  style="url">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_table_constraints.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                      <v:button name="b_table_grants"  style="url"
-                      value="Privileges"
-                      action="simple">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                    </td>
-                  <?vsp http ('</tr>'); ?>
-                </table>
-              </v:template>
-            </v:template>
-            <v:template name="temp_ds_tables_footer" type="simple" name-to-remove="table" set-to-remove="top">
-              <table>
+              <!-- MAIN -->
+              <v:template name="tp_tables" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Tables')">
                 <tr>
-		  <td  class="listing_col_action" colspan="3">
- 		    <v:button name="drop_selected_tables"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Drop Selected"
-		      xhtml_title="Drop Selected"
-		      text="&nbsp;Drop Selected"
-		      value="images/icons/del_16.png">
-		      <v:on-post>
-			self.drop_sel (self."ds_tables", 'table', e);
-		      </v:on-post>
-		    </v:button>
- 		    <v:button name="grants_on_selected_tables"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Privileges On Selected"
-		      xhtml_title="Privileges On Selected"
-		      text="&nbsp;Privileges On Selected"
-		      value="images/icons/key_16.png">
-		      <v:on-post>
-			self.grant_sel (self."ds_tables", 'table', e);
-		      </v:on-post>
-		    </v:button>
-		    <vm:ds-navigation data-set="ds_tables"/>
+                  <td> </td>
+                  <td align="left">
+                    <div class="scroll_area">
+                      <v:data-set name="ds_tables"
+                                  sql="select distinct KEY_TABLE as table_name from SYS_KEYS
+                                where upper(name_part (KEY_TABLE, 0)) like upper(:self.browse_cat) and upper(name_part (KEY_TABLE, 1)) like upper(:self.browse_sch) and upper(name_part (KEY_TABLE, 2)) like upper(:self.browse_mask)
+                                and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL and not exists (select 1 from DB.DBA.SYS_VIEWS where V_NAME = KEY_TABLE) order by 1"
+                                  nrows="1000"
+                                  scrollable="1"
+                                  cursor-type="keyset"
+                                  edit="0"
+                                  width="80"
+                                  initial-enable="1">
+                        <v:before-data-bind>
+                          if (self.db_ds_state is not null and not e.ve_is_post)
+                          {
+                            declare nam, st any;
+
+                            nam := self.db_ds_state[0];
+                            st := self.db_ds_state[1];
+                            if (nam = control.vc_get_name ())
+                            {
+                              declare e1 vspx_event;
+
+                              e1 := new vspx_event ();
+                              e1.ve_is_post := 1;
+                              control.vc_set_control_state (st);
+                              control.vc_set_view_state (e1);
+                            }
+                          }
+                        </v:before-data-bind>
+                        <v:before-render>
+                          declare tmp, st any;
+
+                          tmp := self.db_ds_state;
+                          st := control.vc_get_control_state (null);
+                          tmp[0] := control.vc_get_name ();
+                          tmp[1] := st;
+                          self.db_ds_state := tmp;
+                        </v:before-render>
+
+                        <v:template name="temp_ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                          <table class="listing" rules="groups">
+                            <thead>
+                              <tr class="listing_row_odd">
+                                <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/></th>
+                                <th>Name</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                          </table>
+                        </v:template>
+
+                        <v:template name="temp_ds_tables_repeat" type="repeat" name-to-remove="" set-to-remove="">
+                          <v:template name="temp_ds_tables_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                            <table> <!-- dummy -->
+                              <tr>
+                                <td colspan="10" class="Attention">No tables match the criteria</td>
+                              </tr>
+                            </table>
+                          </v:template>
+
+                          <v:template name="temp_ds_tables_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                            <table> <!-- dummy -->
+                              <?vsp
+                                self.row_count := self.row_count + 1;
+                                http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                              ?>
+                              <td class="listing_col">
+                                <v:check-box name="cb_tables_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+                              </td>
+                              <td class="listing_col">
+                                <img src="images/icons/table_16.png" alt="Table" title="Table"/>
+                                <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                              </td>
+                              <td class="listing_col">
+                                <v:button name="b_table_def"
+                                          value="Definition"
+                                          action="simple" style="url">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      http_request_status ('HTTP/1.1 302 Found');
+                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=definition&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                    ]]>
+                                  </v:on-post>
+                                </v:button>
+                                <v:button name="b_table_idx"
+                                          value="-- 'Indexes(' || (select cast(count(*) as varchar) from db.dba.sql_table_indexes where tablename=(control.vc_parent as vspx_row_template).te_rowset[0]) || ')'"
+                                          action="simple"  style="url">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      http_request_status ('HTTP/1.1 302 Found');
+                                      http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=indexes&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                    ]]>
+                                  </v:on-post>
+                                  </v:button>
+                                  <v:button name="b_table_trg"
+                                            style="url"
+                                            value="--'Triggers('|| (select cast( count(*) as varchar) from SYS_TRIGGERS where T_TABLE = (control.vc_parent as vspx_row_template).te_rowset[0]) || ')'"
+                                            action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: databases_table_edit.vspx?sid=%s&realm=%s&mode=triggers&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <v:button name="b_table_cnst"
+                                            value="-- 'Constraints ('|| cast(
+                                            (SELECT count(distinct FK_NAME) from SYS_FOREIGN_KEYS where FK_TABLE = (control.vc_parent as vspx_row_template).te_rowset[0]) +
+                                            (SELECT count(*) FROM DB.DBA.SYS_CONSTRAINTS WHERE C_TABLE = (control.vc_parent as vspx_row_template).te_rowset[0])
+                                            as varchar)
+                                            || ')'"
+                                            action="simple"
+                                            style="url">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: databases_table_constraints.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <v:button name="b_table_grants"
+                                            style="url"
+                                            value="Privileges"
+                                            action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              <?vsp http ('</tr>'); ?>
+                            </table>
+                          </v:template>
+
+                        </v:template>
+
+                        <v:template name="temp_ds_tables_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                          <table>
+                            <tr>
+                              <td class="listing_col_action" colspan="3">
+                                <v:button name="drop_selected_tables"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Drop Selected"
+                                          xhtml_title="Drop Selected"
+                                          text="&nbsp;Drop Selected"
+                                          value="images/icons/del_16.png">
+                                  <v:on-post>
+                                    self.drop_sel (self."ds_tables", 'table', e);
+                                  </v:on-post>
+                                </v:button>
+                                <v:button name="grants_on_selected_tables"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Privileges On Selected"
+                                          xhtml_title="Privileges On Selected"
+                                          text="&nbsp;Privileges On Selected"
+                                          value="images/icons/key_16.png">
+                                  <v:on-post>
+                                    self.grant_sel (self."ds_tables", 'table', e);
+                                  </v:on-post>
+                                </v:button>
+                                <vm:ds-navigation data-set="ds_tables" />
+                              </td>
+                            </tr>
+                          </table>
+                        </v:template>
+                      </v:data-set>
+                    </div>
                   </td>
                 </tr>
-              </table>
-            </v:template>
-	  </v:data-set>
-	</div>
-        </td>
-      </tr>
-    </v:template>
-    <v:template name="tp_views" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (SQL)')">
-      <tr>
-	<td>
-	</td>
-	<td align="left">
-	  <div class="scroll_area">
-          <v:data-set name="ds_views"
-            sql="SELECT V_NAME FROM SYS_VIEWS
-            WHERE upper(name_part(V_NAME, 0)) like upper(:self.browse_cat) and upper(name_part(V_NAME, 1)) like upper(:self.browse_sch) and upper(name_part(V_NAME, 2)) like upper(:self.browse_mask) order by V_NAME"
-            nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
-	    <v:before-data-bind>
-	      if (self.db_ds_state is not null and not e.ve_is_post)
-	        {
-	          declare nam, st any;
-		  nam := self.db_ds_state[2];
-		  st := self.db_ds_state[3];
-		  if (nam = control.vc_get_name ())
-		    {
-		      declare e1 vspx_event;
-		      e1 := new vspx_event ();
-		      e1.ve_is_post := 1;
-		      control.vc_set_control_state (st);
-		      control.vc_set_view_state (e1);
-		    }
-		}
-	    </v:before-data-bind>
-	    <v:before-render>
-	      declare tmp, st any;
-	      tmp := self.db_ds_state;
-	      st := control.vc_get_control_state (null);
-	      tmp[2] := control.vc_get_name ();
-	      tmp[3] := st;
-	      self.db_ds_state := tmp;
-	    </v:before-render>
-            <v:template name="temp_ds_views_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table class="listing" rules="groups">
-                <colgroup/><colgroup/><colgroup/><colgroup/>
-                <thead>
-                  <tr class="listing_row_odd">
-		     <th  style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_views_select')"/>All</th>
-                     <th>Name</th>
-                     <th>Action</th>
-                  </tr>
-                </thead>
-              </table>
-            </v:template>
-            <v:template name="temp_ds_views_repeat" type="repeat" name-to-remove="" set-to-remove="">
-              <v:template name="temp_ds_views_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                <table>
-                  <tr>
-                    <td colspan="10" class="Attention">No views match the criteria</td>
-                  </tr>
-                </table>
               </v:template>
 
-              <v:template name="temp_ds_views_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                <table>
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
-                    <td class="listing_col">
-                      <v:check-box name="cb_views_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
-		    </td>
-		    <td>
-		      <img src="images/icons/view_16.png" alt="View" title="View"/>
-                      <v:label name="l_view_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-                    </td>
-                    <td  class="listing_col_action">
-		      <v:button action="simple" style="image" name="b_view_edit"
-			value="images/icons/edit_16.png"
-			xhtml_alt="Edit"
-			xhtml_title="Edit"
-			text="&nbsp;Edit"
-			>
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_view_edit.vspx?sid=%s&realm=%s&mode=edit&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                      <v:button name="b_view_grants"  style="url"
-                      value="Privileges"
-                      action="simple">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                    </td>
-                  <?vsp http ('</tr>'); ?>
-                </table>
-              </v:template>
-            </v:template>
-            <v:template name="temp_ds_views_footer" type="simple" name-to-remove="table" set-to-remove="top">
-              <table>
+              <v:template name="tp_views" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (SQL)')">
                 <tr>
-                  <td  class="listing_col_action" colspan="3">
-		    <v:button name="drop_selected_views"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Drop Selected"
-		      xhtml_title="Drop Selected"
-		      text="&nbsp;Drop Selected"
-		      value="images/icons/del_16.png">
-		      <v:on-post>
-			self.drop_sel (self."ds_views", 'view', e);
-		      </v:on-post>
-		    </v:button>
-		    <v:button name="grants_on_selected_views"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Privileges On Selected"
-		      xhtml_title="Privileges On Selected"
-		      text="&nbsp;Privileges On Selected"
-		      value="images/icons/key_16.png">
-		      <v:on-post>
-			self.grant_sel (self."ds_views", 'view', e);
-		      </v:on-post>
-		    </v:button>
-		    <vm:ds-navigation data-set="ds_views"/>
+                  <td>
+                  </td>
+                  <td align="left">
+                    <div class="scroll_area">
+                      <v:data-set name="ds_views"
+                                  sql="SELECT V_NAME FROM SYS_VIEWS
+                            WHERE upper(name_part(V_NAME, 0)) like upper(:self.browse_cat) and upper(name_part(V_NAME, 1)) like upper(:self.browse_sch) and upper(name_part(V_NAME, 2)) like upper(:self.browse_mask) order by V_NAME"
+                                  nrows="1000"
+                                  scrollable="1"
+                                  cursor-type="keyset"
+                                  edit="0"
+                                  width="80"
+                                  initial-enable="1">
+                        <v:before-data-bind>
+                          if (self.db_ds_state is not null and not e.ve_is_post)
+                          {
+                            declare nam, st any;
+
+                            nam := self.db_ds_state[2];
+                            st := self.db_ds_state[3];
+                            if (nam = control.vc_get_name ())
+                            {
+                              declare e1 vspx_event;
+                              e1 := new vspx_event ();
+                              e1.ve_is_post := 1;
+                              control.vc_set_control_state (st);
+                              control.vc_set_view_state (e1);
+                            }
+                          }
+                        </v:before-data-bind>
+                        <v:before-render>
+                          declare tmp, st any;
+
+                          tmp := self.db_ds_state;
+                          st := control.vc_get_control_state (null);
+                          tmp[2] := control.vc_get_name ();
+                          tmp[3] := st;
+                          self.db_ds_state := tmp;
+                        </v:before-render>
+                        <v:template name="temp_ds_views_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                          <table class="listing" rules="groups">
+                            <thead>
+                              <tr class="listing_row_odd">
+                                <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_views_select')"/></th>
+                                <th>Name</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                          </table>
+                        </v:template>
+
+                        <v:template name="temp_ds_views_repeat" type="repeat" name-to-remove="" set-to-remove="">
+                          <v:template name="temp_ds_views_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                            <table>
+                              <tr>
+                                <td colspan="10" class="Attention">No views match the criteria</td>
+                              </tr>
+                            </table>
+                          </v:template>
+
+                          <v:template name="temp_ds_views_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                            <table>
+                              <?vsp
+                                self.row_count := self.row_count + 1;
+                                http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                              ?>
+                                <td class="listing_col">
+                                  <v:check-box name="cb_views_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+                                </td>
+                                <td>
+                                  <img src="images/icons/view_16.png" alt="View" title="View"/>
+                                  <v:label name="l_view_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                </td>
+                                <td  class="listing_col_action">
+                                  <v:button action="simple"
+                                            style="image"
+                                            name="b_view_edit"
+                                            value="images/icons/edit_16.png"
+                                            xhtml_alt="Edit"
+                                            xhtml_title="Edit"
+                                            text="&nbsp;Edit">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: databases_view_edit.vspx?sid=%s&realm=%s&mode=edit&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <v:button name="b_view_grants"
+                                            style="url"
+                                            value="Privileges"
+                                            action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              <?vsp http ('</tr>'); ?>
+                            </table>
+                          </v:template>
+
+                        </v:template>
+
+                        <v:template name="temp_ds_views_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                          <table>
+                            <tr>
+                              <td class="listing_col_action" colspan="3">
+                                <v:button name="drop_selected_views"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Drop Selected"
+                                          xhtml_title="Drop Selected"
+                                          text="&nbsp;Drop Selected"
+                                          value="images/icons/del_16.png">
+                                  <v:on-post>
+                                    self.drop_sel (self."ds_views", 'view', e);
+                                  </v:on-post>
+                                </v:button>
+                                <v:button name="grants_on_selected_views"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Privileges On Selected"
+                                          xhtml_title="Privileges On Selected"
+                                          text="&nbsp;Privileges On Selected"
+                                          value="images/icons/key_16.png">
+                                  <v:on-post>
+                                    self.grant_sel (self."ds_views", 'view', e);
+                                  </v:on-post>
+                                </v:button>
+                                <vm:ds-navigation data-set="ds_views"/>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:template>
+                      </v:data-set>
+                    </div>
                   </td>
                 </tr>
-              </table>
-            </v:template>
-	  </v:data-set>
-	</div>
-        </td>
-      </tr>
-    </v:template>
-    <v:template name="tp_views_ld" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (Linked Data)') * isnull (self.rdf_obj)">
-      <tr>
-	<td>
-	</td>
-	<td align="left">
-	    <div class="scroll_area">
-              <table class="listing" rules="groups">
-                <thead>
-                  <tr class="listing_row_odd">
-                     <th>References</th>
-                  </tr>
-                </thead>
-		<?vsp 
-		   declare cat, have_one any;
-                   have_one := 0;
-		   cat := sprintf ('"%s".%%', self.browse_cat);
-		   for select "o" from (sparql select distinct ?o where 
-		      { ?s virtrdf:qmTableName ?tb_name ; 
-		      virtrdf:qmPredicateRange-rvrFixedValue ?ref .  
-		      ?ref <http://www.w3.org/2000/01/rdf-schema#domain> ?o . 
-			filter (?tb_name like ?:cat ) }) x do 
-			{
-			  declare obj any;
-			  obj := "o";
-			  have_one := 1;
-			  ?>
-			  <tr>
-			      <td>
-				  <v:url render-only="1" name="rlink" value="--obj"  url="--sprintf ('databases.vspx?rdf_obj=%U', obj)"/> 
-			      </td>
-			  </tr>
-			<?vsp 
-			}
-	          if (have_one = 0)
-  		    {		  
-		?>
-                  <tr>
-                    <td class="Attention">No linked data views defined</td>
-                  </tr>
-		<?vsp 
-                    }
-		?>
-              </table>
-	 </div>
-        </td>
-      </tr>
-    </v:template>
-    <v:template name="tp_views_ld2" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (Linked Data)') * equ (isnull (self.rdf_obj), 0)">
-      <tr>
-	<td>
-	</td>
-	<td align="left">
-	    <div class="scroll_area">
-              <table class="listing" rules="groups">
-                <thead>
-                  <tr class="listing_row_odd">
-                     <th>S</th>
-                     <th>P</th>
-                     <th>O</th>
-                  </tr>
-                </thead>
-		<?vsp 
-		   declare stat, msg, data, meta any;
-		   exec (sprintf ('SPARQL define output:format "_UDBC_" define sql:describe-mode "SCBD"  DESCRIBE <%s>', self.rdf_obj), stat, msg, vector (), 0, meta, data);
-		   --dbg_obj_print (data);
-		   foreach (any row in data) do
-			{
-			  ?>
-			  <tr>
-			      <td> <v:url render-only="1" name="rlink" value="--row[0]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[0])"/> </td>
-			      <td> <v:url render-only="1" name="rlink" value="--row[1]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[1])"/> </td>
-			      <?vsp if (__box_flags (row[2])) { ?>
-			      <td> <v:url render-only="1" name="rlink" value="--row[2]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[2])"/> </td>
-			      <?vsp } else { ?>
-			      <td> <v:label render-only="1" name="rlink" value="--row[2]" /> </td>
-			      <?vsp } ?>
-			  </tr>
-			<?vsp 
-			}
-
-		?>
-              </table>
-	 </div>
-        </td>
-      </tr>
-    </v:template>
-    <v:template name="tp_procs" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Procedures')">
-      <tr>
-	<td>
-	</td>
-	<td align="left">
-	  <div class="scroll_area">
-          <v:data-set name="ds_procs"
-            sql="SELECT P_NAME, P_TYPE FROM SYS_PROCEDURES
-            WHERE upper(name_part(P_NAME, 0)) like upper(:self.browse_cat) and upper(name_part(P_NAME, 1)) like upper(:self.browse_sch) and upper(name_part(P_NAME, 2)) like upper(:self.browse_mask) AND P_NAME not like '%.vsp' order by P_NAME"
-            nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
-	    <v:before-data-bind>
-	      if (self.db_ds_state is not null and not e.ve_is_post)
-	        {
-	          declare nam, st any;
-		  nam := self.db_ds_state[4];
-		  st := self.db_ds_state[5];
-		  if (nam = control.vc_get_name ())
-		    {
-		      declare e1 vspx_event;
-		      e1 := new vspx_event ();
-		      e1.ve_is_post := 1;
-		      control.vc_set_control_state (st);
-		      control.vc_set_view_state (e1);
-		    }
-		}
-	    </v:before-data-bind>
-	    <v:before-render>
-	      declare tmp, st any;
-	      tmp := self.db_ds_state;
-	      st := control.vc_get_control_state (null);
-	      tmp[4] := control.vc_get_name ();
-	      tmp[5] := st;
-	      self.db_ds_state := tmp;
-	    </v:before-render>
-            <v:template name="temp_ds_procs_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table class="listing" rules="groups">
-                <colgroup/><colgroup/><colgroup/><colgroup/>
-                <thead>
-                  <tr class="listing_row_odd">
-		     <th  style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_procedures_select')"/>All</th>
-                     <th>Name</th>
-                     <th>Type</th>
-                     <th>Action</th>
-                  </tr>
-                </thead>
-              </table>
-            </v:template>
-            <v:template name="temp_ds_procs_repeat" type="repeat" name-to-remove="" set-to-remove="">
-              <v:template name="temp_ds_procs_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
-                  <tr>
-                    <td colspan="5" class="Attention">No procedures match the criteria</td>
-                  </tr>
-                </table>
               </v:template>
-
-              <v:template name="temp_ds_procs_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
-                     <td class="listing_col">
-                      <v:check-box name="cb_procedures_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
-                    </td>
-                    <td class="listing_col">
-                      <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
-                      <v:label name="l_proc_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-                    </td>
-                    <td class="listing_col">
-                      <v:label name="l_proc_type"
-                               value="--case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'module' else 'procedure' end" format="%s"/>
-                    </td>
-                    <td  class="listing_col_action">
-		      <v:button action="simple" style="image" name="b_proc_edit"
-			value="images/icons/edit_16.png"
-			xhtml_alt="Edit"
-			xhtml_title="Edit"
-			text="&nbsp;Edit"
-			>
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_proc_edit.vspx?sid=%s&realm=%s&mode=edit&type=%s&name=%s\r\n',
-                                     self.sid ,self.realm,
-                                     case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1]
-                                          then 'Module'
-                                          else 'Procedure' end,
-                                     (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                      <v:button name="b_proc_grants"  style="url"
-                      value="Privileges"
-                      action="simple">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                    </td>
-                  <?vsp http ('</tr>'); ?>
-                </table>
-              </v:template>
-            </v:template>
-            <v:template name="temp_ds_procs_footer" type="simple" name-to-remove="table" set-to-remove="top">
-              <table>
+              <v:template name="tp_views_ld" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (Linked Data)') * isnull (self.rdf_obj)">
                 <tr>
-                  <td  class="listing_col_action" colspan="2">
-		    <v:button name="drop_selected_procedures"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Drop Selected"
-		      xhtml_title="Drop Selected"
-		      text="&nbsp;Drop Selected"
-		      value="images/icons/del_16.png">
-		      <v:on-post>
-			self.drop_sel (self."ds_procs", 'procedure', e);
-		      </v:on-post>
-		    </v:button>
-		    <v:button name="grants_on_selected_procedures"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Privileges On Selected"
-		      xhtml_title="Privileges On Selected"
-		      text="&nbsp;Privileges On Selected"
-		      value="images/icons/key_16.png">
-		      <v:on-post>
-			self.grant_sel (self."ds_procs", 'procedure', e);
-		      </v:on-post>
-		    </v:button>
-		  </td>
-                  <td align="center" colspan="2"  class="listing_col_action">
-		    <vm:ds-navigation data-set="ds_procs"/>
+                  <td>
+                  </td>
+                  <td align="left">
+                    <div class="scroll_area">
+                      <table class="listing" rules="groups">
+                        <thead>
+                          <tr class="listing_row_odd">
+                            <th>References</th>
+                          </tr>
+                        </thead>
+                        <?vsp
+                          declare cat, have_one any;
+
+                          have_one := 0;
+                          cat := sprintf ('"%s".%%', self.browse_cat);
+                          for select "o" from (sparql select distinct ?o where
+                              { ?s virtrdf:qmTableName ?tb_name ;
+                              virtrdf:qmPredicateRange-rvrFixedValue ?ref .
+                              ?ref <http://www.w3.org/2000/01/rdf-schema#domain> ?o .
+                              filter (?tb_name like ?:cat ) }) x do
+                          {
+                            declare obj any;
+                            obj := "o";
+                            have_one := 1;
+                        ?>
+                        <tr>
+                          <td>
+                            <v:url render-only="1" name="rlink" value="--obj"  url="--sprintf ('databases.vspx?rdf_obj=%U', obj)"/>
+                          </td>
+                        </tr>
+                        <?vsp
+                          }
+                          if (have_one = 0)
+                          {
+                        ?>
+                        <tr>
+                          <td class="Attention">No linked data views defined</td>
+                        </tr>
+                        <?vsp
+                          }
+                        ?>
+                      </table>
+                    </div>
                   </td>
                 </tr>
-              </table>
-            </v:template>
-	  </v:data-set>
-	</div>
-        </td>
-      </tr>
-    </v:template>
-    <v:template name="tp_udt" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'User Defined Types')">
-      <tr>
-	<td>
-	</td>
-	<td align="left">
-	  <div class="scroll_area">
-          <v:data-set name="ds_udt"
-            sql="SELECT UT_NAME from DB.DBA.SYS_USER_TYPES
-            where upper(name_part(UT_NAME, 0)) like upper(:self.browse_cat) and upper(name_part(UT_NAME, 1)) like upper(:self.browse_sch) and upper(name_part(UT_NAME, 2)) like upper(:self.browse_mask) AND UT_NAME not like '%.vsp' order by UT_NAME"
-            nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
-	    <v:before-data-bind>
-	      if (self.db_ds_state is not null and not e.ve_is_post)
-	        {
-	          declare nam, st any;
-		  nam := self.db_ds_state[6];
-		  st := self.db_ds_state[7];
-		  if (nam = control.vc_get_name ())
-		    {
-		      declare e1 vspx_event;
-		      e1 := new vspx_event ();
-		      e1.ve_is_post := 1;
-		      control.vc_set_control_state (st);
-		      control.vc_set_view_state (e1);
-		    }
-		}
-	    </v:before-data-bind>
-	    <v:before-render>
-	      declare tmp, st any;
-	      tmp := self.db_ds_state;
-	      st := control.vc_get_control_state (null);
-	      tmp[6] := control.vc_get_name ();
-	      tmp[7] := st;
-	      self.db_ds_state := tmp;
-	    </v:before-render>
-            <v:template name="temp_ds_udt_header" type="simple" name-to-remove="table" set-to-remove="bottom">
-              <table class="listing" rules="groups">
-                <colgroup/><colgroup/><colgroup/><colgroup/>
-                <thead>
-                  <tr class="listing_row_odd">
-		     <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_types_select')"/>All</th>
-                     <th>Name</th>
-                     <th>Type</th>
-                     <th>Action</th>
-                  </tr>
-                </thead>
-              </table>
-            </v:template>
-            <v:template name="temp_ds_udt_repeat" type="repeat" name-to-remove="" set-to-remove="">
-              <v:template name="temp_ds_udt_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
-                  <tr>
-                    <td colspan="4" class="Attention">No user defined types match the criteria</td>
-                  </tr>
-                </table>
               </v:template>
 
-              <v:template name="temp_ds_udt_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                <table> <!-- dummy -->
-                  <?vsp self.row_count := self.row_count + 1;
-                        http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-                  ?>
-                     <td class="listing_col">
-                      <v:check-box name="cb_types_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
-                    </td>
-                    <td class="listing_col">
-                      <img src="images/icons/apps_16.png" alt="User-defined Type" title="User-defined type"/>
-                      <v:label name="l_udt_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-                    </td>
-                    <td class="listing_col">
-                      <v:label name="l_udt_type" value="--coalesce((SELECT _TYPE from DB.DBA.DEFINED_TYPES WHERE _CLASS = (control.vc_parent as vspx_row_template).te_rowset[0]), 'sql')" format="%s"/>
-                    </td>
-                    <td class="listing_col" align="left" valign="center">
-                      <v:button name="b_udt_grants"  style="url"
-                      value="Privileges"
-                      action="simple">
-                        <v:on-post><v:script><![CDATA[
-                           http_request_status ('HTTP/1.1 302 Found');
-                           http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
-                        ]]></v:script></v:on-post>
-                      </v:button>
-                    </td>
-                  <?vsp http ('</tr>'); ?>
-                </table>
-              </v:template>
-            </v:template>
-            <v:template name="temp_ds_udt_footer" type="simple" name-to-remove="table" set-to-remove="top">
-              <table>
+              <v:template name="tp_views_ld2" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Views (Linked Data)') * equ (isnull (self.rdf_obj), 0)">
                 <tr>
-                  <td  class="listing_col_action" colspan="2">
-		    <v:button name="drop_selected_udt"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Drop Selected"
-		      xhtml_title="Drop Selected"
-		      text="&nbsp;Drop Selected"
-		      value="images/icons/del_16.png">
-		      <v:on-post>
-			self.drop_sel (self."ds_udt", 'type', e);
-		      </v:on-post>
-		    </v:button>
-		    <v:button name="grants_on_selected_udt"
-		      action="simple"
-		      style="image"
-		      xhtml_alt="Privileges On Selected"
-		      xhtml_title="Privileges On Selected"
-		      text="&nbsp;Privileges On Selected"
-		      value="images/icons/key_16.png">
-		      <v:on-post>
-			self.grant_sel (self."ds_udt", 'type', e);
-		      </v:on-post>
-		    </v:button>
-		  </td>
-                  <td align="center" colspan="2"  class="listing_col_action">
-		    <vm:ds-navigation data-set="ds_udt"/>
+                  <td>
+                  </td>
+                  <td align="left">
+                    <div class="scroll_area">
+                      <table class="listing" rules="groups">
+                        <thead>
+                          <tr class="listing_row_odd">
+                            <th>S</th>
+                            <th>P</th>
+                            <th>O</th>
+                          </tr>
+                        </thead>
+                        <?vsp
+                          declare stat, msg, data, meta any;
+                          exec (sprintf ('SPARQL define output:format "_UDBC_" define sql:describe-mode "SCBD"  DESCRIBE <%s>', self.rdf_obj), stat, msg, vector (), 0, meta, data);
+                          --dbg_obj_print (data);
+                          foreach (any row in data) do
+                          {
+                        ?>
+                        <tr>
+                          <td> <v:url render-only="1" name="rlink" value="--row[0]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[0])"/> </td>
+                          <td> <v:url render-only="1" name="rlink" value="--row[1]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[1])"/> </td>
+                          <?vsp if (__box_flags (row[2])) { ?>
+                          <td> <v:url render-only="1" name="rlink" value="--row[2]"  url="--sprintf ('databases.vspx?rdf_obj=%U', row[2])"/> </td>
+                          <?vsp } else { ?>
+                          <td> <v:label render-only="1" name="rlink" value="--row[2]" /> </td>
+                          <?vsp } ?>
+                        </tr>
+                        <?vsp
+                          }
+                        ?>
+                      </table>
+                    </div>
                   </td>
                 </tr>
-              </table>
-            </v:template>
-	  </v:data-set>
-	</div>
-        </td>
-      </tr>
-    </v:template>
-	  <!-- END -->
-	 <v:node/>
-       </v:node-template>
-     </v:tree>
-   </v:form>
-      <tr>
-	<td colspan="2">
-	</td>
-      </tr>
-    </table>
-    <?vsp
-    if (self.btn_bmk is not null and self.vc_is_valid)
-      {
-        self.last_bmk := self.btn_bmk;
-        http ('\n<script type="text/javascript">\n');
-        http (sprintf ('location.hash = "%s";\n', self.btn_bmk));
-        http ('</script>\n');
-      }
-    ?>
+              </v:template>
+
+              <v:template name="tp_procs" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'Procedures')">
+                <tr>
+                  <td>
+                  </td>
+                  <td align="left">
+                    <div class="scroll_area">
+                      <v:data-set name="ds_procs"
+                                  sql="SELECT P_NAME, P_TYPE FROM SYS_PROCEDURES
+                            WHERE upper(name_part(P_NAME, 0)) like upper(:self.browse_cat) and upper(name_part(P_NAME, 1)) like upper(:self.browse_sch) and upper(name_part(P_NAME, 2)) like upper(:self.browse_mask) AND P_NAME not like '%.vsp' order by P_NAME"
+                            nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
+                        <v:before-data-bind>
+                          if (self.db_ds_state is not null and not e.ve_is_post)
+                          {
+                            declare nam, st any;
+                            nam := self.db_ds_state[4];
+                            st := self.db_ds_state[5];
+                            if (nam = control.vc_get_name ())
+                            {
+                              declare e1 vspx_event;
+                              e1 := new vspx_event ();
+                              e1.ve_is_post := 1;
+                              control.vc_set_control_state (st);
+                              control.vc_set_view_state (e1);
+                            }
+                          }
+                        </v:before-data-bind>
+                        <v:before-render>
+                          declare tmp, st any;
+                          tmp := self.db_ds_state;
+                          st := control.vc_get_control_state (null);
+                          tmp[4] := control.vc_get_name ();
+                          tmp[5] := st;
+                          self.db_ds_state := tmp;
+                        </v:before-render>
+                        <v:template name="temp_ds_procs_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                          <table class="listing" rules="groups">
+                            <thead>
+                              <tr class="listing_row_odd">
+                                <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_procedures_select')"/></th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                          </table>
+                        </v:template>
+
+                        <v:template name="temp_ds_procs_repeat" type="repeat" name-to-remove="" set-to-remove="">
+                          <v:template name="temp_ds_procs_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                            <table> <!-- dummy -->
+                              <tr>
+                                <td colspan="5" class="Attention">No procedures match the criteria</td>
+                              </tr>
+                            </table>
+                          </v:template>
+
+                          <v:template name="temp_ds_procs_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                            <table> <!-- dummy -->
+                              <?vsp self.row_count := self.row_count + 1;
+                                    http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                              ?>
+                                <td class="listing_col">
+                                  <v:check-box name="cb_procedures_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+                                </td>
+                                <td class="listing_col">
+                                  <img src="images/icons/script_16.png" alt="Stored procedure" title="Stored procedure"/>
+                                  <v:label name="l_proc_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                </td>
+                                <td class="listing_col">
+                                  <v:label name="l_proc_type" value="--case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'module' else 'procedure' end" format="%s"/>
+                                </td>
+                                <td class="listing_col_action">
+                                  <v:button action="simple"
+                                            style="image"
+                                            name="b_proc_edit"
+                                            value="images/icons/edit_16.png"
+                                            xhtml_alt="Edit"
+                                            xhtml_title="Edit"
+                                            text="&nbsp;Edit">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: databases_proc_edit.vspx?sid=%s&realm=%s&mode=edit&type=%s&name=%s\r\n',
+                                          self.sid,
+                                          self.realm,
+                                          case when 3 = (control.vc_parent as vspx_row_template).te_rowset[1] then 'Module' else 'Procedure' end,
+                                          (control.vc_parent as vspx_row_template).te_rowset[0])
+                                        );
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <v:button name="b_proc_grants"
+                                            style="url"
+                                            value="Privileges"
+                                            action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              <?vsp http ('</tr>'); ?>
+                            </table>
+                          </v:template>
+                        </v:template>
+
+                        <v:template name="temp_ds_procs_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                          <table>
+                            <tr>
+                              <td class="listing_col_action" colspan="2">
+                                <v:button name="drop_selected_procedures"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Drop Selected"
+                                          xhtml_title="Drop Selected"
+                                          text="&nbsp;Drop Selected"
+                                          value="images/icons/del_16.png">
+                                  <v:on-post>
+                                    self.drop_sel (self."ds_procs", 'procedure', e);
+                                  </v:on-post>
+                                </v:button>
+                                <v:button name="grants_on_selected_procedures"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Privileges On Selected"
+                                          xhtml_title="Privileges On Selected"
+                                          text="&nbsp;Privileges On Selected"
+                                          value="images/icons/key_16.png">
+                                  <v:on-post>
+                                    self.grant_sel (self."ds_procs", 'procedure', e);
+                                  </v:on-post>
+                                </v:button>
+                              </td>
+                              <td align="center" colspan="2" class="listing_col_action">
+                                <vm:ds-navigation data-set="ds_procs"/>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:template>
+
+                      </v:data-set>
+                    </div>
+                  </td>
+                </tr>
+              </v:template>
+
+              <v:template name="tp_udt" type="simple" instantiate="--self.open_tmpl (control.vc_parent, 'User Defined Types')">
+                <tr>
+                  <td> </td>
+                  <td align="left">
+                    <div class="scroll_area">
+                      <v:data-set name="ds_udt"
+                                  sql="SELECT UT_NAME from DB.DBA.SYS_USER_TYPES
+                                  where upper(name_part(UT_NAME, 0)) like upper(:self.browse_cat) and upper(name_part(UT_NAME, 1)) like upper(:self.browse_sch) and upper(name_part(UT_NAME, 2)) like upper(:self.browse_mask) AND UT_NAME not like '%.vsp' order by UT_NAME"
+                                  nrows="1000"
+                                  scrollable="1"
+                                  cursor-type="keyset"
+                                  edit="0"
+                                  width="80"
+                                  initial-enable="1">
+                        <v:before-data-bind>
+                          if (self.db_ds_state is not null and not e.ve_is_post)
+                          {
+                            declare nam, st any;
+                            nam := self.db_ds_state[6];
+                            st := self.db_ds_state[7];
+                            if (nam = control.vc_get_name ())
+                            {
+                              declare e1 vspx_event;
+                              e1 := new vspx_event ();
+                              e1.ve_is_post := 1;
+                              control.vc_set_control_state (st);
+                              control.vc_set_view_state (e1);
+                            }
+                          }
+                        </v:before-data-bind>
+                        <v:before-render>
+                          declare tmp, st any;
+
+                          tmp := self.db_ds_state;
+                          st := control.vc_get_control_state (null);
+                          tmp[6] := control.vc_get_name ();
+                          tmp[7] := st;
+                          self.db_ds_state := tmp;
+                        </v:before-render>
+
+                        <v:template name="temp_ds_udt_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                          <table class="listing" rules="groups">
+                            <thead>
+                              <tr class="listing_row_odd">
+                                <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_types_select')"/></th>
+                                <th>Name</th>
+                                <th>Type</th>
+                                <th>Action</th>
+                              </tr>
+                            </thead>
+                          </table>
+                        </v:template>
+
+                        <v:template name="temp_ds_udt_repeat" type="repeat" name-to-remove="" set-to-remove="">
+                          <v:template name="temp_ds_udt_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                            <table> <!-- dummy -->
+                              <tr>
+                                <td colspan="4" class="Attention">No user defined types match the criteria</td>
+                              </tr>
+                            </table>
+                          </v:template>
+
+                          <v:template name="temp_ds_udt_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                            <table> <!-- dummy -->
+                              <?vsp
+                                self.row_count := self.row_count + 1;
+                                http (sprintf ('<tr class="%s">', case when mod (self.row_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                              ?>
+                                <td class="listing_col">
+                                  <v:check-box name="cb_types_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+                                </td>
+                                <td class="listing_col">
+                                  <img src="images/icons/apps_16.png" alt="User-defined Type" title="User-defined type"/>
+                                  <v:label name="l_udt_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                                </td>
+                                <td class="listing_col">
+                                  <v:label name="l_udt_type" value="--coalesce((SELECT _TYPE from DB.DBA.DEFINED_TYPES WHERE _CLASS = (control.vc_parent as vspx_row_template).te_rowset[0]), 'sql')" format="%s"/>
+                                </td>
+                                <td class="listing_col" align="left" valign="center">
+                                  <v:button name="b_udt_grants"
+                                            style="url"
+                                            value="Privileges"
+                                            action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: databases_grants.vspx?sid=%s&realm=%s&name=%s\r\n', self.sid ,self.realm, (control.vc_parent as vspx_row_template).te_rowset[0]));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              <?vsp http ('</tr>'); ?>
+                            </table>
+                          </v:template>
+                        </v:template>
+
+                        <v:template name="temp_ds_udt_footer" type="simple" name-to-remove="table" set-to-remove="top">
+                          <table>
+                            <tr>
+                              <td class="listing_col_action" colspan="2">
+                                <v:button name="drop_selected_udt"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Drop Selected"
+                                          xhtml_title="Drop Selected"
+                                          text="&nbsp;Drop Selected"
+                                          value="images/icons/del_16.png">
+                                          <v:on-post>
+                                    self.drop_sel (self."ds_udt", 'type', e);
+                                  </v:on-post>
+                                </v:button>
+                                <v:button name="grants_on_selected_udt"
+                                          action="simple"
+                                          style="image"
+                                          xhtml_alt="Privileges On Selected"
+                                          xhtml_title="Privileges On Selected"
+                                          text="&nbsp;Privileges On Selected"
+                                          value="images/icons/key_16.png">
+                                  <v:on-post>
+                                    self.grant_sel (self."ds_udt", 'type', e);
+                                  </v:on-post>
+                                </v:button>
+                              </td>
+                              <td align="center" colspan="2"  class="listing_col_action">
+                                <vm:ds-navigation data-set="ds_udt"/>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:template>
+
+                      </v:data-set>
+                    </div>
+                  </td>
+                </tr>
+              </v:template>
+              <!-- END -->
+              <v:node />
+            </v:node-template>
+          </v:tree>
+        </v:form>
+        <tr>
+          <td colspan="2" />
+        </tr>
+      </table>
+      <?vsp
+        if (self.btn_bmk is not null and self.vc_is_valid)
+        {
+          self.last_bmk := self.btn_bmk;
+          http ('\n<script type="text/javascript">\n');
+          http (sprintf ('location.hash = "%s";\n', self.btn_bmk));
+          http ('</script>\n');
+        }
+      ?>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

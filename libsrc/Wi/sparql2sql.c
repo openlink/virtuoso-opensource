@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -560,7 +560,11 @@ sparp_rewrite_retvals (sparp_t *sparp, SPART *req_top, int safely_copy_retvals)
   if (safely_copy_retvals)
     req_top->_.req_top.expanded_orig_retvals = sparp_treelist_full_copy (sparp, req_top->_.req_top.retvals, req_top->_.req_top.pattern);
   else
-    req_top->_.req_top.expanded_orig_retvals = (SPART **)t_box_copy ((caddr_t)(req_top->_.req_top.retvals));
+    {
+      req_top->_.req_top.expanded_orig_retvals = (SPART **)t_box_copy ((caddr_t)(req_top->_.req_top.retvals));
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (req_top->_.req_top.retvals))
+        box_tag_modify (req_top->_.req_top.retvals, DV_ARRAY_OF_LONG);
+    }
 /* Unlike spar_retvals_of_construct() that can be called during parsing,
 spar_retvals_of_describe() should wait for obtaining all variables and then
 sparp_expand_top_retvals () to process 'DESCRIBE * ...'. */
@@ -4537,11 +4541,10 @@ field_sff_isects_qmv_sff: ;
       caddr_t eff_val = SPAR_LIT_OR_QNAME_VAL (field);
       if (DV_UNAME != DV_TYPE_OF (eff_val))
         { /* This would be very-very strange failure */
-#ifdef DEBUG
-          GPF_T1 ("sparp_check_field_mapping_g(): non-UNAME constant used as graph of a triple, legal but strange");
-#else
-          return SSG_QM_NO_MATCH;
+#ifdef SPARQL_DEBUG
+          spar_internal_error (sparp, "sparp_check_field_mapping_g(): non-UNAME constant used as graph of a triple, legal but strange");
 #endif
+          return SSG_QM_NO_MATCH;
         }
       if (tcc->tcc_check_source_graphs)
         {
@@ -4556,7 +4559,7 @@ field_sff_isects_qmv_sff: ;
       chk_res = sparp_check_field_mapping_of_cvalue (sparp, (SPART *) eff_val, qmv_or_fmt_rvr, rvr);
       return chk_res;
     }
-  GPF_T1("ssg_check_field_mapping_g(): field is neither variable nor literal?");
+  spar_internal_error (sparp, "ssg_check_field_mapping_g(): field is neither variable nor literal?");
   return SSG_QM_NO_MATCH;
 }
 

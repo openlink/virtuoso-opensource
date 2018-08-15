@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,11 +40,10 @@ import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.rdf.model.impl.*;
 
 
-import virtuoso.jdbc4.VirtuosoDataSource;
-
 public class VirtModel extends ModelCom {
 
     private final Object lck_add = new Object();
+    private int batch_worked = 0;
 
     /**
      * @param base
@@ -107,6 +106,10 @@ public class VirtModel extends ModelCom {
 
     public void setRuleSet(String _ruleSet) {
         ((VirtGraph) this.graph).setRuleSet(_ruleSet);
+    }
+
+    public void setMacroLib(String _macroLib) {
+        ((VirtGraph) this.graph).setMacroLib(_macroLib);
     }
 
     public void setSameAs(boolean _sameAs) {
@@ -197,15 +200,38 @@ public class VirtModel extends ModelCom {
 
 
 
+    /**
+     * Get the insertStringLiteralAsSimple state for connection
+     */
+    public boolean getInsertStringLiteralAsSimple() {
+        return ((VirtGraph) this.graph).getInsertStringLiteralAsSimple();
+    }
+
+    /**
+     * Set the insertStringLiteralAsSimple state for connection(default false) 
+     * 
+     * @param v
+     *        true - insert String Literals as Simple Literals
+     *        false - insert String Literals as is
+     */
+    public void setInsertStringLiteralAsSimple(boolean v) {
+        ((VirtGraph) this.graph).setInsertStringLiteralAsSimple(v);
+    }
+
+
+
 
     @Override
     public Model read(String url) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(url);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(url);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -213,10 +239,13 @@ public class VirtModel extends ModelCom {
     public Model read(Reader reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -224,10 +253,13 @@ public class VirtModel extends ModelCom {
     public Model read(InputStream reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -235,10 +267,13 @@ public class VirtModel extends ModelCom {
     public Model read(String url, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(url, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(url, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -246,10 +281,13 @@ public class VirtModel extends ModelCom {
     public Model read(String url, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(url, base, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(url, base, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -257,10 +295,13 @@ public class VirtModel extends ModelCom {
     public Model read(Reader reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -268,10 +309,13 @@ public class VirtModel extends ModelCom {
     public Model read(InputStream reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -324,6 +368,23 @@ public class VirtModel extends ModelCom {
         VirtGraph _g = (VirtGraph) this.graph;
         _g.md_delete_Model(m.listStatements());
         return this;
+    }
+
+
+    private void startBatchAdd()
+    {
+        VirtGraph g = (VirtGraph)getGraph();
+        if (batch_worked==0)
+          g.startBatchAdd();
+        batch_worked++;
+    }
+
+    private void stopBatchAdd()
+    {
+        VirtGraph g = (VirtGraph)getGraph();
+        batch_worked--;
+        if (batch_worked==0)
+          g.stopBatchAdd();
     }
 
 }

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -449,6 +449,63 @@ sel_out_free (state_slot_t ** out_slots, caddr_t * qst)
   dk_free_box ((caddr_t) qst);
 }
 
+#ifdef DK_ALLOC_BOX_DEBUG
+void
+dk_check_trees_of_qi (query_instance_t *qi)
+{
+  dk_hash_t *known = NULL;
+  query_t *qr = qi->qi_query;
+  state_slot_t ** slots = qr->qr_freeable_slots;
+  int countof_freeables = slots ? BOX_ELEMENTS (slots) : 0, freeable_idx_inx;
+  for (freeable_idx_inx = countof_freeables; freeable_idx_inx--; /* no step */ )
+    {
+      state_slot_t * volatile sl = slots[freeable_idx_inx];
+      caddr_t datum = ((caddr_t *)qi)[sl->ssl_index];
+      if (IS_BOX_POINTER (datum))
+        {
+          switch (sl->ssl_type)
+            {
+            case SSL_PARAMETER:
+            case SSL_REF_PARAMETER:
+            case SSL_REF_PARAMETER_OUT:
+            case SSL_VARIABLE:
+            case SSL_COLUMN:
+              if (IS_BOX_POINTER (datum))
+                dk_check_tree_iter (datum, (caddr_t )(((ptrlong)BADBEEF_BOX) & ~0xFFFL | sl->ssl_index), &known);
+              break;
+            case SSL_VEC:
+              {
+                QNCAST (data_col_t, dc, datum);
+                if (sl->ssl_box_index && ((caddr_t *)qi)[sl->ssl_box_index])
+                  dk_check_tree_iter (((caddr_t *)qi)[sl->ssl_box_index], (caddr_t )(((ptrlong)BADBEEF_BOX) & ~0xFFFL | 0x800L | sl->ssl_index), &known);
+                if (dc->dc_values && (DCT_BOXES & dc->dc_type))
+                  {
+                    /* Owns an array of allocd boxes, else they are from qi_mp */
+		    int prev_alias_inx, val_inx;
+		    for (prev_alias_inx = freeable_idx_inx; prev_alias_inx < countof_freeables; prev_alias_inx++)
+		      {
+			state_slot_t *volatile prev_alias_sl = slots[prev_alias_inx];
+			if ((SSL_VEC == prev_alias_sl->ssl_type) && (sl->ssl_index == prev_alias_sl->ssl_index))
+			  goto skip_already_checked_dc_values;	/* see below */
+		      }
+                    for (val_inx = 0; val_inx < dc->dc_n_values; val_inx++)
+                      {
+                        caddr_t val = ((caddr_t*)dc->dc_values)[val_inx];
+                        caddr_t fake_parent = (caddr_t)(0x1000 | sl->ssl_index);
+                        if (NULL != known && (SMALLEST_POSSIBLE_POINTER >= gethash (val, known))) /* This is to reflect the use of aliases */
+                          dk_check_tree_iter (val, fake_parent, &known);
+                      }
+		  skip_already_checked_dc_values:;
+                  }
+                break;
+              }
+            }
+        }
+    }
+  if (NULL != known)
+    hash_table_free (known);
+}
+#endif
 
 void
 qi_inst_state_free (caddr_t * qi_box)
@@ -462,6 +519,9 @@ qi_inst_state_free (caddr_t * qi_box)
     qi_qn_stat (qi);
   if (!qi->qi_is_branch && qi->qi_root_id)
     qi_root_done (qi);
+#ifdef DK_ALLOC_BOX_DEBUG
+  dk_check_trees_of_qi (qi);
+#endif
   for (inx = 0; inx < n; inx++)
     {
       state_slot_t * volatile sl = slots[inx];
@@ -472,7 +532,7 @@ qi_inst_state_free (caddr_t * qi_box)
 }
 
 void
-sqlr_error (const char *code, const char *string, ...)
+DBG_NAME(sqlr_error) (DBG_PARAMS  const char *code, const char *string, ...)
 {
   du_thread_t * self;
   static char temp[2000];
@@ -482,7 +542,7 @@ sqlr_error (const char *code, const char *string, ...)
   va_start (list, string);
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
-  err = srv_make_new_error (code, "SR449", "%s", temp);
+  err = DBG_NAME (srv_make_new_error) (DBG_ARGS code, "SR449", "%s", temp);
   self = THREAD_CURRENT_THREAD;
   thr_set_error_code (self, err);
   CLAQ_UNWIND_CK;
@@ -491,7 +551,7 @@ sqlr_error (const char *code, const char *string, ...)
 
 
 void
-sqlr_new_error (const char *code, const char *virt_code, const char *string, ...)
+DBG_NAME(sqlr_new_error) (DBG_PARAMS  const char *code, const char *virt_code, const char *string, ...)
 {
   du_thread_t * self;
   static char temp[2000];
@@ -502,7 +562,7 @@ sqlr_new_error (const char *code, const char *virt_code, const char *string, ...
   vsnprintf (temp, sizeof (temp), string, list);
   va_end (list);
   temp[sizeof(temp)-1] = '\0';
-  err = srv_make_new_error (code, virt_code, "%s", temp);
+  err = DBG_NAME (srv_make_new_error) (DBG_ARGS code, virt_code, "%s", temp);
   self = THREAD_CURRENT_THREAD;
   thr_set_error_code (self, err);
   CLAQ_UNWIND_CK;
@@ -710,6 +770,13 @@ qi_kill (query_instance_t * qi, int is_error)
 
   IN_CLIENT (cli);
   qi_detach_from_stmt (qi);
+  if (NULL != qi->qi_lc)
+    {
+      if (qi->qi_lc->lc_inst != (caddr_t *)qi)
+        GPF_T1 ("lc_inst is not an inverse of qi_lc");
+      qi->qi_lc->lc_inst = NULL;
+      qi->qi_lc = NULL;
+    }
   thr_waiting = qi->qi_thread_waiting_termination;
   LEAVE_CLIENT (cli);
   IN_TXN;
@@ -731,7 +798,7 @@ qi_kill (query_instance_t * qi, int is_error)
 
 
 int
-qi_select_leave (query_instance_t * qi)
+qi_select_leave (query_instance_t * qi, int *qi_is_killed_ret)
 {
   lock_trx_t *lt = qi->qi_trx;
   if (qi->qi_caller != CALLER_CLIENT)
@@ -739,18 +806,24 @@ qi_select_leave (query_instance_t * qi)
   IN_CLIENT (qi->qi_client);
   if (qi->qi_client->cli_terminate_requested)
     {
+      int res;
       LEAVE_CLIENT (qi->qi_client);
-      return (qi_kill (qi, QI_ERROR));
+      res = qi_kill (qi, QI_ERROR);
+      qi_is_killed_ret[0] = __LINE__;
+      return res;
     }
 
   IN_TXN;
   CHECK_DK_MEM_RESERVE (lt);
   if (LT_PENDING != lt->lt_status)
     {
+      int res;
       LEAVE_TXN;
       qi_detach_from_stmt (qi);
       LEAVE_CLIENT (qi->qi_client);
-      return (qi_kill (qi, QI_ERROR));
+      res = qi_kill (qi, QI_ERROR);
+      qi_is_killed_ret[0] = __LINE__;
+      return res;
     }
   lt_leave (lt);
   qi->qi_threads--;
@@ -1793,7 +1866,7 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
 	{
 	  DO_SET (state_slot_t *, sl, &term->iop_ks->ks_out_slots)
 	    {
-	      qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	      qst_set_null (qst, sl);
 	    }
 	  END_DO_SET ();
 	}
@@ -1803,7 +1876,7 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
     {
       DO_SET (state_slot_t *, sl, &ts->ts_order_ks->ks_out_slots)
 	{
-	  qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	  qst_set_null (qst, sl);
 	}
       END_DO_SET ();
     }
@@ -1811,7 +1884,7 @@ ts_outer_output (table_source_t * ts, caddr_t * qst)
     {
       DO_SET (state_slot_t *, sl, &ts->ts_main_ks->ks_out_slots)
       {
-	qst_set_bin_string (qst, sl, (db_buf_t) "", 0, DV_DB_NULL);
+	qst_set_null (qst, sl);
       }
       END_DO_SET ();
     }
@@ -2946,7 +3019,7 @@ qi_out_box (query_instance_t * qi)
 
 
 caddr_t *
-qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
+DBG_NAME(qi_alloc) (DBG_PARAMS  query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
 	  int auto_qi_len, int n_sets)
 {
   /* alloc the instance length + space for a select out box
@@ -2962,7 +3035,7 @@ qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
     }
   if (!auto_qi || len > auto_qi_len)
     {
-      ret = dk_alloc_box (len, DV_ARRAY_OF_POINTER);
+      ret = DBG_NAME(dk_alloc_box) (DBG_ARGS  len, DV_ARRAY_OF_POINTER);
       memzero (ret, qr->qr_instance_length);
       ((query_instance_t *) ret)->qi_is_allocated = 1;
     }
@@ -3769,8 +3842,7 @@ qr_anytime (query_t * qr, query_instance_t * qi, int reset_code)
   err = qi->qi_thread->thr_reset_code;
   if (!err_is_anytime (err))
     return;
-  qi->qi_thread->thr_reset_code = NULL;
-  dk_free_tree (err);
+  thr_set_error_code (qi->qi_thread, NULL);
   qi_qp_anytime (inst, qr);
   at_printf (("Anytime reset starts\n"));
   qi->qi_is_partial = 1;
@@ -3779,7 +3851,7 @@ qr_anytime (query_t * qr, query_instance_t * qi, int reset_code)
     {
       qr_resume_pending_nodes (qr, inst);
     }
-  qi->qi_thread->thr_reset_code = cli_anytime_error (qi->qi_client);
+  thr_set_error_code (qi->qi_thread, cli_anytime_error (qi->qi_client));
 }
 
 
@@ -3797,24 +3869,29 @@ qi_txn_code (int rc, query_instance_t * caller, caddr_t detail)
 
 
 caddr_t
-qi_handle_reset (query_instance_t * qi, int reset)
+DBG_NAME(qi_handle_reset) (DBG_PARAMS  query_instance_t * qi, int reset, int *qi_is_killed_ret)
 {
   /* Handle a reset into qr_exec or qr_more. Prime thread only */
-  query_instance_t *caller = qi->qi_caller;
+  query_instance_t *caller;
   caddr_t err = NULL;
-  caddr_t detail = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
+  caddr_t detail;
   int trx_code;
+  if (qi_is_killed_ret[0])
+    GPF_T1 ("about to handle reset after qi_kill");
+  caller = qi->qi_caller;
+  detail = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
   QI_CHECK_ANYTIME_RST (qi, reset);
   switch (reset)
     {
     case RST_KILLED:
       {
-	err = srv_make_new_error ("HY008", "SR203",
+	err = DBG_NAME(srv_make_new_error) (DBG_ARGS "HY008", "SR203",
 	    "Async statement killed by SQLCancel.%s%s",
 	    detail ? " : " : "",
 	    detail ? detail : "");
 	qi_log_stats (qi, err);
 	qi_kill (qi, QI_ERROR);
+        qi_is_killed_ret[0] = __LINE__;
 	if (caller == CALLER_CLIENT)
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	break;
@@ -3825,7 +3902,7 @@ qi_handle_reset (query_instance_t * qi, int reset)
 	int rc;
 	if (qi->qi_lc)
 	  qi->qi_lc->lc_row_count = qi->qi_n_affected;
-	rc = qi_select_leave (qi);
+	rc = qi_select_leave (qi, qi_is_killed_ret);
 	err = qi_txn_code (rc, caller, detail);
 	break;
       }
@@ -3838,6 +3915,7 @@ qi_handle_reset (query_instance_t * qi, int reset)
 	    dk_free_tree (err);
 	  }
 	trx_code = qi_kill (qi, QI_ERROR);
+        qi_is_killed_ret[0] = __LINE__;
 	err = qi_txn_code (trx_code, caller, detail);
 	break;
       }
@@ -3864,6 +3942,7 @@ qi_handle_reset (query_instance_t * qi, int reset)
 	if (err && caller == CALLER_CLIENT)
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	trx_code = qi_kill (qi, QI_ERROR);
+        qi_is_killed_ret[0] = __LINE__;
 	trx_err = qi_txn_code (trx_code, caller, detail);
 	if (!err)
 	  err = trx_err;
@@ -3875,6 +3954,10 @@ qi_handle_reset (query_instance_t * qi, int reset)
       dbg_printf (("Freak reset code %d.\n", reset));
     }
   dk_free_box (detail);
+#ifdef SIGNAL_DEBUG
+  if (ERROR_REPORT_P (err))
+    log_error_report_event (err, 0, "QI_HANDLE_RESET at %s:%d", file, line);
+#endif
   return err;
 }
 
@@ -4070,7 +4153,7 @@ qi_init_sz (query_instance_t * caller, caddr_t * params)
 }
 
 caddr_t
-qr_exec (client_connection_t * cli, query_t * qr,
+DBG_NAME(qr_exec) (DBG_PARAMS  client_connection_t * cli, query_t * qr,
     query_instance_t * caller, caddr_t cr_name,
     srv_stmt_t * stmt, local_cursor_t ** lc_ret,
     caddr_t * parms, stmt_options_t * opts,
@@ -4082,10 +4165,11 @@ qr_exec (client_connection_t * cli, query_t * qr,
   caddr_t ret;
   int init_sz = qr->qr_proc_vectored ? qi_init_sz (caller, parms) : 0;
   du_thread_t *self_thread;
-  caddr_t *inst = (caddr_t *) qi_alloc (qr, opts, NULL, 0, init_sz);
+  caddr_t *inst = (caddr_t *) DBG_NAME(qi_alloc) (DBG_ARGS  qr, opts, NULL, 0, init_sz);
   query_instance_t *qi = (query_instance_t *) inst;
+  int qi_is_killed = 0;
   caddr_t *state;
-
+  caddr_t detail = NULL;
   state = inst;
 
 #ifdef MALLOC_DEBUG
@@ -4153,6 +4237,10 @@ qr_exec (client_connection_t * cli, query_t * qr,
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	  return (err);
 	}
+#ifndef NDEBUG
+      if (NULL != stmt->sst_inst)
+        GPF_T1 ("about to leak old stmt->sst_inst");
+#endif
       stmt->sst_inst = qi;
       if (prof_on)
 	stmt->sst_start_msec = get_msec_real_time ();
@@ -4257,11 +4345,25 @@ qr_exec (client_connection_t * cli, query_t * qr,
   }
   QR_RESET_CODE
   {
+    caddr_t res;
     qr_anytime (qr, qi, reset_code);
     POP_QR_RESET;
-    QI_BUNION_RESET (qi, qr, 0);
+    QI_BUNION_RESET (qi, qr, 0, &qi_is_killed);
     PLD_SEM_CLEAR(qi)
-    return (qi_handle_reset (qi, reset_code));
+    res = qi_handle_reset (qi, reset_code, &qi_is_killed);
+    if ((NULL == stmt) && (NULL == lc_ret) && !qi_is_killed)
+      {
+        qi_kill (qi, QI_DONE);
+        qi_is_killed = __LINE__;
+#ifdef WIRE_DEBUG
+        list_wired_buffers (__FILE__, __LINE__, "qr_exec finish (error on run, no stmt, no lc_ret, no qi_kill at time)");
+#endif
+      }
+#ifdef SIGNAL_DEBUG
+    if (ERROR_REPORT_P(res))
+      log_error_report_event (res, 0, "QR_EXEC at %s:%d", file, line);
+#endif
+    return res;
   }
   END_QR_RESET;
  qr_complete:
@@ -4289,43 +4391,58 @@ qr_exec (client_connection_t * cli, query_t * qr,
   if (qi->qi_lc)
     qi->qi_lc->lc_row_count = n_affected;
 
-  {
-    caddr_t detail = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
-    if (!qr->qr_select_node || qi->qi_autocommit)
-      {
-	is_timeout = qi_kill (qi, QI_DONE);
-      }
-    else
-      {
-	if (opts && opts->so_prefetch == PREFETCH_ALL)
-	  is_timeout = qi_kill (qi, QI_DONE);
-	else
-	  is_timeout = qi_select_leave (qi);
-      }
-
-    if (is_timeout != LTE_OK)
-      {
-	caddr_t err;
-	dk_free_tree (ret);
-	err = qi_txn_code (is_timeout, caller, detail);
-	dk_free_box (detail);
-	if (CALLER_CLIENT == caller)
-	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
-	return err;
-      }
-    dk_free_box (detail);
-  }
-  if (caller == CALLER_CLIENT)
+  detail = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
+  if (!qr->qr_select_node || qi->qi_autocommit)
     {
-      cli_send_row_count (cli, n_affected, (caddr_t *) ret, self_thread);
+      is_timeout = qi_kill (qi, QI_DONE);
+      qi_is_killed = __LINE__;
     }
+  else
+    {
+      if (opts && opts->so_prefetch == PREFETCH_ALL)
+        {
+          is_timeout = qi_kill (qi, QI_DONE);
+          qi_is_killed = __LINE__;
+        }
+      else
+        is_timeout = qi_select_leave (qi, &qi_is_killed);
+    }
+
+  if (is_timeout != LTE_OK)
+    {
+      caddr_t err;
+      dk_free_tree (ret);
+      err = qi_txn_code (is_timeout, caller, detail);
+      dk_free_box (detail);
+      if (CALLER_CLIENT == caller)
+        PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
+#ifndef NDEBUG
+      if ((NULL == stmt) && (NULL == lc_ret) && !qi_is_killed)
+        GPF_T1 ("qi is not freed in qr_exec");
+#endif
+      return err;
+    }
+  if (caller == CALLER_CLIENT)
+    cli_send_row_count (cli, n_affected, (caddr_t *) ret, self_thread);
   else
     dk_free_tree (ret);
 
-#ifdef WIRE_DEBUG
-      list_wired_buffers (__FILE__, __LINE__, "qr_exec finish");
-#endif
 
+  if ((NULL == stmt) && (NULL == lc_ret) && !qi_is_killed)
+    {
+      is_timeout = qi_kill (qi, QI_DONE);
+      qi_is_killed = __LINE__;
+      caddr_t err = qi_txn_code (is_timeout, caller, detail);
+#ifdef WIRE_DEBUG
+      list_wired_buffers (__FILE__, __LINE__, "qr_exec finish (no stmt, no lc_ret, no qi_kill at time)");
+#endif
+      dk_free_box (detail);
+      return err;
+    }
+  dk_free_box (detail);
+#ifdef WIRE_DEBUG
+  list_wired_buffers (__FILE__, __LINE__, "qr_exec finish");
+#endif
   return ((caddr_t) SQL_SUCCESS);
 }
 
@@ -4346,9 +4463,8 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
   du_thread_t *self_thread;
   caddr_t *inst = (caddr_t *) qi_alloc (qr, opts, NULL, 0, n_sets);
   query_instance_t *qi = (query_instance_t *) inst;
-  caddr_t *state;
-
-  state = inst;
+  int qi_is_killed = 0;
+  caddr_t *state = inst;
 
 #ifdef MALLOC_DEBUG
   dk_alloc_assert (qr);
@@ -4477,12 +4593,18 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
 	}
       QR_RESET_CODE
 	{
+          caddr_t res;
 	  qr_anytime (qr, qi, reset_code);
 	  POP_QR_RESET;
-	  QI_BUNION_RESET (qi, qr, 0);
+	  QI_BUNION_RESET (qi, qr, 0, &qi_is_killed);
 	  PLD_SEM_CLEAR(qi)
-	    dk_free_tree (param_array);
-	  return (qi_handle_reset (qi, reset_code));
+          dk_free_tree ((caddr_t)param_array);
+          res = qi_handle_reset (qi, reset_code, &qi_is_killed);
+#ifndef NDEBUG
+          if ((NULL == stmt) && !qi_is_killed)
+            GPF_T1 ("qi is not freed in qr_dml_array_exec");
+#endif
+	  return res;
 	}
       END_QR_RESET;
     }
@@ -4494,11 +4616,17 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
     }
   QR_RESET_CODE
     {
+      caddr_t res;
       qr_anytime (qr, qi, reset_code);
       POP_QR_RESET;
-      QI_BUNION_RESET (qi, qr, 0);
+      QI_BUNION_RESET (qi, qr, 0, &qi_is_killed);
       PLD_SEM_CLEAR(qi)
-      return (qi_handle_reset (qi, reset_code));
+      res = qi_handle_reset (qi, reset_code, &qi_is_killed);
+#ifndef NDEBUG
+      if ((NULL == stmt) && !qi_is_killed)
+        GPF_T1 ("qi is not freed in qr_dml_array_exec");
+#endif
+      return res;
     }
   END_QR_RESET;
 
@@ -4596,6 +4724,7 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   caddr_t *inst;
   query_instance_t *qi;
   caddr_t *state;
+  int qi_is_killed = 0;
   char saved_qual_buf[25 + BOX_AUTO_OVERHEAD];
   user_t * saved_user = cli->cli_user;
   caddr_t saved_qual = NULL;
@@ -4675,10 +4804,16 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   }
   QR_RESET_CODE
   {
+    caddr_t res;
     POP_QR_RESET;
     QR_POP_USER(qi, cli, saved_user, saved_qual, saved_qual_buf, caller);
-    QI_BUNION_RESET (qi, qr, 0);
-    return (qi_handle_reset (qi, reset_code));
+    QI_BUNION_RESET (qi, qr, 0, &qi_is_killed);
+    res = qi_handle_reset (qi, reset_code, &qi_is_killed);
+#ifndef NDEBUG
+    if ((NULL == lc) && !qi_is_killed)
+      GPF_T1 ("qi is not freed in qr_subq_exec");
+#endif
+    return res;
   }
   END_QR_RESET;
 
@@ -4709,7 +4844,13 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
       if (opts && opts->so_prefetch == PREFETCH_ALL)
 	qi_kill (qi, 1);
       else
-	qi->qi_threads = 0;
+        {
+          qi->qi_threads = 0;
+#ifndef NDEBUG
+          if (NULL == lc)
+            GPF_T1 ("qi leak in qr_subq_exec");
+#endif
+        }
     }
   return ((caddr_t) SQL_SUCCESS);
 }
@@ -4790,6 +4931,7 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
   int n_actual_params, n_sets = qi_n_sets (caller);
   caddr_t *inst;
   query_instance_t *qi;
+  int qi_is_killed = 0;
   caddr_t *state;
   user_t * saved_user = cli->cli_user;
   char saved_qual_buf[25 + BOX_AUTO_OVERHEAD];
@@ -4856,10 +4998,16 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
     }
   QR_RESET_CODE
     {
+      caddr_t res;
       POP_QR_RESET;
       QR_POP_USER(qi, cli, saved_user, saved_qual, saved_qual_buf, caller);
-      QI_BUNION_RESET (qi, qr, 0);
-      return (qi_handle_reset (qi, reset_code));
+      QI_BUNION_RESET (qi, qr, 0, &qi_is_killed);
+      res = qi_handle_reset (qi, reset_code, &qi_is_killed);
+#ifndef NDEBUG
+      if ((NULL == lc) && !qi_is_killed)
+        GPF_T1 ("qi is not freed in qr_subq_exec_vec");
+#endif
+      return res;
     }
   END_QR_RESET;
 
@@ -4894,9 +5042,15 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
   else
     {
       if (opts && opts->so_prefetch == PREFETCH_ALL)
-	qi_kill (qi, 1);
+        qi_kill (qi, 1);
       else
-	qi->qi_threads = 0;
+        {
+          qi->qi_threads = 0;
+#ifndef NDEBUG
+          if (NULL == lc)
+            GPF_T1 ("qi leak in qr_subq_exec_vec");
+#endif
+        }
     }
   return ((caddr_t) SQL_SUCCESS);
 }
@@ -4987,9 +5141,10 @@ qr_more (caddr_t * inst)
   }
   QR_RESET_CODE
   {
+    int qi_is_killed__stub = 0;
     POP_QR_RESET;
-    QI_BUNION_RESET (qi, qr, 0);
-    return (qi_handle_reset (qi, reset_code));
+    QI_BUNION_RESET (qi, qr, 0, &qi_is_killed__stub);
+    return (qi_handle_reset (qi, reset_code, &qi_is_killed__stub));
   }
   END_QR_RESET;
 
@@ -5001,7 +5156,10 @@ qr_more (caddr_t * inst)
     if (qi->qi_autocommit)
       is_timeout = qi_kill (qi, QI_DONE);
     else
-      is_timeout = qi_select_leave (qi);
+      {
+        int qi_is_killed__stub = 0;
+        is_timeout = qi_select_leave (qi, &qi_is_killed__stub);
+      }
 
     if (LTE_OK != is_timeout)
       {
@@ -5075,18 +5233,15 @@ qi_client (caddr_t * qis)
   return (qi->qi_client);
 }
 
-
 caddr_t
-qr_rec_exec (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret,
+DBG_NAME (qr_rec_exec) (DBG_PARAMS query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret,
     query_instance_t * caller, stmt_options_t * opts, long n_pars, ...)
 {
   caddr_t ret;
   local_cursor_t * lc = NULL;
-  caddr_t *parms = (caddr_t *) dk_alloc_box (2 * n_pars * sizeof (caddr_t),
-      DV_ARRAY_OF_POINTER);
+  caddr_t *parms = dk_alloc_list (2 * n_pars);
   int inx;
   va_list ap;
-
   if (!lc_ret)
     lc_ret = &lc;
   va_start (ap, n_pars);
@@ -5111,7 +5266,7 @@ qr_rec_exec (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret,
 	}
     }
   va_end (ap);
-  ret = qr_exec (cli, qr, caller, NULL, NULL, lc_ret, parms, opts, 1);
+  ret = DBG_NAME (qr_exec) (DBG_ARGS  cli, qr, caller, NULL, NULL, lc_ret, parms, opts, 1);
   dk_free_box ((box_t) parms);
   if (lc)
     lc_free (lc);
@@ -5202,10 +5357,9 @@ lc_next (local_cursor_t * lc)
 void
 lc_free (local_cursor_t * lc)
 {
-  if (lc->lc_inst && lc->lc_error == SQL_SUCCESS)
+  if (lc->lc_inst /*&& lc->lc_error == SQL_SUCCESS --- this was needed when qi_kill did not disconnect qi->qi_lc from qi */)
     /* There's an instance and the instance wasn't killed by an error */
     qi_free (lc->lc_inst);
-
   dk_free_box (lc->lc_cursor_name);
   dk_free_tree (lc->lc_proc_ret);
   if (lc->lc_is_allocated)
@@ -5344,4 +5498,93 @@ qi_check_stack (query_instance_t *qi, void *addr, ptrlong margin)
 #ifdef sqlr_resignal
 #undef sqlr_resignal
 void sqlr_resignal (e) {sqlr_dbg_resignal (e, __FILE__, __LINE__);}
+#endif
+
+#ifdef qr_exec
+#undef qr_exec
+caddr_t
+qr_exec (client_connection_t * cli, query_t * qr,
+    query_instance_t * caller, caddr_t cr_name,
+    srv_stmt_t * stmt, local_cursor_t ** lc_ret,
+    caddr_t * parms, stmt_options_t * opts,
+    int named_params)
+{
+  return dbg_qr_exec (__FILE__, __LINE__, cli, qr, caller, cr_name, stmt, lc_ret, parms, opts, named_params);
+}
+#endif
+
+#ifdef qr_rec_exec
+#undef qr_rec_exec
+caddr_t
+qr_rec_exec (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret,
+    query_instance_t * caller, stmt_options_t * opts, long n_pars, ...)
+{
+  caddr_t ret;
+  local_cursor_t * lc = NULL;
+  caddr_t *parms = dk_alloc_list (2 * n_pars);
+  int inx;
+  va_list ap;
+  if (!lc_ret)
+    lc_ret = &lc;
+  va_start (ap, n_pars);
+  for (inx = 0; inx < 2 * n_pars; inx += 2)
+    {
+      caddr_t arg;
+      parms[inx] = box_string (va_arg (ap, char *));
+      arg = va_arg (ap, caddr_t);
+      switch (va_arg (ap, long))
+	{
+	case QRP_INT:
+	  parms[inx + 1] = box_num ((ptrlong) arg);
+	  break;
+	case QRP_STR:
+	  parms[inx + 1] = box_dv_short_string (arg);
+	  break;
+	case QRP_RAW:
+	  parms[inx + 1] = arg;
+	  break;
+	default:
+	  GPF_T;		/* Bad arg type to quick exec */
+	}
+    }
+  va_end (ap);
+  ret = dbg_qr_exec (__FILE__, __LINE__, cli, qr, caller, NULL, NULL, lc_ret, parms, opts, 1);
+  dk_free_box ((box_t) parms);
+  if (lc)
+    lc_free (lc);
+  return ret;
+}
+#endif
+
+#ifdef MALLOC_DEBUG
+#undef sqlr_new_error
+void
+sqlr_new_error (const char *code, const char *virt_code, const char *string, ...)
+{
+  static char temp[2000];
+  va_list list;
+  caddr_t err;
+  ASSERT_OUTSIDE_TXN;
+  va_start (list, string);
+  vsnprintf (temp, sizeof (temp), string, list);
+  va_end (list);
+  temp[sizeof (temp) - 1] = '\0';
+  dbg_sqlr_new_error (__FILE__, __LINE__, code, virt_code, "%s", temp);
+}
+
+#undef sqlr_error
+void
+sqlr_error (const char *code, const char *string, ...)
+{
+  static char temp[2000];
+  va_list list;
+  caddr_t err;
+  ASSERT_OUTSIDE_TXN;
+  va_start (list, string);
+  vsnprintf (temp, sizeof (temp), string, list);
+  va_end (list);
+  temp[sizeof (temp) - 1] = '\0';
+  dbg_sqlr_error (__FILE__, __LINE__, code, "%s", temp);
+}
+
 #endif

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,9 @@ import org.openrdf.model.util.Models;
 import org.openrdf.repository.config.AbstractRepositoryImplConfig;
 import org.openrdf.repository.config.RepositoryConfigException;
 
+import static virtuoso.sesame4.driver.VirtuosoRepository.CONCUR_DEFAULT;
+import static virtuoso.sesame4.driver.VirtuosoRepository.CONCUR_OPTIMISTIC;
+import static virtuoso.sesame4.driver.VirtuosoRepository.CONCUR_PESSIMISTIC;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.PASSWORD;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.HOSTLIST;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.USERNAME;
@@ -39,6 +42,10 @@ import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.ROUNDROBIN
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.RULESET;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
 import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
+import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.MACROLIB;
+import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.CONCURRENCY;
+import static virtuoso.sesame4.driver.config.VirtuosoRepositorySchema.USE_DEF_GRAPH_FOR_QUERIES;
+
 
 public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     private String hostlist;
@@ -50,7 +57,10 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     private boolean roundRobin;
     private String ruleSet;
     private int batchSize = 5000;
-     private boolean insertBNodeAsVirtuosoIRI = false;
+    private boolean insertBNodeAsVirtuosoIRI = false;
+    private int concurrencyMode = CONCUR_DEFAULT;
+    private String macroLib;
+    private boolean useDefGraphForQueries = false;
 
     public VirtuosoRepositoryConfig() {
         super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -150,6 +160,37 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
     }
 
 
+    public void setConcurrencyMode(int mode) {
+        if (mode != CONCUR_DEFAULT && mode != CONCUR_OPTIMISTIC && mode != CONCUR_PESSIMISTIC)
+            return;
+        this.concurrencyMode = mode;
+    }
+
+    public int getConcurrencyMode() {
+        return this.concurrencyMode;
+    }
+
+    public void setMacroLib(String name) {
+        if (name!=null && name.equals("null"))
+            this.macroLib = null;
+        else
+            this.macroLib = name;
+    }
+
+    public String getMacroLib() {
+        return this.macroLib;
+    }
+
+
+    public void setUseDefGraphForQueries(boolean v) {
+	this.useDefGraphForQueries = v;
+    }
+
+    public boolean getUseDefGraphForQueries() {
+	return this.useDefGraphForQueries;
+    }
+	
+
     @Override
     public void validate()
             throws RepositoryConfigException
@@ -194,6 +235,14 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
 
         model.add(implNode, INSERTBNodeAsVirtuosoIRI, vf.createLiteral(insertBNodeAsVirtuosoIRI));
 
+        if (macroLib != null && macroLib.length() > 0 && !macroLib.equals("null")) {
+            model.add(implNode, MACROLIB, vf.createLiteral(macroLib));
+        }
+
+        model.add(implNode, CONCURRENCY, vf.createLiteral(Integer.toString(concurrencyMode,10)));
+
+	model.add(implNode, USE_DEF_GRAPH_FOR_QUERIES, vf.createLiteral(useDefGraphForQueries));
+
         return implNode;
     }
 
@@ -233,6 +282,15 @@ public class VirtuosoRepositoryConfig extends AbstractRepositoryImplConfig {
 
             Models.objectLiteral(model.filter(implNode, INSERTBNodeAsVirtuosoIRI, null)).ifPresent(
                     lit -> setInsertBNodeAsVirtuosoIRI(lit.booleanValue()));
+
+            Models.objectLiteral(model.filter(implNode, MACROLIB, null)).ifPresent(
+                    lit -> setMacroLib(lit.getLabel()));
+
+            Models.objectLiteral(model.filter(implNode, CONCURRENCY, null)).ifPresent(
+                    lit -> setConcurrencyMode(lit.intValue()));
+
+            Models.objectLiteral(model.filter(implNode, USE_DEF_GRAPH_FOR_QUERIES, null)).ifPresent(
+                    lit -> setUseDefGraphForQueries(lit.booleanValue()));
         }
         catch (ModelException e) {
             throw new RepositoryConfigException(e.getMessage(), e);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,7 +69,12 @@
 
 /* Dkalloc.c */
 void dk_memory_initialize (int do_malloc_cache);
+extern void dk_memory_finalize (void);
+
 int dk_is_alloc_cache (size_t sz);
+void dk_alloc_cache_status (void *cache);
+size_t dk_alloc_cache_total (void *cache);
+size_t dk_alloc_global_cache_total (void);
 void dk_cache_allocs (size_t sz, size_t cache_sz);
 EXE_EXPORT (void *, dk_alloc, (size_t c));
 EXE_EXPORT (void *, dk_try_alloc, (size_t c));
@@ -79,6 +84,8 @@ void dk_check_end_marks (void);
 void dk_mem_stat (char *out, int max);
 void thr_free_alloc_cache (thread_t * thr);
 void malloc_cache_clear (void);
+void thr_alloc_cache_clear (thread_t * thr);
+
 
 #ifdef MALLOC_DEBUG
 # include <util/dbgmal.h>
@@ -90,12 +97,17 @@ void malloc_cache_clear (void);
 # define dk_alloc(sz)		dbg_malloc (__FILE__, __LINE__, (sz))
 # define dk_try_alloc(sz)	dbg_malloc (__FILE__, __LINE__, (sz))
 # define dk_free(ptr, sz)	dbg_free_sized (__FILE__, __LINE__, (ptr), (sz))
-
+# define dk_freep(b,n)			dbg_freep(__FILE__, __LINE__, b, n)
+# define dk_find_alloc_error(p, mp)	dbg_find_allocation_error(p, mp)
 #endif
 #endif
-void dk_alloc_assert (void *ptr);
+extern void dk_alloc_assert (void *ptr);
+extern void dk_alloc_assert_mp_or_plain (void *ptr);
 #else
 # define dk_alloc_assert(ptr) ;
+# define dk_alloc_assert_mp_or_plain(ptr) 	;
+# define dk_find_alloc_error(p, mp)		NULL
+# define dk_freep(b,n)				free(b)
 #endif
 
 #ifdef MALLOC_DEBUG

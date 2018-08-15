@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -113,21 +113,21 @@ typedef struct TCFGDATA
 
 BEGIN_CPLUSPLUS
 
-int cfg_init (PCONFIG *ppconf, char *filename);
-int cfg_init2 (PCONFIG *ppconf, char *filename, int doCreate);
+int cfg_init (PCONFIG *ppconf, const char *filename);
+int cfg_init2 (PCONFIG *ppconf, const char *filename, int doCreate);
 int cfg_done (PCONFIG pconfig);
 int cfg_freeimage (PCONFIG pconfig);
 int cfg_refresh (PCONFIG pconfig);
-int cfg_storeentry (PCONFIG pconfig, char *section, char *id, char *value, char *comment, int dynamic);
+int cfg_storeentry (PCONFIG pconfig, const char *section, const char *id, const char *value, const char *comment, int dynamic);
 int cfg_rewind (PCONFIG pconfig);
 int cfg_nextentry (PCONFIG pconfig);
-int cfg_find (PCONFIG pconfig, char *section, char *id);
+int cfg_find (PCONFIG pconfig, const char *section, const char *id);
 int cfg_merge (PCONFIG pconfig, PCONFIG src);
-int cfg_write (PCONFIG pconfig, char *section, char *id, char *value);
+int cfg_write (PCONFIG pconfig, const char *section, const char *id, const char *value);
 int cfg_commit (PCONFIG pconfig);
-int cfg_getstring (PCONFIG pconfig, char *section, char *id, char **valptr);
-int cfg_getlong (PCONFIG pconfig, char *section, char *id, int32  *valptr);
-int cfg_getshort (PCONFIG pconfig, char *section, char *id, short *valptr);
+int cfg_getstring (PCONFIG pconfig, const char *section, const char *id, char **valptr);
+int cfg_getlong (PCONFIG pconfig, const char *section, const char *id, int32  *valptr);
+int cfg_getshort (PCONFIG pconfig, const char *section, const char *id, short *valptr);
 
 END_CPLUSPLUS
 

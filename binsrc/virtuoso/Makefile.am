@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -88,7 +88,7 @@ virtuoso_iodbc_t_CFLAGS += -DBUILD_THREAD_MODEL=\"-t\"
 virtuoso_iodbc_t_LDADD = \
         $(top_builddir)/libsrc/Wi/libwi_odbc.la \
 	$(server_libs) \
-	@iodbc_LDFLAGS@ \
+	@iodbc_LIBS@ \
 	@LIBS@
 
 # libvirtuoso-iodbc-t
@@ -103,7 +103,7 @@ libvirtuoso_iodbc_t_la_LDFLAGS = -static
 libvirtuoso_iodbc_t_la_LIBADD = \
         $(top_srcdir)/libsrc/Wi/libwi_odbc.la \
 	$(server_libs) \
-	@iodbc_LDFLAGS@ \
+	@iodbc_LIBS@ \
 	@LIBS@
 
 virtuoso_t_SOURCES = $(virtuoso_iodbc_t_SOURCES)

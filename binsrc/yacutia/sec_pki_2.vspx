@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -352,7 +352,7 @@
 	     if (tmp is not null) 
 	       {
 	         arr := split_and_decode (tmp, 0, '\0\0/=');
-		 if (get_keyword ('CN', arr, '') <> self.vhost_nam.ufl_value)
+		 if (matches_like (self.vhost_nam.ufl_value, get_keyword ('CN', arr, '')) = 0)
 		   {
 		     self.vc_is_valid := 0;
 		     self.vc_error_message := 'The certificate common name do not match host name, please generate new or select appropriate key.';

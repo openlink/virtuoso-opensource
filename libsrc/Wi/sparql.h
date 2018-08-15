@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -176,7 +176,10 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 struct spar_sqlgen_s;
 struct spar_tree_s;
 
+typedef struct qm_format_s *ssg_valmode_t;
 typedef struct spar_tree_s SPART;
+
+#define SPART_CHECK_FUEL 0 /* will set to 10000 after tweaks in spar_compose_retvals_of_insert_or_delete that results in diamonds now */
 
 typedef struct spar_lexem_s {
   ptrlong sparl_lex_value;
@@ -460,10 +463,13 @@ extern void spar_error (sparp_t *sparp, const char *format, ...)
                 __attribute__ ((format (printf, 2, 3)))
 #endif
 ;
-extern void spar_internal_error (sparp_t *sparp, const char *strg);
-extern int spar_audit_error (sparp_t *sparp, const char *format, ...) /* returns fake 1 as a value for return */
+extern void spar_internal_error (sparp_t *sparp, const char *strg) NORETURN;
+extern void spar_audit_error (sparp_t *sparp, const char *format, ...) /* returns fake 1 as a value for return */
 #ifdef __GNUC__
                 __attribute__ ((format (printf, 2, 3)))
+#ifndef DEBUG
+		NORETURN
+#endif
 #endif
 ;
 extern caddr_t spar_source_place (sparp_t *sparp, char *raw_text);
@@ -540,8 +546,6 @@ extern ptrlong sparp_tr_usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT];
 
 #define END_SPARP_REVFOREACH_GP_EQUIV \
 	  }} while (0)
-
-typedef struct qm_format_s *ssg_valmode_t;
 
 /*! Type of callback that can generate an unusual SQL text from a tree of SPAR_CODEGEN type */
 typedef void ssg_codegen_callback_t (struct spar_sqlgen_s *ssg, struct spar_tree_s *spart, ...);
@@ -826,7 +830,7 @@ extern void sparp_configure_storage_and_macro_libs (sparp_t *sparp);
 extern void sparp_compile_smllist (sparp_t *sparp, caddr_t sml_iri_uname, void /* actually struct sparql_macro_library_t */ *smlib);
 
 extern const char *spart_dump_opname (ptrlong opname, int is_op);
-extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint);
+extern void spart_dump (const void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint);
 
 #define SPAR_IS_BLANK_OR_VAR(tree) \
   ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)) && \

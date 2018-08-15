@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -123,7 +123,7 @@ xqi_check_slots (xp_instance_t * xqi)
 #ifdef XTREE_DEBUG
 
 void
-xte_tree_check_iter (box_t box, box_t parent, dk_hash_t *known)
+xte_tree_check_iter (box_t box, box_t parent, dk_hash_t **known_ptr)
 {
   dtp_t tag;
   if (!IS_BOX_POINTER (box))
@@ -178,7 +178,7 @@ xte_tree_check_iter (box_t box, box_t parent, dk_hash_t *known)
 	      if ((DV_STRING == expected_type) &&
 	        ((DV_XPATH_QUERY == strg_type) || (DV_UNAME == strg_type) || (' ' == head[idx-1][0])) )
 	        {
-	          dk_check_tree_iter (strg, parent, known);
+	          dk_check_tree_iter (strg, parent, known_ptr);
 	          continue;
 	        }
 	      GPF_T1 ("XML Tree head contains an item of wrong type");
@@ -2057,10 +2057,10 @@ div_by_int:
 		dtp_t left_dtp = DV_TYPE_OF (left);
 		numeric_t n = numeric_allocate();
 		numeric_from_string (n,
-		    left_dtp == DV_LONG_INT ? ((unbox (left) < 0 ? "-Inf" : "Inf")) :
-		    (left_dtp == DV_SINGLE_FLOAT ? (unbox_float (left) < 0.0 ? "-Inf" : "Inf") :
-		    (left_dtp == DV_DOUBLE_FLOAT ? (unbox_double (left) < 0.0 ? "-Inf" : "Inf") :
-		    (left_dtp == DV_NUMERIC ? (numeric_sign ((numeric_t)left) ? "-Inf" : "Inf") : "Inf"))));
+		    left_dtp == DV_LONG_INT ? ((unbox (left) < 0 ? "-INF" : "INF")) :
+		    (left_dtp == DV_SINGLE_FLOAT ? (unbox_float (left) < 0.0 ? "-INF" : "INF") :
+		    (left_dtp == DV_DOUBLE_FLOAT ? (unbox_double (left) < 0.0 ? "-INF" : "INF") :
+		    (left_dtp == DV_NUMERIC ? (numeric_sign ((numeric_t)left) ? "-INF" : "INF") : "INF"))));
 		XQI_SET (xqi, tree->_.bin_exp.res, (caddr_t) n);
 		dk_free_tree (err);
 	      }
@@ -6127,7 +6127,7 @@ doctype_may_not_be_printed:
       if (SESSION_IS_STRING (ses))
 	{
 	  strses_flush (ses);
-	  if (ARRAYP(err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<error>");
 	      SES_PRINT (ses, "<code>");
@@ -7901,7 +7901,7 @@ caddr_t
 xe_mp_copy (mem_pool_t * mp, caddr_t box)
 {
   caddr_t cp = xe_make_copy (box);
-  dk_set_push (&mp->mp_trash, (void*)cp);
+  mp_trash (mp, cp);
   return cp;
 }
 

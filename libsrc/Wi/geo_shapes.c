@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -191,8 +191,10 @@ geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
 }
 
 int
-geo_looks_fine (geo_t * geo)
+geo_looks_fine_or_null (geo_t * geo)
 {
+  if (NULL == geo)
+    return 2;
   switch (GEO_TYPE (geo->geo_flags))
     {
     case GEO_NULL_SHAPE:
@@ -2027,7 +2029,8 @@ ewkt_print_sf12_one (geo_t * g, dk_session_t * ses, int named)
     case GEO_LINESTRING: case GEO_RING: case GEO_POINTLIST:
     case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
       ewkt_print_sf12_points (ses, g->geo_flags, g->_.pline.len,
-        g->_.pline.Xs, g->_.pline.Ys, g->_.pline.Zs, g->_.pline.Ms );
+        g->_.pline.Xs, g->_.pline.Ys,
+        ((g->geo_flags & GEO_A_Z) ? g->_.pline.Zs : NULL), ((g->geo_flags & GEO_A_M) ? g->_.pline.Ms : NULL) );
       return;
     case GEO_COLLECTION:
     case GEO_CURVE: case GEO_CLOSEDCURVE: case GEO_CURVEPOLYGON: case GEO_MULTI_CURVE:

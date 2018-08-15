@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -449,6 +449,12 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
     switch (subtype)
       {
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD"; return;
+      default: return;
+      }
+  if (!strcmp (name, "JSON;LD_CTX"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX"; return;
       default: return;
       }
   if (!strcmp (name, "CXML"))
@@ -2406,7 +2412,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
                     double myNEGINF_d = -1.0/myZERO;
                     if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
                     else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
-                    else buffill = sprintf (tmpbuf, "cast ('nan'");
+                    else buffill = sprintf (tmpbuf, "cast ('NaN'");
                   }
                 else
                   {
@@ -2520,16 +2526,26 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
   BOX_DONE (tmpbuf, smallbuf);
 }
 
-void
-ssg_print_float_literal_as_original (spar_sqlgen_t *ssg, SPART *lit)
+int
+ssg_try_print_float_literal_as_original (spar_sqlgen_t *ssg, SPART *lit)
 {
-  ssg_putchar (' ');
-  ssg_puts (lit->_.lit.original_text);
+  char modif = '\0';
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (lit))
+    return 0;
+  if (NULL == lit->_.lit.original_text)
+    return 0;
   switch (DV_TYPE_OF (lit->_.lit.val))
     {
-    case DV_DOUBLE_FLOAT: ssg_putchar('D'); break;
-    case DV_SINGLE_FLOAT: ssg_putchar('R'); break;
+    case DV_DOUBLE_FLOAT: if (!isfinite (unbox_double (lit->_.lit.val))) return 0; modif = 'D'; break;
+    case DV_SINGLE_FLOAT: if (!isfinite (unbox_float (lit->_.lit.val))) return 0; modif = 'R'; break;
+    case DV_NUMERIC: break;
+    default: return 0;
     }
+  ssg_putchar (' ');
+  ssg_puts (lit->_.lit.original_text);
+  if ('\0' != modif)
+    ssg_putchar (modif);
+  return 1;
 }
 
 void
@@ -2543,11 +2559,8 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
-          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           dt = lit->_.lit.datatype;
           /* lang = lit->_.lit.language; */
         }
@@ -2596,11 +2609,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
-          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           dt = lit->_.lit.datatype;
           lang = lit->_.lit.language;
         }
@@ -2659,11 +2669,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       dk_free_box (dflt_xsd_type_of_box);
       if (box_is_plain_num)
         {
-          if ((DV_ARRAY_OF_POINTER == lit_dtp) && (NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;
         }
@@ -2715,11 +2722,8 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
-          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
-            {
-              ssg_print_float_literal_as_original (ssg, lit);
-              return;
-            }
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           datatype = lit->_.lit.datatype;
           language = lit->_.lit.language;
         }
@@ -4967,6 +4971,8 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
         ssg_puts ("\"RIGHT\"");
       else if (!strcasecmp(name, "log"))
         ssg_puts ("\"LOG\"");
+      else if (strchr (name, ' ') || strchr (name, ':') || strchr (name, '-'))
+        ssg_prin_id (ssg, name);
       else
         ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
@@ -5291,7 +5297,10 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
           SPART *fromshort;
           if (ssg_valmode_is_subformat_of (native, needed))
             {
-              ssg_print_retval (ssg, tree, native, asname);
+	      if (SPAR_RETVAL == SPART_TYPE (tree))
+                ssg_print_retval (ssg, tree, native, asname);
+	      else
+		ssg_print_scalar_expn (ssg, tree, native, asname);
               return;
             }
           SPART_AUTO(fromshort,fromshort_buf,SPAR_CONV);
@@ -5417,7 +5426,7 @@ ssg_print_bool_of_plain_box (spar_sqlgen_t *ssg, caddr_t val)
     case DV_LONG_INT: ssg_puts (unbox (val) ? " 1" : " 0"); ssg_puts_comment ("int as bool"); break;
     case DV_SINGLE_FLOAT:  ssg_puts (unbox_float (val) ? " 1" : " 0"); ssg_puts_comment ("real as bool"); break;
     case DV_DOUBLE_FLOAT:  ssg_puts (unbox_double (val) ? " 1" : " 0"); ssg_puts_comment ("double as bool"); break;
-    case DV_NUMERIC:  ssg_puts (num_is_zero ((numeric_t)(val)) ? " 1" : " 0"); ssg_puts_comment ("decimal as bool"); break;
+    case DV_NUMERIC:  ssg_puts (num_is_zero ((numeric_t)(val)) ? " 0" /* not 1! */ : " 1" /* not 0! */); ssg_puts_comment ("decimal as bool"); break;
     case DV_DATETIME: case DV_XML_ENTITY: case DV_GEO: ssg_puts (" 1"); ssg_puts_comment ("atom as bool"); break;
     case DV_STRING: case DV_BIN: ssg_puts ((1 < box_length (val)) ? " 1" : " 0"); ssg_puts_comment ("string as bool"); break;
     case DV_WIDE:  ssg_puts ((sizeof(wchar_t) < box_length (val)) ? " 1" : " 0"); ssg_puts_comment ("wide as bool"); break;
@@ -8568,7 +8577,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
   if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
     (DV_STRING == DV_TYPE_OF (ft_arg1_str)) )
     {
-      ccaddr_t boxed_id;
+      caddr_t boxed_id;
       boxed_id = sparp_graph_sec_iri_to_id_nosignal (ssg->ssg_sparp, g_iri); /* try very fast method first */
       if (NULL == boxed_id)
         boxed_id = sparp_iri_to_id_nosignal (ssg->ssg_sparp, g_iri);
@@ -8588,6 +8597,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
           memcpy (tail, "\' AND ([ __enc \"UTF-8\" ] ", 25); tail += 25;
           memcpy (tail, ft_arg1_str, ft_arg1_strlen); tail += ft_arg1_strlen;
           strcpy (tail, ")");
+          dk_free_tree (boxed_id);
           return patched_ft_arg1;
         }
     }
@@ -8654,6 +8664,71 @@ default_modification_only:
     (SPART **)t_list (2, t_box_dv_short_string ("[ __enc \"UTF-8\" ] "), ft_arg1) );
   return patched_ft_arg1;
 }
+
+
+void
+ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pred, caddr_t var_name, quad_map_t *qm, qm_ftext_t *qmft, caddr_t ft_type, caddr_t ft_alias, ccaddr_t long_tmpl_or_null)
+{
+  SPART **args, *ft_arg1;
+  int ft_type_is_geo = SPAR_FT_TYPE_IS_GEO(ft_type);
+  int argctr, argcount, contains_in_rdf_quad;
+  args = ft_pred->_.funcall.argtrees;
+  ft_arg1 = args[1];
+  argcount = BOX_ELEMENTS (args);
+  contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
+    !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
+  if (!ft_type_is_geo)
+    {
+      SPART *g = tree->_.triple.tr_graph;
+      ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
+    }
+  ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
+  ssg_puts ("(");
+  if (NULL != long_tmpl_or_null)
+    ssg_print_tmpl (ssg, qm->qmObjectMap->qmvFormat, long_tmpl_or_null, ft_alias, qm->qmObjectMap, tree->_.triple.tr_object, NULL_ASNAME);
+  else
+    {
+      ssg_prin_id (ssg, ft_alias);
+      ssg_puts (".");
+      ssg_prin_id (ssg, qmft->qmvftColumnName);
+    }
+  ssg_puts (", ");
+  if (DV_STRING == DV_TYPE_OF (ft_arg1))
+    ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
+  else
+    ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
+  for (argctr = 2; argctr < argcount; argctr += 2)
+    {
+      switch ((ptrlong)(args[argctr]))
+        {
+        case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
+        case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
+        case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
+        case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
+        case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
+        default:
+          if (SPAR_FT_TYPE_IS_GEO (ft_type))
+            {
+              while (argctr < argcount)
+                {
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, args[argctr++], SSG_VALMODE_SQLVAL, NULL);
+                }
+              goto args_done; /* see below */
+            }
+          spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+        }
+contains_prin_id:
+      ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
+      continue;
+contains_print_scalar:
+      ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
+      continue;
+    }
+args_done:
+  ssg_puts (")");
+}
+
 
 static void
 ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_sets, int tree_set_count, int tree_count, int inside_breakup, int fld_restrictions_bitmask)
@@ -8846,24 +8921,23 @@ from_printed:
       caddr_t ft_type = tree->_.triple.ft_type;
       if (IS_BOX_POINTER (ft_type))
         {
+          SPART *ft_pred = NULL;
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
-          SPART *ft_pred = NULL, **args, *ft_arg1;
           int ft_type_is_geo = SPAR_FT_TYPE_IS_GEO(ft_type);
+          int filter_ctr, filter_idx_to_zap;
           qm_ftext_t *qmft = (ft_type_is_geo ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           caddr_t ft_alias;
-          int ctr, argctr, argcount, contains_in_rdf_quad;
           if (NULL == qmft)
             spar_error (ssg->ssg_sparp, "Special predicate %.100s() for variable %.100s is always false for this specific query on this specific quad storage",
               ft_type, var_name );
-          ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
-          DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
+          DO_BOX_FAST (SPART *, filt, filter_ctr, gp->_.gp.filters)
             {
               if (NULL == spar_filter_is_freetext_or_rtree (ssg->ssg_sparp, filt, tree))
                 continue;
               if (NULL == ft_pred)
                 {
                   ft_pred = filt;
-                  gp->_.gp.filters[ctr] = (SPART *)((void *)(1));
+                  filter_idx_to_zap = filter_ctr;
                 }
               else
                 spar_error (ssg->ssg_sparp, "Too many %.100s() special predicates for variable %.100s, can not build an SQL query",
@@ -8872,58 +8946,21 @@ from_printed:
           END_DO_BOX_FAST;
           if (NULL == ft_pred)
             spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == ft_predicate");
-          args = ft_pred->_.funcall.argtrees;
-          ft_arg1 = args[1];
-          argcount = BOX_ELEMENTS (args);
-          contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
-            !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
-          if (!ft_type_is_geo)
-            {
-              SPART *g = tree->_.triple.tr_graph;
-              ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
-            }
+          ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf_uname (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           ssg_print_where_or_and (ssg, (ft_type_is_geo ? "spatial predicate" : "freetext predicate"));
           ssg_putchar (' ');
-          ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
-          ssg_puts ("(");
-          ssg_prin_id (ssg, ft_alias);
-          ssg_puts (".");
-          ssg_prin_id (ssg, qmft->qmvftColumnName);
-          ssg_puts (", ");
-          if (DV_STRING == DV_TYPE_OF (ft_arg1))
-            ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
-          else
-            ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
-          for (argctr = 2; argctr < argcount; argctr += 2)
-            {
-              switch ((ptrlong)(args[argctr]))
-                {
-                case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
-                case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
-                case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
-                case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
-                case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
-                default:
-                  if (SPAR_FT_TYPE_IS_GEO (ft_type))
+          ssg_print_ft_predicate (ssg, gp, tree, ft_pred, var_name, qm, qmft, ft_type, ft_alias, NULL);
+          if (ft_type_is_geo)
                     {
-                      while (argctr < argcount)
+              qm_format_t *obj_fmt = qm->qmObjectMap->qmvFormat;
+              if (!obj_fmt->qmfIsSubformatOfLong)
                         {
-                          ssg_puts (", ");
-                          ssg_print_scalar_expn (ssg, args[argctr++], SSG_VALMODE_SQLVAL, NULL);
-                        }
-                      goto args_done; /* see below */
-                    }
-                  spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+                  ssg_print_where_or_and (ssg, "spatial predicate, long");
+                  ssg_putchar (' ');
+                  ssg_print_ft_predicate (ssg, gp, tree, ft_pred, var_name, qm, qmft, ft_type, ft_alias, obj_fmt->qmfLongTmpl);
                 }
-contains_prin_id:
-              ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
-              continue;
-contains_print_scalar:
-              ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
-              continue;
             }
-args_done:
-          ssg_puts (")");
+          gp->_.gp.filters[filter_idx_to_zap] = (SPART *)((void *)(1));
         }
       else if (NULL != ft_type)
         {

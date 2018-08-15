@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1084,12 +1084,26 @@ sparp_equiv_alloc (sparp_t *sparp)
       sparp->sparp_sg->sg_removed_equivs = removed_eqs = new_removed_eqs;
 #endif
     }
+#ifdef SPARQL_DEBUG
+#if 0
+  for (eqctr = 0; eqctr < eqcount; eqctr++)
+    {
+      SPART *old_gp;
+      if (NULL == eqs[eqctr])
+        continue;
+      old_gp = eqs[eqctr]->e_gp;
+      if ((old_gp != gp) && (eqs[eqctr]->e_dbg_allocator == sparp) && (SPAR_GP == SPART_TYPE (gp)) && (SPAR_GP == SPART_TYPE (old_gp)) && spar_name_same (gp->_.gp.selid, old_gp->_.gp.selid))
+        spar_internal_error (sparp, "sparp_" "equiv_alloc(): different gps with same selid");
+    }
+#endif
+#endif
   res->e_own_idx = eqcount;
 #ifdef DEBUG
   res->e_clone_idx = (SPART_BAD_EQUIV_IDX-1);
 #endif
 #ifdef SPARQL_DEBUG
   res->e_dbg_merge_dest = SPART_BAD_EQUIV_IDX;
+  res->e_dbg_allocator = sparp;
 #endif
   res->e_external_src_idx = SPART_BAD_EQUIV_IDX;
   eqs[eqcount++] = res;
@@ -5075,12 +5089,9 @@ spart_dump_eq (sparp_equiv_t *eq, dk_session_t *ses)
 }
 
 void
-spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint)
+spart_dump_title (dk_session_t *ses, int indent, const char *title)
 {
-  SPART *tree = (SPART *) tree_arg;
   int ctr;
-  if ((NULL == tree) && (hint < 0))
-    return;
   if (indent > 0)
     {
       session_buffered_write_char ('\n', ses);
@@ -5097,17 +5108,51 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
       SES_PRINT (ses, title);
       SES_PRINT (ses, ": ");
     }
-  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
+}
+
+void
+spart_dump_valmode (ssg_valmode_t valmode, dk_session_t *ses, int indent, const char *title)
+{
+  const char *name;
+  spart_dump_title (ses, indent, title);
+  switch ((ptrlong)valmode)
     {
-      hint = 0;
+    case (ptrlong)NULL				: name = "not set"	; break;
+    case (ptrlong)SSG_VALMODE_SHORT_OR_LONG	: name = "SHORT_OR_LONG"; break;
+    case (ptrlong)SSG_VALMODE_NUM		: name = "NUM"		; break;
+    case (ptrlong)SSG_VALMODE_LONG		: name = "LONG"		; break;
+    case (ptrlong)SSG_VALMODE_SQLVAL		: name = "SQLVAL"	; break;
+    case (ptrlong)SSG_VALMODE_DATATYPE		: name = "DATATYOE"	; break;
+    case (ptrlong)SSG_VALMODE_LANGUAGE		: name = "LANGUAGE"	; break;
+    case (ptrlong)SSG_VALMODE_BOOL		: name = "BOOL"		; break;
+    case (ptrlong)SSG_VALMODE_AUTO		: name = "AUTO"		; break;
+    case (ptrlong)SSG_VALMODE_SPECIAL		: name = "SPECIAL"	; break;
+    default: name = valmode->qmfName; break;
     }
-  if ((-1 == hint) && IS_BOX_POINTER(tree))
+  SES_PRINT (ses, name);
+}
+
+void
+spart_dump (const void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint)
+{
+  const SPART *tree = (const SPART *) tree_arg;
+  int ctr;
+  if ((NULL == tree) && (hint < 0))
+    return;
+  spart_dump_title (ses, indent, title);
+  switch (hint)
     {
+    case -4: if (DV_ARRAY_OF_LONG != DV_TYPE_OF (tree)) hint = 0; break;
+    case -3: if (((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) && (DV_ARRAY_OF_LONG != DV_TYPE_OF (tree))) || (BOX_ELEMENTS (tree)%2)) hint = 0; break;
+    case -2: if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) && (DV_ARRAY_OF_LONG != DV_TYPE_OF (tree))) hint = 0; break;
+    case -1:
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) hint = 0; break;
       if ((SPART_HEAD >= BOX_ELEMENTS(tree)) || IS_BOX_POINTER (tree->type))
         {
           SES_PRINT (ses, "special: ");
           hint = -2;
         }
+      break;
     }
   if (!hint)
     hint = DV_TYPE_OF (tree);
@@ -5161,6 +5206,8 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
           case SPAR_FUNCALL:
             {
               int argctr, argcount = BOX_ELEMENTS (tree->_.funcall.argtrees);
+              sprintf (buf, "FUNCALL:");
+              SES_PRINT (ses, buf);
               spart_dump (tree->_.funcall.qname, ses, indent+2, "FUNCTION NAME", 0);
               if (tree->_.funcall.agg_mode)
                 spart_dump ((void *)(tree->_.funcall.agg_mode), ses, indent+2, "AGGREGATE MODE", 0);
@@ -5430,6 +5477,29 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
               END_DO_BOX_FAST;
               break;
             }
+          case SPAR_QM_SQL_FUNCALL:
+            {
+              int argctr, argcount = BOX_ELEMENTS (tree->_.qm_sql_funcall.fixed);
+              sprintf (buf, "QM SQL FUNCALL:");
+              SES_PRINT (ses, buf);
+              spart_dump (tree->_.qm_sql_funcall.fname, ses, indent+2, "QM SQL FUNCTION NAME", 0);
+              for (argctr = 0; argctr < argcount; argctr++)
+                spart_dump (tree->_.qm_sql_funcall.fixed[argctr], ses, indent+2, "FIXED ARGUMENT", -1);
+              if (NULL != tree->_.qm_sql_funcall.named)
+                spart_dump (tree->_.qm_sql_funcall.named, ses, indent+2, "NAMED ARGUMENTS", -3);
+              break;
+            }
+          case SPAR_CODEGEN:
+            {
+              void *gen = (void*)((ptrlong)unbox ((caddr_t)(tree->_.codegen.cgen_cbk)));
+              SPART **tree_tail, **tree_end;
+              sprintf (buf, "CODEGEN %p (%s):", gen,
+                ((ssg_grabber_codegen == gen) ? "ssg_grabber_codegen" : ((ssg_select_known_graphs_codegen == gen) ? "ssg_select_known_graphs_codegen" : "???")));
+              SES_PRINT (ses, buf);
+              for (tree_tail = (SPART **)(tree->_.codegen.args), tree_end = ((SPART **)(tree))+childrens; tree_tail < tree_end; tree_tail++)
+                spart_dump (tree_tail[0], ses, indent+2, "ARG", -1);
+              break;
+            }
           default:
             {
               sprintf (buf, "NODE OF TYPE %ld (", (ptrlong)(tree->type));
@@ -5518,6 +5588,12 @@ spart_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, in
         SES_PRINT (ses,	"NUMERIC ");
         numeric_to_string (n, buf, 0x100);
         SES_PRINT (ses,	buf);
+        break;
+      }
+    case DV_DB_NULL:
+      {
+        SES_PRINT (ses,	"DB NULL");
+        break;
       }
     default:
       {

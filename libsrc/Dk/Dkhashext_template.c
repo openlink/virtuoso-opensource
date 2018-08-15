@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,9 +45,7 @@
     ((uint32) ht->ht_rehash_threshold) < (uint32)((ht->ht_count * 100) / ht->ht_buckets) ) \
     DBG_HASHEXT_NAME(id_hash_rehash) (DBG_ARGS ht, ht->ht_buckets << 1)
 
-uint32 hash_nextprime (uint32 n);
-
-#define id_ht_max_sz 1048573
+/* #define id_ht_max_sz 1048573 --- Wrong Value! Never happens! Do not uncomment it, the right value is in Dkhash.h */
 
 id_hash_t *
 DBG_HASHEXT_NAME (id_hash_allocate) (DBG_PARAMS id_hashed_key_t buckets, int keybytes, int databytes, hash_func_t hf, cmp_func_t cf)
@@ -384,8 +382,6 @@ void DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t * ht, id_hashed_key
 {
   long o_ins, o_del, o_ovf, o_refc, o_ver, o_mmem, o_mem, o_c;
   id_hash_t ht_buffer;
-  new_sz = hash_nextprime (new_sz);
-
   if (ht->ht_buckets >= id_ht_max_sz)
     {
 #ifdef ID_HT_STATS
@@ -393,12 +389,12 @@ void DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t * ht, id_hashed_key
 #endif
       return;
     }
-
+  new_sz = hash_nextprime (new_sz);
+  if (ht->ht_buckets == new_sz)
+    return;
 #ifdef ID_HT_STATS
   fprintf (stderr, "*** ID HASH TABLE %p REHASH TO %lu\n", ht, new_sz);
 #endif
-
-  new_sz = hash_nextprime (new_sz);
   ID_HASH_ALLOCATE_INTERNALS ((&ht_buffer), new_sz, ht->ht_key_length, ht->ht_data_length, ht->ht_hash_func, ht->ht_cmp);
   ht_buffer.ht_dict_refctr = ht->ht_dict_refctr;
   ht_buffer.ht_dict_version = ht->ht_dict_version;

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -950,7 +950,7 @@ cfg_setup (void)
     c_future_thread_sz = 140000;
 
   if (cfg_getlong (pconfig, section, "ThreadCleanupInterval", &long_helper) == -1)
-    c_cfg_thread_live_period = 0;
+    c_cfg_thread_live_period = 1;
   else
     c_cfg_thread_live_period = (unsigned long) long_helper;
 
@@ -960,7 +960,7 @@ cfg_setup (void)
     c_cfg_thread_threshold = (unsigned long) long_helper;
 
   if (cfg_getlong (pconfig, section, "ResourcesCleanupInterval", &long_helper) == -1)
-    c_cfg_resources_clear_interval = 0;
+    c_cfg_resources_clear_interval = 1;
   else
     c_cfg_resources_clear_interval = (unsigned long) long_helper;
 
@@ -1080,11 +1080,13 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "UseAIO", &c_c_use_aio) == -1)
     c_c_use_aio = 0;
 
+#if 0
   /* Disable AIO for now */
   if (c_c_use_aio) {
     log_warning ("Setting UseAIO = 1 is not supported in this build");
     c_c_use_aio = 0;
   }
+#endif
 
   if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
     c_aq_max_threads = 48;
@@ -2575,6 +2577,8 @@ db_not_in_use (void)
   if (unlink (c_lock_file) == -1)
     log (L_WARNING, "Unable to remove %s (%m)", c_lock_file);
 #endif
+
+  dk_memory_finalize();
 }
 
 

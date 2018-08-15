@@ -6,7 +6,7 @@ AC_REVISION($Id$)
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -31,8 +31,8 @@ AC_REVISION($Id$)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[4])
-m4_define(vos_devel,	[.2])
+m4_define(vos_patch,	[5])
+m4_define(vos_devel,	[])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
@@ -61,6 +61,17 @@ dnl
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 
 AM_MAINTAINER_MODE
+
+
+##########################################################################
+##									##
+##  Check if makeconfig supports silent build rules                     ##
+##									##
+##########################################################################
+m4_ifdef([AM_SILENT_RULES],
+    [AM_SILENT_RULES([yes])
+])
+
 
 ##########################################################################
 ##									##
@@ -326,15 +337,14 @@ AC_SUBST(INCDIR)
 ##									##
 ##########################################################################
 
-#AC_PROG_CPP
-#actually prefer /lib/cpp : it's to be run on Java
-AC_PATH_PROG([CPP], [cpp], [/lib/cpp], [/usr/bin:/lib:$PATH])
-
 AC_PROG_CC
-AC_PROG_CC_C_O 			dnl this was AC_MINUS_C_MINUS_O
+AC_PROG_CC_C_O
 AC_LANG_C
 AC_PROG_LD
 AC_SUBST(LD)
+
+AC_PROG_CPP
+AC_PATH_PROG(JAVACPP, [cpp], [/lib/cpp], [/usr/bin:/lib:$PATH])
 
 
 ##########################################################################
@@ -567,11 +577,11 @@ dnl not used AC_FUNC_GETLOADAVG
 
 AC_CHECK_FUNCS(getpagesize gettimeofday strtok_r ftruncate fchmod fsync ftime localtime_r gmtime_r syslog)
 AC_CHECK_FUNCS(snprintf vsnprintf)
-AC_CHECK_FUNCS(wcsdup wcscasecmp wcsicmp)
-AC_CHECK_FUNCS(wcscmp wcslen wcsncat wcsnicmp wcsncasecmp wcsncmp wcscpy iswspace iswdigit wcsncpy wtol wtoi wcschr wcsrchr wcsstr wcscat iswlower iswupper towlower towupper)
-AC_CHECK_FUNCS(wprintf fputws putwc swprintf fwprintf swscanf fgetws putwchar putws wfopen cwprintf wperror wexecvp)
-AC_CHECK_FUNCS(wgetenv)
-AC_CHECK_FUNCS(wgetpass wgetpassphrase)
+
+AC_CHECK_FUNCS(cwprintf fgetws fputws fwprintf iswdigit iswlower iswspace iswupper putwc putwchar putws)
+AC_CHECK_FUNCS(swprintf swscanf towlower towupper wcscasecmp wcscat wcschr wcscmp wcscpy wcsdup wcsicmp)
+AC_CHECK_FUNCS(wcslen wcsncasecmp wcsncat wcsncmp wcsncpy wcsnicmp wcsrchr wcsstr wexecvp wfopen wgetenv)
+AC_CHECK_FUNCS(wperror wprintf wtoi wtol wgetpass wgetpassphrase)
 
 AC_CHECK_FUNCS(getpwnam getgrnam chmod getpwuid getgrgid setuid)
 AC_CHECK_FUNCS(putenv setenv)
@@ -842,10 +852,10 @@ then
   openssl_CFLAGS="$openssl_CFLAGS -DOPENSSL_NO_KRB5"
 fi
 
-save_CPPFLAGS="$CPPFLAGS"
+save_CFLAGS="$CFLAGS"
 save_LIBS="$LIBS"
 
-CPPFLAGS="$CPPFLAGS $openssl_CFLAGS"
+CFLAGS="$CFLAGS $openssl_CFLAGS"
 LIBS="$LIBS $openssl_LDFLAGS"
 case $host in
 *-solaris*)
@@ -856,59 +866,34 @@ case $host in
 	LIBS="$LIBS -lsocket"
 	;;
 esac
-AC_MSG_CHECKING([validity of the OpenSSL headers in ${openssl_dir}])
+
+AC_MSG_CHECKING([OpenSSL version])
 AC_TRY_COMPILE([
-#include <openssl/rsa.h>
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/asn1.h>
-#include <openssl/pkcs12.h>
-#include <openssl/rand.h>
-#include <stdio.h>
-#include <string.h>
-],
-[
-    SSL_METHOD *ssl_server_method = NULL;
-    SSL_CTX *ssl_server_ctx = NULL;
-    unsigned char tmp[1024];
+#include <openssl/opensslv.h>
+], [
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#error OpenSSL version too old 
+#endif
+    ],[
+      AC_MSG_RESULT([>= 0.9.8e])
+    ],[
+      AC_MSG_ERROR([OpenSSL version 0.9.8e or greater is required.])
+    ])
 
-    SSL_load_error_strings();
-    ERR_load_X509_strings();
-    ERR_load_PKCS12_strings();
-    #ifndef WIN32
-    RAND_bytes (tmp, sizeof(tmp));
-    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
-    #endif
-    SSLeay_add_ssl_algorithms();
-    PKCS12_PBE_add ();
+AC_MSG_CHECKING([OpenSSL version])
+AC_TRY_COMPILE([
+#include <openssl/opensslv.h>
+],[
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+#error OpenSSL version too new
+#endif
+    ],[
+      AC_MSG_RESULT([< 1.1.0])
+    ],[
+      AC_MSG_ERROR([OpenSSL version 1.1.0 or greater is currently not supported.])
+    ])
 
-    ssl_server_method = SSLv23_client_method();
-    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
-
-    if (!ssl_server_ctx)
-    {
-	ERR_print_errors_fp(stderr);
-	return(-1);
-    }
-
-    if (OPENSSL_VERSION_NUMBER < 0x0090700f)
-    {
-	fprintf (stderr, "Wrong SSL version number\n");
-	return (-1);
-    }
-],
-[
- AC_MSG_RESULT(good)
-],
-[
- AC_MSG_ERROR([bad. Check config.log for details])
-])
-
-AC_MSG_CHECKING([version and usability of the OpenSSL lib in ${openssl_dir}])
+AC_MSG_CHECKING([usability of the OpenSSL header files and library in ${openssl_dir}])
 AC_TRY_RUN([
 #include <openssl/rsa.h>
 #include <openssl/crypto.h>
@@ -932,10 +917,10 @@ main ()
     SSL_load_error_strings();
     ERR_load_X509_strings();
     ERR_load_PKCS12_strings();
-    #ifndef WIN32
+#ifndef WIN32
     RAND_bytes (tmp, sizeof(tmp));
     RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
-    #endif
+#endif
     SSLeay_add_ssl_algorithms();
     PKCS12_PBE_add ();
 
@@ -948,11 +933,6 @@ main ()
 	return(-1);
     }
 
-    if (OPENSSL_VERSION_NUMBER < 0x0090700f)
-    {
-	fprintf (stderr, "Wrong SSL version number\n");
-	return (-1);
-    }
   return 0;
 }],
 [
@@ -967,7 +947,7 @@ main ()
  AC_MSG_ERROR([bad. Check config.log for details])
 ])
 LIBS="$save_LIBS"
-CPPFLAGS="$save_CPPFLAGS"
+CFLAGS="$save_CFLAGS"
 AC_SUBST(openssl_CFLAGS)
 AC_SUBST(openssl_LDFLAGS)
 
@@ -1050,7 +1030,7 @@ AC_SUBST(openldap_LDFLAGS)
 # POP3/NNTP support --imsg                                               #
 #                                                                        #
 ##########################################################################
-AC_ARG_ENABLE(imsg,
+AC_ARG_ENABLE(imsg, [dnl
 AC_HELP_STRING([--enable-imsg], [enable POP3 and NNTP extension (default)])
 AC_HELP_STRING([--disable-imsg], [disable POP3 and NNTP extension])dnl
 ], [
@@ -1321,7 +1301,7 @@ main ()
 [
   AC_MSG_RESULT([bad. Check config.log for details])
   with_hsl="no"
-  AC_MSG_WARN([The ImageMagick plugin will not be build])
+  AC_MSG_WARN([The hslookup plugin will not be build])
 ])
 
     LIBS="$save_LIBS"
@@ -1340,6 +1320,7 @@ AC_SUBST(HSL_LIBS)
 # ImageMagic                                                             #
 #                                                                        #
 ##########################################################################
+
 AC_ARG_ENABLE(imagemagick, [dnl
 AC_HELP_STRING([--enable-imagemagick(=DIR)], [enable the ImageMagick plugin (default)])
 AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
@@ -1347,38 +1328,38 @@ AC_HELP_STRING([--disable-imagemagick], [disable the ImageMagick plugin])dnl
      case "${enableval}" in
        yes)	with_im="yes" ;;
        no)	with_im="no" ;;
-       /*)	with_im="${enableval}" ;;
+       /*)	with_im="${enableval}"
+		PKG_CONFIG_PATH="${enableval}/lib/pkgconfig:$PKG_CONFIG_PATH"
+		export PKG_CONFIG_PATH
+		;;
        *)	AC_MSG_ERROR(bad value ${enableval} for --disable-imagemagick) ;;
      esac
   ],
   [ with_im="yes" ]
 )
 
-if test "x$with_im" != "xno"
-then
+PKG_CHECK_MODULES_STATIC(IM, MagickWand, [], [
     AC_PATH_PROG(IM_CONFIG, Wand-config, notfound, ["$with_im/bin:$PATH"])
-
-    if test "x$IM_CONFIG" = "xnotfound"
+    if test "x$IM_CONFIG" != "xnotfound"
     then
-       AC_MSG_WARN([The ImageMagick plugin will not be build])
-       with_im=no
+	IM_CFLAGS=`"$IM_CONFIG" --cflags`
+	IM_LIBS=`"$IM_CONFIG" --libs --static`
+    else
+	AC_MSG_WARN([The ImageMagick plugin will not be build])
+	with_im=no
     fi
-fi
+])
 
 if test "x$with_im" != "xno"
 then
     AC_MSG_CHECKING([ImageMagick library usability])
 
-    save_CPPFLAGS="$CPPFLAGS"
+    save_CFLAGS="$CFLAGS"
     save_LIBS="$LIBS"
     save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
-    IM_CPPFLAGS=`"$IM_CONFIG" --cppflags`
-    IM_LDFLAGS=`"$IM_CONFIG" --ldflags`
-    IM_LIBS=`"$IM_CONFIG" --libs`
-
-    CPPFLAGS="$CPPFLAGS $IM_CPPFLAGS"
-    LIBS="$LIBS $IM_LDFLAGS $IM_LIBS"
+    CFLAGS="$CFLAGS $IM_CFLAGS"
+    LIBS="$LIBS $IM_LIBS"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib"
     export LD_LIBRARY_PATH
@@ -1406,13 +1387,12 @@ main ()
 ])
 
     LIBS="$save_LIBS"
-    CPPFLAGS="$save_CPPFLAGS"
+    CFLAGS="$save_CFLAGS"
     LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
 fi
 
 AM_CONDITIONAL(WITH_IM, test "x$with_im" != "xno" )
-AC_SUBST(IM_CPPFLAGS)
-AC_SUBST(IM_LDFLAGS)
+AC_SUBST(IM_CFLAGS)
 AC_SUBST(IM_LIBS)
 
 
@@ -1916,7 +1896,7 @@ fi
 AC_SUBST(LIBTHR)
 save_LIBS="$LIBS"
 LIBS="$LIBTHR $LIBS"
-AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize pthread_sigmask)
+AC_CHECK_FUNCS(pthread_attr_setstacksize pthread_attr_getstacksize pthread_sigmask pthread_rwlock_init)
 LIBS="$save_LIBS"
 srvrlibs="$srvrlibs $LIBTHR"
 AM_CONDITIONAL(WITH_PTHREADS, test "x$WITH_PTHREADS" = "xyes" )
@@ -2091,50 +2071,96 @@ srvrlibs="$srvrlibs $LIBDL"
 ##########################################################################
 
 AC_MSG_CHECKING(for iODBC location)
-virt_iodbc_dir="libsrc/odbcsdk"
-virt_do_iodbc="no"
+virt_iodbc_dir="."
+virt_with_iodbc="no"
 AC_ARG_WITH(iodbc, [dnl
 AC_HELP_STRING([--with-iodbc(=DIR)], [build with iODBC implementation if possible])dnl
 ], [
       case "${withval}" in
-	  yes)	virt_do_iodbc="yes" ;;
-	  no)	virt_do_iodbc="no"  ;;
-	  /*)	virt_do_iodbc="yes" virt_iodbc_dir="${withval}" ;;
+	  yes)	virt_with_iodbc="yes" ;;
+	  no)	virt_with_iodbc="no"  ;;
+	  /*)	virt_with_iodbc="yes" virt_iodbc_dir="${withval}" ;;
 	  *)	AC_MSG_ERROR("Invalid value for the --with-iodbc : must be an absolute path") ;;
       esac
     ],
-    [ virt_do_iodbc="no" ])
+    [ virt_with_iodbc="no" ])
 
 AC_MSG_RESULT($virt_iodbc_dir)
 AC_DEFINE(NO_UDBC_SDK,1, [Define if using the new iODBC API])
 
 
 #
+#  Check for installed versions of iODBC
+#
+if test "x$virt_with_iodbc" = "xyes"
+then
+    AC_CHECK_PROGS(IODBC_CONFIG, iodbc-config, false, [$virt_iodbc_dir/bin:$virt_iodbc_dir:$PATH])
+    AC_CHECK_PROGS(PKG_CONFIG, pkg-config, false, [$virt_iodbc_dir/bin:$virt_iodbc_dir:$PATH])
+
+    if "$IODBC_CONFIG" --version 2>/dev/null
+    then
+	iodbc_CFLAGS=`"$IODBC_CONFIG" --cflags`
+	iodbc_LIBS=`"$IODBC_CONFIG" --libs`
+    elif "$PKG_CONFIG" --version 2>/dev/null
+    then
+	saved_PKG_CONFIG_PATH="$PKG_CONFIG_PATH"
+	PKG_CONFIG_PATH="$virt_iodbc_dir/lib/pkgconfig:$PKG_CONFIG_PATH"
+
+	if "$PKG_CONFIG" --exists libiodbc
+	then
+	    iodbc_CFLAGS=`$PKG_CONFIG libiodbc --cflags`
+	    iodbc_LIBS=`$PKG_CONFIG libiodbc --libs`
+	fi
+
+	PKG_CONFIG_PATH="$saved_PKG_CONFIG_PATH"
+    elif test -d "$virt_iodbc_dir"
+    then
+	if test -d "$virt_iodbc_dir/include"
+	then
+	    iodbc_CFLAGS="$virt_iodbc_dir/include"
+	fi
+	if test -d "$virt_iodbc_dir/lib"
+	then
+	    iodbc_LIBS="-L$virt_iodbc_dir/lib -liodbc -liodbcinst"
+	fi
+    fi
+fi
+
+
+#
 #  Only add path when using iODBC, otherwise the makefiles will
 #  get the headers from libsrc/odbcsdk/include automatically
 #
-if test "x$virt_do_iodbc" = "xyes"
+if test "x$virt_with_iodbc" = "xyes"
 then
-    iodbc_CPPFLAGS="-I$virt_iodbc_dir/include"
-
     saved_CPPFLAGS="$CPPFLAGS"
-    CPPFLAGS="$iodbc_CPPFLAGS $CPPFLAGS"
-    AC_CHECK_HEADERS(sql.h sqlext.h sqlucode.h iodbcext.h odbcinst.h)
-    CPPFLAGS=$saved_CPPFLAGS
+    CPPFLAGS="$iodbc_CFLAGS $CPPFLAGS"
 
-    ccincl="$iodbc_CPPFLAGS $ccincl"
+    saved_LIBS="$LIBS"
+    LIBS="$iodbc_LIBS $LIBS $DLLIB"
 
-    iodbc_LDFLAGS="-L$virt_iodbc_dir/lib -liodbc -liodbcinst $LIBDL"
-    AC_CHECK_LIB(iodbc, SQLTables,
-		 [
-		  virt_do_iodbc="yes"
-		 ],
-		 [
-		  virt_do_iodbc="no"
-		  iodbc_LDFLAGS=""
-		 ],
-		 [$iodbc_LDFLAGS])
+    AC_CHECK_HEADERS(sql.h sqlext.h sqlucode.h odbcinst.h)
 
+    AC_MSG_CHECKING(iODBC libraries)
+    AC_TRY_COMPILE([
+	#include <sql.h>
+	#include <sqlext.h>],[
+	SQLRETURN ret;
+	SQLHANDLE env_handle;
+	ret = SQLAllocHandle ( SQL_HANDLE_ENV, SQL_NULL_HANDLE, &env_handle);
+	],
+	[
+	    virt_with_iodbc=yes
+	    AC_MSG_RESULT(done)
+	],
+	[
+ 	    virt_with_iodbc=no
+	    AC_MSG_RESULT(failed)
+        ]
+    )
+
+    CPPFLAGS="$saved_CPPFLAGS"
+    LIBS="$saved_LIBS"
 else
   #
   #  we have a copy of these files internally
@@ -2143,15 +2169,20 @@ else
   AC_DEFINE(HAVE_SQLEXT_H, 1)
   AC_DEFINE(HAVE_SQLUCODE_H, 1)
   AC_DEFINE(HAVE_ODBCINST_H, 1)
-  AC_DEFINE(HAVE_IODBCEXT_H, 1)
+
+  iodbc_CFLAGS='-I$(top_srcdir)/libsrc/odbcsdk/include'
+  iodbc_LIBS="-liodbc -liodbcinst"
 fi
 
-if test "x$virt_do_iodbc" = "xyes"; then
+if test "x$virt_with_iodbc" = "xyes"
+then
   BUILD_OPTS="$BUILD_OPTS odbc"
   AC_MSG_RESULT(Will build the iODBC binaries)
 fi
-AC_SUBST(iodbc_LDFLAGS)
-AM_CONDITIONAL(WITH_IODBC, test "x$virt_do_iodbc" = "xyes" )
+
+AC_SUBST(iodbc_CFLAGS)
+AC_SUBST(iodbc_LIBS)
+AM_CONDITIONAL(WITH_IODBC, test "x$virt_with_iodbc" = "xyes" )
 
 
 ##########################################################################
@@ -2483,7 +2514,7 @@ AC_SUBST(PORT)
 AC_ARG_ENABLE([],[
 VAD Packages:],[])
 
-AC_ARG_ENABLE(bpel-vad,
+AC_ARG_ENABLE(bpel-vad, [dnl
 AC_HELP_STRING([--enable-bpel-vad], [enable BPEL vad])
 AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
 ], [
@@ -2496,7 +2527,7 @@ AC_HELP_STRING([--disable-bpel-vad], [disable BPEL vad (default)])dnl
   [ with_bpel_vad="no" ]
 )
 
-AC_ARG_ENABLE(conductor-vad,
+AC_ARG_ENABLE(conductor-vad, [dnl
 AC_HELP_STRING([--enable-conductor-vad], [enable Conductor vad package (default)])
 AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
 ], [
@@ -2509,7 +2540,7 @@ AC_HELP_STRING([--disable-conductor-vad], [disable Conductor vad package])dnl
   [ with_conductor_vad="yes" ]
 )
 
-AC_ARG_ENABLE(dbpedia-vad,
+AC_ARG_ENABLE(dbpedia-vad, [dnl
 AC_HELP_STRING([--enable-dbpedia-vad], [enable DBpedia vad package])
 AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])dnl
 ], [
@@ -2522,7 +2553,7 @@ AC_HELP_STRING([--disable-dbpedia-vad], [disable DBpedia vad package (default)])
   [ with_dbpedia_vad="no" ]
 )
 
-AC_ARG_ENABLE(demo-vad,
+AC_ARG_ENABLE(demo-vad, [dnl
 AC_HELP_STRING([--enable-demo-vad], [enable Demo vad package])
 AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
 ], [
@@ -2535,7 +2566,7 @@ AC_HELP_STRING([--disable-demo-vad], [disable Demo vad package (default)])dnl
   [ with_demo_vad="no" ]
 )
 
-AC_ARG_ENABLE(fct-vad,
+AC_ARG_ENABLE(fct-vad, [dnl
 AC_HELP_STRING([--enable-fct-vad], [enable Facet Browser vad package])
 AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package (default)])dnl
 ], [
@@ -2548,7 +2579,7 @@ AC_HELP_STRING([--disable-fct-vad], [disable Facet Browser vad package (default)
   [ with_fct_vad="no" ]
 )
 
-AC_ARG_ENABLE(isparql-vad,
+AC_ARG_ENABLE(isparql-vad, [dnl
 AC_HELP_STRING([--enable-isparql-vad], [enable iSPARQL vad package])
 AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package (default)])dnl
 ], [
@@ -2561,7 +2592,7 @@ AC_HELP_STRING([--disable-isparql-vad], [disable iSPARQL vad package (default)])
   [ with_isparql_vad="yes" ]
 )
 
-AC_ARG_ENABLE(ods-vad,
+AC_ARG_ENABLE(ods-vad, [dnl
 AC_HELP_STRING([--enable-ods-vad], [enable ODS vad packages])
 AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages (default)])dnl
 ], [
@@ -2574,7 +2605,7 @@ AC_HELP_STRING([--disable-ods-vad], [disable ODS vad packages (default)])dnl
   [ with_ods_vad="no" ]
 )
 
-AC_ARG_ENABLE(rdfmappers-vad,
+AC_ARG_ENABLE(rdfmappers-vad, [dnl
 AC_HELP_STRING([--enable-rdfmappers-vad], [enable RDF Mappers vad package])
 AC_HELP_STRING([--disable-rdfmappers-vad], [disable RDF Mappers vad package (default)])dnl
 ], [
@@ -2587,7 +2618,7 @@ AC_HELP_STRING([--disable-rdfmappers-vad], [disable RDF Mappers vad package (def
   [ with_rdfmappers_vad="no" ]
 )
 
-AC_ARG_ENABLE(rdb2rdf-vad,
+AC_ARG_ENABLE(rdb2rdf-vad, [dnl
 AC_HELP_STRING([--enable-rdb2rdf-vad], [enable Rdb2Rdf vad package])
 AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package (default)])dnl
 ], [
@@ -2600,7 +2631,7 @@ AC_HELP_STRING([--disable-rdb2rdf-vad], [disable Rdb2Rdf vad package (default)])
   [ with_rdb2rdf_vad="no" ]
 )
 
-AC_ARG_ENABLE(sparqldemo-vad,
+AC_ARG_ENABLE(sparqldemo-vad, [dnl
 AC_HELP_STRING([--enable-sparqldemo-vad], [enable Sparql Demo vad package])
 AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package (default)])dnl
 ], [
@@ -2613,7 +2644,7 @@ AC_HELP_STRING([--disable-sparqldemo-vad], [disable Sparql Demo vad package (def
   [ with_sparqldemo_vad="no" ]
 )
 
-AC_ARG_ENABLE(syncml-vad,
+AC_ARG_ENABLE(syncml-vad, [dnl
 AC_HELP_STRING([--enable-syncml-vad], [enable SyncML vad package])
 AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package (default)])dnl
 ], [
@@ -2626,7 +2657,7 @@ AC_HELP_STRING([--disable-syncml-vad], [disable SyncML vad package (default)])dn
   [ with_syncml_vad="no" ]
 )
 
-AC_ARG_ENABLE(tutorial-vad,
+AC_ARG_ENABLE(tutorial-vad, [dnl
 AC_HELP_STRING([--enable-tutorial-vad], [enable Tutorial vad package])
 AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)])dnl
 ], [
@@ -2640,7 +2671,7 @@ AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)
 )
 
 
-AC_ARG_ENABLE(all-vads,
+AC_ARG_ENABLE(all-vads, [dnl
 AC_HELP_STRING([--disable-all-vads], [disable building all vad packages])dnl
 ], [
      case "${enableval}" in
@@ -2916,6 +2947,7 @@ AC_CONFIG_FILES([
 	binsrc/oat/Makefile
 	binsrc/rdf_mappers/Makefile
 	binsrc/rdb2rdf/Makefile
+	binsrc/rdf4j/Makefile
 	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/hslookup/Makefile

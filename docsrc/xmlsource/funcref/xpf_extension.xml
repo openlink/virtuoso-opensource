@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@ the SYS_XPF_EXTENSIONS system table.
 	  <row>
 	    <entry><errorcode>42001</errorcode></entry>
 	    <entry><errorcode>XPE01</errorcode></entry>
-	    <entry><errorname>The function &lt;procedure_name&gt; does not exists</errorname></entry>
+	    <entry><errorname>The function &lt;procedure_name&gt; does not exist</errorname></entry>
 	    <entry>if procedure to define as a XPATH extension function is not existing one.</entry>
 	  </row>
 	  <row>

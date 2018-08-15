@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -824,6 +824,10 @@ dc_itc_append_box (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, c
   caddr_t b = itc_box_column (itc, buf, 0, cl);
   if (DCT_BOXES & dc->dc_type)
     {
+#ifdef MALLOC_DEBUG
+      if (DV_CUSTOM == DV_TYPE_OF (b))
+	GPF_T1 ("DV_CUSTOM in dc_itc_append_box");
+#endif
     ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = b;
       if (IS_BOX_POINTER (b) && DV_DB_NULL == box_tag (b))
 	dc->dc_any_null = 1;
@@ -914,7 +918,7 @@ dc_reset_array (caddr_t * inst, data_source_t * qn, state_slot_t ** ssls, int ne
 
 
 void
-dc_get_buffer (data_col_t * dc, int bytes)
+DBG_NAME (dc_get_buffer) (DBG_PARAMS data_col_t * dc, int bytes)
 {
   db_buf_t new_buf = NULL;
   DO_SET (db_buf_t, buf, &dc->dc_buffers)
@@ -933,7 +937,7 @@ dc_get_buffer (data_col_t * dc, int bytes)
   END_DO_SET ();
   if (!new_buf)
     {
-      new_buf = (db_buf_t) mp_alloc_box_ni (dc->dc_mp, MAX (bytes, 0xfff8), DV_CUSTOM);
+      new_buf = (db_buf_t) DBG_NAME (mp_alloc_box_ni) (DBG_ARGS dc->dc_mp, MAX (bytes, 0xfff8), DV_CUSTOM);
       mp_set_push (dc->dc_mp, &dc->dc_buffers, (void *) new_buf);
     }
   dc->dc_buffer = new_buf;
@@ -1172,7 +1176,7 @@ long tc_dc_extend;
 long tc_dc_extend_values;
 
 void
-dc_extend_2 (data_col_t * dc, int ninx)
+DBG_NAME(dc_extend_2) (DBG_PARAMS data_col_t * dc, int ninx)
 {
   int elt_sz = dc_elt_size (dc);
   db_buf_t vs = dc->dc_values;
@@ -1185,7 +1189,7 @@ dc_extend_2 (data_col_t * dc, int ninx)
     GPF_T1 ("extending dc past max batch size");
   if (next_len > dc_max_batch_sz)
     next_len = dc_max_batch_sz;
-  dc->dc_values = (db_buf_t) mp_alloc_box (dc->dc_mp, 8 + elt_sz * next_len, DV_NON_BOX);
+  dc->dc_values = (db_buf_t) DBG_NAME (mp_alloc_box) (DBG_ARGS dc->dc_mp, 8 + elt_sz * next_len, DV_NON_BOX);
   dc->dc_values = (db_buf_t) ALIGN_16 ((ptrlong) dc->dc_values);
   if (vs)
   memcpy_16 (dc->dc_values, vs, elt_sz * dc->dc_n_values);
@@ -1251,10 +1255,13 @@ dc_elt_size (data_col_t * dc)
   if (!IS_BOX_POINTER (box) || sizeof (int64) != box_length (box))	\
     { dk_free_tree (box); box = inst[box_index] = dk_alloc_box (sizeof (int64), dtp);} \
   if (val_dc->dc_nulls && DC_IS_NULL(val_dc, row_no)) \
-    { box_tag_modify (box, DV_DB_NULL); }	      \
+    { \
+      box_tag_modify (box, DV_DB_NULL); \
+      memzero(box, box_length(box)); \
+    }  \
   else \
     { \
-      box_tag_modify (box, dtp);		      \
+      box_tag_modify (box, dtp); \
       *(int64*)box = ((int64*)val_dc->dc_values)[row_no]; \
     }\
   return box; \
@@ -2612,7 +2619,14 @@ dc_copy (data_col_t * target, data_col_t * source)
   if (DCT_BOXES == source->dc_type)
     {
       for (inx = 0; inx < source->dc_n_values; inx++)
-	((caddr_t *) target->dc_values)[inx] = box_mt_copy_tree (((caddr_t *) source->dc_values)[inx]);
+	{
+	  caddr_t val = ((caddr_t *) source->dc_values)[inx];
+#ifdef MALLOC_DEBUG
+	  if (DV_CUSTOM == DV_TYPE_OF (val))
+	    GPF_T1 ("DV_CUSTOM on dc_copy");
+#endif
+	  ((caddr_t *) target->dc_values)[inx] = box_mt_copy_tree (val);
+	}
       return;
     }
   if (DV_ANY == source->dc_dtp)

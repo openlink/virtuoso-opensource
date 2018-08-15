@@ -18,6 +18,7 @@ SOURCES1= \
 	DateTimeMarshaler.cs \
 	Diagnostics.cs \
 	DTC.cs \
+	Era.cs \
 	ExplicitString.cs \
 	Future.cs \
 	FutureList.cs \
@@ -92,7 +93,7 @@ CSC		= gmcs
 CSFLAGS		= /optimize+ /d:MONO /d:ADONET2
 
 # Set this if using MONO 1.2.3.1
-CSFLAGS 	+= /d:MONO1231
+#CSFLAGS 	+= /d:MONO1231
 
 
 

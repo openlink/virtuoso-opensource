@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="db_repl_page"
@@ -52,52 +49,8 @@
     </vm:menu>
     <vm:header caption="Create Transactional Replication Subscription"/>
     <vm:pagebody vdb_check="1">
-      <script language="JavaScript">
-        function dsns_chg(sel)
-        {
-          var i, _new, old;
-          if (sel.selectedIndex == -1)
-          {
-            document.link_form.dsn.value = '';
-            document.link_form.uid.value = '';
-            document.link_form.pwd.value = '';
-            return (0);
-          }
-          for (i = 0; i &lt; sel.length; i++)
-          {
-            if (sel.options[i].selected)
-            {
-              if (sel.options[i].text == document.link_form.dsn.value)
-                sel.options[i].selected = false;
-              else
-                document.link_form.dsn.value = sel.options[i].text;
-            }
-          }
-        };
-        function selectAllCheckboxes (form, btn)
-        {
-          var i;
-          for (i = 0;i &lt; form.elements.length;i++)
-          {
-            var contr = form.elements[i];
-            if (contr != null &amp;&amp; contr.type == "checkbox")
-            {
-              contr.focus();
-              if (btn.value == 'Select All')
-                contr.checked = true;
-              else
-                contr.checked = false;
-            }
-          }
-          if (btn.value == 'Select All')
-            btn.value = 'Unselect All';
-          else
-            btn.value = 'Select All';
-          btn.focus();
-        };
-      </script>
+
       <v:before-data-bind>
-        <v:script>
           <![CDATA[
         if (self.stage <> 0)
         {
@@ -107,15 +60,9 @@
         if (get_keyword('er', control.vc_page.vc_event.ve_params, '') = '2')
           self.stage := 0;
           ]]>
-        </v:script>
       </v:before-data-bind>
 
       <table class="form_layout">
-        <colgroup>
-          <col/>
-          <col/>
-          <col/>
-        </colgroup>
         <tr>
           <td class="page_tab">
             <v:url name="b_url13" value="Publications" url="db_repl_trans.vspx?page=1"/>
@@ -210,19 +157,16 @@
               <td>
                 <v:button action="simple" value="Publications list" name="pub_list">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.stage := 1;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
               <td>
                 <v:button action="simple" value="Save" name="dsn_save">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.stage := 0;
                         declare _uid, _pwd varchar;
@@ -238,7 +182,6 @@
                         }
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
@@ -288,17 +231,14 @@
               <td colspan="2">
                 <v:button action="simple" value="Clear" name="dsn_clr">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.stage := 0;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <v:button action="simple" value="Add Data Source" name="dsn_add">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.stage := 0;
                         declare _dsn, _uid, _pwd varchar;
@@ -315,7 +255,6 @@
                         }
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
@@ -342,9 +281,10 @@
         <v:form name="link2_form" action="db_repl_sub_create.vspx" method="POST" type="simple">
           <?vsp
             declare _stat, _res, _msg varchar;
+
+                  self.error_str := '';
             _stat := '00000';
             _msg := '';
-            self.error_str := '';
             exec('vd_remote_data_source(?,?,?,?)', _stat, _msg, vector(self.dsn, '', self.username_str, self.password_str));
             if (_stat = '00000')
             {
@@ -354,17 +294,19 @@
               if (atoi(s_ver) > 1937)
               {
                 declare idn, o_idn any;
+
                 _stat := '00000';
-                idn := identify_self();
-                rexecute(self.dsn, 'select aref(identify_self(), 0), aref(identify_self(), 1), aref(identify_self(), 2), aref(identify_self(), 3)', _stat, _msg, null, null, null, _res);
+                      _msg := '';
+                      rexecute (self.dsn, 'select identify_self()[0], identify_self()[1], identify_self()[2], identify_self()[3]', _stat, _msg, null, null, null, _res);
                 if (_stat = '00000')
                 {
                   if (_res is not null and __tag(_res) = 193)
                   {
-                    o_idn := aref(_res, 0);
+                          o_idn := _res[0];
                     if (o_idn is not null and length(o_idn) > 3)
                     {
-                      if ((aref(o_idn, 0) = aref(idn, 0)) and (aref(o_idn, 1) = aref(idn, 1)) and (aref(o_idn, 2) = aref(idn, 2)) and (aref(o_idn, 3) = aref(idn, 3)))
+                            idn := identify_self();
+                            if ((o_idn[0] = idn[0]) and (o_idn[1] = idn[1]) and (o_idn[2] = idn[2]) and (o_idn[3] = idn[3]))
                       {
                         self.error_str := 'Cannot subscribe into the same server';
                         goto draw_label;
@@ -376,14 +318,7 @@
               _res := null;
               _stat := '00000';
               _msg := '';
-              rexecute(self.dsn, 'select sys_connected_server_address (1)', _stat, _msg, null, null, null, _res);
-              if (_stat = '00000')
-              {
-                if (_res is not null)
-                  self.repl_addr := aref(aref(_res, 0), 0);
-              }
-              _stat := '00000';
-              _msg := '';
+                    self.repl_addr := case when (__proc_exists ('sql_get_private_profile_string', 2) is not null) then REPL_GET_ADDR_FROM_DSN (self.dsn) else self.dsn end;
               rexecute(self.dsn, 'select ACCOUNT from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = repl_this_server() and ACCOUNT <> repl_this_server()', _stat, _msg, null, null, null, _res);
               if (_stat = '00000' and _res is not null)
                 self.result_str := _res;
@@ -391,7 +326,9 @@
                 self.error_str := 'Replication cannot be found on selected Data Source';
             }
             else
+                  {
               self.error_str := _msg;
+                  }
             draw_label:;
             if (self.error_str = '')
             {
@@ -453,12 +390,10 @@
               <td colspan="2">
                 <v:button action="simple" value="Back" name="cancel_button2">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.stage := 0;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <?vsp
@@ -467,7 +402,6 @@
                 ?>
                 <v:button action="simple" value="List items" name="list_items">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         if (get_keyword('pub', control.vc_page.vc_event.ve_params, '') = '')
                         {
@@ -478,7 +412,6 @@
                           self.stage := 2;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <?vsp
@@ -505,13 +438,11 @@
               <td>
                 <v:button action="simple" value="Back" name="cancel_button1">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.stage := 0;
                         self.error_str := '';
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
@@ -554,10 +485,9 @@
           <p>To load data after subscription check <b>Load data</b> box or load data manually from main menu using <b>Load image</b> button</p>
           <p>To define scheduled synchronization after subscription input interval in minutes in <b>Sync every</b> box (zero "0" means no schedule)  or define manually using subscription properties menu</p>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/>
             <thead>
-              <tr>
-                <th/>
+                    <tr class="listing_header_row">
+                      <th width="16px"/>
                 <th>Item</th>
                 <th>Type</th>
               </tr>
@@ -583,9 +513,8 @@
 		else
                   _itype := _itp;
                 _idx := _idx + 1;
-
-                http (sprintf ('<tr class="%s">', case when mod (_idx, 2) then 'listing_row_odd' else 'listing_row_even' end));
             ?>
+                  <tr>
               <td class="listing_col">
                 <?vsp
                   if (_itp = 1)
@@ -602,51 +531,56 @@
               <td class="listing_col">
                 <?V _itype ?>
               </td>
+                  </tr>
             <?vsp
-                http('</tr>');
               }
             ?>
           </table>
+
           <table class="ctl_grp">
             <tr>
-              <td colspan="2">
+                    <td />
+                    <td>
+                      <label>
                 <input type="checkbox" name="load_data" id="load_data"/>
-                <label for="load_data">Load data</label>
+                        <strong>Load data</strong>
+                      </label>
               </td>
             </tr>
             <tr>
-              <td colspan="2">
+                    <th>
                 Synchronize subscription every
+                    </th>
+                    <td>
                 <input type="text" name="sched_int" value="10" size="4" align="right"/>
                 min
               </td>
             </tr>
             <tr>
-              <td colspan="2">
+                    <th>
                 Run sync process as
+                    </th>
+                    <td>
                 <select name="sync_user">
                   <?vsp
-                    for select U_NAME from DB.DBA.SYS_USERS
-                        where U_IS_ROLE = 0 and U_SQL_ENABLE = 1
-                        order by U_NAME do
+                          for select U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_SQL_ENABLE = 1 order by U_NAME do
                       {
                         declare _sel varchar;
                         if (U_NAME = 'dba')
                           _sel := ' selected="true"';
                         else
                           _sel := '';
-                        http (sprintf ('<option value="%V"%V>%V</option>',
-                            U_NAME, _sel, U_NAME));
+                            http (sprintf ('<option value="%V"%V>%V</option>', U_NAME, _sel, U_NAME));
                      }
                   ?>
                 </select>
               </td>
             </tr>
             <tr class="ctl_grp_title">
-              <th colspan="2">Permissions</th>
+                    <td align="center" colspan="2"><br /><strong>Permissions</strong></td>
             </tr>
             <tr>
-              <td class="ctl_lbl_ctr">WebDAV owner</td>
+                    <th class="ctl_lbl_ctr">WebDAV owner</th>
               <td class="ctl_ctr">
                 <select name="dav_own">
                   <option value="">nobody</option>
@@ -662,7 +596,7 @@
               </td>
             </tr>
             <tr>
-              <td class="ctl_lbl_ctr">WebDAV group</td>
+                    <th class="ctl_lbl_ctr">WebDAV group</th>
               <td class="ctl_ctr">
                 <select name="dav_grp">
                   <option value="">nogroup</option>
@@ -678,22 +612,19 @@
               </td>
             </tr>
             <tr class="form_cmd_row">
-              <td colspan="2">
+                    <td align="center" colspan="2">
                 <input type="hidden" name="acct" value="<?V self.acct ?>"/>
                 <input type="hidden" name="srv" value="<?V self.srv ?>"/>
                 <v:button action="simple" value="Back" name="cancel_button3">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         self.stage := 1;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
                 <v:button action="simple" value="Subscribe" name="add_sub">
                   <v:on-post>
-                    <v:script>
                       <![CDATA[
                         declare dav_u, dav_g varchar;
                         self.error_str := '';
@@ -747,7 +678,6 @@
                           self.stage := 2;
                         self.vc_data_bind(e);
                       ]]>
-                    </v:script>
                   </v:on-post>
                 </v:button>
               </td>
@@ -798,7 +728,9 @@
          </v:form>
        </table>
      </v:template>
+
      <div>
+             <hr />
        <vm:url name="db_repl_sub_ref" format="%s" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
      </div>
         </td>

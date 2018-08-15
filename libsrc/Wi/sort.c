@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -212,9 +212,10 @@ setp_top_get (caddr_t * inst, state_slot_t * ssl, int deflt)
     return deflt;
   if (SSL_IS_VEC_OR_REF (ssl))
     {
-      state_slot_t ts = *ssl;
+      state_slot_ref_t ts;
+      memcpy (&ts, ssl, sizeof (state_slot_ref_t));
       ts.ssl_type = SSL_VEC;
-      return unbox (sslr_qst_get (inst, (state_slot_ref_t*)&ts, 0));
+      return unbox (sslr_qst_get (inst, &ts, 0));
     }
   return unbox (qst_get (inst, ssl));
 }

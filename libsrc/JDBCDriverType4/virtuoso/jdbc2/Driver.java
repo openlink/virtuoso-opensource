@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 96;
+   protected static final int minor = 108;
 
    // Some variables
    private String host = "localhost";
@@ -278,13 +278,6 @@ public class Driver implements java.sql.Driver
         props.put("kpath", val);
       }
     }
-    val = props.getProperty("cert");
-    if (val != null) {
-      if (fsep != '\\') {
-        val = val.replace('\\', fsep);
-        props.put("cert", val);
-      }
-    }
     val = props.getProperty("ts");
     if (val != null) {
       if (fsep != '\\') {
@@ -295,8 +288,7 @@ public class Driver implements java.sql.Driver
 
     val = props.getProperty("ssl");
     if (val != null) {
-      if (props.getProperty("cert")==null)
-        props.setProperty("cert", "");
+        props.setProperty("ssl", "1");
     }
 
     val = props.getProperty("pwdtype");
@@ -312,17 +304,13 @@ public class Driver implements java.sql.Driver
       props.setProperty("password", val);
 
 
-    val = props.getProperty("cert");
-    if (val != null)
-      props.setProperty("certificate", val);
-
     val = props.getProperty("ts");
     if (val != null)
-      props.setProperty("certificate", val);
+      props.setProperty("truststorepath", val);
 
     val = props.getProperty("tspass");
     if (val != null)
-      props.setProperty("certificatepass", val);
+      props.setProperty("truststorepass", val);
 
 
     val = props.getProperty("kpath");
@@ -385,9 +373,9 @@ public class Driver implements java.sql.Driver
             pinfo.add(pr);
          }
 #ifdef SSL
-         if(info.get("certificate") == null)
+         if(info.get("cert") == null)
          {
-            pr = new DriverPropertyInfo("certificate",null);
+            pr = new DriverPropertyInfo("cert",null);
             pr.required = false;
             pinfo.add(pr);
          }
@@ -406,6 +394,18 @@ public class Driver implements java.sql.Driver
          if(info.get("provider") == null)
          {
             pr = new DriverPropertyInfo("provider",null);
+            pr.required = false;
+            pinfo.add(pr);
+         }
+         if(info.get("truststorepass") == null)
+         {
+            pr = new DriverPropertyInfo("truststorepass",null);
+            pr.required = false;
+            pinfo.add(pr);
+         }
+         if(info.get("truststorepath") == null)
+         {
+            pr = new DriverPropertyInfo("truststorepath",null);
             pr.required = false;
             pinfo.add(pr);
          }
@@ -461,9 +461,9 @@ public class Driver implements java.sql.Driver
          pinfo.add(pr);
       }
 #ifdef SSL
-      if(info.get("certificate") == null)
+      if(info.get("cert") == null)
       {
-         pr = new DriverPropertyInfo("certificate",null);
+         pr = new DriverPropertyInfo("cert",null);
          pr.required = false;
          pinfo.add(pr);
       }
@@ -482,6 +482,18 @@ public class Driver implements java.sql.Driver
       if(info.get("provider") == null)
       {
          pr = new DriverPropertyInfo("provider",null);
+         pr.required = false;
+         pinfo.add(pr);
+      }
+      if(info.get("truststorepass") == null)
+      {
+         pr = new DriverPropertyInfo("truststorepass",null);
+         pr.required = false;
+         pinfo.add(pr);
+      }
+      if(info.get("truststorepath") == null)
+      {
+         pr = new DriverPropertyInfo("truststorepath",null);
          pr.required = false;
          pinfo.add(pr);
       }

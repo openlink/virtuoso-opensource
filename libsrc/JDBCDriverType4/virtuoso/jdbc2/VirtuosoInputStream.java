@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -840,13 +840,16 @@ class VirtuosoInputStream extends BufferedInputStream
    private Object readDate(int tag) throws IOException
    {
       java.util.Calendar cal_dat = new java.util.GregorianCalendar ();
-      int day = read() << 16 | read() << 8 | read();
+      int d0 = read();
+      int day = d0 << 16 | read() << 8 | read();
       int hour = read();
       int temp = read();
       int minute = temp >> 2;
       int second = (((temp & 0x3) << 4) | ((temp = read()) >> 4));
       int fraction = (((temp & 0xf) << 16) | (read() << 8) | read());
       int tz_bytes[] = new int[2], tz_interm;
+
+      day = day | ((d0 & 0x80)!=0 ? 0xff000000 : 0);
 
       int tzless = hour >> 7;
       hour &= 0x1F;

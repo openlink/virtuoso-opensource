@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2734,10 +2734,17 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
 	{
 	  log_error ("in repl_append_vec_entry_async: key_id=%d, op=%d, query_params=%d, row_params=%d"
 	      , request->lr_lrq->lr_key_id, request->lr_op, inx, n_pars);
+#ifdef DEBUG
 	  GPF_T1("repl_append_vec_entry_async param count");
+#else
+	  return srv_make_new_error ("42000", "RFWNK", "Bad log entry");
+#endif
 	}
     }
   n_actual_params = dk_set_length (request->lr_qr->qr_parms);
+  /* if pars not match return an error */
+  if (n_actual_params != n_pars && !key->key_migrate_to)
+    return srv_make_new_error ("42000", "RFWNK", "Bad log entry");
   /* check for blobs */
   if (key && key->key_row_var
       && request->lr_op != LOG_KEY_DELETE && request->lr_op != LOG_DELETE) /* delete log only PK */
@@ -2916,6 +2923,7 @@ log_replay_entry_async (lr_executor_t* executor, lock_trx_t * lt, dtp_t op, dk_s
     {
       flush_request (executor, lq);
       request = NULL;
+      executor->lre_need_sync = 1;
     }
   if (request == NULL)
     {

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -104,13 +104,6 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
       }
    }
 
-   /**
-    * Method runs when the garbage collector want to erase the object
-    */
-   public void finalize() throws Throwable
-   {
-      close();
-   }
 
    // --------------------------- JDBC 1.0 ------------------------------
    /**
@@ -419,9 +412,17 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
             return "VARBINARY";
          case Types.VARCHAR:
             return "VARCHAR";
+#if JDK_VER >= 16
+         case Types.NVARCHAR:
+#else
 	 case -9:
+#endif
 	    return "NVARCHAR";
-	 case -10:
+#if JDK_VER >= 16
+         case Types.LONGNVARCHAR:
+#else
+	 case -16:
+#endif
 	    return "LONG NVARCHAR";
       }
       ;

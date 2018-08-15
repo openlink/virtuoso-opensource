@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1021,9 +1021,9 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
     next_rd:;
     }
   SET_THR_TMP_POOL (NULL);
-  log_needed = REPL_NO_LOG != itc->itc_ltrx->lt_replicate && (key->key_is_primary || ins->ins_key_only || key->key_partition);
-  itc->itc_ins_flags = (ins->ins_key_only || key->key_partition ? LOG_KEY_ONLY : 0) | (ins->ins_mode ? INS_SOFT : 0)
-      | (qi->qi_non_txn_insert ? LOG_SYNC : 0);
+  log_needed = (REPL_NO_LOG != itc->itc_ltrx->lt_replicate) && (key->key_is_primary || ins->ins_key_only || key->key_partition);
+  itc->itc_ins_flags = ((ins->ins_key_only
+	  || key->key_partition) ? LOG_KEY_ONLY : 0) | (ins->ins_mode ? INS_SOFT : 0) | (qi->qi_non_txn_insert ? LOG_SYNC : 0);
   itc->itc_log_actual_ins = log_needed && !key->key_is_bitmap && (key->key_distinct || ins->ins_seq_col
       || (INS_SOFT == ins->ins_mode && !itc->itc_ltrx->lt_blob_log));
   if (!itc->itc_log_actual_ins && log_needed)

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -98,6 +98,9 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_password)) != null)
           ((VirtuosoDataSource) ds).setPassword((String)refS.getContent());
 
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_delegate)) != null)
+          ((VirtuosoDataSource) ds).setDelegate((String)refS.getContent());
+
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_loginTimeout)) != null)
           ((VirtuosoDataSource) ds).setLoginTimeout(Integer.parseInt((String)refS.getContent()));
 
@@ -124,6 +127,15 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
 
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_provider)) != null)
           ((VirtuosoDataSource) ds).setProvider((String)refS.getContent());
+
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_truststorepass)) != null)
+          ((VirtuosoDataSource) ds).setTruststorepass((String)refS.getContent());
+
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_truststorepath)) != null)
+          ((VirtuosoDataSource) ds).setTruststorepath((String)refS.getContent());
+
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_ssl)) != null)
+          ((VirtuosoDataSource) ds).setSsl(Boolean.getBoolean((String)refS.getContent()));
 #endif
 
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_fbs)) != null)

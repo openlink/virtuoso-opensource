@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -299,6 +299,7 @@ struct query_s
     bitf_t		qr_vec_opt_done:1;
     bitf_t		qr_need_enlist:1; /* in cluster, if run in read committed, still need enlist because of unknown function calls  which may update */
     bitf_t		qr_is_mt_insert:1;
+    bitf_t              qr_proc_grants_is_reused:1;
     char			qr_hidden_columns;
     char			qr_n_stages; /* if represents distr frag */
     /* The query state array's description */
@@ -2098,6 +2099,11 @@ extern int enable_vec;
 #define ITC_DFG_CK(itc)
 #endif
 
+#ifdef QUERY_DEBUG
+extern FILE *query_log;
+extern void log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt, ...);
+extern void log_query_event (query_t *qr, int print_full_content, const char *fmt, ...);
+#endif
 
 #endif /* _SQLNODE_H */
 void qr_print (query_t * qr);

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1184,7 +1184,7 @@ int
 geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
 {
   int cctr, ictr, itemctr;
-  if (!geo_looks_fine (g1) || !geo_looks_fine (g2))
+  if (!geo_looks_fine_or_null (g1) || !geo_looks_fine_or_null (g2))
     sqlr_new_error ("42000", "GEO..", "Bad geo type");
   if (GSOP_WITHIN == op)
     {

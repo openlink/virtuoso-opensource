@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -423,6 +423,7 @@ end_scan:
   if (isstring (host))
     {
       long_path := replace (long_path, '^{URIQADefaultHost}^', host);
+      long_path := replace (long_path, '^{uURIQADefaultHost}^', sprintf ('%U', host));
       if (strstr (long_path, '^{DynamicLocalFormat}^') is not null)
         {
 	  long_path := replace (long_path, '^{DynamicLocalFormat}^',
@@ -432,7 +433,9 @@ end_scan:
   if (http_host () <> 0)
     {
       long_path := replace (long_path, '^{Host}^', http_host ());
+      long_path := replace (long_path, '^{uHost}^', sprintf ('%U', http_host ()));
       long_path := replace (long_path, '^{FullHost}^', sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host ()));
+      long_path := replace (long_path, '^{uFullHost}^', sprintf ('%U', sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host ())));
     }
   return long_path;
 }
@@ -1126,7 +1129,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
        qs2 := DB.DBA.URLREWRITE_CALC_QS (lang, VM_LANG);
        qs3 := DB.DBA.URLREWRITE_CALC_QS (cset, VM_ENC);
 --       dbg_obj_print (VM_VARIANT_URI, ' ', qs1, ' ', qs2, ' ', qs3);
-       curr := VM_QS * qs1 * qs2 * qs3;
+       curr := qs1 * qs2 * qs3;
        if (registry_get ('__debug_url_rewrite') in ('1', '2'))
 	 dbg_printf ('tcn trying: %s qs1=%f qs2=%f qs3=%f qs=%f', VM_VARIANT_URI, qs1, qs2, qs3, curr);
        if (curr > best_q)
@@ -1372,12 +1375,11 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
   http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \n\'%s\', 1, \n  vector (', rulelist_iri), ses);
   rules := (select DB.DBA.VECTOR_AGG (URRL_MEMBER) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX);
   http (SYS_SQL_VECTOR_PRINT (rules), ses);
-  http ('));\n\n', ses);
+  http (')\n);\n\n', ses);
 
   for select URRL_MEMBER from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX do
     {
-      for select
-	URR_RULE_TYPE,
+    for (select URR_RULE_TYPE,
 	URR_NICE_FORMAT,
 	URR_NICE_PARAMS,
 	URR_NICE_MIN_PARAMS,
@@ -1387,10 +1389,9 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 	URR_ACCEPT_PATTERN,
 	URR_NO_CONTINUATION,
 	URR_HTTP_REDIRECT,
-	URR_HTTP_HEADERS from
-	    DB.DBA.URL_REWRITE_RULE
-	    where URR_RULE = URRL_MEMBER
-	do
+                URR_HTTP_HEADERS
+           from DB.DBA.URL_REWRITE_RULE
+          where URR_RULE = URRL_MEMBER) do
 	  {
 	    if (URR_RULE_TYPE = 1)
 	      {
@@ -1400,11 +1401,10 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 	      {
 		http (sprintf ('DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE ( \n\'%s\', 1, \n  ', URRL_MEMBER), ses);
 	      }
-
-	      http (sprintf ('\'%S\', \n', URR_NICE_FORMAT), ses);
+      http (sprintf ('  %s,\n', SYS_SQL_VAL_PRINT (URR_NICE_FORMAT)), ses);
 	      http (sprintf ('vector (%s), \n', SYS_SQL_VECTOR_PRINT (deserialize (URR_NICE_PARAMS))), ses);
 	      http (sprintf ('%d, \n', URR_NICE_MIN_PARAMS), ses);
-	      http (sprintf ('\'%S\', \n', URR_TARGET_FORMAT), ses);
+      http (sprintf ('  %s,\n', SYS_SQL_VAL_PRINT (URR_TARGET_FORMAT)), ses);
 	      http (sprintf ('vector (%s), \n', SYS_SQL_VECTOR_PRINT (deserialize (URR_TARGET_PARAMS))), ses);
 	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_TARGET_EXPR)), ses);
 	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_ACCEPT_PATTERN)), ses);
@@ -1416,8 +1416,9 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 	  }
     }
 
-  for select VM_RULELIST, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
-    from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_iri do
+  for (select VM_RULELIST, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
+         from DB.DBA.HTTP_VARIANT_MAP
+        where VM_RULELIST = rulelist_iri) do
    {
       http (sprintf ('DB.DBA.HTTP_VARIANT_ADD (\n%s,\n', SYS_SQL_VAL_PRINT (VM_RULELIST)), ses);
       http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_URI)), ses);

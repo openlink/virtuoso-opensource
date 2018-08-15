@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -200,6 +200,9 @@ wi_free_old_qrs ()
       while (global_old_procs)
 	{
 	  query_t *qr = (query_t *) dk_set_pop (&global_old_procs);
+#ifdef QUERY_DEBUG
+          log_query_event (qr, 1, "POP_GLOBAL_OLD by wi_free_old_qrs at %s:%d", __FILE__, __LINE__, qr);
+#endif
 	  /*log_debug ("freeing proc %.50s", qr->qr_proc_name);*/
 	  gpf_if_found (isp_schema (NULL)->sc_name_to_object[sc_to_proc], qr);
 	  qr_free (qr);
@@ -1744,6 +1747,13 @@ sch_set_procmod_def (dbe_schema_t * sc, caddr_t name, query_t *proc, sc_object_t
       if (*data == proc)
 	GPF_T;
 #endif
+#ifdef QUERY_DEBUG
+      if (o_type == sc_to_proc)
+        {
+          log_query_event (*data, 1, "DEPRECATION PROC by sch_set_procmod_def");
+          log_query_event (proc, 1, "CACHING REPLACING PROC by sch_set_procmod_def");
+        }
+#endif
       if (*data)
 	dk_set_pushnew (o_type == sc_to_module ? &global_old_modules : &global_old_procs, *data);
       *data = proc;
@@ -1752,6 +1762,10 @@ sch_set_procmod_def (dbe_schema_t * sc, caddr_t name, query_t *proc, sc_object_t
     {
       caddr_t qn_key = box_dv_short_string (qn);
       caddr_t o_key = box_dv_short_string (o);
+#ifdef QUERY_DEBUG
+      if (o_type == sc_to_proc)
+        log_query_event (proc, 1, "CACHING NEW PROC by sch_set_procmod_def");
+#endif
       id_casemode_hash_set (sc->sc_name_to_object[o_type], qn_key, o_key, (caddr_t) & proc);
     }
   mutex_leave (old_qr_mtx);

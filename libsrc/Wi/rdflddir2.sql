@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -172,11 +172,11 @@ ld_file (in f varchar, in graph varchar)
     update DB.DBA.LOAD_LIST
       set LL_STATE = 2,
           LL_DONE = curdatetime (),
-          LL_ERROR = __sql_state || ' ' || __sql_message
+          LL_ERROR = __SQL_STATE || ' ' || __SQL_MESSAGE
       where LL_FILE = f;
     commit work;
     log_stats (sprintf ('RDF load %s with error', f));
-    log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
+    log_message (sprintf (' File %s error %s %s', f, __SQL_STATE, __SQL_MESSAGE));
     return;
   };
 

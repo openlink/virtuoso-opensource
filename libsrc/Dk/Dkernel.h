@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -85,6 +85,8 @@ struct dk_session_s
   void *			dks_cluster_data;	/* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol vrsions and cluster is all the same version */
   void *			dks_write_temp;		/* Used by Distributed Objects */
 
+  /*! max msecs to block on a connect */
+  timeout_t 			dks_connect_timeout;
   /*! max msecs to block on a read */
   timeout_t 			dks_read_block_timeout;
   /*! max msecs to block on a write */
@@ -742,6 +744,7 @@ EXE_EXPORT (void, strses_flush, (dk_session_t * ses));
 EXE_EXPORT (int64, strses_length, (dk_session_t * ses));
 int64 strses_chars_length (dk_session_t * ses);
 EXE_EXPORT (void, strses_write_out, (dk_session_t * ses, dk_session_t * out));
+void strses_set_int32 (dk_session_t * ses, int64 offset, int32 val);
 void strses_to_array (dk_session_t * ses, char *buffer);
 size_t strses_fragment_to_array (dk_session_t * ses, char *buffer, size_t fragment_offset, size_t fragment_size);
 #if 0							   /* No longer in use */
@@ -833,8 +836,8 @@ EXE_EXPORT (dtp_t, session_buffered_read_char, (dk_session_t * ses));
 
 /* Dkmarshal.c */
 #if 0							   /* moved to Dkmarshal.h */
-caddr_t scan_session (dk_session_t * ses);
-caddr_t scan_session_boxing (dk_session_t * ses);
+void * scan_session (dk_session_t * ses);
+void * scan_session_boxing (dk_session_t * ses);
 long read_long (dk_session_t * ses);
 caddr_t read_float (dk_session_t * session);
 double read_double (dk_session_t * session);
@@ -860,9 +863,9 @@ void print_raw_float (float f, dk_session_t * session);
 void print_raw_double (double n, dk_session_t * session);
 void print_int (long n, dk_session_t * session);
 void dks_array_head (dk_session_t * ses, int n_elements, dtp_t type);
-void print_string (char *string, dk_session_t * session);
-void print_uname (char *string, dk_session_t * session);
-void print_ref_box (char *string, dk_session_t * session);
+void print_string (const char *string, dk_session_t * session);
+void print_uname (const char *string, dk_session_t * session);
+void print_ref_box (const char *string, dk_session_t * session);
 void PrpcSetWriter (dtp_t dtp, ses_write_func f);
 void print_object (caddr_t object, dk_session_t * session, printer_ext_func extension, caddr_t ea);
 int srv_write_in_session (caddr_t thing, dk_session_t * session, printer_ext_func extension, void *xx, int flush);
@@ -1010,7 +1013,6 @@ extern uint32 time_now_msec;
 void dks_stop_burst_mode (dk_session_t * ses);
 #endif
 
-#endif
 extern long client_trace_flag;
 
 #ifdef PCTCP
@@ -1024,3 +1026,8 @@ extern long init_brk;
 void strses_mem_initalize (void);
 void strses_readtable_initialize (void);
 void dk_box_initialize (void);
+void log_thread_initialize (void);
+int bytes_in_read_buffer (dk_session_t * ses);
+long read_wides_from_utf8_file (dk_session_t * ses, long nchars, unsigned char *dest, int copy_as_utf8, unsigned char **dest_ptr_out);
+
+#endif /* _DKERNEL_H */

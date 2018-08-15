@@ -1,26 +1,26 @@
-<?vsp 
+<?vsp
 --
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2016 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2018 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
   if (not adm_check_auth(lines))
     {
@@ -37,7 +37,7 @@
   <HEAD>
     <LINK REL="stylesheet" TYPE="text/css" HREF="<?=adm_what_css()?>">
     <title>OpenLink Interactive SQL (Virtuoso), DBPUMP version 0.1.: Schema Restore</title>
-    <meta name="AUTHOR" content="OpenLink Software"> 
+    <meta name="AUTHOR" content="OpenLink Software">
     <META NAME="DESCRIPTION" CONTENT="Virtuoso DBPUMP">
   </HEAD>
 <?vsp "PUMP"."DBA"."HTML_HEADER_OUT" (oper_vector, 'Restore Schema','111113111'); ?>
@@ -59,7 +59,7 @@
 <?vsp "PUMP"."DBA"."HTML_TEXTAREA_OUT" (oper_vector, 'comment', 'Comment:', NULL, NULL, ' rows=10 cols=50 '); ?>
 </td></tr>
 
-<td align=center>      
+<td align=center>
 <table class="genlist" border="0" cellpadding="0">
 <!----
 <?vsp "PUMP"."DBA"."HTML_EDIT_ROW_OUT" (oper_vector, 'user', 'User:', '', NULL, NULL); ?></td></tr>
@@ -76,7 +76,7 @@
 <?vsp "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Restore', '
 	if (confirm(\'OK, let\\''s still one time take a look at restore parameters and solve DO WE DO NEED IT? \\nThis will drop your tables and just will recreate them!\'))
 	  {
-	    this.form.action=\'restore_schema_itself.vsp\'; 
+	    this.form.action=\'restore_schema_itself.vsp\';
 	    this.form.submit();
 	  }
 						', NULL, NULL); ?>

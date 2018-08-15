@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,6 +46,7 @@ dk_set_initial_mem (size_t sz)
 #define dk_tlsf_init()
 
 
+int enable_alloc_ctr;
 int64 dk_n_allocs;
 int64 dk_n_total;
 int64 dk_max_allocs;
@@ -67,6 +68,7 @@ int64 dk_n_max_allocs;
 #endif
 
 extern void dk_box_initialize (void);
+extern void dk_box_finalize (void);
 
 #define NO_MALLOC_CACHE
 #undef CACHE_MALLOC
@@ -306,11 +308,14 @@ av_clear (av_list_t * av, size_t sz)
     {
       next = *(caddr_t **) ptr;
       free (ptr);
-      CNT_ENTER;
-      dk_n_total --;
-      CNT_LEAVE;
-      dk_n_free ++;
-      dk_n_bytes -= sz;
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total --;
+	  CNT_LEAVE;
+	  dk_n_free ++;
+	  dk_n_bytes -= sz;
+	}
     }
   av->av_first = NULL;
   av->av_fill = 0;
@@ -593,7 +598,9 @@ dk_memory_initialize (int do_malloc_cache)
   /* This is a global flag. In a DLL all users get to
      share the same cached resources */
   static int is_mem_init = 0;
+#ifdef CACHE_MALLOC
   int s;
+#endif
   if (is_mem_init)
     return;
   dk_cpu_init ();
@@ -650,6 +657,11 @@ dk_memory_initialize (int do_malloc_cache)
   strses_mem_initalize ();
 }
 
+void
+dk_memory_finalize (void)
+{
+  dk_box_finalize ();
+}
 
 void
 dk_mem_stat (char *out, int max)
@@ -716,10 +728,8 @@ dk_cache_allocs (size_t sz, size_t cache_sz)
 void *
 dk_alloc (size_t c)
 {
-  thread_t *thr = NULL;
   void *thing = NULL;
   size_t align_sz;
-  int nth_sz;
 #ifndef CACHE_MALLOC
   align_sz = ALIGN_8 (c);
   thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
@@ -736,6 +746,8 @@ dk_alloc (size_t c)
   av_s_list_t *av1;
   if (c <= MAX_CACHED_MALLOC_SIZE)
     {
+      int nth_sz;
+      thread_t *thr = NULL;
       ALIGN_A (align_sz, nth_sz, c);
       THREAD_ALLOC_LOOKUP (thr, thing, nth_sz);
 
@@ -768,11 +780,14 @@ dk_alloc (size_t c)
 	    }
 
 	  thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
-	  CNT_ENTER;
-	  dk_n_total ++;
-	  CNT_LEAVE;
-	  dk_n_allocs++;
-	  dk_n_bytes += align_sz;
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total ++;
+	      CNT_LEAVE;
+	      dk_n_allocs++;
+	      dk_n_bytes += align_sz;
+	    }
 	}
       AV_MARK_ALLOC (thing, align_sz);
     }
@@ -781,11 +796,14 @@ dk_alloc (size_t c)
       align_sz = _RNDUP_PWR2 (c, 4096);
       thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
       AV_MARK_ALLOC (thing, align_sz);
-      CNT_ENTER;
-      dk_n_total ++;
-      CNT_LEAVE;
-      dk_n_allocs++;
-      dk_n_bytes += align_sz;
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total ++;
+	  CNT_LEAVE;
+	  dk_n_allocs++;
+	  dk_n_bytes += align_sz;
+	}
     }
 #endif
   if (dk_n_allocs > dk_n_max_allocs)
@@ -884,11 +902,14 @@ dk_free (void *ptr, size_t sz)
 	  mutex_leave (&av->av_mtx);
 	full:
 	  FREE_IN_DK_FREE (ptr);
-	  CNT_ENTER;
-	  dk_n_total --;
-	  CNT_LEAVE;
-	  dk_n_bytes -= sz;
-	  dk_n_free ++;
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total --;
+	      CNT_LEAVE;
+	      dk_n_bytes -= sz;
+	      dk_n_free ++;
+	    }
 	  return;
 	}
     }
@@ -934,10 +955,29 @@ dk_check_end_marks (void)
 void
 dk_alloc_assert (void *ptr)
 {
-  const char *err = dbg_find_allocation_error (ptr, NULL);
+  const char *err = dk_find_alloc_error (ptr, NULL);
   if (err)
     GPF_T1 (err);
 }
+
+void
+dk_alloc_assert_mp_or_plain (void *ptr)
+{
+  const char *err;
+  if (ptr == NULL)
+    GPF_T1("NULL pointer");
+  if (!dbgmal_is_enabled())
+    return;
+  if (DBGMAL_MAGIC_POOL_OK == dbg_malloc_magic_of_data (ptr))
+    err = dk_find_alloc_error (ptr, dbg_mp_of_data (ptr));
+  else
+    err = dk_find_alloc_error (ptr, NULL);
+  if (err)
+    GPF_T1 (err);
+}
+
+
+
 
 
 void
@@ -950,6 +990,11 @@ dk_memory_initialize (int do_malloc_cache)
   strses_mem_initalize ();
 }
 
+void
+dk_memory_finalize (void)
+{
+  dk_box_finalize ();
+}
 
 void
 dk_cache_allocs (size_t sz, size_t cache_sz)
@@ -992,12 +1037,12 @@ thr_alloc_cache_clear (thread_t * thr)
 
 
 void
-dk_alloc_cache_status (resource_t ** cache)
+dk_alloc_cache_status (void * cache)
 {
+#ifdef CACHE_MALLOC
   int inx;
   size_t bs = 0;
   printf ("\n--------- dk_alloc cache\n");
-#ifdef CACHE_MALLOC
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
       int way;
@@ -1009,15 +1054,17 @@ dk_alloc_cache_status (resource_t ** cache)
       bs += n * inx * 8;
     }
   printf ("%Ld total\n", bs);
+#else
+  printf ("\n dk_alloc cache is off, because CACHE_MALLOC is not defined\n");
 #endif
 }
 
 size_t
 dk_alloc_global_cache_total ()
 {
-  int inx;
   size_t bs = 0;
 #ifdef CACHE_MALLOC
+  int inx;
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
       int way;
@@ -1034,9 +1081,9 @@ dk_alloc_global_cache_total ()
 size_t
 dk_alloc_cache_total (void * cache)
 {
-  int inx;
   size_t bs = 0;
 #ifdef CACHE_MALLOC
+  int inx;
   av_list_t * av = cache;
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
@@ -1049,6 +1096,21 @@ dk_alloc_cache_total (void * cache)
   return bs;
 }
 
+#ifndef MALLOC_DEBUG
+int
+all_allocs_at_line (const char *file, int line)
+{
+  printf ("\nall_allocs_at_line () requires MALLOC_DEBUG and slow_malloc_debug set to 1\n");
+  return 0;
+}
+
+int
+new_allocs_after (int res_no)
+{
+  printf ("\nnew_allocs_after () requires MALLOC_DEBUG and slow_malloc_debug set to 1\n");
+  return 0;
+}
+#endif
 
 #ifdef MALLOC_DEBUG
 #undef dk_alloc

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,8 +42,12 @@
 #include "security.h"
 #include "sqlbif.h"
 
-#ifdef __MINGW32__
-#define P_tmpdir _P_tmpdir
+#ifndef P_tmpdir
+# ifdef _P_tmpdir               /* native Windows */
+#  define P_tmpdir _P_tmpdir
+# else
+#  define P_tmpdir "/tmp"
+# endif
 #endif
 
 #define UUID_T_DEFINED
@@ -693,7 +697,7 @@ caddr_t
 bif_server_root (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static char abs_path[PATH_MAX + 1], *p_abs_path = abs_path;
-  char *path = "";
+  const char *path = "";
 
   abs_path[0] = 0;
   if (!rel_to_abs_path (p_abs_path, path, sizeof (abs_path)))
@@ -1263,12 +1267,11 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		    {
 		      int buflen = (box_length (raw_name) - 1) / i18n_volume_encoding->eh_minsize;
 		      int state = 0;
-		      wchar_t *buf = dk_alloc_box ((buflen + 1) * sizeof (wchar_t), DV_WIDE);
+                      wchar_t *buf = (wchar_t *)dk_alloc_box ((buflen+1) * sizeof (wchar_t), DV_WIDE);
 		      wchar_t *wide_name;
 		      const char *raw_tail = raw_name;
-		      int res =
-			  i18n_volume_encoding->eh_decode_buffer_to_wchar (buf, buflen, &raw_tail,
-			  raw_name + box_length (raw_name) - 1,
+                      int res = i18n_volume_encoding->eh_decode_buffer_to_wchar (
+                        buf, buflen, &raw_tail, raw_name + box_length (raw_name) - 1,
 			  i18n_volume_encoding, state);
 		      if (res < 0)
 			{
@@ -1277,9 +1280,9 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 			}
 		      if (res < buflen - 1)
 			{
-			  wide_name = dk_alloc_box ((res + 1) * sizeof (wchar_t), DV_WIDE);
+                          wide_name = (wchar_t *)dk_alloc_box ((res+1) * sizeof (wchar_t), DV_WIDE);
 			  memcpy (wide_name, buf, res * sizeof (wchar_t));
-			  dk_free_box (buf);
+                          dk_free_box ((caddr_t)buf);
 			}
 		      else
 			wide_name = buf;
@@ -1454,12 +1457,11 @@ sys_dirlist (caddr_t fname, int files)
 		    {
 		      int buflen = (box_length (raw_name) - 1) / i18n_volume_encoding->eh_minsize;
 		      int state = 0;
-		      wchar_t *buf = dk_alloc_box ((buflen + 1) * sizeof (wchar_t), DV_WIDE);
+                      wchar_t *buf = (wchar_t *)dk_alloc_box ((buflen+1) * sizeof (wchar_t), DV_WIDE);
 		      wchar_t *wide_name;
 		      const char *raw_tail = raw_name;
-		      int res =
-			  i18n_volume_encoding->eh_decode_buffer_to_wchar (buf, buflen, &raw_tail,
-			  raw_name + box_length (raw_name) - 1,
+                      int res = i18n_volume_encoding->eh_decode_buffer_to_wchar (
+                        buf, buflen, &raw_tail, raw_name + box_length (raw_name) - 1,
 			  i18n_volume_encoding, state);
 		      if (res < 0)
 			{
@@ -1468,9 +1470,9 @@ sys_dirlist (caddr_t fname, int files)
 			}
 		      if (res < buflen - 1)
 			{
-			  wide_name = dk_alloc_box ((res + 1) * sizeof (wchar_t), DV_WIDE);
+                          wide_name = (wchar_t *)dk_alloc_box ((res+1) * sizeof (wchar_t), DV_WIDE);
 			  memcpy (wide_name, buf, res * sizeof (wchar_t));
-			  dk_free_box (buf);
+                          dk_free_box ((caddr_t)buf);
 			}
 		      else
 			wide_name = buf;
@@ -1676,7 +1678,7 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   place = bif_long_arg (qst, args, 2, "string_to_file");
   if (place < -2 /* i.e. (place<0) && (place != -1) */ )
     sqlr_new_error ("22003", "FA021",
-	"Third argument of string_to_file function, should be nonnegative offset value, -1 or -2");
+	"Third argument of string_to_file function, should be non-negative offset value, -1 or -2");
 
   if (!DV_STRINGP (string) && !DV_WIDESTRINGP (string) &&
       !IS_BLOB_HANDLE (string) && string_dtp != DV_C_STRING
@@ -1731,8 +1733,11 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       char buffer[64000];
       int to_read;
+      int64 len, ofs = 0;
       dk_session_t *ses = (dk_session_t *) string;
-      int64 len = strses_length (ses), ofs = 0;
+      if (ses->dks_session && ses->dks_session->ses_file && ses->dks_session->ses_file->ses_file_descriptor)
+	session_flush (ses);
+      len = strses_length (ses);
       while (ofs < len)
 	{
 	  int readed;
@@ -2321,7 +2326,7 @@ get_random_info (unsigned char seed[16])
     char hostname[MAX_COMPUTERNAME_LENGTH + 1];
   } r;
 
-  memset (&c, 0, sizeof (MD5_CTX));
+  memset (&r, 0, sizeof (r));
   MD5Init (&c);			/* memory usage stats */
   GlobalMemoryStatus (&r.m);	/* random system stats */
   GetSystemInfo (&r.s);		/* 100ns resolution (nominally) time of day */
@@ -2357,15 +2362,16 @@ get_random_info (unsigned char seed[16])
   struct
   {
     pid_t pid;
-    struct timeval t;
+    struct timeval tv;
     char hostname[257];
   } r;
 
-  memset (&c, 0, sizeof (MD5_CTX));
-  MD5Init (&c);
+  memset (&r, 0, sizeof (r));
   r.pid = getpid ();
-  gettimeofday (&r.t, (struct timezone *) 0);
+  gettimeofday (&r.tv, (struct timezone *) 0);
   gethostname (r.hostname, 256);
+
+  MD5Init (&c);
   MD5Update (&c, (unsigned char *) &r, sizeof (r));
   MD5Final (seed, &c);
 }
@@ -2562,7 +2568,7 @@ bif_md5_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_STRING == dtp || DV_RDF == dtp)
     str = bif_string_arg (qst, args, 1, "md5_update");
   else
-    str = bif_strses_arg (qst, args, 1, "md5_update");
+    str = (caddr_t)bif_strses_arg (qst, args, 1, "md5_update");
 
   string_to_md5ctx (&ctx, sctx);
   if (DV_STRING == dtp || DV_RDF == dtp)
@@ -4093,7 +4099,7 @@ bif_mime_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_mime_tree_ses (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t *ses = (dk_session_t *) bif_strses_arg (qst, args, 0, "mime_tree");
+  dk_session_t *ses = bif_strses_arg (qst, args, 0, "mime_tree");
   int rfc822 = 1;
   caddr_t result = NULL;
 
@@ -4135,7 +4141,7 @@ zlib_box_compress (caddr_t src, caddr_t * err_ret)
   uLongf dest_size_ret;
   caddr_t dest;
   caddr_t dest_tmp = (caddr_t) dk_alloc ((uint32) dest_size);
-  char *err_msg;
+  const char *err_msg;
   int rc;
   if (src_size & 0xff000000 || dest_size & 0xff000000)	/* sign error causes overflow */
     {
@@ -4158,7 +4164,7 @@ zlib_box_compress (caddr_t src, caddr_t * err_ret)
   dk_free (dest_tmp, dest_size);
   if (err_ret)
     {
-      char *state = "22000";
+      const char *state = "22000";
       switch (rc)
 	{
 	case Z_MEM_ERROR:
@@ -4543,7 +4549,7 @@ error:
 static caddr_t
 bif_gz_compress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_compress";
+  static const char *szMe = "gz_compress";
   caddr_t src = bif_string_arg (qst, args, 0, szMe);
   return zlib_box_compress (src, err_ret);
 }
@@ -4553,7 +4559,7 @@ static caddr_t
 bif_string_output_gz_compress (caddr_t * qst, caddr_t * err_ret,
     state_slot_t ** args)
 {
-  static char *szMe = "string_output_gz_compress";
+  static const char *szMe = "string_output_gz_compress";
   dk_session_t *ses = (dk_session_t *) bif_arg (qst, args, 0, szMe);
   dk_session_t *out = (dk_session_t *) bif_arg (qst, args, 1, szMe);
   dtp_t ses_dtp = DV_TYPE_OF (ses), out_dtp = DV_TYPE_OF (out);
@@ -4572,7 +4578,7 @@ bif_string_output_gz_compress (caddr_t * qst, caddr_t * err_ret,
 static caddr_t
 bif_gz_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_uncompress";
+  static const char *szMe = "gz_uncompress";
   caddr_t src = bif_string_arg (qst, args, 0, szMe);
   dk_session_t *out = (dk_session_t *) bif_arg (qst, args, 1, szMe);
 
@@ -4591,7 +4597,7 @@ extern int http_ses_size;
 static caddr_t
 bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gzip_uncompress";
+  static const char *szMe = "gzip_uncompress";
   caddr_t src = bif_arg (qst, args, 0, szMe);
   dk_session_t *out;
   dtp_t dtp = DV_TYPE_OF (src);
@@ -4613,7 +4619,7 @@ bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_compress_file";
+  static const char *szMe = "gz_compress_file";
   caddr_t fname = bif_string_arg (qst, args, 0, szMe);
   caddr_t dname = bif_string_arg (qst, args, 1, szMe);
   gzFile gz_fd = NULL;
@@ -4673,7 +4679,7 @@ bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_gz_uncompress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_uncompress_file";
+  static const char *szMe = "gz_uncompress_file";
   caddr_t dname = bif_string_arg (qst, args, 0, szMe);
   caddr_t fname = bif_string_arg (qst, args, 1, szMe);
   gzFile gz_fd = NULL;
@@ -4797,11 +4803,12 @@ bif_get_mailmsg_hf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 id_hash_t *http_ext_to_mime_type = NULL;
 
 
-char *
-ws_file_ctype (char *name)
+const char *
+ws_file_ctype (const char *name)
 {
-  char **ft, *dot = strrchr (name, '.'), szExtBuffer[20], *szPtr =
-      szExtBuffer;
+  const char *dot = strrchr (name, '.');
+  char szExtBuffer[20], *szPtr = szExtBuffer;
+  const char * const *ft;
   int inx;
   if (http_ext_to_mime_type)
     {
@@ -4810,7 +4817,7 @@ ws_file_ctype (char *name)
       for (inx = 0; inx < sizeof (szExtBuffer) - 1 && name[inx]; inx++)
 	szExtBuffer[inx] = tolower (name[inx]);
       szExtBuffer[inx] = 0;
-      ft = (char **) id_hash_get (http_ext_to_mime_type, (caddr_t) & szPtr);
+      ft = (const char * const *) id_hash_get (http_ext_to_mime_type, (caddr_t) & szPtr);
       if (ft)
 	return *ft;
     }
@@ -4822,8 +4829,9 @@ static caddr_t
 bif_http_mime_type_add (caddr_t * qst, caddr_t * err_ret,
     state_slot_t ** args)
 {
-  char *szMe = "http_mime_type_add", *ptr;
-  caddr_t ext = bif_string_arg (qst, args, 0, szMe);
+  const char *szMe = "http_mime_type_add";
+  char *ptr;
+  caddr_t ext = bif_string_or_uname_arg (qst, args, 0, szMe);
   caddr_t mime_type = bif_string_or_null_arg (qst, args, 1, szMe);
 
   if (!http_ext_to_mime_type)
@@ -4848,8 +4856,8 @@ bif_http_mime_type_add (caddr_t * qst, caddr_t * err_ret,
 static caddr_t
 bif_http_mime_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *szMe = "http_mime_type";
-  caddr_t ext = bif_string_arg (qst, args, 0, szMe);
+  const char *szMe = "http_mime_type";
+  caddr_t ext = bif_string_or_uname_arg (qst, args, 0, szMe);
   char *mime_type = ws_file_ctype (ext);
 
   return box_dv_short_string (mime_type);
@@ -6131,7 +6139,7 @@ fiop_release (caddr_t box)
   if (NULL != fiod->fiod_mutex)
     mutex_enter (fiod->fiod_mutex);
   if (0 >= fiod->fiod_refctr)
-    GPF_T1 ("filep_destroy: nonpositive refctr");
+    GPF_T1 ("filep_destroy: non-positive refctr");
   if (--(fiod->fiod_refctr))
 {
       if (NULL != fiod->fiod_mutex)
@@ -6157,7 +6165,7 @@ fiop_copy (caddr_t box)
   if (NULL != fiod->fiod_mutex)
     mutex_enter (fiod->fiod_mutex);
   if (0 >= fiod->fiod_refctr)
-    GPF_T1 ("filep_copy: nonpositive refctr");
+    GPF_T1 ("filep_copy: non-positive refctr");
   fiod->fiod_refctr++;
   if (NULL != fiod->fiod_mutex)
     mutex_leave (fiod->fiod_mutex);
@@ -6414,7 +6422,7 @@ signal_error:
 caddr_t
 bif_read_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * ses = (dk_session_t *) bif_strses_arg (qst, args, 0, "read_object");
+  dk_session_t * ses = bif_strses_arg (qst, args, 0, "read_object");
   return PrpcReadObject (ses);
 }
 
@@ -6868,7 +6876,7 @@ signal_error:
 static caddr_t
 bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "unzip_file";
+  static const char *szMe = "unzip_file";
   caddr_t fname = bif_string_arg (qst, args, 0, szMe);
   caddr_t zname = bif_string_arg (qst, args, 1, szMe);
   caddr_t fname_cvt;
@@ -6933,7 +6941,7 @@ err_end:
 static caddr_t
 bif_unzip_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "unzip_list";
+  static const char *szMe = "unzip_list";
   caddr_t fname = bif_string_arg (qst, args, 0, szMe);
   unzFile uf;
   uint32 i;
@@ -7117,7 +7125,7 @@ int csv_field_escapes = 1;
 caddr_t
 bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t *in = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_csv_row");
+  dk_session_t *in = bif_strses_arg (qst, args, 0, "get_csv_row");
   dk_set_t row = NULL;
   dk_session_t *fl;
   caddr_t res = NULL;
@@ -7343,14 +7351,14 @@ end:
       if (signal_error)
 	*err_ret = srv_make_new_error ("37000", "CSV04", "Error parsing CSV row, error code: %d", error);
     }
-  dk_free_box (fl);
+  dk_free_box ((caddr_t)fl);
   return res;
 }
 
 caddr_t
 bif_get_plaintext_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * ses = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_plaintext_row");
+  dk_session_t * ses = bif_strses_arg (qst, args, 0, "get_plaintext_row");
   char buf_on_stack[4096];
   char *buf = buf_on_stack;
   int buf_size = sizeof (buf_on_stack);

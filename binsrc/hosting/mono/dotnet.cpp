@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,8 @@
 
 #define uint16  unsigned short
 #define uint8   unsigned char
+
+#include <winsock2.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -248,9 +250,9 @@ static void virt_com_error (HRESULT hr, char * err_no, char * proc_name,  EXCEPI
 	}
       else if ((hr == DISP_E_EXCEPTION) && einfo_ptr && einfo_ptr->bstrDescription)
 	{
-	  sqlr_new_error ("42000", err_no, "Com exception in %s : %sr", proc_name,
-			  CW2A(einfo_ptr->bstrDescription));
-	}
+		  sqlr_new_error("42000", err_no, "Com exception in %s : %sr", proc_name,
+			  (LPCSTR)CW2A(einfo_ptr->bstrDescription));
+	  }
       else
 	sqlr_new_error ("42000", err_no, "Com error in %s %x : Unknown error", proc_name, hr);
 }

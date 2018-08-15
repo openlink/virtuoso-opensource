@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -98,7 +98,6 @@ lin_int (lin_int_t * li, float x)
 
 void dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * overhead_ret, locus_t *loc);
 #define ABS(x) (x < 0 ? -(x) : x)
-#define IS_OV(f) (NAN == (f) || -NAN == (f) || INFINITY == (f) || -INFINITY == (f))
 
 int float_is_ov (float f);
 
@@ -943,7 +942,7 @@ sqlo_rq_g_in_check (df_elt_t * in_tb, df_elt_t ** in_list)
   df_elt_t * s_pred, *o_pred;
   int n_in = BOX_ELEMENTS(in_list) - 1;
   dbe_table_t * tb;
-  if (!in_tb)
+  if (!in_tb || in_tb->dfe_type != DFE_TABLE)
     return n_in;
   tb  = in_tb->_.table.ot->ot_table;
   if (!tb_is_rdf_quad (tb))
@@ -1470,14 +1469,14 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
   lc_next (lc);
   cnt = unbox (lc_nth_col (lc, 0));
   s_cnt = unbox (lc_nth_col (lc, 1));
-  lc_free (lc);
+  LC_FREE (lc);
   err = qr_rec_exec (o_qr, cli, &lc, CALLER_LOCAL, NULL, 1, ":0", box_copy (p), QRP_RAW);
   if (err)
     goto err;
   lc_next (lc);
   o_cnt = unbox (lc_nth_col (lc, 1));
-  lc_free (lc);
  err:
+  LC_FREE (lc);
   if (entered)
     {
       IN_TXN;
@@ -1704,6 +1703,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
       else
 	goto err;
       lc_free (lc);
+      lc = NULL;
     }
   if (NULL != ext_fti)
     err = qr_rec_exec (call2, cli, &lc, CALLER_LOCAL, NULL, 3,
@@ -1729,8 +1729,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
     }
   return ct;
  err:
-  if (lc)
-    lc_free (lc);
+  LC_FREE(lc);
   cli->cli_user = usr;
   cli->cli_anytime_started = at_start;
   cli->cli_rpc_timeout = rpc_timeout;
@@ -4208,7 +4207,9 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       ic->ic_leading_constants = dfe->_.table.is_arity_sure = inx_const_fill * 2 + (0 != p_stat);
     no_sample: ;
     }
+#ifndef NDEBUG
   if (-INFINITY == inx_arity) bing ();
+#endif
   if (enable_vec_cost)
     inx_cost = dfe_vec_inx_cost (dfe, ic, inx_sample);
   if (unique && ic->ic_ric)
@@ -4323,7 +4324,9 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
   dfe->dfe_arity = *a1 = total_arity;
   dfe->dfe_unit = *u1 = total_cost;
-  if (IS_OV (dfe->dfe_unit) || IS_OV (dfe->dfe_arity)) bing ();
+#ifndef NDEBUG
+  if (!isfinite (dfe->dfe_unit) || !isfinite (dfe->dfe_arity)) bing ();
+#endif
   if (IC_AS_IS != ic->ic_op && ic->ic_ric && empty_ric != ic->ic_ric)
     sqlo_try_inf_filter (dfe, ic);
 }
@@ -4740,7 +4743,9 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       *a1 = 1;
       break;
     }
-  if (IS_OV (*a1) || IS_OV (*u1)) bing ();
+#ifndef NDEBUG
+  if (!isfinite (*a1) || !isfinite (*u1)) bing ();
+#endif
   dfe->dfe_unit = *u1;
   dfe->dfe_arity = *a1;
 }
@@ -4757,7 +4762,9 @@ dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * over
       DO_BOX (df_elt_t *, elt, inx, dfe_arr)
 	{
 	  dfe_unit_cost (elt, 1, &u1, &a1, overhead_ret);
-	  if (IS_OV (a1 * arity) || IS_OV (u1 + cum)) bing ();
+#ifndef NDEBUG
+	  if (!isfinite (a1 * arity) || !isfinite (u1 + cum)) bing ();
+#endif
 	  if ((DFE_TABLE == elt->dfe_type || DFE_DT == elt->dfe_type)
 	      && elt->dfe_locus)
 	    {

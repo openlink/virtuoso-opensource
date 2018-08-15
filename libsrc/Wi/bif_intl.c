@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1302,7 +1302,7 @@ bif_intl_init (void)
   bif_define_ex ("collation_order_string", bif_collation_order_string, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("rdf_collation_order_string", bif_rdf_collation_order_string, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("current_charset", bif_current_charset, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-  bif_define_ex ("charset_recode", bif_charset_recode, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("charset_recode", bif_charset_recode, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("bf_text_to_UTF8", bif_bf_text_to_UTF8, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("bf_text_to_UTF8_or_wide", bif_bf_text_to_UTF8_or_wide, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("uname", bif_uname);

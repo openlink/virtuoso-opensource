@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -905,7 +905,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	else
 	  {
 	    op_table_t * ot = NULL;
-	    if (!with_view && !sec_tb_check (tb, (oid_t) unbox (tree->_.table.u_id), (oid_t) unbox (tree->_.table.u_id), GR_SELECT))
+	    if (!with_view && !sec_tb_check (tb, (oid_t) unbox (tree->_.table.g_id), (oid_t) unbox (tree->_.table.u_id), GR_SELECT))
 	      sqlc_new_error (so->so_sc->sc_cc, "42000", "SQ070:SECURITY", "Must have select privileges on view %s", tb->tb_name);
 	    view = (ST*) t_box_copy_tree ((caddr_t) view);
 	    if (ST_P (view, UNION_ST) ||
@@ -2872,6 +2872,12 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	    SEL_SET_DISTINCT (tree, 0)
 	}
     }
+  if (SEL_IS_DISTINCT (tree) &&
+      texp && !texp->_.table_exp.group_by &&
+      dk_set_length (ot->ot_fun_refs) == 1 &&
+      ((sql_tree_t *) ot->ot_fun_refs->data)->_.fn_ref.fn_code >= AMMSC_AVG &&
+      ((sql_tree_t *) ot->ot_fun_refs->data)->_.fn_ref.fn_code <= AMMSC_COUNTSUM)
+    SEL_SET_DISTINCT (tree, 0)
 
   if (texp && texp->_.table_exp.where)
     texp->_.table_exp.where = sqlo_bop_expand_or_exp (so, texp->_.table_exp.where);

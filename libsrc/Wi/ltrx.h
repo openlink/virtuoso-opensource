@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -467,7 +467,7 @@ typedef struct page_lock_s
 #define PL_FINISHING ((dp_addr_t)-2)
 
 #define ITC_PREFER_PAGE_LOCK(itc) \
-  ((itc)->itc_n_lock_escalations > 2 || lock_escalation_pct < 0)
+  (!(itc)->itc_is_col && ((itc)->itc_n_lock_escalations > 2 || lock_escalation_pct < 0))
 
 
 
@@ -554,9 +554,15 @@ void lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf,
 
 void lt_killall (lock_trx_t * lt, int lte);
 int lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf);
-lock_trx_t * lt_start_inner (int cpt_wait);
 EXE_EXPORT (lock_trx_t *, lt_start, (void));
-lock_trx_t * lt_start_outside_map (void);
+lock_trx_t * DBG_NAME(lt_start_inner) (DBG_PARAMS  int cpt_wait);
+lock_trx_t * DBG_NAME(lt_start_outside_map) (DBG_PARAMS_0);
+#ifdef MALLOC_DEBUG
+extern lock_trx_t * DBG_NAME(lt_start) (DBG_PARAMS_0);
+#define lt_start() dbg_lt_start (__FILE__, __LINE__)
+#define lt_start_inner(cpt_wait) dbg_lt_start_inner (__FILE__, __LINE__, (cpt_wait))
+#define lt_start_outside_map() dbg_lt_start_outside_map (__FILE__, __LINE__)
+#endif
 EXE_EXPORT (int, lt_commit, (lock_trx_t * lt, int free_trx));
 EXE_EXPORT (int, lt_commit_cl_local_only, (lock_trx_t * lt));
 EXE_EXPORT (void, lt_rollback, (lock_trx_t * lt, int free_trx));
@@ -922,5 +928,5 @@ int lt_log_merge (lock_trx_t * lt, int in_txn);
 #define NO_LOCK_LT ((lock_trx_t*)-1L)
 
 int ltbing (int s);
-#endif /* _LTRX_H */
 void ltbing2 ();
+#endif /* _LTRX_H */

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1120,7 +1120,7 @@ fetch_again:
     caddr_t err = subq_handle_reset (qi, reset_code);
     POP_QR_RESET;
     /*log_error ("RDF CB COMPLETE: %s %s", ERR_STATE (err), ERR_MESSAGE (err)); */
-    if (ARRAYP (err) && !strcmp (ERR_STATE (err), "40001"))
+    if (ERROR_REPORT_P (err) && !strcmp (ERR_STATE (err), "40001"))
       {
 	dk_free_tree (err);
 	err = NULL;
@@ -1389,7 +1389,7 @@ char *dp_no_err =
     "create procedure dpipe_define_no_err (in DP_NAME any, in DP_PART_TABLE any, in DP_PART_KEY any, in DP_SRV_PROC any, in DP_IS_UPD any, in DP_CALL_PROC any, in DP_CALL_BIF any, in DP_EXTRA any)\n"
     "{\n"
     "  declare exit handler for sqlstate '*' {\n"
-    "   log_message (sprintf ('error in dpipe init %s %s', __sql_state, __sql_message)); return;\n"
+    "   log_message (sprintf ('error in dpipe init %s %s', __SQL_STATE, __SQL_MESSAGE)); return;\n"
     "};\n"
     "dpipe_define_1 (DP_NAME, DP_PART_TABLE, DP_PART_KEY, DP_SRV_PROC, DP_IS_UPD, DP_CALL_PROC, DP_CALL_BIF, DP_EXTRA);\n" "}\n";
 

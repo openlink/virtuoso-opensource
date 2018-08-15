@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3280,6 +3280,7 @@ setp_copy_if_constant (sql_comp_t * sc, setp_node_t * setp, state_slot_t * ssl)
       dk_set_push (&setp->setp_const_gb_values, (void*)ssl);
       return ssl2;
     }
+  ssl->ssl_always_vec = 1;
   return ssl;
 }
 
@@ -5095,7 +5096,7 @@ sqlg_handle_select_list (sqlo_t *so, df_elt_t * dfe, data_source_t ** head,
   sqlc_select_strip_as ((ST **) selection, (caddr_t***) &as_temp, 0);
   sc->sc_select_as_list = (ST**) t_box_copy_tree ((caddr_t) as_temp);
   if (target_names && BOX_ELEMENTS (selection) != BOX_ELEMENTS (target_names))
-    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ142", "Different number of expected and generated columns in a select");
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ142", "Different number of expected and generated columns in a select (%d vs %d)", BOX_ELEMENTS(selection), BOX_ELEMENTS(target_names));
 
   DO_BOX (ST *, exp, inx, tree->_.select_stmt.selection)
     {
@@ -5437,7 +5438,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		if (dfe->dfe_tree)
 		  {
 		    caddr_t name = dfe->dfe_tree->_.call.name;
-		  if (IS_POINTER (name) && !stricmp (name, GROUPING_FUNC) && so->so_sc->sc_grouping)
+		  if (DV_STRINGP (name) && !stricmp (name, GROUPING_FUNC) && so->so_sc->sc_grouping)
 		      {
 		        ptrlong bitmap = 0;
 			dfe->dfe_tree->_.call.params[2] = (ST*) t_box_num (so->so_sc->sc_grouping->ssl_index);

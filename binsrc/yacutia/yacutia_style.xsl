@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -19,11 +19,10 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <!--
   Virtuoso Conductor XSL style-sheet for page macros
-  (C)Copyright 2005-2016 OpenLink Software
+  Copyright (C) 2005-2018 OpenLink Software
 -->
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -88,7 +87,7 @@
     </xsl:choose>
   </xsl:element>
   <xsl:apply-templates select="node()|processing-instruction()" />
-  <div id="copyright_ctr">Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+  <div id="copyright_ctr">&amp;nbsp;Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:pagewrapper">
@@ -267,13 +266,13 @@
     </table> <!-- RC -->
   </td>
 </tr>
-      <tr>
+<tr id="FT">
 	<td id="copyright_ctr" colspan="2">
 	  <!-- Virtuoso Universal Server <?V sys_stat ('st_dbms_ver') ?> -->
 	  Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software
 	  &amp;nbsp;
 	</td>
-      </tr>
+</tr>
   </table> <!-- MT -->
 </xsl:template>
 
@@ -634,14 +633,14 @@ http(sprintf('<xsl:for-each select="text">
   </label>
 </xsl:template>
 
-<xsl:template match="vm:tabCaption">
+<xsl:template match="vm:tabCaption2">
   <div>
     <xsl:if test="@hide">
       <xsl:attribute name="style">display: none;</xsl:attribute>
     </xsl:if>
     <xsl:attribute name="id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
     <xsl:attribute name="class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
-    <xsl:attribute name="onclick">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+    <xsl:attribute name="onclick">javascript:WEBDAV.showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
     <xsl:value-of select="@caption"/>
   </div>
 </xsl:template>

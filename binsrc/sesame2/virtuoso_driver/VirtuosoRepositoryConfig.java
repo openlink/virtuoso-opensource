@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,7 @@ import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.ROUNDROBIN
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.RULESET;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
+import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.USE_DEF_GRAPH_FOR_QUERIES;
 
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
@@ -67,6 +68,8 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 	private int batchSize = 5000;
 
 	private boolean insertBNodeAsVirtuosoIRI = false;
+
+	private boolean useDefGraphForQueries = false;
 
 	public VirtuosoRepositoryConfig() {
 		super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -166,6 +169,15 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 	}
 
 	
+	public void setUseDefGraphForQueries(boolean v) {
+		this.useDefGraphForQueries = v;
+	}
+
+	public boolean getUseDefGraphForQueries() {
+		return this.useDefGraphForQueries;
+	}
+	
+
 	@Override
 	public void validate()
 		throws RepositoryConfigException
@@ -210,6 +222,8 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 		graph.add(implNode, BATCHSIZE, vf.createLiteral(Integer.toString(batchSize,10)));
 
 		graph.add(implNode, INSERTBNodeAsVirtuosoIRI, vf.createLiteral(new Boolean(insertBNodeAsVirtuosoIRI).toString()));
+
+		graph.add(implNode, USE_DEF_GRAPH_FOR_QUERIES, vf.createLiteral(new Boolean(useDefGraphForQueries).toString()));
 
 		return implNode;
 	}
@@ -260,6 +274,10 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 			Literal bnodeAsUri = GraphUtil.getOptionalObjectLiteral(graph, implNode, INSERTBNodeAsVirtuosoIRI);
 			if (bnodeAsUri != null) {
 				setInsertBNodeAsVirtuosoIRI(Boolean.parseBoolean(bnodeAsUri.getLabel()));
+			}
+			Literal useDefGraphForQueries = GraphUtil.getOptionalObjectLiteral(graph, implNode, USE_DEF_GRAPH_FOR_QUERIES);
+			if (useDefGraphForQueries != null) {
+				setUseDefGraphForQueries(Boolean.parseBoolean(useDefGraphForQueries.getLabel()));
 			}
 
 		}

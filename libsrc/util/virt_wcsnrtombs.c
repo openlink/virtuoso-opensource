@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 #include "libutil.h"
 
 size_t
-virt_wcsnrtombs (unsigned char * dst, wchar_t ** src, size_t nwc, size_t len, virt_mbstate_t *ps)
+virt_wcsnrtombs (unsigned char * dst, const wchar_t ** src, size_t nwc, size_t len, virt_mbstate_t *ps)
 {
   size_t written = 0;
   wchar_t *run = src[0];

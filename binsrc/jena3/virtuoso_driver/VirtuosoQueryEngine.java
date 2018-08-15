@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -50,7 +50,7 @@ import org.apache.jena.sparql.engine.binding.BindingMap;
 import org.apache.jena.sparql.engine.main.QueryEngineMain;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.util.Context;
-import org.apache.jena.sparql.util.Utils;
+import org.apache.jena.atlas.lib.Lib ;
 import org.apache.jena.atlas.io.IndentedWriter;
 
 
@@ -78,7 +78,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
         String query = fixQuery(eQuery.toString(), initial, vg);
 
         try {
-            java.sql.Statement stmt = vg.createStatement();
+            java.sql.Statement stmt = vg.createStatement(false);
             java.sql.ResultSet rs = stmt.executeQuery(query);
             return (QueryIterator) new VQueryIterator(vg, stmt, rs);
         } catch (Exception e) {
@@ -141,13 +141,12 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
     private String fixQuery(String query, Binding args, VirtGraph vg) {
         StringBuilder sb = new StringBuilder("sparql\n ");
 
-        vg.appendSparqlPrefixes(sb);
+        vg.appendSparqlPrefixes(sb, true);
 
         if (!vg.getReadFromAllGraphs())
             sb.append(" define input:default-graph-uri <" + vg.getGraphName() + "> \n");
 
         sb.append(substBindings(query, args));
-
         return sb.toString();
     }
 
@@ -155,15 +154,15 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
     @Override
     protected Op modifyOp(Op op) {
         // Extension point: possible place to alter the algebra expression.
-        // Alternative to eval(). 
+        // Alternative to eval().
         op = super.modifyOp(op);
         return op;
     }
 
-    // ---- Registration of the factory for this query engine class. 
+    // ---- Registration of the factory for this query engine class.
 
     // Query engine factory.
-    // Call VirtQueryEngine.register() to add to the global query engine registry. 
+    // Call VirtQueryEngine.register() to add to the global query engine registry.
 
     static QueryEngineFactory factory = new VirtQueryEngineFactory();
 
@@ -246,7 +245,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
 
 
         public void output(IndentedWriter out, SerializationContext sCxt) {
-            out.print(Utils.className(this));
+            out.print(Lib.className(this));
         }
 
         protected boolean hasNextBinding() {
@@ -344,4 +343,3 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
     }
 
 }
-

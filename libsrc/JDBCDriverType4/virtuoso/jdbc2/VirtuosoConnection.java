@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -117,10 +117,13 @@ public class VirtuosoConnection implements Connection
 
 #ifdef SSL
    // The SSL parameters
+   private String cert_alias;
    private String keystore_path, keystore_pass;
    private String truststore_path, truststore_pass;
    private String ssl_provider;
+   private boolean use_ssl;
 #endif
+   private String con_delegate;
 
    // The transaction isolation
    private int trxisolation = Connection.TRANSACTION_REPEATABLE_READ;
@@ -294,7 +297,7 @@ public class VirtuosoConnection implements Connection
       {
 	charset = (String)prop.get("charset");
 	//System.out.println ("VirtuosoConnection " + charset);
-	if (charset.indexOf("UTF-8") != -1) // special case all will go as UTF-8
+	if (charset.toUpperCase().indexOf("UTF-8") != -1) // special case all will go as UTF-8
 	{
 	    this.charset = null;
 	    this.charset_utf8 = true;
@@ -307,29 +310,32 @@ public class VirtuosoConnection implements Connection
       password = (String)prop.get("password");
       if (password == null)
          password = "";
-      if (prop.get("timeout") != null)
-	 timeout = Integer.parseInt(prop.getProperty("timeout"))*1000;
+
+      timeout = getIntAttr(prop, "timeout", timeout)*1000;
       pwdclear = (String)prop.get("pwdclear");
-      if(prop.get("sendbs") != null)
-	  sendbs = Integer.parseInt(prop.getProperty("sendbs"));
+
+      sendbs = getIntAttr(prop, "sendbs", sendbs);
       if (sendbs <= 0)
           sendbs = 32768;
-      if(prop.get("recvbs") != null)
-          recvbs = Integer.parseInt(prop.getProperty("recvbs"));
+
+      recvbs = getIntAttr(prop, "recvbs", recvbs);
       if (recvbs <= 0)
           recvbs = 32768;
-      if (prop.get("fbs") != null)
-          fbs = Integer.parseInt(prop.getProperty("fbs"));
+
+      fbs = getIntAttr(prop, "fbs", fbs);
       if (fbs <= 0)
           fbs = VirtuosoTypes.DEFAULTPREFETCH;;
       //System.err.println ("3PwdClear is " + pwdclear);
 #ifdef SSL
-      truststore_path = (String)prop.get("certificate");
-      truststore_pass = (String)prop.get("certificatepass");
+      truststore_path = (String)prop.get("truststorepath");
+      truststore_pass = (String)prop.get("truststorepass");
       keystore_pass = (String)prop.get("keystorepass");
       keystore_path = (String)prop.get("keystorepath");
       ssl_provider = (String)prop.get("provider");
+      cert_alias = (String)prop.get("cert");
+      use_ssl = getBoolAttr(prop, "ssl", false);
 #endif
+      con_delegate = (String)prop.get("delegate");
       if(pwdclear == null)
          pwdclear = "0";
       //System.err.println ("4PwdClear is " + pwdclear);
@@ -460,10 +466,20 @@ public class VirtuosoConnection implements Connection
       }
 
       // Set database with statement
-      if(db!=null) new VirtuosoStatement(this).executeQuery("use "+db);
+      if(db!=null) 
+        try {
+          new VirtuosoStatement(this).executeQuery("use "+db);
+        } catch (VirtuosoException ve) {
+          throw new VirtuosoException(ve, "Could not execute 'use "+db+"'", VirtuosoException.SQLERROR);
+        }
+
       //System.out.println  ("log enable="+log_enable);
       if (log_enable >= 0 && log_enable <= 3)
-        new VirtuosoStatement(this).executeQuery("log_enable ("+log_enable+")");
+        try {
+          new VirtuosoStatement(this).executeQuery("log_enable ("+log_enable+")");
+        } catch (VirtuosoException ve) {
+          throw new VirtuosoException(ve, "Could not execute 'log_enable("+log_enable+")'", VirtuosoException.SQLERROR);
+        }
    }
 
 
@@ -482,6 +498,31 @@ public class VirtuosoConnection implements Connection
        return deflt;
      }
 
+   private Object[] fill_login_info_array ()
+   {
+       Object[] ret = new Object[7];
+       ret[0] = new String ("JDBC");
+       ret[1] = new Integer (0);
+       ret[2] = new String ("");
+       ret[3] = System.getProperty("os.name");
+       ret[4] = new String ("");
+       ret[5] = new Integer (0);
+       //System.out.println (con_delegate);
+       ret[6] = new String (con_delegate != null ? con_delegate : "");
+       return ret;
+   }
+
+
+#ifdef SSL
+    private Collection getCertificates(InputStream fis)
+    	throws CertificateException
+    {
+        CertificateFactory cf;
+        cf = CertificateFactory.getInstance("X.509");
+        return cf.generateCertificates(fis);
+    }
+#endif
+
    /**
     * Connect to the Virtuoso database and set streams.
     *
@@ -492,72 +533,79 @@ public class VirtuosoConnection implements Connection
     */
   private void connect(String host, int port, int sendbs, int recvbs) throws VirtuosoException
    {
+      String fname = null;
       try
       {
          // Establish the connection
 #ifdef SSL
-	if(truststore_path != null)
+        if(use_ssl || truststore_path != null || keystore_path != null)
 	  {
 	    //System.out.println ("Will do SSL");
-	    if(ssl_provider != null && ssl_provider.length() != 0)
-	      {
+               if (ssl_provider != null && ssl_provider.length() != 0) {
 		//System.out.println ("SSL Provider " + ssl_provider);
 		Security.addProvider((Provider)(Class.forName(ssl_provider).newInstance()));
 	      }
-	    else
-	      java.security.Security.addProvider(new com.sun.net.ssl.internal.ssl.Provider());
 
-	    if(truststore_path.length() == 0)
-	      {
-		/* Connection without authentication  */
-		System.setProperty ("java.protocol.handler.pkgs", "com.sun.net.ssl.internal.www.protocol");
-		/*javax.net.ssl.SSLSocketFactory sf =
-		    (javax.net.ssl.SSLSocketFactory) javax.net.ssl.SSLSocketFactory.getDefault();*/
-		/*javax.net.ssl.SSLSocket sock = null;*/
-		//System.out.println ("init(): Creating derived X509TrustManager");
-
-		X509TrustManager tm = new MyX509TrustManager();
+               SSLContext ssl_ctx = SSLContext.getInstance("TLS");
+               X509TrustManager tm = new VirtX509TrustManager();
 		KeyManager []km = null;
-		TrustManager []tma = {
-		  tm
-		};
+               TrustManager[] tma = null;
+               KeyStore tks = null;
 
-		//System.out.println ("init(): Calling SSLContext.getInstance");
-		SSLContext sc = SSLContext.getInstance("TLS");
-		//System.out.println ("init(): Calling sc.init");
-		sc.init(km,tma,new java.security.SecureRandom());
-		//System.out.println ("init(): Calling sc.getSocketFactory");
-		SSLSocketFactory sf1 = sc.getSocketFactory();
-		//System.out.println ("No auth conn");
-		socket = sf1.createSocket(host, port);
-		//System.out.println ("after create sock");
+               if (truststore_path.length() > 0) {
+                   InputStream fis = null;
+                   String keys_pwd = (truststore_pass != null) ? truststore_pass : "";
+                   String alg = TrustManagerFactory.getDefaultAlgorithm();
+                   TrustManagerFactory tmf = TrustManagerFactory.getInstance(alg);
+
+                   tks = KeyStore.getInstance("JKS");
+
+                   try {
+                     fname = truststore_path;
+                     fis = new FileInputStream(truststore_path);
+
+                     if (truststore_path.endsWith(".pem") || truststore_path.endsWith(".crt") || truststore_path.endsWith(".p7b"))
+                       {
+                         tks.load(null);
+                         Collection certs = getCertificates(fis);
+                         if (certs!=null)
+                           {
+                             int i=0;
+                             for(Iterator it=certs.iterator(); it.hasNext();)
+                             {
+                               tks.setCertificateEntry("cert"+i, (java.security.cert.Certificate) it.next());
+                               i++;
+                             }
+                           }
 	      }
 	    else
-	      {
-		//System.out.println ("Auth conn " + keystore_cert);
-		/* Connection with authentication  */
-		KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-		SSLContext ssl_ctx = SSLContext.getInstance("TLS");
-		KeyStore ks = KeyStore.getInstance("JKS");
+                       tks.load(fis, keys_pwd.toCharArray());
 
-		ks.load(new FileInputStream((keystore_path!=null) ? keystore_path : System.getProperty("user.home") + System.getProperty("file.separator") + ".keystore"),
-		    (keystore_pass!= null) ? keystore_pass.toCharArray() : new String("").toCharArray());
-		kmf.init(ks, (keystore_pass!= null) ? keystore_pass.toCharArray() : new String("").toCharArray());
+                   } finally {
+                     if (fis!=null)
+                       fis.close();
+                   }
 
-                String alg=TrustManagerFactory.getDefaultAlgorithm();
-                TrustManagerFactory tmf=TrustManagerFactory.getInstance(alg);
     
-                ks=KeyStore.getInstance("JKS");
-                ks.load(new FileInputStream(truststore_path), 
-                    (truststore_pass!= null) ? truststore_pass.toCharArray() : new String("").toCharArray());
-                tmf.init(ks);
+                   tmf.init(tks);
+                   tma = tmf.getTrustManagers();
+               } else {
+                   tma = new TrustManager[]{tm};
+               }
 
-		ssl_ctx.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+               if (keystore_path.length() > 0 && keystore_pass.length() > 0) {
+                   String keys_file = (keystore_path != null) ? keystore_path : System.getProperty("user.home") + System.getProperty("file.separator");
+                   String keys_pwd = (keystore_pass != null) ? keystore_pass : "";
 
-		socket = ((SSLSocketFactory)ssl_ctx.getSocketFactory()).createSocket(host, port);
+                   fname = keys_file;
+                   km = new KeyManager[]{new VirtX509KeyManager(cert_alias, keys_file, keys_pwd, tks)};
 	      }
-	    /* Begin the handshake client/server  */
+
+               ssl_ctx.init(km, tma, new SecureRandom());
+
+               socket = ((SSLSocketFactory) ssl_ctx.getSocketFactory()).createSocket(host, port);
 	    ((SSLSocket)socket).startHandshake();
+
 	  }
 	else
 #endif
@@ -598,7 +646,7 @@ public class VirtuosoConnection implements Connection
 	     // Remove the future reference
 	     removeFuture(future);
 	     // RPC login
-	     Object[] args = new Object[3];
+	     Object[] args = new Object[4];
 	     args[0] = user;
 	     //System.err.println ("5PwdClear is " + pwdclear);
 	     if (pwdclear != null && pwdclear.equals ("cleartext"))
@@ -620,9 +668,10 @@ public class VirtuosoConnection implements Connection
 
 
 	     args[2] = VirtuosoTypes.version;
+	     args[3] = new openlink.util.Vector (fill_login_info_array ());
 	     future = getFuture(VirtuosoFuture.scon,args, this.timeout);
 	     result_future = (openlink.util.Vector)future.nextResult();
-	     // Check if it's a login answer
+	     // Check if it is a login answer
 	     if(!(result_future.firstElement() instanceof Short))
 	       {
 		 result_future = (openlink.util.Vector)result_future.firstElement();
@@ -745,9 +794,13 @@ public class VirtuosoConnection implements Connection
       {
          throw new VirtuosoException("Class not found: " + e.getMessage(),VirtuosoException.MISCERROR);
       }
+      catch(FileNotFoundException e)
+      {
+         throw new VirtuosoException("Connection failed: "+ e.getMessage(),VirtuosoException.IOERROR);
+      }
       catch(IOException e)
       {
-         throw new VirtuosoException("Connection failed: " + e.getMessage(),VirtuosoException.IOERROR);
+         throw new VirtuosoException("Connection failed: ["+(fname!=null?fname:"")+"] "+e.getMessage(),VirtuosoException.IOERROR);
       }
 #ifdef SSL
       catch(ClassNotFoundException e)
@@ -780,7 +833,7 @@ public class VirtuosoConnection implements Connection
       }
       catch(UnrecoverableKeyException e)
       {
-         throw new VirtuosoException("Encryption failed: " + e.getMessage(),VirtuosoException.MISCERROR);
+         throw new VirtuosoException("Encryption failed: ["+(fname!=null?fname:"") +"]" + e.getMessage(),VirtuosoException.MISCERROR);
       }
 #endif
    }
@@ -2176,7 +2229,7 @@ public class VirtuosoConnection implements Connection
 
       if (elements == null)
           return null;
-      return new VirtuosoArray(typeName, elements);
+      return new VirtuosoArray(this, typeName, elements);
   }
 
 /**
@@ -2632,7 +2685,7 @@ public class VirtuosoConnection implements Connection
 }
 
 #ifdef SSL
-class MyX509TrustManager implements X509TrustManager
+class VirtX509TrustManager implements X509TrustManager
 {
 
   public boolean isClientTrusted(java.security.cert.X509Certificate[] chain)
@@ -2676,4 +2729,113 @@ class MyX509TrustManager implements X509TrustManager
     }
 #endif
 }
+
+
+class VirtX509KeyManager extends X509ExtendedKeyManager {
+
+    X509KeyManager defaultKeyManager;
+    String defAlias;
+    KeyStore tks;
+    ArrayList<X509Certificate> certs = new ArrayList<X509Certificate>(32);
+
+
+    public VirtX509KeyManager(String cert_alias, String keys_file, String keys_pwd, KeyStore tks)
+            throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException, UnrecoverableKeyException
+    {
+        KeyManager[] km;
+        KeyStore ks;
+
+        if (keys_file.endsWith(".p12") || keys_file.endsWith(".pfx"))
+            ks = KeyStore.getInstance("PKCS12");
+        else
+            ks = KeyStore.getInstance("JKS");
+
+        InputStream is = null;
+        try {
+          is = new FileInputStream(keys_file);
+          ks.load(is, keys_pwd.toCharArray());
+        } finally {
+          if (is!=null)
+            is.close();
+        }
+
+        if (cert_alias == null)
+          {
+            String alias = null;
+            Enumeration<String> en = ks.aliases();
+            while(en.hasMoreElements()) {
+                alias = en.nextElement();
+                ks.isKeyEntry(alias);
+                break;
+            }
+            defAlias = alias;
+          }
+        else
+          {
+            if (!ks.containsAlias(cert_alias))
+              throw new KeyStoreException("Could not found alias:["+cert_alias+"] in KeyStore :"+keys_file);
+            defAlias = cert_alias;
+          }
+
+        certs.add((X509Certificate) ks.getCertificate(defAlias));
+
+        if (tks!=null) {
+            for(Enumeration<String> en = tks.aliases(); en.hasMoreElements(); ) {
+                String alias = en.nextElement();
+                certs.add((X509Certificate) tks.getCertificate(alias));
+            }
+        }
+
+        KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
+        kmf.init(ks, keys_pwd.toCharArray());
+        defaultKeyManager = (X509KeyManager)kmf.getKeyManagers()[0];
+    }
+
+
+    public String[] getClientAliases(String s, Principal[] principals) {
+        return defaultKeyManager.getClientAliases(s, principals);
+    }
+
+    public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
+    {
+        return defAlias;
+/***
+      boolean aliasFound=false;
+
+      for (int i=0; i<keyType.length && !aliasFound; i++) {
+        String[] validAliases=defaultKeyManager.getClientAliases(keyType[i], issuers);
+        if (validAliases!=null) {
+          for (int j=0; j<validAliases.length && !aliasFound; j++) {
+            if (validAliases[j].equals(alias))
+              aliasFound=true;
+          }
+        }
+      }
+
+      if (aliasFound)
+        return alias;
+      else
+        return null;
+***/
+    }
+
+    public String[] getServerAliases(String s, Principal[] principals) {
+        return defaultKeyManager.getServerAliases(s, principals);
+    }
+
+    public String chooseServerAlias(String s, Principal[] principals, Socket socket) {
+        return defaultKeyManager.chooseServerAlias(s, principals, socket);
+    }
+
+    public X509Certificate[] getCertificateChain(String s) {
+//        return certs.toArray(new X509Certificate[certs.size()]);
+        return defaultKeyManager.getCertificateChain(s);
+    }
+
+    public PrivateKey getPrivateKey(String s) {
+        return defaultKeyManager.getPrivateKey(s);
+    }
+}
+
+
 #endif

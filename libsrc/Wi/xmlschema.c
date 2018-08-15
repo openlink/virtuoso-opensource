@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -352,7 +352,7 @@ oid_t
 qi_new_attr (query_instance_t * qi, char *name)
 {
   oid_t a_id;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
   caddr_t err = NULL;
   static query_t *new_attr_qr;
   static query_t *ins_attr_qr;
@@ -368,7 +368,10 @@ qi_new_attr (query_instance_t * qi, char *name)
     }
   err = qr_rec_exec (new_attr_qr, qi->qi_client, &lc, qi, NULL, 0);
   if (err)
-    sqlr_resignal (err);
+    {
+      LC_FREE (lc);
+      sqlr_resignal (err);
+    }
   if (lc_next (lc))
     {
       a_id = (oid_t) unbox (lc_nth_col (lc, 0));
@@ -622,7 +625,7 @@ qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...)
   int inx;
   va_list ap;
   caddr_t err;
-  local_cursor_t *lc;
+  local_cursor_t *lc = NULL;
   query_t *qr = sql_compile (str, bootstrap_cli, &err, SQLC_DEFAULT);
   if (err != (caddr_t) SQL_SUCCESS)
     return err;
@@ -644,7 +647,10 @@ qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...)
 		       a1[3], a2[3], a3[3]
     );
   if (err != (caddr_t) SQL_SUCCESS)
-    return err;
+    {
+      LC_FREE (lc);
+      return err;
+    }
   while (lc_next (lc))
     ;
   err = lc->lc_error;

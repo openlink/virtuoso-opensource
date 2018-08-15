@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,14 +30,18 @@
 #define _DKTHREAD_H
 
 #define _OPL_THREADS	1
-
 /*#define JMP_CKSUM*/
 
-typedef struct
+typedef struct jmp_buf_splice_s
   {
     jmp_buf buf;
 #ifdef JMP_CKSUM
     uint32	j_cksum;
+#endif
+#ifdef SIGNAL_DEBUG
+    const char *j_file;
+    int j_line;
+    struct jmp_buf_splice_s *j_parent;
 #endif
   } jmp_buf_splice;
 
@@ -63,15 +67,18 @@ void longjmp_brk (jmp_buf_splice * j, int rc);
 #define thread_t opl_thread_t
 #define rwlock_t opl_rwlock_t
 #endif
-typedef struct thread_s thread_t;
 
-typedef struct semaphore_s semaphore_t;
-
-typedef struct mutex_s dk_mutex_t;
-
-typedef struct spinlock_s spinlock_t;
-
+#ifdef HAVE_PTHREAD_RWLOCK_INIT
+#undef  rwlock_t
+#define rwlock_t pthread_rwlock_t
+#else
 typedef struct rwlock_s rwlock_t;
+#endif
+
+typedef struct thread_s thread_t;
+typedef struct semaphore_s semaphore_t;
+typedef struct mutex_s dk_mutex_t;
+typedef struct spinlock_s spinlock_t;
 
 typedef int (*mtx_entry_check_t) (dk_mutex_t * mtx, thread_t * self, void * cd);
 
@@ -168,6 +175,12 @@ void thread_sleep (TVAL msec);
 
 EXE_EXPORT (caddr_t, thr_get_error_code, (thread_t *thr));
 EXE_EXPORT (void, thr_set_error_code, (thread_t *thr, caddr_t err));
+#ifdef MALLOC_DEBUG
+extern caddr_t dbg_thr_get_error_code (const char *file, int line, thread_t *thr);
+extern void dbg_thr_set_error_code (const char *file, int line, thread_t *thr, caddr_t err);
+#define thr_get_error_code(thr) dbg_thr_get_error_code (__FILE__, __LINE__, (thr))
+#define thr_set_error_code(thr,err) dbg_thr_set_error_code (__FILE__, __LINE__, (thr), (err))
+#endif
 
 struct sockaddr;
 

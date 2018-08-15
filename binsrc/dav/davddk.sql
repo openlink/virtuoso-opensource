@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -25,23 +25,25 @@ use WS
 ;
 
 -- WebDAV Collection
-create table WS.WS.SYS_DAV_COL (
-    COL_ID              integer,
-    COL_NAME            varchar (256),
-    COL_OWNER           integer,
-    COL_GROUP           integer,
-    COL_PARENT          integer,
-    COL_CR_TIME         datetime,
-    COL_MOD_TIME        datetime,
-    COL_ADD_TIME        datetime,
-    COL_PERMS           char (11),
-    COL_DET             varchar,
-    COL_ACL             long varbinary,
-    COL_IID 		IRI_ID_8,
-    COL_AUTO_VERSIONING char(1),
-    COL_FORK 		integer not null default 0,
-    COL_INHERIT		char(1) default 'N', 		-- NMR flag denotes, none, members, recursive
-    primary key (COL_NAME, COL_PARENT)
+create table WS.WS.SYS_DAV_COL
+(
+  COL_ID              integer,
+  COL_NAME            varchar (256),
+  COL_CREATOR         IRI_ID_8,
+  COL_OWNER           integer,
+  COL_GROUP           integer,
+  COL_PARENT          integer,
+  COL_CR_TIME         datetime,
+  COL_MOD_TIME        datetime,
+  COL_ADD_TIME        datetime,
+  COL_PERMS           char (11),
+  COL_DET             varchar (64),
+  COL_ACL             long varbinary,
+  COL_IID             IRI_ID_8,
+  COL_AUTO_VERSIONING char(1),
+  COL_FORK            integer not null default 0,
+  COL_INHERIT         char(1) default 'N',     -- NMR flag denotes, none, members, recursive
+  primary key (COL_NAME, COL_PARENT)
 )
 alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_PARENT int)
 create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT) partition (COL_PARENT int)
@@ -65,33 +67,40 @@ alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID_8
 alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
 ;
 
---#ENDIF
 alter table WS.WS.SYS_DAV_COL add COL_ADD_TIME datetime
 ;
 
+--#ENDIF
+
+alter table WS.WS.SYS_DAV_COL add COL_CREATOR IRI_ID_8
+;
+
+
 -- WebDAV Resource
-create table WS.WS.SYS_DAV_RES (
-    RES_ID              integer,
-    RES_NAME            varchar (256),
-    RES_OWNER           integer,
-    RES_GROUP           integer,
-    RES_COL             integer,
-    RES_CONTENT         long varbinary IDENTIFIED BY RES_FULL_PATH,
-    RES_TYPE            varchar,
-    RES_SIZE            integer,
-    RES_CR_TIME         datetime,
-    RES_MOD_TIME        datetime,
-    RES_ADD_TIME        datetime,
-    RES_PERMS           char (11),
-    RES_FULL_PATH       varchar,
-    ROWGUID             varchar,
-    RES_ACL             long varbinary,
-    RES_IID 		IRI_ID_8,
-    RES_STATUS 		varchar,
-    RES_VCR_ID 		integer,
-    RES_VCR_CO_VERSION 	integer,
-    RES_VCR_STATE 	integer,
-    primary key (RES_ID)
+create table WS.WS.SYS_DAV_RES
+(
+  RES_ID              integer,
+  RES_NAME            varchar (256),
+  RES_CREATOR         IRI_ID_8,
+  RES_OWNER           integer,
+  RES_GROUP           integer,
+  RES_COL             integer,
+  RES_CONTENT         long varbinary IDENTIFIED BY RES_FULL_PATH,
+  RES_TYPE            varchar,
+  RES_SIZE            integer,
+  RES_CR_TIME         datetime,
+  RES_MOD_TIME        datetime,
+  RES_ADD_TIME        datetime,
+  RES_PERMS           char (11),
+  RES_FULL_PATH       varchar,
+  ROWGUID             varchar,
+  RES_ACL             long varbinary,
+  RES_IID             IRI_ID_8,
+  RES_STATUS          varchar,
+  RES_VCR_ID          integer,
+  RES_VCR_CO_VERSION  integer,
+  RES_VCR_STATE       integer,
+  primary key (RES_ID)
 )
 create unique index SYS_DAV_RES_COL on WS.WS.SYS_DAV_RES (RES_COL, RES_NAME) partition (RES_COL int)
 create index SYS_DAV_RES_FULL_PATH on WS.WS.SYS_DAV_RES (RES_FULL_PATH) partition (RES_FULL_PATH varchar (-10, 0hexffff))
@@ -115,24 +124,39 @@ alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
 alter table WS.WS.SYS_DAV_RES add RES_SIZE integer
 ;
 
---#ENDIF
 alter table WS.WS.SYS_DAV_RES add RES_ADD_TIME datetime
+;
+
+--#ENDIF
+
+alter table WS.WS.SYS_DAV_RES add RES_CREATOR IRI_ID_8
 ;
 
 --__ddl_changed ('WS.WS.SYS_DAV_RES')
 --;
 
-create procedure
-WS.WS.SYS_DAV_RES_RES_CONTENT_INDEX_HOOK (inout vtb any, inout d_id integer)
+create procedure WS.WS.SYS_DAV_RES_RES_CONTENT_HOOK (
+  inout vtb any,
+  in d_id integer,
+  in mode integer := 0)
 {
   return 0;
 }
 ;
 
-create procedure
-WS.WS.SYS_DAV_RES_RES_CONTENT_UNINDEX_HOOK (inout vtb any, inout d_id integer)
+create procedure WS.WS.SYS_DAV_RES_RES_CONTENT_INDEX_HOOK (
+  inout vtb any,
+  in d_id integer)
 {
-  return 0;
+  WS.WS.SYS_DAV_RES_RES_CONTENT_HOOK (vtb, d_id, 0);
+}
+;
+
+create procedure WS.WS.SYS_DAV_RES_RES_CONTENT_UNINDEX_HOOK (
+  inout vtb any,
+  in d_id integer)
+{
+  WS.WS.SYS_DAV_RES_RES_CONTENT_HOOK (vtb, d_id, 1);
 }
 ;
 
@@ -150,13 +174,14 @@ DB.DBA.vt_create_ftt ('WS.WS.SYS_DAV_RES', 'RES_ID', 'RES_CONTENT', 2)
 
 
 -- Properties
-create table WS.WS.SYS_DAV_PROP (
-    PROP_ID             integer,
-    PROP_NAME           char (256),
-    PROP_TYPE           char (1),
-    PROP_PARENT_ID      integer,
-    PROP_VALUE          long varchar,
-    primary key (PROP_PARENT_ID, PROP_TYPE, PROP_NAME)
+create table WS.WS.SYS_DAV_PROP
+(
+  PROP_ID             integer,
+  PROP_NAME           char (256),
+  PROP_TYPE           char (1),
+  PROP_PARENT_ID      integer,
+  PROP_VALUE          long varchar,
+  primary key (PROP_PARENT_ID, PROP_TYPE, PROP_NAME)
 )
 alter index SYS_DAV_PROP on WS.WS.SYS_DAV_PROP partition (PROP_PARENT_ID int)
 --create index SYS_DAV_PROP_PARENT on WS.WS.SYS_DAV_PROP (PROP_TYPE, PROP_PARENT_ID) partition (PROP_PARENT_ID int)
@@ -172,17 +197,18 @@ __ddl_changed ('WS.WS.SYS_DAV_PROP')
 
 
 -- WebDAV Locks
-create table WS.WS.SYS_DAV_LOCK (
-    LOCK_TYPE           char (1),
-    LOCK_SCOPE          char (1),
-    LOCK_TOKEN          char (256),
-    LOCK_PARENT_TYPE    char (1),
-    LOCK_PARENT_ID      integer,
-    LOCK_TIME           datetime not null,
-    LOCK_TIMEOUT        integer not null,
-    LOCK_OWNER          integer,
-    LOCK_OWNER_INFO     varchar,
-    primary key (LOCK_PARENT_ID, LOCK_PARENT_TYPE, LOCK_TOKEN)
+create table WS.WS.SYS_DAV_LOCK
+(
+  LOCK_TYPE           char (1),
+  LOCK_SCOPE          char (1),
+  LOCK_TOKEN          char (256),
+  LOCK_PARENT_TYPE    char (1),
+  LOCK_PARENT_ID      integer,
+  LOCK_TIME           datetime not null,
+  LOCK_TIMEOUT        integer not null,
+  LOCK_OWNER          integer,
+  LOCK_OWNER_INFO     varchar,
+  primary key (LOCK_PARENT_ID, LOCK_PARENT_TYPE, LOCK_TOKEN)
 )
 alter index SYS_DAV_LOCK on WS.WS.SYS_DAV_LOCK partition (LOCK_PARENT_ID int)
 create unique index SYS_DAV_LOCKTOKEN on WS.WS.SYS_DAV_LOCK (LOCK_TOKEN) partition (LOCK_TOKEN varchar)
@@ -212,11 +238,12 @@ create view WS.WS.SYS_DAV_USER_GROUP (UG_UID, UG_GID) as select GI_SUPER, GI_SUB
 -- Resource extensions. These are to guess MIME by file extension.
 -- To guess extension by MIME, use coalesce (select MT_DEFAULT_EXT from WS.WS.SYS_MIME_TYPES ..., select T_EXT from WS.WS.SYS_DAV_RES_TYPES)
 -- because 1) default ext may way from box to box and 2) there may be variety of T_EXTs for one T_TYPE.
-create table WS.WS.SYS_DAV_RES_TYPES (
-    T_EXT               varchar not null,       -- File extension
-    T_TYPE              varchar not null,       -- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
-    T_DESCRIPTION       varchar,                -- NULL or a single-line text description of an extension if differs from generic MT_DESCRIPTION.
-    primary key (T_EXT)
+create table WS.WS.SYS_DAV_RES_TYPES
+(
+  T_EXT               varchar not null,       -- File extension
+  T_TYPE              varchar not null,       -- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
+  T_DESCRIPTION       varchar,                -- NULL or a single-line text description of an extension if differs from generic MT_DESCRIPTION.
+  primary key (T_EXT)
 )
 alter index SYS_DAV_RES_TYPES on WS.WS.SYS_DAV_RES_TYPES partition cluster replicated
 ;
@@ -357,7 +384,8 @@ alter index SYS_DAV_SPACE_QUOTA on WS.WS.SYS_DAV_SPACE_QUOTA partition (DSQ_HOME
 create index SYS_DAV_SPACE_QUOTA_U_ID on WS.WS.SYS_DAV_SPACE_QUOTA (DSQ_U_ID) partition (DSQ_U_ID int)
 ;
 
-create table WS.WS.SYS_DAV_TAG (
+create table WS.WS.SYS_DAV_TAG
+(
   DT_RES_ID     integer not null,
   DT_U_ID       integer not null,
   DT_FT_ID      integer not null,
@@ -406,29 +434,33 @@ again:
 }
 ;
 
-create procedure
-WS.WS.SYS_DAV_TAG_DT_TAGS_INDEX_HOOK (inout vtb any, inout d_id integer)
+create procedure WS.WS.SYS_DAV_TAG_DT_TAGS_HOOK (
+  inout vtb any,
+  inout d_id integer,
+  in mode integer)
 {
   for select DT_RES_ID, DT_U_ID, DT_TAGS from WS.WS.SYS_DAV_TAG where DT_FT_ID = d_id do
-    {
-      vt_batch_feed (vtb, WS.WS.DAV_TAG_NORMALIZE (DT_TAGS), 0, 0, 'x-ViDoc');
-      vt_batch_feed (vtb, sprintf ('UID%d', DT_U_ID), 0, 0, 'x-ViDoc');
-      return 1;
-    }
+  {
+    vt_batch_feed (vtb, WS.WS.DAV_TAG_NORMALIZE (DT_TAGS), mode, 0, 'x-ViDoc');
+    vt_batch_feed (vtb, sprintf ('UID%d', DT_U_ID), mode, 0, 'x-ViDoc');
+  }
   return 1;
 }
 ;
 
-create procedure
-WS.WS.SYS_DAV_TAG_DT_TAGS_UNINDEX_HOOK (inout vtb any, inout d_id integer)
+create procedure WS.WS.SYS_DAV_TAG_DT_TAGS_INDEX_HOOK (
+  inout vtb any,
+  inout d_id integer)
 {
-  for select DT_RES_ID, DT_U_ID, DT_TAGS from WS.WS.SYS_DAV_TAG where DT_FT_ID = d_id do
-    {
-      vt_batch_feed (vtb, WS.WS.DAV_TAG_NORMALIZE (DT_TAGS), 1, 0, 'x-ViDoc');
-      vt_batch_feed (vtb, sprintf ('UID%d', DT_U_ID), 1, 0, 'x-ViDoc');
-      return 1;
-    }
-  return 1;
+  WS.WS.SYS_DAV_TAG_DT_TAGS_HOOK (vtb, d_id, 0);
+}
+;
+
+create procedure WS.WS.SYS_DAV_TAG_DT_TAGS_UNINDEX_HOOK (
+  inout vtb any,
+  inout d_id integer)
+{
+  WS.WS.SYS_DAV_TAG_DT_TAGS_HOOK (vtb, d_id, 1);
 }
 ;
 
@@ -1177,7 +1209,7 @@ create procedure WS.WS.SYS_DAV_INIT_RDF ()
   @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
   ldp:BasicContainer rdfs:subClassOf ldp:Container .
   ldp:DirectContainer rdfs:subClassOf ldp:Container .
-  ldp:IndirectContainer rdfs:subClassOf ldp:Container .', 'http://www.w3.org/ns/ldp#', 'http://www.w3.org/ns/ldp#'); 
+  ldp:IndirectContainer rdfs:subClassOf ldp:Container .', 'http://www.w3.org/ns/ldp#', 'http://www.w3.org/ns/ldp#');
   DB.DBA.rdfs_rule_set ('ldp','http://www.w3.org/ns/ldp#');
   DB.DBA.XML_SET_NS_DECL ('ldp','http://www.w3.org/ns/ldp#',2);
 }
@@ -1258,8 +1290,6 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/mods+xml
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msexcel','xls')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msaccess','mdb')
-;
-insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/msexcel','csv')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/vnd.oasis.opendocument.text','odt')
 ;
@@ -1551,6 +1581,8 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-sgi-movie','
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('x-conference/x-cooltalk','ice')
 ;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/csv','csv')
+;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/html','htm')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/html','html')
@@ -1638,6 +1670,8 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/java-arc
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/java-serialized-object','ser')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/json','json')
+;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/ld+json','jsonld')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('application/lost+xml','lostxml')
 ;
@@ -2925,6 +2959,11 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-ms-wvx','wvx
 update WS.WS.SYS_DAV_RES_TYPES
    set T_TYPE = 'application/x-apple-diskimage'
  where T_TYPE = 'application/octet-stream' and T_EXT = 'dmg'
+;
+
+update WS.WS.SYS_DAV_RES_TYPES
+   set T_TYPE = 'text/csv'
+ where T_TYPE = 'application/msexcel' and T_EXT = 'csv'
 ;
 
 select count(*) from WS.WS.SYS_DAV_RES_TYPES where http_mime_type_add (T_EXT, T_TYPE)

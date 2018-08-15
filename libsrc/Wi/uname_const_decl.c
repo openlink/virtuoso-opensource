@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,6 +46,8 @@ caddr_t uname__srcfile;
 caddr_t uname__srcline;
 caddr_t uname__txt;
 caddr_t uname__xslt;
+caddr_t uname_at_id;
+caddr_t uname_at_num;
 caddr_t uname_SPECIAL_cc_bif_c_AVG;
 caddr_t uname_SPECIAL_cc_bif_c_COUNT;
 caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
@@ -66,6 +68,8 @@ caddr_t uname_false;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
+caddr_t uname_nodeID_ns_0;
+caddr_t uname_nodeID_ns_8192;
 caddr_t uname_rdf_ns_uri;
 caddr_t uname_rdf_ns_uri_Description;
 caddr_t uname_rdf_ns_uri_ID;
@@ -119,8 +123,13 @@ caddr_t uname_virtrdf_ns_uri_dialect_exceptions;
 caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
-caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+caddr_t uname_virtrdf_ns_uri_namespace_base;
+caddr_t uname_virtrdf_ns_uri_namespace_iri;
+caddr_t uname_virtrdf_ns_uri_namespace_prefix;
+caddr_t uname_virtrdf_ns_uri_namespace_row;
 caddr_t uname_virtrdf_ns_uri_rdf_repl_all;
+caddr_t uname_virtrdf_ns_uri_rdf_repl_graph_group;
+caddr_t uname_virtrdf_ns_uri_rdf_repl_world;
 caddr_t uname_xhv_ns_uri;
 caddr_t uname_xhv_ns_uri_alternate;
 caddr_t uname_xhv_ns_uri_appendix;
@@ -243,6 +252,8 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__srcline				, " srcline"			},
   { &uname__txt					, " txt"			},
   { &uname__xslt				, " xslt"			},
+  { &uname_at_id					, "@id"						},
+  { &uname_at_num					, "@num"					},
   { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
   { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
   { &uname_SPECIAL_cc_bif_c_GROUPING			, "SPECIAL::bif:GROUPING"			},
@@ -263,6 +274,8 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
+  { &uname_nodeID_ns_0				, "nodeID://0"			},
+  { &uname_nodeID_ns_8192			, "nodeID://8192"		},
   { &uname_rdf_ns_uri				, RDF_NS_URI			},
   { &uname_rdf_ns_uri_Description		, RDF_NS_URI "Description"	},
   { &uname_rdf_ns_uri_ID			, RDF_NS_URI "ID"		},
@@ -316,8 +329,13 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	},
   { &uname_virtrdf_ns_uri_isSubclassOf		, VIRTRDF_NS_URI "isSubclassOf"	},
   { &uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	},
-  { &uname_virtrdf_ns_uri_rdf_repl_graph_group	, VIRTRDF_NS_URI "rdf_repl_graph_group"	},
+  { &uname_virtrdf_ns_uri_namespace_base		, VIRTRDF_NS_URI "namespace-base"		},
+  { &uname_virtrdf_ns_uri_namespace_iri			, VIRTRDF_NS_URI "namespace-iri"		},
+  { &uname_virtrdf_ns_uri_namespace_prefix		, VIRTRDF_NS_URI "namespace-prefix"		},
+  { &uname_virtrdf_ns_uri_namespace_row			, VIRTRDF_NS_URI "namespace-row"		},
   { &uname_virtrdf_ns_uri_rdf_repl_all		, VIRTRDF_NS_URI "rdf_repl_all"	},
+  { &uname_virtrdf_ns_uri_rdf_repl_graph_group		, VIRTRDF_NS_URI "rdf_repl_graph_group"		},
+  { &uname_virtrdf_ns_uri_rdf_repl_world		, VIRTRDF_NS_URI "rdf_repl_world"		},
   { &uname_xhv_ns_uri				, XHV_NS_URI			},
   { &uname_xhv_ns_uri_alternate			, XHV_NS_URI "alternate"	},
   { &uname_xhv_ns_uri_appendix			, XHV_NS_URI "appendix"		},

@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -459,7 +459,8 @@ DB.DBA.HTTP_AUTH_CHECK_USER (
   in realm varchar,
   in needSql integer := 0,
   in requestAuth integer := 0,
-  in authDomain varchar := null)
+  in authDomain varchar := null,
+  in securityLevel varchar := null)
 {
   declare _u_name, _u_password varchar;
   declare sec, lev varchar;
@@ -468,7 +469,11 @@ DB.DBA.HTTP_AUTH_CHECK_USER (
   declare lines, auth any;
 
   lines := http_request_header ();
-  sec := http_map_get ('security_level');
+  if (length(securityLevel))
+    sec := securityLevel;
+  else
+    sec := http_map_get ('security_level');
+
   if (isstring (sec))
     sec := lower (sec);
   if (sec = 'digest')

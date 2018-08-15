@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 --
 create function DB.DBA.DAV_DET_SPECIAL ()
 {
-  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
+  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP');
 }
 ;
 
@@ -36,7 +36,7 @@ create function DB.DBA.DAV_DET_IS_SPECIAL (
 
 create function DB.DBA.DAV_DET_WEBDAV_BASED ()
 {
-  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'SN', 'FTP');
+  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP');
 }
 ;
 
@@ -50,7 +50,7 @@ create function DB.DBA.DAV_DET_IS_WEBDAV_BASED (
 create function DB.DBA.DAV_DET_NAME (
   in id any)
 {
-  if (isinteger (id))
+  if (isnull (id) or isinteger (id))
     return null;
 
   return cast (id[0] as varchar);
@@ -60,7 +60,7 @@ create function DB.DBA.DAV_DET_NAME (
 create function DB.DBA.DAV_DET_DETCOL_ID (
   in id any)
 {
-  if (isinteger (id))
+  if (isnull (id) or isinteger (id))
     return id;
 
   return cast (id[1] as integer);
@@ -70,7 +70,7 @@ create function DB.DBA.DAV_DET_DETCOL_ID (
 create function DB.DBA.DAV_DET_DAV_ID (
   in id any)
 {
-  if (isinteger (id))
+  if (isnull (id) or isinteger (id))
     return id;
 
   return id[2];
@@ -104,11 +104,25 @@ create function DB.DBA.DAV_DET_PATH (
 create function DB.DBA.DAV_DET_PATH_NAME (
   in path varchar)
 {
-  path := trim (path, '/');
-  if (isnull (strrchr (path, '/')))
+  declare pos, l integer;
+
+  if (isvector (path))
+  {
+    l := length (path);
+    if ((l > 1) and path[l-1] = '')
+      return path[l-2];
+
+    if (l > 0)
+      return path[l-1];
+
+    return null;
+  }
+  path := rtrim (path, '/');
+  pos := strrchr (path, '/');
+  if (isnull (pos))
     return path;
 
-  return right (path, length (path)-strrchr (path, '/')-1);
+  return subseq (path, pos+1);
 }
 ;
 
@@ -125,6 +139,20 @@ create function DB.DBA.DAV_DET_PATH_PARENT (
 
   path := left (path, pos);
   return case when mode then '/' || path || '/' else path end;
+}
+;
+
+create function DB.DBA.DAV_DET_PARENT (
+   in id any,
+   in what char(1))
+{
+  if (what = 'R')
+    return coalesce ((select RES_COL from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id)), -1);
+
+  if (what = 'C')
+    return coalesce ((select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = DB.DBA.DAV_DET_DAV_ID (id)), -1);
+
+  return -1;
 }
 ;
 
@@ -153,10 +181,6 @@ create function DB.DBA.DAV_DET_PROPPATCH (
   {
     det := 'rdfSink';
   }
-  else if (det = 'SocialNetwork')
-  {
-    det := 'SN';
-  }
   if ((det <> 'rdfSink') and (__proc_exists ('DB.DBA.' || det || '_DAV_AUTHENTICATE_HTTP') is null))
   {
     DB.DBA.DAV_SET_HTTP_STATUS (400);
@@ -173,7 +197,7 @@ create function DB.DBA.DAV_DET_PROPPATCH (
     det_params := vector_concat (det_params, vector (dpn, dpv));
   }
 
-  if (det in ('Box', 'Dropbox', 'SkyDrive', 'GDrive', 'SN'))
+  if (det in ('Box', 'Dropbox', 'SkyDrive', 'GDrive'))
   {
     declare expire_in integer;
     declare expire_time datetime;
@@ -188,12 +212,10 @@ create function DB.DBA.DAV_DET_PROPPATCH (
       service_name := 'google';
     else if (det = 'Box')
       service_name := 'boxnet';
-    else if (det = 'SN')
-      service_name := get_keyword ('det_network', det_params);
     else
       service_name := lcase (det);
 
-    qry := ' select TOP 1 CS_SID                        \n' ||
+    qry := 'select TOP 1 CS_SID                         \n' ||
            '  from OAUTH.DBA.CLI_SESSIONS,              \n' ||
            '       DB.DBA.WA_USER_OL_ACCOUNTS           \n' ||
            ' where CS_SID = WUO_OAUTH_SID               \n' ||
@@ -237,11 +259,6 @@ create function DB.DBA.DAV_DET_PROPPATCH (
     {
       det_params := vector_concat (det_params, vector ('sid', service_sid));
       det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
-    }
-    -- SN
-    else if (det in ('SN'))
-    {
-      det_params := vector_concat (det_params, vector ('sid', service_sid));
     }
   }
 
@@ -346,6 +363,9 @@ create function DB.DBA.DAV_DET_RES_UPLOAD_CM (
       if (DB.DBA.DAV_HIDE_ERROR (retValue) is null)
         goto _exit;
 
+      target_id := retValue;
+      DB.DBA.DAV_COPY_PROPS (0, source_id, 'R', target_id, auth_uname, auth_pwd, extern, auth_uid);
+      DB.DBA.DAV_COPY_TAGS (source_id, 'R', target_id);
       if (mode = 'move')
       {
         tmp := DB.DBA.DAV_DELETE_INT (source_path, 1, auth_uname, auth_pwd, extern, check_locks);
@@ -359,7 +379,7 @@ create function DB.DBA.DAV_DET_RES_UPLOAD_CM (
     else if ((what = 'C') and (cast (det as varchar) <> coalesce (DB.DBA.DAV_DET_NAME (source_id), '')))
     {
       target_id := call (cast (det as varchar) || '_DAV_COL_CREATE') (detcol_id, path_parts, permissions, uid, gid, auth_uid, extern);
-      if (DAV_HIDE_ERROR (target_id) is null)
+      if (DB.DBA.DAV_HIDE_ERROR (target_id) is null)
       {
         rollback work;
         retValue := target_id;
@@ -404,7 +424,8 @@ create function DB.DBA.DAV_DET_DAV_LIST (
                       RES_CR_TIME,
                       RES_TYPE,
                       RES_NAME,
-                      coalesce (RES_ADD_TIME, RES_CR_TIME)) as I
+                      coalesce (RES_ADD_TIME, RES_CR_TIME),
+                      RES_CREATOR) as I
          from WS.WS.SYS_DAV_RES
         where RES_COL = DB.DBA.DAV_DET_DAV_ID (colId)) do
   {
@@ -422,7 +443,8 @@ create function DB.DBA.DAV_DET_DAV_LIST (
                       COL_CR_TIME,
                       'dav/unix-directory',
                       COL_NAME,
-                      coalesce (COL_ADD_TIME, COL_CR_TIME)) as I
+                      coalesce (COL_ADD_TIME, COL_CR_TIME),
+                      COL_CREATOR) as I
         from WS.WS.SYS_DAV_COL
        where COL_PARENT = DB.DBA.DAV_DET_DAV_ID (colId)) do
   {
@@ -447,7 +469,7 @@ create function DB.DBA.DAV_DET_PROPS_REMOVE (
   if (isarray (_id))
     return;
 
-  props := DAV_HIDE_ERROR (DAV_PROP_LIST_INT (_id, _what, '%', 1), vector ());
+  props := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_LIST_INT (_id, _what, '%', 1), vector ());
   foreach (any prop in props) do
   {
     if ((prop[0] like ('virt:' || _det || '%')) or (prop[0] = 'virt:DETCOL_ID'))
@@ -538,7 +560,7 @@ _start:;
 
   -- hack for Public folders
   set triggers off;
-  DAV_PROP_SET_INT (activityPath, ':virtpermissions', '110100000RR', null, null, 0, 0, 1, http_dav_uid());
+  DB.DBA.DAV_PROP_SET_INT (activityPath, ':virtpermissions', '110100000RR', null, null, 0, 0, 1, http_dav_uid());
   set triggers on;
 
   commit work;
@@ -570,6 +592,13 @@ create function DB.DBA.DAV_DET_HTTP_CODE (
 }
 ;
 
+create function DB.DBA.DAV_DET_HTTP_MESSAGE (
+  in _header any)
+{
+  return subseq (_header[0], 13);
+}
+;
+
 --
 -- User related procs
 --
@@ -581,10 +610,17 @@ create function DB.DBA.DAV_DET_USER (
 }
 ;
 
+create function DB.DBA.DAV_DET_USER_IRI (
+  in user_id integer) returns varchar
+{
+  return sprintf ('%s/dataspace/person/%s#this',  WS.WS.DAV_HOST (), DB.DBA.DAV_DET_USER (user_id));
+}
+;
+
 create function DB.DBA.DAV_DET_PASSWORD (
   in user_id integer)
 {
-  return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = user_id), '');
+  return coalesce ((select pwd_magic_calc(U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_ID = user_id), '');
 }
 ;
 
@@ -678,13 +714,17 @@ create function DB.DBA.DAV_DET_PARAM_GET (
 
   propValue := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_DET_DAV_ID (_id), _what, _propName, 0, DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), http_dav_uid ());
   if (isinteger (propValue))
+  {
     propValue := null;
+  }
+  else
+  {
+    if (_serialized and not isnull (propValue))
+      propValue := deserialize (propValue);
 
-  if (_serialized and not isnull (propValue))
-    propValue := deserialize (propValue);
-
-  if (_decrypt and not isnull (propValue))
-    propValue := pwd_magic_calc (_password, propValue, 1);
+    if (_decrypt and not isnull (propValue))
+      propValue := pwd_magic_calc (_password, propValue, 1);
+  }
 
   return propValue;
 }
@@ -711,7 +751,7 @@ create function DB.DBA.DAV_DET_PARAM_REMOVE (
 --
 create function DB.DBA.DAV_DET_RDF_DEFAULT_KEYS ()
 {
-  return vector ('sponger', 'cartridges', 'metaCartridges', 'graph');
+  return vector ('sponger', 'cartridges', 'metaCartridges', 'graph', 'graphSecurity', 'graphSecurityACL', 'graphSecurityACI');
 }
 ;
 
@@ -807,7 +847,9 @@ create function DB.DBA.DAV_DET_ENTRY_XPATH (
   if (_cast)
   {
     retValue := serialize_to_UTF8_xml (xpath_eval (sprintf ('string (//entry%s)', _xpath), _xml, 1));
-  } else {
+  }
+  else
+  {
     retValue := xpath_eval ('//entry' || _xpath, _xml, 1);
   }
   return retValue;
@@ -847,7 +889,7 @@ create function DB.DBA.DAV_DET_RDF (
     return;
 
   set_user_id ('dba');
-  aq := async_queue (1);
+  aq := async_queue (1, 4);
   aq_request (aq, 'DB.DBA.DAV_DET_RDF_AQ', vector (det, detcol_id, id, what, rdf_params));
 }
 ;
@@ -948,7 +990,7 @@ create function DB.DBA.DAV_DET_RDF_DELETE (
   }
 
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
-  DB.DBA.RDF_SINK_CLEAR (null, path, rdf_graph);
+  DB.DBA.RDF_SINK_DELETE (-1, path, id, detcol_id, 1);
 }
 ;
 
@@ -998,7 +1040,7 @@ create function DB.DBA.DAV_DET_CONTENT_ROLLBACK (
   }
   else
   {
-    DAV_DELETE_INT (path, 1, null, null, 0, 0);
+    DB.DBA.DAV_DELETE_INT (path, 1, null, null, 0, 0);
   }
 }
 ;
@@ -1044,8 +1086,7 @@ create function DB.DBA.DAV_DET_PRIVATE_INIT ()
 
   -- private graph group (if not exists)
   DB.DBA.RDF_GRAPH_GROUP_CREATE (DB.DBA.DAV_DET_PRIVATE_GRAPH (), 1);
-
-  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0, 1);
+  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 1, 1);
   DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023, 1);
 
   registry_set ('__DAV_DET_PRIVATE_INIT', '1');
@@ -1108,7 +1149,6 @@ create function DB.DBA.DAV_DET_PRIVATE_GRAPH_REMOVE (
 create function DB.DBA.DAV_DET_PRIVATE_GRAPH_CHECK (
   in graph_iri varchar)
 {
-  declare tmp integer;
   declare private_graph varchar;
   declare private_graph_id any;
 
@@ -1118,10 +1158,6 @@ create function DB.DBA.DAV_DET_PRIVATE_GRAPH_CHECK (
 
   private_graph_id := DB.DBA.DAV_DET_PRIVATE_GRAPH_ID ();
   if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = private_graph_id and RGGM_MEMBER_IID = iri_to_id (graph_iri)))
-    return 0;
-
-  tmp := coalesce ((select top 1 RGU_PERMISSIONS from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = http_nobody_uid ()), 0);
-  if (tmp <> 0)
     return 0;
 
   return 1;
@@ -1153,7 +1189,7 @@ create function DB.DBA.DAV_DET_PRIVATE_USER_ADD (
   declare exit handler for sqlstate '*' {return 0;};
 
   if (isinteger (uid))
-    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+    uid := DB.DBA.DAV_DET_USER (uid);
 
   DB.DBA.RDF_GRAPH_GROUP_INS (DB.DBA.DAV_DET_PRIVATE_GRAPH (), graph_iri);
   DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uid, rights);
@@ -1177,7 +1213,7 @@ create function DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (
   declare exit handler for sqlstate '*' {return 0;};
 
   if (isinteger (uid))
-    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+    uid := DB.DBA.DAV_DET_USER (uid);
 
   DB.DBA.RDF_GRAPH_USER_PERMS_DEL (graph_iri, uid);
 
@@ -1185,6 +1221,9 @@ create function DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (
 }
 ;
 
+--!
+-- \brief Compare 2 ACLs fo eqality
+--/
 create function DB.DBA.DAV_DET_PRIVATE_ACL_COMPARE (
   in acls_1 any,
   in acls_2 any)
@@ -1192,161 +1231,122 @@ create function DB.DBA.DAV_DET_PRIVATE_ACL_COMPARE (
   declare N integer;
 
   if (length (acls_1) <> length (acls_2))
-  {
     return 0;
-  }
+
   for (N := 0; N < length (acls_1); N := N + 1)
   {
     if (acls_1[N] <> acls_2[N])
-    {
       return 0;
-    }
   }
   return 1;
 }
 ;
 
+--!
+-- \brief Add permissions based on ACLs
+--/
 create function DB.DBA.DAV_DET_PRIVATE_ACL_ADD (
-  in id integer,
   in graph varchar,
   in acls any)
 {
-  declare N integer;
-  declare V any;
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_PRIVATE_ACL_ADD (', graph, length (acls), ')');
+  declare N, L integer;
+  declare V, allow, denny any;
 
-  for (N := 0; N < length (acls); N := N + 1)
+  allow := vector ();
+  denny := vector ();
+  L := length (acls);
+  for (N := L-1; N >= 0; N := N - 1)
   {
-    V := WS.WS.ACL_PARSE (acls[N], case when (N = length (acls)-1) then '01' else '12' end, 0);
+    V := WS.WS.ACL_PARSE (acls[N], case when (N = L-1) then '01' else '12' end, 0);
     foreach (any acl in V) do
     {
-      if (acl[1] = 1)
+      if (not position (acl[0], allow) and not position (acl[0], denny))
       {
-        DB.DBA.DAV_DET_PRIVATE_USER_ADD (graph, acl[0]);
-      }
-      else
-      {
-        DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (graph, acl[0]);
+        if (acl[1] = 1)
+        {
+          allow := vector_concat (allow, vector (acl[0]));
+        }
+        else
+        {
+          denny := vector_concat (denny, vector (acl[0]));
+        }
       }
     }
+  }
+
+  for (N := 0; N < length (allow); N := N + 1)
+  {
+    DB.DBA.DAV_DET_PRIVATE_USER_ADD (graph, allow[N]);
+  }
+
+  for (N := 0; N < length (denny); N := N + 1)
+  {
+    DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (graph, denny[N]);
   }
 }
 ;
 
+--!
+-- \brief Remove permissions based on ACLs
+--/
 create function DB.DBA.DAV_DET_PRIVATE_ACL_REMOVE (
-  in id integer,
   in graph varchar,
   in acls any)
 {
-  declare N integer;
-  declare V any;
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_PRIVATE_ACL_REMOVE (', graph, acls, ')');
+  declare N, L integer;
+  declare V, denny any;
 
-  for (N := 0; N < length (acls); N := N + 1)
+  denny := vector ();
+  L := length (acls);
+  for (N := L-1; N >= 0; N := N - 1)
   {
-    V := WS.WS.ACL_PARSE (acls[N], case when (N = length (acls)-1) then '01' else '12' end, 0);
+    V := WS.WS.ACL_PARSE (acls[N], case when (N = L-1) then '01' else '12' end, 0);
     foreach (any acl in V) do
     {
-      if (acl[1] = 1)
-      {
-        DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (graph, acl[0]);
-      }
+      if ((acl[1] = 1) and not position (acl[0], denny))
+        denny := vector_concat (denny, vector (acl[0]));
     }
+  }
+
+  for (N := 0; N < length (denny); N := N + 1)
+  {
+    DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (graph, denny[N]);
   }
 }
 ;
 
-create function DB.DBA.DAV_DET_GRAPH_ACL_UPDATE (
+create function DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (
   in id integer,
-  in oldAcls any,
-  in newAcls any)
-{
-  -- get parent acls
-  DB.DBA.DAV_DET_GRAPH_ACL_PARENT (id, oldAcls, newAcls);
-
-  -- child acls
-  DB.DBA.DAV_DET_GRAPH_ACL_UPDATE_CHILD (id, oldAcls, newAcls);
-}
-;
-
-create function DB.DBA.DAV_DET_GRAPH_ACL_PARENT (
-  in id integer,
+  in what varchar,
   inout oldAcls any,
   inout newAcls any)
 {
-  declare _col_id integer;
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (', id, what, ')');
+  declare _id integer;
   declare _acl any;
+  declare exit handler for not found { return; };
 
-  -- get parent acls
-  _col_id := id;
+  -- get acls
   while (1)
   {
-    _col_id := (select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = _col_id);
-    if (isnull (_col_id))
+    select COL_ACL, COL_PARENT into _id, _acl from WS.WS.SYS_DAV_COL where COL_ID = _id;
+    if (length (_acl) > 8)
     {
-      goto _break;
-    }
-    _acl := (select COL_ACL from WS.WS.SYS_DAV_COL where COL_ID = _col_id);
-    oldAcls := vector_concat (vector (_acl), oldAcls);
-    newAcls := vector_concat (vector (_acl), newAcls);
-  }
-_break:;
-}
-;
-
-create function DB.DBA.DAV_DET_GRAPH_ACL_UPDATE_CHILD (
-  in id integer,
-  in oldAcls any,
-  in newAcls any)
-{
-  declare _col_owner, _col_group integer;
-  declare _col_perms, _det varchar;
-  declare _rdf_params any;
-
-  for (select COL_ID as _col_id,
-              COL_ACL as _acl
-         from WS.WS.SYS_DAV_COL
-        where COL_PARENT = id) do
-  {
-    oldAcls := vector_concat (oldAcls, vector (_acl));
-    newAcls := vector_concat (newAcls, vector (_acl));
-
-    -- check for graph
-    if (DB.DBA.DAV_DET_COL_RDF_PARAMS (_col_id, _det, _rdf_params))
-    {
-      select COL_OWNER,
-             COL_GROUP,
-             COL_PERMS
-        into _col_owner,
-             _col_group,
-             _col_perms
-        from WS.WS.SYS_DAV_COL
-       where COL_ID = _col_id;
-
-      DB.DBA.DAV_DET_GRAPH_UPDATE (
-        _col_id,
-        _det,
-        _col_owner,
-        _col_owner,
-        _col_group,
-        _col_group,
-        _col_perms,
-        _col_perms,
-        oldAcls,
-        newAcls,
-        _rdf_params,
-        _rdf_params
-      );
-    }
-    else
-    {
-      DB.DBA.DAV_DET_GRAPH_ACL_UPDATE_CHILD (_col_id, oldAcls, newAcls);
+      oldAcls := vector_concat (vector (_acl), oldAcls);
+      newAcls := vector_concat (vector (_acl), newAcls);
     }
   }
 }
 ;
 
+
+--!
+-- \brief Update graph permissions (collections only)
+--/
 create function DB.DBA.DAV_DET_GRAPH_UPDATE (
   in id integer,
-  in detType varchar,
   in oldOwner integer,
   in newOwner integer,
   in oldGroup integer,
@@ -1357,83 +1357,170 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE (
   in newAcls any,
   in oldRDFParams any,
   in newRDFParams any,
-  in force integer := 0)
+  in forceUpdate integer := 0,
+  in forceChild integer := 0)
 {
-  -- dbg_obj_princ ('DB.DBA.DAV_DET_GRAPH_UPDATE (', oldOwner, newOwner, oldGroup, newGroup, oldPermissions, newPermissions, oldAcls, newAcls, oldRDFParams, newRDFParams, ')');
-  declare path varchar;
-  declare permissions, oldGraph, newGraph varchar;
-  declare aq, owner any;
-
-  path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
-  if (isnull (DB.DBA.DAV_HIDE_ERROR (path)))
-  {
-    return;
-  }
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_GRAPH_UPDATE (', id, oldOwner, newOwner, oldGroup, newGroup, oldPermissions, newPermissions, oldAcls, newAcls, oldRDFParams, newRDFParams, ')');
+  declare N integer;
+  declare det, path, graph varchar;
+  declare oldGraph, newGraph varchar;
+  declare aq, aci, acis, rdfParams any;
 
   oldGraph := get_keyword ('graph', oldRDFParams, '');
   newGraph := get_keyword ('graph', newRDFParams, '');
+
+  -- update if needed
   if (
-      (coalesce (oldOwner, -1) = coalesce (newOwner, -1))             and
-      (coalesce (oldGroup, -1) = coalesce (newGroup, -1))             and
+      (oldGraph                      = newGraph)                      and
+      (coalesce (oldOwner, -1)       = coalesce (newOwner, -1))       and
+      (coalesce (oldGroup, -1)       = coalesce (newGroup, -1))       and
       (coalesce (oldPermissions, '') = coalesce (newPermissions, '')) and
       (DB.DBA.DAV_DET_PRIVATE_ACL_COMPARE (oldAcls, newAcls))         and
-      (oldGraph = newGraph)                                           and
-      (force = 0)
+      (forceUpdate = 0)
      )
   {
     return;
   }
 
-  -- old graph
+  -- old col graph
   if (oldGraph <> '')
   {
-    DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (oldGraph, oldOwner);
-    DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (oldGraph, oldGroup);
-    DB.DBA.DAV_DET_PRIVATE_ACL_REMOVE (id, oldGraph, oldAcls);
-    DB.DBA.DAV_DET_PRIVATE_GRAPH_REMOVE (oldGraph);
+    DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (id, 'C', oldGraph, oldOwner, oldGroup, oldAcls);
   }
 
-  -- new graph
+  -- new col graph
   if (newGraph <> '')
   {
-    if (newPermissions[6] = ascii('0'))
+    DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (id, 'C', newGraph, newOwner, newGroup, newPermissions, newAcls, newRDFParams);
+  }
+
+  if (DB.DBA.DAV_DET_COL_RDF_PARAMS (id, det, rdfParams))
+  {
+    if (get_keyword ('graphSecurity', rdfParams, 'off') = 'off')
     {
-      -- add to private graphs
-      DB.DBA.DAV_DET_PRIVATE_INIT ();
-      DB.DBA.DAV_DET_PRIVATE_GRAPH_ADD (newGraph);
-      DB.DBA.DAV_DET_PRIVATE_USER_ADD (newGraph, newOwner);
-      if (newPermissions[3] = ascii('1'))
-      {
-        DB.DBA.DAV_DET_PRIVATE_USER_ADD (newGraph, newGroup);
-      }
-      DB.DBA.DAV_DET_PRIVATE_ACL_ADD (id, newGraph, newAcls);
-    }
-    else
-    {
-      -- remove from private graphs
-      DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (newGraph, newOwner);
-      DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (newGraph, newGroup);
-      DB.DBA.DAV_DET_PRIVATE_ACL_REMOVE (id, newGraph, newAcls);
-      DB.DBA.DAV_DET_PRIVATE_GRAPH_REMOVE (newGraph);
+      graph := get_keyword ('graph', rdfParams);
+      newRDFParams := vector ('graph', graph, 'graphSecurityACI', get_keyword ('graphSecurityACI', newRDFParams));
+      DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (id, 'C', graph, oldOwner, oldGroup, oldAcls);
+      DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (id, 'C', graph, newOwner, newGroup, newPermissions, newAcls, newRDFParams);
     }
   }
 
-  -- update graph if needed
-  if (oldGraph <> newGraph)
+  if (forceChild)
   {
-    aq := async_queue (1);
-    aq_request (aq, 'DB.DBA.DAV_DET_GRAPH_UPDATE_AQ', vector (path, cast (detType as varchar), oldRDFParams, newRDFParams));
+    for (N := 0; N < length (oldAcls); N := N + 1)
+      oldAcls[N] := cast (oldAcls[N] as varchar);
+
+    for (N := 0; N < length (newAcls); N := N + 1)
+      newAcls[N] := cast (newAcls[N] as varchar);
+
+    aq := async_queue (1, 4);
+    aq_request (aq, 'DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD', vector (id, 'C', oldAcls, newAcls, oldRDFParams, newRDFParams, forceUpdate));
   }
 }
 ;
 
-create function DB.DBA.DAV_DET_GRAPH_UPDATE_AQ (
+--!
+-- \brief Update graph permissions (collections only)
+--/
+create function DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (
+  in id integer,
+  in oldRDFParams any,
+  in newRDFParams any)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (', id, oldRDFParams, newRDFParams, ')');
+  declare path, detType varchar;
+  declare oldGraph, newGraph, oldGraphSecurity, newGraphSecurity, oldSponger, newSponger, oldCartridges, newCartridges, oldMetaCartridges, newMetaCartridges varchar;
+  declare oldAcls, newAcls any;
+  declare aq any;
+
+  oldGraphSecurity := get_keyword ('graphSecurity', oldRDFParams, 'off');
+  newGraphSecurity := get_keyword ('graphSecurity', newRDFParams, 'off');
+
+  oldGraph := get_keyword ('graph', oldRDFParams, '');
+  newGraph := get_keyword ('graph', newRDFParams, '');
+
+  oldSponger := get_keyword ('sponger', oldRDFParams, 'off');
+  newSponger := get_keyword ('sponger', newRDFParams, 'off');
+
+  oldCartridges := get_keyword ('cartridges', oldRDFParams, '');
+  newCartridges := get_keyword ('cartridges', newRDFParams, '');
+
+  oldMetaCartridges := get_keyword ('metaCartridges', oldRDFParams, '');
+  newMetaCartridges := get_keyword ('metaCartridges', newRDFParams, '');
+
+  oldAcls := vector ();
+  if (oldGraphSecurity <> 'off')
+  {
+    oldAcls := vector (get_keyword ('graphSecurityACL', oldRDFParams));
+  }
+
+  newAcls := vector ();
+  if (newGraphSecurity <> 'off')
+  {
+    newAcls := vector (get_keyword ('graphSecurityACL', newRDFParams));
+  }
+
+  -- update graph if needed
+  if (
+      (oldGraphSecurity  <> newGraphSecurity)                     or
+      (oldGraph          <> newGraph)                             or
+      (oldSponger        <> newSponger)                           or
+      (oldCartridges     <> newCartridges)                        or
+      (oldMetaCartridges <> newMetaCartridges)                    or
+      (not DB.DBA.DAV_DET_PRIVATE_ACL_COMPARE (oldAcls, newAcls))
+     )
+  {
+    -- old graph
+    if (oldGraph <> '')
+    {
+      DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (id, 'C', oldGraph, null, null, oldAcls);
+    }
+
+    -- new graph
+    if (newGraph <> '')
+    {
+      DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (id, 'C', newGraph, null, null, '000000000', newAcls, newRDFParams);
+    }
+  }
+
+  if (
+      (oldGraph          <> newGraph)          or
+      (oldSponger        <> newSponger)        or
+      (oldCartridges     <> newCartridges)     or
+      (oldMetaCartridges <> newMetaCartridges)
+     )
+  {
+    oldRDFParams := vector (
+      'graph', oldGraph,
+      'sponger', oldSponger,
+      'cartridges', oldCartridges,
+      'metaCartridges', oldMetaCartridges
+    );
+    newRDFParams := vector (
+      'graph', newGraph,
+      'sponger', newSponger,
+      'cartridges', newCartridges,
+      'metaCartridges', newMetaCartridges
+    );
+
+    path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
+    detType := DB.DBA.DAV_DET_COL_DET (id);
+    aq := async_queue (1, 4);
+    aq_request (aq, 'DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ', vector (path, cast (detType as varchar), oldRDFParams, newRDFParams));
+  }
+}
+;
+
+--!
+-- \brief Thread for update RDF sponger data
+--/
+create function DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ (
   in path varchar,
   in det varchar,
   in oldRDFParams any,
   in newRDFParams any)
 {
-  -- dbg_obj_princ ('DB.DBA.DAV_DET_GRAPH_UPDATE_AQ (', path, det, oldRDFParams, newRDFParams, ')');
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ (', path, det, oldRDFParams, newRDFParams, ')');
   declare N, detcol_id integer;
   declare oldGraph, newGraph varchar;
   declare V, filter any;
@@ -1464,110 +1551,421 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE_AQ (
 }
 ;
 
-create function DB.DBA.DAV_DET_COL_RDF_PARAMS (
-  in _id integer,
-  out _det varchar,
-  out _rdf_params any)
+--!
+-- \brief Update graph permissions (collections only) (LDP change)
+--/
+create function DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (
+  in id integer)
 {
-  declare _prop_name, _prop_value, V any;
-  declare exit handler for not found { return; };
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (', id, ')');
 
-  _det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = _id), '');
-  if (_det = '')
-    return 0;
-
-  _rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET (_det, _id);
-  if (not length ( _rdf_params))
-    return 0;
-
-  return 1;
-}
-;
-
-create function DB.DBA.DAV_DET_COL_FIELDS (
-  in id integer,
-  out _det varchar,
-  out _owner integer,
-  out _group integer,
-  out _permissions varchar,
-  out _acl any)
-{
-  select COL_DET,
-         COL_OWNER,
-         COL_GROUP,
-         COL_PERMS,
-         COL_ACL
-    into _det,
-        _owner,
-        _group,
-        _permissions,
-        _acl
-   from WS.WS.SYS_DAV_COL
-  where COL_ID = id;
-
-  _acl := vector (_acl);
-}
-;
-
-create function DB.DBA.DAV_DET_ACL2VAL_TRANSFORM_OR_CHILDS (
-  in mode varchar,
-  in from_id integer,
-  in id integer,
-  in what varchar)
-{
-  declare _det varchar;
-  declare _rdf_params any;
-
-  if (DB.DBA.DAV_DET_COL_RDF_PARAMS (id, _det, _rdf_params))
+  for (select COL_ACL    as _acl,
+              COL_OWNER  as _owner,
+              COL_GROUP  as _group,
+              COL_PERMS  as _perms,
+              COL_PARENT as _parent_id
+         from WS.WS.SYS_DAV_COL
+        where COL_ID = id) do
   {
-    return;
-  }
-  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = id) do
-  {
-    DB.DBA.DAV_DET_ACL2VAL_TRANSFORM_OR_CHILDS (
-      mode,
-      from_id,
-      COL_ID,
-      what
+    declare _oldAcls, _newAcls, _rdfParams any;
+
+    -- ACLs
+    _oldAcls := vector (_acl);
+    _newAcls := vector (_acl);
+    DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (_parent_id, 'C', _oldAcls, _newAcls);
+
+    _rdfParams := vector ('graph', WS.WS.DAV_IRI (DB.DBA.DAV_SEARCH_PATH (id, 'C')));
+
+    -- check for graph
+    DB.DBA.DAV_DET_GRAPH_UPDATE (
+      id,
+      _owner,
+      _owner,
+      _group,
+      _group,
+      _perms,
+      _perms,
+      _oldAcls,
+      _newAcls,
+      _rdfParams,
+      _rdfParams,
+      1,
+      1
     );
   }
 }
 ;
 
-create function DB.DBA.DAV_DET_ACL2VAL_NEED (
+--!
+-- \brief Update graph permissions (resources only)
+--/
+create function DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
   in id integer,
-  in what varchar)
+  in mode varchar,
+  in oldMimeType varchar,
+  in newMimeType varchar,
+  in oldOwner integer,
+  in newOwner integer,
+  in oldGroup integer,
+  in newGroup integer,
+  in oldPermissions varchar,
+  in newPermissions varchar,
+  in oldAcls any,
+  in newAcls any,
+  in oldRDFParams any,
+  in newRDFParams any,
+  in forceUpdate integer := 0)
 {
-  while (1)
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_RES_GRAPH_UPDATE (', id, mode, oldMimeType, newMimeType, oldRDFParams, newRDFParams, ')');
+  declare oldGraph, newGraph varchar;
+  declare aci, acis any;
+
+  oldMimeType := coalesce (oldMimeType, '');
+  newMimeType := coalesce (newMimeType, '');
+  if ((mode = 'I') and (newMimeType <> 'text/turtle'))
+    return;
+
+  if ((mode = 'D') and (oldMimeType <> 'text/turtle'))
+    return;
+
+  if ((mode = 'U') and (oldMimeType <> 'text/turtle') and (newMimeType <> 'text/turtle'))
+    return;
+
+  oldGraph := get_keyword ('graph', oldRDFParams, '');
+  newGraph := get_keyword ('graph', newRDFParams, '');
+
+  -- update if needed
+  if (
+      (oldGraph                      = newGraph)                      and
+      (coalesce (oldOwner, -1)       = coalesce (newOwner, -1))       and
+      (coalesce (oldGroup, -1)       = coalesce (newGroup, -1))       and
+      (coalesce (oldPermissions, '') = coalesce (newPermissions, '')) and
+      (DB.DBA.DAV_DET_PRIVATE_ACL_COMPARE (oldAcls, newAcls))         and
+      (forceUpdate = 0)
+     )
   {
-    if (exists (select TOP 1 1 from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = id and PROP_TYPE = what and PROP_NAME = 'virt:aci_meta_n3'))
-    {
-      return id;
-    }
-    id := (select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = id);
-    if (isnull (id))
-    {
-      return 0;
-    }
+    return;
   }
-  return 0;
+
+  -- old graph
+  if (oldGraph <> '')
+  {
+    DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (id, 'R', oldGraph, oldOwner, oldGroup, oldAcls);
+  }
+
+  -- new graph
+  if (newGraph <> '')
+  {
+    DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (id, 'R', newGraph, newOwner, newGroup, newPermissions, newAcls, newRDFParams);
+  }
+
 }
 ;
 
+create function DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (
+  in id any,
+  in what varchar,
+  in newGraph varchar,
+  in newOwner integer,
+  in newGroup integer,
+  in newPermissions varchar,
+  in newAcls any,
+  in newRDFParams any)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (', id, what, newGraph, newOwner, newGroup, newPermissions, newAcls, newRDFParams, ')');
 
---
--- Migrate old DAV ACL rules to the new one using VAL ACL API
---
-create function DB.DBA.DAV_DET_ACL2VAL_TRANSFORM (
-  in from_id integer,
+  -- Public permissions
+  if (newPermissions[6] = ascii ('1'))
+    return;
+
+  -- Add to private graph
+  -- graph
+  DB.DBA.DAV_DET_PRIVATE_GRAPH_ADD (newGraph);
+  -- owner
+  if (not isnull (newOwner))
+    DB.DBA.DAV_DET_PRIVATE_USER_ADD (newGraph, newOwner);
+
+  -- group
+  if ((not isnull (newGroup)) and (newOwner <> newGroup) and (newPermissions[3] = ascii ('1')))
+    DB.DBA.DAV_DET_PRIVATE_USER_ADD (newGraph, newGroup);
+
+  -- ACLs
+  DB.DBA.DAV_DET_PRIVATE_ACL_ADD (newGraph, newAcls);
+
+}
+;
+
+--!
+-- \brief Remove private permissions, ACLs and ACIs
+--/
+create function DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (
   in id integer,
   in what varchar,
-  in oldOwner integer,
-  in newOwner integer,
   in oldGraph varchar,
-  in newGraph varchar)
+  in oldOwner integer,
+  in oldGroup integer,
+  in oldAcls any)
 {
-  return;
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (', id, what, oldGraph, oldOwner, oldGroup, oldAcls, ')');
+
+  -- Remove from private graphs
+  -- owner
+  if (not isnull (oldOwner))
+    DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (oldGraph, oldOwner);
+
+  -- group
+  if ((not isnull (oldGroup)) and (oldOwner <> oldGroup))
+    DB.DBA.DAV_DET_PRIVATE_USER_REMOVE (oldGraph, oldGroup);
+
+  -- ACLs
+  DB.DBA.DAV_DET_PRIVATE_ACL_REMOVE (oldGraph, oldAcls);
+
+
+  -- graph
+  DB.DBA.DAV_DET_PRIVATE_GRAPH_REMOVE (oldGraph);
+}
+;
+
+create function DB.DBA.DAV_DET_GRAPH_UPDATE_CURRENT (
+  in id integer,
+  in what varchar,
+  in mode varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_GRAPH_UPDATE_CURRENT (', id, what, ')');
+  declare _oldAcls, _newAcls any;
+  declare _acis any;
+  declare _rdfParams any;
+
+  if (what = 'R')
+  {
+    for (select RES_ID        as _id,
+                RES_TYPE      as _type,
+                RES_ACL       as _acl,
+                RES_OWNER     as _owner,
+                RES_GROUP     as _group,
+                RES_PERMS     as _perms,
+                RES_FULL_PATH as _path,
+                RES_COL       as _parent_id
+           from WS.WS.SYS_DAV_RES
+          where RES_ID = id and RES_TYPE = 'text/turtle') do
+    {
+      -- ACLs
+      _oldAcls := vector (_acl);
+      _newAcls := vector (_acl);
+      DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (_parent_id, 'C', _oldAcls, _newAcls);
+
+
+      _rdfParams := vector ('graph', WS.WS.DAV_IRI (_path), 'graphSecurityACI', _acis);
+      DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
+        _id,
+        '',
+        _type,
+        _type,
+        _owner,
+        _owner,
+        _group,
+        _group,
+        _perms,
+        _perms,
+        _oldAcls,
+        _newAcls,
+        _rdfParams,
+        _rdfParams,
+        1
+      );
+    }
+  }
+
+  if (what = 'C')
+  {
+    for (select COL_ID     as _id,
+                COL_ACL    as _acl,
+                COL_OWNER  as _owner,
+                COL_GROUP  as _group,
+                COL_PERMS  as _perms,
+                COL_PARENT as _parent_id
+           from WS.WS.SYS_DAV_COL
+          where COL_ID = id) do
+    {
+      declare _path varchar;
+
+      _path := DB.DBA.DAV_SEARCH_PATH (_id, 'C');
+
+      -- ACLs
+      _oldAcls := vector (_acl);
+      _newAcls := vector (_acl);
+      DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (_parent_id, 'C', _oldAcls, _newAcls);
+
+
+      _rdfParams := vector ('graph', WS.WS.DAV_IRI (_path), 'graphSecurityACI', _acis);
+      DB.DBA.DAV_DET_GRAPH_UPDATE (
+        _id,
+        _owner,
+        _owner,
+        _group,
+        _group,
+        _perms,
+        _perms,
+        _oldAcls,
+        _newAcls,
+        _rdfParams,
+        _rdfParams,
+        1,
+        1
+      );
+    }
+  }
+}
+;
+
+create function DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD (
+  in id integer,
+  in what varchar,
+  in oldAcls any,
+  in newAcls any,
+  in oldRDFParams any,
+  in newRDFParams any,
+  in forceUpdate integer := 0)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD (', id, what, oldAcls, newAcls, ')');
+  declare _oldAcls, _newAcls any;
+  declare _aci, _acis, _rdfParams any;
+
+  for (select RES_ID    as _id,
+              RES_TYPE  as _type,
+              RES_ACL   as _acl,
+              RES_OWNER as _owner,
+              RES_GROUP as _group,
+              RES_PERMS as _perms,
+              RES_FULL_PATH as _path
+         from WS.WS.SYS_DAV_RES
+        where RES_COL = id and RES_TYPE = 'text/turtle') do
+  {
+    -- ACLs
+    if (length (_acl) > 8)
+    {
+      _oldAcls := vector_concat (oldAcls, vector (_acl));
+      _newAcls := vector_concat (newAcls, vector (_acl));
+    }
+    else
+    {
+      _oldAcls := oldAcls;
+      _newAcls := newAcls;
+    }
+
+
+    _rdfParams := vector ('graph', WS.WS.DAV_IRI (_path), 'graphSecurityACI', _acis);
+    DB.DBA.DAV_DET_RES_GRAPH_UPDATE (
+      _id,
+      '',
+      _type,
+      _type,
+      _owner,
+      _owner,
+      _group,
+      _group,
+      _perms,
+      _perms,
+      _oldAcls,
+      _newAcls,
+      _rdfParams,
+      _rdfParams,
+      forceUpdate
+    );
+  }
+
+  for (select COL_ID    as _id,
+              COL_ACL   as _acl,
+              COL_OWNER as _owner,
+              COL_GROUP as _group,
+              COL_PERMS as _perms
+         from WS.WS.SYS_DAV_COL
+        where COL_PARENT = id) do
+  {
+    declare _path varchar;
+
+    _path := DB.DBA.DAV_SEARCH_PATH (_id, 'C');
+
+    -- ACLs
+    if (length (_acl) > 8)
+    {
+      _oldAcls := vector_concat (oldAcls, vector (_acl));
+      _newAcls := vector_concat (newAcls, vector (_acl));
+    }
+    else
+    {
+      _oldAcls := oldAcls;
+      _newAcls := newAcls;
+    }
+
+
+    -- check for graph
+    _rdfParams := vector ('graph', WS.WS.DAV_IRI (_path), 'graphSecurityACI', _acis);
+    DB.DBA.DAV_DET_GRAPH_UPDATE (
+      _id,
+      _owner,
+      _owner,
+      _group,
+      _group,
+      _perms,
+      _perms,
+      _oldAcls,
+      _newAcls,
+      _rdfParams,
+      _rdfParams,
+      forceUpdate,
+      0
+    );
+
+    DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD (
+      _id,
+      'C',
+      _oldAcls,
+      _newAcls,
+      _rdfParams,
+      _rdfParams,
+      forceUpdate
+    );
+  }
+}
+;
+
+create function DB.DBA.DAV_DET_COL_DET (
+  in _id integer,
+  in _mode integer := 1)
+{
+  declare _det varchar;
+
+  _det := '';
+  if (_mode)
+  {
+    _det := coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = _id), '');
+  }
+  if (_det = '')
+  {
+    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_id, 'C', 'virt:rdfSink-rdf', 0)) is not null)
+      _det := 'rdfSink';
+  }
+
+  return _det;
+}
+;
+
+create function DB.DBA.DAV_DET_COL_RDF_PARAMS (
+  in _id integer,
+  out _det varchar,
+  out _rdfParams any)
+{
+  declare _prop_name, _prop_value, V any;
+  declare exit handler for not found { return; };
+
+  _det := DB.DBA.DAV_DET_COL_DET (_id);
+  if (_det = '')
+    return 0;
+
+  _rdfParams := DB.DBA.DAV_DET_RDF_PARAMS_GET (_det, _id);
+
+  return length ( _rdfParams);
 }
 ;
 
@@ -1577,202 +1975,158 @@ create function DB.DBA.DAV_DET_ACL2VAL_TRANSFORM (
 --
 
 -- WS.WS.SYS_DAV_COL
-create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL) on WS.WS.SYS_DAV_COL order 111 referencing old as O, new as N
+create trigger SYS_DAV_COL_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_COL order 111 referencing new as N
 {
-  declare _id integer;
-  declare _det varchar;
-  declare _oldAcl, _newAcl, _rdf_params any;
+  -- dbg_obj_print ('SYS_DAV_COL_PRIVATE_GRAPH_I ---------------');
+  declare _newPath varchar;
+  declare _oldAcls, _newAcls any;
+  declare _acis, _rdfParams any;
 
-  if (DB.DBA.DAV_DET_COL_RDF_PARAMS (O.COL_ID, _det, _rdf_params))
-  {
-    _oldAcl := vector (O.COL_ACL);
-    _newAcl := vector (N.COL_ACL);
-    DB.DBA.DAV_DET_GRAPH_UPDATE (
-      N.COL_ID,
-      _det,
-      O.COL_OWNER,
-      N.COL_OWNER,
-      O.COL_GROUP,
-      N.COL_GROUP,
-      O.COL_PERMS,
-      N.COL_PERMS,
-      _oldAcl,
-      _newAcl,
-      _rdf_params,
-      _rdf_params
-    );
-    if (O.COL_OWNER <> N.COL_OWNER)
-    {
-      _id := N.COL_ID;
-      _id := DB.DBA.DAV_DET_ACL2VAL_NEED (_id, 'C');
-      if (_id)
-      {
-        DB.DBA.DAV_DET_ACL2VAL_TRANSFORM (
-          N.COL_ID,
-          _id,
-          'C',
-          O.COL_OWNER,
-          N.COL_OWNER,
-          _rdf_params,
-          _rdf_params
-        );
-      }
-    }
-  }
-  else if (O.COL_ACL <> N.COL_ACL)
-  {
-    DB.DBA.DAV_DET_GRAPH_ACL_UPDATE (
-      N.COL_ID,
-      vector (O.COL_ACL),
-      vector (N.COL_ACL)
-    );
-  }
+  -- Paths
+  _newPath := DB.DBA.DAV_SEARCH_PATH (N.COL_ID, 'C');
+
+  -- ACLs
+  _oldAcls := vector ();
+  _newAcls := vector (N.COL_ACL);
+  DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (N.COL_PARENT, 'C', _oldAcls, _newAcls);
+
+
+  _rdfParams := vector ('graph', WS.WS.DAV_IRI (_newPath), 'graphSecurityACI', _acis);
+  DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (
+    N.COL_ID,
+    'C',
+    WS.WS.DAV_IRI (_newPath),
+    N.COL_OWNER,
+    N.COL_GROUP,
+    N.COL_PERMS,
+    _newAcls,
+    _rdfParams
+  );
+}
+;
+
+create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL) on WS.WS.SYS_DAV_COL order 111 referencing old as O, new as N
+{
+  -- dbg_obj_print ('SYS_DAV_COL_PRIVATE_GRAPH_U ---------------');
+  declare _oldPath, _newPath varchar;
+  declare _oldAcls, _newAcls any;
+  declare _acis, _oldRDFParams, _newRDFParams any;
+
+  -- Pahs
+  _oldPath := DB.DBA.DAV_SEARCH_PATH (N.COL_PARENT, 'C') || O.COL_NAME || '/';
+  _newPath := DB.DBA.DAV_SEARCH_PATH (N.COL_ID, 'C');
+
+  -- ACLs
+  _oldAcls := vector (O.COL_ACL);
+  _newAcls := vector (N.COL_ACL);
+  DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (N.COL_PARENT, 'C', _oldAcls, _newAcls);
+
+
+  _oldRDFParams := vector ('graph', WS.WS.DAV_IRI (_oldPath), 'graphSecurityACI', _acis);
+  _newRDFParams := vector ('graph', WS.WS.DAV_IRI (_newPath), 'graphSecurityACI', _acis);
+  DB.DBA.DAV_DET_GRAPH_UPDATE (
+    N.COL_ID,
+    O.COL_OWNER,
+    N.COL_OWNER,
+    O.COL_GROUP,
+    N.COL_GROUP,
+    O.COL_PERMS,
+    N.COL_PERMS,
+    _oldAcls,
+    _newAcls,
+    _oldRDFParams,
+    _newRDFParams,
+    0,
+    1
+  );
+}
+;
+
+create trigger SYS_DAV_COL_PRIVATE_GRAPH_D after delete on WS.WS.SYS_DAV_COL order 111 referencing old as O
+{
+  -- dbg_obj_print ('SYS_DAV_COL_PRIVATE_GRAPH_D ---------------');
+  declare _acl, _oldAcls, _newAcls any;
+
+  -- ACLs
+  _oldAcls := vector (O.COL_ACL);
+  _newAcls := vector ();
+  DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (O.COL_PARENT, 'C', _oldAcls, _newAcls);
+
+  DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (
+    O.COL_ID,
+    'C',
+    WS.WS.DAV_IRI (DB.DBA.DAV_SEARCH_PATH (O.COL_ID, 'C')),
+    O.COL_OWNER,
+    O.COL_GROUP,
+    _oldAcls
+  );
 }
 ;
 
 -- WS.WS.SYS_DAV_PROP
 create trigger SYS_DAV_PROP_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_PROP order 111 referencing new as N
 {
-  -- Only collections
-  if (N.PROP_TYPE <> 'C')
-    return;
-
-  if (N.PROP_NAME like 'virt:%-rdf')
+  -- dbg_obj_princ ('SYS_DAV_PROP_PRIVATE_GRAPH_I ---------------', N.PROP_TYPE, N.PROP_NAME);
+  if (N.PROP_NAME = 'virt:aci_meta_n3')
   {
-    declare _id, _det, _owner, _group, _permissions, _acls, _rdf_params any;
-
-    _rdf_params := deserialize (N.PROP_VALUE);
-    DB.DBA.DAV_DET_COL_FIELDS (N.PROP_PARENT_ID, _det, _owner, _group, _permissions, _acls);
-    DB.DBA.DAV_DET_GRAPH_UPDATE (
-      N.PROP_PARENT_ID,
-      _det,
-      _owner,
-      _owner,
-      _group,
-      _group,
-      _permissions,
-      _permissions,
-      _acls,
-      _acls,
-      null,
-      _rdf_params
-    );
-    _id := N.PROP_PARENT_ID;
-    _id := DB.DBA.DAV_DET_ACL2VAL_NEED (_id, 'C');
-    if (_id)
-    {
-      DB.DBA.DAV_DET_ACL2VAL_TRANSFORM (
-        N.PROP_PARENT_ID,
-        _id,
-        'C',
-        _owner,
-        _owner,
-        null,
-        _rdf_params
-      );
-    }
+    DB.DBA.DAV_DET_GRAPH_UPDATE_CURRENT (N.PROP_PARENT_ID, N.PROP_TYPE, 'I');
   }
-  else if (N.PROP_NAME = 'virt:aci_meta_n3')
+  else if ((N.PROP_TYPE = 'C') and (N.PROP_NAME = 'LDP'))
   {
-    DB.DBA.DAV_DET_ACL2VAL_TRANSFORM_OR_CHILDS ('I', N.PROP_PARENT_ID, N.PROP_PARENT_ID, 'C');
+    DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (N.PROP_PARENT_ID);
+  }
+  else if ((N.PROP_TYPE = 'C') and (N.PROP_NAME like 'virt:%-rdf'))
+  {
+    -- Only collections
+    declare _newRDFParams any;
+
+    _newRDFParams := deserialize (N.PROP_VALUE);
+    DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (N.PROP_PARENT_ID, null, _newRDFParams);
   }
 }
 ;
 
 create trigger SYS_DAV_PROP_PRIVATE_GRAPH_U after update (PROP_VALUE) on WS.WS.SYS_DAV_PROP order 111 referencing old as O, new as N
 {
-  -- Only collections
-  if (N.PROP_TYPE <> 'C')
-    return;
-
-  if (N.PROP_NAME like 'virt:%-rdf')
+  -- dbg_obj_princ ('SYS_DAV_PROP_PRIVATE_GRAPH_U ---------------', N.PROP_NAME);
+  if (N.PROP_NAME = 'virt:aci_meta_n3')
   {
-    declare _id, _det, _owner, _group, _permissions, _acls, _old_rdf_params, _new_rdf_params any;
-
-    _old_rdf_params := deserialize (O.PROP_VALUE);
-    _new_rdf_params := deserialize (N.PROP_VALUE);
-    DB.DBA.DAV_DET_COL_FIELDS (N.PROP_PARENT_ID, _det, _owner, _group, _permissions, _acls);
-    DB.DBA.DAV_DET_GRAPH_UPDATE (
-      N.PROP_PARENT_ID,
-      _det,
-      _owner,
-      _owner,
-      _group,
-      _group,
-      _permissions,
-      _permissions,
-      _acls,
-      _acls,
-      _old_rdf_params,
-      _new_rdf_params
-    );
-    _id := N.PROP_PARENT_ID;
-    _id := DB.DBA.DAV_DET_ACL2VAL_NEED (_id, 'C');
-    if (_id)
-    {
-      DB.DBA.DAV_DET_ACL2VAL_TRANSFORM (
-        N.PROP_PARENT_ID,
-        _id,
-        'C',
-        _owner,
-        _owner,
-        _old_rdf_params,
-        _new_rdf_params
-      );
-    }
+    DB.DBA.DAV_DET_GRAPH_UPDATE_CURRENT (N.PROP_PARENT_ID, N.PROP_TYPE, 'U');
   }
-  else if (N.PROP_NAME = 'virt:aci_meta_n3')
+  else if ((N.PROP_TYPE = 'C') and (N.PROP_NAME = 'LDP'))
   {
-    DB.DBA.DAV_DET_ACL2VAL_TRANSFORM_OR_CHILDS ('U', N.PROP_PARENT_ID, N.PROP_PARENT_ID, 'C');
+    DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (N.PROP_PARENT_ID);
+  }
+  else if ((N.PROP_TYPE = 'C') and (N.PROP_NAME like 'virt:%-rdf'))
+  {
+    -- Only collections
+    declare _oldRDFParams, _newRDFParams any;
+
+    _oldRDFParams := deserialize (O.PROP_VALUE);
+    _newRDFParams := deserialize (N.PROP_VALUE);
+    DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (N.PROP_PARENT_ID, _oldRDFParams, _newRDFParams);
   }
 }
 ;
 
 create trigger SYS_DAV_PROP_PRIVATE_GRAPH_D before delete on WS.WS.SYS_DAV_PROP order 111 referencing old as O
 {
-
-  -- Only collections
-  if (O.PROP_TYPE <> 'C')
-    return;
-
-  if (O.PROP_NAME like 'virt:%-rdf')
+  -- dbg_obj_princ ('SYS_DAV_PROP_PRIVATE_GRAPH_D ---------------', O.PROP_NAME);
+  if (O.PROP_NAME = 'virt:aci_meta_n3')
   {
-    declare _id, _det, _owner, _group, _permissions, _acls, _rdf_params any;
-
-    _rdf_params := deserialize (O.PROP_VALUE);
-    DB.DBA.DAV_DET_COL_FIELDS (O.PROP_PARENT_ID, _det, _owner, _group, _permissions, _acls);
-    DB.DBA.DAV_DET_GRAPH_UPDATE (
-      O.PROP_PARENT_ID,
-      _det,
-      _owner,
-      _owner,
-      _group,
-      _group,
-      _permissions,
-      _permissions,
-      _acls,
-      _acls,
-      _rdf_params,
-      null
-    );
-    _id := O.PROP_PARENT_ID;
-    _id := DB.DBA.DAV_DET_ACL2VAL_NEED (_id, 'C');
-    if (_id)
-    {
-      DB.DBA.DAV_DET_ACL2VAL_TRANSFORM (
-        O.PROP_PARENT_ID,
-        _id,
-        'C',
-        _owner,
-        _owner,
-        _rdf_params,
-        null
-      );
-    }
+    DB.DBA.DAV_DET_GRAPH_UPDATE_CURRENT (O.PROP_PARENT_ID, O.PROP_TYPE, 'D');
   }
-  else if (O.PROP_NAME = 'virt:aci_meta_n3')
+  else if ((O.PROP_TYPE = 'C') and (O.PROP_NAME = 'LDP'))
   {
-    DB.DBA.DAV_DET_ACL2VAL_TRANSFORM_OR_CHILDS ('D', O.PROP_PARENT_ID, O.PROP_PARENT_ID, 'C');
+    DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (O.PROP_PARENT_ID);
+  }
+  else if ((O.PROP_TYPE = 'C') and (O.PROP_NAME like 'virt:%-rdf'))
+  {
+    -- Only collections
+    declare _oldRDFParams any;
+
+    _oldRDFParams := deserialize (O.PROP_VALUE);
+    DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (O.PROP_PARENT_ID, _oldRDFParams, null);
   }
 }
 ;

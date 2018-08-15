@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -813,7 +813,7 @@ bif_search_excerpt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t *orig_word_hits = bif_strict_2type_array_arg (DV_STRING, DV_WIDE, qst, args, 0, "search_excerpt");
   caddr_t *normalized_word_hits = NULL;
-  caddr_t text, text_with_offset = NULL, original_text = bif_arg (qst, args, 1, "search_excerpt");
+  caddr_t text = NULL, text_with_offset = NULL, original_text = bif_arg (qst, args, 1, "search_excerpt");
   ptrlong within_first = 200000;
   ptrlong max_excerpt = 90;
   ptrlong total = 200;

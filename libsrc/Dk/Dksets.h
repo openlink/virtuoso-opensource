@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -144,6 +144,7 @@ EXE_EXPORT (void, dk_set_push, (s_node_t ** set, void *item));
 EXE_EXPORT (void, dk_set_push_two, (s_node_t ** set, void *car_item, void *cadr_item));
 EXE_EXPORT (void, dk_set_pushnew, (s_node_t ** set, void *item));
 EXE_EXPORT (void *, dk_set_pop, (s_node_t ** set));
+EXE_EXPORT (void *, dk_set_pop_or_null, (s_node_t ** set));
 
 #ifdef MALLOC_DEBUG
 dk_set_t dbg_dk_set_cons (const char *file, int line, void *s1, dk_set_t s2);
@@ -155,6 +156,7 @@ void dbg_dk_set_push (const char *file, int line, s_node_t ** set, void *item);
 void dbg_dk_set_push_two (const char *file, int line, s_node_t ** set, void *car_item, void *cadr_item);
 void dbg_dk_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
 void *dbg_dk_set_pop (const char *file, int line, s_node_t ** set);
+void *dbg_dk_set_pop_or_null (const char *file, int line, s_node_t ** set);
 int dbg_dk_set_delete (const char *file, int line, dk_set_t * set, void *item);
 void *dbg_dk_set_delete_nth (const char *file, int line, dk_set_t * set, int idx);
 void dbg_dk_set_free (const char *file, int line, s_node_t * set);
@@ -172,6 +174,7 @@ dk_set_t dbg_dk_set_copy (const char *file, int line, dk_set_t s);
 #define dk_set_push_two(S,A,AD)	dbg_dk_set_push_two (__FILE__, __LINE__, (S), (A), (AD))
 #define dk_set_pushnew(S,I)	dbg_dk_set_pushnew (__FILE__, __LINE__, (S), (I))
 #define dk_set_pop(S)		dbg_dk_set_pop (__FILE__, __LINE__, (S))
+#define dk_set_pop_or_null(S)	dbg_dk_set_pop_or_null (__FILE__, __LINE__, (S))
 #define dk_set_delete(S,I)	dbg_dk_set_delete (__FILE__, __LINE__, (S), (I))
 #define dk_set_delete_nth(S,N)	dbg_dk_set_delete_nth (__FILE__, __LINE__, (S), (N))
 #define dk_set_free(S)		dbg_dk_set_free (__FILE__,__LINE__, (S))

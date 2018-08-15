@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -97,10 +97,10 @@
                           Public Key Infrastructure
                         </td>
                         <td class="page_tab" align="center">
-                          <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+                          <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Root Certificates" render-only="1"/>
                         </td>
                         <td class="page_tab" align="center">
-                          <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Roots" render-only="1"/>
+                          <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
                         </td>
                         <td class="page_tab_empty" align="right" width="100%">
                         </td>

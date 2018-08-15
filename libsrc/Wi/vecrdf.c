@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -341,8 +341,9 @@ bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slo
   if (!rb_complete_qr)
     {
       rb_complete_qr =
-	  sql_compile_static ("select ro_dt_and_lang, ro_flags, ro_val, ro_long from rdf_obj where ro_id = rdf_box_ro_id (?)",
-	  bootstrap_cli, &err, SQLC_DEFAULT);
+	  sql_compile_static
+	  ("select RO_DT_AND_LANG, RO_FLAGS, RO_VAL, RO_LONG from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", bootstrap_cli,
+	  &err, SQLC_DEFAULT);
     }
 
   if (!ret)
@@ -589,7 +590,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	  dc_set_rb (dc, out_set, dt_lang, flags, val, lng, ro_id);
 	  n_res++;
 	}
-      for (inx = 0; inx < dc->dc_n_values; inx++)
+      for (inx = 0; inx < n_sets; inx++)
 	{
 	  if (BIT_IS_SET (rb_bits, inx))
 	    {
@@ -749,7 +750,7 @@ from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_
 	  dc_set_rb (dc, out_set, dt_lang, flags, val, lng, ro_id);
 	  n_res++;
 	}
-      for (inx = 0; inx <dc->dc_n_values; inx++)
+      for (inx = 0; inx < dc->dc_n_values; inx++)
 	{
 	  if (BIT_IS_SET (rb_bits, inx))
 	    { 

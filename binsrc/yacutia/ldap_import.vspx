@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,172 +19,511 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="ldap_import_directory"
+<v:page name="ldap_import"
   decor="yacutia_decor.vspx"
   style="yacutia_style.xsl"
   fast-render="1"
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:vm="http://www.openlinksw.com/vspx/macro"
   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Virtuoso Account Management</vm:pagetitle>
-  <vm:pagewrapper>
-    <vm:variables>
-    </vm:variables>
-    <vm:menu>
-      <vm:menuitem value="LDAP Import"/>
-    </vm:menu>
-    <vm:header caption="LDAP Directory Search"/>
-    <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
-                    <tr>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url31" value="--'Users'" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="Grants"  url="accounts_page.vspx?page=3" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">
-                          LDAP Import
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url15" value="LDAP Servers"  url="ldap_server.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
+
+  <v:variable name="ldi_mode" persist="0" param-name="mode" type="varchar" default="'1'" />
+  <v:variable name="ldi_result" type="any" default="null" />
+  <v:variable name="ldi_maps" type="any" default="null" />
+
+  <script type="text/javascript">
+    <![CDATA[
+      function sslTypeChange ()
+      {
+        $('ldi_port').value = ($('ldi_ssl').checked)? '636' : '389';
+      }
+
+      function checkRest (form, sel)
+      {
+        if (sel.selectedIndex == 0)
+          return;
+
+        for (var i = 0; i < form.elements.length; i++)
+        {
+          var contr = form.elements[i];
+          if (contr != null && contr != sel && contr.type == "select-one")
+          {
+            if (contr.selectedIndex == sel.selectedIndex)
+              contr.selectedIndex = 0;
+          }
+        }
+      }
+    ]]>
+  </script>
+
+  <v:method name="render_select" arglist="inout nam any">
+    <![CDATA[
+      declare uid_sel, fn_sel, emal_sel varchar;
+
+      uid_sel := '';
+      fn_sel := '';
+      emal_sel := '';
+
+      if (nam = 'uid')
+        uid_sel := 'selected';
+      else if (nam = 'cn')
+        fn_sel := 'selected';
+      else if (nam = 'mail')
+        emal_sel := 'selected';
+
+      http (sprintf ('<select name="sel_%s" onchange="checkRest(this.form,this)">', nam));
+      http ('<option value="skip">--</option>');
+      http (sprintf ('<option value="uid" %s>Login Name</option>', uid_sel));
+      http (sprintf ('<option value="fn" %s>Full Name</option>', fn_sel));
+      http (sprintf ('<option value="email" %s>E-Mail</option>', emal_sel));
+      http ('<option value="pwd">Initial Password</option>');
+      http ('</select>');
+    ]]>
+  </v:method>
+
+  <table class="tab_page" style="border: 0px;">
                     <tr>
                       <td valign="top">
+
+        <v:template name="template_ldi1" type="simple" enabled="--case when (self.ldi_mode = '1') then 1 else 0 end">
 	<table class="ctl_grp">
-      <v:form type="simple" name="sel_ldapf" method="POST">
+
+            <v:form type="simple" name="ldi_form1_select" method="POST" action="accounts_page.vspx?page=4&mode=1">
 	  <tr>
-	    <td colspan="2"><img src="images/icons/filter_32.png"/></td>
-	  </tr>
-	  <tr>
-	    <td CLASS="genlisthead">LDAP server</td>
-	    <td CLASS="geninput">
-	      <v:data-list name="ldap_s" value="" key-column="LS_ADDRESS" value-column="LS_ADDRESS"
-		sql="select 'User-defined' as LS_ADDRESS from SYS_USERS where U_ID = 0 union all
-			select LS_ADDRESS from SYS_LDAP_SERVERS" error-glyph="*" auto-submit="1">
+                <th>LDAP server</th>
+                <td>
+                                <v:data-list
+                    name="ldi_select"
+                                  value=""
+                                  key-column="LS_ADDRESS"
+                                  value-column="LS_ADDRESS"
+                                  sql="select 'User-defined' as LS_ADDRESS from SYS_USERS where U_ID = 0 union all select LS_ADDRESS from SYS_LDAP_SERVERS"
+                                  error-glyph="*"
+                    auto-submit="1"
+                    xhtml_style="width: 350px;">
 	      </v:data-list>
 	    </td>
 	  </tr>
-	  <v:on-post><![CDATA[
+                            <v:on-post>
+                              <![CDATA[
 	    if (e.ve_is_post and e.ve_button = control)
 	      {
-	        if (self.ldap_s.ufl_value <> 'User-defined')
+                    if (self.ldi_select.ufl_value <> 'User-defined')
 		  {
 		    declare hf, arr, host, port, lver, bind, ufld, uid, pwd any;
 
-	            hf := WS.WS.PARSE_URI (self.ldap_s.ufl_value);
+                      hf := WS.WS.PARSE_URI (self.ldi_select.ufl_value);
 		    arr := split_and_decode (hf[1], 0, '\0\0:');
-		    self.host.ufl_value := arr[0];
-		    if (length (arr) > 1)
-		      self.port.ufl_value := arr[1];
-		    else
-		      self.port.ufl_value := '389';
-		    pwd := pwd_magic_calc (uid, self.pwd.ufl_value, 0);  
+                      self.ldi_host.ufl_value := arr[0];
+                      self.ldi_port.ufl_value := case when (length (arr) > 1) then arr[1] else case when self.ldi_ssl.ufl_selected then '636' else '389' end end;
 		    select LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL
-		    into self.base.ufl_value, lver, bind, ufld, uid, pwd, self.ssl.ufl_selected
-		      from SYS_LDAP_SERVERS where LS_ADDRESS = self.ldap_s.ufl_value;
-		    pwd := pwd_magic_calc (uid, pwd, 1);  
-		    self.bind.ufl_value := sprintf ('%s=%s, %s', ufld, uid, bind);
+                        into self.ldi_base.ufl_value, lver, bind, ufld, uid, pwd, self.ldi_ssl.ufl_selected
+                                      from SYS_LDAP_SERVERS
+                       where LS_ADDRESS = self.ldi_select.ufl_value;
+
+                      self.ldi_lver.ufl_value := cast (lver as varchar);
+                      self.ldi_lver.vs_set_selected ();
+                      self.ldi_pwd.ufl_value := pwd_magic_calc (uid, pwd, 1);
+                      self.ldi_bind.ufl_value := sprintf ('%s=%s, %s', ufld, uid, bind);
 		  }
-		self.ldaps.ufl_value := self.ldap_s.ufl_value;
+                    self.ldi_ldaps.ufl_value := self.ldi_select.ufl_value;
 	      }
-	    ]]></v:on-post>
+                              ]]>
+                            </v:on-post>
 	</v:form>
-	<v:form type="simple" name="dav_user" method="POST" action="ldap_import_1.vspx">
-	  <v:text name="ldaps" value="" type="hidden" />
+
+            <v:form type="simple" name="ldi_form1" method="POST" action="accounts_page.vspx?page=4&mode=2">
+              <v:text name="ldi_ldaps" value="" type="hidden" />
 	  <v:template name="serv_det" type="simple">
 	  <tr>
-	    <td CLASS="genlisthead">Host name</td>
-	    <td CLASS="geninput">
-	      <v:text html_size="35" name="host" value="" >
-		  <v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name"
-		  runat="client"/>
+                  <th>Host name</th>
+                  <td>
+                    <v:text xhtml_style="width: 350px;" name="ldi_host" value="" >
+                      <v:validator test="regexp" regexp="^(ldap(s)?://)?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$" message="Invalid host name" runat="client"/>
 	      </v:text>
 	    </td>
 	  </tr>
 	  <tr>
-	    <td CLASS="genlisthead">Port</td>
-	    <td CLASS="geninput">
-	      <v:text xhtml_size="5" name="port" value="389"/>
+                  <th>Port</th>
+                  <td>
+                    <v:text xhtml_size="2" name="ldi_port" xhtml_id="ldi_port" value="389"/>
 	    </td>
 	  </tr>
 	  <tr>
-	      <td CLASS="geninput">
-		<v:check-box name="ssl" value="1" xhtml_id="ssl"/>
+                  <td></td>
+                  <th><label><v:check-box name="ldi_ssl" xhtml_id="ldi_ssl" value="1" xhtml_onchange="sslTypeChange();" /> Try TLS</label></th>
+                </tr>
+                <tr>
+                  <th>Base</th>
+                  <td>
+                    <v:text xhtml_style="width: 350px;" name="ldi_base" value=""/>
 	      </td>
-	      <td CLASS="genlisthead"><label for="ssl">Try TLS</label></td>
 	    </tr>
 	  <tr>
-	    <td CLASS="genlisthead">Base</td>
-	    <td CLASS="geninput">
-	      <v:text xhtml_size="35" name="base" value=""/>
+                  <th>Bind DN</th>
+                  <td>
+                    <v:text xhtml_style="width: 350px;" name="ldi_bind" value=""/>
 	    </td>
 	  </tr>
 	  <tr>
-	    <td CLASS="genlisthead">Bind DN</td>
-	    <td CLASS="geninput">
-	      <v:text xhtml_size="35" name="bind" value=""/>
+                  <th>Password</th>
+                  <td>
+                    <v:text xhtml_style="width: 350px;" name="ldi_pwd" value="" type="password"/>
 	      </td>
 	    </tr>
 	    <tr>
-	      <td CLASS="genlisthead">Password</td>
-	      <td CLASS="geninput">
-		<v:text xhtml_size="35" name="pwd" value="" type="password"/>
+                  <th>LDAP Version</th>
+                  <td>
+                    <v:select-list name="ldi_lver">
+                      <v:item value="2" name="2"/>
+                      <v:item value="3" name="3"/>
+                    </v:select-list>
 	      </td>
 	    </tr>
 	  </v:template>
 	    <tr>
-	      <td CLASS="genlisthead">Search string</td>
-	      <td CLASS="geninput">
-		<v:text xhtml_size="35" name="src" value="(cn=*)"/>
+                <th>Search string</th>
+                <td>
+                  <v:text xhtml_style="width: 350px;" name="ldi_src" value="(cn=*)"/>
 	      </td>
 	    </tr>
 	    <tr>
-	      <td colspan="2" CLASS="genlisthead">
-		<v:button action="simple" name="get" value="Search"/>
+                <th/>
+                <td>
+                  <v:button action="simple" name="ldi_get" value="Search">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_data_bind (e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button name="ldi_cancel1" value="Cancel" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_redirect ('accounts_page.vspx?page=4&mode=1');
+                      ]]>
+                    </v:on-post>
+                  </v:button>
 	      </td>
 	    </tr>
 	</v:form>
 	  </table>
-                      </td>
-                    </tr>
-                  </table>
+        </v:template>
+
+        <v:template name="template_ldi2" type="simple" enabled="--case when (self.ldi_mode = '2')  then 1 else 0 end">
+          <v:form name="ldi_form2" type="simple" method="POST" action="accounts_page.vspx?page=4&mode=3">
+            <v:before-data-bind>
+              declare ssl integer;
+              declare host varchar;
+
+              if (self.vc_is_valid = 0)
+                return;
+
+              ssl := self.ldi_ssl.ufl_selected;
+              host := self.ldi_host.ufl_value || ':' || self.ldi_port.ufl_value;
+              if (host not like 'ldap%://%')
+                host := case when ssl then 'ldaps://' else 'ldap://' end || host;
+
+              declare exit handler for sqlstate '*'
+              {
+                rollback work;
+                self.vc_is_valid := 0;
+                self.vc_error_message := __SQL_MESSAGE;
+                self.ldi_result := null;
+                return;
+              };
+              connection_set ('LDAP_VERSION', case when ssl then 3 else 2 end);
+              self.ldi_result := ldap_search (host, ssl, self.ldi_base.ufl_value, self.ldi_src.ufl_value, self.ldi_bind.ufl_value, self.ldi_pwd.ufl_value);
+            </v:before-data-bind>
+
+            <table  class="listing">
+              <tr class="listing_header_row">
+                <th>LDAP property</th>
+                <th>Sample Data (first record)</th>
+                <th>User Property</th>
+              </tr>
+              <?vsp
+                declare i, l, j, k integer;
+                declare item, items any;
+
+                items := self.ldi_result;
+                l := length (items);
+                for (i := 0; i < l; i := i + 2)
+                {
+                  if (items[i] = 'entry')
+                  {
+                    item := items[i+1];
+                    k := length (item);
+                    for (j := 0; j < k; j := j + 2)
+                    {
+              ?>
+              <tr>
+                <td  class="listing_col" nowrap="1">
+                  <?V item[j] ?>
+                </td>
+                <td class="listing_col" nowrap="1">
+                  <?V substring (case when isstring (item[j+1]) then item[j+1] else item[j+1][0] end, 1, 50) ?>
+                </td>
+                <td class="listing_col" nowrap="1">
+                  <?vsp
+                    self.render_select (item[j]);
+                  ?>
+                </td>
+              </tr>
+              <?vsp
+                    }
+                    i := l;
+                  }
+                }
+              ?>
+              <tr>
+                <td colspan="3">
+                  <v:button name="ldi_go2" value="Next" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_data_bind (e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button name="ldi_cancel2" value="Cancel" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_redirect ('accounts_page.vspx?page=4&mode=1');
+                      ]]>
+                    </v:on-post>
+                  </v:button>
                 </td>
               </tr>
             </table>
+          </v:form>
+        </v:template>
+
+        <v:template name="template_ldi3" type="simple" enabled="--case when (self.ldi_mode = '3') then 1 else 0 end">
+          <v:form name="ldi_form3" type="simple" method="POST" action="accounts_page.vspx?page=4&mode=4">
+            <v:before-data-bind>
+              <![CDATA[
+                declare j, k int;
+                declare opt, params, maps, uid any;
+
+                params := e.ve_params;
+                if ({?'cancel'} is not null)
+                {
+                  self.vc_redirect ('accounts_page.vspx?page=4');
+                  return;
+                }
+                maps := vector ();
+                uid := null;
+                k := length (params);
+                for (j := 0; j < k; j := j + 2)
+                {
+                  if (params[j] like 'sel_%' and params[j+1] <> 'skip')
+                  {
+                    maps := vector_concat (maps, vector (params[j+1], substring (params[j], 5, length (params[j]))));
+                    if (params[j+1] = 'uid')
+                      uid := substring (params[j], 5, length (params[j]));
+                  }
+                }
+                if (not length (maps))
+                {
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := 'Mapping between LDAP and user properties are not defined';
+                }
+                else if (not length (uid))
+                {
+                  self.vc_is_valid := 0;
+                  self.vc_error_message := 'The user id can not be empty or not mapped to an LDAP property';
+                }
+                self.ldi_maps := maps;
+              ]]>
+            </v:before-data-bind>
+
+            <table class="listing">
+              <tr class="listing_header_row">
+                <th>
+                  <input type="checkbox" onclick="selectAllCheckboxes(this.form, this)" name="selectall" value="Select All"/>
+                </th>
+                <th>Name</th>
+                <th>LDAP Authentication</th>
+              </tr>
+              <?vsp
+                declare i, l int;
+                declare ar, res any;
+                declare npwd, nuid, nname, nemail varchar;
+
+                if (self.ldi_maps is not null and self.vc_is_valid)
+                {
+                  res := self.ldi_result;
+                  nuid := get_keyword ('uid' , self.ldi_maps, 'uid');
+                  nname := get_keyword ('fn' , self.ldi_maps, 'cn');
+                  nemail := get_keyword ('email' , self.ldi_maps, 'mail');
+                  npwd := get_keyword ('pwd' , self.ldi_maps, '*skip*');
+
+                  l := length (res);
+                  for (i := 0; i < l; i := i + 2)
+                  {
+                    declare dn, uid, name, pwd, email, opts varchar;
+                    if (res[i] = 'entry')
+                    {
+                      ar := res[i+1];
+                      name := get_keyword (nname , ar, vector ('') );
+                      if (isarray (name) and not isstring (name))
+                        name := name[0];
+
+                      uid := get_keyword (nuid , ar, vector ('') );
+                      if (isarray (uid) and not isstring (uid))
+                        uid := uid[0];
+
+                      email := get_keyword (nemail , ar, vector ('') );
+                      if (isarray (email) and not isstring (email))
+                        email := email[0];
+
+                      pwd := get_keyword (npwd , ar, vector ('') );
+                      if (isarray (pwd) and not isstring (pwd))
+                        pwd := pwd[0];
+
+                      opts := sprintf ('u_name=%V&u_full_name=%V&u_e_mail=%V', uid, name, email);
+              ?>
+              <tr>
+                <td>
+                  <input type="checkbox" name="cb_<?V uid ?>" />
+                  <input type="hidden" name="data_<?V uid ?>" value="<?V encode_base64(serialize (vector (uid,name,email,pwd, '')))?>" />
+                  <?V uid ?>
+                </td>
+                <td><?V name ?></td>
+                <td>
+                  <select name="la_<?V uid ?>">
+                    <option value="-1">none</option>
+                    <?vsp
+                      if (self.ldi_select.ufl_value <> 'User-defined' and length (self.ldi_select.ufl_value))
+                      {
+                    ?>
+                    <option value="0" selected="1">enabled</option>
+                    <option value="1">account check</option>
+                    <?vsp
+                      }
+                    ?>
+                  </select>
+                </td>
+              </tr>
+              <?vsp
+                    }
+                  }
+                }
+              ?>
+              <tr>
+                <td colspan="3">
+                  <v:button name="ldi_go3" value="Import" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+                        declare j, k int;
+                        declare params, items, dt any;
+
+                        params := e.ve_params;
+                        items := vector ();
+
+                        k := length (params);
+                        for (j := 0; j < k; j := j + 2)
+                        {
+                          if (params[j] like 'data_%')
+                          {
+                            dt := deserialize (decode_base64 (params[j+1]));
+                            if (get_keyword ('cb_'||dt[0], params) = 'on')
+                            {
+                              declare exit handler for sqlstate '*'
+                              {
+                                rollback work;
+                                dt[4] := __SQL_MESSAGE;
+                                items[length (items)-1] := dt;
+
+                                goto next;
+                              };
+                              dt[4] := 'OK';
+                              items := vector_concat (items, vector (dt));
+                              if (not exists (select 1 from SYS_USERS where U_NAME = dt[0]))
+                              {
+                                declare oldap, opt any;
+
+                                oldap := atoi(get_keyword ('la_'||dt[0], params, '-1'));
+                                if (oldap <> -1)
+                                  opt := vector ('LDAPServer', vector (self.ldI_select.ufl_value, oldap));
+                                else
+                                  opt := vector ();
+
+                                USER_CREATE (dt[0], case when length(dt[3]) > 0 then dt[3] else dt[0] end, vector_concat (vector ('FULL_NAME', dt[1], 'E-MAIL', dt[2], 'DAV_ENABLE', 1, 'SQL_ENABLE', 0), opt));
+                              }
+                              else
+                              {
+                                dt[4] := 'Already exists in the Database';
+                                items[length (items)-1] := dt;
+                              }
+                              commit work;
+                            }
+                         next:;
+                          }
+                        }
+                        self.ldi_result := items;
+                        self.vc_post(e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button name="ldi_cancel3" value="Cancel" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_redirect ('accounts_page.vspx?page=4&mode=1');
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                      </td>
+                    </tr>
+                  </table>
+          </v:form>
+        </v:template>
+
+        <v:template name="template_ldi4" type="simple" enabled="--case when (self.ldi_mode = '4') then 1 else 0 end">
+          <v:form name="ldi_form4" type="simple" method="POST" action="accounts_page.vspx?page=4&mode=1">
+            <table class="listing">
+              <tr class="listing_header_row">
+                <th>Login Name</th>
+                <th>Name</th>
+                <th>Status</th>
+              </tr>
+              <?vsp
+                declare i, l int;
+                declare items any;
+
+                if (self.ldi_result is not null)
+                {
+                  items := self.ldi_result;
+                  l := length (items);
+                  for (i := 0; i < l; i := i + 1)
+                  {
+                ?>
+              <tr>
+                <td class="gendata"><?V items[i][0] ?></td>
+                <td class="gendata"><?V items[i][1] ?></td>
+                <td class="gendata"><?V items[i][4] ?></td>
+              </tr>
+              <?vsp
+                  }
+                }
+              ?>
+              <tr>
+                <td colspan="3">
+                  <v:button name="ldi_go4" value="Finish" action="simple">
+                    <v:on-post>
+                      <![CDATA[
+                        self.vc_redirect ('accounts_page.vspx?page=4&mode=1');
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </table>
+          </v:form>
+        </v:template>
+
           </td>
         </tr>
       </table>
-    </vm:pagebody>
-  </vm:pagewrapper>
 </v:page>

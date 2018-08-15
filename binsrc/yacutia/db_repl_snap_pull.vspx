@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="db_repl_snap" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
@@ -35,40 +32,9 @@
     </vm:menu>
     <vm:header caption="Incremental Snapshot Replication"/>
     <vm:pagebody vdb_check="1">
-    <script language="JavaScript">
-      function selectAllCheckboxes (form, btn)
-      {
-        var i;
-        for (i =0; i &lt; form.elements.length; i++)
-          {
-            var contr = form.elements[i];
-            if (contr != null &amp;&amp; contr.type == "checkbox")
-        {
-          contr.focus();
-          if (btn.value == 'Select All')
-            contr.checked = true;
-          else
-                  contr.checked = false;
-        }
-          }
-        if (btn.value == 'Select All')
-          btn.value = 'Unselect All';
-        else
-          btn.value = 'Select All';
-        btn.focus();
-      };
-    </script>
       <table cellpadding="0" cellspacing="0" border="0">
-        <colgroup>
-          <col/>
-          <col/>
-          <col/>
-          <col/>
-          <col/>
-          <col/>
-        </colgroup>
         <tr>
-          <td class="page_tab_selected" align="center">Remote to Local</td>        
+          <td class="page_tab_selected" align="center">Remote to Local</td>
           <td class="page_tab" align="center">
             <v:url name="b_url31" value="Local to Remote" url="db_repl_snap.vspx"/>
           </td>
@@ -91,68 +57,66 @@
               </v:on-post>
             </v:button>
           </div>
-	  <?vsp http('<div class="scroll_area">'); ?>
-          <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/><colgroup/>
-            <thead>
-              <tr class="listing_header_row">
-                <th>
-                  <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>
-                </th>
-                <th/>
-                <th>Source Attached Table</th>
-                <th>Destination Local Table</th>
-                <th>Replicated from</th>
-                <th>Replicated at</th>
-                <th>Interval</th>
-              </tr>
-            </thead>
-            <?vsp
-              declare _ex integer;
-              declare _ts, _sch varchar;
-              _ex := 0;
-              for select SN_SOURCE_TABLE as src, SN_NAME as dst, SN_LAST_TS as ts, RT_DSN from SYS_SNAPSHOT, SYS_REMOTE_TABLE where SN_SOURCE_TABLE = RT_NAME and SN_IS_INCREMENTAL is not null do
-              {
-                _sch := coalesce ((select yac_hum_min_to_dur(SE_INTERVAL) from SYS_SCHEDULED_EVENT where SE_NAME = 'UPDATE SNAPSHOT '||dst), 'none');
-                _ex := _ex + 1;
-                _ts := '**source not changed**';
-                if (ts is not null)
-                  _ts := yac_hum_datefmt(ts);
-                self.r_count := self.r_count + 1;
+	        <div class="scroll_area">
+            <table class="listing" rules="groups">
+              <thead>
+                <tr class="listing_header_row">
+                  <th class="checkbox">
+                    <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)"/>
+                  </th>
+                  <th width="16px" />
+                  <th>Source Attached Table</th>
+                  <th>Destination Local Table</th>
+                  <th>Replicated from</th>
+                  <th>Replicated at</th>
+                  <th>Interval</th>
+                </tr>
+              </thead>
+              <?vsp
+                declare _ex integer;
+                declare _ts, _sch varchar;
 
-                http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-            ?>
-              <td class="listing_col">
-                <input type="checkbox" name="TB_<?V dst ?>" />
-              </td>
-              <td class="listing_col">
-                <img src="images/icons/table_16.png" alt="Table" title="Table"/>
-              </td>
-              <td class="listing_col">
-                <?V src ?>
-              </td>
-              <td class="listing_col">
-                <?V dst ?>
-              </td>
-              <td class="listing_col">
-                <?V RT_DSN ?>
-              </td>
-              <td class="listing_col">
-                <?V _ts ?>
-              </td>
-              <td class="listing_col">
-                <?V _sch ?>
-              </td>
-            <?vsp
-                http ('</tr>');
-              }
-              if (_ex = 0)
-              {
-                http ('<tr><td colspan="7" class="Attention">No snapshot replications</td></tr>');
-              }
-            ?>
-          </table>
-	  <?vsp http ('</div>'); ?>
+                _ex := 0;
+                for select SN_SOURCE_TABLE as src, SN_NAME as dst, SN_LAST_TS as ts, RT_DSN from SYS_SNAPSHOT, SYS_REMOTE_TABLE where SN_SOURCE_TABLE = RT_NAME and SN_IS_INCREMENTAL is not null do
+                {
+                  _sch := coalesce ((select yac_hum_min_to_dur(SE_INTERVAL) from SYS_SCHEDULED_EVENT where SE_NAME = 'UPDATE SNAPSHOT '||dst), 'none');
+                  _ex := _ex + 1;
+                  _ts := '**source not changed**';
+                  if (ts is not null)
+                    _ts := yac_hum_datefmt(ts);
+              ?>
+              <tr>
+                <td class="listing_col">
+                  <input type="checkbox" name="TB_<?V dst ?>" />
+                </td>
+                <td class="listing_col">
+                  <img src="images/icons/table_16.png" alt="Table" title="Table"/>
+                </td>
+                <td class="listing_col">
+                  <?V src ?>
+                </td>
+                <td class="listing_col">
+                  <?V dst ?>
+                </td>
+                <td class="listing_col">
+                  <?V RT_DSN ?>
+                </td>
+                <td class="listing_col">
+                  <?V _ts ?>
+                </td>
+                <td class="listing_col">
+                  <?V _sch ?>
+                </td>
+              </tr>
+              <?vsp
+                }
+                if (_ex = 0)
+                {
+                  http ('<tr><td colspan="7" class="Attention">No snapshot replications</td></tr>');
+                }
+              ?>
+            </table>
+	        </div>
           <?vsp
             if (_ex <> 0)
             {
@@ -162,137 +126,133 @@
             <input type="text" name="interval" value="10" size="5" id="interval"/>
             <v:button action="simple" value="Schedule" name="sch_but">
               <v:on-post>
-                <v:script>
-                  <![CDATA[
-                    declare _int integer;
-                    declare idx integer;
-                    declare item varchar;
-                    _int := atoi(get_keyword('interval', params, '10'));
-                    while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
-                    {
-                      if (_int > 0)
-                        insert replacing SYS_SCHEDULED_EVENT(SE_NAME, SE_START, SE_INTERVAL, SE_SQL) values('UPDATE SNAPSHOT ' || item, now (), _int,  sprintf ('UPDATE SNAPSHOT "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)));
-                      else
-                        delete from SYS_SCHEDULED_EVENT where SE_NAME = 'UPDATE SNAPSHOT ' || item;
-                    }
-                  ]]>
-                </v:script>
+                <![CDATA[
+                  declare _int integer;
+                  declare idx integer;
+                  declare item varchar;
+
+                  _int := atoi(get_keyword('interval', params, '10'));
+                  while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                  {
+                    if (_int > 0)
+                      insert replacing SYS_SCHEDULED_EVENT(SE_NAME, SE_START, SE_INTERVAL, SE_SQL) values('UPDATE SNAPSHOT ' || item, now (), _int,  sprintf ('UPDATE SNAPSHOT "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)));
+                    else
+                      delete from SYS_SCHEDULED_EVENT where SE_NAME = 'UPDATE SNAPSHOT ' || item;
+                  }
+                ]]>
               </v:on-post>
             </v:button>
             <br/>
             <v:button action="simple" value="Synchronize" name="synch_but">
               <v:on-post>
-                <v:script>
-                  <![CDATA[
-                    declare idx, _cnt integer;
-                    declare item, m_dta, _stat, _msg varchar;
-                    _stat := '00000';
-                    while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
-                    {
-                      exec (sprintf ('update snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
-                      if (_stat <> '00000')
-                        self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                    }
-                  ]]>
-                </v:script>
+                <![CDATA[
+                  declare idx, _cnt integer;
+                  declare item, m_dta, _stat, _msg varchar;
+                  _stat := '00000';
+                  while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                  {
+                    exec (sprintf ('update snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                    if (_stat <> '00000')
+                      self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                  }
+                ]]>
               </v:on-post>
             </v:button>
             <v:button action="simple" value="Remove" name="remove_but">
               <v:on-post>
-                <v:script>
-                  <![CDATA[
-                    declare idx, _cnt integer;
-                    declare item, m_dta, _tbl, _stat, _msg varchar;
-		    declare n_done int;
-		    n_done := 0;
-                    _stat := '00000';
-                    idx := 0;
-                    while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                <![CDATA[
+                  declare idx, _cnt integer;
+                  declare item, m_dta, _tbl, _stat, _msg varchar;
+          		    declare n_done int;
+
+	                n_done := 0;
+                  _stat := '00000';
+                  idx := 0;
+                  while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                  {
+                    select count (*) as cnt, a.SN_SOURCE_TABLE as tbl into _cnt, _tbl from SYS_SNAPSHOT b, SYS_SNAPSHOT a where a.SN_SOURCE_TABLE = b.SN_SOURCE_TABLE and b.SN_NAME = item group by 2;
+                    if (_cnt = 1)
                     {
-                      select count (*) as cnt, a.SN_SOURCE_TABLE as tbl into _cnt, _tbl from SYS_SNAPSHOT b, SYS_SNAPSHOT a where a.SN_SOURCE_TABLE = b.SN_SOURCE_TABLE and b.SN_NAME = item group by 2;
-                      if (_cnt = 1)
-                      {
-                        exec(sprintf('drop snapshot log for "%I"."%I"."%I"', name_part(_tbl, 0), name_part(_tbl, 1), name_part(_tbl, 2)), _stat, _msg);
-                        if (_stat <> '00000')
-                          self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                        exec(sprintf('drop trigger "%I"."%I"."%I_I_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
-                        exec(sprintf('drop trigger "%I"."%I"."%I_U_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
-                        exec(sprintf('drop trigger "%I"."%I"."%I_D_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
-                        _stat := '00000';
-                        _msg := '';
-                      }
-                      exec(sprintf('drop snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                      exec(sprintf('drop snapshot log for "%I"."%I"."%I"', name_part(_tbl, 0), name_part(_tbl, 1), name_part(_tbl, 2)), _stat, _msg);
                       if (_stat <> '00000')
                         self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                      commit work;
-                      --exec (sprintf ('drop table "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
-                      --if (_stat <> '00000')
-                      --  self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                      exec (sprintf('delete from SYS_SCHEDULED_EVENT where SE_NAME = ''%S''', 'UPDATE SNAPSHOT ' || item), _stat, _msg);
-                      if (_stat <> '00000')
-		        self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-		      n_done := 1;
+                      exec(sprintf('drop trigger "%I"."%I"."%I_I_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
+                      exec(sprintf('drop trigger "%I"."%I"."%I_U_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
+                      exec(sprintf('drop trigger "%I"."%I"."%I_D_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
+                      _stat := '00000';
+                      _msg := '';
                     }
-		    if (n_done = 0)
-		      {
-		        self.vc_is_valid := 0;
-			self.vc_error_message := 'There are no tables selected to perform operation.';
-		      }
-                  ]]>
-                </v:script>
+                    exec(sprintf('drop snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                    if (_stat <> '00000')
+                      self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                    commit work;
+                    --exec (sprintf ('drop table "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                    --if (_stat <> '00000')
+                    --  self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                    exec (sprintf('delete from SYS_SCHEDULED_EVENT where SE_NAME = ''%S''', 'UPDATE SNAPSHOT ' || item), _stat, _msg);
+                    if (_stat <> '00000')
+		                  self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+		                n_done := 1;
+                  }
+		              if (n_done = 0)
+        		      {
+        		        self.vc_is_valid := 0;
+        			      self.vc_error_message := 'There are no tables selected to perform operation.';
+        		      }
+                ]]>
               </v:on-post>
             </v:button>
+
             <v:button action="simple" value="Remove & Drop Local" name="drop_but">
               <v:on-post>
-                <v:script>
-                  <![CDATA[
-                    declare idx, _cnt integer;
-                    declare item, m_dta, _tbl, _stat, _msg varchar;
-		    declare n_done int;
-		    n_done := 0;
-                    _stat := '00000';
-                    idx := 0;
-                    while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                <![CDATA[
+                  declare idx, _cnt integer;
+                  declare item, m_dta, _tbl, _stat, _msg varchar;
+          		    declare n_done int;
+
+		              n_done := 0;
+                  _stat := '00000';
+                  idx := 0;
+                  while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                  {
+                    select count (*) as cnt, a.SN_SOURCE_TABLE as tbl into _cnt, _tbl from SYS_SNAPSHOT b, SYS_SNAPSHOT a where a.SN_SOURCE_TABLE = b.SN_SOURCE_TABLE and b.SN_NAME = item group by 2;
+                    if (_cnt = 1)
                     {
-                      select count (*) as cnt, a.SN_SOURCE_TABLE as tbl into _cnt, _tbl from SYS_SNAPSHOT b, SYS_SNAPSHOT a where a.SN_SOURCE_TABLE = b.SN_SOURCE_TABLE and b.SN_NAME = item group by 2;
-                      if (_cnt = 1)
-                      {
-                        exec(sprintf('drop snapshot log for "%I"."%I"."%I"', name_part(_tbl, 0), name_part(_tbl, 1), name_part(_tbl, 2)), _stat, _msg);
-                        if (_stat <> '00000')
-                          self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                        exec(sprintf('drop trigger "%I"."%I"."%I_I_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
-                        exec(sprintf('drop trigger "%I"."%I"."%I_U_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
-                        exec(sprintf('drop trigger "%I"."%I"."%I_D_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
-                        _stat := '00000';
-                        _msg := '';
-                      }
-                      --for select RT_DSN as __dsn from SYS_REMOTE_TABLE where RT_NAME = item do
-                      --{
-                      --  declare stmt varchar;
-                      --  stmt := sprintf('drop table %s', quote_dotted (__dsn, name_part (_tbl, 2)));
-                      --  exec(__dsn, stmt, _stat, _msg);
-                      --  if (_stat <> '00000')
-                      --    self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                      --}
-                      exec(sprintf('drop snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                      exec(sprintf('drop snapshot log for "%I"."%I"."%I"', name_part(_tbl, 0), name_part(_tbl, 1), name_part(_tbl, 2)), _stat, _msg);
                       if (_stat <> '00000')
                         self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                      commit work;
-                      exec (sprintf ('drop table "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
-                      if (_stat <> '00000')
-                        self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-                      exec (sprintf('delete from SYS_SCHEDULED_EVENT where SE_NAME = ''%S''', 'UPDATE SNAPSHOT ' || item), _stat, _msg);
-                      if (_stat <> '00000')
-                        self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
-	              n_done := 1;
+                      exec(sprintf('drop trigger "%I"."%I"."%I_I_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
+                      exec(sprintf('drop trigger "%I"."%I"."%I_U_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
+                      exec(sprintf('drop trigger "%I"."%I"."%I_D_log"', name_part(_tbl, 0), name_part(_tbl, 1), replace(_tbl, '.', '_')), _stat, _msg);
+                      _stat := '00000';
+                      _msg := '';
                     }
-		    if (n_done = 0)
-		      {
-		        self.vc_is_valid := 0;
-			self.vc_error_message := 'There are no tables selected to perform operation.';
-		      }
-                  ]]>
-                </v:script>
+                    --for select RT_DSN as __dsn from SYS_REMOTE_TABLE where RT_NAME = item do
+                    --{
+                    --  declare stmt varchar;
+                    --  stmt := sprintf('drop table %s', quote_dotted (__dsn, name_part (_tbl, 2)));
+                    --  exec(__dsn, stmt, _stat, _msg);
+                    --  if (_stat <> '00000')
+                    --    self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                    --}
+                    exec(sprintf('drop snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                    if (_stat <> '00000')
+                      self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                    commit work;
+                    exec (sprintf ('drop table "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                    if (_stat <> '00000')
+                      self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                    exec (sprintf('delete from SYS_SCHEDULED_EVENT where SE_NAME = ''%S''', 'UPDATE SNAPSHOT ' || item), _stat, _msg);
+                    if (_stat <> '00000')
+                      self.repl_snap_pull_error_str := concat(self.repl_snap_pull_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+    	              n_done := 1;
+                  }
+        		      if (n_done = 0)
+        		      {
+        		        self.vc_is_valid := 0;
+        			      self.vc_error_message := 'There are no tables selected to perform operation.';
+        		      }
+                ]]>
               </v:on-post>
             </v:button>
           </div>

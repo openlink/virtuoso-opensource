@@ -10,7 +10,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -474,9 +474,9 @@ GENERATE_RELEASE_IDENT()
 CHECK_LOG()
 {
 #   I've modified these grep patterns to ignore ':' which may be forgoten easily.
-    passed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^PASSED" | wc -l`
-    failed=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?FAILED" | wc -l`
-    aborted=`find . -type f -name "*.output" -print0 | xargs -0 grep -E "^\*\*\* ?ABORTED" | wc -l`
+    passed=`find . -type f -name "*.output" -print | xargs  egrep "^PASSED" | wc -l`
+    failed=`find . -type f -name "*.output" -print | xargs  egrep "^\*\*\* ?FAILED" | wc -l`
+    aborted=`find . -type f -name "*.output" -print | xargs egrep "^\*\*\* ?ABORTED" | wc -l`
 
     ECHO ""
     LINE
@@ -493,9 +493,9 @@ CHECK_LOG()
        ECHO "*** Not all tests completed successfully"
        ECHO "*** Check the file $LOGFILE for more information"
        echo "Failed tests:" >> $LOGFILE
-       find . -type f -name "*.output" -print0 | xargs -0 grep -El "^\*\*\* ?FAILED" >> $LOGFILE
+       find . -type f -name "*.output" -print | xargs egrep -l "^\*\*\* ?FAILED" >> $LOGFILE
        echo "Aborted tests:" >> $LOGFILE
-       find . -type f -name "*.output" -print0 | xargs -0 grep -El "^\*\*\* ?ABORTED" >> $LOGFILE
+       find . -type f -name "*.output" -print | xargs egrep -l "^\*\*\* ?ABORTED" >> $LOGFILE
     fi
 }
 
@@ -570,7 +570,8 @@ RUN_TEST()
   HTTPPORT=$GENERATED_HTTPPORT
   echo "test started: $test, Virtuoso port $PORT, HTTP port $HTTPPORT"
   cd $VIRTUOSO_TEST/$test_dir
-  export SILENT=$silent
+  SILENT=$silent
+  export SILENT
   if [ "$silent" = "1" ]
   then
       $VIRTUOSO_TEST/$test_exe $* > $VIRTUOSO_TEST/$test_dir/stdout 2>&1
@@ -603,7 +604,8 @@ RUN_SQL_TEST()
   mkdir $VIRTUOSO_TEST/$test_dir
   LOGFILE=$test.output
   export LOGFILE
-  export SILENT=$silent
+  SILENT=$silent
+  export SILENT
 
   cp $CFGFILE $VIRTUOSO_TEST/$test_dir
   cp $TESTCFGFILE $VIRTUOSO_TEST/$test_dir

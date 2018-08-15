@@ -1,12 +1,10 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id: folder.vspx,v 1.4 2013/04/10 12:07:56 ddimitrov Exp $
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,8 +19,17 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
+<v:page
+  name="dav_browser"
+  style="yacutia_style.xsl"
+  on-error-redirect="/conductor/folder_error.vspx"
+  fast-render="1"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -67,8 +74,7 @@
 
       var featureList = ["combolist", "ajax", "tab"];
       OAT.Loader.load(featureList);
-    </script>
-    <script type="text/javascript">
+
       function myInit() {
         if (!OAT._loaded) {
           setTimeout(myInit, 100);
@@ -76,27 +82,90 @@
         }
         OAT.MSG.send(OAT, 'PAGE_LOADED');
       }
+
       OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
       window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
     </script>
   ]]>
-  </head>
-  <body>
-    <v:page
-      name="dav_browser"
-      style="yacutia_style.xsl"
-      on-error-redirect="/conductor/folder_error.vspx"
-      fast-render="1"
-      doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-      xmlns:xhtml="http://www.w3.org/1999/xhtml"
-      xmlns:v="http://www.openlinksw.com/vspx/"
-      xmlns:vm="http://www.openlinksw.com/vspx/macro">
       <v:on-init>
         <![CDATA[
           set ISOLATION = 'Committed';
           set http_charset = 'utf-8';
         ]]>
       </v:on-init>
+      <v:before-data-bind>
+        <![CDATA[
+          declare vspx_user varchar;
+
+          vspx_user := connection_get ('vspx_user');
+          if (isnull (vspx_user) or (vspx_user = 'nobody'))
+          {
+            self.account_id := http_nobody_uid ();
+            if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null)
+            {
+              declare val_sid, val_serviceId, val_realm, val_uname varchar;
+              declare val_isRealUser integer;
+
+              val_realm := null;
+              if (VAL.DBA.authentication_details_for_connection (sid=>val_sid, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser, realm=>val_realm))
+              {
+                if (val_isRealUser)
+                {
+                  connection_set ('vspx_user', val_uname);
+                  self.account_id := WEBDAV.DBA.account_id (val_uname);
+                }
+              }
+            }
+          }
+          else
+          {
+            self.account_id := WEBDAV.DBA.account_id (vspx_user);
+          }
+          self.owner_id := self.account_id;
+          self.settings := WEBDAV.DBA.settings (self.account_id);
+          self.account_name := WEBDAV.DBA.account_name (self.account_id);
+          self.account_password := WEBDAV.DBA.account_password (self.account_id);
+        ]]>
+      </v:before-data-bind>
+      <?vsp
+        declare id integer;
+
+        id := 0;
+        if (WEBDAV.DBA.VAD_CHECK ('Briefcase'))
+        {
+          declare S, data, path any;
+
+          S := 'select WAI_ID from DB.DBA.SYS_USERS A, DB.DBA.WA_MEMBER B, DB.DBA.WA_INSTANCE C where A.U_ID = ? and B.WAM_USER = A.U_ID and B.WAM_MEMBER_TYPE = 1 and B.WAM_INST = C.WAI_NAME and C.WAI_TYPE_NAME = ?';
+          data := WEBDAV.DBA.exec (S, vector (self.account_id, 'oDrive'));
+          if (length (data) = 1)
+          {
+            id := data[0][0];
+          }
+          else
+          {
+            path := http_path ();
+            if (path like '/DAV/home/%')
+            {
+              path := split_and_decode (trim (path, '/'), 0, '\0\0/');
+              if (length (path) > 2)
+              {
+                data := WEBDAV.DBA.exec (S, vector (WEBDAV.DBA.account_id (path[2]), 'oDrive'));
+                if (length (data) = 1)
+                {
+                  id := data[0][0];
+                }
+              }
+            }
+          }
+        }
+        if (id > 0)
+        {
+          http (sprintf ('<link rel="alternate" title="ODS Briefcase Instance" href="%s" />\n', ODRIVE.WA.forum_iri (id)));
+          http (sprintf ('<script type="text/turtle" id="API_briefcase">\n@prefix schema: <http://schema.org/> .\n <> schema:relatedLink <%s> .\n </script>', ODRIVE.WA.forum_iri (id)));
+        }
+      ?>
+    </head>
+    <body>
       <v:template type="simple" condition="not self.vc_is_valid">
         <div class="error">
           <v:error-summary/>
@@ -109,42 +178,13 @@
           <v:variable persist="0" name="owner_id" type="integer" default="null" />
           <v:variable persist="0" name="account_id" type="integer" default="null" />
           <v:variable persist="0" name="account_role" type="varchar" default="'R'" />
-          <v:before-data-bind>
-            <![CDATA[
-              declare vspx_user varchar;
-
-              vspx_user := connection_get ('vspx_user');
-              if (isnull (vspx_user) or (vspx_user = 'nobody'))
-              {
-                self.account_id := http_nobody_uid ();
-                if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null)
-                {
-                  declare val_sid, val_serviceId, val_realm, val_uname varchar;
-                  declare val_isRealUser integer;
-
-                  val_realm := null;
-                  if (VAL.DBA.authentication_details_for_connection (sid=>val_sid, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser, realm=>val_realm))
-                  {
-                    if (val_isRealUser)
-                    {
-                      connection_set ('vspx_user', val_uname);
-                      self.account_id := WEBDAV.DBA.account_id (val_serviceId);
-                    }
-                  }
-                }
-              }
-              else
-              {
-                self.account_id := WEBDAV.DBA.account_id (vspx_user);
-              }
-              self.owner_id := self.account_id;
-              self.settings := WEBDAV.DBA.settings (self.account_id);
-            ]]>
-          </v:before-data-bind>
+          <v:variable persist="0" name="account_name" type="varchar" default="null"/>
+          <v:variable persist="0" name="account_password" type="varchar" default="null"/>
           <?vsp http (sprintf ('<input type="hidden" name="sid" id="sid" value="%s" />', get_keyword ('sid', self.vc_page.vc_event.ve_params, ''))); ?>
+          <?vsp http (sprintf ('<input type="hidden" name="mode" id="mode" value="%s" />', get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav'))); ?>
           <vm:dav_browser mode="webdav" />
         </v:form>
       </vm:popup_page_wrapper>
-    </v:page>
-  </body>
-</html>
+    </body>
+  </html>
+</v:page>

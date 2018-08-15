@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -311,7 +311,7 @@ sqlc_add_table_ref (sql_comp_t * sc, ST * tree, dk_set_t * res)
 	  t_box_copy_tree (sch_view_def (wi_inst.wi_schema, tb->tb_name));
 	if (ct->ct_derived)
 	  {
-	    if (!sec_tb_check (tb, ct->ct_u_id, ct->ct_u_id, GR_SELECT))
+	    if (!sec_tb_check (tb, ct->ct_g_id, ct->ct_u_id, GR_SELECT))
 	      sqlc_new_error (sc->sc_cc, "42000", "SQ070:SECURITY",
 		  "Must have select privileges on view %s", tb->tb_name);
 	    if (ST_P (ct->ct_derived, SELECT_STMT))
@@ -1132,7 +1132,7 @@ sc_free (sql_comp_t * sc)
     }
   if (NULL != sc->sc_big_ssl_consts)
     {
-#ifndef NDEBUG
+#if 0 /* This check is no longer valid, because the pointers to big consts are not (erroneously) zeroed anymore */
       int ctr;
       DO_BOX_FAST (caddr_t, itm, ctr, sc->sc_big_ssl_consts)
         {
@@ -1220,6 +1220,10 @@ sqlc_make_proc_store_qr (client_connection_t * cli, query_t * proc_or_trig, cons
 
   qr_set_freeable (&cc, qr);
   sc_free (sc);
+#ifdef QUERY_DEBUG
+  log_query_event (proc_or_trig, 1, "MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d resulting %p", __FILE__, __LINE__, qr);
+  log_query_event (qr, 1, "ALLOC+MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d wrapping %p", __FILE__, __LINE__, proc_or_trig);
+#endif
   return qr;
 }
 
@@ -1394,6 +1398,76 @@ sql_is_ddl (sql_tree_t * tree)
 }
 #endif
 
+#ifdef QUERY_DEBUG
+extern FILE *query_log;
+extern dk_mutex_t *query_log_mutex;
+
+void
+log_query_content (FILE *query_log, const char *title, query_t *qr)
+ {
+   char buf[200];
+   char *eol;
+   if (NULL == qr)
+     return;
+   if (NULL == qr->qr_text)
+     {
+       fprintf (query_log, " %s{{null}}", title);
+       return;
+     }
+   strncpy (buf, qr->qr_text, sizeof (buf)-1);
+   buf [sizeof (buf)-1] = '\0';
+   for (eol = strchr (buf, '\n'); NULL != eol; eol = strchr (eol+1, '\n')) eol[0] = '\t';
+   fprintf (query_log, " %s{{%s}}", title, buf);
+ }
+
+void
+log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  if (NULL == cli)
+    return;
+  mutex_enter (query_log_mutex);
+  fprintf (query_log, "\n{{{CLI %p ", cli);
+  vfprintf (query_log, fmt, ap);
+  if (print_full_content)
+    {
+      if (cli->cli_first_query)
+        log_query_content (query_log, "first=", cli->cli_first_query);
+      if (cli->cli_last_query)
+        if (cli->cli_last_query != cli->cli_first_query)
+          log_query_content (query_log, "last=", cli->cli_last_query);
+        else
+          fprintf (query_log, " last={{first}}");
+    }
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+  fprintf (query_log, " }}}");
+  fflush (query_log);
+  mutex_leave (query_log_mutex);
+}
+
+void
+log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  mutex_enter (query_log_mutex);
+  fprintf (query_log, "\n{{{QRY %p ", qr);
+  vfprintf (query_log, fmt, ap);
+  if (print_full_content)
+    log_query_content (query_log, "", qr);
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+  fprintf (query_log, " }}}");
+  fflush (query_log);
+  mutex_leave (query_log_mutex);
+}
+#endif
+
+
 extern int enable_vec;
 int64 sqlc_cum_memory;
 
@@ -1442,6 +1516,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   qr->qr_text_is_constant = cr_type == SQLC_QR_TEXT_IS_CONSTANT;
 
   sc.sc_text = string2;
+  SET_QR_TEXT(qr,sc.sc_text);
   sc.sc_client = cli;
 
   cc.cc_query = qr;
@@ -1510,6 +1585,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    }
 	  if (!parse_tree)
 	    {
+#ifdef QUERY_DEBUG
+              qr->qr_text = string2;
+              qr->qr_text_is_constant = 1;
+              log_query_event (qr, 1, "ALLOC+FAILED by sql_compile_1 at %s:%d, parse error", file, line);
+#endif
 	      qr_free (qr);
 	      if (err && !*err)
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
@@ -1556,6 +1636,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	sqlc_inside_sem = 1;
       if (cr_type == SQLC_PARSE_ONLY)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+PARSE_ONLY by sql_compile_1 at %s:%d", file, line);
+#endif
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
 	  sqlc_set_client (old_cli);
 	  if (!nested_sql_comp)
@@ -1571,6 +1656,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	}
       if (cr_type == SQLC_TRY_SQLO)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+TRY_SQLO by sql_compile_1 at %s:%d", file, line);
+#endif
 	  caddr_t tree1;
 	  ST *ret = (ST *) sqlo_top (&sc, &tree, NULL);
 	  tree1 = box_copy_tree ((box_t) (ret ? ret : tree));
@@ -1588,6 +1678,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	}
       else if (cr_type == SQLC_SQLO_SCORE)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+SQLO_SCORE by sql_compile_1 at %s:%d", file, line);
+#endif
 	  float score = 0;
 	  sqlo_top (&sc, &tree, &score);
 	  sqlc_set_client (old_cli);
@@ -1646,6 +1741,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   }
   THROW_CODE
   {
+#ifdef QUERY_DEBUG
+    qr->qr_text = string2;
+    qr->qr_text_is_constant = 1;
+    log_query_event (qr, 1, "ALLOC+FAILED by sql_compile_1 at %s:%d, compilation error", file, line);
+#endif
     if (qr && qr->qr_proc_name)
       query_free (qr);
     else
@@ -1658,18 +1758,12 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	else
 	  *err = srv_make_new_error ("42000", "SQ075", "Unclassified SQL compilation error.");
       }
-    else
+    else if (IS_BOX_POINTER (cc_error))
       {
 #ifdef DEBUG
-	if (IS_BOX_POINTER (err))
-	  {
-	    log_error (
-		"Error compiling %.500s : %s: %s.",
-		string2,
-		((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
-
-	  }
+	log_error ("Error compiling %.500s : %s: %s.", string2, ((caddr_t *) cc_error)[QC_ERRNO], ((caddr_t *) cc_error)[QC_ERROR_STRING]);
 #endif
+	SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
 	dk_free_tree (cc_error);	/* IvAn/010411/LeakOnError */
       }
     qr = NULL;
@@ -1688,10 +1782,14 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     parse_leave ();
   if (qr)
     {
-      qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);
+      if ((NULL != qr->qr_text) && !qr->qr_text_is_constant)
+        dk_free_box (qr->qr_text);
+      SET_QR_TEXT(qr,sc.sc_text);
       qr->qr_parse_tree = box_copy_tree ((box_t) the_parse_tree);
+#ifdef QUERY_DEBUG
+      log_query_event (qr, 1, "ALLOC+PARSE by sql_compile_1 at %s:%d", file, line);
+#endif
     }
-
   if (!nested_sql_comp)
     {
       int64 sqlc_mem;
@@ -2065,6 +2163,9 @@ DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connecti
   if (ret_dtp)
     qr->qr_proc_ret_type = list (2, ret_dtp, 0);
   SET_QR_TEXT(qr,string2);
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "ALLOC+TEXT by sql_proc_to_recompile at %s:%d", file, line);
+#endif
   sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
   return qr;
 }
@@ -2305,7 +2406,7 @@ sqlc_test (void)
 #ifdef MALLOC_DEBUG
 #undef sql_compile
 query_t *
-sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
+sql_compile (const char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
 {
   return dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
 }
@@ -2320,3 +2421,17 @@ sql_compile_static (const char *string2, client_connection_t * cli, caddr_t * er
 }
 #endif
 
+void
+qr_free_1 (query_t * qr)
+{
+  qr_free (qr);
+}
+
+#ifdef MALLOC_DEBUG
+#undef qr_free
+void
+qr_free (query_t * qr)
+{
+  dbg_qr_free (__FILE__, __LINE__, qr);
+}
+#endif

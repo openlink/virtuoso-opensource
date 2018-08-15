@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1709,14 +1709,17 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
 {
   -- dbg_obj_princ ('DAV_VERSION_CONTROL ', path, ', ', auth, ', ', pwd);
   declare _id int;
+
   _id := DAV_SEARCH_ID (path, 'R');
   if (DAV_HIDE_ERROR (_id) is null)
     return _id;
+
   if (not isinteger (_id))
     return -37; -- not supported for DET controlled resources
 
   declare _attic_id, _vvc_id, _main_id, _rc, ouid, guid int;
   declare _attic, _vvc, _main, oname, gname, resource varchar;
+
   select RES_NAME, RES_COL, RES_OWNER, RES_GROUP into resource, _main_id, ouid, guid from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path;
   _main := DAV_SEARCH_PATH (_main_id, 'C');
   _vvc := _main || 'VVC/';
@@ -1738,7 +1741,7 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
     {
       _rc := DAV_PROP_SET (_vvc, 'virt:Versioning-Collection', _main, auth, pwd );
       if (DAV_HIDE_ERROR(_rc) is null)
-      return _rc;
+        return _rc;
     }
 
     _rc := DAV_PROP_GET_INT (_main_id, 'C', 'virt:Versioning-History', 0);
@@ -1749,9 +1752,9 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
     {
       _rc := DAV_PROP_SET (_main, 'virt:Versioning-History', _vvc, auth, pwd );
       if (DAV_HIDE_ERROR(_rc) is null)
-      return _rc;
+        return _rc;
     }
-       update WS.WS.SYS_DAV_COL set COL_DET = 'Versioning' where COL_ID = _vvc_id;
+    update WS.WS.SYS_DAV_COL set COL_DET = 'Versioning' where COL_ID = _vvc_id;
   }
   _attic := _main || 'Attic/';
   _attic_id := DAV_SEARCH_ID (_attic, 'C');
@@ -1764,7 +1767,7 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
     _rc := DAV_PROP_SET (_vvc, 'virt:Versioning-Attic', _attic, auth, pwd);
     if (DAV_HIDE_ERROR (_rc) is null)
       return _rc;
-    }
+  }
   if (DAV_HIDE_ERROR(DAV_PROP_GET_INT (_id, 'R', 'DAV:checked-in', 0)) or (DAV_HIDE_ERROR(DAV_PROP_GET_INT(_id, 'R', 'DAV:checked-out', 0)))) -- already under version control
     return _id;
 
@@ -1781,15 +1784,15 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
   dt := now();
   select RES_TYPE, RES_CONTENT into _type, _content from WS.WS.SYS_DAV_RES where RES_ID = _id;
   insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
-      RV_ID, -- Version ID
-      RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
-      RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
-      RV_ACT_ID, -- referenced by WS.WS.SYS_DAV_ACTIVITY (ACT_ID) when NOT NULL
-      RV_RES_TYPE, -- MIME content type as it was in WS.WS.SYS_DAV_RES.RES_TYPE, NULL if deleted in this version.
-      RV_CR_TIME, -- Old creation time as it was in WS.WS.SYS_DAV_RES.RES_CR_TIME
-      RV_MOD_TIME, -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
-      RV_WHO,
-      RV_SIZE)
+    RV_ID, -- Version ID
+    RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
+    RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
+    RV_ACT_ID, -- referenced by WS.WS.SYS_DAV_ACTIVITY (ACT_ID) when NOT NULL
+    RV_RES_TYPE, -- MIME content type as it was in WS.WS.SYS_DAV_RES.RES_TYPE, NULL if deleted in this version.
+    RV_CR_TIME, -- Old creation time as it was in WS.WS.SYS_DAV_RES.RES_CR_TIME
+    RV_MOD_TIME, -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
+    RV_WHO,
+    RV_SIZE)
   values (
     _id,
     1,

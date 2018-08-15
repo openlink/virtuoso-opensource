@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,8 +24,10 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+#ifndef SQLVER_H
+#define SQLVER_H
 
-#define PRODUCT_COPYRIGHT	"Copyright (C) 1998-2016 OpenLink Software"
+#define PRODUCT_COPYRIGHT	"Copyright (C) 1998-2018 OpenLink Software"
 #define PRODUCT_NAME		"OpenLink Virtuoso"
 
 /* DBMS Server */
@@ -33,7 +35,7 @@
 #define DBMS_SRV_NAME		PRODUCT_DBMS " Universal Server"
 #define DBMS_SRV_VER_ONLY	"07.20"
 #define DBMS_SRV_GEN_MAJOR	"32"
-#define DBMS_SRV_GEN_MINOR	"17"
+#define DBMS_SRV_GEN_MINOR	"29"
 #define DBMS_SRV_VER		DBMS_SRV_VER_ONLY "." \
 				DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR
 
@@ -51,10 +53,20 @@
 
 #define ODBC_DRV_VER_G_NO(v)	atoi (&(v)[6])
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-extern char *build_date;
-extern char *build_host_id;
-extern char *build_opsys_id;
-extern char *build_thread_model;
+extern const char *build_date;
+extern const char *build_host_id;
+extern const char *build_opsys_id;
+extern const char *build_thread_model;
 extern const char *build_special_server_model;
+
 void build_set_special_server_model (const char *new_model);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif

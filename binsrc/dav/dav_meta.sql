@@ -1,10 +1,8 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -22,112 +20,92 @@
 
 create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns varchar
 {
+  -- dbg_obj_princ ('DAV_GUESS_MIME_TYPE_BY_NAME (', orig_res_name, ')');
   declare dot_pos integer;
   declare orig_res_ext, orig_res_ext_upper varchar;
-  -- dbg_obj_princ ('DAV_GUESS_MIME_TYPE_BY_NAME (', orig_res_name, ')');
+
   dot_pos := strrchr (orig_res_name, '.');
   if (dot_pos is null or (0 = dot_pos))
     return null;
-  else
-    orig_res_ext := subseq (orig_res_name, dot_pos);
+
+  orig_res_ext := subseq (orig_res_name, dot_pos+1);
   orig_res_ext_upper := upper (orig_res_ext);
-  if (position (orig_res_ext_upper, vector ('.EML')))
-    return 'text/eml';
-  if (position (orig_res_ext_upper, vector ('.ODT')))
-    return 'application/vnd.oasis.opendocument.text';
-  if (position (orig_res_ext_upper, vector ('.ODB')))
-    return 'application/vnd.oasis.opendocument.database';
-  if (position (orig_res_ext_upper, vector ('.ODG')))
-    return 'application/vnd.oasis.opendocument.graphics';
-  if (position (orig_res_ext_upper, vector ('.ODP')))
-    return 'application/vnd.oasis.opendocument.presentation';
-  if (position (orig_res_ext_upper, vector ('.ODS')))
-    return 'application/vnd.oasis.opendocument.spreadsheet';
-  if (position (orig_res_ext_upper, vector ('.ODC')))
-    return 'application/vnd.oasis.opendocument.chart';
-  if (position (orig_res_ext_upper, vector ('.ODF')))
-    return 'application/vnd.oasis.opendocument.formula';
-  if (position (orig_res_ext_upper, vector ('.ODI')))
-    return 'application/vnd.oasis.opendocument.image';
-  if (position (orig_res_ext_upper, vector ('.HTM', '.HTML', '.XHTML')))
+  if (position (orig_res_ext_upper, vector ('HTM', 'HTML', 'XHTML')))
     return 'text/html';
-  if (position (orig_res_ext_upper, vector ('.XSL', '.XSLT', '.XSD')))
+  if (position (orig_res_ext_upper, vector ('XSL', 'XSLT', 'XSD')))
     return 'application/xml';
-  if (position (orig_res_ext_upper, vector ('.VCARD', '.VCF', '.ICAL', '.ICS')))
-    return 'text/directory';
-  if (position (orig_res_ext_upper, vector ('.DTD')))
-    return 'application/xml-dtd';
-  if (position (orig_res_ext_upper, vector ('.VAD')))
+  if (orig_res_ext_upper = 'VAD')
     return 'application/x-openlinksw-vad';
-  if (position (orig_res_ext_upper, vector ('.VSP')))
+  if (orig_res_ext_upper = 'VSP')
     return 'application/x-openlinksw-vsp';
-  if (position (orig_res_ext_upper, vector ('.LIC')))
-    return 'application/x-openlink-license';
-  if (position (orig_res_ext_upper, vector ('.XBRL')))
-    return 'application/xbrl+xml';
-  if (position (orig_res_ext_upper, vector ('.TXT')) and
-        connection_get ('oWiki Topic') is not null and
-        connection_get ('oWiki Topic') = orig_res_name)
-      return 'text/wiki';
-  if (position (orig_res_ext_upper,
-    vector ('.BMP', '.DIB', '.RLE', '.CR2', '.CRW', '.EMF', '.EPS', '.IFF', '.LBM', '.JP2', '.JPX', '.JPK', '.J2K',
-     '.JPC', '.J2C', '.JPE', '.JIF', '.JFIF', '.JPG', '.JPEG', '.GIF', '.PNG') ) )
-    return 'application/x-openlink-image';
-  if (position (orig_res_ext_upper,
-    vector ('.XML', '.RDF', '.RDFS', '.RSS', '.RSS2', '.XBEL', '.FOAF', '.OPML', '.WSDL', '.BPEL', '.VSPX', '.VSCX', '.XDDL', '.OCS') ) )
-    return 'text/xml';
-  if (position (orig_res_ext_upper,
-    vector ('.TAR') ) )
-    return 'application/tar';
-  if (position (orig_res_ext_upper,
-    vector ('.TAZ') ) )
-    return 'application/taz';
-  if (position (orig_res_ext_upper,
-    vector ('.GZ') ) )
-    return 'application/gz';
-  if (position (orig_res_ext_upper,
-    vector ('.MSI') ) )
-    return 'application/msi';
-  if (position (orig_res_ext_upper,
-    vector ('.DMG') ) )
-    return 'application/dmg';
-  if (position (orig_res_ext_upper,
-    vector ('.ARJ') ) )
-    return 'application/arj';
-  if (position (orig_res_ext_upper,
-    vector ('.BZ') ) )
-    return 'application/bz';
-  if (position (orig_res_ext_upper,
-    vector ('.BZ2') ) )
-    return 'application/bz2';
-  if (position (orig_res_ext_upper,
-    vector ('.TGZ') ) )
-    return 'application/tgz';
-  if (position (orig_res_ext_upper,
-    vector ('.RAR') ) )
-    return 'application/rar';
-  if (position (orig_res_ext_upper,
-    vector ('.ZIP') ) )
-    return 'application/zip';
-  if (position (orig_res_ext_upper,
-    vector ('.CAB') ) )
-    return 'application/cab';
-  if (position (orig_res_ext_upper,
-    vector ('.LZH') ) )
-    return 'application/lzh';
-  if (position (orig_res_ext_upper,
-    vector ('.ACE') ) )
-    return 'application/ace';
-  if (position (orig_res_ext_upper,
-    vector ('.ISO') ) )
-    return 'application/iso';
-  if (position (orig_res_ext_upper,
-    vector ('.TTL') ) )
+  if (orig_res_ext_upper = 'TTL')
     return 'text/turtle';
-  if (position (orig_res_ext_upper,
-    vector ('.N3') ) )
+  if (orig_res_ext_upper = 'N3')
     return 'text/rdf+n3';
-  return coalesce ((select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = lower (subseq (orig_res_ext, 1))));
+  if (position (orig_res_ext_upper, vector ('XML', 'RDF', 'RDFS', 'RSS', 'RSS2', 'XBEL', 'FOAF', 'OPML', 'WSDL', 'BPEL', 'VSPX', 'VSCX', 'XDDL', 'OCS')))
+    return 'text/xml';
+  if (orig_res_ext_upper = 'EML')
+    return 'text/eml';
+  if (orig_res_ext_upper = 'ODT')
+    return 'application/vnd.oasis.opendocument.text';
+  if (orig_res_ext_upper = 'ODB')
+    return 'application/vnd.oasis.opendocument.database';
+  if (orig_res_ext_upper = 'ODG')
+    return 'application/vnd.oasis.opendocument.graphics';
+  if (orig_res_ext_upper = 'ODP')
+    return 'application/vnd.oasis.opendocument.presentation';
+  if (orig_res_ext_upper = 'ODS')
+    return 'application/vnd.oasis.opendocument.spreadsheet';
+  if (orig_res_ext_upper = 'ODC')
+    return 'application/vnd.oasis.opendocument.chart';
+  if (orig_res_ext_upper = 'ODF')
+    return 'application/vnd.oasis.opendocument.formula';
+  if (orig_res_ext_upper = 'ODI')
+    return 'application/vnd.oasis.opendocument.image';
+  if (position (orig_res_ext_upper, vector ('VCARD', 'VCF', 'ICAL', 'ICS')))
+    return 'text/directory';
+  if (orig_res_ext_upper = 'DTD')
+    return 'application/xml-dtd';
+  if (orig_res_ext_upper = 'LIC')
+    return 'application/x-openlink-license';
+  if (orig_res_ext_upper = 'XBRL')
+    return 'application/xbrl+xml';
+  if (orig_res_ext_upper = 'TXT' and coalesce (connection_get ('oWiki Topic'), '') = orig_res_name)
+    return 'text/wiki';
+  if (position (orig_res_ext_upper, vector ('BMP', 'DIB', 'RLE', 'CR2', 'CRW', 'EMF', 'EPS', 'IFF', 'LBM', 'JP2', 'JPX', 'JPK', 'J2K', 'JPC', 'J2C', 'JPE', 'JIF', 'JFIF', 'JPG', 'JPEG', 'GIF', 'PNG')))
+    return 'application/x-openlink-image';
+  if (orig_res_ext_upper = 'TAR')
+    return 'application/tar';
+  if (orig_res_ext_upper = 'TAZ')
+    return 'application/taz';
+  if (orig_res_ext_upper = 'GZ')
+    return 'application/gz';
+  if (orig_res_ext_upper = 'MSI')
+    return 'application/msi';
+  if (orig_res_ext_upper = 'DMG')
+    return 'application/dmg';
+  if (orig_res_ext_upper = 'ARJ')
+    return 'application/arj';
+  if (orig_res_ext_upper = 'BZ')
+    return 'application/bz';
+  if (orig_res_ext_upper = 'BZ2')
+    return 'application/bz2';
+  if (orig_res_ext_upper = 'TGZ')
+    return 'application/tgz';
+  if (orig_res_ext_upper = 'RAR')
+    return 'application/rar';
+  if (orig_res_ext_upper = 'ZIP')
+    return 'application/zip';
+  if (orig_res_ext_upper = 'CAB')
+    return 'application/cab';
+  if (orig_res_ext_upper = 'LZH')
+    return 'application/lzh';
+  if (orig_res_ext_upper = 'ACE')
+    return 'application/ace';
+  if (orig_res_ext_upper = 'ISO')
+    return 'application/iso';
+
+  return (select T_TYPE from WS.WS.SYS_DAV_RES_TYPES where T_EXT = lower (orig_res_ext));
 }
 ;
 
@@ -173,7 +151,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
                   min_frag_len := 20000;
                 }
               else
-                  min_frag_len := max_frag_len;
+                min_frag_len := max_frag_len;
               for (frag_len := max_frag_len; (frag_len >= min_frag_len) and (html_start is null); frag_len := frag_len - 1000)
                 {
                   html_start := xtree_doc (subseq (content, 0, frag_len), 18, 'http://localdav.virt/' || orig_res_name, 'LATIN-1', 'x-any',
@@ -230,29 +208,30 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
       -- rdf:rdf is lowercase, instead of proper rdf:RDF because dirty HTML mode converts names.
       if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] exists(/rdf:rdf)', html_start))
         return 'application/rdf+xml';
+
       return dflt_ret;
     }
-  if (dflt_ret = 'application/x-openlink-license')
+  else if (dflt_ret = 'application/x-openlink-license')
     {
       declare mydata, exp_date varchar;
+
       mydata := "asn1_to_xml" (content, length(blob_to_string (content)));
       exp_date := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="ExpireDate"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
       if (exp_date is not null and exp_date <> '')
-        {
-          return 'application/x-openlink-license';
-        }
+        return 'application/x-openlink-license';
     }
-  if (dflt_ret = 'application/x-openlink-image')
+  else if (dflt_ret = 'application/x-openlink-image')
     {
       declare image_format varchar;
+
       image_format := "IM GetImageBlobFormat" (content, length(blob_to_string (content)));
       if (image_format is not null)
         {
           image_format := "IM GetImageBlobAttribute" (content, length(blob_to_string (content)), 'EXIF:Model');
           if (image_format is not null and image_format <> '' and image_format <> 'unknown' and image_format <> '.')
             return 'application/x-openlink-photo';
-          else
-            return 'application/x-openlink-image';
+
+          return 'application/x-openlink-image';
         }
     }
 no_op:
@@ -262,44 +241,49 @@ no_op:
 
 create procedure file_space_fmt (in d integer) returns varchar
 {
-  declare ret float;
   if (d is null or d = 0)
     return 'N/A';
-  if (d >= 1024 and d < 1048576)
-  {
-    ret := d/1024;
-    return sprintf('%d KB', ret);
-  }
-  if (d >= 1048576)
-  {
-    ret := d/1024/1024;
-    return sprintf('%d MB', ret);
-  }
-  else
+
+  if (d < 1024)
     return sprintf('%d B', d);
+
+  if (d < 1048576)
+    return sprintf('%d KB', d / 1024);
+
+  return sprintf('%d MB', d / 1024 / 1024);
 }
 ;
 
 create function "DAV_EXTRACT_RDF_application/x-openlink-license" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-  declare doc, metas, res, content any;
-  whenever sqlstate '*' goto errexit;
-        content := blob_to_string (content1);
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-license (', orig_res_name, ',... )');
-  xte_nodebld_init(res);
-  declare mydata, reg_to, con_num, serial varchar;
-  mydata := "asn1_to_xml" (content, length(blob_to_string (content)));
-  reg_to := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="RegisteredTo"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
-  con_num := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="NumberOfConnections"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
-  serial := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="SerialNumber"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#registeredTo'), reg_to));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#numberOfConnections'), con_num));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#serialNumber'), serial));
-  xte_nodebld_final(res, xte_head (UNAME' root'));
+  declare res, content, mydata any;
+  declare tmp varchar;
+  whenever sqlstate '*' goto errexit;
+
+  content := blob_to_string (content1);
+  mydata := xtree_doc ("asn1_to_xml" (content, length (content)));
+
+  xte_nodebld_init (res);
+  -- RegisteredTo
+  tmp := cast (xpath_eval ('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="RegisteredTo"]/PRINTABLESTRING[position() > 1]/text()', mydata) as varchar);
+  xte_nodebld_acc (res, xte_node (xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#RegisteredTo'), tmp));
+  -- NumberOfConnections
+  tmp := cast (xpath_eval ('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="NumberOfConnections"]/PRINTABLESTRING[position() > 1]/text()', mydata) as varchar);
+  xte_nodebld_acc (res, xte_node (xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#NumberOfConnections'), tmp));
+  -- NumberOfUsers
+  tmp := cast (xpath_eval ('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="NumberOfUsers"]/PRINTABLESTRING[position() > 1]/text()', mydata) as varchar);
+  xte_nodebld_acc (res, xte_node (xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#NumberOfUsers'), tmp));
+  -- SerialNumber
+  tmp := cast (xpath_eval ('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="SerialNumber"]/PRINTABLESTRING[position() > 1]/text()', mydata) as varchar);
+  xte_nodebld_acc(res, xte_node (xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#SerialNumber'), tmp));
+  -- SerialNumber
+  tmp := cast (xpath_eval ('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="ExpireDate"]/PRINTABLESTRING[position() > 1]/text()', mydata) as varchar);
+  xte_nodebld_acc (res, xte_node (xte_head (UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#ExpireDate'), tmp));
+
+  xte_nodebld_final (res, xte_head (UNAME' root'));
   return xml_tree_doc (res);
+
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
 }
@@ -345,116 +329,92 @@ errexit:
 
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.text" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.database" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.graphics" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.presentation" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.spreadsheet" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.chart" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.formula" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 create function "DAV_EXTRACT_RDF_application/vnd.oasis.opendocument.image" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-        return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
+  return "DAV_EXTRACT_RDF_opendocument" (orig_res_name, content1, html_start);
 }
 ;
 
 create function "DAV_EXTRACT_RDF_application/x-openlink-image" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-  declare doc, metas, res, content any;
-  whenever sqlstate '*' goto errexit;
-        content := blob_to_string (content1);
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-image (', orig_res_name, ',... )');
-  xte_nodebld_init(res);
-  declare image_size, xsize, ysize, depth integer;
-  declare image_format, comments, xres, yres varchar;
-        image_format := "IM GetImageBlobFormat"(content, length(content));
-  image_size := length(content);
-  xsize := "IM GetImageBlobWidth"(content, length(content));
-        ysize := "IM GetImageBlobHeight"(content, length(content));
-  xres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:XResolution');
-  yres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:YResolution');
-  depth := "IM GetImageBlobDepth"(content, length(content));
-  comments := "IM GetImageBlobAttribute"(content, length(content), 'Comment');
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#type'), image_format));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#size'), file_space_fmt(image_size)));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#dimensions'), sprintf('%dx%d', xsize, ysize)));
-  if (xres is not null and yres is not null)
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#resolutions'), sprintf('%s:%s', xres, yres)));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#depth'), sprintf('%d', depth)));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Image#comments'), comments));
-  xte_nodebld_final(res, xte_head (UNAME' root'));
-  return xml_tree_doc (res);
-errexit:
-  return xml_tree_doc (xte_node (xte_head (UNAME' root')));
+  return "DAV_EXTRACT_RDF_application/x-openlink-picture" ('http://www.openlinksw.com/schemas/Image#', orig_res_name, content1, html_start);
 }
 ;
 
 create function "DAV_EXTRACT_RDF_application/x-openlink-photo" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
-  declare doc, metas, res, content any;
-  whenever sqlstate '*' goto errexit;
-        content := blob_to_string (content1);
-  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-image (', orig_res_name, ',... )');
-  xte_nodebld_init(res);
+  return "DAV_EXTRACT_RDF_application/x-openlink-picture" ('http://www.openlinksw.com/schemas/Photo#', orig_res_name, content1, html_start);
+}
+;
+
+create function "DAV_EXTRACT_RDF_application/x-openlink-picture" (in rdf_schema varchar, in orig_res_name varchar, inout content1 any, inout html_start any)
+{
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlink-picture (', rdf_schema, orig_res_name, ',... )');
+  declare res, content any;
   declare image_size, xsize, ysize, depth integer;
   declare image_format, comments, xres, yres varchar;
-        image_format := "IM GetImageBlobFormat"(content, length(content));
-  image_size := length(content);
-  xsize := "IM GetImageBlobWidth"(content, length(content));
-        ysize := "IM GetImageBlobHeight"(content, length(content));
-  xres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:XResolution');
-  yres := "IM GetImageBlobAttribute"(content, length(content), 'EXIF:YResolution');
-  depth := "IM GetImageBlobDepth"(content, length(content));
-  comments := "IM GetImageBlobAttribute"(content, length(content), 'Comment');
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#type'), image_format));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#size'), file_space_fmt(image_size)));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#dimensions'), sprintf('%dx%d', xsize, ysize)));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#resolutions'), sprintf('%s:%s', xres, yres)));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#depth'), sprintf('%d', depth)));
-  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/Photo#comments'), comments));
+  whenever sqlstate '*' goto errexit;
+
+  content := blob_to_string (content1);
+
+  image_size := length (content);
+  image_format := "IM GetImageBlobFormat"(content, image_size);
+  xsize := "IM GetImageBlobWidth"(content, image_size);
+  ysize := "IM GetImageBlobHeight"(content, image_size);
+  xres := "IM GetImageBlobAttribute"(content, image_size, 'EXIF:XResolution');
+  yres := "IM GetImageBlobAttribute"(content, image_size, 'EXIF:YResolution');
+  depth := "IM GetImageBlobDepth"(content, image_size);
+  comments := "IM GetImageBlobAttribute"(content, image_size, 'Comment');
+
+  xte_nodebld_init(res);
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', rdf_schema || 'type'), image_format));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', rdf_schema || 'size'), file_space_fmt (image_size)));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', rdf_schema || 'dimensions'), sprintf ('%dx%d', xsize, ysize)));
+  if (xres is not null and yres is not null)
+    xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', rdf_schema || 'resolutions'), sprintf ('%s:%s', xres, yres)));
+
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', rdf_schema || 'depth'), sprintf ('%d', depth)));
+  xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this', UNAME'N3P', rdf_schema || 'comments'), comments));
   xte_nodebld_final(res, xte_head (UNAME' root'));
+
   return xml_tree_doc (res);
+
 errexit:
   return xml_tree_doc (xte_node (xte_head (UNAME' root')));
 }
@@ -463,6 +423,7 @@ errexit:
 create function "DAV_EXTRACT_RDF_application/audio" (in orig_res_name varchar, inout content1 any, inout html_start any)
 {
   declare content any;
+
   content := blob_to_string (content1);
   return xml_tree_doc (audio_to_xml (content, length (content), 1));
 }
@@ -1908,9 +1869,10 @@ final:
 -- /* meta data extractor */
 create function "DAV_EXTRACT_RDF_BY_METAS" (inout doc any, inout metas any, inout extras any)
 {
+  -- dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, ')');
   declare res any;
   declare ctr, len integer;
-  --dbg_obj_princ ('DAV_EXTRACT_RDF_BY_METAS" (', doc, ')');
+
   xte_nodebld_init (res);
   whenever sqlstate '*' goto final;
   len := length (metas);
@@ -2311,8 +2273,11 @@ insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME)
 xpf_extension ('http://www.openlinksw.com/xsltext/:unixTime2ISO', 'DB.DBA.XML_UNIX_DATE_TO_ISO', 0)
 ;
 
-create procedure DAV_EXTRACT_META_AS_RDF_XML (in resname varchar, in rescontent any := null)
+create procedure DAV_EXTRACT_META_AS_RDF_XML (
+  in resname varchar,
+  in rescontent any := null)
 {
+  -- dbg_obj_princ ('DAV_EXTRACT_META_AS_RDF_XML ()');
   declare res_type_uri, restype varchar;
   declare html_start, type_tree any;
   declare addon_n3, spotlight_addon_n3, ret any;
@@ -2340,6 +2305,7 @@ addon_n3_set: ;
     }
   if (__proc_exists ('SPOTLIGHT_METADATA', 2) is not null)
     spotlight_addon_n3 := DAV_EXTRACT_SPOTLIGHT (resname, rescontent);
+
   if (addon_n3 is null and spotlight_addon_n3 is null)
     goto no_op;
 

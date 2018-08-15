@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -22,7 +20,13 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="robot_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="robot_edit_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -86,8 +90,9 @@
       </h1>
     </vm:rawheader>
     <vm:pagebody>
-      <script type="text/javascript">
         <![CDATA[
+        <script language="JavaScript" src="admin_utils.js"></script>
+        <script type="text/javascript">
           function toggleMeta (btn, div_id)
           {
             var div = document.getElementById (div_id);
@@ -96,8 +101,8 @@
             else
               div.style.display = 'none';
           }
-        ]]>
       </script>
+      ]]>
       <v:before-data-bind>
         <![CDATA[
           declare _idx varchar;
@@ -107,26 +112,77 @@
           if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'copy')
           {
             declare _host, _root, _tmp any;
+
             _n_own := 0;
             _host := get_keyword ('EDIT', self.vc_page.vc_event.ve_params);
             _root := get_keyword ('root', self.vc_page.vc_event.ve_params);
-
-            select VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_ROOT,
-                   VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW, VS_OPTIONS,
-                   VS_SRC, VS_METHOD, VS_OWN, VS_OTHER, VS_OPAGE, VS_REDIRECT, VS_STORE,
-                   VS_DLOAD_META, deserialize (VS_UDATA), VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, coalesce (VS_DEPTH, 'unlimited'),
-                   VS_ACCEPT_RDF, VS_BOT, VS_THREADS, VS_DELAY, VS_HEADERS
-              into self._descr, self._host, self._url, _idx, self._root,
-                   self._newd, self._del, self._flow, self._dflow, self._auth,
-                   self._img, self._dav, _n_own, self._other, self._opage, self._redir, self._store,
-                   self._ask_rdf, self._udata, self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth,
-                   self._accept_rdf, self._bot, self._thr, self._delay, self._head
-              from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+            select VS_DESCR,
+                   VS_HOST,
+                   VS_URL,
+                   VS_INX,
+                   VS_ROOT,
+                   VS_NEWER,
+                   VS_DEL,
+                   VS_FOLLOW,
+                   VS_NFOLLOW,
+                   VS_OPTIONS,
+                   VS_SRC,
+                   VS_METHOD,
+                   VS_OWN,
+                   VS_OTHER,
+                   VS_OPAGE,
+                   VS_REDIRECT,
+                   VS_STORE,
+                   VS_DLOAD_META,
+                   deserialize (VS_UDATA),
+                   VS_STORE_FN,
+                   VS_EXTRACT_FN,
+                   VS_CONVERT_HTML,
+                   VS_XPATH,
+                   coalesce (VS_DEPTH, 'unlimited'),
+                   VS_ACCEPT_RDF,
+                   VS_BOT,
+                   VS_THREADS,
+                   VS_DELAY,
+                   VS_HEADERS
+              into self._descr,
+                   self._host,
+                   self._url,
+                   _idx,
+                   self._root,
+                   self._newd,
+                   self._del,
+                   self._flow,
+                   self._dflow,
+                   self._auth,
+                   self._img,
+                   self._dav,
+                   _n_own,
+                   self._other,
+                   self._opage,
+                   self._redir,
+                   self._store,
+                   self._ask_rdf,
+                   self._udata,
+                   self._store_fn,
+                   self._ext_fn,
+                   self._convhtml,
+                   self._xp_exp,
+                   self._depth,
+                   self._accept_rdf,
+                   self._bot,
+                   self._thr,
+                   self._delay,
+                   self._head
+              from WS.WS.VFS_SITE
+             where VS_HOST = _host
+               and VS_ROOT = _root;
 
             if (self._other is null)
               self._other := 0;
             else if (self._other = 'checked')
               self._other := 1;
+
             self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
             ename := concat(self._descr, '(', _host,' in /DAV/',_root,')');
             self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
@@ -134,7 +190,6 @@
             self._root := concat('/DAV/', self._root);
             self._newd := subseq (datestring(coalesce (self._newd, now ())), 0, 19);
             self._old_url := self._url;
-            self.target_url := 'http://';
             if (self._udata is null)
               self._udata := vector ();
 
@@ -157,7 +212,10 @@
                 self.target_pwd := auth[1];
               }
             }
-            self.target_url := concat(self.target_url, self._host, self._url);
+            self.target_url := self._host || self._url;
+            if ((self.target_url not like 'http://%') and (self.target_url not like 'https://%'))
+              self.target_url := 'http://' || self.target_url;
+
             self._get_rdf := coalesce ((select top 1 1 from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = _host and VM_ROOT = _root), 0);
           }
           else if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'create')
@@ -193,13 +251,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
@@ -214,12 +265,7 @@
                         <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
+                        &nbsp;
                       </td>
                     </tr>
                   </table>
@@ -230,35 +276,31 @@
                           <table border="0" cellspacing="0" cellpadding="3" class="ctl_grp">
                             <input type="hidden" name="name" value="<?V get_keyword ('name', self.vc_page.vc_event.ve_params) ?>"/>
                             <tr>
-                              <td>Target description</td>
+                              <th>Target description</th>
                               <td>
                                 <v:text name="descr" value="--self._descr"  xhtml_size="70"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>Target URL <!--br/>
-                                <em>(http://httpuser:password@host:port/start_path)</em-->
-                              </td>
+                              <th>Target URL</th>
                               <td>
                                 <v:text name="tar_url" value="--self.target_url" xhtml_size="70"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>Login name on target</td>
+                              <th>Login name on target</th>
                               <td>
                                 <v:text name="tar_uid" value="--self.target_uid" xhtml_size="20"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>Login password on target</td>
+                              <th>Login password on target</th>
                               <td>
                                 <v:text name="tar_pwd" value="--self.target_pwd" type='password' xhtml_size="20"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>
-                                Copy to local DAV collection
-                              </td>
+                              <th>Copy to local DAV collection</th>
                               <td>
                                 <v:text name="root" value="--self._root" xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"  xhtml_size="70"/>
                                 <?vsp
@@ -290,7 +332,7 @@
                               </td>
                             </tr>
                             <tr>
-                              <td>Local resources owner</td>
+                              <th>Local resources owner</th>
                               <td>
                                <v:data-list name="own" sql="select U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME">
                                  <v:before-data-bind>
@@ -302,19 +344,19 @@
                               </td>
                             </tr>
                             <tr>
-                              <td>Download only newer than</td>
+                              <th>Download only newer than</th>
                               <td>
                                 <v:text name="newd" value="--self._newd" />
                               </td>
                             </tr>
                             <tr>
-                              <td>Follow links matching<EM><br/>(delimited with ;)</EM></td>
+                              <th>Follow links matching<em><br/>(delimited with ;)</em></th>
                               <td>
                                 <v:text name="flow" value="--self._flow"  xhtml_size="70"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>Do not follow links matching<EM><br/>(delimited with ;)</EM></td>
+                              <th>Do not follow links matching<em><br/>(delimited with ;)</em></th>
                               <td>
                                 <v:text name="dflow" value="--self._dflow"  xhtml_size="70"/>
                               </td>
@@ -327,51 +369,49 @@
                               </td>
                             </tr>
                             <tr>
-                              <td>Custom HTTP headers</td>
+                              <th>Custom HTTP headers</th>
                               <td>
                                 <v:text name="head" value="--coalesce (self._head, '')"  xhtml_size="70"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>
-                                <label for="redir">Number of HTTP redirects to follow</label>
-                              </td>
+                              <th><label for="redir">Number of HTTP redirects to follow</label></th>
                               <td>
                                 <v:text name="redir" value="--self._redir" xhtml_id="redir" xhtml_size="5"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>XPath expression for links extraction</td>
+                              <th>XPath expression for links extraction</th>
                               <td>
                                 <v:text name="xp_exp" value="--coalesce (self._xp_exp, '')"  xhtml_size="70"/>
                               </td>
                             </tr>
                             <tr>
-                              <td>Crawling depth limit</td>
+                              <th>Crawling depth limit</th>
                               <td>
                                 <v:text name="depth" value="--coalesce (self._depth, '')"  />
                               </td>
                             </tr>
                             <tr>
-                              <td>Update Interval (minutes)</td>
+                              <th>Update Interval (minutes)</th>
                               <td>
                                 <v:text name="intv" value="--self._intv"  />
                               </td>
                             </tr>
                             <tr>
-                              <td>Number of threads</td>
+                              <th>Number of threads</th>
                               <td>
                                 <v:text name="thr" value="--self._thr"  />
                               </td>
                             </tr>
                             <tr>
-                              <td>Crawl delay (sec)</td>
+                              <th>Crawl delay (sec)</th>
                               <td>
                                 <v:text name="delay" value="--sprintf ('%.2f', self._delay)"  />
                               </td>
                             </tr>
                             <tr>
-                              <td>Store Function</td>
+                              <th>Store Function</th>
                               <td>
                                 <v:text name="store_fn" value="--self._store_fn" xhtml_size="50"/>
                                 <v:browse-button name="br_store" value="Browse..."
@@ -383,7 +423,7 @@
                               </td>
                             </tr>
                             <tr>
-                              <td>Extract Function</td>
+                              <th>Extract Function</th>
                               <td>
                                 <v:text name="ext_fn" value="--self._ext_fn" xhtml_size="50"/>
                                 <v:browse-button name="br_ext" value="Browse..."
@@ -402,7 +442,7 @@
                               </td>
                             </tr>
                             <tr>
-                              <td>If <b>Graph IRI</b> is unassigned use this Data Source URL</td>
+                              <th>If <b>Graph IRI</b> is unassigned use this Data Source URL</th>
                               <td>
                                 <v:text name="rdf_graph" value="--self._rdf_graph"  xhtml_size="70"/>
                               </td>
@@ -422,7 +462,7 @@
                               </td>
                             </tr>
                             <tr>
-                              <td>Follow RDF properties<EM><br/>(one IRI per row)</EM></td>
+                              <th>Follow RDF properties<em><br/>(one IRI per row)</em></th>
                               <td>
                                 <v:textarea name="rdf_flw" value="--self._rdf_flw"  xhtml_rows="3" xhtml_cols="70"/>
                               </td>
@@ -480,14 +520,14 @@
                               <td/>
                               <td>
                                 <v:check-box name="get_rdf" value="1" initial-checked="--case when self._get_rdf then 1 else 0 end" xhtml_id="get_rdf" xhtml_onchange='javascript: toggleMeta (this, "meta_opts");'/>
-                                <label for="get_rdf">Store metadata *</label>
+                                <label for="get_rdf">Save Linked Data to RDF Storage *</label>
                               </td>
                             </tr>
                             <tr>
                               <td/>
-                              <td colspan="2">
+                              <td>
                                 <div  id="meta_opts" style="display: <?V case when self._get_rdf = 0 then 'none' else 'block' end ?>;">
-                                  <ul id="fg_tabs" class="tabs">
+                                  <ul id="fg_tabs" class="tabs" style="margin-top: 5px;">
                                     <li id="fg_tab_0"><b>Cartridges</b></li>
                                     <?vsp
                                       if (not isnull (VAD_CHECK_VERSION ('cartridges')))
@@ -498,7 +538,7 @@
                                       }
                                     ?>
                                   </ul>
-                                  <div style="background-color: #fff; min-height: 150px; min-width: 650px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
+                                  <div style="background-color: #fff; min-height: 150px; min-width: 450px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                                     <div id="fg_content">
                                     </div>
                                     <div id="fg_page_0" class="tabContent" style="margin-bottom: 6px; max-height: 200px; overflow: auto;">
@@ -510,11 +550,9 @@
                                           </th>
                                         </tr>
                                         <?vsp
-                                          declare ix int;
                                           declare _root_col varchar;
 
                                           _root_col := case when (left(self._root, 5) = '/DAV/') then right(self._root, length(self._root) - 5) else self._root end;
-                                          ix := 0;
                                           for ( select RM_PID, RM_DESCRIPTION, ucase (cast (RM_DESCRIPTION as varchar (128))) as RM_SORT, VM_ID
                                                   from (select * from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = _root_col and coalesce (VM_RDF_MAP_TYPE, 0) = 0) x
                                                          right outer join DB.DBA.SYS_RDF_MAPPERS on (VM_RDF_MAP = RM_PID)
@@ -522,7 +560,7 @@
                                                  order by RM_SORT option (loop) ) do
                                           {
                                         ?>
-                                        <tr class="<?V case when mod(ix, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
+                                        <tr>
                                           <td>
                                             <?vsp
                                               if (VM_ID is null)
@@ -542,7 +580,6 @@
                                           </td>
                                         </tr>
                                         <?vsp
-                                            ix := ix + 1;
                                           }
                                         ?>
                                       </table>
@@ -580,7 +617,7 @@
                                             for (N := 0; N < length (rows); N := N + 1)
                                             {
                                         ?>
-                                        <tr class="<?V case when mod (N, 2) then 'listing_row_odd' else 'listing_row_even' end ?>" >
+                                        <tr>
                                           <td>
                                             <?vsp
                                               if (rows[N][3] is null)
@@ -657,32 +694,43 @@
                                       declare item, idx, len, _idx, tar_url, sav_host, desc_save varchar;
                                       declare ret_arr, opts, tmp any;
                                       declare pos integer;
-                                      tar_url := trim (get_keyword ('tar_url', params, ''));
+
                                       desc_save := self._descr;
-                                      if (length(tar_url) <= 0)
+                                      tar_url := trim (get_keyword ('tar_url', params, ''));
+                                      if (length(tar_url) = 0)
                                       {
                                         self.vc_error_message := 'Incorrect target URL';
                                         self.vc_is_valid := 0;
                                         return;
                                       }
                                       ret_arr := WS.WS.PARSE_URI(tar_url);
-                                      pos := 0;
-                                      pos := strchr(aref(ret_arr, 1), '@');
+                                      pos := strchr (ret_arr[1], '@');
                                       if (pos is null)
                                         pos := 0;
 
-                                      self._auth := left(aref(ret_arr, 1), pos);
                                       sav_host := self._host;
-                                      self._host := right(aref(ret_arr, 1), length(aref(ret_arr, 1)) - pos);
+                                      self._host := right (ret_arr[1], length (ret_arr[1]) - pos);
+                                      if (self._host[0] = ascii ('@'))
+                                      {
+                                        self._host := substring (self._host, 2, length (self._host));
+                                      }
+                                      self._host := ret_arr[0] || '://' || right (ret_arr[1], length (ret_arr[1]) - pos);
+                                      if (self.mode = 'edit' and sav_host <> self._host)
+                                      {
+                                        self._host := sav_host;
+                                        self.vc_error_message := sprintf ('Host name can not be edited, it must be "%s".', sav_host);
+                                        self.vc_is_valid := 0;
+                                        return;
+                                      }
 
-                                      self._auth := '';
                                       if (length (self.tar_uid.ufl_value) and length (self.tar_pwd.ufl_value))
                                       {
                                         self._auth := concat (self.tar_uid.ufl_value,':',self.tar_pwd.ufl_value);
                                       }
-
-                                      if (self._host[0] = ascii ('@'))
-                                        self._host := substring (self._host, 2, length (self._host));
+                                      else
+                                      {
+                                        self._auth := left (ret_arr[1], pos);
+                                      }
 
                                       if (self.mode = 'edit' and sav_host <> self._host)
                                       {
@@ -693,17 +741,19 @@
                                       }
 
                                       self._descr := trim (get_keyword ('descr', params));
-                                      self._url := aref(ret_arr, 2);
-                                      if (aref(ret_arr, 4) is not null and length(aref(ret_arr, 4)) > 0)
+                                      self._url := ret_arr[2];
+                                      if (ret_arr[4] is not null and length (ret_arr[4]) > 0)
                                       {
-                                        self._url := concat(self._url, '?', aref(ret_arr, 4));
-                                        self._url := trim(self._url);
+                                        self._url := concat (self._url, '?', ret_arr[4]);
+                                        self._url := trim (self._url);
                                       }
                                       self._root := trim (get_keyword ('root', params));
                                       if (self.mode <> 'edit' and right(self._root, 1) <> '/')
                                         self._root := concat(self._root, '/');
+
                                       if (left(self._root, 5) = '/DAV/')
                                         self._root := right(self._root, length(self._root) - 5);
+
                                       self._newd := get_keyword ('newd', params);
                                       self._flow := get_keyword ('flow', params);
                                       self._dflow := get_keyword ('dflow', params);
@@ -716,9 +766,14 @@
                                       self._head := get_keyword ('head', params, '');
                                       self._depth := get_keyword ('depth', params, '');
 
-                                      if (self._depth = '' or self._depth = 'unlimited') self._depth := null;
-                                      if (self._xp_exp = '') self._xp_exp := null;
-                                      if (self._head = '') self._head := null;
+                                      if (self._depth = '' or self._depth = 'unlimited')
+                                        self._depth := null;
+
+                                      if (self._xp_exp = '')
+                                        self._xp_exp := null;
+
+                                      if (self._head = '')
+                                        self._head := null;
 
                                       if (self._xp_exp is not null)
                                       {
@@ -794,12 +849,16 @@
 
                                       if (self.mode <> 'edit' and self._opage = '1')
                                         self._opage := 'checked';
+
                                       if (self._del = '1')
                                         self._del := 'checked';
+
                                       if (self._img = '1')
                                         self._img := 'checked';
+
                                       if (self._dav = '1')
                                         self._dav := 'checked';
+
                                       if (WS.WS.isempty(self._host) or WS.WS.isempty(self._root) or WS.WS.isempty(self._url))
                                       {
                                         self.vc_error_message := 'Host, Target collection and Start path must be specified';
@@ -825,7 +884,9 @@
                                           target_page := u_arr[length (u_arr) - 1];
                                         }
                                         else
+                                        {
                                           target_page := 'index.html';
+                                        }
 
                                         -- we'll guess is the root is a collection or not
                                         if (self._root[length(self._root) - 1] = ascii('/'))
@@ -837,6 +898,7 @@
                                         self.vc_is_valid := 0;
                                         return;
                                       }
+
                                       if (self.mode = 'edit')
                                       {
                                         update WS.WS.VFS_SITE
@@ -873,73 +935,117 @@
                                         if (not exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._url))
                                           update WS.WS.VFS_QUEUE set VQ_URL = self._url where VQ_HOST = self._host and VQ_ROOT = self._root and VQ_URL = self._old_url;
 
-                                        insert soft WS.WS.VFS_QUEUE(VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT) values(self._host, self._url, now(), 'waiting', self._root);
+                                        insert soft WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
+                                          values (self._host, self._url, now(), 'waiting', self._root);
                                       }
                                       else
                                       {
-                                        declare hinf any;
+                                        insert into WS.WS.VFS_SITE (
+                                            VS_DESCR,
+                                            VS_HOST,
+                                            VS_URL,
+                                            VS_INX,
+                                            VS_OWN,
+                                            VS_ROOT,
+                                            VS_NEWER,
+                                            VS_DEL,
+                                            VS_FOLLOW,
+                                            VS_NFOLLOW,
+                                            VS_SRC,
+                                            VS_METHOD,
+                                            VS_OTHER,
+                                            VS_OPTIONS,
+                                            VS_OPAGE,
+                                            VS_REDIRECT,
+                                            VS_STORE,
+                                            VS_DLOAD_META,
+                                            VS_UDATA,
+                                            VS_STORE_FN,
+                                            VS_EXTRACT_FN,
+                                            VS_CONVERT_HTML,
+                                            VS_XPATH,
+                                            VS_DEPTH,
+                                            VS_ACCEPT_RDF,
+                                            VS_THREADS,
+                                            VS_BOT,
+                                            VS_DELAY,
+                                            VS_HEADERS
+                                          )
+                                          values (
+                                            self._descr,
+                                            self._host,
+                                            self._url,
+                                            _idx,
+                                            (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
+                                            self._root,
+                                            stringdate (self._newd),
+                                            self._del,
+                                            self._flow,
+                                            self._dflow,
+                                            self._img,
+                                            self._dav,
+                                            case when self._other then 'checked' else NULL end,
+                                            self._auth,
+                                            self._opage,
+                                            self._redir,
+                                            self._store,
+                                            self._ask_rdf,
+                                            serialize (self._udata),
+                                            self._store_fn,
+                                            self._ext_fn,
+                                            self._convhtml,
+                                            self._xp_exp,
+                                            self._depth,
+                                            self._accept_rdf,
+                                            self._thr,
+                                            self._bot,
+                                            self._delay,
+                                            self._head
+                                          );
 
-                                        hinf := WS.WS.PARSE_URI(self._host);
-                                        if (lower(hinf[0]) = 'http' and hinf[1] <> '')
-                                          self._host := hinf[1];
+                                        insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
+                                          values (self._host, self._url, now(), 'waiting', self._root);
+                                      }
 
-                                        insert into WS.WS.VFS_SITE
-                                           (VS_DESCR, VS_HOST, VS_URL, VS_INX, VS_OWN,
-                                            VS_ROOT, VS_NEWER, VS_DEL, VS_FOLLOW, VS_NFOLLOW,
-                                            VS_SRC, VS_METHOD, VS_OTHER, VS_OPTIONS,
-                                            VS_OPAGE, VS_REDIRECT, VS_STORE, VS_DLOAD_META, VS_UDATA,
-                                            VS_STORE_FN, VS_EXTRACT_FN, VS_CONVERT_HTML, VS_XPATH, VS_DEPTH, VS_ACCEPT_RDF,
-                                            VS_THREADS, VS_BOT, VS_DELAY, VS_HEADERS)
-                                          values
-                                            (self._descr, self._host, self._url, _idx, (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = self._own),
-                                            self._root, stringdate(self._newd), self._del, self._flow, self._dflow,
-                                            self._img, self._dav, case when self._other then 'checked' else NULL end, self._auth,
-                                            self._opage, self._redir, self._store, self._ask_rdf, serialize (self._udata),
-                                            self._store_fn, self._ext_fn, self._convhtml, self._xp_exp, self._depth, self._accept_rdf,
-                                            self._thr, self._bot, self._delay, self._head);
+                                      declare _mp, _idx, p_id, _seq, ename, ename_old any;
 
-                                          insert into WS.WS.VFS_QUEUE (VQ_HOST, VQ_URL, VQ_TS, VQ_STAT, VQ_ROOT)
-                                            values (self._host, self._url, now(), 'waiting', self._root);
-                                        }
-
-                                        declare _mp, _idx, p_id, _seq, ename, ename_old any;
-
-                                        _seq := _idx := 0;
-                                        delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
-                                        if (self._get_rdf)
+                                      _seq := 0;
+                                      _idx := 0;
+                                      delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = self._host and VM_ROOT = self._root;
+                                      if (self._get_rdf)
+                                      {
+                                        while (_mp := adm_next_keyword ('mapper', params, _idx))
                                         {
-                                          while (_mp := adm_next_keyword ('mapper', control.vc_page.vc_event.ve_params, _idx))
-                                          {
-                                            _seq := _seq + 1;
-                                            p_id := atoi (_mp);
-                                            insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
-                                              values (self._host, self._root, p_id, 0, _seq);
-                                          }
-                                          while (_mp := adm_next_keyword ('metaMapper', control.vc_page.vc_event.ve_params, _idx))
-                                          {
-                                            _seq := _seq + 1;
-                                            p_id := atoi (_mp);
-                                            insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
-                                              values (self._host, self._root, p_id, 1, _seq);
-                                          }
+                                          _seq := _seq + 1;
+                                          p_id := atoi (_mp);
+                                          insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
+                                            values (self._host, self._root, p_id, 0, _seq);
                                         }
+                                        while (_mp := adm_next_keyword ('metaMapper', params, _idx))
+                                        {
+                                          _seq := _seq + 1;
+                                          p_id := atoi (_mp);
+                                          insert into WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE, VM_SEQ)
+                                            values (self._host, self._root, p_id, 1, _seq);
+                                        }
+                                      }
 
-                                        ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
-                                        if (desc_save <> '')
-                                        {
-                                          ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
-                                          if (ename_old <> ename)
-                                            delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;
-                                        }
-                                        if (self._intv = 0)
-                                        {
-                                          delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
-                                        }
-                                        else
-                                        {
-                                          insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
-                                             values (ename, now (), self._intv, concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)'));
-                                        }
+                                      ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
+                                      if (desc_save <> '')
+                                      {
+                                        ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
+                                        if (ename_old <> ename)
+                                          delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;
+                                      }
+                                      if (self._intv = 0)
+                                      {
+                                        delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename;
+                                      }
+                                      else
+                                      {
+                                        insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL)
+                                          values (ename, now (), self._intv, concat('WS.WS.SERV_QUEUE_TOP(\'',self._host,'\',\'',self._root,'\', 1, 0, null, null)'));
+                                      }
                                       commit work;
 
                                       http_request_status ('HTTP/1.1 302 Found');
@@ -950,8 +1056,9 @@
                               </td>
                             </tr>
                             <tr>
-                              <td colspan="2">
-                                <span>* The "Target URL" will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>
+                              <td align="center" colspan="2">
+                                <span>* The "Target URL" will be used as a destination Quad Store Graph IRI. <br />
+                                If no RDF cartridge is enabled only RDF content  will be retrieved and imported i.e., no RDF transformation via Sponger.</span>
                               </td>
                             </tr>
                           </table>

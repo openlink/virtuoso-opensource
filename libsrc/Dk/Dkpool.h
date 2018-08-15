@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -106,7 +106,7 @@ struct mem_pool_s
   resource_t **		mp_large_reuse;
   dk_hash_t *		mp_unames;
   dk_set_t 		mp_trash;
-#if defined (DEBUG) || defined (MALLOC_DEBUG)
+#if defined (DEBUG) || defined (MALLOC_DEBUG) || !defined(NDEBUG)
   const char *		mp_alloc_file;
   int 			mp_alloc_line;
 #endif
@@ -336,6 +336,7 @@ dk_set_t dbg_t_set_diff (const char *file, int line, dk_set_t s1, dk_set_t s2);
 caddr_t *dbg_t_list_to_array (const char *file, int line, dk_set_t list);
 caddr_t *dbg_t_revlist_to_array (const char *file, int line, dk_set_t list);
 int dbg_t_set_delete (const char *file, int line, dk_set_t * set, void *item);
+void * dbg_t_set_delete_nth (const char *file, int line, dk_set_t * set, int nth);
 dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define mp_set_push(mp,set,elt)			dbg_mp_set_push (__FILE__, __LINE__, (mp), (set), (elt))
 #define t_cons(car,cdr)				dbg_t_cons (__FILE__, __LINE__, (car), (cdr))
@@ -349,6 +350,7 @@ dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define t_list_to_array(list)			dbg_t_list_to_array (__FILE__, __LINE__, (list))
 #define t_revlist_to_array(list)		dbg_t_revlist_to_array (__FILE__, __LINE__, (list))
 #define t_set_delete(set,item)			dbg_t_set_delete (__FILE__, __LINE__, (set), (item))
+#define t_set_delete_nth(set,nth)		dbg_t_set_delete_nth (__FILE__, __LINE__, (set), (nth))
 #define t_set_copy(s)				dbg_t_set_copy (__FILE__, __LINE__, (s))
 #else
 void mp_set_push (mem_pool_t * mp, dk_set_t * set, void *elt);
@@ -363,6 +365,7 @@ dk_set_t t_set_diff (dk_set_t s1, dk_set_t s2);
 caddr_t *t_list_to_array (dk_set_t list);
 caddr_t *t_revlist_to_array (dk_set_t list);
 int t_set_delete (dk_set_t * set, void *item);
+void * t_set_delete_nth (dk_set_t * set, int nth);
 dk_set_t t_set_copy (dk_set_t s);
 #endif
 #define mp_set_nreverse(mp,s) dk_set_nreverse((s))
@@ -381,7 +384,13 @@ void mp_check_tree (mem_pool_t * mp, box_t box);
 
 #ifdef _DKSYSTEM_H
 caddr_t t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail);
+caddr_t t_box_vsprintf_uname (size_t buflen_eval, const char *format, va_list tail);
 caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
+caddr_t t_box_sprintf_uname (size_t buflen_eval, const char *format, ...)
 #ifdef __GNUC__
                 __attribute__ ((format (printf, 2, 3)))
 #endif
@@ -482,9 +491,13 @@ size_t mm_next_size (size_t n, int * nth);
 size_t mm_cache_trim (size_t target_sz, int age_limit, int old_only);
 extern size_t mp_block_size;
 
-#if !defined (NDEBUG) /*&& !defined (MALLOC_DEBUG)*/
-
+#if defined (DEBUG) || defined (MALLOC_DEBUG) || !defined(NDEBUG)
 #define MP_MAP_CHECK
+#endif
+
+#ifdef MP_MAP_CHECK
+extern dk_hash_t * mp_registered;
+extern dk_mutex_t mp_reg_mtx;
 
 typedef struct dk_pool_4g {
   unsigned char 	bits[128 * 1024];
@@ -508,7 +521,8 @@ if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 
 
 int mp_reuse_large (mem_pool_t * mp, void * ptr);
 int mp_reserve (mem_pool_t * mp, size_t inc);
-void mp_comment (mem_pool_t * mp, char * str1, char * str2);
+void mp_comment (mem_pool_t * mp, const char * str1, const char * str2);
 size_t  mp_block_size_sc (size_t sz);
+void * mp_mmap (size_t sz);
 
 #endif /* ifdef __DKPOOL_H */

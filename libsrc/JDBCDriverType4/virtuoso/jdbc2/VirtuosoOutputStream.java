@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -757,8 +757,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
       // Send the number of minute
       yday = _second;
       write(((_minute << 2) & 0xfc) | ((yday >> 4) & 0x3));
-//--      temp = _frac / 1000;
-      temp = _frac;
+      temp = _frac / 1000;
       write((yday << 4) | ((temp >> 16) & 0xf));
       // Send the fraction if it's a time stamp
       write(temp >> 8);

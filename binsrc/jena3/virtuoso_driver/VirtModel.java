@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,7 @@ import javax.sql.*;
 
 import org.apache.jena.graph.*;
 import org.apache.jena.graph.impl.*;
+import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.*;
 import org.apache.jena.util.iterator.*;
@@ -40,11 +41,10 @@ import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.*;
 
 
-import virtuoso.jdbc4.VirtuosoDataSource;
-
 public class VirtModel extends ModelCom {
 
     private final Object lck_add = new Object();
+    private int batch_worked = 0;
 
     /**
      * @param base
@@ -113,6 +113,10 @@ public class VirtModel extends ModelCom {
         ((VirtGraph) this.graph).setSameAs(_sameAs);
     }
 
+    public void setMacroLib(String _macroLib) {
+        ((VirtGraph) this.graph).setMacroLib(_macroLib);
+    }
+
 
     public int getBatchSize() {
         return ((VirtGraph) this.graph).getBatchSize();
@@ -142,8 +146,8 @@ public class VirtModel extends ModelCom {
 
 
     /**
-     * Set the insertBNodeAsURI state for connection(default false) 
-     * 
+     * Set the insertBNodeAsURI state for connection(default false)
+     *
      * @param v
      *        true - insert BNode as Virtuoso IRI
      *        false - insert BNode as Virtuoso Native BNode
@@ -163,8 +167,8 @@ public class VirtModel extends ModelCom {
     /**
      * Set the resetBNodesDictAfterCall (reset server side BNodes Dictionary,
      * that is used for map between Jena Bnodes and Virtuoso BNodes, after each
-     * add call). The default state for connection is false 
-     * 
+     * add call). The default state for connection is false
+     *
      * @param v
      *        true  - reset BNodes Dictionary after each add(add batch) call
      *        false - not reset BNode Dictionary after each add(add batch) call
@@ -183,10 +187,10 @@ public class VirtModel extends ModelCom {
 
     /**
      * Set the resetBNodesDictAfterCommit (reset server side BNodes Dictionary,
-     * that is used for map between Jena Bnodes and Virtuoso BNodes, 
+     * that is used for map between Jena Bnodes and Virtuoso BNodes,
      * after commit/rollback).
-     * The default state for connection is true 
-     * 
+     * The default state for connection is true
+     *
      * @param v
      *        true  - reset BNodes Dictionary after each commit/rollack
      *        false - not reset BNode Dictionary after each commit/rollback
@@ -197,15 +201,57 @@ public class VirtModel extends ModelCom {
 
 
 
+    /**
+     * Get the insertStringLiteralAsSimple state for connection
+     */
+    public boolean getInsertStringLiteralAsSimple() {
+        return ((VirtGraph) this.graph).getInsertStringLiteralAsSimple();
+    }
+
+    /**
+     * Set the insertStringLiteralAsSimple state for connection(default false)
+     *
+     * @param v
+     *        true - insert String Literals as Simple Literals
+     *        false - insert String Literals as is
+     */
+    public void setInsertStringLiteralAsSimple(boolean v) {
+        ((VirtGraph) this.graph).setInsertStringLiteralAsSimple(v);
+    }
+
+
+    /**
+     * Set the concurrency mode for Insert/Update/Delete operations and SPARUL queries
+     *
+     * @param mode
+     *        Concurrency mode
+     */
+    public void setConcurrencyMode(int mode) throws JenaException
+    {
+        ((VirtGraph) this.graph).setConcurrencyMode(mode);
+    }
+
+    /**
+     * Get the concurrency mode for Insert/Update/Delete operations and SPARUL queries
+     *
+     * @return concurrency mode
+     */
+    public int getConcurrencyMode() {
+        return ((VirtGraph) this.graph).concurencyMode;
+    }
+
 
     @Override
     public Model read(String url) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(url);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(url);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -213,10 +259,13 @@ public class VirtModel extends ModelCom {
     public Model read(Reader reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -224,10 +273,13 @@ public class VirtModel extends ModelCom {
     public Model read(InputStream reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -235,10 +287,13 @@ public class VirtModel extends ModelCom {
     public Model read(String url, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(url, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(url, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -246,10 +301,13 @@ public class VirtModel extends ModelCom {
     public Model read(String url, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(url, base, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(url, base, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -257,10 +315,13 @@ public class VirtModel extends ModelCom {
     public Model read(Reader reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -268,10 +329,13 @@ public class VirtModel extends ModelCom {
     public Model read(InputStream reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (lck_add){
-            g.startBatchAdd();
-            Model ret = super.read(reader, base, lang);
-            g.stopBatchAdd();
-            return ret;
+            startBatchAdd();
+            try{
+              Model ret = super.read(reader, base, lang);
+              return ret;
+            } finally {
+              stopBatchAdd();
+            }
         }
     }
 
@@ -325,5 +389,39 @@ public class VirtModel extends ModelCom {
         _g.md_delete_Model(m.listStatements());
         return this;
     }
+
+    private void startBatchAdd()
+    {
+        VirtGraph g = (VirtGraph)getGraph();
+        if (batch_worked==0)
+          g.startBatchAdd();
+        batch_worked++;
+    }
+
+    private void stopBatchAdd()
+    {
+        VirtGraph g = (VirtGraph)getGraph();
+        batch_worked--;
+        if (batch_worked==0)
+          g.stopBatchAdd();
+    }
+
+    /** Begin a new transation.
+     *
+     * @param readWrite
+     *        READ  - start transaction with default Concurrency mode
+     *        WRITE - start transaction with Pessimistic Concurrency mode
+     *
+     * <p> All changes made to a model within a transaction, will either
+     * be made, or none of them will be made.</p>
+     * @return this model to enable cascading.
+
+     */
+    public Model begin(ReadWrite readWrite)
+    {
+        ((VirtGraph)getGraph()).getTransactionHandler().begin(readWrite);
+        return this;
+    }
+
 
 }

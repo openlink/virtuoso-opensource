@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -22,8 +22,7 @@
 
 function selectAllCheckboxes (form, btn)
 {
-  var i;
-  for (i = 0;i < form.elements.length;i++)
+  for (var i = 0;i < form.elements.length;i++)
   {
       var contr = form.elements[i];
       if (contr != null && contr.type == "checkbox")
@@ -44,8 +43,7 @@ function selectAllCheckboxes (form, btn)
 
 function selectAllCheckboxes_mask (form, btn, txt)
 {
-  var i;
-  for (i = 0; i < form.elements.length; i++)
+  for (var i = 0; i < form.elements.length; i++)
     {
       var contr = form.elements[i];
       if (contr != null && contr.type == "checkbox" && contr.name.indexOf (txt) != -1)

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2058,6 +2058,9 @@ bif_scroll_cr_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   stmt->sst_is_pl_cursor = 1;
   stmt->sst_query = qr;
   IN_CLL;
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT++ by bif_scroll_cr_init");
+#endif
   qr->qr_ref_count++;
   LEAVE_CLL;
 

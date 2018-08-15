@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2889,7 +2889,7 @@ ref_found:
       while (sc->sc_vec_pred && (void *) hs->hs_merged_into_ts != sc->sc_vec_pred->data)
 	{
 	  QNCAST (table_source_t, post_ts, sc->sc_vec_pred->data);
-	  if (IS_TS (post_ts))
+	  if (IS_TS (post_ts) || IS_RTS (post_ts))
 	    sqlg_ts_add_copy (sc, post_ts, hs->hs_out_slots);	/* any ts between recipient of merge and the hs being merged must add the out slots of the hs to its branch copy */
 	  sc->sc_vec_pred = sc->sc_vec_pred->next;
 	}

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="event_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
@@ -67,10 +64,9 @@
         <input type="hidden" name="item" value="<?V get_keyword('item', self.vc_page.vc_event.ve_params) ?>"/>
         <input type="hidden" name="item_type" value="<?V get_keyword('item_type', self.vc_page.vc_event.ve_params) ?>"/>
         <table class="listing" rules="groups">
-          <colgroup/><colgroup/><colgroup/><colgroup/><colgroup/>
           <thead>
-            <tr>
-              <th/>
+            <tr class="listing_header_row">
+              <th class="checkbox" />
               <th>Subscriber</th>
               <th>Last pull time</th>
               <th>Last push time</th>
@@ -85,8 +81,8 @@
               _count := _count + 1;
               _pull_ts := yac_hum_datefmt(SS_LAST_PULL_TS);
               _push_ts := yac_hum_datefmt(SS_LAST_PUSH_TS);
-              http (sprintf ('<tr class="%s">', case when mod (_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
           ?>
+          <tr>
             <td class="listing_col">
               <input type="checkbox" name="SB_<?V SS_SERVER ?>"/>
             </td>
@@ -99,8 +95,8 @@
             <td class="listing_col">
               <?V _push_ts ?>
             </td>
+          </tr>
           <?vsp
-              http('</tr>');
             }
             if (_count = 0)
               http('<tr><td colspan="4" class="Attention">No subscriptions</td></tr>');

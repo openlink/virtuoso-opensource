@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@
 #include "sqlnode.h"
 #include "arith.h"
 #include "log.h"
+#include "datesupp.h"
 
 
 
@@ -818,7 +819,7 @@ int
 ce_total_bytes (db_buf_t ce)
 {
   dtp_t flags, ce_type;
-  int n_bytes, n_values, hl, is_null;
+  int n_bytes = 0, n_values, hl, is_null;
   flags = ce[0];
   ce_type = flags & CE_TYPE_MASK;
   if (ce_type < CE_BITS)
@@ -4294,6 +4295,7 @@ key_col_insert (it_cursor_t * itc, row_delta_t * rd)
 void
 key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins)
 {
+  query_instance_t *qi;
   int inx;
   itc->itc_n_sets = 1;
   itc->itc_set = 0;
@@ -4305,6 +4307,10 @@ key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins)
       itc->itc_param_order[0] = 0;
     }
   itc->itc_vec_rds = (row_delta_t **) list (1, (caddr_t) rd);
+  qi = (query_instance_t *) (rd->rd_qst);
+  itc->itc_ins_flags = ((ins->ins_key_only
+	  || itc->itc_insert_key->key_partition) ? LOG_KEY_ONLY : 0) | (ins->ins_mode ? INS_SOFT : 0) | (qi->
+      qi_non_txn_insert ? LOG_SYNC : 0);
   itc_col_vec_insert (itc, ins);
   dk_free_box ((caddr_t) itc->itc_vec_rds);
   itc_free_box (itc, itc->itc_param_order);

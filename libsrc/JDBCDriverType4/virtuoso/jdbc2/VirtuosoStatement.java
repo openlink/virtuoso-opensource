@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -149,7 +149,7 @@ public class VirtuosoStatement implements Statement
          this.type = type;
       else
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
-      if(concurrency == VirtuosoResultSet.CONCUR_READ_ONLY || concurrency == VirtuosoResultSet.CONCUR_UPDATABLE)
+      if(concurrency == VirtuosoResultSet.CONCUR_READ_ONLY || concurrency == VirtuosoResultSet.CONCUR_UPDATABLE || concurrency == VirtuosoResultSet.CONCUR_VALUES)
          this.concurrency = concurrency;
       else
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
@@ -163,11 +163,16 @@ public class VirtuosoStatement implements Statement
      {
        // Set the concurrency type
        Long[] arrLong = new Long[11];
-       if (connection.isReadOnly ())
+       if (connection.isReadOnly ()) {
          arrLong[0] = new Long (VirtuosoTypes.SQL_CONCUR_ROWVER);
+       }
+       else {
+         if (concurrency == VirtuosoResultSet.CONCUR_VALUES)
+           arrLong[0] = new Long(VirtuosoTypes.SQL_CONCUR_VALUES);
        else
 	 arrLong[0] = new Long(concurrency == VirtuosoResultSet.CONCUR_READ_ONLY ?
 		VirtuosoTypes.SQL_CONCUR_READ_ONLY : VirtuosoTypes.SQL_CONCUR_LOCK);
+       }
        arrLong[1] = new Long(0);
        arrLong[2] = new Long(maxRows);
 #if JDK_VER >= 14
@@ -277,9 +282,6 @@ public class VirtuosoStatement implements Statement
    public void finalize() throws Throwable
    {
       close();
-      // Remove the metaData
-      if(metaData != null)
-         metaData.close();
    }
 
    // --------------------------- JDBC 1.0 ------------------------------
@@ -355,6 +357,7 @@ public class VirtuosoStatement implements Statement
 	     connection.removeFuture(future);
 	     future = null;
 	     result_opened = false;
+	     metaData = null;
 	   }
 	 catch(IOException e)
 	   {
@@ -503,8 +506,12 @@ public class VirtuosoStatement implements Statement
 	       try
 	       {
 		   // First of all, check if there's at least the first result set
-		   if(vresultSet == null || vresultSet.isLastResult)
+		   if(vresultSet == null || vresultSet.isLastResult) {
+		       if (vresultSet.isLastResult)
+		         vresultSet = null;
+
 		       return false;
+		   }
 		   // Send the fetch query
 		   Object[] args = new Object[2];
 		   args[0] = statid;
@@ -553,7 +560,7 @@ public class VirtuosoStatement implements Statement
     */
    public ResultSet getResultSet() throws VirtuosoException
    {
-      return (vresultSet.kindop() != VirtuosoTypes.QT_UPDATE)?vresultSet:null;
+      return (vresultSet!=null && vresultSet.kindop() != VirtuosoTypes.QT_UPDATE)?vresultSet:null;
    }
 
    /**

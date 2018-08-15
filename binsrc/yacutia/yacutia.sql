@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -233,11 +233,6 @@ create procedure adm_menu_tree ()
      <node name="Grants" url="capabilities.vspx" id="9" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="caps_browser.vspx" id="10" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="caps_cols_browser.vspx" id="11" place="1" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import.vspx" place="1" id="12" allowed="yacutia_accounts_page" />
-     <node name="LDAP Import" url="ldap_import_1.vspx" place="1" id="14" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import_2.vspx" place="1" id="15" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Import" url="ldap_import_3.vspx" place="1" id="16" allowed="yacutia_accounts_page"/>
-     <node name="LDAP Servers" url="ldap_server.vspx" id="179" place="1" allowed="yacutia_accounts_page"/>
    </node>
    <node name="Scheduler" url="sys_queues.vspx"  tip="Event Scheduling" id="17" allowed="yacutia_queues_page">
      <node name="Scheduler" url="sys_queues.vspx" id="18" place="1" allowed="yacutia_queues_page">
@@ -249,6 +244,7 @@ create procedure adm_menu_tree ()
    <node name="Parameters" url="inifile.vspx?page=Database" id="21" allowed="yacutia_params_page">
      <node name="Parameters" url="inifile.vspx" id="22" place="1" allowed="yacutia_params_page"/>
    </node>
+   <node name="Registry" url="registries.vspx" id="221" allowed="yacutia_registry_page" />
    <node name="Packages" url="vad.vspx" id="27" allowed="yacutia_vad_page">
      <node name="Packages" url="vad.vspx" id="28" place="1" allowed="yacutia_vad_page"/>
      <node name="Install packages" url="vad_install.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
@@ -325,11 +321,7 @@ create procedure adm_menu_tree ()
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
    </node>
-   <node name="Import" url="import_csv_1.vspx" id="271" allowed="cvs_import">
-   <node name="Import" url="import_csv_2.vspx" id="271" place="1" />
-   <node name="Import" url="import_csv_3.vspx" id="271" place="1" />
-   <node name="Import" url="import_csv_opts.vspx" id="271" place="1" />
-   </node>
+   <node name="Import" url="import_csv.vspx" id="271" allowed="cvs_import"/>
  </node>
  <node name="Replication" url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
    <node name="Basic" url="db_repl_basic.vspx" id="8001" >
@@ -439,6 +431,11 @@ create procedure adm_menu_tree ()
      </node>
    </node>
    <node name="BPEL" url="bpel_service.vspx" id="165" allowed="yacutia_bpel_page"/>',
+   case when check_package('VAL') then
+  '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
+      <node name="OAuth Service Binding" url="login_keys.vspx" id="282" place="1"  allowed="yacutia_val"/>
+   </node>'
+   end,
 --   <node name="UDDI Services" url="uddi_serv.vspx" id="130" allowed="yacutia_uddi_page">
 --     <node name="Server" url="uddi_serv.vspx" id="131" place="1" allowed="yacutia_uddi_page"/>
 --     <node name="Browse" url="uddi_serv_browse.vspx" id="132" place="1" allowed="yacutia_uddi_page"/>
@@ -498,11 +495,6 @@ create procedure adm_menu_tree ()
    <node name="Views" url="db_rdf_view_tb.vspx" id="273" place="1"/>
    <node name="Views" url="db_rdf_view_cols.vspx" id="273" place="1"/>
    <node name="Views" url="db_rdf_view_pk.vspx" id="273" place="1"/>',
-   case when check_package('VAL') then
-  '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
-      <node name="OAuth Service Binding" url="login_keys.vspx" id="282" place="1"  allowed="yacutia_val"/>
-   </node>'
-   end,
    case when check_package('rdb2rdf') then
   '<node name="R2RML" url="r2rml_import.vspx" id="273" />
    <node name="R2RML" url="r2rml_validate.vspx" id="273" place="1"/>
@@ -1605,19 +1597,29 @@ create procedure "PUMP"."DBA"."DBPUMP_CHOICE_RSCHEMA" ( in path varchar := './ba
 }
 ;
 
-create procedure check_grants(in user_name  varchar, in role_name varchar) {
+create procedure check_grants (
+  in user_name varchar,
+  in role_name varchar)
+{
   declare user_id, group_id, role_id, sql_enabled, dav_enabled integer;
   whenever not found goto nf;
-  if (user_name='') return 0;
-  select U_ID, U_GROUP into user_id, group_id from SYS_USERS where U_NAME=user_name;
-  if (user_id = 0 OR group_id = 0)
+
+  select U_ID, U_GROUP into user_id, group_id from DB.DBA.SYS_USERS where U_NAME = user_name;
+  if (user_id = 0 or group_id = 0 or group_id = 3)
     return 1;
+
+  for (select GI_GRANT from DB.DBA.SYS_ROLE_GRANTS where GI_SUPER = user_id and GI_DIRECT = '1') do
+  {
+    if (GI_GRANT = 0 or GI_GRANT = 3)
+      return 1;
+  }
+
   if (role_name is null or role_name = '')
     return 0;
 
-  select U_ID into role_id from SYS_USERS where U_NAME=role_name;
-  if (exists(select 1 from SYS_ROLE_GRANTS where GI_SUPER=user_id and GI_SUB=role_id))
-      return 1;
+  select U_ID into role_id from DB.DBA.SYS_USERS where U_NAME = role_name;
+  if (exists (select 1 from DB.DBA.SYS_ROLE_GRANTS where GI_SUPER = user_id and GI_SUB = role_id))
+    return 1;
 nf:
   return 0;
 }
@@ -3356,7 +3358,7 @@ YACUTIA_DAV_STATUS (in status integer) returns varchar
     return 'Property name is reserved (protected or private)';
 
   if (status = -11)
-    return 'Property does not exists';
+    return 'Property does not exist';
 
   if (status = -12)
     return 'Authentication failed';
@@ -6085,5 +6087,28 @@ create procedure y_wide2utf (
       return retValue;
   }
   return charset_recode (S, null, 'UTF-8' );
+}
+;
+
+create procedure y_registries (
+  in _filter varchar := '')
+{
+  declare N integer;
+  declare V, v0, v1 any;
+  declare c0, c1 varchar;
+
+  result_names (c0, c1);
+
+  V := registry_get_all ();
+  for (N := 0; N < length (V); N := N + 2)
+  {
+    v0 := cast (V[N] as varchar);
+    v1 := V[N+1];
+    if ((_filter <> '') and (v0 not like _filter))
+      goto _skip;
+
+    result (v0, v1);
+  _skip:;
+  }
 }
 ;

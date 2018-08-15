@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2016 OpenLink Software
+//  Copyright (C) 1998-2018 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -83,6 +83,26 @@ namespace OpenLink.Data.Virtuoso
 			if (rc != CLI.ReturnCode.SQL_SUCCESS)
 				Diagnostics.HandleResult (rc, this, outerCommand.Connection);
 			GC.KeepAlive (this);
+		}
+
+		public void SetConcurrencyMode(CommandConcurrency concurrency)
+		{
+			int mode = CLI.Concurrency.SQL_CONCUR_READ_ONLY;
+
+			if (concurrency == CommandConcurrency.CONCUR_PESSIMISTIC)
+			   mode = CLI.Concurrency.SQL_CONCUR_LOCK;
+			else if (concurrency == CommandConcurrency.CONCUR_OPTIMISTIC)
+			   mode = CLI.Concurrency.SQL_CONCUR_VALUES;
+
+			CLI.ReturnCode rc = (CLI.ReturnCode) CLI.SQLSetStmtAttr (
+				hstmt,
+				(int) CLI.StatementAttribute.SQL_ATTR_CONCURRENCY,
+				(IntPtr) mode,
+				(int) CLI.LengthCode.SQL_IS_SMALLINT);
+			if (rc != CLI.ReturnCode.SQL_SUCCESS)
+				Diagnostics.HandleResult (rc, this, outerCommand.Connection);
+			GC.KeepAlive (this);
+
 		}
 
 		public void SetCommandBehavior (CommandBehavior behavior)

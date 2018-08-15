@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2016 OpenLink Software
+#  Copyright (C) 1998-2018 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -289,7 +289,7 @@ echo "  <caption>" >> $STICKER
 echo "    <name package=\"conductor\">" >> $STICKER
 echo "      <prop name=\"Title\" value=\"Virtuoso Conductor\"/>" >> $STICKER
 echo "      <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-echo "      <prop name=\"Copyright\" value=\"(C) 1998-2016 OpenLink Software\"/>" >> $STICKER
+echo "      <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/conductor/download\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/conductor/download\"/>" >> $STICKER
 echo "    </name>" >> $STICKER
@@ -345,10 +345,14 @@ echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is
 echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
+echo "      if ($ISDAV = 1) " >> $STICKER
+echo "      { " >> $STICKER
 echo "      for (select RES_FULL_PATH as X from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/conductor/%.xsl') do " >> $STICKER
 echo "      { " >> $STICKER
+echo "     		  DB.DBA.DAV_PROP_SET_INT (X, ':getlastmodified', now (), null, null, 0, auth_uid=>http_dav_uid ()); " >> $STICKER
 echo "     		xslt_stale ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || X); " >> $STICKER
-echo "     	}; " >> $STICKER
+echo "     	  } " >> $STICKER
+echo "      } " >> $STICKER
 echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-uninstall\">" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER
@@ -494,7 +498,7 @@ fi
 #
 #  Clean ups
 #
-rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb
+rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb virtuoso.pxa
 rm -f xddl.xsd xddl_diff.xsl xddl_exec.xsl xddl_procs.xsd xddl_views.xsd xddl_tables.xsd
 rm -rf vad
 

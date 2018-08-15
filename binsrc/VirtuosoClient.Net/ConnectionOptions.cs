@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2016 OpenLink Software
+//  Copyright (C) 1998-2018 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -201,6 +201,7 @@ namespace OpenLink.Data.Virtuoso
 		internal const string ENLIST = "Enlist";
 		internal const string ROUNDROBIN = "RoundRobin";
 		internal const string ROUND_ROBIN = "Round Robin";
+		internal const string LOG_ENABLE = "Log_enable";
 
 		private BooleanOption odbc;
 		private ListOption host;
@@ -217,6 +218,7 @@ namespace OpenLink.Data.Virtuoso
 		private BooleanOption pooling;
 		private BooleanOption enlist;
 		private BooleanOption roundrobin;
+		private IntegerOption log_enable;
 
 		/// <summary>
 		/// Contains the original connection string.
@@ -247,6 +249,7 @@ namespace OpenLink.Data.Virtuoso
 			pooling = new BooleanOption ();
 			enlist = new BooleanOption ();
 			roundrobin = new BooleanOption ();
+			log_enable = new IntegerOption();
 			Reset ();
 
 			options = CollectionsUtil.CreateCaseInsensitiveHashtable (23);
@@ -281,6 +284,7 @@ namespace OpenLink.Data.Virtuoso
 			options.Add (ENLIST, enlist);
 			options.Add (ROUNDROBIN, roundrobin);
 			options.Add (ROUND_ROBIN, roundrobin);
+			options.Add(LOG_ENABLE, log_enable);
 		}
 
 		internal void Reset ()
@@ -297,9 +301,10 @@ namespace OpenLink.Data.Virtuoso
 			connectionLifetime.setting = DEFAULT_CONN_LIFETIME;
 			minPoolSize.setting = DEFAULT_MIN_POOL_SIZE;
 			maxPoolSize.setting = DEFAULT_MAX_POOL_SIZE;
-            		pooling.setting = true;
-            		enlist.setting = Platform.HasDtc ();
-            		roundrobin.setting = false;
+            pooling.setting = true;
+            enlist.setting = Platform.HasDtc ();
+            roundrobin.setting = false;
+			log_enable.setting = -1;
 		}
 
 		internal void Verify ()
@@ -312,6 +317,8 @@ namespace OpenLink.Data.Virtuoso
 				throw new ArgumentException ("Min Pool Size is greater than Max Pool Size.");
 			if (Enlist && !Platform.HasDtc ())
 				throw new ArgumentException ("Transaction enlistment is not supported on this platform.");
+			if (Log_enable !=-1 && (Log_enable < 0 || Log_enable > 3))
+				throw new ArgumentException ("Log_enable must >=0 and <= 3.");
 		}
 
 		internal void Secure ()
@@ -414,6 +421,11 @@ namespace OpenLink.Data.Virtuoso
 		internal bool RoundRobin
 		{
 			get { return roundrobin.setting; }
+		}
+
+		internal int Log_enable
+		{
+			get { return log_enable.setting; }
 		}
 
 		internal string ConnectionString

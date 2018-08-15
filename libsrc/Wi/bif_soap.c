@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -9646,11 +9646,11 @@ soap_print_scalar_value (dtp_t proposed_type, caddr_t value, dk_session_t *ses, 
 	numeric_to_string ((numeric_t) value, tmp, sizeof (tmp));
       else
 	goto error;
-      if (!stricmp(tmp, "nan"))
+      if (!stricmp(tmp, "NaN"))
 	strcpy_ck (tmp, "NaN");
-      else if (!stricmp(tmp, "inf"))
+      else if (!stricmp(tmp, "INF"))
 	strcpy_ck (tmp, "INF");
-      else if (!stricmp(tmp, "-inf"))
+      else if (!stricmp(tmp, "-INF"))
 	strcpy_ck (tmp, "-INF");
       SES_PRINT (ses, tmp);
     }

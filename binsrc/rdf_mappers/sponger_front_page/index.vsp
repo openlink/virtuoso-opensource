@@ -434,7 +434,7 @@ href="http://{virtuoso-host}/about/id/{URIscheme}/{authority}/{local-path}"
 
       <div class="reset">
         <div id="footer">
-          Copyright (C) 1998-2016 OpenLink Software. All rights reserved.
+          Copyright (C) 1998-2018 OpenLink Software. All rights reserved.
         </div>
       </div>
     </div>

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -72,8 +72,11 @@ public class VirtuosoParameterMetaData implements ParameterMetaData
    {
      Object pd;
      openlink.util.Vector pdd;
-     if (param < 0 || param > getParameterCount())
+     if (param < 1 || param > getParameterCount())
        throw new VirtuosoException ("No such parameter", "22023", VirtuosoException.BADPARAM);
+
+     param--;
+
      pd = parameters.elementAt (param);
      if (pd == null || !(pd instanceof openlink.util.Vector))
        throw new VirtuosoException ("Invalid param info type", "22023", VirtuosoException.BADPARAM);
@@ -133,14 +136,13 @@ public class VirtuosoParameterMetaData implements ParameterMetaData
 
    public String getParameterTypeName(int param) throws VirtuosoException
    {
-     return VirtuosoResultSetMetaData._getColumnTypeName (
-       getParameterType ((((Number) getPd (param).elementAt (0)).intValue())));
+     return VirtuosoResultSetMetaData._getColumnTypeName (getParameterType(param));
    }
 
 
    public String getParameterClassName(int param) throws VirtuosoException
    {
-     return VirtuosoColumn.getColumnClassName (((Number) getPd (param).elementAt (0)).intValue());
+     return VirtuosoColumn.getColumnClassName (getParameterType(param));
    }
 
 

@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2016 OpenLink Software
+//  Copyright (C) 1998-2018 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -48,6 +48,7 @@ namespace OpenLink.Data.Virtuoso
 
 		private int timeout = 0;
 		private int prefetchSize = Values.SELECT_PREFETCH_QUOTA;
+		private CommandConcurrency concurrency = CommandConcurrency.CONCUR_DEFAULT;
 		private bool uniqueRows = false;
 		private ArrayOfLongPacked options = null;
 
@@ -107,6 +108,11 @@ namespace OpenLink.Data.Virtuoso
 			if (timeout > (int.MaxValue / Values.MillisPerSec))
 				timeout = int.MaxValue / Values.MillisPerSec;
 			this.timeout = timeout;
+		}
+
+		public void SetConcurrencyMode(CommandConcurrency mode)
+		{
+			this.concurrency = mode;
 		}
 
 		public void SetCommandBehavior (CommandBehavior behavior)
@@ -213,7 +219,7 @@ namespace OpenLink.Data.Virtuoso
 			{
 				if (rc != CLI.ReturnCode.SQL_SUCCESS_WITH_INFO)
 				{
-				pendingFuture = null;
+				    pendingFuture = null;
 					connection.futures.Remove(future);
 				}
 				Diagnostics.HandleResult (rc, this, connection.OuterConnection);
@@ -283,9 +289,10 @@ namespace OpenLink.Data.Virtuoso
 				if ((prefetchedRows == prefetchSize || isLastInBatch)
 					&& queryType == QueryType.QT_SELECT)
 				{
-					Future future = new Future (Service.Fetch, id, pendingFuture.RequestNo);
-					future.SendRequest (connection.Session, timeout);
+					Future future = new Future(Service.Fetch, id, pendingFuture.RequestNo);
+					future.SendRequest(connection.Session, timeout);
 					prefetchedRows = 0;
+					isLastInBatch = false;
 				}
 
 				CLI.ReturnCode rc = ProcessResult (true);
@@ -298,7 +305,7 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
-		public bool GetNextResult ()
+		public bool GetNextResult()
 		{
 			Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.GetNextResult ()");
 
@@ -355,7 +362,7 @@ namespace OpenLink.Data.Virtuoso
 
 		public object GetColumnData (int i, ColumnData[] columns)
 		{
-		        Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.GetColumnData"); 
+		    Debug.WriteLineIf (CLI.FnTrace.Enabled, "ManagedCommand.GetColumnData"); 
 			Debug.Assert (currentRow != null);
 			ColumnData column = columns[i];
 			object data = currentRow[i + 1];
@@ -611,18 +618,25 @@ namespace OpenLink.Data.Virtuoso
 		private void InitializeOptions ()
 		{
 			Debug.Assert (options != null);
-			options[RpcMessageLayout.SO_Concurrency] = (int) CLI.Concurrency.SQL_CONCUR_READ_ONLY;
+
+			if (concurrency == CommandConcurrency.CONCUR_PESSIMISTIC)
+				options[RpcMessageLayout.SO_Concurrency] = (int)CLI.Concurrency.SQL_CONCUR_LOCK;
+			else if (concurrency == CommandConcurrency.CONCUR_OPTIMISTIC)
+				options[RpcMessageLayout.SO_Concurrency] = (int)CLI.Concurrency.SQL_CONCUR_VALUES;
+			else
+				options[RpcMessageLayout.SO_Concurrency] = (int)CLI.Concurrency.SQL_CONCUR_READ_ONLY;
+
 			options[RpcMessageLayout.SO_IsAsync] = 0;
 			options[RpcMessageLayout.SO_MaxRows] = 0;
 			options[RpcMessageLayout.SO_Timeout] = 0;
-			//options[RpcMessageLayout.SO_Prefetch] = Values.SELECT_PREFETCH_QUOTA;
+			options[RpcMessageLayout.SO_Prefetch] = Values.SELECT_PREFETCH_QUOTA;
 			//options[RpcMessageLayout.SO_AutoCommit] = (int) CLI.AutoCommit.SQL_AUTOCOMMIT_ON;
 			//options[RpcMessageLayout.SO_RpcTimeout] = 0;
 			options[RpcMessageLayout.SO_CursorType] = (int) CLI.CursorType.SQL_CURSOR_FORWARD_ONLY;
 			options[RpcMessageLayout.SO_KeysetSize] = 0;
 			options[RpcMessageLayout.SO_UseBookmarks] = 0;
 			//options[RpcMessageLayout.SO_Isolation] = (int) CLI.IsolationLevel.SQL_TXN_READ_COMMITED;
-			options[RpcMessageLayout.SO_PrefetchBytes] = 0;
+			//options[RpcMessageLayout.SO_PrefetchBytes] = 0;
 			//options[RpcMessageLayout.SO_UniqueRows] = 0;
 		}
 

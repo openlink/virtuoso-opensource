@@ -2,26 +2,26 @@
 <!--
  -
  -  $Id$
- -  
+ -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
- -  Copyright (C) 1998-2016 OpenLink Software
- -  
+ -
+ -  Copyright (C) 1998-2018 OpenLink Software
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <html>
 <body>
@@ -144,7 +144,7 @@ else {
                           <v:on-post width="0" height="16">
                             <v:script>
                               <![CDATA[
-      delete from WS.WS.HTTP_SES_TRAP_DISABLE 
+      delete from WS.WS.HTTP_SES_TRAP_DISABLE
       where EXT = self.ds.ds_current_row.te_rowset[0];
       self.ds.vc_data_bind(e);
                               ]]>
@@ -305,9 +305,9 @@ if(state = '00000') {
     if(line like '%_sql_exec') {
       self.command_lines.ufl_value := concat
                                 (
-                                self.command_lines.ufl_value, 
-                                'SQL ', 
-                                line, 
+                                self.command_lines.ufl_value,
+                                'SQL ',
+                                line,
                                 '\n'
                                 );
     }

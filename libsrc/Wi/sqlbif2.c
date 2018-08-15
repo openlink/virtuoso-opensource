@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -766,7 +766,7 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (!stricmp ("connect_attrs", mode))
     {
       if (qi->qi_client->cli_info)
-	return box_copy_tree (qi->qi_client->cli_info);
+	return box_copy_tree ((caddr_t)(qi->qi_client->cli_info));
       else
 	return NEW_DB_NULL;
     }
@@ -783,7 +783,7 @@ bif_query_instance_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   long depth = bif_long_range_arg (qst, args, 0, "query_instance_id", 0, 0xffff);
-  while ((depth-- > 0) && (NULL != qi)) qi = qi->qi_caller;
+  while ((depth-- > 0) && IS_BOX_POINTER (qi)) qi = qi->qi_caller;
   if (NULL == qi)
     return NEW_DB_NULL;
   return box_num ((ptrlong)qi);
@@ -804,8 +804,8 @@ bif_sql_warnings_resignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       DO_BOX (caddr_t,  warning, inx, warnings)
 	{
 	  if (!IS_BOX_POINTER (warning) ||
-	      DV_ARRAY_OF_POINTER != DV_TYPE_OF (warning) ||
-	      BOX_ELEMENTS (warning) != 3 ||
+	      DV_ERROR_REPORT != DV_TYPE_OF (warning) ||
+	      BOX_ELEMENTS (warning) < 3 ||
 	      (((caddr_t*) warning)[0]) != (caddr_t) QA_WARNING ||
 	      (!DV_STRINGP (ERR_STATE (warning)) && DV_C_STRING != DV_TYPE_OF (ERR_STATE (warning))) ||
 	      (!DV_STRINGP (ERR_MESSAGE (warning)) && DV_C_STRING != DV_TYPE_OF (ERR_MESSAGE (warning))))
@@ -1471,7 +1471,7 @@ static char restricted_xml_chars[0x80] = {
             }
           if (0 == weird_char_ctr)
             return NULL;
-          dest = dest_tail = dk_alloc_box ((sizeof (wchar_t) * 2 * weird_char_ctr) + src_box_length, src_dtp);
+          dest = dest_tail = (wchar_t *)dk_alloc_box ((sizeof (wchar_t) * 2 * weird_char_ctr) + src_box_length, src_dtp);
           dest_to_swap = (caddr_t) dest;
           for (tail = (wchar_t *)src; tail < end; tail++)
             {
@@ -1620,7 +1620,7 @@ bif_stop_cpt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char * me = "format_number";
+  const char * me = "format_number";
   NUMERIC_VAR (num_buf);
   numeric_t number = (numeric_t) num_buf;
   caddr_t number_box = bif_arg (qst, args, 0, me);

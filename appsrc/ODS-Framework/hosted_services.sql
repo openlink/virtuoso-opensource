@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2413,13 +2413,13 @@ create procedure INIT_SERVER_SETTINGS ()
 	     'Enter your User ID and Password',
 	     '',
 	     '',
-	     'Copyright &copy; 1998-2016 OpenLink Software',
+	     'Copyright &copy; 1998-2018 OpenLink Software',
 	     '',
 	     sys_stat ('st_host_name'),
 	     1
 	    );
   }
-  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2016 OpenLink Software';
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2018 OpenLink Software';
 
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =
@@ -2542,7 +2542,7 @@ create procedure WA_USER_GET_OPTION(in _name varchar,in _key varchar)
   return _data;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -2558,7 +2558,7 @@ create procedure WA_USER_SET_OPTION(in _name varchar,in _key varchar,in _data an
   return;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -3343,7 +3343,7 @@ YACUTIA_DAV_STATUS (in status integer) returns varchar
     return 'Property name is reserved (protected or private)';
 
   if (status = -11)
-    return 'Property does not exists';
+    return 'Property does not exist';
 
   if (status = -12)
     return 'Authentication failed';
@@ -4600,7 +4600,7 @@ create procedure WA_USER_SET_INFO (in _name varchar,in _fname varchar,in _lname 
   return;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -4782,7 +4782,7 @@ create procedure WA_USER_EDIT (in _name varchar, in _key varchar, in _data any)
   return row_count ();
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 
@@ -4840,7 +4840,7 @@ create procedure WA_USER_VISIBILITY (in _name varchar, in _arr any default null,
   return;
 
  nf:
-   signal ('42000', sprintf ('The object "%s" does not exists.', _name), 'U0002');
+   signal ('42000', sprintf ('The object "%s" does not exist.', _name), 'U0002');
 }
 ;
 

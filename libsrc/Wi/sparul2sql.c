@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -354,7 +354,11 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
                 {
                 case SPAR_BLANK_NODE_LABEL:
                   if (cve->cve_bnodes_are_prohibited)
-                    spar_error (sparp, "Blank nodes are not allowed in DELETE constructor patterns");
+                    {
+                      while (NULL != list_of_triples)
+                        dk_free_tree ((caddr_t)(dk_set_pop (&list_of_triples)));
+                      spar_error (sparp, "Blank nodes are not allowed in DELETE constructor patterns");
+                    }
                   var_ctr = bnode_count;
                   for (bnode_iter = bnodes_acc; NULL != bnode_iter; bnode_iter = bnode_iter->next)
                     {

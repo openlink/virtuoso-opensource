@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="db_repl_sub_image_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
@@ -35,21 +32,19 @@
     </vm:menu>
     <vm:header caption="Image File Replay"/>
     <vm:pagebody vdb_check="1">
+
       <table class="form_layout">
-        <colgroup>
-          <col/>
-          <col/>
-          <col/>
-        </colgroup>
         <tr>
           <td class="page_tab">
             <v:url name="b_url13" value="Publications" url="db_repl_trans.vspx?page=1"/>
           </td>
-          <td class="page_tab_selected">Subscriptions
+          <td class="page_tab_selected">
+            Subscriptions
           </td>
-        <td class="page_tab_empty"></td>
+          <td class="page_tab_empty" />
       </tr>
     </table>
+
     <table class="tab_page">
       <tr>
         <td>
@@ -83,10 +78,9 @@
             </v:button>
           </div>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/><colgroup/><colgroup/>
             <thead>
-              <tr>
-                <th>Select</th>
+                    <tr class="listing_header_row">
+                      <th width="1px">Select</th>
                 <th>Image file</th>
               </tr>
             </thead>
@@ -103,17 +97,16 @@
                 if (_if <> '')
                 {
                   _l := _l + 1;
-
-                http (sprintf ('<tr class="%s">', case when mod (_l, 2) then 'listing_row_odd' else 'listing_row_even' end));
             ?>
+                  <tr>
               <td class="listing_col">
                 <input type="checkbox" name="CB_<?V _n ?>"/>
               </td>
               <td class="listing_col">
                 <?V _if ?>
               </td>
+                  </tr>
             <?vsp
-                  http('</tr>');
                 }
                 _ix := _ix + 1;
               }

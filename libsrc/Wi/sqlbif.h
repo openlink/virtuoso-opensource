@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -59,6 +59,13 @@ typedef struct sql_comp_s *sql_comp_ptr_t;
 typedef struct sparp_s *sparp_ptr_t;
 
 typedef struct sql_tree_s *bif_sql_optimizer_t (sql_comp_ptr_t sqlc, int bif_opt_opcode, struct sql_tree_s *tree, bif_metadata_ptr_t bmd, void *more);
+/*! Type of SPARQL expression optimization callback function.
+
+The function gets the context, the opcode, the funcall tree to analyze/optimize, and the bif metadata in use.
+if \c bif_opt_opcode is BIF_OPT_SIMPLIFY then the function returns an expression tree that is either the original \c tree,
+or a simplified expression that returns same result.
+If the expression is simplified, the returned pointer must differ from \c tree, it is not allowed to replace a part of the call without copying the top.
+if \c bif_opt_opcode is case BIF_OPT_RET_TYPE then the function fills in and rdf_val_range_t * of expected return value that is passed as \c more argument. */
 typedef struct spar_tree_s *bif_sparql_optimizer_t (sparp_ptr_t sparp, int bif_opt_opcode, struct spar_tree_s *tree, bif_metadata_ptr_t bmd, void *more);
 
 #define BMD_DONE			12053	/*!< The value in arglist of bif_define_ex that indicates the end of arglist */
@@ -106,7 +113,7 @@ extern id_hash_t *name_to_bif_metadata_idhash;			/*!< Metadata of all known BIFs
 extern dk_hash_t *bif_to_bif_metadata_hash;			/*!< Metadata of all known BIFs (except \c BMD_SPARQL_ONLY records); bif_t pointers as keys, pointers to \c bif_metadata_t as values */
 extern dk_hash_t *name_to_bif_sparql_only_metadata_hash;	/*!< Metadata of \c BMD_SPARQL_ONLY names; unames as keys, pointers to \c bif_metadata_t as values. Note that it is \c dk_hash_t, not \c dk_hash_t */
 
-#define find_bif_metadata_by_bif(b) ((bif_metadata_t *)gethash ((b), bif_to_bif_metadata_hash))
+#define find_bif_metadata_by_bif(b) ((bif_metadata_t *)gethash ((void *)(b), bif_to_bif_metadata_hash))
 EXE_EXPORT (bif_metadata_t *, find_bif_metadata_by_name, (const char *name));
 EXE_EXPORT (bif_metadata_t *, find_bif_metadata_by_raw_name, (const char *name));
 #define find_bif_metadata_by_raw_name_safe(name) ((NULL == name_to_bif_metadata_idhash) ? NULL : find_bif_metadata_by_raw_name(name))
@@ -132,7 +139,7 @@ EXE_EXPORT (caddr_t, bif_arg_unrdf_ext, (caddr_t * qst, state_slot_t ** args, in
 EXE_EXPORT (caddr_t, bif_string_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_uname_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_uname_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
-EXE_EXPORT (caddr_t, bif_strses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
+EXE_EXPORT (dk_session_t *, bif_strses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (dk_session_t *, bif_strses_or_http_ses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (struct xml_entity_s *, bif_entity_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (struct xml_tree_ent_s *, bif_tree_ent_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
@@ -158,14 +165,15 @@ EXE_EXPORT (caddr_t *, bif_strict_2type_array_arg, (dtp_t element_dtp1, dtp_t el
 EXE_EXPORT (caddr_t, bif_varchar_or_bin_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (iri_id_t, bif_iri_id_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (iri_id_t, bif_iri_id_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
+EXE_EXPORT (iri_id_t, bif_iri_id_or_long_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version));
 EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version));
-EXE_EXPORT (caddr_t, bif_date_arg, (caddr_t * qst, state_slot_t ** args, int nth, char *func));
-EXE_EXPORT (caddr_t, bif_date_arg_rb_type, (caddr_t * qst, state_slot_t ** args, int nth, char *func, int *rb_type_ret));
+EXE_EXPORT (caddr_t, bif_date_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
+EXE_EXPORT (caddr_t, bif_date_arg_rb_type, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *rb_type_ret));
 EXE_EXPORT (int, dt_print_flags_of_rb_type, (int rb_type));
 EXE_EXPORT (int, dt_print_flags_of_xsd_type_uname, (ccaddr_t xsd_type_uname));
 
-dbe_key_t * bif_key_arg (caddr_t * qst, state_slot_t ** args, int n, char * fn);
+dbe_key_t * bif_key_arg (caddr_t * qst, state_slot_t ** args, int n, const char * fn);
 
 EXE_EXPORT (caddr_t, box_find_mt_unsafe_subtree, (caddr_t box));
 EXE_EXPORT (void, box_make_tree_mt_safe, (caddr_t box));
@@ -189,23 +197,23 @@ double bif_double_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, con
 EXE_EXPORT (caddr_t *, bif_array_of_pointer_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 
 
-extern bif_type_t bt_varchar;
-extern bif_type_t bt_wvarchar;
-extern bif_type_t bt_any;
-extern bif_type_t bt_any_box;
-extern bif_type_t bt_iri_id;
-extern bif_type_t bt_integer;
-extern bif_type_t bt_integer_nn;
-extern bif_type_t bt_double;
-extern bif_type_t bt_float;
-extern bif_type_t bt_numeric;
-extern bif_type_t bt_convert;
-extern bif_type_t bt_timestamp;
-extern bif_type_t bt_time;
-extern bif_type_t bt_date;
-extern bif_type_t bt_datetime;
-extern bif_type_t bt_bin;
-extern bif_type_t bt_xml_entity;
+EXE_EXPORT_TYPED (bif_type_t, bt_varchar);
+EXE_EXPORT_TYPED (bif_type_t, bt_wvarchar);
+EXE_EXPORT_TYPED (bif_type_t, bt_any);
+EXE_EXPORT_TYPED (bif_type_t, bt_any_box);
+EXE_EXPORT_TYPED (bif_type_t, bt_iri_id);
+EXE_EXPORT_TYPED (bif_type_t, bt_integer);
+EXE_EXPORT_TYPED (bif_type_t, bt_integer_nn);
+EXE_EXPORT_TYPED (bif_type_t, bt_double);
+EXE_EXPORT_TYPED (bif_type_t, bt_float);
+EXE_EXPORT_TYPED (bif_type_t, bt_numeric);
+EXE_EXPORT_TYPED (bif_type_t, bt_convert);
+EXE_EXPORT_TYPED (bif_type_t, bt_timestamp);
+EXE_EXPORT_TYPED (bif_type_t, bt_time);
+EXE_EXPORT_TYPED (bif_type_t, bt_date);
+EXE_EXPORT_TYPED (bif_type_t, bt_datetime);
+EXE_EXPORT_TYPED (bif_type_t, bt_bin);
+EXE_EXPORT_TYPED (bif_type_t, bt_xml_entity);
 
 
 extern dk_mutex_t *time_mtx;
@@ -255,8 +263,8 @@ caddr_t mime_stream_get_part (int rfc822, dk_session_t *ses, long max_size,
 int find_index_to_vector (caddr_t item, caddr_t vec, int veclen, dtp_t vectype,
     int start, int skip_value, const char *calling_fun);
 
-char * ws_file_ctype (char * name);
-void sprintf_escaped_id (caddr_t str, char *out, dk_session_t *ses);
+const char * ws_file_ctype (const char * name);
+void sprintf_escaped_id (ccaddr_t str, char *out, dk_session_t *ses);
 void bif_ldapcli_init (void);
 void bif_hosting_init (void);
 
@@ -314,7 +322,7 @@ int regexp_split_parse (const char* pattern, const char* str, int* offvect, int 
 
 /*! Wrapper for uu_decode_part,
  modifies \c src input string! */
-EXE_EXPORT (int, uudecode_base64, (char * , char * ));
+EXE_EXPORT (int, uudecode_base64, (char * src, char * tgt));
 
 EXE_EXPORT (caddr_t, sprintf_inverse, (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors));
 EXE_EXPORT (caddr_t, sprintf_inverse_ex, (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors, unsigned char *expected_dtp_strg));
@@ -325,6 +333,7 @@ extern int no_free_set;
 
 char * rel_to_abs_path (char *p, const char *path, long len);
 
+extern boxint sequence_next_inc_and_log (query_instance_t *qi, caddr_t * err_ret, caddr_t name, boxint inc_by, boxint cl_sz);
 caddr_t bif_result_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_clear_temp (caddr_t *  qst, caddr_t * err_ret, state_slot_t ** args);
@@ -377,4 +386,22 @@ extern id_hash_t * bif_exec_pending;
 extern int c_no_dbg_print;
 
 #define BIF_NOT_VECTORED ((caddr_t)-2) /* err ret of a vectored bif for reverting to non-vectored form */
+
+/* sqlprt.c */
+
+#define TRSET_BUF_MAX		4000
+
+typedef struct trset_ctx_s
+{
+  caddr_t tc_buf;
+  char *  tc_tail;
+  query_instance_t* tc_qst;
+  int tc_indent;
+} trset_ctx_t;
+
+extern void trset_start (caddr_t *qst);
+extern void trset_printf (const char *str, ...);
+extern void trset_end (void);
+extern void trset_add_indent (int delta);
+
 #endif /* _SQLBIF_H */

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -451,7 +451,13 @@ ce_first = ce + 5; n_bytes = SHORT_REF_CA (ce + 1); n_values = SHORT_REF_CA (ce 
 caddr_t mp_box_to_any (mem_pool_t * mp, caddr_t box);
 void cs_compress (compress_state_t * cs, caddr_t any);
 void cs_compress_int (compress_state_t * cs, int64 * ints, int n_ints);
-void cs_best (compress_state_t * cs, dtp_t ** best, int * len);
+
+void DBG_NAME(cs_best) (DBG_PARAMS  compress_state_t * cs, dtp_t ** best, int * len);
+#ifdef MALLOC_DEBUG
+#define cs_best(cs,best,len) dbg_cs_best(__FILE__, __LINE__, (cs), (best), (len))
+#define cs_check_dict(cs) dbg_cs_check_dict(__FILE__, __LINE__, (cs))
+#endif
+
 void cs_reset (compress_state_t * cs);
 int cs_decode (col_pos_t * cpo, int from, int to);
 
@@ -708,7 +714,7 @@ int64 itc_anify_param (it_cursor_t * itc, caddr_t box);
 void cs_free_allocd_parts (compress_state_t * cs);
 void cpt_col_uncommitted (dbe_storage_t * dbs);
 void cpt_col_restore_uncommitted ();
-int col_ac_set_dirty (caddr_t * qst, state_slot_t ** args, it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last);
+int col_ac_set_dirty (it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last);
 void itc_ensure_col_refs (it_cursor_t * itc);
 void itc_col_page_free (it_cursor_t * itc, buffer_desc_t * buf, int col);
 void itc_fetch_col_dps (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, dk_hash_t * dps);

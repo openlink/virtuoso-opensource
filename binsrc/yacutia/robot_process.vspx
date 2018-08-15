@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -100,7 +100,9 @@
             http (concat ('<p>Errors while retrieving target. Wrong entries : ', cast (_err_cnt as varchar) ,'. Select "Stop" and "Reset" to return initial state</p>'), res_ses);
         }
         else if (_upd = 2)
+        {
           update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = _url;
+        }
         else if (_upd = 3)
         {
           delete from  WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL <> _url and VQ_STAT <> 'pending';

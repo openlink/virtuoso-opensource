@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -93,36 +93,40 @@ void upd_free (update_node_t * upd);
 
 void ddl_free (ddl_node_t * ddl);
 
-void sqlc_error (comp_context_t * cc, const char *st, const char *str,...);
-void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
+#ifdef MALLOC_DEBUG
+extern void dbg_sqlc_error (const char *file, int line, comp_context_t * cc, const char *st, const char *str,...);
+extern void dbg_sqlc_new_error (const char *file, int line, comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
+#define sqlc_error(cc,st,str,...) dbg_sqlc_error (__FILE__, __LINE__, (cc), (st), (str), ##__VA_ARGS__)
+#define sqlc_new_error(cc,st,virt_code,str,...) dbg_sqlc_new_error (__FILE__, __LINE__, (cc), (st), (virt_code), (str), ##__VA_ARGS__)
+#else
+extern void sqlc_error (comp_context_t * cc, const char *st, const char *str,...);
+extern void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
+#endif
 void sqlc_resignal_1 (comp_context_t * cc, caddr_t err);
-
-EXE_EXPORT(query_t *, sql_compile, (const char *string2, client_connection_t * cli, caddr_t * err, volatile int store_procs));
-EXE_EXPORT(query_t *, sql_proc_to_recompile, (const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant));
 
 extern query_t *DBG_NAME (sql_compile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t * err,
     volatile int store_procs);
 extern query_t *DBG_NAME (sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t proc_name,
     int text_is_constant);
 #ifdef MALLOC_DEBUG
-#ifndef _USRDLL
-#ifndef EXPORT_GATE
 #define sql_compile(s,c,e,sp) dbg_sql_compile(__FILE__,__LINE__,(s),(c),(e),(sp))
 #define sql_proc_to_recompile(s,c,pn,tic) dbg_sql_proc_to_recompile(__FILE__,__LINE__,(s),(c),(pn),(tic))
 #endif
-#endif
-#endif
 
+EXE_EXPORT (query_t *, sql_compile_static, (const char *string2, client_connection_t * cli, caddr_t * err, volatile int store_procs));
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
 extern query_t *static_qr_dllist; /*!< Double-linked list of queries that should be freed only at server shutdown. */
 extern query_t *dbg_sql_compile_static (const char *file, int line,
     const char *string2, client_connection_t * cli, caddr_t * err,
     volatile int store_procs);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define sql_compile_static(s,c,e,sp) dbg_sql_compile_static(__FILE__,__LINE__,(s),(c),(e),(sp))
+#endif
+#endif
 extern void static_qr_dllist_append (query_t *qr, int gpf_on_dupe);
 extern void static_qr_dllist_remove (query_t *qr);
 #else
-EXE_EXPORT (query_t *, sql_compile_static, (const char *string2, client_connection_t * cli, caddr_t * err, volatile int store_procs));
 #define static_qr_dllist_append(qr,g)
 #define static_qr_dllist_remove(qr)
 #endif

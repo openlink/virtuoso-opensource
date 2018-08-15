@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4962,7 +4962,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	    }
 	  END_QR_RESET;
 	  dk_free_box (tsql);
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: "); SES_PRINT (ses, ERR_STATE(err));
 	      SES_PRINT (ses, " SQLMessage: "); SES_PRINT (ses, ERR_MESSAGE(err));
@@ -5001,7 +5001,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	      err = srv_make_new_error ("42001", "HT004", "No DB.DBA.XQ_TEMPLATE defined");
 	    }
 
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: "); SES_PRINT (ses, ERR_STATE(err));
 	      SES_PRINT (ses, " SQLMessage: "); SES_PRINT (ses, ERR_MESSAGE(err));
@@ -5063,7 +5063,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	      err = srv_make_new_error ("42001", "HT004", "No DB.DBA.SQLX_OR_SPARQL_TEMPLATE defined");
 	    }
 
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: "); SES_PRINT (ses, ERR_STATE(err));
 	      SES_PRINT (ses, " SQLMessage: "); SES_PRINT (ses, ERR_MESSAGE(err));
@@ -5104,7 +5104,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	      xs = xs_reverse (xs);
 	      xs_stmts_exec (qi, &err, xs, NULL, NULL, pars, 0 /*TODO: add debug support here */);
 	    }
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: ");
 	      SES_PRINT (ses, ERR_STATE(err));

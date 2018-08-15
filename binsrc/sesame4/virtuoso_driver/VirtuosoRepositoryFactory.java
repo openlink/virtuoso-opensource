@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,6 +69,9 @@ public class VirtuosoRepositoryFactory implements RepositoryFactory {
             result.setRuleSet(vConfig.getRuleSet());
             result.setBatchSize(vConfig.getBatchSize());
             result.setInsertBNodeAsVirtuosoIRI(vConfig.getInsertBNodeAsVirtuosoIRI());
+            result.setMacroLib(vConfig.getMacroLib());
+            result.setConcurrencyMode(vConfig.getConcurrencyMode());
+            result.setUseDefGraphForQueries(vConfig.getUseDefGraphForQueries());
         }
         else {
             throw new RepositoryConfigException("Invalid configuration class: " + config.getClass());

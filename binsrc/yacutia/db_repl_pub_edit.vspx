@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="db_repl_pub_create_page"
@@ -90,11 +87,10 @@
 	  <h4>Publication "<?V self.acct ?>"</h4>
 	  <div class="scroll_area">
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/><colgroup/><colgroup/>
             <thead>
 	      <tr class="listing_header_row">
-                <th/>
-                <th/>
+                <th class="checkbox"/>
+                <th width="16px"/>
                 <th>Item</th>
                 <th>Type</th>
                 <th>Default copy mode</th>
@@ -109,9 +105,8 @@
               for select TI_ITEM, TI_TYPE, TI_IS_COPY, TI_OPTIONS from SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ACCT = self.acct do
               {
                 _len := _len + 1;
-
-                http (sprintf ('<tr class="%s">', case when mod (_len, 2) then 'listing_row_odd' else 'listing_row_even' end));
             ?>
+            <tr>
               <td class="listing_col">
                 <input type="checkbox" name="CB<?V TI_TYPE ?>_<?V TI_ITEM ?>"/>
               </td>
@@ -163,11 +158,11 @@
                     http ('N/A');
                 ?>
               </td>
+            </tr>
             <?vsp
-                http('</tr>');
               }
               if (_len = 0)
-                http ('<tr><td colspan="5" align="center">No items added to this publication</td></tr>');
+                http ('<tr><td colspan="6" align="center">No items added to this publication</td></tr>');
             ?>
 	  </table>
 	</div>
@@ -322,7 +317,6 @@
       <v:template name="grant_template" type="simple" enabled="-- equ(self.db_pub_stage, 0)">
         <v:form name="grant_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
           <table class="listing" rules="groups">
-            <colgroup/>
             <thead>
               <tr class="listing_header_row">
                 <th>Select</th>
@@ -555,11 +549,10 @@
 		      ?>
 		      <div class="<?V case when tbls then 'scroll_area' else '' end ?>">
                       <table class="listing" rules="groups">
-                        <colgroup/><colgroup/>
                         <thead>
-                          <tr>
-                            <th>Add</th>
-                            <th/>
+                          <tr class="listing_header_row">
+                            <th class="checkbox">Add</th>
+                            <th width="16px"/>
                             <th>Table</th>
                           </tr>
                         </thead>
@@ -576,7 +569,7 @@
                             if (not exists(select 1 from SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ITEM = tblname and TI_TYPE = 2));
                             {
                               len := len + 1;
-                              http (sprintf ('<tr class="%s">', case when mod (len, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                              http('<tr>');
                               http(sprintf('<td class="listing_col"><input type="checkbox" name="TB_%V" %s></td>\n', tblname, _s));
                               http ('<td class="listing_col"><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
                               http(sprintf('<td class="listing_col">%V</td>', tblname));
@@ -634,9 +627,8 @@
 		      ?>
 		      <div class="<?V case when tbls then 'scroll_area' else '' end ?>">
                       <table class="listing" rules="groups">
-                        <colgroup/><colgroup/><colgroup/>
                         <thead>
-                          <tr>
+                          <tr class="listing_header_row">
                             <th>Add</th>
                             <th/>
                             <th>Procedure</th>
@@ -804,9 +796,8 @@
           </table>
           <br/>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/>
             <thead>
-              <tr>
+              <tr class="listing_header_row">
                 <th/>
                 <th>Item name</th>
                 <th>Type</th>
@@ -942,7 +933,6 @@
           </table>
           <br/>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/><colgroup/><colgroup/><colgroup/>
             <thead>
               <tr class="listing_header_row">
                 <th/>
@@ -1165,11 +1155,10 @@
         <v:form name="grante_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
           <h4>Select users to grant subscribe to publication <b><?V self.acct ?></b></h4>
           <table class="listing" rules="groups">
-            <colgroup/><colgroup/>
             <thead>
-              <tr>
-                <th/>
-                <th>Select</th>
+              <tr class="listing_header_row">
+                <th class="checkbox">Select</th>
+                <th width="16px"></th>
                 <th>User Name</th>
               </tr>
             </thead>
@@ -1182,8 +1171,8 @@
               for select U_NAME from SYS_USERS where U_ID <> 0 and U_SQL_ENABLE = 1 and U_IS_ROLE = 0 and (not exists (select 1 from SYS_TP_GRANT where TPG_ACCT = self.acct and TPG_GRANTEE = U_NAME)) order by U_NAME do
               {
                 ulen := ulen + 1;
-                http (sprintf ('<tr class="%s">', case when mod (ulen, 2) then 'listing_row_odd' else 'listing_row_even' end));
             ?>
+            <tr>
               <td class="listing_col">
                 <input type="checkbox" name="GR_<?V U_NAME ?>"/>
               </td>
@@ -1193,8 +1182,8 @@
               <td class="listing_col">
                 <?V U_NAME ?>
               </td>
+            </tr>
             <?vsp
-                http ('</tr>');
               }
 	      if (ulen = 0)
 	        {
@@ -1242,16 +1231,16 @@
                   ]]>
                 </v:on-post>
               </v:button>
+
               <v:button name="grant_back_but" action="simple" value="Back">
                 <v:on-post>
-                  <v:script>
                     <![CDATA[
                       self.db_pub_stage := 0;
                       self.vc_data_bind(e);
                     ]]>
-                  </v:script>
                 </v:on-post>
               </v:button>
+
             </div>
           <?vsp
             }

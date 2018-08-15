@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,7 +36,7 @@ One tab before end of single-line BNF comment.
 
 Whitespaces in all other places, including two whitespaces after "::=" in BNF comments */
 
-%pure_parser
+%pure-parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
 %expect 14
@@ -2400,7 +2400,7 @@ spar_nonsigned_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | 
 				  $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_double (myPOSINF_d), uname_xmlschema_ns_uri_hash_double, NULL, "INF"); }
 	| NAN_L			{ double myZERO = 0.0;
 				  double myNAN_d = 0.0/myZERO;
-				  $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL, "NAN"); }
+				  $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL, "NaN"); }
 	;
 
 spar_optsigned_numeric_literal	/* [Virt]	SignedNumericLiteral	 ::=  ( '+' | '-' )? NumericLiteral	*/

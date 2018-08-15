@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3323,7 +3323,7 @@ xp_sql_xp_tree (xpp_t * caller_xpp, xp_lexbmk_t *begin, sql_comp_t * sc, caddr_t
 	MP_DONE();
       if (err_ret[0]) goto error;
       qr_mem_wrapper = (dk_mem_wrapper_t *)dk_alloc_box_zero (sizeof (dk_mem_wrapper_t), DV_MEM_WRAPPER);
-      qr_mem_wrapper->dmw_free = (dk_free_box_trap_cbk_t) qr_free;
+      qr_mem_wrapper->dmw_free = (dk_free_box_trap_cbk_t) qr_free_1;
       qr_mem_wrapper->dmw_data[0] = qr;
       xq_xml = xtlist (
 	caller_xpp, 10, XQ_FOR_SQL,

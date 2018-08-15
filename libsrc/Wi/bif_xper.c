@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2677,7 +2677,7 @@ parse_source:
 	config.uri_resolver = (VXmlUriResolver)xml_uri_resolve_like_get;
 	config.uri_reader = (VXmlUriReader)xml_uri_get;
 	config.uri_appdata = qi;	/* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-        config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+        config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
 	config.initial_src_enc_name = enc_name;
 	config.dtd_config = dtd_config;
 	config.uri = ((NULL == uri) ? uname___empty : uri);

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="vdb_main_page"
         decor="yacutia_decor.vspx"
@@ -32,6 +29,12 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
   <vm:pagewrapper>
+    <vm:scripts>
+      <?vsp
+        http ('<script language="JavaScript" type="text/javascript" src="admin_utils.js"></script>');
+      ?>
+    </vm:scripts>
+
     <vm:variables>
       <v:variable name="ds_name" type="varchar" default="null" persist="0"/>
       <v:variable name="dsn_to_connect" type="varchar" default="null" persist="0"/>
@@ -83,30 +86,7 @@
     </vm:menu>
     <vm:header caption="External Data Sources"/>
     <vm:pagebody vdb_check="1">
-      <script language="JavaScript">
-      function selectAllCheckboxes (form, btn)
-      {
-	var i;
-	for (i = 0; i &lt; form.length; i++)
-	  {
-	    var contr = form.elements[i];
-	    if (contr != null &amp;&amp; contr.type == "checkbox")
-	      {
-		contr.focus();
-		if (btn.value == 'Select All')
-		  contr.checked = true;
-		else
-		  contr.checked = false;
-	      }
-	  }
-	if (btn.value == 'Select All')
-	  btn.value = 'Unselect All';
-	else
-	  btn.value = 'Select All';
-	btn.focus();
-      }
-      </script>
-        <v:before-data-bind>
+      <v:before-data-bind>
 	    <![CDATA[
 declare params any;
 params := e.ve_params;

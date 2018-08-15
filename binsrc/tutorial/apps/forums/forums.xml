@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -144,7 +144,7 @@ transformation.</listitem>
    [isql tool directory]\isql [server ip or hostname]:[port] dba dba
 
    Connected to OpenLink Virtuoso VDBMS
-   Driver: 02.10.2015 OpenLink Virtuoso ODBC Driver
+   Driver: 02.10.2018 OpenLink Virtuoso ODBC Driver
    OpenLink Interactive SQL (Virtuoso), version 0.9849b.
    Type HELP; for help and EXIT; to exit.
    SQL&gt;load c:\temp\def.sql;

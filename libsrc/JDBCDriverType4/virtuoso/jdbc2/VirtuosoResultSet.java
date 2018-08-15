@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -177,6 +177,8 @@ public class VirtuosoResultSet implements ResultSet
     */
    public static final int CONCUR_UPDATABLE = 1008;
 
+   public static final int CONCUR_VALUES = 1009;
+
    /**
     * Constructs a new VirtuosoResultSet.
     *
@@ -296,7 +298,7 @@ public class VirtuosoResultSet implements ResultSet
       }
       catch(IOException e)
       {
-         throw new VirtuosoException("Problem during serialization : " + e.getMessage(),VirtuosoException.IOERROR);
+         throw new VirtuosoException(e, "Problem during serialization : " + e.getMessage(),VirtuosoException.IOERROR);
       }
    }
 
@@ -338,7 +340,7 @@ public class VirtuosoResultSet implements ResultSet
       }
       catch(IOException e)
       {
-         throw new VirtuosoException("Problem during serialization : " + e.getMessage(),VirtuosoException.IOERROR);
+         throw new VirtuosoException(e, "Problem during serialization : " + e.getMessage(),VirtuosoException.IOERROR);
       }
    }
 
@@ -357,6 +359,26 @@ public class VirtuosoResultSet implements ResultSet
       pstmt.setString(1,statement.statid);
       pstmt.setLong(2,op);
       pstmt.setLong(3,num);
+      if (args!=null) {
+         for(int i=0; i < args.size(); i++) {
+            int dtp = metaData.getColumnDtp (i+1);
+            Object v = args.elementAt(i);
+            if (v instanceof String)
+               switch (dtp){
+                  case VirtuosoTypes.DV_ANY:
+                  case VirtuosoTypes.DV_WIDE:
+                  case VirtuosoTypes.DV_LONG_WIDE:
+                  case VirtuosoTypes.DV_BLOB_WIDE:
+                  case VirtuosoTypes.DV_STRING:
+                  case VirtuosoTypes.DV_SHORT_STRING_SERIAL:
+                  case VirtuosoTypes.DV_STRICT_STRING:
+                  case VirtuosoTypes.DV_C_STRING:
+                  case VirtuosoTypes.DV_BLOB:
+                     args.setElementAt(new VirtuosoExplicitString((String)v, dtp, this.statement.connection), i);
+                     break;
+               }
+         }
+      }
       pstmt.setVector(4,args);
       pstmt.execute();
       // Treat depending the operation

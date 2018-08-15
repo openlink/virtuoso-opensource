@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -71,11 +71,21 @@ public class VirtuosoTimestamp extends java.sql.Timestamp
     public String toXSD_String ()
     {
         StringBuilder sb = new StringBuilder();
-        DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        DateFormat formatter;
         String nanosString;
         String timeZoneString = null;
         String zeros = "000000000";
         int nanos = getNanos();
+        java.util.Calendar cal = new java.util.GregorianCalendar ();
+
+        cal.setTime(this);
+
+        if (cal.get(Calendar.ERA) == GregorianCalendar.BC) {
+            sb.append('-');
+            formatter = new SimpleDateFormat("yyy-MM-dd'T'HH:mm:ss");
+        }
+        else
+            formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
 
         if (nanos == 0) {
 //            nanosString = "000";

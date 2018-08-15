@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -402,7 +402,7 @@ dv_to_double (db_buf_t dv, dtp_t * nf)
       return (double) INT64_REF (dv + 1);
     default:
       *nf = 1;
-      return NAN;
+      return DBL_NAN;
     }
 }
 
@@ -646,6 +646,7 @@ cha_any (chash_t * cha, db_buf_t dv)
   chash_page_t *chp = cha->cha_current_data, *chp2;
   int off;
   int len;
+  unsigned char dvnull[1] = {DV_DB_NULL};
   if (!chp)
     {
       if (cha->cha_is_parallel)
@@ -656,6 +657,7 @@ cha_any (chash_t * cha, db_buf_t dv)
       memset (chp, 0, DP_DATA);
     }
   off = chp->h.h.chp_fill;
+  if (!dv) dv = dvnull;
   DB_BUF_TLEN (len, dv[0], dv);
   if (len > chash_max_key_len)
     {
@@ -1856,7 +1858,7 @@ cha_gb_dtp (dtp_t dtp, int is_key, gb_op_t * go)
 }
 
 index_tree_t *
-cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
+DBG_NAME(cha_allocate) (setp_node_t * setp, caddr_t * inst, int64 card)
 {
   hash_area_t *ha = setp->setp_ha;
   int n_slots = BOX_ELEMENTS (ha->ha_slots), inx;

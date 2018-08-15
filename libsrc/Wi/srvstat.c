@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -64,7 +64,7 @@
 #endif
 
 
-
+extern char *git_head;
 long  tc_try_land_write;
 long  tc_try_land_reset;
 long tc_up_transit_parent_change;
@@ -229,6 +229,7 @@ extern int enable_mem_hash_join;
 extern int enable_no_free;
 #endif
 extern int32 enable_rdf_box_const;
+extern int32 simple_rdf_numbers;
 extern int enable_subscore;
 extern int enable_dfg;
 extern int enable_feed_other_dfg;
@@ -391,6 +392,7 @@ extern int32 cl_batch_bytes;
 extern int32 cl_first_buf;
 extern int32 iri_range_size;
 extern int32 enable_iri_nic_n;
+extern int32 enable_iri_prefix_nic_n;
 extern int enable_small_int_part;
 extern int iri_seqs_used;
 int64 tn_max_memory = 1000000000;
@@ -415,6 +417,8 @@ extern int dbf_max_itc_samples;
 extern int32 c_pcre_match_limit;
 extern int32 c_pcre_match_limit_recursion;
 extern int32 pcre_max_cache_sz;
+
+extern int32 shcompo_max_cache_sz;
 
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
@@ -481,6 +485,7 @@ extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
 
 extern int timezoneless_datetimes;
+extern int http_connect_timeout;;
 
 static long thr_cli_running;
 static long thr_cli_waiting;
@@ -690,7 +695,7 @@ dbms_status_report (void)
       rep_printf ("\nDatabase Status:\n"
 	  "  File size " OFF_T_PRINTF_FMT ", %ld pages, %ld free.\n"
 	  "  %d buffers, %d used, %d dirty %d wired down, repl age %d %d w. io %d w/crsr.\n",
-	  (OFF_T_PRINTF_DTP) dbs->dbs_file_length, dbs->dbs_n_pages,
+	  dbs->dbs_file_length ? (OFF_T_PRINTF_DTP) dbs->dbs_file_length : (dbs->dbs_n_pages * PAGE_SZ), dbs->dbs_n_pages,
 	  st_db_free_pages,
 	  n_buffers, n_used, n_dirty, n_wired,
 		  bp_replace_count ? (int) (bp_replace_age / bp_replace_count) : 0, n_io, n_crsr );
@@ -745,8 +750,11 @@ dbms_status_report (void)
   rep_printf ("Clients: %ld connects, max %ld concurrent\n",
       srv_connect_ctr, srv_max_clients);
   rep_printf ("%s %s\n", rpc, mem);
+
+  mutex_enter (thread_mtx);
   dk_free_box (st_rpc_stat);
   st_rpc_stat = box_dv_short_string (rpc);
+  mutex_leave (thread_mtx);
 }
 
 
@@ -1200,6 +1208,7 @@ st_collect_ps_info (dk_set_t * arr)
 	}
     }
   END_DO_SET ();
+  dk_set_free (clients);
   mutex_leave (thread_mtx);
   semaphore_leave (ps_sem);
 }
@@ -1419,8 +1428,7 @@ static long my_fd_setsize = FD_SETSIZE;
 static char * my_bp_prefix = bp_ctx.db_bp_prfx;
 static long my_case_mode;
 static long my_lite_mode;
-static long st_has_vdb =
-  0;
+static long st_has_vdb = 0;
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
 extern long mp_sparql_cap;
@@ -1430,6 +1438,8 @@ extern int32 col_seg_max_rows;
 extern int32 enable_qr_comment;
 extern int32 enable_rdf_trig;
 extern int32 enable_sslr_check;
+extern int32 enable_spar_logfile;
+extern int32 enable_sqlc_logfile;
 
 
 stat_desc_t stat_descs [] =
@@ -1715,6 +1725,9 @@ stat_desc_t stat_descs [] =
     {"sqlc_add_views_qualifiers", &sqlc_add_views_qualifiers, NULL},
 
     {"db_ver_string", NULL, &db_version_string},
+#ifdef unix
+    {"git_head", NULL, &git_head},
+#endif
     {"db_max_col_bytes", &db_max_col_bytes, NULL},
     {"db_sizeof_wide_char", &db_sizeof_wide_char, NULL},
 
@@ -1812,11 +1825,13 @@ stat_desc_t dbf_descs [] =
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},
     {"setp_distinct_max_keys", (long *)&setp_distinct_max_keys, SD_INT32},
     {"enable_iri_nic_n", (long *)&enable_iri_nic_n, SD_INT32},
+    {"enable_iri_prefix_nic_n", (long *) &enable_iri_prefix_nic_n, SD_INT32},
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},
     {"enable_distinct_sas", (long *)&enable_distinct_sas, SD_INT32},
     {"enable_inline_sqs", (long *)&enable_inline_sqs, SD_INT32},
     {"hash_join_enable", (long *)&hash_join_enable, SD_INT32},
+    {"enable_chash_join", (long *)&enable_chash_join, SD_INT32},
     {"enable_joins_only", &enable_joins_only, SD_INT32},
     {"enable_exact_p_stat", &enable_exact_p_stat, SD_INT32},
     {"em_ra_window", (long *)&em_ra_window, SD_INT32},
@@ -1907,11 +1922,17 @@ stat_desc_t dbf_descs [] =
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
+    {"simple_rdf_numbers", &simple_rdf_numbers, SD_INT32},
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
+  {"shcompo_max_cache_sz", &shcompo_max_cache_sz, SD_INT32},
     {"enable_qr_comment", &enable_qr_comment, SD_INT32},
     {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
+    {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
+    {"enable_spar_logfile", (long *) &enable_spar_logfile, SD_INT32},
+    {"enable_sqlc_logfile", (long *) &enable_sqlc_logfile, SD_INT32},
+    {"http_connect_timeout", &http_connect_timeout, SD_INT32},
     {NULL, NULL, NULL}
   };
 
@@ -4765,8 +4786,8 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	continue;
       col->col_n_distinct =  unbox (cs[2]);
       col->col_count =  unbox (cs[3]);
-      col->col_min = sc_ext_to_data (qi, cs[4]);
-      col->col_max = sc_ext_to_data (qi, cs[5]);
+      dk_free_tree (col->col_min); col->col_min = sc_ext_to_data (qi, cs[4]);
+      dk_free_tree (col->col_max); col->col_max = sc_ext_to_data (qi, cs[5]);
     }
   END_DO_BOX;
   DO_BOX (caddr_t *, ks, inx, stats[1])

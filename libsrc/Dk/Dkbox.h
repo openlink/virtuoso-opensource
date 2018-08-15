@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,7 +46,7 @@ typedef const void *cbox_t;
  * If the configuration has distributed objects they do
  * not get deleted in dk_delete_tree.
  */
-#define SMALLEST_POSSIBLE_POINTER 	((ptrlong)(0x10000))
+#define SMALLEST_POSSIBLE_POINTER 	((ptrlong)(0x100000))
 
 /* This is a pointer that will never be equal to any box pointer (alignment...) */
 #define BADBEEF_BOX 			((box_t)(0xBADBEEF))
@@ -294,6 +294,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 
 #define ALIGN_LIKE_BOX(x)		ALIGN_8(x)
 #define STATIC_DV_NULL 			{0,0,0,0,0,0,0,(char)DV_DB_NULL}
+#define BOX_HEADER_OVERHEAD 		8
 #define BOX_AUTO_OVERHEAD 		8
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) (~((ptrlong)7) & (ptrlong)(area))) + BOX_AUTO_OVERHEAD)
 
@@ -301,6 +302,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 
 #define ALIGN_LIKE_BOX(x)		ALIGN_4(x)
 #define STATIC_DV_NULL 			{0,0,0,(char)DV_DB_NULL}
+#define BOX_HEADER_OVERHEAD 		4
 #define BOX_AUTO_OVERHEAD 		4
 #define BOX_BEGIN_IN_AREA(area) 	(((char *) area) + BOX_AUTO_OVERHEAD)
 
@@ -542,10 +544,44 @@ typedef struct dk_mem_wrapper_s
 #define DV_WIDE 			225		   /* wchar_t */
 #define DV_LONG_WIDE 			226		   /* wchar_t with 32 bit length */
 
+#ifdef SIGNAL_DEBUG
+#define DV_ERROR_REPORT			250
+#else
+#define DV_ERROR_REPORT			DV_ARRAY_OF_POINTER
+#endif
+#define LAST_DV_DTP 			250
+
 #define IS_STRING_DTP(dtp)		((DV_STRING == (dtp)) || (DV_UNAME == (dtp)))
 #define IS_STRING_ALIGN_DTP(dtp) 	(IS_STRING_DTP(dtp) || (DV_C_STRING == (dtp)) || (DV_SYMBOL == (dtp)) || DV_SHORT_STRING_SERIAL == (dtp) || DV_BIN == (dtp))
 
-#define LAST_DV_DTP 			220
+#define ARRAYP(a) \
+  (IS_BOX_POINTER(a) && DV_ARRAY_OF_POINTER == box_tag((caddr_t) a))
+
+#define ERROR_REPORT_P(a) \
+  (IS_BOX_POINTER(a) && DV_ERROR_REPORT == box_tag((caddr_t) a))
+
+#define SYMBOLP(a) \
+  (IS_BOX_POINTER(a) && DV_SYMBOL == box_tag((caddr_t) a))
+
+#define LITERAL_P(a) \
+  (! IS_BOX_POINTER (a) \
+   || DV_SHORT_STRING == box_tag((caddr_t) a) \
+   || DV_LONG_STRING == box_tag((caddr_t) a) \
+   || DV_WIDE == box_tag((caddr_t) a) \
+   || DV_LONG_WIDE == box_tag((caddr_t) a) \
+   || DV_LONG_INT == box_tag((caddr_t) a) \
+   || DV_DB_NULL == box_tag((caddr_t) a) \
+   || DV_SINGLE_FLOAT == box_tag((caddr_t) a) \
+   || DV_NUMERIC == box_tag((caddr_t) a) \
+   || DV_DOUBLE_FLOAT == box_tag((caddr_t) a) \
+   || DV_BIN == box_tag((caddr_t) a) \
+   || DV_UNAME == box_tag((caddr_t) a) \
+   || DV_IRI_ID == box_tag((caddr_t) a) \
+   || DV_RDF == box_tag((caddr_t) a) \
+   || DV_DATETIME == box_tag((caddr_t) a) \
+   || DV_GEO == box_tag((caddr_t) a) \
+   || DV_XPATH_QUERY == box_tag((caddr_t) a) )
+
 
 typedef int64 boxint;
 #define BOXINT_MAX 			0x7fffffffffffffffLL
@@ -577,12 +613,22 @@ typedef unsigned int64 iri_id_t;
 #define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)7) << 60)
 #define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)
 
+#ifdef SIGNAL_DEBUG
+#define IS_NONLEAF_DTP(dtp) \
+	(((dtp) == DV_ARRAY_OF_POINTER) || \
+	 ((dtp) == DV_LIST_OF_POINTER) || \
+	 ((dtp) == DV_ARRAY_OF_XQVAL) || \
+	 ((dtp) == DV_ERROR_REPORT) || \
+	 ((dtp) == DV_XTREE_HEAD) || \
+	 ((dtp) == DV_XTREE_NODE) )
+#else
 #define IS_NONLEAF_DTP(dtp) \
 	(((dtp) == DV_ARRAY_OF_POINTER) || \
 	 ((dtp) == DV_LIST_OF_POINTER) || \
 	 ((dtp) == DV_ARRAY_OF_XQVAL) || \
 	 ((dtp) == DV_XTREE_HEAD) || \
 	 ((dtp) == DV_XTREE_NODE) )
+#endif
 
 #ifndef __LITTLE_ENDIAN
 #define __LITTLE_ENDIAN  		4321
@@ -787,8 +833,10 @@ EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 
 #ifdef MALLOC_DEBUG
 void dk_alloc_box_assert (box_t box);
+void dk_alloc_box_assert_mp_or_plain (box_t box);
 #else
-#define dk_alloc_box_assert(box)	;
+#define dk_alloc_box_assert(box)		;
+#define dk_alloc_box_assert_mp_or_plain(box)	;
 #endif
 
 EXE_EXPORT (int, dk_free_box, (box_t box));
@@ -796,10 +844,12 @@ EXE_EXPORT (int, dk_free_box, (box_t box));
 extern void dk_check_tree (box_t box);
 extern void dk_check_tree_heads (box_t box, int count_of_sample_children);
 extern void dk_check_domain_of_connectivity (box_t box);
+extern void dk_check_tree_mp_or_plain (box_t box, int max_fuel); /* fuel is a max total count of descendants to check */
 #else
 #define dk_check_tree(box)
-#define dk_check_tree_heads (box, n)
+#define dk_check_tree_heads(box,n)
 #define dk_check_domain_of_connectivity(box)
+#define dk_check_tree_mp_or_plain(box,fuel)
 #endif
 EXE_EXPORT (int, dk_free_tree, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_numbers, (box_t box));
@@ -1013,5 +1063,11 @@ float buf_to_float (char *buf);
 void double_to_buf (double d, char *buf);
 #define is_array_of_long(type)\
   ((DV_ARRAY_OF_LONG == (type)) || (DV_ARRAY_OF_LONG_PACKED == (type)))
+
+#ifdef SIGNAL_DEBUG
+extern void log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ...);
+#else
+#define log_error_report_event(box,p,fmt,...)
+#endif
 
 #endif

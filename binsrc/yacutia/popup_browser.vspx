@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,6 @@
     <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>WebDAV Repository</title>
-  <![CDATA[
   <script type="text/javascript">
   var featureList = ["combolist", "ajax", "tab"];
   </script>
@@ -33,11 +32,9 @@
   <script type="text/javascript">
       OAT.Preferences.imagePath = "toolkit/images/";
   </script>
-  ]]>
   </head>
   <body>
-    <v:page
-      name="dav_browser"
+    <v:page name="dav_browser"
       style="yacutia_style.xsl"
       fast-render="1"
       doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -49,13 +46,16 @@
           <v:error-summary/>
         </div>
       </v:template>
+
       <vm:popup_page_wrapper>
         <v:form name="F1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
           <v:variable name="settings" type="any" default="null" />
           <v:variable name="domain_id" type="integer" default="0" />
-          <v:variable name="owner_id" type="integer" default="0" />
-          <v:variable name="account_id" type="integer" default="0" />
-          <v:variable name="account_role" type="varchar" default="'W'" />
+          <v:variable name="owner_id" type="integer" default="null" />
+          <v:variable name="account_id" type="integer" default="null" />
+          <v:variable name="account_role" type="varchar" default="null" />
+          <v:variable name="account_name" type="varchar" default="null"/>
+          <v:variable name="account_password" type="varchar" default="null"/>
 
           <v:login
             name="admin_login_isql_browser"
@@ -74,14 +74,25 @@
                           user-title="User Name"
                           password-title="Password"
                           submit-title="Login"/>
-            <v:template name='il_browser' type="if-login">
-              <?vsp
-                connection_set ('ctr', coalesce (connection_get ('ctr'), 0) + 1);
-              ?>
-            </v:template>
           </v:login>
 
+          <v:before-data-bind>
+            <![CDATA[
+              declare vspx_user varchar;
+
+              vspx_user := connection_get ('vspx_user');
+              self.account_id := case when (isnull (vspx_user)) then http_nobody_uid () else WEBDAV.DBA.account_id (vspx_user) end;
+              self.owner_id := self.account_id;
+              self.settings := WEBDAV.DBA.settings (self.account_id);
+              self.account_name := WEBDAV.DBA.account_name (self.account_id);
+              self.account_password := WEBDAV.DBA.account_password (self.account_id);
+            ]]>
+          </v:before-data-bind>
+
+          <?vsp if (connection_get ('vspx_user') is not null) { ?>
         <vm:dav_browser view="popup"/>
+          <?vsp } ?>
+
         </v:form>
       </vm:popup_page_wrapper>
     </v:page>

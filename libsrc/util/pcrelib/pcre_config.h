@@ -136,21 +136,27 @@ them both to 0; an emulation function will be used. */
 /* #undef NO_RECURSE */
 
 /* Name of package */
+#undef PACKAGE
 #define PACKAGE "pcre"
 
 /* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
 #define PACKAGE_BUGREPORT ""
 
 /* Define to the full name of this package. */
+#undef PACKAGE_NAME
 #define PACKAGE_NAME "PCRE"
 
 /* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
 #define PACKAGE_STRING "PCRE 7.9"
 
 /* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
 #define PACKAGE_TARNAME "pcre"
 
 /* Define to the version of this package. */
+#undef PACKAGE_VERSION
 #define PACKAGE_VERSION "7.9"
 
 
@@ -199,6 +205,7 @@ them both to 0; an emulation function will be used. */
 #define SUPPORT_UTF8 /**/
 
 /* Version number of package */
+#undef VERSION
 #define VERSION "7.9"
 
 /* Define to empty if `const' does not conform to ANSI C. */

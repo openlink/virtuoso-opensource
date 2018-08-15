@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -536,12 +536,16 @@ try_http_get:
     }
   else if (proto = 'file')
     {
-      inx := 5;
-      base_uri := charset_recode (base_uri, 'UTF-8', NULL);
-      while (length (base_uri) > inx + 1 and
-	  aref (base_uri, inx) = ascii ('/'))
-	inx := inx + 1;
-      str := file_to_string (concat (http_root(), '/' , subseq (base_uri, inx)));
+      if ('localhost' = s_uri[1])
+        base_uri := charset_recode (s_uri[2], 'UTF-8', NULL);
+      else if (('' <> s_uri[1]) and ('/' = s_uri[2]))
+        base_uri := charset_recode (s_uri[1], 'UTF-8', NULL);
+      else
+        base_uri := charset_recode (s_uri[1] || s_uri[2], 'UTF-8', NULL);
+      if (base_uri like '/%')
+        str := file_to_string (base_uri);
+      else
+        str := file_to_string (concat (http_root(), '/' , base_uri));
     }
   else if (proto = 'virt')
     {
@@ -4890,7 +4894,7 @@ create procedure DB.DBA.SCHEDULER_NOTIFY ()
   if (not isstring (hostname))
     return;
 
-  hdrs := sprintf ('Subject: [Scheduled Event Errors] %s\r\n', hostname);
+  hdrs := sprintf ('Message-Id: <%s@%s>\r\nSubject: [Scheduled Event Errors] %s\r\n', uuid(), hostname, hostname);
 
   for select SE_NAME, SE_SQL, SE_LAST_ERROR, SE_NOTIFY from SYS_SCHEDULED_EVENT where
     SE_LAST_ERROR is not null and SE_ENABLE_NOTIFY = 1 and SE_NOTIFICATION_SENT = 0 order by SE_NOTIFY do
@@ -4915,7 +4919,7 @@ create procedure DB.DBA.SCHEDULER_NOTIFY ()
 	}
       else if (current_rec <> _SE_NOTIFY)
 	{
-	  mime_parts := vector (DB.DBA.MIME_PART ('text/html', null, null, err_text));
+	  mime_parts := vector (DB.DBA.MIME_PART ('text/plain', null, null, err_text));
           update SYS_SCHEDULED_EVENT set SE_NOTIFICATION_SENT = 1 where SE_NOTIFY = current_rec and SE_NOTIFICATION_SENT = 0;
 	  commit work;
 	  {
@@ -4930,11 +4934,12 @@ create procedure DB.DBA.SCHEDULER_NOTIFY ()
 	  current_rec := _SE_NOTIFY;
 	  err_text := '';
         }
-      err_text := err_text || '<pre>' || _SE_NAME || ' ' || _SE_SQL || '\r\n' || blob_to_string (_SE_LAST_ERROR) || '</pre>\r\n' ;
+      err_text := err_text || '\r\nEvent : ' || _SE_NAME || '\r\nSQL   : ' || _SE_SQL || '\r\nError : ' || blob_to_string (_SE_LAST_ERROR) || '\r\n\r\n' ;
+
     }
   if (length (err_text) and current_rec is not null)
     {
-      mime_parts := vector (DB.DBA.MIME_PART ('text/html', null, null, err_text));
+      mime_parts := vector (DB.DBA.MIME_PART ('text/plain', null, null, err_text));
       update SYS_SCHEDULED_EVENT set SE_NOTIFICATION_SENT = 1 where SE_NOTIFY = current_rec and SE_NOTIFICATION_SENT = 0;
       commit work;
       smtp_send (null, current_rec, current_rec, concat (hdrs, DB.DBA.MIME_BODY (mime_parts)));

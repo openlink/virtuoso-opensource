@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,6 +40,7 @@
 extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
 extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
 extern caddr_t key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no);
+extern caddr_t key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no);
 extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
 extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
 #define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
@@ -282,6 +283,7 @@ extern void ttlp_triple_process_prepared (ttlp_t *ttlp_arg);
 extern void ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int is_reverse);
 extern void ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse);
 extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label);
+extern void ttlp_triples_for_prefix (ttlp_t *ttlp_arg, caddr_t prefix, caddr_t ns, int lineno);
 
 #define RDFXML_COMPLETE		0
 #define RDFXML_OMIT_TOP_RDF	1
@@ -338,6 +340,8 @@ void rdf_graph_keyword (iri_id_t id, char *ret);
 extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connection_t * cli);
 #define uriqa_dynamic_local_replace(name, cli) \
   (strncmp ((name), "local:", 6) ? (name) : uriqa_dynamic_local_replace_nocheck ((name), (cli)))
+
+extern int utf8_is_pn_chars_base (const char *head, const char *pasttail);
 
 /* if rb content longer than this, use md5 in rdf_obj table key */
 #define RB_BOX_HASH_MIN_LEN 50

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -363,8 +363,8 @@
 
                     if (get_keyword ('mode', params) = 'create')
                     {
-                      insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
-                        values (name, stringdate(start_str), sql_str, inter);
+		      insert soft DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL, SE_NOTIFY, SE_ENABLE_NOTIFY, SE_DISABLED)
+		        values (name, stringdate (start_str), sql_str, inter, u_notif, notif_enable, disabled);
                       if (row_count () = 0)
                       {
                         self.vc_is_valid := 0;

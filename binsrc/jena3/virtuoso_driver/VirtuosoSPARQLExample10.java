@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2015 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,6 +45,11 @@ public class VirtuosoSPARQLExample10 {
 		VirtGraph set = new VirtGraph ("gr", url, "dba", "dba");
 
 /*			STEP 2			*/
+		set.clear ();
+
+		System.out.print ("Begin read from 'http://www.w3.org/People/Berners-Lee/card#i'  ");
+		set.read("http://www.w3.org/People/Berners-Lee/card#i", "RDF/XML");
+		System.out.println ("\t\t\t Done.");
 
 
 /*			STEP 3			*/

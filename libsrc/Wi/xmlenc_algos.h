@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -102,7 +102,7 @@ extern void P_SHA1_block(P_SHA1_CTX *ctx, char *dst);
 extern void P_SHA1_free(P_SHA1_CTX *ctx);
 
 /* utilities */
-/* convert nonnegative integer to octet stream buf with length len
+/* convert non-negative integer to octet stream buf with length len
    returns zero if success
  */
 int xenc_I2OSP (long x, long octet_len, unsigned char* buf);

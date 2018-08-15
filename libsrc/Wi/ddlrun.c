@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -773,6 +773,7 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
       sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
       return;
     }
+  lc_free (lc);
 
   if (!strncmp (name, "DB.DBA.", 7))
     { /* check for the presence of unqualified when it's DB.DBA */
@@ -784,9 +785,8 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
 	  sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
 	  return;
 	}
+      lc_free (lc);
     }
-
-  lc_free (lc);
 
   for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (cols); inx += 2)
     {
@@ -1628,10 +1628,8 @@ dbe_col_load_stats (client_connection_t *cli, query_instance_t *caller,
       col->col_count = (long) unbox (col_n_values);
       if ( DV_TYPE_OF (n_distinct) == DV_LONG_INT)
 	col->col_n_distinct = (long) unbox (n_distinct);
-      dk_free_tree (col->col_min);
-      col->col_min = box_copy_tree (col_min);
-      dk_free_tree (col->col_max);
-      col->col_max = box_copy_tree (col_max);
+      dk_free_tree (col->col_min); col->col_min = box_copy_tree (col_min);
+      dk_free_tree (col->col_max); col->col_max = box_copy_tree (col_max);
       if (DV_TYPE_OF (col_n_rows) == DV_LONG_INT)
 	tb->tb_count = (long) unbox (col_n_rows);
       if (DV_TYPE_OF (col_avg_len) == DV_LONG_INT)
@@ -1679,10 +1677,8 @@ isp_load_stats_data (client_connection_t *cli)
 	{
 	  col->col_count = DV_TYPE_OF (col_n_values) == DV_LONG_INT ? (long) unbox (col_n_values) : 0;
 	  col->col_n_distinct = DV_TYPE_OF (n_distinct) == DV_LONG_INT ? (long) unbox (n_distinct) : 0;
-	  dk_free_tree (col->col_min);
-	  dk_free_tree (col->col_max);
-	  col->col_min = box_copy_tree (col_min);
-	  col->col_max = box_copy_tree (col_max);
+	  dk_free_tree (col->col_min); col->col_min = box_copy_tree (col_min);
+	  dk_free_tree (col->col_max); col->col_max = box_copy_tree (col_max);
 	  if (DV_TYPE_OF (col_n_rows) == DV_LONG_INT)
 	    tb->tb_count = (long) unbox (col_n_rows);
 	  col->col_avg_len = DV_TYPE_OF (col_avg_len) == DV_LONG_INT ? (long) unbox (col_avg_len) : 0;
@@ -2980,12 +2976,12 @@ bif_table_renamed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dbe_table_t *old_tb;
   dk_set_t old_roots = NULL;
   old = ddl_complete_table_name (qi, old);
-  if (!old)
+  old_tb = sch_name_to_table (isp_schema (NULL), old);
+  if (!old_tb)
     {
-      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table in rename table");
+      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table %.500s before renaming it to %.500s", old, new_name);
       return NULL;
     }
-  old_tb = sch_name_to_table (isp_schema (NULL), old);
   DO_SET (dbe_key_t *, old_k, &old_tb->tb_keys)
     {
       dk_set_push (&old_roots, (caddr_t) ((ptrlong) old_k->key_id));
@@ -3013,17 +3009,19 @@ ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *e
     {
       ren_table = eql_compile ("DB.DBA.rename_table (?, ?)", bootstrap_cli);
     }
-  old = ddl_complete_table_name (qi, old);
-  sql_error_if_remote_table (qi_name_to_table (qi, old));
-  if (!old)
+  old_tb = qi_name_to_table (qi, old);
+  sql_error_if_remote_table (old_tb);
+  if (!old_tb)
     {
-      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table in rename table");
+      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table %.500s in rename table", old);
       return;
     }
-  if (NULL != (new_tb = qi_name_to_table (qi, new_name)))
+  old = old_tb->tb_name;
+  new_tb = qi_name_to_table (qi, new_name);
+  if (NULL != new_tb)
     {
       *err_ret = srv_make_new_error ("42S01", "SQ201",
-	  "There is already table named %s in ALTER TABLE",
+	  "There is already table named %.500s in ALTER TABLE",
 	  new_tb->tb_name);
       return;
     }
@@ -3229,6 +3227,7 @@ ddl_droptable_pre (query_instance_t * qi, char *name)
   if (lc_next (lc))
     { /* it is a snapshot replication destination */
       long ret = unbox (lc_nth_col (lc, 0));
+      lc_free (lc);
       return ret ? 1 : 0;
     }
   lc_free (lc);
@@ -3565,7 +3564,7 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
 	  qr = sql_compile_1 ("", cli, &err, SQLC_DO_NOT_STORE_PROC, st, NULL);
 	  dk_free_tree ((box_t) st);
 	  if (err != SQL_SUCCESS)
-	    {
+	    {   if (NULL != qr) GPF_T;
 	      if (qi)
 		QI_POISON_TRX (qi);
 	      sqlr_resignal (err);
@@ -3628,6 +3627,8 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
       dk_free_tree ((box_t) st);
       if (err != SQL_SUCCESS)
 	{
+	  if (NULL != qr)
+	    GPF_T;
 	  if (qi)
 	    QI_POISON_TRX (qi);
 	  sqlr_resignal (err);
@@ -3649,7 +3650,7 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
       qr = sql_compile_1 ("", cli, &err, SQLC_DO_NOT_STORE_PROC, st, NULL);
       dk_free_tree ((box_t) st);
       if (err != SQL_SUCCESS)
-	{
+	{   if (NULL != qr) GPF_T;
 	  if (qi)
 	    QI_POISON_TRX (qi);
 	  sqlr_resignal (err);
@@ -4152,10 +4153,10 @@ const char *sys_users_dd_text =
 ;
 
 void
-local_start_trx (client_connection_t * cli)
+DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli)
 {
   IN_TXN;
-  cli_set_new_trx (cli);
+  DBG_NAME(cli_set_new_trx) (DBG_ARGS  cli);
   cli->cli_trx->lt_replicate = REPL_NO_LOG;
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
@@ -4611,7 +4612,7 @@ ddl_read_constraints (char *spec_tb_name, caddr_t *qst)
 dk_set_t triggers_to_redo = NULL;
 
 void
-ddl_redo_undefined_triggers ()
+ddl_redo_undefined_triggers (void)
 {
   caddr_t * trigs;
   user_t *org_user = bootstrap_cli->cli_user;
@@ -4660,6 +4661,7 @@ ddl_redo_undefined_triggers ()
 	    {
 	      caddr_t err2 = NULL;
 	      full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+	      short_text = NULL;
 	      if (err2)
 		{
 		  log_error (
@@ -4897,6 +4899,7 @@ scan_SYS_PROCEDURES:
 	{
 	  caddr_t err2 = NULL;
 	  full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+ 	  short_text = NULL;
 	  if (err2)
 	    {
 	      log_error (
@@ -5160,7 +5163,11 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       /*if (owner_user && new_qr)
 	new_qr->qr_proc_owner = owner_user->usr_id;*/
       if (QR_IS_MODULE_PROC (qr))
-	new_qr = NULL;
+        {
+          if (new_qr != qr)
+            qr_free (new_qr);
+	  new_qr = NULL;
+        }
     }
 
   recomp_cli->cli_user = org_user;
@@ -5173,14 +5180,21 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	  if (!err)
 	    {
 	      /* find a new qr corresponding to old by name
-	       * and set grants; match the requested qr and set return value
-	       * no need to set qr_proc_grants as it's not freed by qr_free */
+	       * and set grants; match the requested qr and set return value */
 	      query_t *new_mod_qr = sch_proc_def (sc, old_mod_qr->qr_proc_name);
 	      if (new_mod_qr)
 		{
-		  new_mod_qr->qr_proc_grants = old_mod_qr->qr_proc_grants;
+		  if  (new_mod_qr != old_mod_qr)
+		    {
+		      new_mod_qr->qr_proc_grants = old_mod_qr->qr_proc_grants;
+		      old_mod_qr->qr_proc_grants_is_reused = 1;
+		    }
 		  if (old_mod_qr == qr)
-		    new_qr = new_mod_qr;
+                    {
+                      if (new_qr != qr)
+                        qr_free (new_qr);
+		      new_qr = new_mod_qr;
+                    }
 		}
 	    }
 	  else
@@ -5193,13 +5207,23 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       dk_set_free (old_qr_set);
       if (new_qr)
 	{
-	  new_qr->qr_module->qr_proc_grants = qr->qr_module->qr_proc_grants;
+         if (new_qr->qr_module != qr->qr_module)
+           {
+             new_qr->qr_module->qr_proc_grants = qr->qr_module->qr_proc_grants;
+             qr->qr_module->qr_proc_grants_is_reused = 1;
+           }
 	  /*sch_set_module_def (sc, new_qr->qr_module->qr_proc_name, new_qr->qr_module);*/
 	}
     }
 
   if (!err && !QR_IS_MODULE_PROC (qr))
-    new_qr->qr_proc_grants = qr->qr_proc_grants;
+    {
+      if (new_qr != qr)
+        {
+          new_qr->qr_proc_grants = qr->qr_proc_grants;
+          qr->qr_proc_grants_is_reused = 1;
+        }
+    }
 
   qr_recompile_leave (&is_entered, err_ret);
   if (err)
@@ -6848,7 +6872,7 @@ static const char * scheduler_do_round_text =
 "      exec (aref (aref (arr, inx), 1), st, msg, vector (), 0);\n"
 "      if (st <> '00000')\n"
 "	{\n"
-"	  fl := 4;\n"
+"	  fl := 4; notify_flag := 0;\n"
 "         emsg := msg;\n"
 "	  rollback work;\n"
 "	}\n"
@@ -6931,3 +6955,12 @@ sch_create_table_as (query_instance_t *qi, ST * tree)
   if (err)
     sqlr_resignal (err);
 }
+
+#ifdef MALLOC_DEBUG
+#undef local_start_trx
+void
+local_start_trx (client_connection_t * cli)
+{
+  dbg_local_start_trx (__FILE__, __LINE__, cli);
+}
+#endif

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -1904,7 +1904,7 @@
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>SR298</errorcode><errortype>42S12</errortype>
-      <errorname>Foreign key &lt;key_name&gt; does not exists</errorname>
+      <errorname>Foreign key &lt;key_name&gt; does not exist</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -2036,7 +2036,7 @@
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>SR320</errorcode><errortype>42S12</errortype>
-      <errorname>Constraint &lt;constraint name&gt; does not exists for table &lt;table&gt;</errorname>
+      <errorname>Constraint &lt;constraint name&gt; does not exist for table &lt;table&gt;</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
@@ -5492,13 +5492,13 @@ x    </msgtext></msgmain></msg>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>TR017</errorcode><errortype>37000</errortype>
-      <errorname>The publication &lt;name&gt; doesn't exists.</errorname>
+      <errorname>The publication &lt;name&gt; doesn't exist.</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 
   <msgentry>
     <msg><msgmain><msgtext><errorcode>TR018</errorcode><errortype>37000</errortype>
-      <errorname>The WebDAV collection &lt;name&gt; doesn't exists.</errorname>
+      <errorname>The WebDAV collection &lt;name&gt; doesn't exist.</errorname>
     </msgtext></msgmain></msg>
   </msgentry>
 

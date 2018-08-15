@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,12 +69,6 @@ typedef struct qr_comment_s
 } qr_comment_t;
 
 int dbf_explain_level = 0;
-
-/* sqlprt.c */
-void trset_start (caddr_t *qst);
-void trset_printf (const char *str, ...);
-void trset_end (void);
-
 
 extern dk_mutex_t * prof_mtx;
 extern id_hash_t * qn_prof;
@@ -225,33 +219,122 @@ ssl_type (state_slot_t * ssl, char * str)
 caddr_t
 dv_iri_short_name (caddr_t x)
 {
-  caddr_t pref, local, r;
+  trset_ctx_t *ctx = (trset_ctx_t *)THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX);
+  caddr_t pref, local;
   iri_id_t iid = unbox_iri_id (x);
-  caddr_t name = key_id_to_iri ((query_instance_t*)THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST), iid);
+  caddr_t name = (NULL != ctx) ? key_id_to_iri (ctx->tc_qst, iid) : key_id_to_canonicalized_iri_if_cached (iid);
   if (!name)
     return NULL;
   if (iri_split (name, &pref, &local))
     {
-      int inx;
+      int len = box_length (local) - 4 /* Remember that 4 bytes of \c local is placeholder for encoding namespace prefix */ ;
+      char *pure_local = local + 4;	/* that 4 bytes, yeah */
+      int inx = len - 2;
+      int best_inx = 0;
       caddr_t r;
       dk_free_box (name);
       dk_free_box (pref);
-      for (inx = box_length (local) - 1; inx > 3; inx--)
-	if (':'== local[inx] || '/' == local[inx] || '#'== local[inx])
+      do
+	{
+	  for (;; inx--)
+	    {
+	      if ((inx <= 7) || (inx < len - 20))
+		goto inx_too_small;
+	      if (!((':' == pure_local[inx]) || ('/' == pure_local[inx]) || ('#' == pure_local[inx])))
+		break;
+	    }
+	  for (; inx >= 0; inx--)
+	    {
+	      if ((':' == pure_local[inx]) || ('/' == pure_local[inx]) || ('#' == pure_local[inx]))
 	  break;
-      r = box_dv_short_nchars (local + inx, box_length (local) - inx);
+	      best_inx = inx;
+	    }
+	  if (inx <= 0)
+	    goto inx_too_small;
+	}
+      while (inx > len - 10);
+    inx_too_small:
+      r = box_dv_short_nchars (pure_local + best_inx, len - best_inx);
       dk_free_box (local);
       return r;
     }
+  if (20 > strlen (name))
+    return name;
+  local = box_dv_short_nchars (name + strlen (name) - 20, 20);
   dk_free_box (name);
-  return NULL;
+  return local;
+}
+
+
+void
+stmt_box_print (caddr_t cval)
+{
+  caddr_t strval, err_ret;
+  dtp_t dtp = DV_TYPE_OF (cval);
+  if (DV_DB_NULL == dtp)
+    {
+      stmt_printf (("<DB_NULL>"));
+      return;
+    }
+  if (DV_RDF == dtp)
+    {
+      rdf_box_t * rb = (rdf_box_t*)cval;
+      stmt_printf (("rdflit" BOXINT_FMT, rb->rb_ro_id));
+      return;
+    }
+  err_ret = NULL;
+  strval = box_cast_to (NULL, cval, dtp, DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err_ret);
+  if (err_ret)
+    {
+      stmt_printf (("<tag %d flag %d>", dtp, box_flags (cval)));
+      dk_free_tree (err_ret);
+      if (strval)
+        dk_free_box (strval);
+      return;
+    }
+  switch (dtp)
+    {
+    case DV_IRI_ID:
+      {
+        iri_id_t iid = unbox_iri_id (cval);
+        if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+          {
+            char buf[30];
+            BNODE_IID_TO_LABEL_BUFFER(buf,iid);
+            stmt_printf ((" IRI_ID\"..." EXPLAIN_LINE_MAX_STR_FORMAT "\" ", buf));
+            break;
+          }
+        else
+          {
+            caddr_t str = dv_iri_short_name (cval);
+            if (str)
+              {
+                stmt_printf ((" IRI_ID\"..." EXPLAIN_LINE_MAX_STR_FORMAT "\" ", str));
+                dk_free_box (str);
+                break;
+              }
+          }
+      }
+    case DV_LONG_INT: case DV_NUMERIC: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
+      stmt_printf ((" " EXPLAIN_LINE_MAX_STR_FORMAT " ", strval));
+      break;
+    default:
+      if (box_flags (cval))
+        stmt_printf (("<tag %d flag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), box_flags (cval), strval));
+      else if (DV_STRING != DV_TYPE_OF (cval))
+        stmt_printf (("<tag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), strval));
+      else
+        stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
+    }
+  if (strval)
+    dk_free_box (strval);
 }
 
 
 static void
 ssl_print (state_slot_t * ssl)
 {
-  char str[10];
+  char str[3];
   if (!ssl)
     {
       stmt_printf ((" <none> "));
@@ -272,19 +355,24 @@ ssl_print (state_slot_t * ssl)
     case SSL_PARAMETER:
     case SSL_COLUMN:
     case SSL_VARIABLE:
-      stmt_printf (("$%d \"%s\"", ssl->ssl_index, ssl->ssl_name ? ssl->ssl_name : "-"));
+      stmt_printf (("%s$%d ", ssl->ssl_name ? ssl->ssl_name : "-", ssl->ssl_index));
       break;
     case SSL_VEC:
       if (0 == dbf_explain_level)
-	{
-	  stmt_printf (("%s", ssl->ssl_name ? ssl->ssl_name : (snprintf (str, sizeof (str), "$%d", ssl->ssl_index), str)));
-	  break;
-	}
+        {
+          if (NULL == ssl->ssl_name)
+            stmt_printf (("$%d", ssl->ssl_index));
+          /*else if (NULL != strchr (ssl->ssl_name, '.'))
+            stmt_printf (("%s", ssl->ssl_name));*/
+          else
+            stmt_printf (("%s$%d", ssl->ssl_name, ssl->ssl_index));
+          break;
+        }
       ssl_type (ssl, str);
       if (ssl->ssl_sets)
-	stmt_printf (("<v $%d %s S%d %s>", ssl->ssl_index, ssl->ssl_name, ssl->ssl_sets, str));
+	stmt_printf (("<v %s$%d Set%d %s>", ssl->ssl_name, ssl->ssl_index, ssl->ssl_sets, str));
       else
-	stmt_printf (("<V $%d %s %s>", ssl->ssl_index, ssl->ssl_name, str));
+	stmt_printf (("<V %s$%d %s>", ssl->ssl_name, ssl->ssl_index, str));
       break;
     case SSL_REF:
       {
@@ -295,69 +383,17 @@ ssl_print (state_slot_t * ssl)
 	    ssl_print (sslr->sslr_ssl);
 	    break;
 	  }
-	stmt_printf (("<r $%d %s via ", sslr->sslr_index, sslr->sslr_ssl && sslr->sslr_ssl->ssl_name ? sslr->sslr_ssl->ssl_name : ""));
+	stmt_printf (("<r %s$%d via ", sslr->sslr_ssl && sslr->sslr_ssl->ssl_name ? sslr->sslr_ssl->ssl_name : "-", sslr->sslr_index));
 	for (inx = 0; inx < sslr->sslr_distance; inx++)
-	  stmt_printf ((" S%d", sslr->sslr_set_nos[inx]));
+	  stmt_printf ((" Set%d", sslr->sslr_set_nos[inx]));
 	stmt_printf ((">"));
 	break;
       }
     case SSL_CONSTANT:
-	{
-	  caddr_t err_ret = NULL;
-	  caddr_t cval = ssl->ssl_constant;
-	  dtp_t dtp = DV_TYPE_OF (cval);
-	  if (DV_DB_NULL == dtp)
-	    stmt_printf (("<DB_NULL>"));
-	  else if (DV_RDF == dtp)
-	    {
-	      rdf_box_t * rb = (rdf_box_t*)cval;
-	      stmt_printf (("rdflit" BOXINT_FMT, rb->rb_ro_id));
-	    }
-	  else
-	    {
-	      caddr_t strval = box_cast_to (NULL, cval,
-					    dtp, DV_SHORT_STRING,
-		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
-		  &err_ret);
-	      if (!err_ret && strval)
-		{
-		  switch (dtp)
-		    {
-		      case DV_IRI_ID:
-			    {
-			caddr_t str = dv_iri_short_name (cval);
-			      if (str)
-				{
-				  stmt_printf ((" #" EXPLAIN_LINE_MAX_STR_FORMAT " ", str));
-				  dk_free_box (str);
-				  break;
-				}
-			    }
-		      case DV_LONG_INT: case DV_NUMERIC: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT:
-			  stmt_printf ((" " EXPLAIN_LINE_MAX_STR_FORMAT " ", strval));
-			  break;
-		      default:
-		      if (box_flags (cval))
-		        stmt_printf (("<tag %d flag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), box_flags (cval), strval));
-		      else if (DV_STRING != DV_TYPE_OF (cval))
-		        stmt_printf (("<tag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), strval));
-		      else
-		        stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
-		    }
-		}
-	      else
-		stmt_printf (("<constant>"));
-	      if (err_ret)
-		dk_free_tree (err_ret);
-	      if (strval)
-		dk_free_box (strval);
-	    }
-	}
+      stmt_box_print (ssl->ssl_constant);
       break;
-
     default:
-      stmt_printf (("<$%d \"%s\" spec %d>", ssl->ssl_index,
-	  ssl->ssl_name ? ssl->ssl_name : "-", ssl->ssl_type));
+      stmt_printf (("<%s$%d spec %d>", ssl->ssl_name ? ssl->ssl_name : "-", ssl->ssl_index, ssl->ssl_type));
       break;
     }
 }
@@ -407,11 +443,7 @@ code_vec_print (code_vec_t cv)
   char *strptr;
   DO_INSTR (in, 0, cv)
     {
-      if (in->ins_type == INS_COMPOUND_END)
-	compound_level--;
-      for  (comp_inx = 0; comp_inx < compound_level; comp_inx++)
-	stmt_printf (("  "));
-      stmt_printf (("      %d: ", (int) INSTR_OFS (in, cv)));
+      stmt_printf (("%d: ", (int) INSTR_OFS (in, cv)));
       switch (in->ins_type)
 	{
 	case IN_ARTM_FPTR: strptr = "<UNKNOWN>"; goto artm_print;
@@ -446,7 +478,7 @@ artm_print:
 	      }
 	    if (in->_.agg.distinct)
 	      {
-		stmt_printf (("distinct "));
+		stmt_printf (("distinct via hash area "));
 		ssl_print (in->_.agg.distinct->ha_tree);
 	      }
 	    break;
@@ -520,9 +552,10 @@ artm_print:
 	    {
 	      unsigned _inx, _first = 1;
 	      state_slot_t **ssls = in->_.call.params;
-	      stmt_printf (("{ "));
+	      stmt_printf (("  { "));
 	      ssl_print (in->_.call.params[0]);
 	      stmt_printf ((" := Call %s (", in->_.call.proc));
+              trset_add_indent (6);
 	      for (_inx = 1; _inx < (ssls ? BOX_ELEMENTS (ssls) : 0); _inx++)
 		{
 		  state_slot_t *ssl = (state_slot_t *)ssls[_inx];
@@ -532,7 +565,8 @@ artm_print:
 		    stmt_printf ((", "));
 		  ssl_print (ssl);
 		}
-	      stmt_printf ((") }"));
+              trset_add_indent (-6);
+	      stmt_printf ((" ) }"));
 	    }
 	  break;
 
@@ -573,7 +607,8 @@ artm_print:
 
 	case INS_COMPOUND_START:
 	  compound_level++;
-	  stmt_printf (("Comp start (level=%d, line=%d, src=%s:%d)",
+          trset_add_indent (2);
+	  stmt_printf (("Compound start (level=%d, line=%d, src=%s:%d)",
 		compound_level,
 		in->_.compound_start.line_no,
 		in->_.compound_start.file_name ? in->_.compound_start.file_name : "",
@@ -582,7 +617,8 @@ artm_print:
 	  break;
 
 	case INS_COMPOUND_END:
-	  /*compound_level--;*/
+          compound_level--;
+          trset_add_indent (-2);
 	  stmt_printf (("Comp end (level=%d)", compound_level));
 	  break;
 
@@ -596,8 +632,10 @@ artm_print:
 	      dk_set_t conts = new_node->src_continuations;
 	      new_node->src_continuations = NULL;
 	      stmt_printf (("QNode {\n"));
+              trset_add_indent (4);
 	      node_print (new_node);
-	      stmt_printf (("}\n"));
+              trset_add_indent (-4);
+	      stmt_printf (("  }\n"));
 	      new_node->src_continuations = conts;
 	    }
 	  break;
@@ -612,9 +650,11 @@ artm_print:
 	  ssl_array_print (in->_.for_vect.in_values);
 	  ssl_array_print (in->_.for_vect.out_vars);
 	  ssl_array_print (in->_.for_vect.out_values);
-	  stmt_printf (("\n{\n"));
+	  stmt_printf (("  {\n"));
+          trset_add_indent (4);
 	  code_vec_print (in->_.for_vect.code);
-	  stmt_printf (("\n}\n"));
+          trset_add_indent (-4);
+	  stmt_printf (("  }\n"));
 	  break;
 	default:;
 	}
@@ -659,7 +699,7 @@ void
 hrng_print (hash_range_spec_t * hrng, search_spec_t * sp)
 {
   hash_source_t * hs;
-  stmt_printf (("hash partition%s by %d ", (hrng->hrng_flags & HR_RANGE_ONLY) ? "" : "+bloom", hrng->hrng_min));
+  stmt_printf (("%shash partition%s by %d ", sp->sp_is_reverse ? "exclude ": "", (hrng->hrng_flags & HR_RANGE_ONLY) ? "" : "+bloom", hrng->hrng_min));
   ssl_array_print (hrng->hrng_ssls);
   if ((hs = hrng->hrng_hs))
     {
@@ -684,6 +724,10 @@ sp_list_print (search_spec_t * sp)
 	stmt_printf ((" %s", sp->sp_col->col_name));
       else
 	stmt_printf (("col#%ld", sp->sp_cl.cl_col_id));
+      if (CMP_HASH_RANGE == sp->sp_min_op)
+	{
+	  hrng_print ((hash_range_spec_t *) (sp->sp_min_ssl), sp);
+	  goto next;}
       if (sp->sp_min_op != CMP_NONE)
 	{
 	  stmt_printf ((" %s ", cmp_op_text (sp->sp_min_op)));
@@ -701,7 +745,7 @@ sp_list_print (search_spec_t * sp)
 	}
       if (sp->sp_next)
 	stmt_printf ((" "));
-
+    next:
       if ((sp = sp->sp_next))
 	stmt_printf ((", "));
     }
@@ -741,6 +785,8 @@ ks_print_0 (key_source_t * ks)
   if (ks->ks_from_temp_tree || !ks->ks_key)
     stmt_printf (("Key from temp "));
   ssl_list_print (ks->ks_out_slots);
+  if (ks->ks_is_deleting)
+    stmt_printf (("deleting"));
   if (ks->ks_v_out_map)
     {
       int inx;
@@ -958,8 +1004,10 @@ ts_print_0 (table_source_t * ts)
   if (ts->ts_alternate)
     {
       stmt_printf (("Alternate ts {\n"));
+      trset_add_indent (4);
       node_print ((data_source_t *) ts->ts_alternate);
-      stmt_printf (("\n}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   {
   /* milos: clear the 'first' flag */
@@ -979,6 +1027,7 @@ ts_print (table_source_t * ts)
       inx_op_t * iop = ts->ts_inx_op;
       snprintf (card, sizeof (card), "%9.2g rows%s", ts->ts_cardinality, ts->ts_card_measured ? "by sample" : "");
       stmt_printf (("  Index AND %s {\n", card));
+      trset_add_indent (4);
       DO_BOX (inx_op_t *, term, inx, iop->iop_terms)
 	{
 	  stmt_printf (("from %s by %s\n",
@@ -998,7 +1047,8 @@ ts_print (table_source_t * ts)
 	  stmt_printf (("\n"));
 	}
       END_DO_BOX;
-      stmt_printf ((" }\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else
     {
@@ -1068,8 +1118,10 @@ ts_print (table_source_t * ts)
   if (ts->ts_alternate)
     {
       stmt_printf (("Alternate ts {\n"));
+      trset_add_indent (4);
       node_print ((data_source_t *) ts->ts_alternate);
-      stmt_printf (("\n}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   {
   /* milos: clear the 'first' flag */
@@ -1145,14 +1197,18 @@ node_print_0 (data_source_t * node)
 	{
       QNCAST (ts_split_node_t, tssp, node);
       stmt_printf (("Alternate ts {\n"));
+      trset_add_indent (4);
       node_print ((data_source_t *) tssp->tssp_alt_ts);
-      stmt_printf (("\n}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else if (in == (qn_input_fn) query_frag_input)
 	    {
       query_frag_t * qf = (query_frag_t *) node;
-      stmt_printf (("QF {\n"));
+      stmt_printf (("Query Fragment {\n"));
+      trset_add_indent (4);
       node_print (qf->qf_head_node);
+      trset_add_indent (-4);
       stmt_printf (("}\n"));
     }
   else if (in == (qn_input_fn) skip_node_input)
@@ -1200,10 +1256,10 @@ node_print_0 (data_source_t * node)
   else if (in == (qn_input_fn) setp_node_input)
     {
       setp_node_t *setp = (setp_node_t *) node;
-      char hf[40];
+      char hf[60];
       if (setp->setp_ha && HA_FILL == setp->setp_ha->ha_op)
-	snprintf (hf, sizeof (hf), "hf %d %s", setp->setp_ha->ha_tree->ssl_index,
-		  HS_CL_REPLICATED == setp->setp_cl_partition ? "replicated" : "");
+	snprintf (hf, sizeof (hf), "hash area fill to $%d, %s %9.2g rows", setp->setp_ha->ha_tree->ssl_index,
+		  HS_CL_REPLICATED == setp->setp_cl_partition ? "replicated" : "", (float)setp->setp_ha->ha_row_count);
       else
 	hf[0] = 0;
       stmt_printf (("%s %s", setp->setp_distinct ? "Distinct" : "Sort", hf));
@@ -1221,9 +1277,9 @@ node_print_0 (data_source_t * node)
 		{
 		  if (go->go_ua_init_setp_call)
 		    {
-		      stmt_printf (("\nuser aggr init\n"));
+		      stmt_printf (("\nuser aggregate init\n"));
 		      code_vec_print (go->go_ua_init_setp_call);
-		      stmt_printf ((" user aggr acc\n"));
+		      stmt_printf ((" user aggregate accumulator\n"));
 		      code_vec_print (go->go_ua_acc_setp_call);
 		    }
 		}
@@ -1239,14 +1295,16 @@ node_print_0 (data_source_t * node)
       fun_ref_node_t *fref = (fun_ref_node_t *) node;
       du_thread_t * self = THREAD_CURRENT_THREAD;
       qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
-      stmt_printf (("{ %s\n", IS_QN (node, hash_fill_node_input) ? "hash filler": "fork"));
+      stmt_printf (("%s {\n", IS_QN (node, hash_fill_node_input) ? "hash filler": "fork"));
+      trset_add_indent (4);
       /* milos: set the 'first' flag */
       if (comm) comm->qrc_is_first = 1;
       node_print (fref->fnr_select);
       /* milos: set the 'first' flag */
       comm = THR_ATTR (self, TA_STAT_COMM);
       if(comm) comm->qrc_is_first = 1;
-      stmt_printf (("}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else if (in == (qn_input_fn) remote_table_source_input)
     {
@@ -1316,14 +1374,19 @@ node_print_0 (data_source_t * node)
   else if (in == (qn_input_fn) gs_union_node_input)
     {
       gs_union_node_t *gsu = (gs_union_node_t *) node;
-      stmt_printf (("DataSource_Union\n"));
+      stmt_printf (("DataSource Union {\n"));
+      trset_add_indent (4);
       DO_SET (data_source_t *, nd, &gsu->gsu_cont)
       {
-	stmt_printf (("DSU_Branch\n{  \n"));
+	stmt_printf (("DSU Branch {\n"));
+        trset_add_indent (4);
 	node_print (nd);
-	stmt_printf (("}\n"));
+        trset_add_indent (-4);
+	stmt_printf (("  }\n"));
       }
       END_DO_SET ();
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else if (in == (qn_input_fn) update_node_input)
     {
@@ -1378,8 +1441,10 @@ node_print_0 (data_source_t * node)
       if (ins->ins_del_node)
 	{
 	  stmt_printf (("Replacing vectored {\n"));
+          trset_add_indent (4);
 	  node_print (ins->ins_del_node);
-	  stmt_printf (("\n}\n"));
+          trset_add_indent (-4);
+	  stmt_printf (("  }\n"));
 	}
       stmt_printf (("Insert %s ", ins->ins_table->tb_name));
       ssl_list_print (ins->ins_values);
@@ -1431,7 +1496,7 @@ node_print_0 (data_source_t * node)
   else if (in == (qn_input_fn) rdf_inf_pre_input)
     {
       rdf_inf_pre_node_t *ri = (rdf_inf_pre_node_t *) node;
-      char * mode = "";
+      const char * mode = "";
       switch (ri->ri_mode)
 	{
 	case RI_SUBCLASS: mode = "subclass"; break;
@@ -1523,7 +1588,8 @@ node_print_0 (data_source_t * node)
   else if (in == (qn_input_fn) outer_seq_end_input)
     {
       outer_seq_end_node_t * ose = (outer_seq_end_node_t *)node;
-      stmt_printf ((" end of outer}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  } /* end of outer */\n"));
       ssl_print (ose->ose_set_no);
       stmt_printf (("\n out: "));
       ssl_array_print (ose->ose_out_slots);
@@ -1540,6 +1606,7 @@ node_print_0 (data_source_t * node)
       if (sctr->sctr_ose)
 	{
 	  stmt_printf (("outer {\n"));
+          trset_add_indent (4);
 	}
     }
 #ifdef BIF_XML
@@ -1625,8 +1692,14 @@ node_print_0 (data_source_t * node)
 void
 node_print (data_source_t * node)
 {
+  trset_ctx_t *ctx = (trset_ctx_t *)THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX);
   qn_input_fn in;
-  query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
+  query_instance_t * qi = ctx->tc_qst;
+  if (!node)
+    {
+      stmt_printf  (("empty qr\n"));
+      return;
+    }
   if (qi)
     QI_CHECK_STACK (qi, &node, 10000);
   in = node->src_input;
@@ -1634,7 +1707,8 @@ node_print (data_source_t * node)
     node_stat (node);
   if (node->src_pre_code)
     {
-      stmt_printf (("\nPrecode:\n"));
+      stmt_printf (("Precode:\n"));
+      trset_add_indent (2);
       if (node->src_query->qr_is_call == 2)
 	{
 	  code_vec_t vec = (code_vec_t) box_copy ((box_t) node->src_pre_code);
@@ -1655,6 +1729,7 @@ node_print (data_source_t * node)
 	}
       else
 	code_vec_print (node->src_pre_code);
+      trset_add_indent (-2);
     }
   if (0 == dbf_explain_level)
     {
@@ -1693,8 +1768,10 @@ node_print (data_source_t * node)
     {
       QNCAST (ts_split_node_t, tssp, node);
       stmt_printf (("Alternate ts {\n"));
+      trset_add_indent (4);
       node_print ((data_source_t *) tssp->tssp_alt_ts);
-      stmt_printf (("\n}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else if (in == (qn_input_fn) query_frag_input)
     {
@@ -1704,7 +1781,9 @@ node_print (data_source_t * node)
 	snprintf (max_rows, sizeof (max_rows), " max %d", qf->qf_max_rows);
       else
 	max_rows[0] = 0;
-      stmt_printf (("  { Cluster location fragment %d %d %s %s\n   Params: ", node->src_in_state, (int)qf->qf_nth, qf->qf_order ? "" : "unordered", max_rows));
+      stmt_printf (("  { Cluster location fragment %d %d %s %s\n", node->src_in_state, (int)qf->qf_nth, qf->qf_order ? "" : "unordered", max_rows));
+      trset_add_indent (4);
+      stmt_printf (("Params: ", node->src_in_state, (int)qf->qf_nth, qf->qf_order ? "" : "unordered", max_rows));
       ssl_array_print (qf->qf_params);
       stmt_printf (("\nOutput: "));
       ssl_array_print (qf->qf_result);
@@ -1727,7 +1806,8 @@ node_print (data_source_t * node)
 	  stmt_printf (("\n"));
 	}
       node_print (qf->qf_head_node);
-      stmt_printf (("  \n}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else if (in == (qn_input_fn) skip_node_input)
     {
@@ -1791,11 +1871,11 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) setp_node_input)
     {
       setp_node_t *setp = (setp_node_t *) node;
-      char hf[40];
+      char hf[60];
       if (setp->setp_ha && HA_FILL == setp->setp_ha->ha_op)
-	snprintf (hf, sizeof (hf), "hf %d %s %s", setp->setp_ha->ha_tree->ssl_index,
+	snprintf (hf, sizeof (hf), "hf %d %s %s %9.2g rows", setp->setp_ha->ha_tree->ssl_index,
 		  HS_CL_REPLICATED == setp->setp_cl_partition ? "replicated" : "",
-		  setp->setp_no_bloom ? "no bloom" : "");
+		  setp->setp_no_bloom ? "no bloom" : "", (float)setp->setp_ha->ha_row_count);
       else
 	hf[0] = 0;
       stmt_printf (("%s %s", setp->setp_distinct ? "Distinct" : "Sort", hf));
@@ -1856,8 +1936,9 @@ node_print (data_source_t * node)
 	   || in == (qn_input_fn) hash_fill_node_input)
     {
       fun_ref_node_t *fref = (fun_ref_node_t *) node;
-      stmt_printf (("Fork %d \n{  %s\n", node->src_in_state,
+      stmt_printf (("Fork %d {  %s\n", node->src_in_state,
 		    fref->fnr_hi_signature ? " shareable hash fill " : ""));
+      trset_add_indent (4);
       if (fref->fnr_hash_part_min)
 	stmt_printf ((" Hash filler partition by %d", fref->fnr_hash_part_min));
       if (IS_QN (fref, hash_fill_node_input) && fref->fnr_no_hash_partition)
@@ -1890,14 +1971,18 @@ node_print (data_source_t * node)
 	  if(comm) comm->qrc_is_first = 1;
 	  /* milos: detect a new warning and add the warning text: it is a partition hash join, and it did N passes (N = fref->fnr_select->src_stat.srs_n_in)  	 */
 	  ctx_inst = THR_ATTR (THREAD_CURRENT_THREAD, TA_STAT_INST);
+	  if (ctx_inst)
+	    {
 	  srs = (src_stat_t *)&ctx_inst[fref->fnr_select->src_stat];
-	  if ((fref->fnr_select->src_stat) && (qi != NULL) && (QST_INT(qi, srs->srs_n_in) > 1))	
+	      if ((fref->fnr_select->src_stat) && (qi != NULL) && srs->srs_n_in > 1)
 	    qrc_add_wrn_msg("Warning: There is a partition hash join which did %d passes.\n", srs->srs_n_in);
+	    }
 	  node_print (fref->fnr_select);
 	  /* milos: set the 'first' flag on */
 	  comm = THR_ATTR (self, TA_STAT_COMM);
 	  if(comm) comm->qrc_is_first = 1;
       }
+      trset_add_indent (-4);
       stmt_printf (("}\n"));
     }
   else if (in == (qn_input_fn) remote_table_source_input)
@@ -1980,14 +2065,19 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) gs_union_node_input)
     {
       gs_union_node_t *gsu = (gs_union_node_t *) node;
-      stmt_printf (("DataSource_Union\n"));
+      stmt_printf (("DataSource Union {\n"));
+      trset_add_indent (4);
       DO_SET (data_source_t *, nd, &gsu->gsu_cont)
       {
-	stmt_printf (("DSU_Branch\n{  \n"));
+	stmt_printf (("DSU Branch {  \n"));
+        trset_add_indent (4);
 	node_print (nd);
-	stmt_printf (("}\n"));
+        trset_add_indent (-4);
+	stmt_printf (("  }\n"));
       }
       END_DO_SET ();
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else if (in == (qn_input_fn) update_node_input)
     {
@@ -2042,8 +2132,10 @@ node_print (data_source_t * node)
       if (ins->ins_del_node)
 	{
 	  stmt_printf (("Replacing vectored {\n"));
+          trset_add_indent (4);
 	  node_print (ins->ins_del_node);
-	  stmt_printf (("\n}\n"));
+          trset_add_indent (-4);
+          stmt_printf (("  }\n"));
 	}
       stmt_printf (("Insert %s ", ins->ins_table->tb_name));
       ssl_list_print (ins->ins_values);
@@ -2110,7 +2202,7 @@ node_print (data_source_t * node)
   else if (in == (qn_input_fn) rdf_inf_pre_input)
     {
       rdf_inf_pre_node_t *ri = (rdf_inf_pre_node_t *) node;
-      char * mode = "";
+      const char * mode = "";
       switch (ri->ri_mode)
 	{
 	case RI_SUBCLASS: mode = "subclass"; break;
@@ -2304,13 +2396,17 @@ node_print (data_source_t * node)
 
   if (node->src_after_test)
     {
-      stmt_printf (("\nAfter test:\n"));
+      stmt_printf (("After test:\n"));
+      trset_add_indent (2);
       code_vec_print (node->src_after_test);
+      trset_add_indent (-2);
     }
   if (node->src_after_code)
     {
-      stmt_printf (("\nAfter code:\n"));
+      stmt_printf (("After code:\n"));
+      trset_add_indent (2);
       code_vec_print (node->src_after_code);
+      trset_add_indent (-2);
     }
   node_print_next (node);
 }
@@ -2366,6 +2462,14 @@ qr_print_params (query_t * qr)
 	{
 	  stmt_printf (("<$%d dtp %d (%ld, %d) %s> ", ssl->ssl_index, ssl->ssl_dtp,
 			ssl->ssl_prec, ssl->ssl_scale, ssl->ssl_class ? ssl->ssl_class->scl_name : ""));
+	if (ssl->ssl_qr_global && ssl->ssl_constant)
+	  {
+	    state_slot_t lit;
+	    lit = *ssl;
+	    lit.ssl_type = SSL_CONSTANT;
+	    stmt_printf (("lit %s ", ssl->ssl_name ? ssl->ssl_name : ""));
+	    ssl_print (&lit);
+	  }
 	}
       END_DO_SET ();
       stmt_printf (("\n"));
@@ -2376,7 +2480,8 @@ void
 qr_print (query_t * qr)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
-  query_instance_t * qi = (query_instance_t *) THR_ATTR (self, TA_REPORT_QST);
+  trset_ctx_t *ctx = (trset_ctx_t *)THR_ATTR (self, TA_REPORT_CTX);
+  query_instance_t * qi = ctx->tc_qst;
   query_instance_t * stat_qi = (QI*)THR_ATTR (self, TA_STAT_INST);
   if (qi || stat_qi)
     {
@@ -2384,7 +2489,8 @@ qr_print (query_t * qr)
 	GPF_T;
       QI_CHECK_STACK (qi, &qr, 10000);
     }
-  stmt_printf (("{ %s\n", qr->qr_lock_mode == PL_EXCLUSIVE ? "FOR UPDATE" : ""));
+  stmt_printf (("  { %s\n", qr->qr_lock_mode == PL_EXCLUSIVE ? "FOR UPDATE" : ""));
+  trset_add_indent (4);
   qr_print_params (qr);
   node_print (qr->qr_head_node);
   if (qr->qr_cursor)
@@ -2393,15 +2499,18 @@ qr_print (query_t * qr)
   if (qr->qr_subq_queries)
     {
       stmt_printf (("Subqueries : {\n"));
+      trset_add_indent (4);
       DO_SET (query_t *, sub_qr, &qr->qr_subq_queries)
 	{
 	  qr_print (sub_qr);
 	}
       END_DO_SET();
-      stmt_printf (("}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
 #endif
-  stmt_printf (("}\n"));
+  trset_add_indent (-4);
+  stmt_printf (("  }\n"));
 }
 
 
@@ -2480,7 +2589,9 @@ ssl_print_xml (state_slot_t * ssl, dk_session_t * s)
 		  &err_ret);
 	      if (!err_ret && strval)
 		{
-		  ses_sprintf (s, "<ssl constant='" EXPLAIN_LINE_MAX_STR_FORMAT "' />", strval);
+		SES_PRINT (s, "<ssl constant='");
+		dks_esc_write (s, strval, MIN (strlen (strval), EXPLAIN_LINE_MAX), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
+		SES_PRINT (s, "' />");
 		}
 	      else
 		SES_PRINT (s, "<ssl constant='' />");
@@ -2976,7 +3087,7 @@ node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
       QNCAST (qf_select_node_t, qfs, qn);
       SES_PRINT (s, "<qfs>");
       ssl_array_print_xml (qfs->qfs_out_slots, s);
-      SES_PRINT (s, "<qfs>");
+      SES_PRINT (s, "</qfs>");
     }
   else if (IS_QN (qn, skip_node_input))
     {
@@ -3193,7 +3304,7 @@ node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
   else if (IS_QN (qn, rdf_inf_pre_input))
     {
       QNCAST (rdf_inf_pre_node_t, ri, qn);
-      char * mode = "";
+      const char * mode = "";
       switch (ri->ri_mode)
 	{
 	case RI_SUBCLASS: mode = "subclass"; break;
@@ -3280,7 +3391,7 @@ node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
   else if (IS_QN (qn, txs_input))
     {
       QNCAST (text_node_t, txs, qn);
-      ses_sprintf (s, "<txs op='%scontains' tb='%s' card='%.2g' geo='%s'>", 
+      ses_sprintf (s, "<txs op='%scontains' tb='%s' card='%.2g' geo='%s' ext='%s'>",
 	  txs->txs_xpath_text_exp ? "x" : "",
 	  txs->txs_table->tb_name, txs->txs_card, 
 	  txs->txs_geo ? predicate_name_of_gsop (txs->txs_geo) : "");
@@ -3324,8 +3435,12 @@ node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
 static caddr_t
 qr_print_top_xml (QI * qi, query_t * qr)
 {
+  trset_ctx_t *ctx = (trset_ctx_t *)dk_alloc_box_zero (sizeof (trset_ctx_t), DV_CUSTOM);
+  ctx->tc_qst = qi;
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX, ctx);
+
+
   dk_session_t * s = strses_allocate ();
-  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST, qi);
   SES_PRINT (s, "<report>\n");
   if (qr->qr_parms)
     {
@@ -3333,8 +3448,11 @@ qr_print_top_xml (QI * qi, query_t * qr)
       ssl_list_print_xml (qr->qr_parms, s);
       SES_PRINT (s, "</params>");
     }
+  if (qr->qr_head_node)
   node_print_xml (qi, s, qr->qr_head_node);
   SES_PRINT (s, "</report>\n");
+  dk_free_box ((caddr_t)ctx);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_CTX, NULL);
   return (caddr_t) s;
 } 
 
@@ -3395,7 +3513,7 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return NULL;
   else if (SQLC_PARSE_ONLY == cr_type)
     return (caddr_t) qr;
-  if (xml_out || dbf_explain_level == 4)
+  if (xml_out || dbf_explain_level > 3)
     return qr_print_top_xml (qi, qr);
   trset_start (qst);
   if (QR_IS_MODULE (qr))
@@ -3406,6 +3524,7 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       id_casemode_hash_iterator (&it, sc->sc_name_to_object[sc_to_proc]);
       stmt_printf (("Module %s : {\n", qr->qr_proc_name));
+      trset_add_indent (4);
       while (id_casemode_hit_next (&it, (caddr_t *) & pproc))
 	{
 	  if (!pproc || !*pproc)
@@ -3413,11 +3532,14 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if ((*pproc)->qr_module == qr)
 	    {
 	      stmt_printf (("Procedure %s : {\n", (*pproc)->qr_proc_name));
+              trset_add_indent (4);
 	      qr_print (*pproc);
-	      stmt_printf (("}\n"));
+              trset_add_indent (-4);
+	      stmt_printf (("  }\n"));
 	    }
 	}
-      stmt_printf (("}\n"));
+      trset_add_indent (-4);
+      stmt_printf (("  }\n"));
     }
   else
     qr_print_top (qr);
@@ -3464,7 +3586,7 @@ bif_procedure_cols (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (!qr || QR_IS_MODULE (qr))
     return NULL;
-  if (!sec_proc_check (qr, qi->qi_client->cli_user->usr_id, qi->qi_client->cli_user->usr_g_id))
+  if (!sec_proc_check (qr, qi->qi_client->cli_user->usr_g_id, qi->qi_client->cli_user->usr_id))
     return NULL;
   if (qr->qr_to_recompile)
     qr = qr_recompile (qr, NULL);
@@ -3684,6 +3806,11 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int * fill = &f;
   query_t * qr;
   DK_ALLOC_QUERY (qr);
+#ifdef QUERY_DEBUG
+  qr->qr_text_is_constant = 1;
+  qr->qr_text = "(no source, only a parsed tree)";
+  log_query_event (qr, 1, "ALLOC by bif_sql_text");
+#endif
   memset (&sc, 0, sizeof (sc));
   CC_INIT (cc, cli);
   sc.sc_cc = &cc;
@@ -3723,6 +3850,68 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return ((caddr_t)(box_dv_short_string (text)));
 }
 
+
+
+
+
+void
+st_print (ST * tree)
+{
+  caddr_t volatile err = NULL;
+  SCS_STATE_FRAME;
+  sql_comp_t sc;
+  comp_context_t cc;
+  client_connection_t *cli = sqlc_client (), *old_cli = sqlc_client ();
+  char text[MAX_TEXT_SZ];
+  int f = 0;
+  int *fill = &f;
+  query_t *qr;
+  DK_ALLOC_QUERY (qr);
+#ifdef QUERY_DEBUG
+  qr->qr_text_is_constant = 1;
+  qr->qr_text = "(no source, only a parsed tree)";
+  log_query_event (qr, 1, "ALLOC by st_print");
+#endif
+  memset (&sc, 0, sizeof (sc));
+  CC_INIT (cc, cli);
+  sc.sc_cc = &cc;
+  sc.sc_client = cli;
+  cc.cc_query = /* No & here, obviously */ qr;
+  sc.sc_exp_print_hook = xsql_print_stmt;
+  WITHOUT_TMP_POOL
+  {
+    MP_START ();
+    SCS_STATE_PUSH;
+    sqlc_target_rds (local_rds);
+
+    top_sc = &sc;
+    sqlc_set_client (cli);
+    CATCH (CATCH_LISP_ERROR)
+    {
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
+      memset (text, 0, sizeof (text));
+      sqlc_exp_print (&sc, NULL, tree, text, sizeof (text), fill);
+    }
+    THROW_CODE
+    {
+      err = (caddr_t) THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR);
+      if (!err)
+	err = srv_make_new_error ("42000", "SR105", "Unclassified SQL error.");
+    }
+    END_CATCH;
+    sqlc_set_client (old_cli);
+    SCS_STATE_POP;
+    MP_DONE ();
+    sc_free (&sc);
+  }
+  END_WITHOUT_TMP_POOL;
+  qr_free (qr);
+
+  if (err)
+    printf ("err %s %s\n", ERR_STATE (err), ERR_MESSAGE (err));
+  else
+    printf ("%s\n", text);
+}
 
 
 typedef struct  qnw_mrg_cd_s
@@ -3951,7 +4140,7 @@ qi_branch_stats (query_instance_t * qi, query_instance_t * branch, query_t * qr)
       data_source_t * qn2 = qn;
       while (qn2 && (IS_QN (qn2, fun_ref_node_input) || IS_QN (qn2, hash_fill_node_input)))
 	qn2 = ((fun_ref_node_t*)qn2)->fnr_select;
-      if (qn2 && !qn2->src_stat)
+      if (qn2 && !qn2->src_stat && !IS_QN (qn2, union_node_input))
 	return;
     }
   qnw.qnw_qi_from = branch;
@@ -4306,11 +4495,11 @@ mutex_enter (&ql_mtx);
   strses_set_int32 (ses, 4, ql_ctr++);
   if (!ql_file)
     {
-      OFF_T off;
+      /*OFF_T off;*/
       int fd;
       file_set_rw (c_query_log_file);
       fd = fd_open (c_query_log_file, LOG_OPEN_FLAGS);
-      off = LSEEK (fd, 0, SEEK_END);
+      /*off =*/ LSEEK (fd, 0, SEEK_END);
       ql_file = dk_session_allocate (SESCLASS_TCPIP);
       tcpses_set_fd (ql_file->dks_session, fd);
     }

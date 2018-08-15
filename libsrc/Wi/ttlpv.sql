@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2016 OpenLink Software
+--  Copyright (C) 1998-2018 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -541,7 +541,7 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
       }
     connection_set ('g_dict', null);
     log_enable (old_log_mode, 1);
-    signal (__sql_state, __sql_message || ' processed pending to here.');
+    signal (__SQL_STATE, '[Vectorized Turtle loader] ' || __SQL_MESSAGE);
   };
   old_log_mode := log_enable (null, 1);
   if (transactional = 0)
@@ -581,7 +581,7 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
 }
 ;
 
-create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in graph varchar := null, in threads int := 3, in transactional int := 0, in log_mode int := 0, in parse_mode int := 0)
+create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in graph varchar := null, in threads int := 3, in transactional int := 0, in log_mode int := null, in parse_mode int := 0)
 {
   declare ro_id_dict, app_env, g_iid, old_log_mode any;
   if (1 <> sys_stat ('cl_run_local_only'))
@@ -593,13 +593,20 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
     aq_wait_all (app_env[0]);
     connection_set ('g_dict', null);
     log_enable (old_log_mode, 1);
-    signal (__sql_state, __sql_message || ' processed pending to here.');
+    signal (__SQL_STATE, '[Vectorized RDF/XML loader] ' || __SQL_MESSAGE);
   };
   old_log_mode := log_enable (null, 1);
   if (transactional = 0)
-    log_enable (2 + log_mode, 1);
+    {
+      if (log_mode = 0 or log_mode = 1)
+	log_enable (2 + log_mode, 1);
+    }
   else
     threads := 0;
+  if (log_mode is not null)
+    {
+      old_log_mode := log_enable (log_mode, 1);
+    }
   if (126 = __tag (strg))
     {
       declare s any;
@@ -790,31 +797,41 @@ create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
 }
 ;
 
-create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, in o any, in o_type any, in o_flags int, in is_local int) returns any array
+create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, inout o any, in o_type any, in o_and_bnode_flags int, in is_local int)
 {
   vectored;
   not vectored {
     declare xlat_dict any;
-    xlat_dict := connection_get ('RDF_INSERT_TRIPLE_C_BNODES');
+    xlat_dict := coalesce (connection_get ('RDF_INSERT_TRIPLE_C_BNODES', null), connection_get ('RDF_INSERT_TRIPLE_C_BNODES', null, 1));
+    -- dbg_obj_princ ('DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C: xlat_dict=', xlat_dict);
   }
-  declare is_text int;
+  declare o_flags, is_text int;
   declare lid, tid int;
-  is_text := bit_and (o_flags, 16);
-  o_flags := bit_and (o_flags, 15);
-  declare rb any array;
-  if (xlat_dict is not null and (__tag(s) in (__tag of varchar, __tag of UNAME)) and s like '[_]:%')
+  is_text := bit_and (o_and_bnode_flags, 16);
+  o_flags := bit_and (o_and_bnode_flags, 15);
+  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C: args are ', s, o, o_type, o_and_bnode_flags, is_local);
+  if (xlat_dict is not null and (__tag(s) in (__tag of varchar, __tag of UNAME)) and (s like '[_]:%' or bit_and (o_and_bnode_flags, 0hex100)))
+    {
     s := __bft ('nodeID://' || dict_get_or_set_sequence_next (xlat_dict, __bft (s,1), 'RDF_URL_IID_BLANK'), 1);
-  if (o_flags in (0,15) and xlat_dict is not null and ((__tag(o) = __tag of UNAME) or (__tag(o) = __tag of varchar)) and o like '[_]:%')
-    return __bft ('nodeID://' || dict_get_or_set_sequence_next (xlat_dict, __bft(o,1), 'RDF_URL_IID_BLANK'), 1);
+      -- dbg_obj_princ ('DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C: s is tweaked, now ', s);
+    }
+  if (o_flags in (0,15) and xlat_dict is not null and ((__tag(o) = __tag of UNAME) or (__tag(o) = __tag of varchar)) and (o like '[_]:%' or bit_and (o_and_bnode_flags, 0hex200)))
+    {
+      o := __bft ('nodeID://' || dict_get_or_set_sequence_next (xlat_dict, __bft(o,1), 'RDF_URL_IID_BLANK'), 1);
+      return;
+    }
   if (0 = o_flags)
-  return __bft (o, 1);
+    {
+      o := __bft (o, 1);
+      return;
+    }
   else if (1 = o_flags)
     {
-      rb := rdf_box (o, 258, 257, 0, 1);
-      rdf_box_set_type (rb, 257);
+      o := rdf_box (o, 258, 257, 0, 1);
+      rdf_box_set_type (o, 257);
       if (is_text and 246 = __tag (o))
 	rdf_box_set_is_text (o, 1);
-      return rb;
+      return;
     }
   else if (2 = o_flags)
     {
@@ -828,7 +845,8 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 	}
       if (is_text and 246 = __tag (o))
 	rdf_box_set_is_text (o, 1);
-      return rdf_box (o, 257, lid, 0, 1);
+      o := rdf_box (o, 257, lid, 0, 1);
+      return;
     }
   else if (3 = o_flags)
     {
@@ -857,7 +875,8 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
                   rdf_box_set_type (parsed, tid);
                 }
             }
-	return parsed;
+          o := parsed;
+          return;
         }
       else
 	{
@@ -869,30 +888,45 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 	      else
 		tid := rdf_type_id (o_type);
 	    }
-	  rb := rdf_box (o, tid, 257, 0, 1);
+          o := rdf_box (o, tid, 257, 0, 1);
 	  if (is_text and 246 = __tag (o))
 	    rdf_box_set_is_text (o, 1);
-	return rb;
+          return;
 	}
     }
   else if (4 = o_flags)
     {
-      rb := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
-      rdf_box_set_type (rb, 257);
+      o := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
+      rdf_box_set_type (o, 257);
       if (is_text and 246 = __tag (o))
 	rdf_box_set_is_text (o, 1);
-      return rb;
+      return;
     }
   else if (5 = o_flags)
-  return cast (o as int);
+    {
+      o := cast (o as int);
+      return;
+    }
   else if (6 = o_flags)
-  return cast (o as real);
+    {
+      o := cast (o as real);
+      return;
+    }
   else if (7 = o_flags)
-  return cast (o as double precision);
+    {
+      o := cast (o as double precision);
+      return;
+    }
   else if (8 = o_flags)
-  return cast (o as decimal);
+    {
+      o := cast (o as decimal);
+      return;
+    }
   else if (15 = o_flags)
-    return __bft (o, 1);
+    {
+      o := __bft (o, 1);
+      return;
+    }
   else
     signal ('xxxxx', 'Bad rdf object flags va,value');
 }
@@ -907,7 +941,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLE_C (in s any array, in p any array, in 
     if (log_enable (null, 1) in (2,3))
       set non_txn_insert = 1;
   }
-  o := DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (s, o, o_type, o_flags, is_local);
+  DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (s, o, o_type, o_flags, is_local);
   not vectored {
     declare dp any array;
     if (is_local)
@@ -1011,8 +1045,10 @@ create procedure rdf_clear_graphs_c (in graphs any array)
 {
   for vectored (in in_g any array := graphs)
     {
-      delete from RDF_QUAD table option (index G) where G = iri_to_id (in_g, 0);
-      delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (in_g, 0)  option (index_only, index RDF_QUAD_GS);
+      declare g_iid any;
+      g_iid := iri_to_id (in_g, 0);
+      delete from RDF_QUAD table option (index G) where G = g_iid;
+      delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = g_iid option (index_only, index RDF_QUAD_GS);
     }
 }
 ;

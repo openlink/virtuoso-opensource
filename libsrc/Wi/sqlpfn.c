@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1288,6 +1288,7 @@ ST **
 sqlp_wrapper_sqlxml (ST ** selection)
 {
   int inx;
+  /* dk_check_tree_mp_or_plain (selection, 1000); */
   DO_BOX (ST *, arg, inx, selection)
   {
     selection[inx] = sqlp_wrapper_sqlxml_assign (arg);
@@ -2558,15 +2559,16 @@ sqlp_breakup (ST * sel)
   if (sel->_.select_stmt.top || !sel->_.select_stmt.table_exp
       || sel->_.select_stmt.table_exp->_.table_exp.order_by || sel->_.select_stmt.table_exp->_.table_exp.group_by)
     yyerror ("breakup is not compatible with distinct, group by, order by or select with no from");
-  DO_BOX (dk_set_t, term_list, inx, terms)
+  DO_BOX_FAST (ST **, term_list, inx, terms)
     {
-if (!inx)
-  continue; /* the 0th elt is a marker.  Not part of the breakup set */
+      int exp_inx;
+      if (!inx)
+        continue; /* the 0th elt is a marker.  Not part of the breakup set */
       if (is_first)
-	brk_len = dk_set_length (term_list);
-      else if (brk_len != dk_set_length (term_list))
+	brk_len = BOX_ELEMENTS (term_list);
+      else if (brk_len != BOX_ELEMENTS (term_list))
 	yyerror ("breakup terms lists are not of even length");
-      DO_SET (ST *, exp, &term_list)
+      DO_BOX_FAST (ST *, exp, exp_inx, term_list)
 	{
 	  if (!is_first)
 	    {
@@ -2578,7 +2580,7 @@ if (!inx)
 	  else
 	    t_set_push (&new_terms, (void*) exp);
 	}
-      END_DO_SET();
+      END_DO_BOX_FAST;
       is_first = 0;
     }
   END_DO_BOX;

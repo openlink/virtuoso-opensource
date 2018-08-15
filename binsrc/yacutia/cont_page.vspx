@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,6 +32,9 @@
 
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
   <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="page" param-name="page" persist="0" type="varchar" default="'1'" />
+    </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
     </vm:menu>
@@ -47,117 +48,34 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                      <v:template name="tabTemplate1" type="simple" enabled="-- case when( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Repository
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url14" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate2" type="simple" enabled="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '2' )">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url21" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Content Imports
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url23" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url24" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate3" type="simple" enabled="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '3' )">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url31" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url32" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Settings
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url34" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate4" type="simple" enabled="-- equ( get_keyword('page', control.vc_page.vc_event.ve_params), '4' )">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url41" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url42" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url43" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Resource Types
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
+                      <td class="<?V case when (self.page = '1' or self.page is null) then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url21" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url14" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" xhtml_class="uddi"/>
+                      </td>
                     </tr>
                   </table>
-                  <table class="tab_page">
+                  <table class="tab_page" style="border: 0px;">
                     <tr>
                       <td valign="top">
-                        <v:template name="_tabtemplate1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end ">
+                        <v:template name="_tabtemplate1" type="simple" enabled="-- case when (self.page = '1' or self.page is null) then 1 else 0 end ">
                           <v:include url="cont_management.vspx"/>
                         </v:template>
-                        <v:template name="_tabtemplate2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
+                        <v:template name="_tabtemplate2" type="simple" enabled="-- equ (self.page, '2')">
                           <v:include url="robot_control.vspx"/>
                         </v:template>
-                        <v:template name="_tabtemplate3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
+                        <v:template name="_tabtemplate3" type="simple" enabled="-- equ (self.page, '3')">
                           <v:include url="text_triggers.vspx"/>
                         </v:template>
-                        <v:template name="_tabtemplate4" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '4')">
+                        <v:template name="_tabtemplate4" type="simple" enabled="-- equ (self.page, '4')">
                           <v:include url="cont_management_types.vspx"/>
                         </v:template>
                       </td>

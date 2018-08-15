@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2016 OpenLink Software
+//  Copyright (C) 1998-2018 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -486,8 +486,19 @@ namespace OpenLink.Data.Virtuoso
             {
                 innerConnection = CreateInnerConnection (options, true);
             }
+
             state = ConnectionState.Open;
-            options.Secure ();
+            options.Secure();
+
+            if (options.Log_enable != -1 && options.Log_enable >= 0 && options.Log_enable <= 3)
+            {
+                using (VirtuosoCommand cmd = this.CreateCommand())
+                {
+                    cmd.CommandText = "log_enable(" + options.Log_enable + ")";
+                    cmd.ExecuteNonQuery();
+                }
+            }
+
             OnOpen ();
         }
 

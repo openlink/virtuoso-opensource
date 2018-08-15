@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -463,6 +463,15 @@ box_read_array (dk_session_t * session, dtp_t dtp)
   return (void *) array;
 }
 
+#ifdef SIGNAL_DEBUG
+static void *
+box_read_error_report (dk_session_t * session, dtp_t dtp)
+{
+  void *res = box_read_array (session, dtp);
+  log_error_report_event ((caddr_t) res, 1, "READ");
+  return res;
+}
+#endif
 
 static void *
 box_read_array_of_double (dk_session_t * session, dtp_t dtp)
@@ -750,6 +759,9 @@ init_readtable (void)
   readtable[DV_ARRAY_OF_XQVAL] = box_read_array;
   readtable[DV_XTREE_HEAD] = box_read_array;
   readtable[DV_XTREE_NODE] = box_read_array;
+#ifdef SIGNAL_DEBUG
+  readtable[DV_ERROR_REPORT] = box_read_error_report;
+#endif
 
   readtable[DV_ARRAY_OF_LONG_PACKED] = box_read_packed_array_of_long;
   readtable[DV_ARRAY_OF_LONG] = box_read_array_of_long;
@@ -1118,7 +1130,7 @@ dks_array_head (dk_session_t * session, long n_elements, dtp_t type)
 int (*box_flags_serial_test_hook) (dk_session_t * ses);
 
 void
-print_string (char *string, dk_session_t * session)
+print_string (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   uint32 flags = box_flags (string);
@@ -1142,7 +1154,7 @@ print_string (char *string, dk_session_t * session)
 }
 
 void
-print_uname (char *string, dk_session_t * session)
+print_uname (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   uint32 flags = box_flags (string) | BF_IRI | BF_UNAME_AS_STRING;
@@ -1166,7 +1178,7 @@ print_uname (char *string, dk_session_t * session)
 }
 
 void
-print_ref_box (char *string, dk_session_t * session)
+print_ref_box (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   size_t length = box_length (string);
@@ -1192,7 +1204,7 @@ print_ref_box (char *string, dk_session_t * session)
  */
 
 void
-print_object2 (void *object, dk_session_t * session)
+print_object2 (const void *object, dk_session_t * session)
 {
   if (object == NULL)
     session_buffered_write_char (DV_NULL, session);
@@ -1207,6 +1219,9 @@ print_object2 (void *object, dk_session_t * session)
 
       switch (tag)
 	{
+#ifdef SIGNAL_DEBUG
+        case DV_ERROR_REPORT:
+#endif
 	case DV_ARRAY_OF_POINTER:
 	case DV_LIST_OF_POINTER:
 	case DV_ARRAY_OF_XQVAL:

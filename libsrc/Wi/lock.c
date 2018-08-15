@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -386,25 +386,25 @@ lt_is_deadlock_old (lock_trx_t * before, lock_trx_t * after, int *n_deadlocks,
 #endif
 
 lock_trx_t *
-lt_start_outside_map ()
+DBG_NAME(lt_start_outside_map) (DBG_PARAMS_0)
 {
   lock_trx_t *lt;
   IN_TXN;
-  lt = lt_start ();
+  lt = DBG_NAME(lt_start_inner) (DBG_ARGS  1);
   LEAVE_TXN;
   return lt;
 }
 
 lock_trx_t *
-lt_start ()
+DBG_NAME(lt_start) (DBG_PARAMS_0)
 {
-  return lt_start_inner (1);
+  return DBG_NAME(lt_start_inner) (DBG_ARGS  1);
 }
 
 lock_trx_t *
-lt_start_inner (int cpt_wait)
+DBG_NAME(lt_start_inner) (DBG_PARAMS  int cpt_wait)
 {
-  lock_trx_t *lt = (lock_trx_t *) resource_get (trx_rc);
+  lock_trx_t *lt = (lock_trx_t *) DBG_NAME(resource_get) (DBG_ARGS  trx_rc);
   ASSERT_IN_TXN;
   LT_THREADS_REPORT(lt, "LT_START");
   if (cpt_wait)
@@ -619,9 +619,12 @@ lt_done (lock_trx_t * lt)
   ASSERT_IN_TXN;
   if (lt->lt_waits_for || lt->lt_waiting_for_this || lt->lt_lock.ht_count)
     GPF_T1 ("lt done called with waiting, waits for or locks in lt");
-  if (wi_inst.wi_checkpoint_atomic) lt_weird ();
+  if (wi_inst.wi_checkpoint_atomic)
+    lt_weird ();
   remhash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx);
-#if defined (VALGRIND) || defined (MALLOC_DEBUG)
+
+   /* This is obsolete due to new debugging of resource_get() / resource_store() */
+#if 0	/* defined (VALGRIND) || defined (MALLOC_DEBUG) */
   lt_free (lt);
 #else
   lt->lt_threads = 0;
@@ -634,7 +637,8 @@ lt_done (lock_trx_t * lt)
     if (plt)
       GPF_T1 ("lt in id to trx  at lt_done");
     for (inx = 0; inx < trx_rc->rc_fill; inx++)
-      if (trx_rc->rc_items[inx] == (void*)lt) GPF_T1 ("double lt_done");
+      if (trx_rc->rc_items[inx] == (void *) lt)
+	GPF_T1 ("double lt_done");
   }
 #endif
   lt->lt_trx_no = lt->lt_w_id = LT_ID_FREE;
@@ -2554,3 +2558,11 @@ int ltbing (int s)
 {
   return s;
 }
+
+#ifdef MALLOC_DEBUG
+#undef lt_start
+lock_trx_t * lt_start ()
+{
+  return dbg_lt_start (__FILE__, __LINE__);
+}
+#endif

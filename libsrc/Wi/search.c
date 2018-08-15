@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -270,26 +270,72 @@ box_serial_length (caddr_t box, dtp_t dtp)
     dtp = DV_TYPE_OF (box);
   switch (dtp)
     {
+#ifdef SIGNAL_DEBUG
+    case DV_ERROR_REPORT:
+#endif
+    case DV_ARRAY_OF_POINTER:
+    case DV_LIST_OF_POINTER:
+    case DV_ARRAY_OF_XQVAL:
+    case DV_XTREE_HEAD:
+    case DV_XTREE_NODE:
+      {
+        int inx, elts = BOX_ELEMENTS (box);
+        int len = elts < 128 ? 3 : 6;
+        DO_BOX (caddr_t, v, inx, (caddr_t *)box)
+          {
+            len += box_serial_length (v, 0);
+          }
+        END_DO_BOX;
+        return len;
+      }
+    case DV_ARRAY_OF_LONG: /* _ROW */
+      {
+        int elts = box_length (box) / sizeof (ptrlong);
+        return (elts < 128 ? 3 : 6) + 4 * elts;
+      }
+    case DV_ARRAY_OF_LONG_PACKED: /* _ROW */
+      {
+        ptrlong *valptr = (ptrlong *) box;
+        int i, elts = box_length (box) / sizeof (ptrlong);
+        int len = elts < 128 ? 3 : 6;
+        for (i = elts; i--; /* no step */)
+          {
+            boxint n = valptr[i];
+            len += (((n > -128) && (n < 128)) ? 2 : ((n >= (int64) INT32_MIN && n <= (int64) INT32_MAX) ? 5 : 9));
+          }
+        return len;
+      }
+    case DV_ARRAY_OF_DOUBLE: /* _ROW */
+      {
+        int elts = BOX_ELEMENTS (box);
+        return (elts < 128 ? 3 : 6) + 8 * elts;
+      }
+    case DV_ARRAY_OF_FLOAT: /* _ROW */
+      {
+        int elts = BOX_ELEMENTS (box);
+        return (elts < 128 ? 3 : 6) + 4 * elts;
+      }
     case DV_LONG_INT:
     case DV_SHORT_INT:
       {
-	boxint n = IS_BOX_POINTER (box) ? *((ptrlong *) box) : (boxint)((ptrlong)box); /* Is it ((ptrlong *) box) or ((boxint *) box) ??? */
-	if ((n > -128) && (n < 128))
-	  return 2;
-	else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
-	  return 5;
-	else
-	  return 9;
+        boxint n = IS_BOX_POINTER (box) ? *((ptrlong *) box) : (boxint)((ptrlong)box); /* Is it ((ptrlong *) box) or ((boxint *) box) ??? */
+        if ((n > -128) && (n < 128))
+          return 2;
+        else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
+          return 5;
+        else
+          return 9;
       }
     case DV_STRING:
+    case DV_C_STRING:
       {
-	int len = box_length (box);
-	return (len > 256 ? len + 4 : len + 1); /* count the trailing 0 incl. in the box length */
+        int len = box_length (box);
+        return (len > 256 ? len + 4 : len + 1); /* count the trailing 0 incl. in the box length */
       }
-    case DV_IRI_ID:
-      {
-	iri_id_t iid = unbox_iri_id (box);
-	return  (iid <= 0xffffffff) ? 5 : 9;
+    case DV_UNAME:
+      { /* This is true only for internal Virtuoso serialization! */
+        int len = box_length (box);
+        return (len > 256 ? len + 4 : len + 1); /* count the trailing 0 incl. in the box length */
       }
     case DV_SINGLE_FLOAT:
       return 5;
@@ -297,6 +343,14 @@ box_serial_length (caddr_t box, dtp_t dtp)
       return 9;
     case DV_DB_NULL:
       return 1;
+    case DV_SHORT_CONT_STRING:
+    case DV_LONG_CONT_STRING:
+      return box_length (box);
+    case DV_IRI_ID:
+      {
+	iri_id_t iid = unbox_iri_id (box);
+	return  (iid <= 0xffffffff) ? 5 : 9;
+      }
     case DV_NUMERIC:
       return numeric_dv_len ((numeric_t)box);
     case DV_DATETIME:
@@ -308,20 +362,23 @@ box_serial_length (caddr_t box, dtp_t dtp)
         geo_t *g = (geo_t *)box;
         return geo_serial_length (g);
       }
-    case DV_ARRAY_OF_POINTER: /* _ROW */
-	{
-	  int inx, elts = BOX_ELEMENTS (box);
-	  int len = elts < 128 ? 3 : 6;
-	  DO_BOX (caddr_t, v, inx, (caddr_t *)box)
-	    {
-	      len += box_serial_length (v, 0);
-	    }
-	  END_DO_BOX;
-	  return len;
-	}
+    case DV_WIDE:
+      {
+        const wchar_t *wstr = (const wchar_t *)box;
+        const wchar_t *wide_work = wstr;
+        size_t utf8_len, wide_len = box_length (box) / sizeof (wchar_t) - 1;
+        virt_mbstate_t state;
+        unsigned char mbs[VIRT_MB_CUR_MAX];
+        wide_work = wstr;
+        memset (&state, 0, sizeof (virt_mbstate_t));
+        utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
+        if (((long) utf8_len) < 0)
+          GPF_T1("non consistent wide char to multi-byte translation of a buffer");
+        return ((utf8_len < 256) ? 2 : 5) + utf8_len;
+      }
     default:
       if (approx)
-      return box_length (box);
+        return box_length (box);
       log_error ("box_serial_len called with dtp %d", (uint32)dtp);
       GPF_T1 ("box_serial_length not supported for data type");
     }
@@ -3212,18 +3269,101 @@ col_min_max_trunc (caddr_t val)
     }
 }
 
+void
+col_stat_free (col_stat_t *cs)
+{
+  id_hash_iterator_t hit;
+  caddr_t * data;
+  ptrlong * count;
+  id_hash_iterator (&hit, cs->cs_distinct);
+  while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
+    dk_free_tree (*data);
+  id_hash_free (cs->cs_distinct);
+  dk_free ((caddr_t) cs, sizeof (col_stat_t));
+}
+
+void col_stat_free_ext_int (col_stat_t *cs, boxint *min_ret, boxint *max_ret)
+{
+  id_hash_iterator_t hit;
+  caddr_t * data;
+  ptrlong * count;
+  int is_first = 1;
+  boxint min = 0, max = 0;
+  id_hash_iterator (&hit, cs->cs_distinct);
+  while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
+    {
+      boxint d = unbox (*data);
+      if (is_first)
+        {
+          is_first = 0;
+          min = max = d;
+        }
+      else
+        {
+          if (d > max) max = d;
+          else if (d < min) min = d;
+        }
+      dk_free_tree (*data);
+    }
+  id_hash_free (cs->cs_distinct);
+  dk_free ((caddr_t) cs, sizeof (col_stat_t));
+  min_ret[0] = min;
+  max_ret[0] = max;
+}
+
+void
+col_stat_free_ext_box (col_stat_t *cs, caddr_t *min_box_ret, caddr_t *max_box_ret)
+{
+  id_hash_iterator_t hit;
+  caddr_t * data;
+  ptrlong * count;
+  int is_first = 1;
+  caddr_t min_box = NULL, max_box = NULL;
+  id_hash_iterator (&hit, cs->cs_distinct);
+  while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
+    {
+      if (is_first)
+        {
+          min_box = *data;
+          max_box = box_copy_tree (min_box);
+          is_first = 0;
+        }
+      else
+        {
+          int low_rc =  cmp_boxes_safe (*data, min_box, NULL, NULL);
+          if (DVC_LESS == (~DVC_NOORDER & low_rc))
+            {
+              dk_free_tree (min_box);
+              min_box = *data;
+            }
+          else 
+            {
+              int high_rc = cmp_boxes_safe (*data, max_box, NULL, NULL);
+              if (DVC_GREATER == (~DVC_NOORDER & high_rc))
+                {
+                  dk_free_tree (max_box);
+                  max_box = *data;
+                }
+              else 
+                dk_free_tree (*data);
+            }
+        }
+    }
+  id_hash_free (cs->cs_distinct);
+  dk_free ((caddr_t) cs, sizeof (col_stat_t));
+  min_box_ret[0] = min_box;
+  max_box_ret[0] = max_box;
+}
+
 
 void
 itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 {
   dbe_key_t * key = itc->itc_insert_key;
   dk_hash_iterator_t it;
-  id_hash_iterator_t hit;
 
   dbe_column_t * col;
   col_stat_t * cs;
-  caddr_t * data;
-  ptrlong * count;
   if (!itc->itc_st.cols)
     return;
   dk_hash_iterator (&it, itc->itc_st.cols);
@@ -3231,110 +3371,67 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
     {
       boxint min = 0, max = 0;
       caddr_t minb = NULL, maxb = NULL;
+      long last_cs_distinct_inserts = cs->cs_distinct->ht_inserts;
+      unsigned long last_cs_distinct_count = cs->cs_distinct->ht_count;
+      int64 last_cs_len = cs->cs_len;
+      int64 last_cs_n_values = cs->cs_n_values;
       int is_first = 1;
       int is_int = DV_LONG_INT == col->col_sqt.sqt_dtp || DV_INT64 == col->col_sqt.sqt_dtp;
       if (upd_col && (0 == stricmp (col->col_name, "P") || 0 == stricmp (col->col_name, "G")))
-	{
-	  col->col_stat = cs;
-	  is_int = 0;
-	}
+        {
+          if (NULL != col->col_stat)
+            srv_add_background_task (col_stat_free, col->col_stat);
+          col->col_stat = cs;
+          is_int = 0;
+        }
       else
-	{
-	  id_hash_iterator (&hit, cs->cs_distinct);
-	  while (hit_next (&hit, (caddr_t*) &data, (caddr_t*) &count))
-	    {
-	      if (is_int)
-		{
-		  boxint d = unbox (*data);
-		  if (is_first)
-		    {
-		      is_first = 0;
-		      min = max = d;
-		    }
-		  else
-		    {
-		      if (d > max)
-			max = d;
-		      if (d < min)
-			min = d;
-		    }
-		  dk_free_tree (*data);
-		}
-	      else 
-		{
-		  if (is_first)
-		    {
-		      minb = *data;
-		      maxb = box_copy_tree (minb);
-		      is_first = 0;
-		    }
-		  else
-		    {
-		      int low_rc =  cmp_boxes_safe (*data, minb, NULL, NULL);
-		      if (DVC_LESS == (~DVC_NOORDER & low_rc))
-			{
-			  dk_free_tree (minb);
-			  minb = *data;
-			}
-		      else 
-			{
-			  int high_rc = cmp_boxes_safe (*data, maxb, NULL, NULL);
-			  if (DVC_GREATER == (~DVC_NOORDER & high_rc))
-			    {
-			      dk_free_tree (maxb);
-			      maxb = *data;
-			    }
-			  else 
-			    dk_free_tree (*data);
-			}
-		    }
-		}
-	    }
-	}
+        {
+          if (is_int)
+            col_stat_free_ext_int (cs, &min, &max);
+          else
+            col_stat_free_ext_box (cs, &minb, &maxb);
+        }
       if (upd_col)
-	{
-	  if (key && !key->key_distinct)
-	    {
-	      col->col_count = cs->cs_n_values / (float) itc->itc_st.n_sample_rows * est;
-	      if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only)
-		col->col_count *= key_n_partitions (key);
-	    }
-	  /* for distinct value count, consider a distinct projection is the col in question is the first, otherwise do not trust one */
-	  if (itc->itc_st.n_sample_rows && (key && (!key->key_distinct || col == (dbe_column_t*)key->key_parts->data)))
-	    {
-	      /* if n distinct under 2% of samples and under 200 values, assume that this is a flag.  If more distinct, scale pro rata.  */
-	      if (cs->cs_distinct->ht_inserts < itc->itc_st.n_sample_rows / 50 && cs->cs_distinct->ht_count < 200)
-		col->col_n_distinct = cs->cs_distinct->ht_inserts;
-	      else
-		col->col_n_distinct = (float)cs->cs_distinct->ht_inserts / (float)itc->itc_st.n_sample_rows * est;
-	      if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only)
-		col->col_n_distinct *= key_n_partitions (key);
-	      col->col_avg_len = cs->cs_len / itc->itc_st.n_sample_rows;
-	      if (is_int && !is_first)
-		{
-		  /* if it is an int then the max distinct is the difference between min and max seen */
-		  col->col_min = box_num (min);
-		  col->col_max = box_num (max);
-		  if (col->col_n_distinct > max - min)
-		    col->col_n_distinct = MAX (1, max - min);
-		}
-	      if (!is_int)
-		{
-		  col->col_min = col_min_max_trunc (minb);
-		  col->col_max = col_min_max_trunc (maxb);
-		}
-	    }
-	  else if (key && !key->key_distinct)
-	    {
-	      col->col_n_distinct = 1;
-	      col->col_avg_len = 0; /* no data, use declared prec instead */
-	    }
-	}
-      if (col->col_stat != cs)
-	{
-	  id_hash_free (cs->cs_distinct);
-	  dk_free ((caddr_t) cs, sizeof (col_stat_t));
-	}
+        {
+          if (key && !key->key_distinct)
+            {
+              col->col_count = last_cs_n_values / (float) itc->itc_st.n_sample_rows * est;
+              if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only)
+                col->col_count *= key_n_partitions (key);
+            }
+          /* for distinct value count, consider a distinct projection is the col in question is the first, otherwise do not trust one */
+          if (itc->itc_st.n_sample_rows && (key && (!key->key_distinct || col == (dbe_column_t*)key->key_parts->data)))
+            {
+              /* if n distinct under 2% of samples and under 200 values, assume that this is a flag.  If more distinct, scale pro rata.  */
+              if (last_cs_distinct_inserts < itc->itc_st.n_sample_rows / 50 && last_cs_distinct_count < 200)
+                col->col_n_distinct = last_cs_distinct_inserts;
+              else
+                col->col_n_distinct = (float)last_cs_distinct_inserts / (float)itc->itc_st.n_sample_rows * est;
+              if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only)
+                col->col_n_distinct *= key_n_partitions (key);
+              col->col_avg_len = last_cs_len / itc->itc_st.n_sample_rows;
+              if (is_int && last_cs_distinct_count)
+                {
+                  /* if it is an int then the max distinct is the difference between min and max seen */
+                  dk_free_tree (col->col_min); col->col_min = box_num (min);
+                  dk_free_tree (col->col_max); col->col_max = box_num (max);
+                  if (col->col_n_distinct > max - min)
+                    col->col_n_distinct = MAX (1, max - min);
+                }
+              if (!is_int)
+                {
+                  dk_free_tree (col->col_min); col->col_min = col_min_max_trunc (minb); minb = NULL;
+                  dk_free_tree (col->col_max); col->col_max = col_min_max_trunc (maxb); maxb = NULL;
+                }
+            }
+          else if (key && !key->key_distinct)
+            {
+              col->col_n_distinct = 1;
+              col->col_avg_len = 0; /* no data, use declared prec instead */
+            }
+        }
+      dk_free_tree (minb);
+      dk_free_tree (maxb);
     }
   hash_table_free (itc->itc_st.cols);
   itc->itc_st.cols = NULL;
@@ -3406,7 +3503,7 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
   int len_limit = -1, first_match = 0;
   if (!kv ||  KV_LEFT_DUMMY == kv)
     return;
-  ppos = itc->itc_page + (int64)itc->itc_map_pos << 32;
+  ppos = ((int64)(itc->itc_page) << 16) | itc->itc_map_pos;
   if (!itc->itc_st.visited)
     itc->itc_st.visited = hash_table_allocate (203);
   if (gethash ((void*)ppos, itc->itc_st.visited))

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -923,7 +923,7 @@
               search_path := ODRIVE.WA.odrive_real_path(get_keyword('dav_PropFilter_SearchPath', params, '/DAV/'));
               retValue := DB.DBA.DAV_SEARCH_ID(search_path, 'C');
               if (ODRIVE.WA.DAV_ERROR(retValue))
-                signal('TEST', 'Search path does not exists!<>');
+                signal('TEST', 'Search path does not exist!<>');
             }
             else if (dav_detType = 'IMAP')
             {

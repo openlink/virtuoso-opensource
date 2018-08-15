@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,20 +19,21 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_rdf_class" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+<v:page name="db_rdf_view_3"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Linked Data View definition</vm:pagetitle>
   <vm:pagewrapper>
-  <vm:variables>
-    <v:variable name="is_popup" persist="0" type="integer" default="0" />
-  </vm:variables>
   <vm:menu>
   </vm:menu>
   <vm:variables>
+    <v:variable name="is_popup" persist="0" type="integer" default="0" />
+
       <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
       <v:variable persist="0" name="vdb_used" type="int" default="0"/>
       <v:variable persist="0" name="base_url" type="any" default="null" param-name="host"/>
@@ -59,26 +58,27 @@
 
   <vm:header caption="Linked Data View definition"/>
   <vm:pagebody>
-  <script type="text/javascript"><![CDATA[
+    <script type="text/javascript">
+      <![CDATA[
     function saveSQL ()
     {
       var lf = document.forms ['admin_login'];
       var f = document.forms['account_form'];
-      window.open (f.fsave.value+'&sid='+lf.sid.value,
-      'file_save', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=600');
+          window.open (f.fsave.value+'&sid='+lf.sid.value, 'file_save', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=600');
       return false;
     }
     function saveOwl ()
     {
       var lf = document.forms ['admin_login'];
       var f = document.forms['account_form'];
-      window.open (f.osave.value+'&sid='+lf.sid.value,
-      'file_save', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=600');
+          window.open (f.osave.value+'&sid='+lf.sid.value, 'file_save', 'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=600');
       return false;
     }
-    ]]></script>
+      ]]>
+    </script>
 <table>
-    <v:method name="exec_all" arglist="inout control vspx_control"><![CDATA[
+      <v:method name="exec_all" arglist="inout control vspx_control">
+        <![CDATA[
 	      declare stat, msg varchar;
 	      declare res, arr, data, meta, gr, path, ret any;
 	      declare inx int;
@@ -134,13 +134,14 @@
 	     control.vc_enabled := 0;
 	     self.b_loc_save1.vc_enabled := 0;
 	     self.b_loc_save2.vc_enabled := 0;
-	     ]]></v:method>
+        ]]>
+      </v:method>
+
       <v:form name="account_form" type="simple" method="POST" action="">
-    <v:text type="hidden"
-      name="fsave" value="--concat ('/INLINEFILE/script.sql?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
-  <v:text type="hidden"
-      name="osave" value="--concat ('/INLINEFILE/ontology.nt?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'), '&ext=.n3')"/>
-      <v:before-data-bind><![CDATA[
+        <v:text type="hidden" name="fsave" value="--concat ('/INLINEFILE/script.sql?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
+        <v:text type="hidden" name="osave" value="--concat ('/INLINEFILE/ontology.nt?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'), '&ext=.n3')"/>
+        <v:before-data-bind>
+          <![CDATA[
 	  declare _base_url, _db_object_to_process, e_array, path any;
 
 	  self.exist_sql := self._view + self.view_vd + self.owl_vd;
@@ -152,19 +153,14 @@
 	         self.db_object_to_process := vector (get_keyword('name', self.vc_event.ve_params));
                else
 	         self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
-	       tbls := self.db_object_to_process;
-               --if (exists (select 1 from sys_remote_table where RT_NAME in (tbls)))
-               --  self.vdb_used := 1;	       
-	    }
 
+	       tbls := self.db_object_to_process;
+	    }
 	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
 
 	  if (self.body_v is NULL)
 	    {
 	      declare tbls, cols, pklist any;
-	      cols := null;
-	      if (self.cols is not null)
-	        cols := deserialize (decode_base64 (self.cols));
               declare exit handler for sqlstate '*'
 	      {
 	        self.vc_is_valid := 0;
@@ -172,8 +168,12 @@
 		self.body_v := '';
 		return;
 	      };
-	      tbls := self.db_object_to_process;
 
+              cols := null;
+              if (self.cols is not null)
+                cols := deserialize (decode_base64 (self.cols));
+
+              tbls := self.db_object_to_process;
 	      if (self.pklist is not null and self.pklist <> '')
 	        pklist := deserialize (decode_base64 (self.pklist));
               else
@@ -249,14 +249,23 @@
 	  <h2>Execution Status</h2>
 	  <div class="scroll_area">
 	  <table class="listing">
-	      <tr class="listing_header_row"><th>Status</th><th>Message</th></tr>
+                <tr class="listing_header_row">
+                  <th>Status</th>
+                  <th>Message</th>
+                </tr>
 	      <?vsp
 	      foreach (any elm in self.exec_ret) do
                 {
-		  if (elm <> 0) {
-		    foreach (any _row in elm) do {
+                    if (elm <> 0)
+                    {
+                      foreach (any _row in elm) do
+                      {
 	      ?>
-	      <tr><td><?V _row[0] ?></td><td><?V _row[1] ?></td></tr>
+                <tr>
+                  <td>
+                    <?V _row[0] ?></td><td><?V _row[1] ?>
+                  </td>
+                </tr>
 	      <?vsp
 	             }
 	           }
@@ -271,12 +280,18 @@
 	  <br/>
 	  <h2>RDB2RDF Triggers Status</h2>
 	  <table class="listing">
-	      <tr class="listing_header_row"><th>Status</th><th>Message</th></tr>
+              <tr class="listing_header_row">
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
 	      <?vsp
 	      foreach (any _row in self.sync_ret) do
                 {
 	      ?>
-	      <tr><td><?V _row[0] ?></td><td><?V _row[1] ?></td></tr>
+              <tr>
+                <td><?V _row[0] ?></td>
+                <td><?V _row[1] ?></td>
+              </tr>
 	      <?vsp
 	        }
 	      ?>
@@ -389,42 +404,77 @@
   </tr>
   <tr>
       <td>
-	  <?vsp if (self.text_e = 0) { ?>
-	  <?vsp if (self.exist_sql) { ?>
+            <?vsp
+              if (self.text_e = 0)
+              {
+                if (self.exist_sql)
+                {
+            ?>
 	  <h2>Definitions</h2>
 	  <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="20" value="--self.body_v"/><br/>
 	  <h2>R2RML Graph</h2>
 	  <v:textarea name="r2rml" xhtml_cols="120" xhtml_rows="20" value="--self.body_r2rml"/><br/>
-	  <?vsp } ?>
-	  <?vsp if (self.owl) { ?>
+            <?vsp
+                }
+                if (self.owl)
+                {
+            ?>
 	  <h2>Ontology</h2>
 	  <v:textarea name="cr_owl" xhtml_cols="120" xhtml_rows="20" value="--self.body_o"/>
-	  <?vsp } ?>
-	  <?vsp } ?>
-	  <?vsp if (self.text_e = 0 and __proc_exists ('DB.DBA.RDF_VIEW_DO_SYNC')) { ?>
+            <?vsp
+                }
+              }
+            ?>
+            <?vsp
+              if (self.text_e = 0 and __proc_exists ('DB.DBA.RDF_VIEW_DO_SYNC'))
+              {
+            ?>
 	  <br />
 	  <v:template type="simple" condition="self.vdb_used = 0"> 
-	  <label>Physical Graph Name</label> <v:text name="pgraph" value="--sprintf ('urn:%{URIQADefaultHost}s:%s', self.base_url)" xhtml_size="70" /><br />
-	  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
-	  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Enable Data Syncs with Physical Quad Store</label> <br/>
+              <div class="fm">
+                <label style="width: 200px; text-align: left;">Default Physical Named Graph</label>
+                <v:text name="pgraph" value="--sprintf ('urn:%{URIQADefaultHost}s:%s', self.base_url)" xhtml_size="70" />
+                <br />
+                <label style="margin-left: 200px; width: 400px; text-align: left;">
+                  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" />
+                  Generate RDB2RDF triggers
+                </label>
+                <br />
+                <label style="margin-left: 200px; width: 400px; text-align: left;">
+                  <v:check-box name="fill" value="1" xhtml_id="fill" />
+                  Enable Data Syncs with Physical Quad Store
+                </label>
+                <br />
+              </div>
           </v:template>
+
 	  <v:template type="simple" condition="self.vdb_used = 1">
 	      <div class="warning">RDB2RDF triggers cannot be generated on remote tables</div>
           </v:template>
-	  <?vsp } ?>
-	  <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/><br/>
+
+            <?vsp
+              }
+            ?>
+            <input type="hidden" name="host" value="<?V get_keyword('host', self.vc_event.ve_params) ?>"/>
+            <br />
 	  <v:button action="simple" name="cncl" value="Start Over">
-	  <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 	      path := concat('/DAV/temp/', self.sid, '.sql');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      path := concat('/DAV/temp/', self.sid, '.n3');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      self.vc_redirect ('db_rdf_objects.vspx');
-	      ]]></v:on-post>
+                ]]>
+              </v:on-post>
       </v:button>
-      <?vsp if (self.text_e = 0) { ?>
+            <?vsp
+              if (self.text_e = 0)
+              {
+            ?>
 	  <v:button action="simple" name="apply" value="Apply Changes">
-	  <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 	      declare path any;
 
 	      path := concat('/DAV/temp/', self.sid, '.sql');
@@ -438,38 +488,55 @@
 	         DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
 		 DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, self.body_o, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 	       }
-	      ]]></v:on-post>
+                ]]>
+              </v:on-post>
       </v:button>
+
       <v:button action="simple" name="exec" value="Execute">
-	  <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 	      self.exec_all (control);
-	    ]]></v:on-post>
+                ]]>
+              </v:on-post>
     </v:button>
+
     <v:button action="simple" name="b_loc_save1" value="Save Data Mappings" xhtml_onclick="javascript:saveSQL()" enabled="--self.exist_sql"/>
+
     <v:button action="simple" name="b_loc_save2" value="Save Ontology Mappings" xhtml_onclick="javascript:saveOwl()" enabled="--self.owl"/>
-    <?vsp } ?>
+
+            <?vsp
+              }
+            ?>
     <v:button name="back" action="simple" value="Back" enabled="--self.text_e">
-	  <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 	      self.text_e := 0;
 	      control.vc_enabled := 0;
 	      self.exec.vc_enabled := 1;
 	     self.b_loc_save1.vc_enabled := self.exist_sql;
 	     self.b_loc_save2.vc_enabled := self.owl;
-	    ]]></v:on-post>
+                ]]>
+              </v:on-post>
     </v:button>
 </td>
   </tr>
-     <?vsp if (self.text_e = 0) { ?>
+        <?vsp
+          if (self.text_e = 0)
+          {
+        ?>
 
   <tr>
     <td>
-	<?vsp if (self.exist_sql) { ?>
+            <?vsp
+              if (self.exist_sql)
+              {
+            ?>
       WebDAV location:
       <v:text width="200" type="simple" value="" name="filename" />
       <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="" lang="en" return_box="filename"/>
-
       <v:button action="submit" name="export" value="Save Data Mappings">
-        <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 	  if (get_keyword('export', params) is not null)
             {
               if (not length (self.filename.ufl_value))
@@ -497,24 +564,29 @@
                   self.vc_is_valid := 0;
                   return;
   	        };
-              YAC_DAV_RES_UPLOAD (self.filename.ufl_value, Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v, 'text/plain', '110100000N',
-                                  connection_get('vspx_user'), null, connection_get('vspx_user'));
+                    YAC_DAV_RES_UPLOAD (self.filename.ufl_value, Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v, 'text/plain', '110100000N', connection_get('vspx_user'), null, connection_get('vspx_user'));
               self.sc_1.vc_enabled := 1;
               self.sc_1.vc_data_bind (e);
             }
-	  ]]></v:on-post>
-          </v:button><br/>
-	  <?vsp } ?>
-	  <?vsp if (self.owl) { ?>
+                ]]>
+              </v:on-post>
+            </v:button>
+            <br/>
+            <?vsp
+              }
+            ?>
+            <?vsp
+              if (self.owl)
+              {
+            ?>
       WebDAV location:
       <v:text width="200" type="simple" value="" name="filename2" />
       <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="" lang="en" return_box="filename2"/>
-
       <v:button action="submit" name="export2" value="Save Ontology Mappings">
-        <v:on-post><![CDATA[
+              <v:on-post>
+                <![CDATA[
 	  if (get_keyword('export2', params) is not null)
             {
-
               if (not length (self.filename2.ufl_value))
                 {
                   self.vc_is_valid := 0;
@@ -540,18 +612,21 @@
                   self.vc_is_valid := 0;
                   return;
   	        };
-		YAC_DAV_RES_UPLOAD (self.filename2.ufl_value, self.body_o, 'text/rdf+n3', '110100000N',
-                                  connection_get('vspx_user'), null, connection_get('vspx_user'));
+                    YAC_DAV_RES_UPLOAD (self.filename2.ufl_value, self.body_o, 'text/rdf+n3', '110100000N', connection_get('vspx_user'), null, connection_get('vspx_user'));
               self.sc_2.vc_enabled := 1;
               self.sc_2.vc_data_bind (e);
             }
-	  ]]></v:on-post>
+                ]]>
+              </v:on-post>
         </v:button>
-	  <?vsp } ?>
+            <?vsp
+              }
+            ?>
       </td>
     </tr>
-
-   <?vsp } ?>
+        <?vsp
+          }
+        ?>
    </v:form>
 
         <v:template type="simple" name="sc_1" enabled="0">

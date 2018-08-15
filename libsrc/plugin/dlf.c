@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2016 OpenLink Software
+ *  Copyright (C) 1998-2018 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -482,7 +482,7 @@ dlsym (void *hdl, char *sym)
    *  to working round this:
    *   1. convert to full pathname in driver manager.
    *   2. applications always pass driver's full path name.
-   *   3. if driver itself do not support SQLGetFunctions(), call it with
+   *   3. if driver itself does not support SQLGetFunctions(), call it with
    *      SQL_ALL_FUNCTIONS as flag immediately after SQLConnect(),
    *      SQLDriverConnect() and SQLBrowseConnect() to force the driver
    *      manager resolving all will be used symbols.
@@ -500,7 +500,7 @@ dlsym (void *hdl, char *sym)
    *  Note: On AIX 3.x if the object library is not built with -g compiling
    *  option, .n_type field is always 0. While on 4.x it will be 32.
    *  On AIX 4.x, if the symbol is a entry point, n_value will be 0.
-   *  However, one thing is for sure that if a symbol does not exists in the
+   *  However, one thing is for sure that if a symbol does not exist in the
    *  file, both .n_type and .n_value would be 0.
    */
   if (!nl[1].n_type && !nl[1].n_value)

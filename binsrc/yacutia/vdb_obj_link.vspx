@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2016 OpenLink Software
+ -  Copyright (C) 1998-2018 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,9 +19,9 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -31,6 +29,12 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
   <vm:pagewrapper>
+    <vm:scripts>
+      <?vsp
+        http ('<script language="JavaScript" type="text/javascript" src="admin_utils.js"></script>');
+      ?>
+    </vm:scripts>
+
     <vm:variables>
       <v:variable name="current_dsn" type="varchar" default="null" param-name="dsn"/>
       <v:variable name="current_dsn_desc" type="varchar" default="null" param-name="desc"/>
@@ -59,35 +63,15 @@
       <v:variable name="procedures_flag" type="integer" default="0" persist="0"/>
       <v:variable name="ret_bmk" type="varchar" default="null" param-name="bmk"/>
     </vm:variables>
+
     <vm:menu>
       <vm:menuitem value="External Data Sources"/>
     </vm:menu>
+
     <vm:header caption="External Data Sources">
     </vm:header>
+
     <vm:pagebody vdb_check="1">
-      <script language="JavaScript">
-      function selectAllCheckboxes (form, btn)
-      {
-	var i;
-	for (i = 0; i &lt; form.length; i++)
-	  {
-	    var contr = form.elements[i];
-	    if (contr != null &amp;&amp; contr.type == "checkbox")
-	      {
-		contr.focus();
-		if (btn.value == 'Select All')
-		  contr.checked = true;
-		else
-		  contr.checked = false;
-	      }
-	  }
-	if (btn.value == 'Select All')
-	  btn.value = 'Unselect All';
-	else
-	  btn.value = 'Select All';
-	btn.focus();
-      }
-      </script>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -95,711 +79,617 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">Data Sources</td>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Data Sources</td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <!-- MAIN -->
+                        <v:template name="vdb_dsn_res_list_tmpl" type="simple">
+                          <v:before-data-bind>
+                            <![CDATA[
+                              declare exit handler for sqlstate '*'
+                              {
+                                self.vc_error_message := sprintf ('%s',__SQL_MESSAGE);
+                                self.vc_is_valid := 0;
+                                return;
+                              };
+
+                              self.name_mask := '%';
+                              if (0 and self.current_catalog is null and self.current_dsn is not null)
+                              {
+                                if (length (sql_tables (self.current_dsn, null, null, null, null)) > 0)
+                                  self.current_catalog := aref (aref (sql_tables (self.current_dsn,
+                                                                                  null,
+                                                                                  null,
+                                                                                  null,
+                                                                                  null), 0), 0);
+                              }
+                              if (0 and self.current_schema is null and self.current_dsn is not null)
+                              {
+                                if (length (sql_tables (self.current_dsn, null, null, null, null)) > 0 )
+                                  self.current_schema := aref (aref (sql_tables (self.current_dsn,
+                                                                                 null,
+                                                                                 null,
+                                                                                 null,
+                                                                                 null), 0), 1) ;
+                              }
+                            ]]>
+                          </v:before-data-bind>
+                          <table>
                             <tr>
-                              <td width="100%" >
+                              <td id="RB" valign="top" border="0" cellspacing="0" cellpadding="0">
+                                <table id="DT" width="100%" border="0" cellspacing="0" cellpadding="0">
+                                  <tr class="subpage_header_area">
+                                    <td>
+                                      <table class="ctl_grp">
+                                        <tr> <!-- dsn row -->
+                                          <td>
+                                            <v:form name="dsn_form" type="simple" method="POST" action="">
+                                              <table> <!-- dsn dropbox w. description and host -->
+                                                <tr>
+                                                  <th>DSN</th>
+                                                  <th>Description</th>
+                                                </tr>
+                                                <tr>
+                                                  <td>
+                                                    <v:label name="label_dsn1" value="--self.current_dsn"/>
+                                                  </td>
+                                                  <td>
+                                                    <v:label name="label_dsn1" value="--self.current_dsn_desc"/>
+                                                  </td>
+                                                </tr>
+                                              </table>
+                                            </v:form> <!-- dsn_form -->
+                                          </td>
+                                        </tr> <!-- dsn row -->
+                                        <tr> <!-- filter row -->
+                                          <td>
+                                            <v:form name="dsn_filter_form" type="simple" method="POST" action="">
+                                              <v:on-post>
+                                                <![CDATA[
+                                                  self.current_catalog := get_keyword ('catalog_list', params, '%');
+                                                  self.current_schema := get_keyword ('schema_list', params, '%');
+
+                                                  self.user_tables_flag := atoi (get_keyword ('user_tables_en', params, '0'));
+                                                  self.views_flag := atoi (get_keyword ('views_en', params, '0'));
+                                                  self.procedures_flag := atoi (get_keyword ('procedures_en', params, '0'));
+
+                                                  self.name_mask :=  get_keyword ('res_mask_of_name', params, '%');
+                                                ]]>
+                                              </v:on-post>
+
+                                              <table> <!-- dsn_filter_form -->
+                                                <tr>
+                                                  <td valign="top">
+                                                    <table> <!-- flt -->
+                                                      <tr>
+                                                        <td></td>
+                                                        <td>Catalog</td>
+                                                        <td>Schema</td>
+                                                        <td>Name</td>
+                                                      </tr>
+                                                      <tr>
+                                                        <td><label>Filter</label></td>
+                                                        <td>
+                                                          <v:select-list name="catalog_list" defvalue="--self.current_catalog">
+                                                            <v:after-data-bind>
+                                                              <![CDATA[
+                                                                declare key_list any;
+                                                                declare i, len integer;
+                                                                declare v varchar;
+
+                                                                control.vsl_items := vector ('All');
+                                                                control.vsl_item_values:= vector ('%');
+                                                                control.vsl_selected_inx := 0;
+                                                                if (self.current_dsn is not null and self.current_dsn <> '')
+                                                                {
+                                                                  key_list := sql_tables (self.current_dsn, null, null, null, null);
+                                                                  len :=  length (key_list);
+                                                                  for (i := 0; i < len; i := i + 1)
+                                                                  {
+                                                                    v := key_list[i][0];
+                                                                    if (v is not null and not position (v, control.vsl_item_values))
+                                                                    {
+                                                                      control.vsl_items := vector_concat (control.vsl_items, vector (v));
+                                                                      control.vsl_item_values := vector_concat (control.vsl_item_values, vector (v));
+                                                                    }
+                                                                  }
+                                                                  control.vs_set_selected();
+                                                                }
+                                                              ]]>
+                                                            </v:after-data-bind>
+                                                          </v:select-list>
+                                                        </td>
+                                                        <td>
+                                                          <v:select-list name="schema_list" defvalue="--self.current_schema">
+                                                            <v:before-data-bind>
+                                                              <![CDATA[
+                                                                {
+                                                                  declare key_list any;
+                                                                  declare i, len, n, sz, is_found integer;
+                                                                  declare v varchar;
+
+                                                                  control.vsl_items := vector ('All');
+                                                                  control.vsl_item_values:= vector ('%');
+                                                                  control.vsl_selected_inx := 0;
+
+                                                                  if (self.current_dsn is not null and self.current_dsn <> '')
+                                                                  {
+                                                                    key_list := sql_tables (self.current_dsn, null, null, null, null);
+                                                                    i := 0;
+                                                                    len :=  length (key_list);
+                                                                    while (i < len)
+                                                                    {
+                                                                      v := aref (aref (key_list, i), 1);
+                                                                      if (v is not null and not position (v, control.vsl_item_values))
+                                                                      {
+                                                                        control.vsl_items := vector_concat (control.vsl_items, vector (v));
+                                                                        control.vsl_item_values := vector_concat (control.vsl_item_values, vector (v));
+                                                                      }
+                                                                      i := i + 1;
+                                                                    }
+                                                                    control.vs_set_selected();
+                                                                  }
+                                                                }
+                                                              ]]>
+                                                            </v:before-data-bind>
+                                                          </v:select-list>
+                                                        </td>
+                                                        <td>
+                                                          <v:text name="res_mask_of_name" size="24" value="--self.name_mask" />
+                                                        </td>
+                                                      </tr>
+                                                    </table> <!-- flt -->
+                                                  </td>
+                                                  <td valign="top">
+                                                    <table> <!-- checkboxen -->
+                                                      <tr>
+                                                        <td>
+                                                          <v:check-box name="user_tables_en"
+                                                                       initial-checked="--self.user_tables_flag"
+                                                                       value="1"
+                                                                       xhtml_id="user_tables_en"/>
+                                                        </td>
+                                                        <td>
+                                                          <label for="user_tables_en">Tables</label>
+                                                        </td>
+                                                      </tr>
+                                                      <tr>
+                                                        <td>
+                                                          <v:check-box name="views_en"
+                                                                       initial-checked="--self.views_flag"
+                                                                       value="1"
+                                                                       xhtml_id="views_en"/>
+                                                        </td>
+                                                        <td>
+                                                          <label for="views_en">Views</label>
+                                                        </td>
+                                                      </tr>
+                                                      <tr>
+                                                        <td>
+                                                          <v:check-box name="procedures_en"
+                                                                       initial-checked="--self.procedures_flag"
+                                                                       value="1"
+                                                                       xhtml_id="procedures_en"/>
+                                                        </td>
+                                                        <td>
+                                                          <label for="procedures_en">Stored Procedures</label>
+                                                        </td>
+                                                      </tr>
+                                                    </table> <!-- checkboxen -->
+                                                  </td>
+                                                  <td valign="top">
+                                                    <table> <!-- btns -->
+                                                      <tr>
+                                                        <td>
+                                                          <v:button action="simple" name="filter_apply" value="Apply" xhtml_id="flt_apply"/>
+                                                        </td>
+                                                        <td>
+                                                          <v:button action="simple" name="filter_clear" value="Clear" />
+                                                        </td>
+                                                      </tr>
+                                                    </table> <!-- btns -->
+                                                  </td>
+                                                </tr>
+                                              </table> <!-- dns_filter_form -->
+                                            </v:form>
+                                          </td>
+                                        </tr> <!-- filter_row -->
+                                      </table> <!-- ctl_grp -->
+                                    </td>
+                                  </tr>
+                                  <tr class="main_page_area">
+                                  <td>
+                                    <v:form name="obj_list_form" method="POST" type="simple" action="">
+                                      <v:on-post>
+                                        <![CDATA[
+                                          declare n, i integer;
+                                          declare _data any;
+                                          declare _param varchar;
+                                          declare err_tables, err_messages, err_pks any;
+
+                                          if (e.ve_button.vc_name = 'btn_cancel_top' or e.ve_button.vc_name = 'btn_cancel_bot')
+                                          {
+                                            self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
+                                            return;
+                                          }
+
+                                          self.s_procs := vector ();
+                                          self.s_stables := vector ();
+                                          self.s_tables := vector ();
+                                          self.s_views := vector ();
+
+                                          if (self.user_tables_flag = 1)
+                                          {
+                                            n := length (self.user_table_list);
+                                            i := 0;
+                                            self.pks_t := vector ();
+
+                                            while (i < n)
+                                            {
+                                              if (get_keyword ('link_all_tables', params) is null)
+                                              {
+                                                _param := get_keyword (sprintf ('cbu_%d', i), self.vc_page.vc_event.ve_params, '');
+                                                if (_param <> '')
+                                                  _data := deserialize (decode_base64 (_param));
+                                                else
+                                                  _data := vector ();
+                                              }
+                                              else
+                                                _data := vector (aref (aref (self.user_table_list, i), 0),
+                                                                       aref (aref (self.user_table_list, i), 1),
+                                                                       aref (aref (self.user_table_list, i), 2));
+
+                                              if (length (_data))
+                                              {
+                                                self.s_tables := vector_concat (self.s_tables, vector (vector (_data,
+                                                                                                               vector (aref (_data, 0),
+                                                                                                                       self.current_dsn,
+                                                                                                                       aref (_data, 2)))));
+                                                self.pks_t := vector_concat (self.pks_t,
+                                                                            vector (adm_lt_getRPKeys2 (self.current_dsn,
+                                                                                                       _data[0], _data[1], _data[2])));
+                                              }
+                                              i := i + 1;
+                                            }
+                                          }
+
+                                          if (self.views_flag = 1)
+                                          {
+                                            n := length (self.view_list);
+                                            i := 0;
+                                            self.pks_v := vector ();
+
+                                            while (i < n)
+                                            {
+                                              if (get_keyword ('link_all_views', params) is null)
+                                              {
+                                                _param := get_keyword (sprintf ('cbv_%d',i), self.vc_page.vc_event.ve_params,'');
+
+                                                if (_param <> '')
+                                                  _data := deserialize (decode_base64( _param));
+                                                else
+                                                  _data := vector();
+                                              }
+                                              else
+                                                _data := vector (aref (aref (self.view_list, i), 0),
+                                                                 aref (aref (self.view_list, i), 1),
+                                                                 aref (aref (self.view_list, i), 2));
+
+                                              if (length (_data))
+                                              {
+                                                self.s_views := vector_concat (self.s_views, vector (vector (_data,
+                                                                                                             vector (aref (_data, 0),
+                                                                                                                     self.current_dsn,
+                                                                                                                     aref (_data, 2)))));
+                                                self.pks_v := vector_concat (self.pks_v,
+                                                                             vector (adm_lt_getRPKeys2 (self.current_dsn, _data[0], _data[1], _data[2])));
+                                              }
+                                              i := i + 1;
+                                            }
+                                          }
+                                          if (self.procedures_flag = 1)
+                                          {
+                                            n := length (self.proc_list);
+                                            i := 0;
+
+                                            while (i < n)
+                                            {
+                                              if (get_keyword ('link_all_procs', params) is null)
+                                              {
+                                                _param := get_keyword (sprintf ('cbp_%d',i), self.vc_page.vc_event.ve_params,'');
+
+                                                if (_param <> '')
+                                                  _data := deserialize (decode_base64 (_param));
+                                                else
+                                                  _data := vector();
+                                              }
+                                              else
+                                                _data := vector (aref (aref (self.proc_list, i), 0),
+                                                                 aref (aref (self.proc_list, i), 1),
+                                                                 aref (aref (self.proc_list, i), 2));
+
+                                              if (length (_data) > 0)
+                                              {
+                                                declare cols, ncols, k, wrapit any;
+                                                declare pars varchar;
+                                                declare j, l, k integer;
+
+                                                cols := sql_procedure_cols (self.current_dsn, _data[0], _data[1], _data[2], NULL);
+                                                j := 0;
+                                                l := length (cols);
+                                                k := 0;
+                                                ncols := make_array (l, 'any');
+                                                wrapit := '';
+
+                                                while (j < l)
+                                                {
+                                                  declare stype, sprec, sscale any;
+                                                  declare type, prec, scale, ty, nam, lopts any;
+
+                                                  stype := cols[j][5];
+                                                  sprec := cols[j][7];
+                                                  sscale := cols[j][10];
+                                                  att_sql_to_dv_type (stype, sprec, sscale, null, null, type, prec, scale, lopts);
+                                                  ty := case cols[j][4]
+                                                          when 1 then 'IN'
+                                                          when 4 then 'OUT'
+                                                          when 2 then 'INOUT'
+                                                          when 3 then 'RESULTSET'
+                                                          when 5 then 'RETURNS'
+                                                          else 'UNDEFINED'
+                                                        end;
+
+                                                  if (ty = 'OUT' and cols[j][6] = 'PL/SQL TABLE')
+                                                    ty := 'RESULTSET';
+
+                                                  wrapit := 'checked';
+                                                  nam := SYS_ALFANUM_NAME (cols[j][3]);
+
+                                                  if (cols[j][4] <> 5 and length (cols[j]) > 16 and cols[j][17] <= l)
+                                                  {
+                                                    aset (ncols, cols[j][17] - 1, vector (ty, nam, dv_type_title (type)));
+                                                  }
+                                                  else
+                                                  {
+                                                    if (cols[j][4] <> 5)
+                                                    {
+                                                      aset (ncols, k, vector (ty, nam, dv_type_title (type)));
+                                                      k := k + 1;
+                                                    }
+                                                    else
+                                                    {
+                                                      aset (ncols, l - 1, vector (ty, nam, dv_type_title (type)));
+                                                    }
+                                                  }
+                                                  j := j + 1;
+                                                }
+
+                                                declare q, o, n, q1, o1, n1, lname varchar;
+
+                                                q := aref ( _data, 0);
+                                                o := aref ( _data, 1);
+                                                n := aref ( _data, 2);
+                                                lname := att_local_name (self.current_dsn, n);
+                                                q1 := name_part (lname, 0);
+                                                o1 := name_part (lname, 1);
+                                                n1 := SYS_ALFANUM_NAME (n);
+                                                self.s_procs := vector_concat (self.s_procs,
+                                                                                vector (sprintf ('%s%s.%s', case when q is not null then q || '.' else '' end, o, n),
+                                                                                q1, o1, n1, 'attach', '', ncols));
+                                              }
+                                              i := i + 1;
+                                            }
+                                          }
+                                          self.sel_pk := null;
+                                          self.vc_redirect (sprintf ('vdb_obj_link_opts.vspx?dsn=%U&bmk=%s', self.current_dsn, self.ret_bmk));
+                                        ]]>
+                                      </v:on-post>
+                                      <div class="scroll_area" style="margin: 0;">
+                                        <table class="listing"> <!-- Tables available for linking -->
+                                          <!--tr class="listing_head_cmd_row">
+                                            <td colspan="3">
+                                              <v:button action="simple" name="btn_cancel_top" value="Cancel" />
+                                              <v:button action="simple" name="btn_link_top" value="Link..." />
+                                            </td>
+                                          </tr-->
+                                          <tr class="listing_header_row">
+                                            <th class="checkbox">
+                                              <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>
+                                            </th>
+                                            <th width="1px">Type</th>
+                                            <th>Name</th>
+                                          </tr>
+                                          <?vsp
+                                            declare n, size, table_deni integer;
+                                            declare system_table_list, user_table_list, view_list, proc_list any;
+                                            declare table_name, table_den, table_value  varchar;
+                                            declare hits integer;
+                                            declare n_allready_linked integer; n_allready_linked := 0;
+                                            declare allready_linked_marker varchar;
+
+                                            if (self.user_tables_flag = 1)
+                                            {
+                                              user_table_list := get_sql_tables (self.current_dsn,
+                                                                                 self.current_catalog,
+                                                                                 self.current_schema,
+                                                                                 self.name_mask,
+                                                                                 'TABLE');
+                                            }
+                                            else
+                                            {
+                                              user_table_list := vector ();
+                                            }
+
+                                            if (self.views_flag = 1)
+                                            {
+                                              view_list := get_sql_tables (self.current_dsn,
+                                                                           self.current_catalog,
+                                                                           self.current_schema,
+                                                                           self.name_mask,
+                                                                           'VIEW');
+                                            }
+                                            else
+                                            {
+                                              view_list := vector ();
+                                            }
+
+                                            if (self.procedures_flag = 1)
+                                            {
+                                              proc_list := get_sql_procedures (self.current_dsn, self.current_catalog, self.current_schema, self.name_mask);
+                                            }
+                                            else
+                                            {
+                                              proc_list := vector ();
+                                            }
+
+                                            self.user_table_list := user_table_list;
+                                            self.view_list := view_list;
+                                            self.proc_list := proc_list;
+
+                                            if (self.user_tables_flag = 1) -- Table listing
+                                            {
+                                              size := length (user_table_list);
+                                              for (n := 0; n < size; n := n + 1)
+                                              {
+                                                if (user_table_list[n][0] is not null and user_table_list[n][1] is not null)
+                                                {
+                                                  table_name := sprintf ('%s.%s.%s', user_table_list[n][0], user_table_list[n][1], user_table_list[n][2]);
+                                                }
+                                                else if (user_table_list[n][1] is not null)
+                                                {
+                                                  table_name := sprintf ('%s.%s', user_table_list[n][1], user_table_list[n][2]);
+                                                }
+                                                else
+                                                {
+                                                  table_name := user_table_list[n][2];
+                                                }
+                                                table_value := encode_base64 (serialize (vector (user_table_list[n][0], user_table_list[n][1], user_table_list[n][2])));
+
+                                                http ('<tr>');
+                                                http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbu_%d" value="%s"/></td>', n, table_value));
+                                                http ('<td><img class="icon" src="images/icons/table_16.png" title="Table" alt="Table"/></td>');
+                                                if (exists (select RT_NAME from SYS_REMOTE_TABLE where RT_DSN = self.current_dsn and RT_REMOTE_NAME = table_name))
+                                                {
+                                                  allready_linked_marker := '*&nbsp;';
+                                                  n_allready_linked := n_allready_linked + 1;
+                                                }
+                                                else
+                                                {
+                                                  allready_linked_marker := '';
+                                                }
+                                                http (sprintf ('<td>%s%s</td>', allready_linked_marker, table_name));
+                                                http ('</tr>');
+                                              }
+
+                                              if (size = 0)
+                                                http ('<tr><th colspan="3"><br />No tables available for linking<br /><br /></th></tr>');
+                                            }
+
+                                            if (length (view_list) > 0 and self.views_flag = 1)
+                                            {
+                                              size := length (view_list);
+                                              for (n := 0; n < size; n := n + 1)
+                                              {
+                                                if (view_list[n][0] is not null and view_list[n][1] is not null)
+                                                {
+                                                  table_name :=  sprintf('%s.%s.%s', view_list[n][0], view_list[n][1], view_list[n][2]);
+                                                }
+                                                else if (view_list[n][1] is not null)
+                                                {
+                                                  table_name :=  sprintf('%s.%s', view_list[n][1], view_list[n][2]);
+                                                }
+                                                else
+                                                {
+                                                  table_name :=  view_list[n][2];
+                                                }
+                                                table_value := encode_base64 (serialize (vector (view_list[n][0], view_list[n][1], view_list[n][2])));
+
+                                                http ('<tr>');
+                                                http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbv_%d" value="%s"/></td>', n, table_value));
+                                                http ('<td><img class="icon" src="images/icons/view_16.png" title="View" alt="View"/></td>');
+                                                if (exists (select RT_NAME from SYS_REMOTE_TABLE where RT_DSN = self.current_dsn and RT_REMOTE_NAME = table_name))
+                                                {
+                                                  allready_linked_marker := '*&nbsp;';
+                                                  n_allready_linked := n_allready_linked + 1;
+                                                }
+                                                else
+                                                {
+                                                  allready_linked_marker := '';
+                                                }
+                                                http (sprintf ('<td>%s%s</td>', allready_linked_marker, table_name));
+                                                http ('</tr>');
+                                              }
+
+                                              if (size = 0)
+                                                http ('<tr><th colspan="3"><br />No views available for linking<br /><br /></th></tr>');
+                                            }
+
+                                            if (length (proc_list) > 0 and self.procedures_flag = 1)
+                                            {
+                                              size := length (proc_list);
+                                              for (n := 0; n < size; n := n + 1)
+                                              {
+                                                if (proc_list[n][0] is not null and proc_list[n][1] is not null)
+                                                {
+                                                  table_name := sprintf ('%s.%s.%s', proc_list[n][0], proc_list[n][1], proc_list[n][2]);
+                                                }
+                                                else if (proc_list[n][1] is not null)
+                                                {
+                                                  table_name := sprintf ('%s.%s', proc_list[n][1], proc_list[n][2]);
+                                                }
+                                                else
+                                                {
+                                                  table_name := proc_list[n][2];
+                                                }
+                                                table_value := encode_base64 (serialize (vector (proc_list[n][0], proc_list[n][1], proc_list[n][2])));
+
+                                                http ('<tr">');
+                                                http (sprintf ('<td class="checkbox"><input type="checkbox" name="cbp_%d" value="%s"/></td>', n, table_value));
+                                                http ('<td><img class="icon" src="images/icons/script_16.png" title="Stored procedure" alt="Stored procedure"/></td>');
+                                                http (sprintf ('<td>%s</td>', table_name));
+                                                http ('</tr>');
+                                              }
+
+                                              if (size = 0)
+                                                http ('<tr><th colspan="3"><br />No procedures available for linking<br /><br /></th></tr>');
+                                            }
+                                            if (n_allready_linked > 0)
+                                              http ('<tr><td colspan="3">* Denotes objects already linked. Unlink first or link under a different name.</td></tr>');
+                                          ?>
+                                          </table>
+                                        </div>
+                                        <div class="listing_foot_cmd_row">
+                                          <v:button action="simple" name="btn_cancel_bot" value="Cancel" />
+                                          <v:button action="simple" name="btn_link_bot" value="Link..." />
+                                        </div>
+                                      </v:form>
+                                    </td>
+                                  </tr>
+                                </table>
                               </td>
                             </tr>
                           </table>
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-		      <td valign="top">
-			<!-- MAIN -->
-      <v:template name="vdb_dsn_res_list_tmpl" type="simple">
-        <v:before-data-bind>
-          <v:script>
-            <![CDATA[
-	      declare exit handler for sqlstate '*'
-	        {
-                  self.vc_error_message := sprintf ('%s',__SQL_MESSAGE);
-                  self.vc_is_valid := 0;
-                  return;
-                };
-
-              self.name_mask := '%';
-
-              if (0 and self.current_catalog is null and self.current_dsn is not null)
-                {
-                  if (length (sql_tables (self.current_dsn, null, null, null, null)) > 0)
-                    self.current_catalog := aref (aref (sql_tables (self.current_dsn,
-                                                                    null,
-                                                                    null,
-                                                                    null,
-                                                                    null), 0), 0);
-                }
-              if (0 and self.current_schema is null and self.current_dsn is not null)
-                {
-                  if (length (sql_tables (self.current_dsn, null, null, null, null)) > 0 )
-                    self.current_schema := aref (aref (sql_tables (self.current_dsn,
-                                                                   null,
-                                                                   null,
-                                                                   null,
-                                                                   null), 0), 1) ;
-                }
-            ]]>
-          </v:script>
-        </v:before-data-bind>
-        <table>
-          <tr>
-            <td id="RB" width="90%" valign="top" border="0" cellspacing="0" cellpadding="0">
-              <table id="DT" width="100%" border="0" cellspacing="0" cellpadding="0">
-                <tr class="subpage_header_area">
-                  <td>
-                    <table class="ctl_grp">
-                        <tr> <!-- dsn row -->
-                          <td>
-                            <v:form name="dsn_form" type="simple" method="POST" action="">
-                              <table> <!-- dsn dropbox w. description and host -->
-                                <tr>
-                                  <th>DSN</th>
-                                  <th>Description</th>
-                                </tr>
-                                <tr>
-				  <td>
-				    <v:label name="label_dsn1" value="--self.current_dsn"/>
-                                  </td>
-				  <td>
-				    <v:label name="label_dsn1" value="--self.current_dsn_desc"/>
-				  </td>
-                                </tr>
-                              </table>
-                            </v:form> <!-- dsn_form -->
-                          </td>
-                        </tr> <!-- dsn row -->
-                        <tr> <!-- filter row -->
-                          <td>
-                            <v:form name="dsn_filter_form" type="simple" method="POST" action="">
-                              <v:on-post>
-                                <v:script>
-                                  <![CDATA[
-      self.current_catalog := get_keyword ('catalog_list', params);
-      self.current_schema := get_keyword ('schema_list', params);
-
-      if (get_keyword ('user_tables_en', params))
-        self.user_tables_flag := 1;
-      else
-        self.user_tables_flag := 0;
-
-      if (get_keyword('views_en', params) is not null)
-        self.views_flag := 1;
-      else
-        self.views_flag := 0;
-
-      if (get_keyword('procedures_en', params) is not null)
-        self.procedures_flag := 1;
-      else
-        self.procedures_flag := 0;
-
-      self.name_mask :=  get_keyword ('res_mask_of_name', params);
-                                  ]]>
-                                </v:script>
-                              </v:on-post>
-                              <table> <!-- dsn_filter_form -->
-                                <tr>
-                                  <td valign="top">
-                                    <table> <!-- flt -->
-                                      <tr>
-                                        <td></td>
-                                        <td>Catalog</td>
-                                        <td>Schema</td>
-                                        <td>Name</td>
-                                      </tr>
-                                      <tr>
-                                        <td><label>Filter</label></td>
-                                        <td>
-                                          <v:select-list name="catalog_list"
-                                                         defvalue="--self.current_catalog">
-                                            <v:after-data-bind>
-                                              <v:script>
-                                                <![CDATA[
-    {
-      declare key_list any;
-      declare i, len, n, sz, is_found integer;
-      declare v varchar;
-
-
-      control.vsl_items := vector ('All');
-      control.vsl_item_values:= vector ('%');
-      control.vsl_selected_inx := 0;
-
-      if (self.current_dsn is not null and self.current_dsn <> '')
-        {
-          key_list := sql_tables (self.current_dsn, null, null, null, null);
-          i := 0;
-          len :=  length (key_list);
-
-          while (i < len)
-            {
-              v := aref (aref (key_list, i), 0);
-	      if (v is not null and not position (v, control.vsl_item_values))
-                {
-                  control.vsl_items := vector_concat (control.vsl_items, vector (v));
-                  control.vsl_item_values := vector_concat (control.vsl_item_values, vector (v));
-                }
-              i := i + 1;
-            }
-          control.vs_set_selected();
-        }
-    }
-                                                ]]>
-                                              </v:script>
-                                            </v:after-data-bind>
-                                          </v:select-list>
-                                        </td>
-                                        <td>
-                                          <v:select-list name="schema_list" defvalue="--self.current_schema">
-                                            <v:before-data-bind>
-                                              <v:script>
-                                                <![CDATA[
-
-    {
-      declare key_list any;
-      declare i, len, n, sz, is_found integer;
-      declare v varchar;
-
-      control.vsl_items := vector ('All');
-      control.vsl_item_values:= vector ('%');
-      control.vsl_selected_inx := 0;
-
-      if (self.current_dsn is not null and self.current_dsn <> '')
-        {
-          key_list := sql_tables (self.current_dsn, null, null, null, null);
-          i := 0;
-          len :=  length (key_list);
-
-          while (i < len)
-            {
-              v := aref (aref (key_list, i), 1);
-	      if (v is not null and not position (v, control.vsl_item_values))
-                {
-                  control.vsl_items := vector_concat (control.vsl_items, vector (v));
-                  control.vsl_item_values := vector_concat (control.vsl_item_values, vector (v));
-                }
-              i := i + 1;
-            }
-          control.vs_set_selected();
-        }
-    }
-                                                ]]>
-                                              </v:script>
-                                            </v:before-data-bind>
-                                          </v:select-list>
-                                        </td>
-                                        <td>
-                                          <v:text name="res_mask_of_name" size="24" value="--self.name_mask" />
-                                        </td>
-                                      </tr>
-                                    </table> <!-- flt -->
-                                  </td>
-                                  <td valign="top">
-                                    <table> <!-- checkboxen -->
-                                      <tr>
-                                        <td>
-                                          <v:check-box name="user_tables_en"
-                                                       initial-checked="--self.user_tables_flag"
-                                                       value="1"
-                                                       xhtml_id="user_tables_en"/>
-                                        </td>
-                                        <td>
-                                          <label for="user_tables_en">Tables</label>
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td>
-                                          <v:check-box name="views_en"
-                                                       initial-checked="--self.views_flag"
-                                                       value="1"
-                                                       xhtml_id="views_en"/>
-                                        </td>
-                                        <td>
-                                          <label for="views_en">Views</label>
-                                        </td>
-                                      </tr>
-                                      <tr>
-                                        <td>
-                                          <v:check-box name="procedures_en"
-                                                       initial-checked="--self.procedures_flag"
-                                                       value="1"
-                                                       xhtml_id="procedures_en"/>
-                                        </td>
-                                        <td>
-                                          <label for="procedures_en">Stored Procedures</label>
-                                        </td>
-                                      </tr>
-                                    </table> <!-- checkboxen -->
-                                  </td>
-                                  <td valign="top">
-                                    <table> <!-- btns -->
-                                      <tr>
-                                        <td>
-                                          <v:button action="simple" name="filter_apply" value="Apply" xhtml_id="flt_apply"/>
-                                        </td>
-                                        <td>
-                                          <v:button action="simple" name="filter_clear" value="Clear" />
-                                        </td>
-                                      </tr>
-                                    </table> <!-- btns -->
-                                  </td>
-                                </tr>
-                              </table> <!-- dns_filter_form -->
-                            </v:form>
-                          </td>
-                        </tr> <!-- filter_row -->
-                      </table> <!-- ctl_grp -->
-                    </td>
-                  </tr>
-                  <tr class="main_page_area">
-                  <td>
-                    <v:form name="obj_list_form" method="POST" type="simple" action="">
-                      <v:on-post>
-                        <v:script>
-                          <![CDATA[
-  declare n, i integer;
-  declare _data any;
-  declare _param varchar;
-  declare err_tables, err_messages, err_pks any;
-
-
-  if (e.ve_button.vc_name = 'btn_cancel_top' or
-      e.ve_button.vc_name = 'btn_cancel_bot')
-
-    {
-      self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
-      return;
-    }
-
-  self.s_procs := vector ();
-  self.s_stables := vector ();
-  self.s_tables := vector ();
-  self.s_views := vector ();
-
-  if (self.user_tables_flag = 1)
-    {
-      n := length (self.user_table_list);
-      i := 0;
-      self.pks_t := vector ();
-
-      while (i < n)
-        {
-          if (get_keyword ('link_all_tables', params) is null)
-            {
-              _param := get_keyword (sprintf ('cbu_%d', i), self.vc_page.vc_event.ve_params, '');
-              if (_param <> '')
-                _data := deserialize (decode_base64 (_param));
-              else
-                _data := vector ();
-            }
-          else
-            _data := vector (aref (aref (self.user_table_list, i), 0),
-                                   aref (aref (self.user_table_list, i), 1),
-                                   aref (aref (self.user_table_list, i), 2));
-
-          if (length (_data))
-            {
-              self.s_tables := vector_concat (self.s_tables, vector (vector (_data,
-                                                                             vector (aref (_data, 0),
-                                                                                     self.current_dsn,
-                                                                                     aref (_data, 2)))));
-              self.pks_t := vector_concat (self.pks_t,
-                                          vector (adm_lt_getRPKeys2 (self.current_dsn,
-                                                                     _data[0], _data[1], _data[2])));
-            }
-          i := i + 1;
-        }
-    }
-
-  if (self.views_flag = 1)
-    {
-      n := length (self.view_list);
-      i := 0;
-      self.pks_v := vector ();
-
-      while (i < n)
-        {
-          if (get_keyword ('link_all_views', params) is null)
-            {
-              _param := get_keyword (sprintf ('cbv_%d',i), self.vc_page.vc_event.ve_params,'');
-
-              if (_param <> '')
-                _data := deserialize (decode_base64( _param));
-              else
-                _data := vector();
-            }
-          else
-            _data := vector (aref (aref (self.view_list, i), 0),
-                             aref (aref (self.view_list, i), 1),
-                             aref (aref (self.view_list, i), 2));
-
-          if (length (_data))
-            {
-              self.s_views := vector_concat (self.s_views, vector (vector (_data,
-                                                                           vector (aref (_data, 0),
-                                                                                   self.current_dsn,
-                                                                                   aref (_data, 2)))));
-              self.pks_v := vector_concat (self.pks_v,
-                                           vector (adm_lt_getRPKeys2 (self.current_dsn,
-                                                                      _data[0], _data[1], _data[2])));
-            }
-          i := i + 1;
-        }
-    }
-  if (self.procedures_flag = 1)
-    {
-      n := length (self.proc_list);
-      i := 0;
-
-      while (i < n)
-        {
-          if (get_keyword ('link_all_procs', params) is null)
-            {
-              _param := get_keyword (sprintf ('cbp_%d',i), self.vc_page.vc_event.ve_params,'');
-
-              if (_param <> '')
-                _data := deserialize (decode_base64 (_param));
-              else
-                _data := vector();
-            }
-          else
-            _data := vector (aref (aref (self.proc_list, i), 0),
-                             aref (aref (self.proc_list, i), 1),
-                             aref (aref (self.proc_list, i), 2));
-
-            if (length (_data) > 0)
-              {
-                declare cols, ncols, k, wrapit any;
-                declare pars varchar;
-                declare j, l, k integer;
-
-                cols := sql_procedure_cols (self.current_dsn, _data[0], _data[1], _data[2], NULL);
-                j := 0;
-                l := length (cols);
-                k := 0;
-                ncols := make_array (l, 'any');
-                wrapit := '';
-
-                while (j < l)
-                  {
-                    declare stype, sprec, sscale any;
-                    declare type, prec, scale, ty, nam, lopts any;
-                    stype := cols[j][5];
-                    sprec := cols[j][7];
-                    sscale := cols[j][10];
-                    att_sql_to_dv_type (stype, sprec, sscale, null, null, type, prec, scale, lopts);
-                    ty := case cols[j][4]
-                            when 1 then 'IN'
-                            when 4 then 'OUT'
-                            when 2 then 'INOUT'
-                            when 3 then 'RESULTSET'
-                            when 5 then 'RETURNS'
-                            else 'UNDEFINED'
-                          end;
-
-                    if (ty = 'OUT' and cols[j][6] = 'PL/SQL TABLE')
-                      ty := 'RESULTSET';
-
-                    wrapit := 'checked';
-                    nam := SYS_ALFANUM_NAME (cols[j][3]);
-
-                    if (cols[j][4] <> 5 and
-                        length (cols[j]) > 16 and
-                        cols[j][17] <= l)
-                      aset (ncols, cols[j][17] - 1, vector (ty, nam, dv_type_title (type)));
-                    else
-                      if (cols[j][4] <> 5)
-                        {
-                          aset (ncols, k, vector (ty, nam, dv_type_title (type)));
-                          k := k + 1;
-                        }
-                      else
-                        aset (ncols, l - 1, vector (ty, nam, dv_type_title (type)));
-
-                    j := j + 1;
-                  }
-
-                declare q, o, n, q1, o1, n1, lname varchar;
-
-                q := aref ( _data, 0);
-                o := aref ( _data, 1);
-                n := aref ( _data, 2);
-                lname := att_local_name (self.current_dsn, n);
-                q1 := name_part (lname, 0);
-                o1 := name_part (lname, 1);
-                n1 := SYS_ALFANUM_NAME (n);
-                self.s_procs := vector_concat (self.s_procs,
-				vector (sprintf ('%s%s.%s', case when q is not null then q || '.' else '' end, o, n),
-
-                                                       q1, o1, n1, 'attach', '', ncols));
-              }
-            i := i + 1;
-        }
-    }
-    self.sel_pk := null;
-    self.vc_redirect (sprintf ('vdb_obj_link_opts.vspx?dsn=%U&bmk=%s', self.current_dsn, self.ret_bmk));
-
-                          ]]>
-                        </v:script>
-                      </v:on-post>
-	    <div class="scroll_area">
-                      <table class="listing"> <!-- Tables available for linking -->
-                        <!--tr class="listing_head_cmd_row">
-                          <td colspan="3">
-                            <v:button action="simple" name="btn_cancel_top" value="Cancel" />
-                            <v:button action="simple" name="btn_link_top" value="Link..." />
-                          </td>
-                        </tr-->
-                        <tr class="listing_header_row">
-			<th><INPUT type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>All</th>
-                          <th>Type</th>
-                          <th>Name</th>
-                        </tr>
-                        <?vsp
-    {
-      declare row_no integer; row_no := 0;
-      declare row_class varchar;
-      declare n, size, table_deni integer;
-      declare system_table_list, user_table_list, view_list, proc_list any;
-      declare table_name, table_den, table_value  varchar;
-      declare hits, row_cnt integer;
-      declare n_allready_linked integer; n_allready_linked := 0;
-      declare allready_linked_marker varchar;
-
-      if (self.user_tables_flag = 1)
-        {
-          user_table_list := get_sql_tables (self.current_dsn,
-                                         self.current_catalog,
-                                         self.current_schema,
-					 self.name_mask, 'TABLE');
-	}
-      else
-        user_table_list := vector ();
-
-      if (self.views_flag = 1)
-        {
-          view_list := get_sql_tables (self.current_dsn,
-                                   self.current_catalog,
-                                   self.current_schema,
-                                   self.name_mask,
-				   'VIEW');
-        }
-      else
-        view_list := vector ();
-
-      if (self.procedures_flag = 1)
-        {
-          proc_list := get_sql_procedures (self.current_dsn,
-                                       self.current_catalog,
-                                       self.current_schema,
-				       self.name_mask);
-        }
-       else
-        proc_list := vector ();
-
-
-      self.user_table_list := user_table_list;
-      self.view_list := view_list;
-      self.proc_list := proc_list;
-
-      row_cnt := 0;
-
-      if (self.user_tables_flag = 1) -- Table listing
-        {
-          size := length (user_table_list);
-          n := 0;
-
-          while (n < size)
-            {
-
-	      if (length (user_table_list[n][0]))
-	       table_name := sprintf ('%s.%s.%s', user_table_list[n][0], user_table_list[n][1], user_table_list[n][2]);
-	      else if (length (user_table_list[n][1]))
-	        table_name := sprintf ('%s.%s', user_table_list[n][1], user_table_list[n][2]);
-              else
-                table_name := user_table_list[n][2];
-
-              table_value := encode_base64 (serialize (vector (aref (aref (user_table_list, n), 0),
-                                                               aref (aref (user_table_list, n), 1),
-                                                               aref (aref (user_table_list, n), 2))));
-
-                {
-		  row_no := row_no + 1;
-		  row_cnt := row_cnt + 1;
-
-                  if (mod (row_cnt, 2))
-                    row_class := 'listing_row_odd';
-                  else
-                    row_class := 'listing_row_even';
-
-                  http (sprintf ('<tr class="%s">', row_class));
-                  http (sprintf ('<td><input type="checkbox" name="cbu_%d" value="%s"/></td>',
-                                 n, table_value));
-                  http ('<td><img class="icon" src="images/icons/table_16.png" title="Table" alt="Table"/></td>');
-                  if (exists (select RT_NAME
-				    from SYS_REMOTE_TABLE
-				    where RT_DSN = self.current_dsn and
-					  RT_REMOTE_NAME = table_name))
-                    {
-                      allready_linked_marker := '*&nbsp;';
-                      n_allready_linked := n_allready_linked + 1;
-                    }
-                  else
-                    allready_linked_marker := '';
-                  http (sprintf ('<td>%s%s</td>', allready_linked_marker, table_name));
-                  http ('</tr>');
-                }
-              n := n + 1;
-            }
-
-          if (row_no = 0)
-            http ('<tr><td colspan="3">No tables available for linking</td></tr>');
-        }
-
-      row_no := 0;
-
-      if (length (view_list) > 0 and self.views_flag = 1)
-        {
-
-         size := length (view_list);
-         n := 0;
-
-         while (n < size)
-           {
-
-	     if (aref (aref (view_list, n), 0) is not null)
-	       {
-                  table_name :=  sprintf('%s.%s.%s', aref (aref (view_list, n), 0),
-                                                      aref (aref (view_list, n), 1),
-						      aref (aref (view_list, n), 2));
-	       }
-	     else
-	       {
-                  table_name :=  sprintf('%s.%s',
-                                                      aref (aref (view_list, n), 1),
-						      aref (aref (view_list, n), 2));
-	       }
-
-             table_value := encode_base64 (serialize (vector (aref (aref (view_list, n), 0),
-                                                              aref (aref (view_list, n), 1),
-                                                              aref (aref (view_list, n), 2))));
-
-               {
-                 row_no := row_no + 1;
-		 row_cnt := row_cnt + 1;
-
-		 if (mod (row_cnt, 2))
-                   row_class := 'listing_row_odd';
-                 else
-                   row_class := 'listing_row_even';
-
-                 http (sprintf ('<tr class="%s">', row_class));
-                 http (sprintf ('<td><input type="checkbox" name="cbv_%d" value="%s"/></td>',
-                                n, table_value));
-                 http ('<td><img class="icon" src="images/icons/view_16.png" title="View" alt="View"/></td>');
-                 if (exists (select RT_NAME
-				   from SYS_REMOTE_TABLE
-				   where RT_DSN = self.current_dsn and
-					 RT_REMOTE_NAME = table_name))
-                   {
-                     allready_linked_marker := '*&nbsp;';
-                     n_allready_linked := n_allready_linked + 1;
-                   }
-                 else
-                   allready_linked_marker := '';
-                 http (sprintf ('<td>%s%s</td>', allready_linked_marker, table_name));
-                 http ('</tr>');
-               }
-             n := n + 1;
-           }
-
-          if (row_no = 0)
-            http ('<tr><td colspan="3">No views available for linking</td></tr>');
-        }
-
-      row_no := 0;
-
-      if (length (proc_list) > 0 and self.procedures_flag = 1)
-        {
-
-          size := length (proc_list);
-          n:= 0;
-
-          while (n < size)
-            {
-	      if (aref (aref (proc_list, n), 0) is not null)
-	        {
-                  table_name :=  sprintf ('%s.%s.%s', aref (aref (proc_list, n), 0),
-                                                  aref (aref (proc_list, n), 1),
-						  aref (aref (proc_list, n), 2));
-                }
-              else
-	        {
-                  table_name :=  sprintf ('%s.%s',
-                                                  aref (aref (proc_list, n), 1),
-						  aref (aref (proc_list, n), 2));
-                }
-
-              table_value := encode_base64 (serialize (vector (aref (aref (proc_list, n), 0),
-                                                               aref (aref (proc_list, n), 1),
-                                                               aref (aref (proc_list, n), 2))));
-              row_no := row_no + 1;
-              row_cnt := row_cnt + 1;
-
-              if (mod (row_cnt, 2))
-                row_class := 'listing_row_odd';
-              else
-                row_class := 'listing_row_even';
-
-              http (sprintf ('<tr class="%s">', row_class));
-              http (sprintf ('<td><input type="checkbox" name="cbp_%d" value="%s"/></td>',
-                             n, table_value));
-              http ('<td><img class="icon" src="images/icons/script_16.png" title="Stored procedure" alt="Stored procedure"/></td>');
-              http (sprintf ('<td>%s</td>', table_name));
-              http ('</tr>');
-
-              n := n + 1;
-            }
-
-          if (row_no = 0)
-            http ('<tr><td colspan="3">No procedures available for linking</td></tr>');
-        }
-      if (n_allready_linked > 0)
-        http ('<tr><td colspan="3">* Denotes objects already linked. Unlink first or link under a different name.</td></tr>');
-    }
-                        ?>
-		      </table>
-		    </div>
-                        <div class="listing_foot_cmd_row">
-                            <v:button action="simple" name="btn_cancel_bot" value="Cancel" />
-                            <v:button action="simple" name="btn_link_bot" value="Link..." />
-                        </div>
-                    </v:form>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
-      </v:template>
-			<!-- END -->
+                        </v:template>
+                        <!-- END -->
                       </td>
                     </tr>
                   </table>
