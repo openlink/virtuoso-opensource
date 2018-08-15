@@ -51,9 +51,11 @@ if MAINTAINER_MODE
 #
 binary-tar:
 	-mkdir @build@
-	$(MAKE) install DESTDIR="`pwd`/@build@/tmp/" prefix=..
-	tar cvf @build@.tar @build@
-	gzip -9vf @build@.tar
+	$(MAKE) install DESTDIR="`pwd`/@build@/$(PACKAGE)/tmp/" prefix=..
+	(cd @build@/$(PACKAGE) && rm -f hosting/*.a hosting/*.la lib/*.a lib/*.la)
+	(cd @build@/$(PACKAGE)/database && mv virtuoso.ini virtuoso.ini.sample)
+	(cd @build@ && tar cvf ../$(PACKAGE).@build@.tar virtuoso-opensource)
+	gzip -9vf $(PACKAGE).@build@.tar
 	rm -rf @build@
 
 
