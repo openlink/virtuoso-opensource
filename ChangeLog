@@ -1,5 +1,39 @@
 2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
 
+	Updated version to 7.2.5.3229 for stable release
+
+	Fixed layout of binary .tar.gz file
+
+2018-08-15  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed VS projects
+
+2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed Conductor VAD version
+
+	Fixed typo in variable
+
+	Removed TLSv1 from default protocol list
+
+	Fixed typo
+
+	Merge branch 'feature/markdown' into develop/7
+
+	Updated README files to markdown format for GitHub viewing
+
+	Removed deprecated file
+
+	Created symlinks for files that autoconf/automake check
+
+	Moved files to .md extension for GitHub viewing
+
+	Updated engine to 3229 for release
+
+	Updated NEWS for upcoming release
+
+	Updated ChangeLog for upcoming release
+
 	Fixed links
 
 	Added option for less verbose builds
