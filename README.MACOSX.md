@@ -88,7 +88,7 @@ or
 
 ### OpenSSL on macOS
 Apple is actively deprecating OpenSSL from macOS, so your system likely has a pretty old version
-of openssl, and as of High Sierra (10.13), Apple completely removed the required `include` files 
+of `openssl`, and as of High Sierra (10.13), Apple completely removed the required `include` files 
 from the `/usr/include/openssl` directory.
 
 We recommend installing the OpenSSL 1.0.2 library using:
