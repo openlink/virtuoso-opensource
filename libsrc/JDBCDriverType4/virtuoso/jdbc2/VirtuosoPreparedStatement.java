@@ -54,6 +54,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 #else
    private static final int _EXECUTE_FAILED = Statement.EXECUTE_FAILED;
 #endif
+   protected VirtuosoResultSet ps_vresultSet;
 
    /**
     * Constructs a new VirtuosoPreparedStatement that is forward-only and read-only.
@@ -98,7 +99,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	      // Create a future
 	      future = connection.getFuture(VirtuosoFuture.prepare,args, this.rpc_timeout);
 	      // Process result to get information about results meta data
-	      vresultSet = new VirtuosoResultSet(this,metaData, true);
+	      ps_vresultSet = vresultSet = new VirtuosoResultSet(this,metaData, true);
 	      result_opened = true;
               clearParameters();
 	    }
@@ -166,9 +167,10 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
-             vresultSet.isLastResult = false;
-	     vresultSet.getMoreResults(false);
-             vresultSet.stmt_n_rows_to_get = this.prefetch;
+             ps_vresultSet.isLastResult = false;
+	     ps_vresultSet.getMoreResults(false);
+             ps_vresultSet.stmt_n_rows_to_get = this.prefetch;
+             vresultSet = ps_vresultSet;
 	     result_opened = true;
 	   }
 	 catch(IOException e)
@@ -369,7 +371,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Build the args array
 	     Object[] args = new Object[2];
 	     args[0] = statid;
-//	     args[1] = new Long(VirtuosoTypes.STAT_CLOSE);
 	     args[1] = new Long(VirtuosoTypes.STAT_DROP);
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);

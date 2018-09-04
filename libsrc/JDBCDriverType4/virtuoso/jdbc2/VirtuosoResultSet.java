@@ -2198,10 +2198,12 @@ public class VirtuosoResultSet implements ResultSet
          statement = null;
       }
 #endif
-      if (statement != null && !is_prepared) 
+      if (statement != null) 
       {
-         statement.close_rs(false);
-         statement = null;
+         statement.close_rs(false, is_prepared);
+         if (!is_prepared) {
+           statement = null;
+         }
       }
 
       row = null;

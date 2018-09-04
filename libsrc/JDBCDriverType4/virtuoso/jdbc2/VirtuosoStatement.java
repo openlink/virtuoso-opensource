@@ -324,7 +324,7 @@ public class VirtuosoStatement implements Statement
        }
    }
 
-   public void close_rs(boolean close_stmt) throws VirtuosoException
+   public void close_rs(boolean close_stmt, boolean is_prepared) throws VirtuosoException
    {
      if(close_flag)
        return;
@@ -348,7 +348,7 @@ public class VirtuosoStatement implements Statement
 	     // Build the args array
 	     Object[] args = new Object[2];
 	     args[0] = statid;
-	     args[1] = new Long(VirtuosoTypes.STAT_DROP);
+	     args[1] = close_stmt ? new Long(VirtuosoTypes.STAT_DROP): new Long(VirtuosoTypes.STAT_CLOSE);
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
@@ -357,7 +357,9 @@ public class VirtuosoStatement implements Statement
 	     connection.removeFuture(future);
 	     future = null;
 	     result_opened = false;
-	     metaData = null;
+	     if (!is_prepared) {
+	       metaData = null;
+	     }
 	   }
 	 catch(IOException e)
 	   {
@@ -389,7 +391,7 @@ public class VirtuosoStatement implements Statement
     */
    public void close() throws VirtuosoException
    {
-     close_rs(true);
+     close_rs(true, false);
    }
 
    /**
