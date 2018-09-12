@@ -1055,7 +1055,7 @@ intl_find_user_charset (const char *encname, int xml_input_is_wide)
   wcharset_t **charset;
   encoding_handler_t *eh = NULL;
 
-  if (!encname && !*encname)
+  if (!encname || !*encname)
     return eh;
 
   inx1 = 0;
