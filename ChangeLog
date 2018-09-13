@@ -1,3 +1,1875 @@
+2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.5.3229 for stable release
+
+	Fixed layout of binary .tar.gz file
+
+2018-08-15  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed VS projects
+
+2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed Conductor VAD version
+
+	Fixed typo in variable
+
+	Removed TLSv1 from default protocol list
+
+	Fixed typo
+
+	Merge branch 'feature/markdown' into develop/7
+
+	Updated README files to markdown format for GitHub viewing
+
+	Removed deprecated file
+
+	Created symlinks for files that autoconf/automake check
+
+	Moved files to .md extension for GitHub viewing
+
+	Updated engine to 3229 for release
+
+	Updated NEWS for upcoming release
+
+	Updated ChangeLog for upcoming release
+
+	Fixed links
+
+	Added option for less verbose builds
+
+	Added better version checking for OpenSSL to configure
+
+2018-08-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue returing correct uiser after TLS login
+
+	Updated Conductor version
+
+	Fixed some compiler warnings for WebDAV browser
+
+	Fixed footer on WebDAV skin page
+
+	Added item creator as a field in the properties when not empty
+
+	Moved 'OAuth Service Binding' to 'Web Services'
+
+	Fixed clean up used files after build
+
+	Fixed selection of category in the database browser page
+
+2018-08-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed initial fill of caches after server restart (closes issue #747)
+
+	Fixed increase cache size for language and datatype caches
+
+	Fixed bif_sprintf() in order to process string arguments that get long values but the format precision is small enough.
+
+	Added new function t_set_delete_nth()
+
+	Fixed check for infinite loop in SQL compiler
+
+	Fixed checking BIF names
+
+	Fixed issues with Mac OS X WebDAV mapping
+
+	Fixed issue with cast numeric to bool
+
+	Fixed issue on TTLP with flag 4096 if a namespace declaration is repeated twice
+
+	Added support for ttlp_triples_for_prefix
+
+2018-07-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed rwlock support from single thread library
+
+	Fixed missing files from distribution
+
+	Added defines for virtuoso odbc extension
+
+	Fixed issue with wchar_t check
+
+	Fixed small issues in odbcsdk header files
+
+2018-07-09  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.5-rc2
+
+	Updated Conductor VAD version
+
+	Fixed issues in properties, locks and mkcol using Litmus testsuite
+
+	Fixed selection to use a RES_FULL_PATH instead a procedure.
+
+	Fixed missing PL for /sparql?nsdecl
+
+2018-07-09  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Fixed grammar
+
+2018-07-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Remove TLSv1 protocol from default protocol list
+
+	As the TLSv1 protocol is vunerable against certain attacks, it should not be in the default list for
+	server side connectivity.
+
+	It can still be turned on by the dba, should this protocol be needed for legacy browsers and/or devices.
+
+2018-07-03  Andrei Meliș  <andrei.melis@eaudeweb.ro>
+
+	Fix a typo
+
+	backup_dump instead of backup-dump
+
+2018-07-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild providers
+
+	Fixed issue with MALLOC_DEBUG
+
+	Fixed allocation hook
+
+	Fixed spelling
+
+	Fixed compiler warnings
+
+	Updated Conductor VAD version
+
+	Fixed bug with PROPFIND and bad XML (without correct namespace) as body
+
+	Updated WebDAV tests to support RDF 4918 specification
+
+	Added option to delete locked files by admin users
+
+	Fixed issues related to the LITMUS testsuite for DAV
+
+	Fixed readability of SHOW command
+
+2018-07-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use varchar(64) for name of det in order to keep smaller row limit
+
+	This is only done for new databases, to avoid unwanted warnings on startup.
+
+2018-07-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Optimized RDF meta data extractor
+
+	Fixed issues related to S3 DET folder definition
+
+2018-07-03  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Fixed spelling, grammar and punctuation
+
+2018-06-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed file permissions
+
+	Merge branch 'feature/2018_06_22_fix_vs2017_build' into develop/7
+
+2018-06-27  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Dktypes.h defines for VS2017
+
+	Fix SQL_FILES_DAV in sqlcode.bat
+
+	Add new file git_head.c to wi.vcproj
+
+	Fix for properly compile with VS2017
+
+	Fix version info for virtodbc
+
+	Fix VS2017 compile errors
+
+	Fix issues with VS2017
+
+2018-06-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed show all ABORTED and FAILED tests
+
+	Fixed link order of iODBC libraries
+
+	Fixed checking for installed versions of iODBC development headers and libraries
+
+2018-06-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues checking header files
+
+	Checking header files on many systems requires the use of the C compiler and not the standalone cpp program.
+
+	Compiling the virtuoso JDBC drivers does require the standalone cpp program.
+
+2018-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed extra ']' chars on configure --help
+
+2018-06-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added options for SPARQL endpoint and Faceted browser in left menu
+
+2018-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.5-rc1
+
+	Fixed rewrite rule export format
+
+	Fixed check for installed VAD package
+
+	Fixed encoding of URL when using describe or about links
+
+	Fixed SPARQL DELETE for quads did not delete booleans and other inlined RDF boxes that have non-default dt twobytes but not stored in RDF_OBJ
+
+2018-06-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed no not read uninitialized and unused tail of result dc
+
+	Small code cleanup for MALLOC_DEBUG
+
+	Fixed GPF when there is no result qst on error condition
+
+	Fixed possible memory leak
+
+	Fixed assert when using SIGNAL_DEBUG
+
+	Added support for both return values as well as scalar expressions
+
+	Fixed compiler warnings
+
+	Added support for X-Forwarded-Proto
+
+	Fixed memory leak
+
+	Fixed check PL compilation for errors
+
+	Fixed return success or fail
+
+	Added support for application/n-triples mime type
+
+	Fixed IRIs with utf-8-encoded punctutation in local part should not printed as ns:local, but as <...>
+
+	Fixed memory leak in imap and pop3
+
+	Fixed portability issue
+
+	Added support for modifying size of SQL compiler cache
+
+	Fixed memory leak passing error codes up the execution chain
+
+	Added additional checks for memory leaks and other debugging checks
+
+	Fixed readability of short iri names in explain output
+
+2018-06-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with DAV authentication
+
+	Fixed upgrading DAV tables with new field
+
+2018-05-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Code cleanup and removed some dependencies from ODS Framework
+
+	Removed stubs
+
+	Added better owner/group entity identification for filelist UI
+
+2018-05-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed DAV graph permissions
+
+	Removed old code
+
+2018-05-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added MALLOC_DEBUG check
+
+	Fixed documentation
+
+	Fixed compiler warnings
+
+	Fixed compiler warnings on PACKAGE_* and VERSION defines
+
+	Added new function strexpect_cs for case sensitive checks
+
+	Fixed output of mem_leaks to match format of mem_all_in_use
+
+	Fixed issues with query and signal logs
+
+	Fixed a missing CA chain does not mean .p12 file is bad
+
+	Merge branch 'feature/conductor_fixes' into develop/7
+
+	Fixed issue editing properties of doc in briefcase
+
+	Added default options for application by redirection
+
+	Fixed OAuth definitions
+
+	Added Cartridge ACL mode selection to UI
+
+	Optimized calls to some APIs using user/password properties
+
+	Added support for LDP DET
+
+	Merge branch 'feature/dav_fixes' into develop/7
+
+	Fixed indendation
+
+	Fixed DAV ACL permisssion
+
+	Added graph security for LDP RDF data
+
+	Fixed procedures for checking permissions
+
+2018-05-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Reformatted and small optimizations for CatFolder DET and related API functions
+
+	Fixed issue extracting license properties used by CatFolder DET
+
+	Fixed issue with LDP protocol using 'Slug' header value
+
+	Removed stubs
+
+2018-05-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2018_04_14_fix_github738' into develop/7
+
+	Rebuild RDF4J provider
+
+	Updated version of RDF4J provider
+
+2018-05-14  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix for github738 (baseURI parameter not handled properly by RDF4J provider)
+
+2018-04-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues with HTTP PATCH command changing resource permissions
+
+2018-04-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2018_04_04_fix_bug18232' into develop/7
+
+	Rebuild JDBC drivers
+
+	Updated version of JDBC driver
+
+2018-04-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix bugzilla#18232
+
+	String values must be sent ad DV_STRING or DV_SHORT_STRING_SERIAL
+
+2018-03-25  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use http://..../KEY/VAL#this for RML uri template generation
+
+	Fixed version and usage information for isql tool
+
+	Fixed new API calls for sponger
+
+	Fixed namespaces
+
+	Fixed issues with PATCH not returning an error after a SPARQL error
+
+	Updated GET command to support new redirection options
+
+	Fixed issue with spaces in WebDAV directory names
+
+	Fixed Conductor UI issue for specific doc types
+
+	Updated WebDAV browser to support new redirection options
+
+	Updated Conductor UI to support new redirection options
+
+	Fixed Conductor UI for specific doc types
+
+2018-03-23  Sergey Malinin  <sergmalinin@gmail.com>
+
+	Merge pull request #722 from jhdulaney/develop/7
+
+	Fixes to libsrc/JDBCDriverType4/virtuoso/jdbc2/Makefile.am
+
+2018-03-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing struct members when configured  with --with-debug
+
+2018-03-03  John Dulaney  <jdulaney@fedoraproject.org>
+
+	Fixes to libsrc/JDBCDriverType4/virtuoso/jdbc2/Makefile.am
+
+2018-02-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added initial documentation on building VOS on Mac OS X
+
+2018-02-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for pthread_rwlock library
+
+	Fixed issue generating files needed for tutorials
+
+	Added support for timeout on socket connect
+
+	Fixed use variable number of threads of AQ
+
+	Fixed issue building with SEM_DEBUG
+
+	Fixed issue with DAV headers
+
+	Added distinctive error message for each RDF loader
+
+	Fixed GPF replaying table rename due to deref NULL result
+
+	Fixed error message
+
+	Fixed bad check for type of name before comparing with __grouping
+
+	Fixed use __SQL_STATE and __SQL_MESSAGE
+
+	Fixed issue with activitystreams
+
+2018-02-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed for DAV browser
+
+	* Fixed owned lost ability to edit properties of doc in Briefcase
+	* Fixed LDP procedure recovery
+	* Fixed issue with LDP files/folders
+
+2018-02-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing response header for briefcase LDP Container Accept-Post:
+
+	Fixed issues sponging content in the LDI DET
+
+	Fixed always build the wiki plugins
+
+	Fixed path to find local imagemagick.pc via pkg-config
+
+2018-02-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed artifact
+
+2018-02-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC providers
+
+	Updated version of JDBC driver
+
+2018-02-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed  handling for timezoned date values from sparql queries
+
+	Fixes github #709
+
+2018-02-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use %pure-parser to avoid deprecation warning on later versions of bison
+
+	Fixed handling of Accept header with activitystreams profile
+
+	Fixed procedure for parsing 'Accept' HTTP header
+
+	Added overwrite flag for DynaRes creation
+
+	Fixed Turtle 1.1 permits multiple semicolons without predicate-object pairs between them
+
+	Fixed issues with QUERY_DEBUG
+
+	Fixed merged query log and error report log into one
+
+	Fixed memleak with composit boxes
+
+	Fixed LDP related issues
+
+	Fixed response code to 204 for PATCH command
+
+2018-02-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated DynaRes DET
+
+	* Added support for renaming DynaRes resource
+	* Added option to allow overwriting DynaRes resource
+	* Fixed authentication
+
+2018-02-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues relating to set and update LDP related data
+
+	Fixed initial DB.DBA.RDF_DEFAULT_USER_PERMS_SET for user 'nobody' so /sparql endpoint can query all graphs without any performance penalty.
+
+	Fixed return code for WebDAV PATCH command
+
+	Updated response of the OPTIONS command for WebDAV virtual path
+
+	Fixed return 406 if no matching Accept header found
+
+	Update and optimize the import of resources in the RDF store
+
+	Added separate function to create SPARQL file for LDI folders
+
+	Fixed folder copying in briefcase should be recursive
+
+	Fixed issue with TAGs text index
+
+	Enable user id as group id
+
+2018-02-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+	Fixed issue changing a mime type without changing the extension
+
+	All filter/search UI should always show a page with results
+
+	Fixed issues with LDP
+
+	Fixed UI for ACL and ACI definitions
+
+	Fixed 'Dynamic Resource' folder creation
+
+	Added 'Activity' option for LDI DET folders
+
+	Fixed UI needs user-settable options for filesize display
+
+	Fixed number of small issues with sync
+
+	Updated WebDAV API functions
+
+	Fixed 'Create Link' page after request
+
+	Fixed label
+
+2018-01-25  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild Jena3 provider
+
+	Added missing source file
+
+	Updated version of Jena3 provider
+
+2018-01-25  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issue github #687
+
+	Add set/getIsolationLevel to VirtDataset
+
+2018-01-22  Jerven Bolleman  <jerven.bolleman@isb-sib.ch>
+
+	Travis CI setup to test with multiple C compilers and config options allowing the opensource version branches to be tested automatically.
+
+2018-01-18  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed XMLA service to select TIMESTAMP, XML_ENTITY, IRI_ID columns
+
+2018-01-02  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Copyright to include 2018
+
+2017-12-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild providers
+
+	Updated version of JDBC, Jena, RDF4j and Sesame drivers
+
+2017-12-21  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix: github #701 xsd:boolean literals returned as xsd:string literals
+
+2017-12-21  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix github #702
+
+	The new versions of providers Jena/RDF4J set/getNamespaces in global cache, prev versions worked with connection cache.
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/backport' into develop/7
+
+	Fixed prototypes
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue pred_gen_1 should be inside cond gen with preceding GENERATE_CONTROL_EXP
+
+	(closes issue 693)
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added option to explicitly set required security level (digest vs basic auth)
+
+	Fixed bad url http:/ -> http://
+
+	Fixed missing patch
+
+	Fixed issue tracking wrong datastruct
+
+	Added extra debug events for compiled queries
+
+	Fixed issue with file system applications
+
+	Fixed DB.DBA.XML_URI_GET() to handle 'file:path', 'file:/path', 'file://path', and 'file:///path'
+
+	Fixed missing POP_QR_RESET
+
+	Fixed allocation size of box
+
+	Fixed GPF performing strlen of a DV_DB_NULL box
+
+	Fixed bounds check
+
+	Initial support for non-ASCII IRI format strings
+
+	Fixed functions which can return multiple types should use bt_any
+
+	Fixed issue
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with shcompo cache size
+
+	When limit on population of shcompo_cache is much smaller than
+	number of buckets of cache hashtable then removal of random redundand
+	entry costs a lot, bigger limit is better.
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed GPF in log_query_event when qr is NULL
+
+	Set default value for ThreadCleanupInterval and ResourceCleanupInterval to 1
+
+	Fixed commented out call to dk_check_tree_mp_or_plain()
+
+	Fixed issue with dc_values shared between two freeable state slots
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C() etc
+
+	* Added support for flags 0x100 and 0x200
+	* Fixed issue with Jena object values that are URLs
+	* Fixed several small issue
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed various bugs
+
+	Fixed handling of Accept q params
+
+	Fixed Conductor's RDF View wizard now supports table and column names with more weird characters (@, `, ~, 8-bit)
+
+	Fixed RDB2RDF VAD version
+
+	Fixed typo
+
+	Fixed support of weird column names in R2RML
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated imagemagick plugin
+
+	* Added error information from ImageMagick when failing to read blob
+	* Replaced deprecated API functions
+	* Fixed issue resizing/cropping gif with transparent background
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed MTX_DEBUG in mutex_enter for Windows
+
+	Fixed http_cli_get_doc_str() to return either long or short url based on protocol and proxy settings
+
+	Fixed overflow in bif_atoi()
+
+	Added support for DV_RDF boxes in bif_isnumeric()
+
+	Fixed calls to sec_tb_check and sec_proc_check got U_ID and G_ID swapped
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added new bif functions
+
+	* substr()
+	* rdf_is_literal_impl()
+	* is_plain_bnode_iri_id()
+	* iri_id_to_blank_nodeid(),
+	* all_allocs_at_line() and  new_allocs_after() for MALLOC_DEBUG
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing restore of saved value
+
+	Added bif_callstack_dump()
+
+	Added support for RDF boxes and NVARCHAR in bif_sprintf and the like
+
+	Added sequence_next_inc_and_log()
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added new function bif_one_of_these()
+
+	This function accepts vectors of variants as arguments and
+	different representations of strings now "match" each other more
+	naturally
+
+2017-12-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed string_to_file() must flush file-resident string sessions before obtaining the session length
+
+	Merge branch 'feature/explain' into develop/7
+
+	Fixed readability and indentation of EXPLAIN output
+
+	Backported constants uname_nodeID_ns_0 and uname_nodeID_ns_8192
+
+	Merge branch 'feature/conductor' into develop/7
+
+	Updated Conductor VAD version
+
+	Added insert option after searching RDF prefixes
+
+	Added supoort for JSON and JSON-LD in rewrite rules for SPARQL query output
+
+2017-12-04  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed bad URL http:/www.purl.org/ -> http://purl.org/
+
+	Closes github #669
+
+2017-11-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed st_contains and other geo predicates
+
+	they were tried on O by geo node without trying on __ro2lo(O) as plain BIFs for final accurate result
+
+2017-11-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with generating msdtc plugin
+
+2017-11-08  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Cleaned up plugin code generation
+
+	Added pkg.m4 so we can create a working configure even if pkg-config development is not installed
+
+2017-11-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed check for GRDDL port
+
+	Added missing function
+
+	Fixed memleak when compiled with MTX_DEBUG
+
+	Fixed print errno on error
+
+	Fixed check for NULL pointer
+
+	Fixed SMALLEST_POSSIBLE_POINTER is now 0x100000
+
+	Merge branch 'feature/sparql' into develop/7
+
+	Disabled old SPARQL_DEBUG check
+
+	Fixed return internal sparql error instead of GPF
+
+2017-11-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added new functions
+
+	* Added bif_result_names_get_count()
+	* Added bif_explain_query_sources()
+	* Fixed bif_exec_metadata() and bif_exec_score() to handle wide string arguments in uniform way
+
+2017-11-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added FLAGS enable_spar_logfile and enable_sqlc_logfile
+
+	Added suport for writing audit/internal SPARQL errors to logfile
+
+	Added suport for writing audit/internal SQL errors to logfile
+
+	Added alias sql:comments for sql:comment
+
+	Added new option 'Explain' to /sparql endpoint
+
+	Added new help page for RDF views to /sparql endpoint
+
+	Fix for SPARQL 1.1 SUBSTR() (issue 692)
+
+	Merge branch 'feature/conductor' into develop/7
+
+	Fixed issue with WEBdav browser and folder selection
+
+	Updated Conductor VAD version
+
+	Fixed missing registry page
+
+	Fixed issue with catalog list by grants
+
+	Fixed UI
+
+	Fixed issue creating new user accounts with conductor using user with dba and administrator roles
+
+	Fixed issue with security of popup pages in WebDAV and File browser
+
+	Added support editing .xhtml files with CKEditor
+
+	Fixed issue deleting Smart folders
+
+	Merge branch 'feature/memleaks' into develop/7
+
+	Fixed memleak in dav PUT method
+
+	Fixed memleak in bif_http_body_read
+
+	Added new func col_stat_free() etc to avoid memleak on re-assignment of col_stat
+
+	Added new enable_iri_prefix_nic_n flag
+
+	Fixed memleak on RDFXX error
+
+	Fixed memleak of cs_dict
+
+	Fixed memleak on values of sc_big_ssl_consts
+
+	Fixed memory leak in SPARQL compiler
+
+	Fixed leak of not killed qi after error
+
+	Fixed memory leaks of query instance and local cursors
+
+2017-11-06  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed memleak in col_set_ac_dirty
+
+	Added short git SHA1 of HEAD to version info
+
+	Merge branch 'feature/malloc_debug' into develop/7
+
+	Added resource_track_new()/resource_track_delete() to count created resources without the use of rc_constructor/rc_destructor
+
+	Added checks for some values stored in dc_values
+
+	Added initial support for debugging queries using -DQUERY_DEBUG
+
+2017-11-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added initial support for detailed history of every error messages using -DSIGNAL_DEBUG
+
+	Fixed compiler warning on struct declaration
+
+	Fixed dk_mem_hooks should permit duplicate pointers to DB_CLOP and DV_CLRG
+
+2017-11-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed mem corruption in bif_rgs_prepare_del_or_ins if quad does not contain graph but context graph is DV_IRI_ID
+
+	Fixed dk_mem_hools should permit duplicate pointers to DV_ASYNC_QUEUE
+
+	Fixed issue with list of prime numbers
+
+	Added new function resource_get_batch()
+
+	Removed old MALLOC_DEBUG workaround
+
+	Added MALLOC_DEBUG support for resource_get() and resource_store()
+
+	Added support for gathering statistics on memory pools in use
+
+	Added new function dk_check_trees_of_qi for MALLOC_DEBUG
+
+	Added new function __dk_check_tree for MALLOC_DEBUG
+
+	Fixed small issue with box comparisons
+
+	Added new function dk_realloc_list
+
+	Added support for more MALLOC_DEBUG tracing
+
+	Fixed make allocation counting optional
+
+	Fixed issue compiling plugin with MALLOC_DEBUG
+
+	Fixed small issues with MALLOC_DEBUG
+
+2017-10-31  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added support for more datatypes in box_serial_length()
+
+2017-10-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_10_17_fix_jena_github_686' into develop/7
+
+	Rebuild Jena providers
+
+	Updated version of Jena provider
+
+2017-10-17  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issue github #686
+
+2017-10-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_10_16_github_685' into develop/7
+
+	Rebuild JDBC drivers
+
+2017-10-16  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix typo
+
+2017-10-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of JDBC driver
+
+2017-10-16  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix from github issue 685
+
+2017-10-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild providers
+
+	Merge branch 'feature/2017_10_12_fix_jena' into develop/7
+
+	Updated version of Jena providers
+
+2017-10-12  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix VirtDataset class for properly handle transaction
+
+2017-10-05  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update using of DB proc rdf_insert_triple_c() in Jena3
+
+2017-10-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_05_24_rdf4j_update' into develop/7
+
+2017-10-05  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update using of Db proc rdf_insert_triple_c() in rdf4j
+
+	Update for RDF4J provider for fix bug#17788 and etc
+
+2017-10-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Removed deprecated file
+
+2017-10-03  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update labels on ODBC Setup UI
+
+2017-09-29  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix misprint in method VirtGraph.setMacroLib()
+
+2017-09-28  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed typo
+
+	Fixed checks for ImageMagick
+
+2017-09-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed K&R-style function prototypes
+
+	Merge branch 'feature/windows_build' into develop/7
+
+	Fixed typo
+
+	Fixed issue with AIO
+
+	Fixed declarations after statement which trips up windows compiler
+
+	Fixed windows build issue
+
+	Fixed windows build issue
+
+	Fixed issue building on windows
+
+	Fixed portable check for NAN and INF for Windows builds
+
+	Fixed different declarations of build_thread_model and other vars
+
+2017-09-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed sizes
+
+	Removed deprecated image
+
+	Merge branch 'feature/dav' into develop/7
+
+	Changed mime tyoe for .csv extension to text/csv
+
+	Fixed text indexes for better maintainability
+
+	Fixed issue with permissions for WebDAV PUT command
+
+	Merge branch 'feature/conductor' into develop/7
+
+	Updated Conductor VAD version
+
+	Removed deprecated entries
+
+	Added support for Angellist
+
+	Fixed UI
+
+	Fixed packaging list
+
+	Fixed some bad links after reorganization
+
+	Fixed UI for editing soap service
+
+	Fixed issue with WebDAV sort order when Briefcase is not installed
+
+	Fixed issues with Rewrite Rule export function
+
+	Fixed CSV importer
+
+	Fixed iSQL page UI
+
+	Fixed UI issues with CSS
+
+	Fixed issue for ODS briefcase
+
+	Fixed user/password params get for API calls
+
+	Fixed WebDAV skin API for ODS briefcase API
+
+	Fixed typo
+
+	Fixed issue with MIME types page
+
+	Removed unneeded account remove include page
+
+	Removed unneeded role remove include page
+
+	Removed unneeded html elements from pages
+
+	Removed unneeded role include file
+
+	Fixed issues changing INI file entries
+
+	Removed unneeded properties from pages
+
+	Fixed issues with WebDAV browser
+
+2017-09-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed robot pages
+
+	* Fixed issue creating new Content Import target
+	* Fixed UI
+	* Removed unneeded tags
+
+2017-09-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed VAD UI
+
+	* Added new column with old installed VAD version
+	* Fixed UI
+	* Fixed issue with VAD config pages and filesystem version of Conductor
+
+2017-09-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed WebDAV
+
+	* Added link alternate tags for ODS briefcase instance
+	* Fixed WebDAV skin
+
+2017-09-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue selecting items in WebDAV
+
+	Removed debug info
+
+	Fixed issue with bad file size on upload
+
+	Fixed for replication (not available in virtuoso opensource binary)
+
+	Fixed issue with 'Next' time in Scheduler
+
+	Fixed incorrect UTF-8 character IRI handling in Namespaces
+
+	Fixed UI of WebDAV related pages
+
+	Fixed path to image
+
+	Fixed LDP recovery procedure
+
+2017-09-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed LDAP pages
+
+	* Added support for LDAPS
+	* Fixed UI issues
+	* Removed deprecated code
+
+2017-09-18  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed UI of r2rml pages
+
+2017-09-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed compiler warnings
+
+	Fixed issue compiling with PHP 5.6.x
+
+2017-05-24  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_05_24_fix_jdbc_github656' into develop/7
+
+	Rebuild JDBC drivers
+
+2017-05-24  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix conversion of Unicode characters
+
+2017-05-16  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update ADO.NET provider for support Sparql Negative Dates, Concurrency modes, Connection option "Log_enable"
+
+2017-05-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_05_12_fix_jdbc_date' into develop/7
+
+	Rebuild JDBC providers
+
+2017-05-12  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update JDBC minor version number
+
+	Additional fix for properly handle SPARQL negative dates
+
+2017-05-10  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Jena3 examples (bugzilla #17701)
+
+2017-05-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild drivers
+
+	Merge branch 'feature/2017_05_04_fix__sesame2' into develop/7
+
+2017-05-09  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Sesame2 resources virtuoso.ttl, create-virtuoso.xsl
+
+2017-05-09  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Sesame2 bugzilla #17788
+
+	-fixed [Bug 17788] New: Add method to Sesame provider to query across all RDF graphs in Quad Store
+	-added old uncommited updates
+
+2017-05-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_05_04_fix_sesame2' into develop/7
+
+	Updated version of Sesame2 provider
+
+2017-05-09  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Sesame2 bugzilla #17788
+
+	-fixed [Bug 17788] New: Add method to Sesame provider to query across all RDF graphs in Quad Store
+	-added old uncommited updates
+
+2017-05-09  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_05_04_fix_sesame4' into develop/7
+
+2017-05-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix permissions
+
+2017-05-04  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Sesame4 bugzilla #17788
+
+	-fixed [Bug 17788] New: Add method to Sesame provider to query across all RDF graphs in Quad Store
+
+2017-05-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+2017-05-02  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix JDBC driver for support negative SPARQL date and dateTime values in output resultSet
+
+2017-04-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+	Updated JDBC driver to version 3.100
+
+2017-04-27  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Github issue: Sql Workbench/J csv file import in Virtuoso fails on empty numeric fields (#647)
+
+2017-04-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Rebuild JDBC drivers and providers
+
+	Merge branch 'feature/jdbc_fixes' into develop/7
+
+	Updated version of Jena3, Sesame4 and RDF4J providers
+
+	Updated version of JDBC provider
+
+2017-04-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed SSL connection
+
+	Added support for concurency mode CONCUR_VALUES
+
+	Fixed exception handling
+
+	Added support for SSL truststore
+
+2017-04-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update Sesame4 provider
+
+	- added support for concurrency modes
+	- added support for SPIN
+	- update default log_enable mode to 1
+
+2017-04-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_04_17_rdf4j__concurrency' into develop/7
+
+2017-04-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Add lost fix
+
+2017-04-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update rdf4j provider
+
+	- added support for concurrency modes
+	- added support for SPIN
+	- update default log_enable mode to 1
+
+2017-04-19  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_04_17_jena3_concurrency' into develop/7
+
+2017-04-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Add lost fix
+
+	update default log_enable mode to 1
+
+2017-04-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update for Jena3 provider
+
+	- added support for concurrency modes
+	- added support for SPIN
+
+2017-04-12  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issues running testsuite on Solaris 2.10
+
+	Added support for TLSext Server Name Indication to http_client
+
+	Updated version of Conductor VAD
+
+	Fixed Conductor UI send incorrect Unicode data to server
+
+	Fixed issue creating DET folders
+
+	Fixed issue with smart folders
+
+	Fixed issue creating DET folders
+
+2017-04-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with strcchr on wide strings
+
+2017-03-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_03_30_fix_jdbc' into develop/7
+
+	Updated version of JDBC drivers to 3.97
+
+2017-03-30  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix TestSuite, fix VirtuosoResultSet.set_pos()
+
+2017-03-30  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issues with using Unicode character in the SQL queries parameter binding
+
+	- fix issue with PreparedStatement.setString() / setObject()
+	- fix issue with ResultSet.updateString()
+	- fix for ConnectionPool
+	- fix for ParameterMetaData methods
+	- fix for Statement.getUpdateCount() mjst return -1 after Statement.getMoreResults(), if there isn't more resultSets for executed query
+
+2017-03-24  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Statement.getUpdateCount() must return -1 after Statement.getMoreResults(), if there isn't more resultSets for executed query
+
+2017-03-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed use parameters for graph and subject when possible
+
+2017-03-22  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix define in VirtuosoTimeSpan
+
+2017-03-16  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue when function called with negative level
+
+	Upgraded to the 'new' DES API from OpenSSL >= 0.9.8
+
+	Fixed issue with sys_http_recording files larger than 64k
+
+	Updated version of Conductor VAD
+
+	Fixed issue editing .TTL files
+
+	Fixed editing extended file types
+
+	Fixed issue with session expire and redirect URL
+
+2017-03-13  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Upgraded to zlib 1.2.11
+
+2017-03-10  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	FIxed issue changing permissions of LDI folders
+
+	Fixed SPARQL_CONSTRUCT_ACC could get fixed-value variables referred to in 'stats' argument
+
+	Fixed bif_http_sparql_object to write UNDEFs for DB_NULL
+
+	Fixed small memory leak
+
+	Fixed race condition leading to double free
+
+	Fixed crash after failed compilation of PL
+
+	Fixed generate new resource name when POSTing JSON-LD Fixed buf not cleaning graph after mime type is changed
+
+	Fixed HTTP GET for application/sparql-query mime types
+
+	Updated version of Conductor VAD
+
+	Fixed sort order bug for unlogged users
+
+	Fixed UI
+
+	Fixed issues with LDAP import
+
+	Added certificate maangement for users
+
+	Changed color of the selected tab on the second navigation line
+
+	Added registry editor
+
+2017-03-08  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix bug in ADO.NET Fetch implementation
+
+2017-03-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix for VirtuosoParameter.cs
+
+2017-03-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2017_03_07_fix_ADONET_1' into develop/7
+
+	Fixed use / for all compiler flags
+
+2017-03-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix compile error in VirtuosoTimeSpan.cs
+
+	Fix ADO.NET provider compile error on NET2.0
+
+2017-03-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of ADO.NET driver
+
+	Removed support for old Mono /d:MONO1231 workaround
+
+2017-03-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix ADO.NET issues
+
+	- fix compilation error on Mono for VirtuosoTimeSpan.cs
+	- fix error in CompareTo() methods in VirtuosoDateTime.cs/VirtuosoDataTimeOffset.cs/VirtuosoTimeSpan.cs
+	- fix compilation warnings for VirtuosoDateTime.cs/VirtuosoDataTimeOffset.cs/VirtuosoTimeSpan.cs/VirtuosoParameters.cs
+
+2017-03-06  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated Conductor VAD version
+
+	Fixed removed debug line
+
+	Fixed issue editing content > 10MB length
+
+	Fixed issue updating content > 10MB length
+
+	Fixed issue showing errors from login page
+
+	Fixed backup UI in Conductor
+
+	Fixed issue retrieving user's profile data with RDFData DET
+
+	Fixed issues running testsuite on Solaris 2.10
+
+	Fixed issue with log_enable for rdfxml data loading to work with replication
+
+	Added setting simple_rdf_numbers to cast numeric to double
+
+	Added bif_array_strses_ro_arg
+
+	Fixed WebDAV skin
+
+	Fixed mod date for collections is changed when the content is updated
+
+	Fixed missing prototypes
+
+	Merge branch 'feature/rdfview' into develop/7
+
+	Updated VAD version
+
+	Fixed check engine version
+
+	Small whitespace cleanups and use upper case names for all PL
+
+	Fixed issues with RDF_VIEW_SYNC_TO_PHYSICAL
+
+	Fixed missing prefix and error reporting for R2RML
+
+	Fixed issue with weird column names in R2RML translator
+
+	Added support fro smallint/bigint columns in R2RML and quad map PL
+
+	Workaround for issue with SQL runtime in R2RML
+
+	Fixed sqlp_breakup to use a list instead of a set
+
+	Added some more debugging code for SPARQL
+
+	Merge branch 'feature/mallocdebug' into develop/7
+
+	Fixed memory leak on permissons of PL procedures
+
+	Fixed issue reading uninitialized and unused tail of result dc
+
+	Merged mp_data_col_large and mp_data_col into one function
+
+	Fixed remove spurious return 0 so destructor can be called
+
+	Fixed GPF on NULL operands of geo builtin operators
+
+	Fixed issue copying beyond end of allocated space
+
+	Fixed missing call to resignal on error
+
+	Fixed missing initialization
+
+	Fixed missing initialization
+
+	Fixed issue trying to compile uninitialized tail of instructions
+
+	Fixed change box tag to eliminate MALLOC_DEBUG reporting error
+
+	Fixed call to d_id_set_box should be inside condition
+
+	Fixed allocation issue with sif_skipped_part
+
+	Added basic MALLOC_DEBUG  accounting for PCRE libary
+
+	Fixed valgrind warnings
+
+	Fixed issues initializing itc_ins_flags
+
+	Fixed error text to include column counts
+
+	Fixed issue using client connect structure after it was freed
+
+	Added NORETURN attribute to error functions to eliminate compiler warnings
+
+	Fixed compiler warnings
+
+	Fixed compiler warnings
+
+	Added functions for sprintf_uname
+
+	Added faster and partial checks for trees of boxes for MALLOC_DEBUG and VALGRIND
+
+	Fixed for MALLOC_DEBUG and VALGRIND
+
+	Fixed prototypes
+
+	Rolled use of generate script
+
+2017-03-05  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed GET command for files with 'application/ld+json' mime type
+
+	Fixed format GET command
+
+	Fixed DET API functions
+
+	Added 'application/ld+json' mime type
+
+	Fixed external DS pages, UI optimizations, use common JS
+
+	Fixed issue with get tables proc for some external DS
+
+	Fixed call xslt_stale on conductor sheets during upgrade
+
+	Added 'change login' button to WebDAV skin
+
+	Fixed default activity log parameter for DETs to 'on'
+
+	Fixed issue with sort order direction
+
+	Fixed whitespace
+
+	Fixed crawler functions to work with HTTPS sources
+
+	Fixed Content Imports (web crawler) UI does not allow Target URL set to secure https URL.
+
+	Fixed make url API function
+
+	Updated 'Accept-Post' header for LDP folders
+
+	Fixed on some calls HTTP return code 200 OK should be 201 Created
+
+	Added functions to register/unregister certificates
+
+	Added labels for user certificates
+
+	Fixed issue with LDAP import
+
+	Fixed WebDAV browser should default to pwd not 'dav' home
+
+	Added remote folder selection for DETs
+
+	Removed S3 DET from binary
+
+	Fixed HTTP GET for LDP resources
+
+	Fixed dependency issue (re)generating cached_resources.c
+
+2017-01-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue encoding urls in SPARQL/FED
+
+	Updated VAD version of conductor
+
+	Fixed UI of remove account page
+
+	Fixed UI of remove role page
+
+	Joined 'create' and 'edit' actions in the role page
+
+	Fixed UI of role pages
+
+	Reformat user creation page and added certificate management for users
+
+	Fixes and workaround for OVL validation primarily for R2RML
+
+	Fixed issue with bad content type by copy
+
+	Fixed parameter encoding in graph page
+
+2017-01-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issues with Turtle and JSON;LD_CTX
+
+	* Better handling of lists and loops in 'nice turtle' output
+	* Fixed issues with nested subjects in JSON;LD_CTX
+
+2017-01-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue making aliases for predicates in JSON_LD CTX
+
+2017-01-11  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'develop/6' into develop/7
+
+	Fixed copyright
+
+2017-01-10  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated Copyright to include 2017
+
+	Updated Copyright to include 2017
+
+2016-11-28  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version of ADO.NET driver
+
+2016-11-28  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issue ADO.NET for properly DateTime types and TZ
+
+	- fix support different "TimezonelessDatetimes" modes
+	- fix SqlRdfBox with TimeSpan/DateTime/DateTimeOffset types in received values
+	- fix SqlRdfBox for received Literal with type "http://www.w3.org/2001/XMLSchema#gYear"
+	- fix SqlRdfBox for received Literal with type "http://www.w3.org/2001/XMLSchema#gYearMonth"
+
+2016-11-15  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2016_11_11_jena3_update' into develop/7
+
+	Updated version of Jena2/Jena3 providers
+
+2016-11-15  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix for Makefile
+
+2016-11-11  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update Jena2/Jena3 providers
+
+	- Jena2/Jena3 update for BatchAdd mode
+	- Jena2/Jena3 added support insert String Literals without Literal DataType
+	- Jena3 added support Jena3.1.1
+
+2016-10-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	W3C Turtle 2014 permits lone bnode at top-level with no predicates and no objects after it
+
+	Fixes issue 593
+
+2016-10-27  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added function to print all itc col refs
+
+2016-10-17  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2016_10_17_rdf4j_fix' into develop/7
+
+	Rebuild driver
+
+	Fixed missing mkdir
+
+	Updated version
+
+2016-10-17  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix rdf4j issue with parameter binding
+
+	- fix for https://github.com/openlink/virtuoso-opensource/issues/588
+
+2016-09-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed empty check
+
+	Fixed ssls in gby dep must be vec for chash
+
+	Added live link to URI
+
+	Added new output format: JSON-LD with context which is google friendly
+
+	Added cpu monitor for windows
+
+	Fixed dba does not need password
+
+	Updated version of Conductor VAD package
+
+	Fixed copyright comment
+
+	Fixed create a new event forgot to insert notifications
+
+	Added export function to key storage
+
+	Fixed only recode strings
+
+	Added support for importing PEM and DER formats
+
+2016-09-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issues with LDP
+
+	* Fixed LDP recovery procedure to correctly use DAV resources
+	* Fixed update of the system created LDP folder
+
+2016-09-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed validate API functions
+
+	Added additional commit to the skin
+
+	Added filter param to the WebDAV browser skin
+
+	Fixed WebDAV utility functions with Briefcase
+
+	Fixed issue editing soap services paths
+
+2016-09-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Merge branch 'feature/2016_06_27_rdf4j' into develop/7
+
+	Rebuild driver
+
+	Updated version number of virt_rdf4j provider
+
+	Fixed use eclipse-rdf4j-2.0.1-onejar.jar
+
+	Hooked rdf4j into build process
+
+2016-09-22  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update Makefile for use new version of RDF4J
+
+	RDF4J provider for Virtuoso
+
+2016-09-14  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed lock escalation not required on column index
+
+2016-09-10  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Added lock_escalation_pct to dbf descs
+
+	Fixed skip bad records instead of GPF
+
+	Fixed set transaction isolation for DAV queue
+
+	Optimized handling of vspx session expiration
+
+2016-08-30  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed gb should only use mem cache when chash is enabled
+
+	Fixed typo
+
+	Fixed grammar
+
+2016-08-02  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed certificate can have wild card in CN
+
+2016-07-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed concat should ignore no cast error option of qi
+
+2016-07-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed missing file size
+
+2016-07-22  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed schedule a sync after op changes
+
+	Can be del/ins on same key and time when del goes after ins, may look like records lost
+
+2016-07-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated DAV_QUEUE related procedures to optimize locking
+
+	Fixed DAV COPY for files with application/sparql-query content type
+
+	Fixed async calls
+
+	Added LODmilla browser
+
+2016-07-07  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed use fully qualified table name
+
+	Fixed use fully qualified table name
+
+	Fixed use fully qualified name
+
+	Fixed errors should be emailed every time the event fails
+
+	Fixed event notification emails should use text/plain
+
+	Added Message-Id: header to notification email
+
+	Fixed issue with bad plan
+
+	Removed redundant distinct
+
+	Fixed make chash join configurable
+
+2016-06-13  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Disable Enable Async Mode in ODBC driver for all OS
+
+2016-06-03  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed simplified JSON-LD output to keep Google happy
+
+	Fixed as G is always known, getting bad plan if G index used
+
+	Fixed crash
+
+	Fixed issue with search for col not handled
+
+	Fixed more acurate error for loader
+
+	Merge branch 'develop/6' into develop/7
+
+	Updated Conductor VAD version
+
+	Fixed issue when context is lost after key remove or import
+
+	Fixed safe execute of the key rdf
+
+	Fixed issue cloning vhost
+
+	Fixed issues in public key infrastructure UI
+
+	Fixed label
+
+2016-05-20  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed make sure geo: prefix is avail for indexing
+
+	Fixed skip datapoints with bad lat/lng data
+
+	Fixed crash when in tb is not a table df
+
+2016-04-29  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed crash in vec ssl
+
+2016-04-29  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix for Github 510 https://github.com/openlink/virtuoso-opensource/issues/510
+
+	Wrong nanosecond valued was sent to server
+
+2016-04-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Updated version to 7.2.5-dev to start new development cycle
+
+	Merge branch 'hotfix/7.2.4.2' into develop/7
+
+	Fixed typo in version number
+
+	Merge branch 'hotfix/7.2.4.1' into develop/7
+
+	Merge branch 'hotfix/7.2.4.1' into stable/7
+
+	Updated version to 7.2.4.1
+
+2016-04-25  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Revert "Fixed issue passing make flags to subdirs"
+
+	This reverts commit 26f840a22f1118651dd924ff38c240a34f218e8f.
+
 2016-04-25  VOS Maintainer  <vos.admin@openlinksw.com>
 
 	Updated version to 7.2.4 for final release

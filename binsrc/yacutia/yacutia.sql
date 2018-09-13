@@ -431,6 +431,11 @@ create procedure adm_menu_tree ()
      </node>
    </node>
    <node name="BPEL" url="bpel_service.vspx" id="165" allowed="yacutia_bpel_page"/>',
+   case when check_package('VAL') then
+  '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
+      <node name="OAuth Service Binding" url="login_keys.vspx" id="282" place="1"  allowed="yacutia_val"/>
+   </node>'
+   end,
 --   <node name="UDDI Services" url="uddi_serv.vspx" id="130" allowed="yacutia_uddi_page">
 --     <node name="Server" url="uddi_serv.vspx" id="131" place="1" allowed="yacutia_uddi_page"/>
 --     <node name="Browse" url="uddi_serv_browse.vspx" id="132" place="1" allowed="yacutia_uddi_page"/>
@@ -490,11 +495,6 @@ create procedure adm_menu_tree ()
    <node name="Views" url="db_rdf_view_tb.vspx" id="273" place="1"/>
    <node name="Views" url="db_rdf_view_cols.vspx" id="273" place="1"/>
    <node name="Views" url="db_rdf_view_pk.vspx" id="273" place="1"/>',
-   case when check_package('VAL') then
-  '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
-      <node name="OAuth Service Binding" url="login_keys.vspx" id="282" place="1"  allowed="yacutia_val"/>
-   </node>'
-   end,
    case when check_package('rdb2rdf') then
   '<node name="R2RML" url="r2rml_import.vspx" id="273" />
    <node name="R2RML" url="r2rml_validate.vspx" id="273" place="1"/>

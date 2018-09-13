@@ -251,8 +251,8 @@ IDB_BITMAPVIRT          BITMAP                  "virtodbc.bmp"
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 7,2,4,3217
- PRODUCTVERSION 7,2,4,3217
+ FILEVERSION 7,2,5,3229
+ PRODUCTVERSION 7,2,5,3229
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -269,11 +269,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "OpenLink Software"
             VALUE "FileDescription", "Virtuoso OpenSource"
-            VALUE "FileVersion", "7, 2, 4, 3217"
+            VALUE "FileVersion", "7, 2, 5, 3229"
             VALUE "InternalName", "Virtuoso"
             VALUE "LegalCopyright", "Copyright (C) 1998-2018 OpenLink Software"
             VALUE "ProductName", "Virtuoso OpenSource"
-            VALUE "ProductVersion", "7, 2, 4, 3217"
+            VALUE "ProductVersion", "7, 2, 5, 3229"
         END
     END
     BLOCK "VarFileInfo"

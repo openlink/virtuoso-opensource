@@ -72,7 +72,8 @@
               OAT.Loader.load(["ajax", "json", "drag", "dialog", "tab", "combolist"]);
               var davOptions = {
                 imagePath: OAT.Preferences.imagePath,
-                path: "/DAV/home/",
+                pathHome: "/home/",
+                pathHome: "/home/<?V connection_get ('vspx_user') ?>/",
                 user: "<?V connection_get ('vspx_user') ?>",
                 connectionHeaders: {Authorization: "<?V WEBDAV.DBA.account_basicAuthorization (connection_get ('vspx_user')) ?>"}
               };
@@ -372,7 +373,7 @@
 
           <v:method name="toolbarShow" arglist="in writePermission integer, in cmd varchar, in cmdLabel varchar, in cmdEvent varchar, in cmdImage varchar, in cmdImageGray varchar, in cmdImageAlternate integer">
             <![CDATA[
-              declare hasLabels varchar;
+              declare hasLabels integer;
               declare toolbarLabel varchar;
               declare toolbarEnable integer;
 
@@ -646,13 +647,13 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
                 retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expiretexm', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expiretexm', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if (detClass = 'HostFS')
                 retValue := vector ('source', 'name', 'mime', 'fileSize', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
@@ -661,13 +662,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
               else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -790,6 +791,15 @@
               }
 
               return retValue;
+            ]]>
+          </v:method>
+
+          <v:method name="itemHasCreator" arglist="in item any">
+            <![CDATA[
+              if ((length (item) <= 12) or isnull (item[12]))
+                return 0;
+
+              return 1;
             ]]>
           </v:method>
 
@@ -1738,9 +1748,8 @@
                 <v:on-post>
                   <![CDATA[
                     declare i integer;
-                    declare _tmp, _action, _path, _item, _det, params any;
+                    declare _tmp, _action, _path, _item, _det any;
 
-                    params := self.vc_page.vc_event.ve_params;
                     _action := get_keyword ('_cmd', params, '');
 
                     if (_action = 'refresh')
@@ -2047,9 +2056,8 @@
                   <v:on-post>
                     <![CDATA[
                       -- save & validate metadata
-                      declare rValue, params any;
+                      declare rValue any;
 
-                      params := self.vc_page.vc_event.ve_params;
                       self.search_advanced := self.search_dc;
                       self.search_dc := null;
                       rValue := self.dc_prepare ();
@@ -2252,9 +2260,7 @@
             <v:before-data-bind>
               <![CDATA[
                 declare parent_path, mode varchar;
-                declare params any;
 
-                params := self.vc_page.vc_event.ve_params;
                 if (self.command_mode <> 1)
                   self.search_dc := null;
 
@@ -2699,6 +2705,16 @@
                         </td>
                       </tr>
                     </v:template>
+                    <v:template name="tf_8b" type="simple" enabled="-- case when self.viewField ('creator') and self.itemHasCreator (self.dav_item) and (self.command_mode = 10) then 1 else 0 end">
+                      <tr id="davRow_creator">
+                        <th width="30%" valign="top">
+                          Creator
+                        </th>
+                        <td>
+                          <b><?vsp http (WEBDAV.DBA.ui_creator (WEBDAV.DBA.DAV_GET (self.dav_item, 'creator'))); ?></b>
+                        </td>
+                      </tr>
+                    </v:template>
                     <v:template name="tf_9" type="simple" enabled="-- self.viewField ('owner')">
                       <tr id="davRow_owner">
                         <th width="30%">
@@ -2949,11 +2965,11 @@
                         <td>
                           <label>
                             <?vsp
-                              declare tmp, checked any;
+                              declare tmp12c, checked12c any;
 
-                              tmp := self.get_fieldProperty ('dav_turtleRedirect', self.dav_path, 'virt:turtleRedirect', WEBDAV.DBA.DAV_PROP_GET_CHAIN (self.dav_path, 'virt:turtleRedirect', 'yes', self.account_name, self.account_password));
-                              checked := case when (tmp = 'yes') then 'checked="checked"' else '' end;
-                              http (sprintf ('<input type="checkbox" name="dav_turtleRedirect" id="dav_turtleRedirect" value="yes" disabled="disabled" title="Turtle Redirect" %s onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'ttl_enable_1\', \'ttl_enable_2\']}, \'unchecked\': {\'hide\': [\'ttl_enable_1\', \'ttl_enable_2\']}});" />',  checked));
+                              tmp12c := self.get_fieldProperty ('dav_turtleRedirect', self.dav_path, 'virt:turtleRedirect', WEBDAV.DBA.DAV_PROP_GET_CHAIN (self.dav_path, 'virt:turtleRedirect', 'yes', self.account_name, self.account_password));
+                              checked12c := case when (tmp12c = 'yes') then 'checked="checked"' else '' end;
+                              http (sprintf ('<input type="checkbox" name="dav_turtleRedirect" id="dav_turtleRedirect" value="yes" disabled="disabled" title="Turtle Redirect" %s onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'ttl_enable_1\', \'ttl_enable_2\']}, \'unchecked\': {\'hide\': [\'ttl_enable_1\', \'ttl_enable_2\']}});" />',  checked12c));
                             ?>
                             <b> ('text/html' content negotiation only)</b>
                           </label>
@@ -3314,8 +3330,10 @@
                   <v:template name="src_6" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'S3') then 1 else 0 end">
                     <vm:search-dc-template6 />
                   </v:template>
-                  <vm:search-dc-template7 />
-                  <v:template name="src_7" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'rdfSink') then 1 else 0 end">
+                  <v:template name="src_7" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'CatFilter') or (self.dav_detType = 'ResFilter') then 1 else 0 end">
+                    <vm:search-dc-template7 />
+                  </v:template>
+                  <v:template name="src_8" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'rdfSink') then 1 else 0 end">
                     <vm:search-dc-template8 />
                   </v:template>
                   <vm:search-dc-template11 />
@@ -3360,7 +3378,7 @@
                     declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, dav_turtleRedirect, dav_turtleRedirectApp, dav_turtleRedirectParams, msg, _p varchar;
                     declare properties, c_properties any;
                     declare old_dav_acl, dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content, dav_expireDate any;
-                    declare params, detParams, itemList any;
+                    declare detParams, itemList any;
                     declare tmp any;
 
                     msg := '';
@@ -3375,7 +3393,6 @@
                       resignal;
                     };
 
-                    params := e.ve_params;
                     if (self.command_mode = 0)
                     {
                       msg := 'Can not create folder. ';
@@ -4992,9 +5009,6 @@
                               <![CDATA[
                                 <script type="text/javascript">
                                 <?vsp
-                                  declare L, N integer;
-                                  declare entry, f1, f2 any;
-
                                   L := xpath_eval ('count (/filter/actions/entry)', self.imap_filter);
                                   for (N := 1; N <= L; N := N + 1)
                                   {
@@ -5028,7 +5042,7 @@
                     <![CDATA[
                       declare _owner varchar;
                       declare A, C any;
-                      declare tmp, params, imap_filterName, imap_filterActive, imap_filterMode, imap_filterCriteria, imap_filterActions any;
+                      declare tmp, imap_filterName, imap_filterActive, imap_filterMode, imap_filterCriteria, imap_filterActions any;
                       declare exit handler for SQLSTATE '*'
                       {
                         if (__SQL_STATE = 'TEST')
@@ -5039,8 +5053,6 @@
                         }
                         resignal;
                       };
-
-                      params := self.vc_page.vc_event.ve_params;
 
                       _owner := DB.DBA.IMAP__owner (DB.DBA.DAV_SEARCH_ID (self.source, 'C'));
                       imap_filterName := self.imap_filterName.ufl_value;
@@ -5458,10 +5470,7 @@
                                 </v:template>
                                 <td class="action">
                                   <?vsp
-                                    declare id any;
-
                                     id := DB.DBA.DAV_SEARCH_ID (path, rowset[1]);
-
                                     if ((permission <> '') or (self.mode = 'webdav'))
                                     {
                                       http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
@@ -5500,7 +5509,6 @@
                                          not DB.DBA.IS_REDIRECT_REF (path)
                                        )
                                     {
-                                      declare S varchar;
                                       if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')))
                                       {
                                         http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
@@ -6104,10 +6112,10 @@
               <v:button style="url" action="simple" value="--WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%s" xhtml_disabled="disabled">
                 <v:on-post>
                   <![CDATA[
-                    declare path varchar;
+                    declare _path varchar;
 
-                    path := WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path);
-                    if (WEBDAV.DBA.permission(path) = '')
+                    _path := WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path);
+                    if (WEBDAV.DBA.permission (_path) = '')
                     {
                       self.vc_error_message := 'You have not rights to read this folder/file!';
                       self.vc_is_valid := 0;
@@ -6116,7 +6124,7 @@
                     }
 
                     http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf ('Location: view.vsp?sid=%s&realm=%U&file=%U&mode=download\r\n', self.sid , self.realm, path));
+                    http_header (sprintf ('Location: view.vsp?sid=%s&realm=%U&file=%U&mode=download\r\n', self.sid , self.realm, _path));
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
@@ -6158,10 +6166,10 @@
                           <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s" xhtml_disabled="disabled">
                             <v:on-post>
                               <![CDATA[
-                                declare path varchar;
+                                declare _path varchar;
 
-                                path := (control.vc_parent as vspx_row_template).te_column_value('c0');
-                                if (WEBDAV.DBA.permission(path) = '')
+                                _path := (control.vc_parent as vspx_row_template).te_column_value('c0');
+                                if (WEBDAV.DBA.permission (_path) = '')
                                 {
                                   self.vc_error_message := 'You have not rights to read this folder/file!';
                                   self.vc_is_valid := 0;
@@ -6170,7 +6178,7 @@
                                 }
 
                                 http_request_status ('HTTP/1.1 302 Found');
-                                http_header (sprintf ('Location: %s&mode=download&file=%U\r\n', WEBDAV.DBA.url_fix ('view.vsp', self.sid , self.realm), path));
+                                http_header (sprintf ('Location: %s&mode=download&file=%U\r\n', WEBDAV.DBA.url_fix ('view.vsp', self.sid , self.realm), _path));
                                 self.vc_data_bind (e);
                               ]]>
                             </v:on-post>
@@ -6287,8 +6295,6 @@
           <td>
             <select name="ts_grouping">
               <?vsp
-                declare N integer;
-
                 http (self.option_prepare('', '', self.dir_grouping));
                 for (N := 0; N < length(self.dir_columns); N := N + 1)
                   if (self.dir_columns[N][4] = 1)
@@ -6336,9 +6342,6 @@
           <td>
             <select name="syncml_type">
               <?vsp
-                declare aValues, aValue any;
-                declare N integer;
-
                 aValue := case when (self.command_mode = 0) then 'N' else WEBDAV.DBA.syncml_type (self.dav_path) end;
                 aValues := WEBDAV.DBA.syncml_types ();
                 for (N := 2; N < length (aValues); N := N + 2)

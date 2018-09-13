@@ -3533,6 +3533,20 @@ create procedure WEBDAV.DBA.DAV_GET (
   if (property = 'name')
     return resource[10];
 
+  if (property = 'creator')
+  {
+    declare tmp any;
+
+    tmp := coalesce (resource[either (lte (length (resource), 12),7,12)], resource[7]);
+    if (isinteger (tmp))
+      return WEBDAV.DBA.user_iri (tmp);
+
+    if (isiri_id (tmp))
+      return id_to_iri (tmp);
+
+    return WEBDAV.DBA.user_iri (resource[6]);
+  }
+
   if (property = 'acl')
   {
     declare path varchar;
@@ -3644,7 +3658,7 @@ create procedure WEBDAV.DBA.DAV_ERROR (in code any)
 create procedure WEBDAV.DBA.DAV_SET (
   in path varchar,
   in property varchar,
-  in value varchar,
+  in value any,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {

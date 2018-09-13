@@ -31,8 +31,8 @@ AC_REVISION($Id$)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[5])
-m4_define(vos_devel,	[-rc2])
+m4_define(vos_patch,	[6])
+m4_define(vos_devel,	[-dev])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
@@ -61,6 +61,17 @@ dnl
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 
 AM_MAINTAINER_MODE
+
+
+##########################################################################
+##									##
+##  Check if makeconfig supports silent build rules                     ##
+##									##
+##########################################################################
+m4_ifdef([AM_SILENT_RULES],
+    [AM_SILENT_RULES([yes])
+])
+
 
 ##########################################################################
 ##									##
@@ -841,10 +852,10 @@ then
   openssl_CFLAGS="$openssl_CFLAGS -DOPENSSL_NO_KRB5"
 fi
 
-save_CPPFLAGS="$CPPFLAGS"
+save_CFLAGS="$CFLAGS"
 save_LIBS="$LIBS"
 
-CPPFLAGS="$CPPFLAGS $openssl_CFLAGS"
+CFLAGS="$CFLAGS $openssl_CFLAGS"
 LIBS="$LIBS $openssl_LDFLAGS"
 case $host in
 *-solaris*)
@@ -855,59 +866,34 @@ case $host in
 	LIBS="$LIBS -lsocket"
 	;;
 esac
-AC_MSG_CHECKING([validity of the OpenSSL headers in ${openssl_dir}])
+
+AC_MSG_CHECKING([OpenSSL version])
 AC_TRY_COMPILE([
-#include <openssl/rsa.h>
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/asn1.h>
-#include <openssl/pkcs12.h>
-#include <openssl/rand.h>
-#include <stdio.h>
-#include <string.h>
-],
-[
-    SSL_METHOD *ssl_server_method = NULL;
-    SSL_CTX *ssl_server_ctx = NULL;
-    unsigned char tmp[1024];
+#include <openssl/opensslv.h>
+], [
+#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+#error OpenSSL version too old 
+#endif
+    ],[
+      AC_MSG_RESULT([>= 0.9.8e])
+    ],[
+      AC_MSG_ERROR([OpenSSL version 0.9.8e or greater is required.])
+    ])
 
-    SSL_load_error_strings();
-    ERR_load_X509_strings();
-    ERR_load_PKCS12_strings();
-    #ifndef WIN32
-    RAND_bytes (tmp, sizeof(tmp));
-    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
-    #endif
-    SSLeay_add_ssl_algorithms();
-    PKCS12_PBE_add ();
+AC_MSG_CHECKING([OpenSSL version])
+AC_TRY_COMPILE([
+#include <openssl/opensslv.h>
+],[
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+#error OpenSSL version too new
+#endif
+    ],[
+      AC_MSG_RESULT([< 1.1.0])
+    ],[
+      AC_MSG_ERROR([OpenSSL version 1.1.0 or greater is currently not supported.])
+    ])
 
-    ssl_server_method = SSLv23_client_method();
-    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
-
-    if (!ssl_server_ctx)
-    {
-	ERR_print_errors_fp(stderr);
-	return(-1);
-    }
-
-    if (OPENSSL_VERSION_NUMBER < 0x0090700f)
-    {
-	fprintf (stderr, "Wrong SSL version number\n");
-	return (-1);
-    }
-],
-[
- AC_MSG_RESULT(good)
-],
-[
- AC_MSG_ERROR([bad. Check config.log for details])
-])
-
-AC_MSG_CHECKING([version and usability of the OpenSSL lib in ${openssl_dir}])
+AC_MSG_CHECKING([usability of the OpenSSL header files and library in ${openssl_dir}])
 AC_TRY_RUN([
 #include <openssl/rsa.h>
 #include <openssl/crypto.h>
@@ -931,10 +917,10 @@ main ()
     SSL_load_error_strings();
     ERR_load_X509_strings();
     ERR_load_PKCS12_strings();
-    #ifndef WIN32
+#ifndef WIN32
     RAND_bytes (tmp, sizeof(tmp));
     RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
-    #endif
+#endif
     SSLeay_add_ssl_algorithms();
     PKCS12_PBE_add ();
 
@@ -947,11 +933,6 @@ main ()
 	return(-1);
     }
 
-    if (OPENSSL_VERSION_NUMBER < 0x0090700f)
-    {
-	fprintf (stderr, "Wrong SSL version number\n");
-	return (-1);
-    }
   return 0;
 }],
 [
@@ -966,7 +947,7 @@ main ()
  AC_MSG_ERROR([bad. Check config.log for details])
 ])
 LIBS="$save_LIBS"
-CPPFLAGS="$save_CPPFLAGS"
+CFLAGS="$save_CFLAGS"
 AC_SUBST(openssl_CFLAGS)
 AC_SUBST(openssl_LDFLAGS)
 

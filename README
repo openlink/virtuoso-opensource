@@ -76,7 +76,7 @@ any GNU packages required by these) are installed on your system.
     gawk     3.1.1              http://www.gnu.org/software/gawk/
     m4       1.4.1              http://www.gnu.org/software/m4/
     make     3.79.1             http://www.gnu.org/software/make/
-    OpenSSL  0.9.7i (max 1.0.x)  http://www.openssl.org/
+    OpenSSL  0.9.8e (max 1.0.x) http://www.openssl.org/
 
 The `autogen.sh` and `configure` scripts check the presence and version
 of some of the required components.

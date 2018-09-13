@@ -1857,25 +1857,18 @@ create function DAV_AUTHENTICATE_CHECK_EXTENTED (
   inout a_uid integer,
   inout a_gid integer,
   inout a_perms varchar,
-  inout i_serviceID varchar) returns integer
+  inout a_serviceID varchar) returns integer
 {
   -- dbg_obj_princ ('DAV_AUTHENTICATE_CHECK_EXTENTED (', id, what, ')');
   declare rc integer;
-  declare a_uname, a_webID, val_uname, val_isRealUser any;
+  declare a_uname, a_isRealUser, a_cert any;
 
-  i_serviceID := null;
-  if (DB.DBA.DAV_AUTHENTICATE_SSL (id, what, null, r_perms, a_uid, a_gid, a_perms, a_webID))
+  a_serviceID := null;
+  if (DB.DBA.DAV_AUTHENTICATE_SSL (id, what, null, r_perms, a_uid, a_gid, a_perms, a_serviceID, a_cert))
   {
-    i_serviceID := a_webID;
     return 1;
   }
 
-
-  -- Normalize the service variables for error handling in VAL
-  if (not a_webID is not null and i_serviceID is null)
-  {
-    i_serviceID := a_webID;
-  }
 
   -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
@@ -1886,11 +1879,14 @@ create function DAV_AUTHENTICATE_CHECK_EXTENTED (
   -- this check is only valid if table is accessed in a separate SP which is not precompiled
   if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS'))
   {
-    if (not DB.DBA.DAV_GET_UID_BY_SERVICE_ID (i_serviceID, a_uid, a_gid, a_uname, a_perms))
+    if (not DB.DBA.DAV_GET_UID_BY_SERVICE_ID (a_serviceID, a_uid, a_gid, a_uname, a_perms))
     {
       a_uid := -1;
     }
   }
+
+  if (a_uid = -1)
+    DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid, a_cert);
 
   return 0;
 }
@@ -2121,11 +2117,10 @@ create function DAV_GET_UID_BY_SERVICE_ID (
   out a_uname varchar,
   out a_perms int)
 {
-  declare st, msg, meta, rows any;
+  declare rows any;
 
-  st := '00000';
-  exec ('select WUO_U_ID, U_GROUP, U_NAME, U_DEF_PERMS from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', st, msg, vector (serviceId), 0, meta, rows);
-  if (('00000' <> st) or (length (rows) = 0))
+  rows := DB.DBA.DAV_EXEC_SQL ('select WUO_U_ID, U_GROUP, U_NAME, U_DEF_PERMS from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', vector (serviceId));
+  if (length (rows) = 0)
   {
     a_uid := null;
     a_gid := null;
@@ -2146,20 +2141,19 @@ create function DAV_GET_UID_BY_SERVICE_ID (
 
 create function DAV_GET_UID_BY_WEBID (
   out a_uid int,
-  out a_gid int)
+  out a_gid int,
+  in a_cert any := null)
 {
-  declare cert, st, msg, meta, rows any;
+  declare rows any;
 
-  if (not is_https_ctx ())
+  if (isnull (a_cert) or (a_cert = 0))
+    a_cert := client_attr ('client_certificate');
+
+  if (isnull (a_cert) or (a_cert = 0))
     return 0;
 
-  cert := client_attr ('client_certificate');
-  if (cert = 0)
-    return 0;
-
-  st := '00000';
-  exec ('select U_ID, U_GROUP from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = ? and UC_U_ID = U_ID', st, msg, vector (get_certificate_info (6, cert)), 0, meta, rows);
-  if (('00000' <> st) or (length (rows) = 0))
+  rows := DB.DBA.DAV_EXEC_SQL ('select U_ID, U_GROUP from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = ? and UC_U_ID = U_ID', vector (get_certificate_info (6, a_cert)));
+  if (length (rows) = 0)
   {
     a_uid := null;
     a_gid := null;
@@ -2234,21 +2228,25 @@ _exit:;
 
 create function DAV_AUTHENTICATE_SSL_WEBID (
   inout webid varchar,
-  inout webidGraph varchar)
+  inout webidGraph varchar,
+  inout cert any := null)
 {
   webid := connection_get ('__webid');
   webidGraph := connection_get ('__webidGraph');
   if (isnull (webid))
   {
-    declare cert, fing, vtype any;
+    declare fing, vtype any;
 
-    cert := client_attr ('client_certificate');
+    if (cert is null or cert = 0)
+      cert := client_attr ('client_certificate');
+
     if (cert is null or cert = 0)
     {
       https_renegotiate (3);
       cert := client_attr ('client_certificate');
     }
-    if (cert = 0)
+
+    if (cert is null or cert = 0)
       return null;
 
     fing := get_certificate_info (6, cert);
@@ -2380,7 +2378,7 @@ create function DAV_CHECK_ACLS (
   inout a_uid integer,
   inout a_gid integer,
   inout a_perms varchar,
-  inout cert any := null) returns integer
+  inout a_cert any := null) returns integer
 {
   -- dbg_printf ('DAV_CHECK_ACLS (_, %s, %s, %s, %s, ...)', webid, webidGraph, what, path);
   declare rc integer;
@@ -2405,10 +2403,10 @@ create function DAV_CHECK_ACLS (
     {
       graph := WS.WS.WAC_GRAPH (path);
       grpGraph := SIOC.DBA.get_graph () || '/private/%';
-      DB.DBA.DAV_CHECK_ACLS_INTERNAL (webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, cert);
+      DB.DBA.DAV_CHECK_ACLS_INTERNAL (webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
       if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
       {
-        if (not DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid))
+        if (not DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid, a_cert))
         {
           a_uid := DB.DBA.DAV_GET_OWNER (id, what);
           if (DAV_HIDE_ERROR (a_uid) is null)
@@ -2443,37 +2441,38 @@ create function DAV_AUTHENTICATE_SSL (
   inout a_uid integer,
   inout a_gid integer,
   inout a_perms varchar,
-  out webid varchar) returns integer
+  inout a_webid varchar,
+  inout a_cert any := null) returns integer
 {
   --dbg_printf('DAV_AUTHENTICATE_SSL (%d, %s, %s, ...)', id, what, path);
   declare rc integer;
-  declare webidGraph, cert any;
+  declare webidGraph any;
   declare hdr, hstr any;
 
   rc := 0;
-  if (DB.DBA.DAV_AUTHENTICATE_SSL_CONDITION ())
+  if (not DB.DBA.DAV_AUTHENTICATE_SSL_CONDITION ())
+    return rc;
+
+  DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
+
+  webidGraph := null;
+  DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (a_webid, webidGraph, a_cert);
+
+  a_perms := '___';
+  rc := DB.DBA.DAV_CHECK_ACLS (id, a_webid, webidGraph, what, path, req, a_uid, a_gid, a_perms, a_cert);
+  if (rc)
   {
-    DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
-
-    cert := null;
-    webidGraph := null;
-    DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
-
-    a_perms := '___';
-    rc := DB.DBA.DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, a_perms, cert);
-    if (rc)
+    DB.DBA.DAV_PERMS_FIX (a_perms, '000000000TM');
+    hdr := http_header_array_get ();
+    hstr := '';
+    foreach (any h in hdr) do
     {
-      DAV_PERMS_FIX (a_perms, '000000000TM');
-      hdr := http_header_array_get ();
-      hstr := '';
-      foreach (any h in hdr) do
-      {
-        if (h not like 'WWW-Authenticate:%')
-          hstr := hstr || h;
-      }
-      http_header (hstr);
+      if (h not like 'WWW-Authenticate:%')
+        hstr := hstr || h;
     }
+    http_header (hstr);
   }
+
   return rc;
 }
 ;
@@ -2703,7 +2702,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
     {
       WS.WS.SPARQL_QUERY_POST (path, content, uid, dav_call);
     }
-    else if (type = 'text/turtle')
+    else if ((type = 'text/turtle') and not DB.DBA.DAV_MAC_METAFILE (path))
     {
       rc := WS.WS.TTL_QUERY_POST (path, content, DB.DBA.LDP_ENABLED (DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_DET_PATH_PARENT (path, 1), 'C')));
       if (isnull (DAV_HIDE_ERROR (rc)))
@@ -5588,6 +5587,33 @@ create procedure DAV_RES_CONTENT_META_N3 (
 	  DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, stream);
 
   return string_output_string (stream);
+}
+;
+
+create function DB.DBA.DAV_EXEC_SQL (
+  in query varchar,
+  in params any := null,
+  in useCache integer := 0)
+{
+  declare st, msg, opts, metas, rset any;
+
+  if (useCache)
+  {
+    opts := vector ('use_cache', 1, 'max_rows', 0);
+  }
+  else
+  {
+    opts := vector ();
+  }
+
+  -- Run the query itself
+  st := '00000';
+  exec (query, st, msg, coalesce (params, vector ()), opts, metas, rset);
+  -- Return the result if there was no error
+  if (st = '00000')
+    return rset;
+
+  return vector ();
 }
 ;
 

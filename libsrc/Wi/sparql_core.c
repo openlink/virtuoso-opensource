@@ -4763,7 +4763,7 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     }
   if (need_check_for_infection_chars)
     for (c = tail+4; '\0' != c[0]; c++)
-      if (strchr ("\'\"\\()., +-/*|\t\n\r", c[0]))
+      if (strchr ("\'\"\\().,+/*|\t\n\r", c[0]))
         spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt to bypass security restrictions", fname);
   return;
 restricted:
