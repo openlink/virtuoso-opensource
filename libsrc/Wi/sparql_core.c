@@ -743,10 +743,10 @@ caddr_t
 sparp_graph_sec_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname)
 {
   caddr_t *place, res;
-  mutex_enter (rdf_graph_iri2id_dict_htable->ht_mutex);
+  rwlock_rdlock (rdf_graph_iri2id_dict_htable->ht_rwlock);
   place = (caddr_t *)id_hash_get (rdf_graph_iri2id_dict_htable, (caddr_t)(&qname));
   res = (NULL == place) ? NULL : box_copy_tree (place[0]);
-  mutex_leave (rdf_graph_iri2id_dict_htable->ht_mutex);
+  rwlock_unlock (rdf_graph_iri2id_dict_htable->ht_rwlock);
   return res;
 }
 
@@ -757,10 +757,10 @@ sparp_graph_sec_id_to_iri_nosignal (sparp_t *sparp, iri_id_t iid)
   caddr_t boxed_iid, *place, res;
   BOX_AUTO (boxed_iid, iid_box_buf, sizeof (iri_id_t), DV_IRI_ID);
   ((iri_id_t *)boxed_iid)[0] = iid;
-  mutex_enter (rdf_graph_id2iri_dict_htable->ht_mutex);
+  rwlock_rdlock (rdf_graph_id2iri_dict_htable->ht_rwlock);
   place = (caddr_t *)id_hash_get (rdf_graph_id2iri_dict_htable, (caddr_t)(&iid));
   res = (NULL == place) ? NULL : box_copy_tree (place[0]);
-  mutex_leave (rdf_graph_id2iri_dict_htable->ht_mutex);
+  rwlock_unlock (rdf_graph_id2iri_dict_htable->ht_rwlock);
   return res;
 }
 
@@ -4398,9 +4398,9 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
       caddr_t iid = sparp_graph_sec_iri_to_id_nosignal (sparp, iri);
       if (NULL != iid)
         {
-          mutex_enter (rdf_graph_group_dict_htable->ht_mutex);
+          rwlock_rdlock (rdf_graph_group_dict_htable->ht_rwlock);
           group_members_ptr = (caddr_t **)id_hash_get (rdf_graph_group_dict_htable, (caddr_t)(&iid));
-          mutex_leave (rdf_graph_group_dict_htable->ht_mutex);
+          rwlock_unlock (rdf_graph_group_dict_htable->ht_rwlock);
           dk_free_tree (iid);
         }
     }
@@ -5448,18 +5448,18 @@ static caddr_t boxed_8192_iid = NULL;
       caddr_t boxed_graph_iid = sparp_graph_sec_iri_to_id_nosignal (sparp, graph_iri);
       if (NULL != boxed_graph_iid)
         {
-          mutex_enter (rdf_graph_group_of_privates_dict_htable->ht_mutex);
+          rwlock_rdlock (rdf_graph_group_of_privates_dict_htable->ht_rwlock);
           if (NULL != id_hash_get (rdf_graph_group_of_privates_dict_htable, (caddr_t)(&(boxed_graph_iid))))
             {
               graph_is_private = 1;
               dflt_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
               dflt_other_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
             }
-          mutex_leave (rdf_graph_group_of_privates_dict_htable->ht_mutex);
+          rwlock_unlock (rdf_graph_group_of_privates_dict_htable->ht_rwlock);
 /*!!! maybe TBD: add retrieval of permissions of specific user on specific graph */
-          mutex_enter (dflt_perms_of_user->ht_mutex);
+          rwlock_rdlock (dflt_perms_of_user->ht_rwlock);
           hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid /* not boxed_graph_iid */)));
-          mutex_leave (dflt_perms_of_user->ht_mutex);
+          rwlock_unlock (dflt_perms_of_user->ht_rwlock);
           dk_free_tree (boxed_graph_iid);
         }
       if (NULL != hit)
@@ -5472,9 +5472,9 @@ static caddr_t boxed_8192_iid = NULL;
           return unbox (hit[0]);
         }
     }
-  mutex_enter (dflt_perms_of_user->ht_mutex);
+  rwlock_rdlock (dflt_perms_of_user->ht_rwlock);
   hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid)));
-  mutex_leave (dflt_perms_of_user->ht_mutex);
+  rwlock_unlock (dflt_perms_of_user->ht_rwlock);
   if ((NULL != query_with_deps) || (NULL == graph_iri))
     {
       potential_hit = (caddr_t *)id_hash_get (dflt_other_perms_of_user, (caddr_t)(&(boxed_uid)));
@@ -5501,9 +5501,9 @@ static caddr_t boxed_8192_iid = NULL;
         return res;
       return res & potential_res;
     }
-  mutex_enter (rdf_graph_public_perms_dict_htable->ht_mutex);
+  rwlock_rdlock (rdf_graph_public_perms_dict_htable->ht_rwlock);
   hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(graph_is_private ? &boxed_8192_iid : &boxed_zero_iid));
-  mutex_leave (rdf_graph_public_perms_dict_htable->ht_mutex);
+  rwlock_unlock (rdf_graph_public_perms_dict_htable->ht_rwlock);
   if (NULL != hit)
     res = unbox (hit[0]);
   else res = RDF_GRAPH_PERM_DEFAULT;

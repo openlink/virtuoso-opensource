@@ -457,12 +457,11 @@ DBG_NAME (box_dv_dict_iterator) (DBG_PARAMS caddr_t ht_box)
   res->hit_chilum = (char *)(-1);
   if (NULL != ht)
     {
-      if (NULL != ht->ht_mutex)
-	mutex_enter (ht->ht_mutex);
+      int rdlocked;
+      HT_RDLOCK_COND(ht,rdlocked);
       res->hit_dict_version = ht->ht_dict_version;
       ht->ht_dict_refctr += 1;
-      if (NULL != ht->ht_mutex)
-	mutex_leave (ht->ht_mutex);
+      HT_UNLOCK_COND(ht,rdlocked);
     }
   else
     res->hit_dict_version = 0;
@@ -482,13 +481,13 @@ box_dict_hashtable_copy_hook (caddr_t orig)
   id_hash_t *res;
   caddr_t key, val;
   id_hash_iterator_t hit;
+  int rdlocked;
 #ifndef NDEBUG
   if (0 >= orig_dict->ht_dict_refctr)
     GPF_T;
 #endif
   res = (id_hash_t *) dk_alloc_box (sizeof (id_hash_t), DV_DICT_HASHTABLE);
-  if (orig_dict->ht_mutex)
-    mutex_enter (orig_dict->ht_mutex);
+  HT_RDLOCK_COND(orig_dict,rdlocked);
   buckets = (((id_hash_t *) orig_dict)->ht_inserts - ((id_hash_t *) orig_dict)->ht_deletes);
   if (buckets < orig_dict->ht_buckets)
     buckets = orig_dict->ht_buckets;
@@ -508,11 +507,9 @@ box_dict_hashtable_copy_hook (caddr_t orig)
       val_copy = box_copy_tree (((caddr_t *)val)[0]);
       id_hash_set (res, (caddr_t) (&key_copy), (caddr_t) (&val_copy));
     }
-  if (orig_dict->ht_mutex)
-    {
-      res->ht_mutex = mutex_allocate ();
-      mutex_leave (orig_dict->ht_mutex);
-    }
+  if (rdlocked)
+    res->ht_rwlock = rwlock_allocate ();
+  HT_UNLOCK_COND(orig_dict,rdlocked);
   return (caddr_t) res;
 }
 
@@ -565,11 +562,11 @@ box_dict_iterator_copy_hook (caddr_t orig_iter)
       if (0 >= org->hit_hash->ht_dict_refctr)
 	GPF_T;
 #endif
-      if ((org->hit_hash->ht_mutex) && (ID_HASH_LOCK_REFCOUNT != org->hit_hash->ht_dict_refctr))
+      if ((org->hit_hash->ht_rwlock) && (ID_HASH_LOCK_REFCOUNT != org->hit_hash->ht_dict_refctr))
 	{
-	  mutex_enter (org->hit_hash->ht_mutex);
+	  rwlock_wrlock (org->hit_hash->ht_rwlock);
 	  org->hit_hash->ht_dict_refctr += 1;
-	  mutex_leave (org->hit_hash->ht_mutex);
+	  rwlock_unlock (org->hit_hash->ht_rwlock);
 	}
       else
 	org->hit_hash->ht_dict_refctr += 1;
@@ -584,23 +581,23 @@ box_dict_iterator_destr_hook (caddr_t iter)
   id_hash_iterator_t *hit = (id_hash_iterator_t *) iter;
   if ((hit->hit_hash) && (ID_HASH_LOCK_REFCOUNT != hit->hit_hash->ht_dict_refctr))
     {
-      dk_mutex_t *mtx = hit->hit_hash->ht_mutex;
+      rwlock_t *rwl = hit->hit_hash->ht_rwlock;
 #ifndef NDEBUG
       if (0 >= hit->hit_hash->ht_dict_refctr)
 	GPF_T;
 #endif
-      if (NULL != mtx)
+      if (NULL != rwl)
 	{
-	  mutex_enter (mtx);
+	  rwlock_wrlock (rwl);
 	  hit->hit_hash->ht_dict_refctr -= 1;
 	  if (0 == hit->hit_hash->ht_dict_refctr)
 	    {
 	      dk_free_box ((caddr_t) (hit->hit_hash));
-	      mutex_leave (mtx);
-	      mutex_free (mtx);
+	      rwlock_unlock (rwl);
+	      rwlock_free (rwl);
 	    }
 	  else
-	    mutex_leave (mtx);
+	    rwlock_unlock (rwl);
 	}
       else
 	{
