@@ -65,13 +65,18 @@ To generate the configure script and all other build files necessary,
 please make sure the following packages and recommended versions (and
 any GNU packages required by these) are installed on your system.
 
+*NOTE* - The versions listed below are the _minimum_ recommended versions 
+of these packages. Older version can sometimes be used, but could cause
+build problems. Newer versions are usually fine, with exceptions as
+discussed further below (e.g., OpenSSL).
+
     Package  Version                         From
     -------  -------                         ----
     autoconf 2.57               http://www.gnu.org/software/autoconf/
     automake 1.9                http://www.gnu.org/software/automake/
     libtool  1.5.16             http://www.gnu.org/software/libtool/
     flex     2.5.33 (was 2.5.4) http://www.gnu.org/software/non-gnu/flex/
-    bison    2.3 (was 1.35)     http://www.gnu.org/software/bison/
+    bison    2.3     (was 1.35) http://www.gnu.org/software/bison/
     gperf    2.7.2              http://www.gnu.org/software/gperf/
     gawk     3.1.1              http://www.gnu.org/software/gawk/
     m4       1.4.1              http://www.gnu.org/software/m4/
@@ -81,13 +86,8 @@ any GNU packages required by these) are installed on your system.
 The `autogen.sh` and `configure` scripts check the presence and version
 of some of the required components.
 
-The above version are the minimum recommended versions of these packages.
-Older version of these packages can sometimes be used, but could cause
-build problems. Newer versions are usually fine, with exceptions as
-discussed below (e.g., OpenSSL).
-
-To check the version number of the tools installed on your system, you
-can use the following commands:
+You can use the following commands to check the versions of the tools 
+installed on your system:
 
     $ autoconf --version
     $ automake --version
