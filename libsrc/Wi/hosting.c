@@ -36,7 +36,6 @@
 #include "sqlbif.h"
 #include "security.h"
 
-extern int _gate_export (void *tgt);
 #undef free
 
 #ifndef __NO_LIBDK

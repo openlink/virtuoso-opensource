@@ -216,9 +216,6 @@ cat <<- EOF >> $exportc.tmp
 	/* Now we should declare dictionary array with one item per one exported function. */
 	/* At connection time, executable will fill _gate structures of plugins with data from this table. */
 
-	struct _gate_export_item_s { void *_ptr; const char *_name; };
-	typedef struct _gate_export_item_s _gate_export_item_t;
-
 	extern _gate_export_item_t _gate_export_data[];
 
 	int _gate_export (_gate_export_item_t *tgt)
