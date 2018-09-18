@@ -1924,7 +1924,7 @@ char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
 
 static char hsts_header_buf[128];
 
-static inline char *
+static char *
 hsts_header_line (ws_connection_t * ws)
 {
   if (https_hsts_max_age >= 0 && tcpses_get_ssl (ws->ws_session->dks_session) != NULL)
