@@ -42,6 +42,7 @@ char * https_key;
 char * https_extra;
 char * https_dhparam;
 char * https_ecdh_curve;
+int32  https_hsts_max_age = -1;
 char * https_cipher_list;
 char * https_protocols;
 int32 https_client_verify = 0;

@@ -1922,6 +1922,16 @@ char http_server_id_string_buf [1024];
 char *http_server_id_string = NULL;
 char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
 
+static char hsts_header_buf[128];
+
+static inline char *
+hsts_header_line (ws_connection_t * ws)
+{
+  if (https_hsts_max_age >= 0 && tcpses_get_ssl (ws->ws_session->dks_session) != NULL)
+    return hsts_header_buf;
+  return "";
+}
+
 #define IS_CHUNKED_OUTPUT(ws) \
 	((ws) && strses_is_ws_chunked_output ((ws)->ws_strses))
 
@@ -2480,6 +2490,8 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       if (ws->ws_status_code != 101)
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 
+      SES_PRINT (ws->ws_session, hsts_header_line(ws));
+
       if (ws->ws_header) /* user-defined headers */
 	{
 	  SES_PRINT (ws->ws_session, ws->ws_header);
@@ -2828,6 +2840,7 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       "Date: %s\r\n"
       "Server: %.1000s\r\n"
       "Connection: %s\r\n"
+      "%s"
       "\r\n"
       "--THIS_STRING_SEPARATES\r\n"
       ,
@@ -2836,7 +2849,8 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       last_modify,
       date_now,
       http_server_id_string,
-      ws->ws_try_pipeline ? "Keep-Alive" : "close");
+      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+      hsts_header_line (ws));
   SES_PRINT (ws->ws_session, head);
   fprintf (stdout, "Head_mp = %s\n", head);
 
@@ -3116,6 +3130,7 @@ ws_file (ws_connection_t * ws)
 	      "Connection: %s\r\n"
 	      "%s"
 	      "%s"
+	      "%s"
 	      "%s",
 	      head_beg,
 	      (OFF_T_PRINTF_DTP) off,
@@ -3125,6 +3140,7 @@ ws_file (ws_connection_t * ws)
 	      date_now,
 	      http_server_id_string,
 	      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+	      hsts_header_line(ws),
 	      (MAINTENANCE) ? "Retry-After: 1800\r\n" : "",
 	      ws->ws_header ? ws->ws_header : "",
 	      ranges_buffer
@@ -11490,6 +11506,8 @@ http_init_part_one ()
 	  );
       http_server_id_string = http_server_id_string_buf;
     }
+
+  snprintf (hsts_header_buf, sizeof (hsts_header_buf), "Strict-Transport-Security: max-age=%d\r\n", https_hsts_max_age);
 
   dns_host_name = get_qualified_host_name ();
   return 1;

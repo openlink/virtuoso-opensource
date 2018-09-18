@@ -122,6 +122,7 @@ extern char *https_key;
 extern char *https_extra;
 extern char *https_dhparam;
 extern char *https_ecdh_curve;
+extern int32 https_hsts_max_age;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
@@ -1452,6 +1453,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SSL_ECDH_CURVE", &https_ecdh_curve) == -1)
       https_ecdh_curve = NULL;
+
+  if (cfg_getlong (pconfig, section, "HSTS_MaxAge", &https_hsts_max_age) == -1)
+      https_hsts_max_age = -1;
 
   if (cfg_getstring (pconfig, section, "SSLPrivateKey", &c_https_key) == -1)
     c_https_key = NULL;
