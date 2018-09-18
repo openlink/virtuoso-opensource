@@ -120,6 +120,8 @@ extern char *https_port;
 extern char *https_cert;
 extern char *https_key;
 extern char *https_extra;
+extern char *https_dhparam;
+extern char *https_ecdh_curve;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
@@ -136,6 +138,8 @@ extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
 extern char *ssl_server_cipher_list;
 extern char *ssl_server_protocols;
+extern char *ssl_server_dhparam;
+extern char *ssl_server_ecdh_curve;
 #endif
 extern int spotlight_integration;
 #ifdef BIF_XML
@@ -819,6 +823,12 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SSL_PROTOCOLS", &ssl_server_protocols) == -1)
     ssl_server_protocols = "default";
+
+  if (cfg_getstring (pconfig, section, "SSL_DHPARAM", &ssl_server_dhparam) == -1)
+      ssl_server_dhparam = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_ECDH_CURVE", &ssl_server_ecdh_curve) == -1)
+      ssl_server_ecdh_curve = NULL;
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
@@ -1436,6 +1446,12 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SSLExtraChainCertificate", &https_extra) == -1)
     https_extra = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_DHPARAM", &https_dhparam) == -1)
+      https_dhparam = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_ECDH_CURVE", &https_ecdh_curve) == -1)
+      https_ecdh_curve = NULL;
 
   if (cfg_getstring (pconfig, section, "SSLPrivateKey", &c_https_key) == -1)
     c_https_key = NULL;

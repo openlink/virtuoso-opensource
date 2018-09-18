@@ -208,6 +208,8 @@ void * tcpses_get_sslctx (session_t * ses);
 void tcpses_set_sslctx (session_t * ses, void * ssl_ctx);
 extern int ssl_ctx_set_cipher_list (SSL_CTX *ctx, char *cipher_list);
 extern int ssl_ctx_set_protocol_options (SSL_CTX *ctx, char *protocols);
+extern int ssl_ctx_set_dhparam (SSL_CTX *ctx, char *dhparam);
+extern int ssl_ctx_set_ecdh_curve (SSL_CTX *ctx, char *curve);
 #endif
 
 #ifdef _IMSG
@@ -8933,6 +8935,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char *skey = NULL;
   char *ciphers = https_cipher_list;
   char *protocols = https_protocols;
+  char *curve = https_ecdh_curve;
+  char *dhparam = https_dhparam;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
   ssl_meth = SSLv23_server_method ();
@@ -8966,6 +8970,10 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_client_verify = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
 	    extra = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_dhparam") && DV_STRINGP (https_opts [i + 1]))  /* DH param */
+	    dhparam = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_ecdh_curve") && DV_STRINGP (https_opts [i + 1]))  /* ECDH curve */
+	    curve = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_cipher_list") && DV_STRINGP (https_opts [i + 1]))  /* Ciphers */
 	    ciphers = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_protocols") && DV_STRINGP (https_opts [i + 1]))  /* Protocols */
@@ -8989,13 +8997,28 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   if (!ssl_ctx_set_protocol_options (ssl_ctx, protocols))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Error setting SSL Protocols options: %s", err_buf);
+      log_error ("HTTPS: Error setting SSL Protocols [%s]: %s", protocols, err_buf);
       goto err_exit;
     }
+
   if (!ssl_ctx_set_cipher_list (ssl_ctx, ciphers))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
+      log_error ("HTTPS: Error setting SSL Cipher list [%s]: %s", ciphers, err_buf);
+      goto err_exit;
+    }
+
+  if (!ssl_ctx_set_dhparam (ssl_ctx, dhparam))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL DH param [%s]: %s", dhparam, err_buf);
+      goto err_exit;
+    }
+
+  if (!ssl_ctx_set_ecdh_curve (ssl_ctx, curve))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL ECDH curve [%s]: %s", curve, err_buf);
       goto err_exit;
     }
 
@@ -11651,7 +11674,21 @@ http_init_part_two ()
       if (!ssl_ctx_set_cipher_list (ssl_ctx, https_cipher_list))
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
+	  log_error ("HTTPS: Error setting SSL Cipher list : %s", err_buf);
+	  goto init_ssl_exit;
+	}
+
+      if (!ssl_ctx_set_dhparam (ssl_ctx, https_dhparam))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL DH param [%s]: %s", https_dhparam, err_buf);
+	  goto init_ssl_exit;
+	}
+
+      if (!ssl_ctx_set_ecdh_curve (ssl_ctx, https_ecdh_curve))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL ECDH curve [%s]: %s", https_ecdh_curve, err_buf);
 	  goto init_ssl_exit;
 	}
 

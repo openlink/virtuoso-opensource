@@ -71,11 +71,14 @@ int LEVEL_VAR = 4;
 #include <openssl/asn1.h>
 #include <openssl/pkcs12.h>
 #include <openssl/rand.h>
+#include <openssl/dh.h>
 
 static void ssl_server_init ();
 
 int ssl_ctx_set_cipher_list(SSL_CTX *ctx, char *cipher_list);
 int ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol);
+int ssl_ctx_set_dhparam(SSL_CTX *ctx, char * dhparam);
+int ssl_ctx_set_ecdh_curve(SSL_CTX *ctx, char * curve);
 
 #ifndef NO_THREAD
 static int ssl_server_accept (dk_session_t * listen, dk_session_t * ses);
@@ -87,6 +90,8 @@ int32 ssl_server_verify_depth = 0;
 char *ssl_server_verify_file = NULL;
 char *ssl_server_cipher_list = NULL;
 char *ssl_server_protocols = NULL;
+char *ssl_server_dhparam = NULL;
+char *ssl_server_ecdh_curve = NULL;
 #endif
 
 #ifndef NO_THREAD
@@ -5254,6 +5259,157 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   return 1;
 }
 
+int
+ssl_ctx_set_ecdh_curve (SSL_CTX * ctx, char *curve)
+{
+#ifndef OPENSSL_NO_ECDH
+
+  if (!curve)
+    curve = "auto";
+
+  /*
+   *  Configure ECDH
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_SINGLE_ECDH_USE);
+
+  /*
+   *  Set default curve(s) for ECDH
+   */
+
+#if defined (SSL_CTX_set1_curves_list) || defined (SSL_CTRL_SET_CURVES_LIST)
+    /*
+     *  OpenSSL 1.0.2+ can use a cuve list instead of a single curve
+     */
+#if defined (SSL_CTRL_SET_ECDH_AUTO)
+    SSL_CTX_set_ecdh_auto (ctx, 1);		/* For OpenSSL 1.0.2+ */
+#endif
+
+  if (!strcasecmp(curve, "auto"))
+    return 1;
+
+  /*
+   *  Try setting list of curves
+   */
+  if (SSL_CTX_set1_curves_list(ctx, curve) == 0)
+    return 0;
+
+#else
+
+  /*
+   *  Try setting the specified curve with default of prime256v1
+   */
+  {
+    EC_KEY *eckey = NULL;
+    int nid;
+
+    if (!strcasecmp(curve, "auto"))
+      curve = "prime256v1";
+
+    nid = OBJ_dn2nid(curve);
+    if (nid == 0)
+	return 0;
+    eckey = EC_KEY_new_by_curve_name (nid);
+    if (eckey == NULL)
+	return 0;
+    SSL_CTX_set_tmp_ecdh (ctx, eckey);
+    EC_KEY_free (eckey);
+  }
+#endif
+#endif
+
+  return 1;
+}
+
+int
+ssl_ctx_set_dhparam (SSL_CTX * ctx, char *dh_file)
+{
+  DH *dh = NULL;
+  BIO *bio = NULL;
+  int ok = 0;
+
+  /*
+   *  If the dba provided a filename, try to read the DH from
+   */
+  if (dh_file)
+    {
+      bio = BIO_new_file (dh_file, "r");
+      if (bio)
+	dh = PEM_read_bio_DHparams (bio, NULL, NULL, NULL);
+      if (!dh)
+	goto cleanup;
+    }
+
+#ifndef VIRTUOSO_NO_INTERNAL_DH
+  /*
+   *  If dba has not provided a custom dhparam, then use a built-in version
+   */
+  if (!dh)
+    {
+      static unsigned char dh2048_p[] = {
+	0x90, 0xE0, 0xDE, 0x4C, 0x70, 0x1D, 0xCB, 0x0F, 0xD9, 0x2E,
+	0xD9, 0x44, 0x3C, 0x99, 0x99, 0x4C, 0x92, 0x41, 0x3F, 0x09,
+	0x65, 0xB9, 0x7D, 0xAD, 0xEE, 0xD2, 0x73, 0xAC, 0x17, 0x46,
+	0x6E, 0x7F, 0x6D, 0x42, 0x36, 0xC8, 0x19, 0x0D, 0x69, 0xF4,
+	0xA2, 0x4D, 0x83, 0x7E, 0x15, 0x3A, 0xB8, 0x09, 0x86, 0xA5,
+	0xA6, 0x9E, 0xD5, 0x72, 0xBF, 0xD9, 0x64, 0xE0, 0x14, 0x09,
+	0x27, 0xC0, 0x13, 0x73, 0x98, 0xAC, 0xB2, 0xD6, 0x8A, 0xC8,
+	0x4F, 0xD1, 0x41, 0x45, 0x10, 0x08, 0xA2, 0x4F, 0xA9, 0xD9,
+	0xD0, 0xAF, 0x9B, 0x98, 0xF1, 0xAF, 0x52, 0x17, 0xB1, 0x9E,
+	0x0B, 0x87, 0xCE, 0x6F, 0xDC, 0xA3, 0x42, 0x56, 0xFD, 0x04,
+	0xBD, 0xBF, 0x57, 0xCB, 0xB8, 0xB3, 0x62, 0x36, 0x3E, 0x2C,
+	0xC0, 0xA0, 0x37, 0xC3, 0x1B, 0x22, 0x8B, 0x25, 0x9A, 0x69,
+	0xF3, 0x94, 0xF7, 0x14, 0x7B, 0xAA, 0x2E, 0xD3, 0x79, 0x20,
+	0x93, 0x58, 0xA5, 0xD7, 0x84, 0x69, 0x94, 0x5E, 0xB0, 0x72,
+	0x7A, 0x7A, 0x4E, 0x70, 0x64, 0x10, 0x69, 0xAD, 0x51, 0x7A,
+	0xDE, 0xD2, 0x03, 0xE0, 0xDE, 0x0C, 0xEC, 0xA8, 0xB1, 0x41,
+	0x08, 0x54, 0x76, 0xF5, 0x09, 0xF4, 0xBE, 0xA6, 0xAF, 0x13,
+	0x1F, 0xCB, 0xF7, 0xA6, 0xE4, 0x43, 0x62, 0x7D, 0xDC, 0x4B,
+	0x43, 0x4F, 0x64, 0x00, 0x44, 0xBC, 0xE3, 0x6F, 0x61, 0x81,
+	0xEF, 0x4D, 0x3B, 0x43, 0x37, 0x9E, 0xA2, 0x88, 0xAE, 0x8C,
+	0x26, 0x05, 0x0A, 0xD2, 0x41, 0xA2, 0x28, 0xDD, 0x1A, 0xEE,
+	0x8C, 0x2A, 0xDB, 0x39, 0xF8, 0x43, 0xB3, 0xD4, 0x3B, 0xC9,
+	0x9B, 0x8B, 0xBA, 0xCA, 0xEC, 0x91, 0x12, 0x0E, 0xA5, 0xDC,
+	0x4F, 0x61, 0xD8, 0xBB, 0x3E, 0x9D, 0x7B, 0x7D, 0x76, 0x3F,
+	0xF5, 0xDA, 0xC1, 0xFA, 0x72, 0x37, 0x0B, 0xD9, 0xC3, 0xED,
+	0xC0, 0x2C, 0x70, 0x71, 0x77, 0x6B
+      };
+      static unsigned char dh2048_g[] = {
+	0x02
+      };
+
+      if ((dh = DH_new ()) == NULL)
+	goto cleanup;
+
+      dh->p = BN_bin2bn (dh2048_p, sizeof (dh2048_p), NULL);
+      dh->g = BN_bin2bn (dh2048_g, sizeof (dh2048_g), NULL);
+
+      if (dh->p == NULL || dh->g == NULL)
+        goto cleanup;
+    }
+#endif
+
+  /*
+   *  Always create a new key when using temporary DH parameters
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_SINGLE_DH_USE);
+
+  /*
+   *  Assign dh
+   */
+  SSL_CTX_set_tmp_dh (ctx, dh);
+
+  /*
+   *  Signal success
+   */
+  ok = 1;
+
+cleanup:
+  BIO_free (bio);
+  DH_free (dh);
+
+  return ok;
+}
+
 
 static void
 ssl_server_init ()
@@ -5301,11 +5457,25 @@ ssl_server_init ()
    */
   if (!ssl_ctx_set_protocol_options (ssl_server_ctx, ssl_server_protocols))
     {
+      log_error ("Error setting SSL Protocols [%s]", ssl_server_protocols);
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }
   if (!ssl_ctx_set_cipher_list (ssl_server_ctx, ssl_server_cipher_list))
     {
+      log_error ("Error setting SSL Cipher list [%s]", ssl_server_cipher_list);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_dhparam (ssl_server_ctx, ssl_server_dhparam))
+    {
+      log_error ("Error setting SSL DH param [%s]", ssl_server_dhparam);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_ecdh_curve (ssl_server_ctx, ssl_server_ecdh_curve))
+    {
+      log_error ("Error setting SSL ECDH curve [%s]", ssl_server_ecdh_curve);
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }

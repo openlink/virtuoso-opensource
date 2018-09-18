@@ -40,6 +40,8 @@ char * https_port;
 char * https_cert;
 char * https_key;
 char * https_extra;
+char * https_dhparam;
+char * https_ecdh_curve;
 char * https_cipher_list;
 char * https_protocols;
 int32 https_client_verify = 0;
