@@ -377,7 +377,7 @@ extern int rn_n_col_leaves;
 /* disk.c */
 
 dbe_storage_t * dbs_open_slice (dbe_storage_t * top_dbs, disk_segment_t * seg, int slice_no, int create);
-void dbs_slice_close  (cluster_map_t * clm, dbe_storage_t * top_dbs, dbe_storage_t * dbs, int delete);
+void dbs_slice_close  (cluster_map_t * clm, dbe_storage_t * top_dbs, dbe_storage_t * dbs, int unlink_files);
 void cl_dbs_read_cfg (dbe_storage_t * dbs);
 void dbs_slice_init (dbe_storage_t * top_dbs, dbe_storage_t * dbs, int exists);
 int word_free_bit (dp_addr_t w);
@@ -1371,6 +1371,7 @@ void dv_geo_length (db_buf_t dv, long * hl, long * l);
 int  cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc);
 void  itc_geo_insert (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd);
 caddr_t geo_wkt (caddr_t g);
+caddr_t geo_wkb (caddr_t g);
 extern dk_mutex_t * geo_reg_mtx;
 void itc_geo_unregister (it_cursor_t * itc);
 caddr_t geo_parse_wkt (char * str, caddr_t * err_ret);

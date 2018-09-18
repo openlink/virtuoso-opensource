@@ -3567,7 +3567,7 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	{
 	  caddr_t err = NULL;
 	  caddr_t g = geo_parse_wkt (arg, &err);
-	  if (err && (!suppress_error || !strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")))
+	  if (err && (!(suppress_error & 1) || !strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")))
 	    sqlr_resignal (err);
 	  if (!err)
 	    {

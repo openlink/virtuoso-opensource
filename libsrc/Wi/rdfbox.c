@@ -5403,6 +5403,7 @@ bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   int triple_ctr;
   ptrlong nesting = 0;
   int n_args = BOX_ELEMENTS (args);
+  int e2_wrlocked;
   id_hash_iterator_t *bnode_usage_iter = ((5 < n_args) ? bif_dict_iterator_arg (qst, args, 5, "http_ld_json_triple_batch", 0) : NULL);
   ld_json_env_t *env = (ld_json_env_t *)bif_arg (qst, args, 0, "http_ld_json_triple_batch");
   memset (&e2, 0, sizeof (ld_json_env2_t));
@@ -5423,11 +5424,10 @@ bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t **
     }
   if ((NULL != e2.printed_triples_mask) && (e2.triple_count != box_length (e2.printed_triples_mask) - 1))
     sqlr_new_error ("22023", "SR607", "Argument 5 of http_ld_json_triple_batch() should be a mask string with length matching to the vector of triples");
-  if ((NULL != e2.bnode_usage) && (e2.bnode_usage->ht_mutex))
-    mutex_enter (e2.bnode_usage->ht_mutex);
+  if (NULL != e2.bnode_usage)
+    HT_WRLOCK_COND(e2.bnode_usage,e2_wrlocked);
   nesting = bif_http_ld_json_triple_batch_impl (env, &e2);
-  if ((NULL != e2.bnode_usage) && (e2.bnode_usage->ht_mutex))
-    mutex_leave (e2.bnode_usage->ht_mutex);
+  HT_UNLOCK_COND(e2.bnode_usage,e2_wrlocked);
   return box_num (nesting);
 }
 
@@ -6088,9 +6088,9 @@ rdf_graph_specific_perms_of_user (user_t *u, iri_id_t g_iid)
     return 0;
   if (NULL == u->usr_rdf_graph_perms)
     return 0;
-  mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+  rwlock_rdlock (u->usr_rdf_graph_perms->ht_rwlock);
   gethash_64 (res, (boxint)g_iid, u->usr_rdf_graph_perms);
-  mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+  rwlock_unlock (u->usr_rdf_graph_perms->ht_rwlock);
   return res;
 }
 
@@ -6188,9 +6188,9 @@ rdf_graph_specific_perms_of_user_set_impl (iri_id_t g_iid, oid_t u_id, boxint pe
         {
           if (NULL != u->usr_rdf_graph_perms)
             {
-              mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+              rwlock_wrlock (u->usr_rdf_graph_perms->ht_rwlock);
               remhash_64 (g_iid, u->usr_rdf_graph_perms);
-              mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+              rwlock_unlock (u->usr_rdf_graph_perms->ht_rwlock);
             }
         }
       else
@@ -6198,12 +6198,12 @@ rdf_graph_specific_perms_of_user_set_impl (iri_id_t g_iid, oid_t u_id, boxint pe
           if (NULL == u->usr_rdf_graph_perms)
             {
               dk_hash_64_t *ht = hash_table_allocate_64 (97);
-              ht->ht_mutex = mutex_allocate ();
+              ht->ht_rwlock = rwlock_allocate ();
               u->usr_rdf_graph_perms = ht;
             }
-          mutex_enter (u->usr_rdf_graph_perms->ht_mutex);
+          rwlock_wrlock (u->usr_rdf_graph_perms->ht_rwlock);
           sethash_64 (g_iid, u->usr_rdf_graph_perms, perms);
-          mutex_leave (u->usr_rdf_graph_perms->ht_mutex);
+          rwlock_unlock (u->usr_rdf_graph_perms->ht_rwlock);
         }
   return 1;
 }
@@ -7009,7 +7009,7 @@ caddr_t boxed_nobody_uid = NULL;
   name##_htable = (id_hash_t *)box_dv_dict_hashtable (31); \
   name##_htable->ht_rehash_threshold = 120; \
   name##_htable->ht_dict_refctr = ID_HASH_LOCK_REFCOUNT; \
-  name##_htable->ht_mutex = mutex_allocate (); \
+  name##_htable->ht_rwlock = rwlock_allocate (); \
   name##_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)name##_htable); \
   } while (0)
 

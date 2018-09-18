@@ -743,10 +743,10 @@ caddr_t
 sparp_graph_sec_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname)
 {
   caddr_t *place, res;
-  mutex_enter (rdf_graph_iri2id_dict_htable->ht_mutex);
+  rwlock_rdlock (rdf_graph_iri2id_dict_htable->ht_rwlock);
   place = (caddr_t *)id_hash_get (rdf_graph_iri2id_dict_htable, (caddr_t)(&qname));
   res = (NULL == place) ? NULL : box_copy_tree (place[0]);
-  mutex_leave (rdf_graph_iri2id_dict_htable->ht_mutex);
+  rwlock_unlock (rdf_graph_iri2id_dict_htable->ht_rwlock);
   return res;
 }
 
@@ -757,10 +757,10 @@ sparp_graph_sec_id_to_iri_nosignal (sparp_t *sparp, iri_id_t iid)
   caddr_t boxed_iid, *place, res;
   BOX_AUTO (boxed_iid, iid_box_buf, sizeof (iri_id_t), DV_IRI_ID);
   ((iri_id_t *)boxed_iid)[0] = iid;
-  mutex_enter (rdf_graph_id2iri_dict_htable->ht_mutex);
+  rwlock_rdlock (rdf_graph_id2iri_dict_htable->ht_rwlock);
   place = (caddr_t *)id_hash_get (rdf_graph_id2iri_dict_htable, (caddr_t)(&iid));
   res = (NULL == place) ? NULL : box_copy_tree (place[0]);
-  mutex_leave (rdf_graph_id2iri_dict_htable->ht_mutex);
+  rwlock_unlock (rdf_graph_id2iri_dict_htable->ht_rwlock);
   return res;
 }
 
@@ -4398,9 +4398,9 @@ sparp_make_and_push_new_graph_source (sparp_t *sparp, ptrlong subtype, SPART *ir
       caddr_t iid = sparp_graph_sec_iri_to_id_nosignal (sparp, iri);
       if (NULL != iid)
         {
-          mutex_enter (rdf_graph_group_dict_htable->ht_mutex);
+          rwlock_rdlock (rdf_graph_group_dict_htable->ht_rwlock);
           group_members_ptr = (caddr_t **)id_hash_get (rdf_graph_group_dict_htable, (caddr_t)(&iid));
-          mutex_leave (rdf_graph_group_dict_htable->ht_mutex);
+          rwlock_unlock (rdf_graph_group_dict_htable->ht_rwlock);
           dk_free_tree (iid);
         }
     }
@@ -4611,17 +4611,59 @@ bad_regex:
  return sparp_make_builtin_call (sparp, SPAR_BIF_REGEX, (SPART **)t_list (2, strg, regexpn));
 }
 
+
 extern id_hash_t *name_to_pl_name;
 
-static const char *unsafe_sql_names[] = {
-    "RDF_INSERT_TRIPLES",
-    "RDF_INSERT_TRIPLES",
+/* Note dirty hack in sqlpfn.c, sqlp_proc_name(): the function expectes that unsafe names begins with "RDF_", "SPARQL", "SPARUL" or "TTLP".
+Add more prefixes there if needed */
+static const char *spar_unsafe_sql_names[] = {
     "RDF_DELETE_TRIPLES",
+    "RDF_DELETE_TRIPLES_AGG",
     "RDF_GLOBAL_RESET",
     "RDF_GRAPH_GROUP_LIST_GET",
+    "RDF_INSERT_TRIPLES",
     "RDF_LOAD_RDFXML",
     "RDF_LOAD_RDFXML_MT",
     "RDF_MODIFY_TRIPLES",
+    "RDF_QM_ADD_MAPPING_TO_STORAGE",
+    "RDF_QM_APPLY_CHANGES",
+    "RDF_QM_ASSERT_JSO_TYPE",
+    "RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING",
+    "RDF_QM_ASSERT_STORAGE_FLAG",
+    "RDF_QM_ATTACH_MACRO_LIBRARY",
+    "RDF_QM_ATTACH_MAPPING",
+    "RDF_QM_ATTACH_SPIN_LIBRARY",
+    "RDF_QM_BEGIN_ALTER_QUAD_STORAGE",
+    "RDF_QM_CBD_OF_IRI_CLASS",
+    "RDF_QM_CHANGE",
+    "RDF_QM_CHANGE_OPT",
+    "RDF_QM_CHECK_CLASS_FUNCTION_HEADERS",
+    "RDF_QM_CHECK_COLUMNS_FORM_KEY",
+    "RDF_QM_DEFINE_IRI_CLASS_FORMAT",
+    "RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS",
+    "RDF_QM_DEFINE_LITERAL_CLASS_FORMAT",
+    "RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS",
+    "RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG",
+    "RDF_QM_DEFINE_MAPPING",
+    "RDF_QM_DEFINE_MAP_VALUE",
+    "RDF_QM_DEFINE_QUAD_STORAGE",
+    "RDF_QM_DEFINE_SUBCLASS",
+    "RDF_QM_DELETE_MAPPING_FROM_STORAGE",
+    "RDF_QM_DETACH_MACRO_LIBRARY",
+    "RDF_QM_DETACH_SPIN_LIBRARY",
+    "RDF_QM_DROP_CLASS",
+    "RDF_QM_DROP_MAPPING",
+    "RDF_QM_DROP_QUAD_STORAGE",
+    "RDF_QM_DROP_SUBJ",
+    "RDF_QM_END_ALTER_QUAD_STORAGE",
+    "RDF_QM_FT_USAGE",
+    "RDF_QM_GC_MAPPING_SUBTREE",
+    "RDF_QM_GC_SUBTREE",
+    "RDF_QM_MACROEXPAND_TEMPLATE",
+    "RDF_QM_NN_PUT_VECTOR",
+    "RDF_QM_NORMALIZE_QMV",
+    "RDF_QM_SET_DEFAULT_MAPPING",
+    "RDF_QM_STORE_ATABLES",
     "RDF_REPL_DELETE_TRIPLES",
     "RDF_REPL_GRAPH_DEL",
     "RDF_REPL_GRAPH_INS",
@@ -4630,19 +4672,21 @@ static const char *unsafe_sql_names[] = {
     "RDF_REPL_STOP",
     "RDF_REPL_SYNC",
     "RDF_SPONGE_UP",
-    "SPARQL_INSERT_DICT_CONTENT",
-    "SPARQL_INSERT_QUAD_DICT_CONTENT",
+    "SPARQL_DELETE_CTOR",
     "SPARQL_DELETE_DICT_CONTENT",
     "SPARQL_DELETE_QUAD_DICT_CONTENT",
     "SPARQL_DESC_AGG",
     "SPARQL_DESC_AGG_ACC",
-    "SPARQL_DESC_AGG_INIT",
     "SPARQL_DESC_AGG_FIN",
+    "SPARQL_DESC_AGG_INIT",
     "SPARQL_DESC_DICT",
     "SPARQL_DESC_DICT_CBD",
     "SPARQL_DESC_DICT_CBD_PHYSICAL",
     "SPARQL_DESC_DICT_SPO",
     "SPARQL_DESC_DICT_SPO_PHYSICAL",
+    "SPARQL_INSERT_CTOR",
+    "SPARQL_INSERT_DICT_CONTENT",
+    "SPARQL_INSERT_QUAD_DICT_CONTENT",
     "SPARQL_MODIFY_BY_DICT_CONTENTS",
     "SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS",
     "SPARQL_SELECT_KNOWN_GRAPHS",
@@ -4655,24 +4699,34 @@ static const char *unsafe_sql_names[] = {
     "SPARUL_MOVE",
     "SPARUL_RUN",
     "TTLP",
+    "TTLP_EV_COMMIT",
+    "TTLP_EV_CL_GS_TRIPLE",
+    "TTLP_EV_CL_GS_TRIPLE_L",
+    "TTLP_EV_CL_TRIPLE",
+    "TTLP_EV_CL_TRIPLE_L",
     "TTLP_EV_GET_IID",
     "TTLP_EV_NEW_BLANK",
     "TTLP_EV_NEW_GRAPH",
     "TTLP_EV_NEW_GRAPH_A",
     "TTLP_EV_TRIPLE",
     "TTLP_EV_TRIPLE_A",
-    "TTLP_EV_TRIPLE_W",
     "TTLP_EV_TRIPLE_L",
     "TTLP_EV_TRIPLE_L_A",
     "TTLP_EV_TRIPLE_L_W",
+    "TTLP_EV_TRIPLE_W",
+    "TTLP_EV_TRIPLE_XLAT",
+    "TTLP_EV_TRIPLE_XLAT_L",
     "TTLP_MT",
     "TTLP_MT_LOCAL_FILE" };
 
-static const char *unsafe_bif_names[] = {
+static const char *spar_unsafe_bif_names[] = {
+    "BACKUP",
     "CONNECTION_SET",
+    "CONNECTION_SWAP",
+    "CONNECTION_VARS_SET",
+    "EXEC",
     "FILE_TO_STRING",
     "FILE_TO_STRING_OUTPUT",
-    "EXEC",
     "REGISTRY_SET",
     "REGISTRY_SET_ALL",
     "STRING_TO_FILE",
@@ -4687,14 +4741,21 @@ static const char *sparql11_agg_names[] = {
     "SAMPLE",		"sql:SAMPLE",
     "SUM",		"SPECIAL::bif:SUM" };
 
+int sparp_sql_function_name_is_unsafe (const char *buf)
+{
+  return (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_sql_names,
+    sizeof (spar_unsafe_sql_names)/sizeof(spar_unsafe_sql_names[0]), sizeof (caddr_t) ) );
+}
+
 void
 spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args)
 {
   ccaddr_t fname = fname_ptr[0];
-  int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;
-  const char *tail;
+  int uid, need_check_for_sparql11_agg = 0;
+  const char *tail, *tail_to_check_for_infection_chars = NULL;
   const char *c;
-  char buf[30];
+  char buf[100];
+  int is_bif = 0, is_sql = 0;
   tail = strstr (fname, "::");
   if (NULL == tail)
     tail = fname;
@@ -4705,26 +4766,42 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
   uid = unbox (sparp->sparp_boxed_exec_uid);
   if (!strncmp (tail, "sql:", 4))
     {
-      strncpy (buf, tail+4, sizeof(buf)-1);
+      tail_to_check_for_infection_chars = tail + 4;
+      is_sql = 1;
+    }
+  else if (!strncmp (tail, "bif:", 4))
+    {
+      tail_to_check_for_infection_chars = tail + 4;
+      is_bif = 1;
+    }
+  else if (!strncmp (tail, OPENLINKSW_SQL_NS_URI, OPENLINKSW_SQL_NS_URI_LEN))
+    {
+      tail_to_check_for_infection_chars = tail + OPENLINKSW_SQL_NS_URI_LEN;
+      is_sql = 1;
+    }
+  else if (!strncmp (tail, OPENLINKSW_BIF_NS_URI, OPENLINKSW_BIF_NS_URI_LEN))
+    {
+      tail_to_check_for_infection_chars = tail + OPENLINKSW_SQL_NS_URI_LEN;
+      is_bif = 1;
+    }
+  if (is_sql || is_bif)
+    {
+      strncpy (buf, tail_to_check_for_infection_chars, sizeof(buf)-1);
       buf[sizeof(buf)-1] = '\0';
       strupr (buf);
-      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
-          sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+    }
+  if (is_sql)
+    {
+      if ((U_ID_DBA != uid) && sparp_sql_function_name_is_unsafe (buf))
         goto restricted; /* see below */
       need_check_for_sparql11_agg = 1;
-      need_check_for_infection_chars = 1;
     }
-  else
-  if (!strncmp (tail, "bif:", 4))
+  else if (is_bif)
     {
-      strncpy (buf, tail+4, sizeof(buf)-1);
-      buf[sizeof(buf)-1] = '\0';
-      strupr (buf);
-      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
-          sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+      if ((U_ID_DBA != uid) && sparp_sql_function_name_is_unsafe (buf))
         goto restricted; /* see below */
-      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_bif_names,
-          sizeof (unsafe_bif_names)/sizeof(unsafe_bif_names[0]), sizeof (caddr_t) ) ) )
+      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_bif_names,
+          sizeof (spar_unsafe_bif_names)/sizeof(spar_unsafe_bif_names[0]), sizeof (caddr_t) ) ) )
         goto restricted; /* see below */
       if (NULL != name_to_pl_name)
         {
@@ -4737,8 +4814,8 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
               strncpy (buf, full_sql_name_ptr[0]+7, sizeof(buf)-1);
               buf[sizeof(buf)-1] = '\0';
               strupr (buf);
-              if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
-                  sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+              if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_sql_names,
+                  sizeof (spar_unsafe_sql_names)/sizeof(spar_unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
                 goto restricted; /* see below */
               strcpy (buf, "sql:");
               strncpy (buf+4, full_sql_name_ptr[0]+7, sizeof(buf)-5);
@@ -4748,7 +4825,6 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
             }
         }
       need_check_for_sparql11_agg = 1;
-      need_check_for_infection_chars = 1;
     }
   if (need_check_for_sparql11_agg)
     {
@@ -4761,10 +4837,10 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
           return;
         }
     }
-  if (need_check_for_infection_chars)
-    for (c = tail+4; '\0' != c[0]; c++)
-      if (strchr ("\'\"\\().,+/*|\t\n\r", c[0]))
-        spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt to bypass security restrictions", fname);
+  if (NULL != tail_to_check_for_infection_chars)
+    for (c = tail_to_check_for_infection_chars; '\0' != c[0]; c++)
+      if (strchr ("\'\"\\()., +-/*|\t\n\r", c[0]))
+        spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt of bypassing security restrictions", fname);
   return;
 restricted:
   spar_error (sparp, "Function %.200s() cannot be used in text of SPARQL query due to security restrictions", fname);
@@ -4845,9 +4921,25 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   caddr_t proc_full_name;
   query_t *proc;
   int argcount;
+  const char *funname_to_store = funname;
+  const char *bare_bif_name = NULL;
+  bif_metadata_t *bmd = NULL;
   if (NULL == args)
     args = (SPART **)t_list (0);
   argcount = BOX_ELEMENTS (args);
+  if ('h' == funname[0]) /* It's kond of strange to begin function name name with 'h', right? 99% of them are bif:... or sql:... */
+    {
+      if (!strncmp (funname, OPENLINKSW_BIF_NS_URI, OPENLINKSW_BIF_NS_URI_LEN))
+        return spar_make_funcall (sparp, aggregate_mode, t_box_dv_short_strconcat ("bif:", funname + OPENLINKSW_BIF_NS_URI_LEN), args);
+      if (!strncmp (funname, OPENLINKSW_SQL_NS_URI, OPENLINKSW_SQL_NS_URI_LEN))
+        return spar_make_funcall (sparp, aggregate_mode, t_box_dv_short_strconcat ("sql:", funname + OPENLINKSW_SQL_NS_URI_LEN), args);
+      if (!strncmp (funname, OPENGIS_NS_URI, OPENGIS_NS_URI_LEN))
+        {
+          funname_to_store = t_box_dv_short_strconcat ("bif:", funname);
+          bare_bif_name = funname;
+          goto bare_bif_name_found; /* see below */
+        }
+    }
   if (0 != aggregate_mode)
     goto aggr_checked; /* see below */
   sql_colon = strstr (funname, "sql:");
@@ -4868,8 +4960,11 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
     spar_error (sparp, "Aggregate function %.100s() is not allowed outside result-set expressions", funname);
 aggr_checked:
   if (!strncmp (funname, "bif:", 4))
+    bare_bif_name = funname + 4;
+bare_bif_name_found:
+  if (NULL != bare_bif_name)
     {
-      bif_metadata_t *bmd = find_bif_metadata_by_raw_name (funname+4);
+      bmd = find_bif_metadata_by_raw_name (bare_bif_name);
       if (NULL == bmd)
         spar_error (sparp, "Unknown function %.100s()", funname);
       if (bmd->bmd_is_pure)
@@ -4920,8 +5015,9 @@ xpf_checked:
       else
         sparp->sparp_query_uses_aggregates++;
     }
-  return spartlist (sparp, 5, SPAR_FUNCALL, t_box_dv_uname_string (funname), args, (ptrlong)aggregate_mode, (ptrlong)0);
+  return spartlist (sparp, 5, SPAR_FUNCALL, t_box_dv_uname_string (funname_to_store), args, (ptrlong)aggregate_mode, (ptrlong)0);
 }
+
 
 const sparp_bif_desc_t sparp_bif_descs[] = {
 /*  sbd_name		| sbd_subtype			, impl	| sbd_required_syntax	| min-/maxargs	| ret_valmode		| sbd_arg_valmodes					| sbd_result_restr_bits		*/
@@ -5448,18 +5544,18 @@ static caddr_t boxed_8192_iid = NULL;
       caddr_t boxed_graph_iid = sparp_graph_sec_iri_to_id_nosignal (sparp, graph_iri);
       if (NULL != boxed_graph_iid)
         {
-          mutex_enter (rdf_graph_group_of_privates_dict_htable->ht_mutex);
+          rwlock_rdlock (rdf_graph_group_of_privates_dict_htable->ht_rwlock);
           if (NULL != id_hash_get (rdf_graph_group_of_privates_dict_htable, (caddr_t)(&(boxed_graph_iid))))
             {
               graph_is_private = 1;
               dflt_perms_of_user = rdf_graph_default_private_perms_of_user_dict_htable;
               dflt_other_perms_of_user = rdf_graph_default_world_perms_of_user_dict_htable;
             }
-          mutex_leave (rdf_graph_group_of_privates_dict_htable->ht_mutex);
+          rwlock_unlock (rdf_graph_group_of_privates_dict_htable->ht_rwlock);
 /*!!! maybe TBD: add retrieval of permissions of specific user on specific graph */
-          mutex_enter (dflt_perms_of_user->ht_mutex);
+          rwlock_rdlock (dflt_perms_of_user->ht_rwlock);
           hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid /* not boxed_graph_iid */)));
-          mutex_leave (dflt_perms_of_user->ht_mutex);
+          rwlock_unlock (dflt_perms_of_user->ht_rwlock);
           dk_free_tree (boxed_graph_iid);
         }
       if (NULL != hit)
@@ -5472,9 +5568,9 @@ static caddr_t boxed_8192_iid = NULL;
           return unbox (hit[0]);
         }
     }
-  mutex_enter (dflt_perms_of_user->ht_mutex);
+  rwlock_rdlock (dflt_perms_of_user->ht_rwlock);
   hit = (caddr_t *)id_hash_get (dflt_perms_of_user, (caddr_t)(&(boxed_uid)));
-  mutex_leave (dflt_perms_of_user->ht_mutex);
+  rwlock_unlock (dflt_perms_of_user->ht_rwlock);
   if ((NULL != query_with_deps) || (NULL == graph_iri))
     {
       potential_hit = (caddr_t *)id_hash_get (dflt_other_perms_of_user, (caddr_t)(&(boxed_uid)));
@@ -5501,9 +5597,9 @@ static caddr_t boxed_8192_iid = NULL;
         return res;
       return res & potential_res;
     }
-  mutex_enter (rdf_graph_public_perms_dict_htable->ht_mutex);
+  rwlock_rdlock (rdf_graph_public_perms_dict_htable->ht_rwlock);
   hit = (caddr_t *)id_hash_get (rdf_graph_public_perms_dict_htable, (caddr_t)(graph_is_private ? &boxed_8192_iid : &boxed_zero_iid));
-  mutex_leave (rdf_graph_public_perms_dict_htable->ht_mutex);
+  rwlock_unlock (rdf_graph_public_perms_dict_htable->ht_rwlock);
   if (NULL != hit)
     res = unbox (hit[0]);
   else res = RDF_GRAPH_PERM_DEFAULT;

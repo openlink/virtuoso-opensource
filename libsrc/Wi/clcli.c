@@ -420,11 +420,11 @@ clo_destroy  (cl_op_t * clo)
 	}
       break;
     case CLO_DELETE:
-      if (clo->_.delete.rd)
+      if (clo->_.delete_op.rd)
 	{
-	  if (clo->_.delete.rd->rd_itc)
-	    itc_free (clo->_.delete.rd->rd_itc);
-	  rd_free (clo->_.delete.rd);
+	  if (clo->_.delete_op.rd->rd_itc)
+	    itc_free (clo->_.delete_op.rd->rd_itc);
+	  rd_free (clo->_.delete_op.rd);
 	}
       break;
     case CLO_SELECT:

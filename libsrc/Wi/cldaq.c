@@ -323,7 +323,7 @@ clrg_local_ins_del_single (cl_req_group_t * clrg)
 		sqlr_resignal (err);
 	      }
 	if (CLO_DELETE == clo->clo_op)
-	  cls_vec_del_rd_layout (clo->_.delete.rd);
+	  cls_vec_del_rd_layout (clo->_.delete_op.rd);
 	err = NULL;
 	qi->qi_client->cli_non_txn_insert = CLO_INSERT == clo->clo_op && clo->_.insert.non_txn;
 	err = cl_vec_exec (qr, qi->qi_client, clrg->clrg_pool, clo->_.insert.rd->rd_values, NULL, QI_NO_SLICE, &set_mask, NULL, 0);

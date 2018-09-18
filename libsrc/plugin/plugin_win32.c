@@ -28,8 +28,6 @@
 #include <windows.h>
 #include "plugin.h"
 
-extern int _gate_export (void *tgt);
-
 static char *get_win_error (void)
 {
   DWORD err;

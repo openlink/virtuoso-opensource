@@ -18,7 +18,7 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
-SUBDIRS = . perl python ruby php mono
+SUBDIRS = . perl python ruby php mono proj4 geos shapefileio
 
 # ----------------------------------------------------------------------
 #

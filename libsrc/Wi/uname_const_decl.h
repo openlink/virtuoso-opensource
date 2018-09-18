@@ -1,8 +1,6 @@
 /*
  *  $Id$
  *
- *  Constant declarations of commonly used UNAMEs.
- *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
@@ -27,6 +25,20 @@
 #define UNAME_CONST_DECL_H
 #include "Dk.h"
 
+/*				 0         1         2         3         */
+/*				 012345678901234567890123456789012345678 */
+#define OPENLINKSW_BIF_NS_URI	"http://www.openlinksw.com/schemas/bif#"
+#define OPENLINKSW_SQL_NS_URI	"http://www.openlinksw.com/schemas/sql#"
+#define OPENLINKSW_BIF_NS_URI_LEN 38
+#define OPENLINKSW_SQL_NS_URI_LEN 38
+
+/*				 0         1         2         3        */
+/*				 012345678901234567890123456789012345678 */
+#define OPENLINKSW_BIF_NS_URI	"http://www.openlinksw.com/schemas/bif#"
+#define OPENLINKSW_SQL_NS_URI	"http://www.openlinksw.com/schemas/sql#"
+#define OPENLINKSW_BIF_NS_URI_LEN 38
+#define OPENLINKSW_SQL_NS_URI_LEN 38
+
 /*				 0         1         2         3        */
 /*				 01234567890123456789012345678901234567 */
 #define SWAP_REIFY_NS_URI	"http://www.w3.org/2000/10/swap/reify#"
@@ -46,6 +58,35 @@
 /*				 012345678901234567890123456789012345 */
 #define XHV_NS_URI		"http://www.w3.org/1999/xhtml/vocab#"
 #define XHV_NS_URI_LEN		35
+
+/*					 0         1         2    */
+/*					 012345678901234567890123 */
+#define OPENGIS_NS_URI			"http://www.opengis.net/"
+#define OPENGIS_NS_URI_LEN		23
+
+/*					 0         1         2         3         4       */
+/*					 01234567890123456789012345678901234567890123456 */
+#define OPENGIS_DEF_FUNCTION_GS_NS_URI	"http://www.opengis.net/def/function/geosparql/"
+#define OPENGIS_DEF_FUNCTION_GS_NS_URI_LEN 46
+
+/*					 0         1         2         3         4   */
+/*					 0123456789012345678901234567890123456789012 */
+#define OPENGIS_DEF_RULE_GS_NS_URI	"http://www.opengis.net/def/rule/geosparql/"
+#define OPENGIS_DEF_RULE_GS_NS_URI_LEN	42
+
+/*					 0         1         2         3          */
+/*					 0123456789012345678901234567890123456789 */
+#define OPENGIS_DEF_UOM_GS_NS_URI	"http://www.opengis.net/def/uom/OGC/1.0/"
+#define OPENGIS_DEF_UOM_GS_NS_URI_LEN 39
+
+/*					 0         1         2         3        */
+/*					 01234567890123456789012345678901234567 */
+#define OPENGIS_ONT_GS_NS_URI		"http://www.opengis.net/ont/geosparql#"
+#define OPENGIS_ONT_GS_NS_URI_LEN	37
+
+#define OPENGIS_ONT_GML_NS_URI		"http://www.opengis.net/ont/gml#"
+#define OPENGIS_ONT_SF_NS_URI		"http://www.opengis.net/ont/sf#"
+
 
 extern void uname_const_decl_init (void);
 
@@ -87,6 +128,102 @@ extern caddr_t uname_bif_c_st_within;
 extern caddr_t uname_bif_c_xcontains;
 extern caddr_t uname_bif_c_xpath_contains;
 extern caddr_t uname_bif_c_xquery_contains;
+extern caddr_t uname_bif_ns_uri;
+extern caddr_t uname_opengis_def_function_gs_ns_uri;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_boundary;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_buffer;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_convexHull;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_difference;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_distance;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehContains;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehCoveredBy;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehCovers;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehDisjoint;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehEquals;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehInside;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehMeet;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_ehOverlap;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_envelope;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_getSRID;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_intersection;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8dc;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8ec;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8eq;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8ntpp;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8ntppi;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8po;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8tpp;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_rcc8tppi;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_relate;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfContains;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfCrosses;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfDisjoint;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfEquals;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfIntersects;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfOverlaps;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfTouches;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_sfWithin;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_symDifference;
+extern caddr_t uname_opengis_def_function_gs_ns_uri_union;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehContains;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehCoveredBy;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehCovers;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehDisjoint;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehEquals;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehInside;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehMeet;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_ehOverlap;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8dc;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8ec;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8eq;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8ntpp;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8ntppi;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8po;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8tpp;
+extern caddr_t uname_opengis_def_rule_gs_ns_uri_rcc8tppi;
+extern caddr_t uname_opengis_ns_uri;
+extern caddr_t uname_opengis_ont_gml_ns_uri;
+extern caddr_t uname_opengis_ont_gs_ns_uri;
+extern caddr_t uname_opengis_ont_gs_ns_uri_Feature;
+extern caddr_t uname_opengis_ont_gs_ns_uri_SpatialObject;
+extern caddr_t uname_opengis_ont_gs_ns_uri_asGML;
+extern caddr_t uname_opengis_ont_gs_ns_uri_asWKT;
+extern caddr_t uname_opengis_ont_gs_ns_uri_coordinateDimension;
+extern caddr_t uname_opengis_ont_gs_ns_uri_dimension;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehContains;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehCoveredBy;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehCovers;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehDisjoint;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehEquals;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehInside;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehMeet;
+extern caddr_t uname_opengis_ont_gs_ns_uri_ehOverlap;
+extern caddr_t uname_opengis_ont_gs_ns_uri_gmlLiteral;
+extern caddr_t uname_opengis_ont_gs_ns_uri_hasDefaultGeometry;
+extern caddr_t uname_opengis_ont_gs_ns_uri_hasGeometry;
+extern caddr_t uname_opengis_ont_gs_ns_uri_hasSerialization;
+extern caddr_t uname_opengis_ont_gs_ns_uri_isEmpty;
+extern caddr_t uname_opengis_ont_gs_ns_uri_isSimple;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8dc;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8ec;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8eq;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8ntpp;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8ntppi;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8po;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8tpp;
+extern caddr_t uname_opengis_ont_gs_ns_uri_rcc8tppi;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfContains;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfCrosses;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfDisjoint;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfEquals;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfIntersects;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfOverlaps;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfTouches;
+extern caddr_t uname_opengis_ont_gs_ns_uri_sfWithin;
+extern caddr_t uname_opengis_ont_gs_ns_uri_spatialDimension;
+extern caddr_t uname_opengis_ont_gs_ns_uri_wktLiteral;
+extern caddr_t uname_opengis_ont_sf_ns_uri;
 extern caddr_t uname_false;
 extern caddr_t uname_lang;
 extern caddr_t uname_nil;
@@ -120,12 +257,14 @@ extern caddr_t uname_rdfdf_ns_uri_default_nullable;
 extern caddr_t uname_rdfdf_ns_uri_default_iid;
 extern caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 extern caddr_t uname_space;
+extern caddr_t uname_sql_ns_uri;
 extern caddr_t uname_swap_reify_ns_uri;
 extern caddr_t uname_swap_reify_ns_uri_statement;
 extern caddr_t uname_true;
 extern caddr_t uname_virtrdf_ns_uri;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadMap;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
+extern caddr_t uname_virtrdf_ns_uri_DefaultServiceMap;
 extern caddr_t uname_virtrdf_ns_uri_DefaultServiceStorage;
 extern caddr_t uname_virtrdf_ns_uri_DefaultSparul11Target;
 extern caddr_t uname_virtrdf_ns_uri_Geometry;
@@ -133,6 +272,7 @@ extern caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 extern caddr_t uname_virtrdf_ns_uri_QuadMap;
 extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
 extern caddr_t uname_virtrdf_ns_uri_QuadStorage;
+extern caddr_t uname_virtrdf_ns_uri_RdfDebuggerSingletone;
 extern caddr_t uname_virtrdf_ns_uri_SparqlMacroLibrary;
 extern caddr_t uname_virtrdf_ns_uri_SyncToQuads;
 extern caddr_t uname_virtrdf_ns_uri_array_of_any;

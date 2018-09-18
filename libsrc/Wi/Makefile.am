@@ -1060,6 +1060,7 @@ EXTRA_DIST = \
 	bif_kerberoscli.c \
 	bif_mts.c \
 	bif_purify.c \
+	bmcmp.c \
 	box2any.c \
 	cebits.c \
 	cebitsdec.c \

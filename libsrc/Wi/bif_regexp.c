@@ -37,8 +37,6 @@
    }
  */
 
-#define HT_ENTER(h) mutex_enter (h->ht_mutex)
-#define HT_LEAVE(h) mutex_leave (h->ht_mutex)
 
 
 #define NOFFSETS 20*3
@@ -103,10 +101,10 @@ release_compiled_regexp (id_hash_t *c_r, compiled_regexp_t *data)
   if (0 >= data->refctr)
     GPF_T1 ("Wrong refctr of a compiled regexp; memory corruption");
   if (NULL != c_r)
-    HT_ENTER (c_r);
+    HT_WRLOCK (c_r);
   delete_data = (0 == --(data->refctr));
   if (NULL != c_r)
-    HT_LEAVE (c_r);
+    HT_UNLOCK (c_r);
   if (!delete_data)
     return;
   if (NULL != data->code)
@@ -144,15 +142,15 @@ get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *
   compiled_regexp_t tmp, *new_val;
   key.orig_strg = (caddr_t)pattern;
   key.options = options;
-  HT_ENTER (c_r);
+  HT_WRLOCK (c_r);
   val = (compiled_regexp_t **)id_hash_get (c_r, (caddr_t) &key);
   if (NULL != val)
     {
       val[0]->refctr++;
-      HT_LEAVE (c_r);
+      HT_UNLOCK (c_r);
       return val[0];
     }
-  HT_LEAVE (c_r);
+  HT_UNLOCK (c_r);
   dbg_printf (("regex compiling (%s) with options %x ...\n", pattern, options));
   tmp.code = pcre_compile (pattern, options, &error, &erroff, 0);
   if (NULL == tmp.code)
@@ -195,7 +193,7 @@ get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *
   new_val->code = tmp.code;
   new_val->code_x = tmp.code_x;
   new_val->refctr = 1;
-  HT_ENTER (c_r);
+  HT_WRLOCK (c_r);
   pcre_cache_check (c_r);
   val = (compiled_regexp_t **)id_hash_get (c_r, (caddr_t) &key);
   if (NULL != val) /* double compile */
@@ -203,12 +201,12 @@ get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *
       dk_free_box (key.orig_strg);
       release_compiled_regexp (NULL, new_val);
       val[0]->refctr++;
-      HT_LEAVE (c_r);
+      HT_UNLOCK (c_r);
       return val[0];
     }
   id_hash_set (c_r, (caddr_t)(&key), (caddr_t)(&new_val));
   new_val->refctr++;
-  HT_LEAVE (c_r);
+  HT_UNLOCK (c_r);
   return new_val;
 }
 
@@ -997,7 +995,7 @@ bif_regexp_init ()
   compiled_regexps = id_hash_allocate (NHASHITEMS, sizeof (regexp_key_t), sizeof (compiled_regexp_t *),
       regexp_key_hash, regexp_key_hashcmp );
   id_hash_set_rehash_pct (compiled_regexps, 200);
-  compiled_regexps->ht_mutex = mutex_allocate();
+  compiled_regexps->ht_rwlock = rwlock_allocate();
 
   bif_define_ex ("regexp_match", bif_regexp_match, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("rdf_regex_impl", bif_rdf_regex_impl, BMD_RET_TYPE, &bt_integer, BMD_DONE);

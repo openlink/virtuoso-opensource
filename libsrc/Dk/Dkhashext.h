@@ -81,7 +81,7 @@ struct id_hash_s
     size_t 		ht_dict_mem_in_use;	/*!< Approximate size of dictonary in memory. Each stored item adds length of key + lenght of the data + size of hash table entry. That is filled only if \c ht_dict_max_mem_in_use is not zero */
     size_t 		ht_dict_max_entries;	/*!< Maximum number of entries kept in dictonary */
     size_t 		ht_dict_max_mem_in_use;	/*!< Memory size limit to prevent exausting of the physical memory */
-    dk_mutex_t *	ht_mutex;		/*!< Optional mutex, esp. popular when this is a dictionary propagated across threads of async queue. The mutex is NOT owned by the hashtable box! */
+    rwlock_t *		ht_rwlock;		/*!< Optional rwlock, esp. popular when this is a dictionary propagated across threads of async queue. The rwlock is NOT owned by the hashtable box! */
     id_hash_free_t	ht_free_hook;
     void * 		ht_mp;
 #ifdef RH_TRACE
@@ -91,8 +91,13 @@ struct id_hash_s
 #endif
 };
 
+#define HT_RDLOCK(ht) rwlock_rdlock ((ht)->ht_rwlock)
+#define HT_WRLOCK(ht) rwlock_wrlock ((ht)->ht_rwlock)
+#define HT_UNLOCK(ht) rwlock_unlock ((ht)->ht_rwlock)
 
-
+#define HT_RDLOCK_COND(ht,locked) (((locked) = (NULL != (ht)->ht_rwlock)) ? (rwlock_rdlock ((ht)->ht_rwlock), 1) : 0)
+#define HT_WRLOCK_COND(ht,locked) (((locked) = (NULL != (ht)->ht_rwlock)) ? (rwlock_wrlock ((ht)->ht_rwlock), 1) : 0)
+#define HT_UNLOCK_COND(ht,locked) ((locked) && (rwlock_unlock ((ht)->ht_rwlock), 1))
 
 typedef struct id_hash_iterator_s
 {

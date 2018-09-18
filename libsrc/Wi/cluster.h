@@ -233,7 +233,7 @@ typedef struct cl_op_s
     {
       row_delta_t *	rd; /* key and key parts for finding the key to delete, must be first, same as insert  */
       slice_id_t *	slices;
-    } delete;
+    } delete_op;
     struct
     {
       query_frag_t *	qf;

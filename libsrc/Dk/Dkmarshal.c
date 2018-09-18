@@ -31,24 +31,13 @@
 # include <netinet/in.h>			 /* for ntohl, htonl */
 #endif
 
-#if defined (i386) || \
-    defined (_WIN64) || \
-    defined (_M_IX86) || \
-    defined (_M_ALPHA) || \
-    defined (mc68000) || \
-    defined (sparc) || \
-    defined (__x86_64) || \
-    defined (__alpha) || \
-    defined (__powerpc) || \
-    defined (mips) || \
-    defined (__OS2__) || \
-    defined (_IBMR2)
-# define _IEEE_FLOATS
-#elif defined (OPL_SOURCE)
+#ifndef _IEEE_FLOATS
+#if defined (OPL_SOURCE)
 # include <librpc.h>
 #else
 # include <rpc/types.h>
 # include <rpc/xdr.h>
+#endif
 #endif
 
 macro_char_func readtable[256];
