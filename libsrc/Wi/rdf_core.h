@@ -36,13 +36,16 @@
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
 #define IRI_TO_ID_GPF		3 /*!< The conversion must be avoided at all, GPF is signalled if the value is tried */
 
+/*!< Parses tail of "nodeID://..." IRI and returns the numeric value of IRI_ID. In case of error, 0 is returned and \c error_fmt_ret is set to printf format string for reporting an error */
+extern int64 iri_nodeid_to_iid (unsigned char *nodeid_tail, const char **error_fmt_ret);
 /*!< returns 0 for NULL or non-cached rdf box or error, 1 for ready to use iri_id, 2 for URI string */
 extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
-extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
-extern caddr_t key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no);
-extern caddr_t key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no);
-extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
-extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
+EXE_EXPORT (void, rdf_handle_invalid_iri_id, (caddr_t * qst, const char *msg, iri_id_t iid));
+EXE_EXPORT (caddr_t, iri_to_id, (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret));
+EXE_EXPORT (caddr_t, key_id_to_canonicalized_iri, (query_instance_t * qi, iri_id_t iri_id_no));
+EXE_EXPORT (caddr_t, key_id_to_canonicalized_iri_if_cached, (iri_id_t iri_id_no));
+EXE_EXPORT (caddr_t, key_id_to_iri, (query_instance_t * qi, iri_id_t iri_id_no));
+EXE_EXPORT (int, key_id_to_namespace_and_local, (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret));
 #define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
 #define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
 #define RDF_TYPE_PARSEABLE 0x1

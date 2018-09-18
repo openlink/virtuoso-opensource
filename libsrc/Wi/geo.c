@@ -97,8 +97,7 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
   geo_t *g = (geo_t *) itc->itc_search_params[0];
   geo_t *g_shape = g;
   int gs_op;
-  if (rv)
-    GPF_T1 ("a geo inx col is supposed to have 0 rv");
+  if (rv) GPF_T1 ("a geo inx col is supposed to have 0 rv");
   if (GEO_GSOP == GEO_TYPE_CORE (g->geo_flags))
     {
       gs_op = itc->itc_geo_op;
@@ -165,7 +164,8 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
 	    err = thr_get_error_code (THREAD_CURRENT_THREAD);
 	    sqlr_resignal (err);
 	  }
-	  END_QR_RESET if (rc)
+	  END_QR_RESET
+	  if (rc)
 	    return DVC_MATCH;
 	  else
 	    return DVC_LESS;
@@ -211,8 +211,7 @@ itc_geo_invalidate (it_cursor_t * itc)
   a = MAX (x2 - x, FLT_SQ_EPSILON) * MAX (y2 - y, FLT_SQ_EPSILON)
 
 void
-rd_box_union (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, int row_no, row_delta_t * rd, double *min_growth,
-    double *min_area, double *mg_area, int *mg_row, int *ma_row)
+rd_box_union (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, int row_no, row_delta_t * rd, double * min_growth, double * min_area, double * mg_area, int * mg_row, int * ma_row)
 {
   /* see how much the row would grow in area if rd were unioned with it.  Get the area after the intersect */
   dbe_key_t *key = itc->itc_insert_key;
@@ -233,14 +232,10 @@ rd_box_union (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, int row_no, 
   MIN_F (dy, ry, iy, y_changes);
   MAX_F (dy2, ry2, iy2, y_changes);
 #if 0
-  if (dx < rx && !x_changes)
-    GPF_T1 ("no change");
-  if (dy < ry && !y_changes)
-    GPF_T1 ("no change");
-  if (dx2 > rx2 && !x_changes)
-    GPF_T1 ("no change");
-  if (dy2 > ry2 && !y_changes)
-    GPF_T1 ("no change");
+  if (dx < rx && !x_changes) GPF_T1 ("no change");
+  if (dy < ry && !y_changes) GPF_T1 ("no change");
+  if (dx2 > rx2 && !x_changes) GPF_T1 ("no change");
+  if (dy2 > ry2 && !y_changes) GPF_T1 ("no change");
 #endif
   if (x_changes || y_changes)
     {
@@ -299,8 +294,8 @@ page_geo_split (it_cursor_t * itc, buffer_desc_t * buf, int n_right, int *right,
   pf_fill_registered (&pf, buf);
   {
     row_delta_t *rd = &paf->paf_rd;
-    memset (rd, 0, sizeof (row_delta_t));
-    rd->rd_temp = &paf->paf_rd_temp[0];
+    memset (rd, 0, sizeof (row_delta_t));	\
+    rd->rd_temp = &paf->paf_rd_temp[0];		\
     rd->rd_temp_max = sizeof (paf->paf_rd_temp);
     rd->rd_values = paf->paf_rd_values;
     rd->rd_allocated = RD_AUTO;
@@ -365,8 +360,7 @@ page_geo_split (it_cursor_t * itc, buffer_desc_t * buf, int n_right, int *right,
       END_DO_SET ();
       itc_split_lock_waits (pf.pf_itc, buf, pf.pf_current);
     }
-  if (t_buf->bd_registered)
-    GPF_T1 ("registrations are not supposed to go to the temp buf");
+  if (t_buf->bd_registered) GPF_T1 ("registrations are not supposed to go to the temp buf");
   first_affected = 0;
   dk_set_free (pf.pf_left);
   itc_geo_invalidate (itc);
@@ -384,10 +378,7 @@ incbox (bbox_t * b, double x, double y, double x2, double y2)
 {
   if (!b->inited)
     {
-      b->x = x;
-      b->y = y;
-      b->x2 = x2;
-      b->y2 = y2;
+      b->x = x; b->y = y; b->x2 = x2; b->y2 = y2;
       b->inited = 1;
     }
   else
@@ -471,8 +462,7 @@ itc_geo_row (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, double *x, do
 {
   dbe_key_t *key = itc->itc_insert_key;
   row_ver_t rv = IE_ROW_VERSION (row);
-  if (rv)
-    GPF_T1 ("geo inx row is supposed to have 0 rv");
+  if (rv) GPF_T1 ("geo inx row is supposed to have 0 rv");
   ROW_DBL_COL (x, buf, row, key->key_key_fixed[RD_X]);
   ROW_DBL_COL (y, buf, row, key->key_key_fixed[RD_Y]);
   ROW_DBL_COL (x2, buf, row, key->key_key_fixed[RD_X2]);
@@ -605,7 +595,8 @@ geo_uneven_split (int left_x, int left_y, int n, float *x_ratio, float *y_ratio)
   /* if more than 80% on one side with both x and y splits */
   *x_ratio = (float) left_x / (float) n;
   *y_ratio = (float) left_y / (float) n;
-  return ((*x_ratio < 0.2 || *x_ratio > 0.8) && (*y_ratio < 0.2 || *y_ratio > 0.8));
+  return ((*x_ratio  < 0.2 || *x_ratio > 0.8)
+	  && (*y_ratio < 0.2 || *y_ratio > 0.8));
 }
 
 long tc_geo_x_split;
@@ -675,8 +666,7 @@ itc_geo_split (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
       if (cny < cy)
 	{
 	  incbox (&ybox_left, x[inx], y[inx], x2[inx], y2[inx]);
-	  if (ybox_left.y2 < y2[inx])
-	    GPF_T1 ("incbox bad");
+	  if (ybox_left.y2 < y2[inx]) GPF_T1 ("incbox bad");
 	  n_left_by_y++;
 	}
       else
@@ -1166,12 +1156,14 @@ geo_t *
 bif_geo_arg (caddr_t * qst, state_slot_t ** args, int inx, const char *f, int tp)
 {
   geo_t *g;
-  caddr_t v = bif_arg_unrdf (qst, args, inx, f);
+  caddr_t v = ((GEO_ARG_NEVER_UNRDF & tp) ? bif_arg (qst, args, inx, f) :  bif_arg_unrdf (qst, args, inx, f));
   dtp_t v_dtp = DV_TYPE_OF (v);
   if (DV_GEO != v_dtp)
     {
       if ((GEO_ARG_NULLABLE & tp) && (DV_DB_NULL == v_dtp))
 	return NULL;
+      if (GEO_ARG_NONGEO_AS_IS & tp)
+        return (geo_t*)v; /* An intentionally wrong cast, yes */
       sqlr_new_error ("22032", "GEO..", "Function %s() expects a geometry%s as argument %d",
 	  f, ((GEO_ARG_NULLABLE == (tp & GEO_ARG_MASK)) ? " or NULL" : ""), inx);
     }
@@ -1343,8 +1335,7 @@ caddr_t
 geo_parse_wkt (char *text, caddr_t * err_ret)
 {
   geo_t *g;
-  do
-    {
+  do {
       char *par = text, ns1[30], ns2[30];
       double x, y;
       if (strncmp (text, "point(", 6) && strncmp (text, "POINT(", 6))
@@ -1358,8 +1349,7 @@ geo_parse_wkt (char *text, caddr_t * err_ret)
 	g->geo_flags |= GEO_IS_FLOAT;
       *err_ret = NULL;
       return (caddr_t) g;
-    }
-  while (0);
+    } while (0);
   g = ewkt_parse (text, err_ret);
   return (caddr_t)g;
 }

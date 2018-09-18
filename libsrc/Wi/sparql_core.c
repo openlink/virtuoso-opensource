@@ -4921,6 +4921,9 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
   caddr_t proc_full_name;
   query_t *proc;
   int argcount;
+  const char *funname_to_store = funname;
+  const char *bare_bif_name = NULL;
+  bif_metadata_t *bmd = NULL;
   if (NULL == args)
     args = (SPART **)t_list (0);
   argcount = BOX_ELEMENTS (args);
@@ -4930,6 +4933,12 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
         return spar_make_funcall (sparp, aggregate_mode, t_box_dv_short_strconcat ("bif:", funname + OPENLINKSW_BIF_NS_URI_LEN), args);
       if (!strncmp (funname, OPENLINKSW_SQL_NS_URI, OPENLINKSW_SQL_NS_URI_LEN))
         return spar_make_funcall (sparp, aggregate_mode, t_box_dv_short_strconcat ("sql:", funname + OPENLINKSW_SQL_NS_URI_LEN), args);
+      if (!strncmp (funname, OPENGIS_NS_URI, OPENGIS_NS_URI_LEN))
+        {
+          funname_to_store = t_box_dv_short_strconcat ("bif:", funname);
+          bare_bif_name = funname;
+          goto bare_bif_name_found; /* see below */
+        }
     }
   if (0 != aggregate_mode)
     goto aggr_checked; /* see below */
@@ -4951,8 +4960,11 @@ spar_make_funcall (sparp_t *sparp, int aggregate_mode, const char *funname, SPAR
     spar_error (sparp, "Aggregate function %.100s() is not allowed outside result-set expressions", funname);
 aggr_checked:
   if (!strncmp (funname, "bif:", 4))
+    bare_bif_name = funname + 4;
+bare_bif_name_found:
+  if (NULL != bare_bif_name)
     {
-      bif_metadata_t *bmd = find_bif_metadata_by_raw_name (funname+4);
+      bmd = find_bif_metadata_by_raw_name (bare_bif_name);
       if (NULL == bmd)
         spar_error (sparp, "Unknown function %.100s()", funname);
       if (bmd->bmd_is_pure)
@@ -5003,8 +5015,9 @@ xpf_checked:
       else
         sparp->sparp_query_uses_aggregates++;
     }
-  return spartlist (sparp, 5, SPAR_FUNCALL, t_box_dv_uname_string (funname), args, (ptrlong)aggregate_mode, (ptrlong)0);
+  return spartlist (sparp, 5, SPAR_FUNCALL, t_box_dv_uname_string (funname_to_store), args, (ptrlong)aggregate_mode, (ptrlong)0);
 }
+
 
 const sparp_bif_desc_t sparp_bif_descs[] = {
 /*  sbd_name		| sbd_subtype			, impl	| sbd_required_syntax	| min-/maxargs	| ret_valmode		| sbd_arg_valmodes					| sbd_result_restr_bits		*/

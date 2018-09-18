@@ -107,7 +107,9 @@ typedef unsigned short geo_flags_t;	/*!< Type for flags of a shape (type + seria
 #define GEO_ARG_CHECK_ZM	0x20000000				/*!< Special value for use in bif_geo_arg to indicate that the argument should have Z and/or M dimensions specified by the argument. It does not fit into \c geo_flags_t shortint! */
 #define GEO_ARG_ANY_NULLABLE	(GEO_ARG_NULLABLE | GEO_UNDEFTYPE)	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype or a NULL. It does not fit into \c geo_flags_t shortint! */
 #define GEO_ARG_ANY_NONNULL	(GEO_ARG_NONNULL | GEO_UNDEFTYPE)	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype but not NULL. It does not fit into \c geo_flags_t shortint! */
-#define GEO_ARG_MASK		0x70000000				/*!< Mask for GEO_ARG_xxx values. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_NEVER_UNRDF	0x01000000				/*!< Special value for use in bif_geo_arg to indicate that the argument should not be unrdf-ed.  It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_NONGEO_AS_IS	0x02000000				/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any type, but if it's not a geo then it is passed unchanged, no error. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_MASK		0x73000000				/*!< Mask for GEO_ARG_xxx values. It does not fit into \c geo_flags_t shortint! */
 
 typedef double geoc;		/*!< Type of geographical coordinate */
 typedef double geo_measure_t;	/*!< Type of M coordinate */
@@ -272,12 +274,15 @@ typedef struct geo_s
 #define EARTH_RADIUS_GEOM_MEAN_KM 6367.43568
 #define EARTH_RADIUS_EQUATOR_KM 6378.137
 
+EXE_EXPORT (boxint, geo_sr_iri_to_srid, (caddr_t sr_iri));
+EXE_EXPORT (caddr_t, geo_sr_srid_to_iri, (boxint srid));
 
-extern double haversine_deg_km (double long1, double lat1, double long2, double lat2);
+EXE_EXPORT (double, haversine_deg_km, (double long1, double lat1, double long2, double lat2));
+EXE_EXPORT (double, haversine_deg_deg, (double long1, double lat1, double long2, double lat2));
 extern double dist_from_point_to_line_segment (double xP, double yP, double xL1, double yL1, double xL2, double yL2);
 extern double geo_distance (geo_srcode_t srcode, double x1, double y1, double x2, double y2);
 
-extern int geo_pred (geo_t * g1, geo_t * g2, int op, double prec);
+EXE_EXPORT (int, geo_pred, (geo_t * g1, geo_t * g2, int op, double prec));
 struct dbe_table_s;
 extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double prec, slice_id_t slice);
 
@@ -307,18 +312,19 @@ EXE_EXPORT (void, geo_print_as_dxf_entity, (geo_t *g, caddr_t *attrs, dk_session
 
 extern int geo_calc_length_of_serialization (geo_t *g, int is_topmost);
 extern int geo_serial_length (geo_t *g);
-extern int geo_looks_fine_or_null (geo_t * geo);
+int geo_looks_fine_or_null (geo_t * geo);
 
 /* EWKT Reader */
 
-#define EWKT_NUM		-1
-#define EWKT_NUM_BAD		-2
-#define EWKT_KWD_GEO_TYPE	-3
-#define EWKT_KWD_MODIF		-4
-#define EWKT_KWD_EXT		-5
-#define EWKT_KWD_BAD		-6
-#define EWKT_BAD		-7
-#define EWKT_KWD_SRID		-10
+#define EWKT_NUM		-1	/*!< Valid number */
+#define EWKT_NUM_BAD		-2	/*!< Invalid number, quite naturally */
+#define EWKT_KWD_GEO_TYPE	-3	/*!< Keyword like "POINT", "POLYGON" etc. */
+#define EWKT_KWD_MODIF		-4	/*!< Dimention modifier, "M", "Z" or "ZM" (but not "MZ") */
+#define EWKT_KWD_EXT		-5	/*!< WKT extension keyword, now only "SRID" is specified */
+#define EWKT_IRI		-6	/*!< Angle-bracketed IRI, may appear only at the very beginning */
+#define EWKT_KWD_BAD		-7	/*!< An unknown word, most likely a type in a keyword */
+#define EWKT_BAD		-8	/*!< Something totally wrong */
+#define EWKT_KWD_SRID		-100	/*!< Subtype of EWKT_KWD_EXT token for "SRID" keyword, may appear only at the very beginning */
 
 
 typedef struct ewkt_kwd_metas_s
@@ -334,9 +340,13 @@ typedef struct ewkt_kwd_metas_s
 } ewkt_kwd_metas_t;
 
 EXE_EXPORT (ewkt_kwd_metas_t *, ewkt_find_metas_by_geotype, (int geotype));
+EXE_EXPORT (id_hash_iterator_t **, get_sr_iri_to_srid_iter, (void));
+EXE_EXPORT (id_hash_iterator_t **, get_sr_srid_to_iri_iter, (void));
 EXE_EXPORT (geo_t *, ewkt_parse, (const char *strg, caddr_t *err_ret));
-EXE_EXPORT (geo_t *, ewkt_parse_2, (const char *strg, int dflt_srid, caddr_t *err_ret));
+EXE_EXPORT (geo_t *, ewkt_parse_2, (const char *strg, int dflt_srcode, caddr_t *err_ret));
 EXE_EXPORT (void, ewkt_print_sf12, (geo_t *g, dk_session_t *ses));
+EXE_EXPORT (geo_t *, wkb_read_ses, (dk_session_t *ses, int srid, int basic_wkb_only));
+EXE_EXPORT (void, wkb_print, (geo_t *g, dk_session_t *ses, int basic_wkb_only, char set_byte_order));
 
 EXE_EXPORT (geo_t *, bif_geo_arg, (caddr_t * qst, struct state_slot_s ** args, int inx, const char *fname, int geotype));
 
@@ -354,6 +364,7 @@ EXE_EXPORT (int, geo_long360add, (geo_t * g));
 EXE_EXPORT (int, geo_calc_bounding, (geo_t * g, int flags));
 EXE_EXPORT (void, geo_get_bounding_XYbox, (geo_t * g, geo_t * box, double prec_x, double prec_y));
 EXE_EXPORT (geo_ZMbox_t *, geo_get_ZMbox_field, (geo_t * g));
+EXE_EXPORT (caddr_t, bif_st_get_bounding_box_impl, (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int get_prec_args, const char *fname, int geotype));
 extern geo_t *geo_parse_ewkt (const char *text);
 extern geo_t *geo_parse_ewkt_sub (const char *text, int expected_type);
 extern void dks_print_ewkt (dk_session_t *ses, geo_t *sg);
@@ -375,8 +386,21 @@ EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xf
 EXE_EXPORT (void, geo_modify_by_affine2d, (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff));
 
 typedef geo_t *geo_srid_transform_cbk_t (caddr_t *qst, geo_t *g, int dest_srid, caddr_t *err_ret);
-EXE_EXPORT (void, geo_set_default_srid_transform_cbk, (geo_srid_transform_cbk_t *cbk));
 extern geo_srid_transform_cbk_t *geo_default_srid_transform_cbk;
+EXE_EXPORT (void, geo_set_default_srid_transform_cbk, (geo_srid_transform_cbk_t *cbk));
+EXE_EXPORT (geo_srid_transform_cbk_t *, geo_get_default_srid_transform_cbk, (void));
+
+typedef void *geo_pj_by_srid_or_string_cbk_t (caddr_t * qst, caddr_t *err_ret, int srid, caddr_t strg_or_null, const char *bifname, const char *argname);
+extern geo_pj_by_srid_or_string_cbk_t *geo_default_pj_by_srid_or_string_cbk;
+EXE_EXPORT (void, geo_set_default_pj_by_srid_or_string_cbk, (geo_pj_by_srid_or_string_cbk_t *cbk));
+EXE_EXPORT (geo_pj_by_srid_or_string_cbk_t *, geo_get_default_pj_by_srid_or_string_cbk, (void));
+
+typedef int geo_pj_yn_cbk_t (void *pj);
+extern geo_pj_yn_cbk_t *geo_default_pj_is_latlong_cbk;
+extern geo_pj_yn_cbk_t *geo_default_pj_is_geocent_cbk;
+EXE_EXPORT (void, geo_set_default_pj_yn_cbks, (geo_pj_yn_cbk_t *is_latlong_cbk, geo_pj_yn_cbk_t *is_geocent_cbk));
+EXE_EXPORT (geo_pj_yn_cbk_t *, geo_get_default_pj_is_latlong_cbk, (void));
+EXE_EXPORT (geo_pj_yn_cbk_t *, geo_get_default_pj_is_geocent_cbk, (void));
 
 /*! Map projection callback that gets pointer to projection, longitude and latitude of a point, fills in X and Y of corresponding point on map and returns NULL on success or error message otherwise. */
 typedef const char *geo_proj_point_cbk_t (void *geo_proj, geoc longP, geoc latP, double *retX, double *retY);

@@ -26,8 +26,6 @@
 #endif
 #include <math.h>
 #include "Dk.h"
-#include "Dk/Dkalloc.h"
-#include "Dk/Dkbox.h"
 #include "geo.h"
 #include "widv.h"
 #include "sqlfn.h"
@@ -126,7 +124,7 @@ geo_t *
 geo_alloc_safe (geo_flags_t geo_flags_, int len_, int srcode_, dk_session_t * ses)
 {
   geo_t *res = NULL;
-  int head_sz, gcb_bcount, gcb_sz, full_sz;
+  size_t head_sz, gcb_bcount, gcb_sz, full_sz;
   switch (GEO_TYPE (geo_flags_))
     {
     case GEO_NULL_SHAPE:		GEO_ALLOC_POINT(XYbox); break;
@@ -371,7 +369,7 @@ geo_copy (geo_t *src)
   GEO_RESET_CVECT(_.pline.Ys);
 
 #define GEO_MP_COPY_PARTS(lastfld) do { int ctr; \
-  GEO_RESET_GCB(_.pline.pline_gcb); \
+  GEO_RESET_GCB(_.parts.parts_gcb); \
   res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(src->_.parts.items)) - (char *)src))); \
   for (ctr = res->_.parts.len; ctr--; /* no step */) \
     res->_.parts.items[ctr] = mp_geo_copy (mp, src->_.parts.items[ctr]); \
@@ -1251,17 +1249,20 @@ faraway:
 
 typedef struct ewkt_input_s
 {
-  const unsigned char *ewkt_source;
-  const unsigned char *ewkt_tail;
-  int ewkt_row_no;
-  const unsigned char *ewkt_row_begin;
+  const unsigned char *	ewkt_source;				/*!< EWKT string being read */
+  const unsigned char *	ewkt_tail;				/*!< Not-yet-scanned end of \c ewkt_source */
+  int			ewkt_row_no;				/*!< Zero-based row number of current position, add 1 when print it in report like error message */
+  const unsigned char *	ewkt_row_begin;				/*!< Pointer to the first character of current row in \c ewkt_source */
+  int			ewkt_error_point_idx1;			/*!< 1-based index of point with wrong coordinate */
+  int			ewkt_error_dim_idx1;			/*!< 1-based index of dimension with wrong coordinate */
   const char *ewkt_error;
   geo_srid_t ewkt_srid;
   geo_srcode_t ewkt_srcode;
   geoc *ekwt_Cs[4];
+  int			ewkt_swap_latlong_to_longlat;		/*!< Swap X and Y when read <http://www.opengis.net/def/crs/EPSG/0/4326> and <http://www.opengis.net/def/crs/EPSG/0/4979> geo:wktLiteral-s */
   int ekwt_point_count, ekwt_point_max;
   dk_set_t ekwt_cuts, ekwt_rings, ekwt_childs, ekwt_members;
-  jmp_buf ewkt_error_ctx;
+  jmp_buf		ewkt_error_ctx;				/*!< Context for longjmp() to in case of error */
 } ewkt_input_t;
 
 #define ewkt_ws_skip(in) for (;;) { \
@@ -1279,97 +1280,114 @@ typedef struct ewkt_input_s
 typedef union ewkt_token_val_s
 {
   geoc v_geoc;
+  const unsigned char *	v_iri_begin_and_end[2];
   ewkt_kwd_metas_t *v_kwd;
 } ewkt_token_val_t;
 
 ewkt_kwd_metas_t ewkt_keyword_metas[] = {
 /*  Name			| Serial| Type			| Subtype		| (...(	|minnums|maxnums|alias */
-  {"BOX"			,  0	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 3	, 0	},
-  {"BOX2D"			,  1	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 2	, 1	},
-  {"BOX3D"			,  2	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 3	, 0	},
-  {"BOXM"			,  3	, EWKT_KWD_GEO_TYPE	, GEO_BOX_M		, 1	, 3	, 4	, 0	},
-  {"BOXZ"			,  4	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 4	, 1	},
-  {"BOXZM"			,  5	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z_M		, 1	, 4	, 4	, 0	},
-  {"CIRCULARSTRING"		,  6	, EWKT_KWD_GEO_TYPE	, GEO_ARCSTRING		, 1	, 2	, 2	, 0	},
-  {"CIRCULARSTRINGM"		,  7	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CIRCULARSTRINGZ"		,  8	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CIRCULARSTRINGZM"		,  9	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"COMPOUNDCURVE"		, 10	, EWKT_KWD_GEO_TYPE	, GEO_CURVE		, 1	, 2	, 2	, 0	},
-  {"COMPOUNDCURVEM"		, 11	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"COMPOUNDCURVEZ"		, 12	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"COMPOUNDCURVEZM"		, 13	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CURVE"			, 14	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CURVEM"			, 15	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CURVEPOLYGON"		, 16	, EWKT_KWD_GEO_TYPE	, GEO_CURVEPOLYGON	, 2	, -1	, -1	, 0	},
-  {"CURVEPOLYGONM"		, 17	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CURVEPOLYGONZ"		, 18	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CURVEPOLYGONZM"		, 19	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CURVEZ"			, 20	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"CURVEZM"			, 21	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"EMPTY"			, 22	, EWKT_KWD_GEO_TYPE	, GEO_NULL_SHAPE	, 0	, 0	, 0	, 0	},
-  {"GEOMETRYCOLLECTION"		, 23	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION	, -1	, -1	, -1	, 0	},
-  {"GEOMETRYCOLLECTIONM"	, 24	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION_M	, -1	, -1	, -1	, 0	},
-  {"GEOMETRYCOLLECTIONZ"	, 25	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION_Z	, -1	, -1	, -1	, 0	},
-  {"GEOMETRYCOLLECTIONZM"	, 26	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION_Z_M	, -1	, -1	, -1	, 0	},
-  {"GEOMETRY"			, 27	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"GEOMETRYZ"			, 28	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"GEOMETRYZM"			, 29	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"LINESTRING"			, 30	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING	, 1	, 2	, 3	, 0	},
-  {"LINESTRINGM"		, 31	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING_M	, 1	, 3	, 4	, 0	},
-  {"LINESTRINGZ"		, 32	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING_Z	, 1	, 3	, 4	, 0	},
-  {"LINESTRINGZM"		, 33	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING_Z_M	, 1	, 4	, 4	, 0	},
-  {"M"				, 34	, EWKT_KWD_MODIF	, GEO_A_M		, 0	, 0	, 0	, 0	},
-  {"MULTICURVE"			, 35	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_CURVE	, 2	, 2	, 2	, 0	},
-  {"MULTICURVEM"		, 36	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"MULTICURVEZ"		, 37	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"MULTICURVEZM"		, 38	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"MULTILINESTRING"		, 39	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING	, 2	, 2	, 3	, 0	},
-  {"MULTILINESTRINGM"		, 40	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_M, 2	, 3	, 4	, 0	},
-  {"MULTILINESTRINGZ"		, 41	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_Z, 2	, 3	, 4	, 0	},
-  {"MULTILINESTRINGZM"		, 42	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_Z_M, 2	, 4	, 4	, 0	},
-  {"MULTIPATCH"			, 43	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"MULTIPOINT"			, 44	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST		, 1	, 2	, 3	, 0	},
-  {"MULTIPOINTM"		, 45	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST_M	, 1	, 3	, 4	, 0	},
-  {"MULTIPOINTZ"		, 46	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST_Z	, 1	, 3	, 4	, 0	},
-  {"MULTIPOINTZM"		, 47	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST_Z_M	, 1	, 4	, 4	, 0	},
-  {"MULTIPOLYGON"		, 48	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON	, 3	, 2	, 3	, 0	},
-  {"MULTIPOLYGONM"		, 49	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON_M	, 3	, 3	, 4	, 0	},
-  {"MULTIPOLYGONZ"		, 50	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON_Z	, 3	, 3	, 4	, 0	},
-  {"MULTIPOLYGONZM"		, 51	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON_Z_M	, 3	, 4	, 4	, 0	},
-  {"MULTISURFACE"		, 52	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"MULTISURFACEM"		, 53	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"MULTISURFACEZ"		, 54	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"MULTISURFACEZM"		, 55	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"POINT"			, 56	, EWKT_KWD_GEO_TYPE	, GEO_POINT		, 1	, 2	, 3	, 0	},
-  {"POINTM"			, 57	, EWKT_KWD_GEO_TYPE	, GEO_POINT_M		, 1	, 3	, 4	, 0	},
-  {"POINTZ"			, 58	, EWKT_KWD_GEO_TYPE	, GEO_POINT_Z		, 1	, 3	, 4	, 0	},
-  {"POINTZM"			, 59	, EWKT_KWD_GEO_TYPE	, GEO_POINT_Z_M		, 1	, 4	, 4	, 0	},
-  {"POLYGON"			, 60	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON		, 2	, 2	, 3	, 0	},
-  {"POLYGONM"			, 61	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON_M		, 2	, 3	, 4	, 0	},
-  {"POLYGONZ"			, 62	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON_Z		, 2	, 3	, 4	, 0	},
-  {"POLYGONZM"			, 63	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON_Z_M	, 2	, 4	, 4	, 0	},
-  {"POLYHEDRALSURFACE"		, 64	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"POLYHEDRALSURFACEM"		, 65	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"POLYHEDRALSURFACEZ"		, 66	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"POLYHEDRALSURFACEZM"	, 67	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"POLYLINE"			, 68	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING	, 2	, 2	, 3	, 1	},
-  {"POLYLINEM"			, 69	, EWKT_KWD_GEO_TYPE	, -1			, 2	, 2	, 2	, 1	},
-  {"POLYLINEZ"			, 70	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_Z, 2	, 3	, 3	, 1	},
-  {"RING"			, 71	, EWKT_KWD_GEO_TYPE	, GEO_RING		, 1	, 2	, 3	, 0	},
-  {"RINGM"			, 72	, EWKT_KWD_GEO_TYPE	, GEO_RING_M		, 1	, 3	, 4	, 0	},
-  {"RINGZ"			, 73	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z		, 1	, 3	, 4	, 0	},
-  {"RINGZM"			, 74	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z_M		, 1	, 4	, 4	, 0	},
-  {"SRID"			, 75	, EWKT_KWD_EXT		, EWKT_KWD_SRID		, 0	, 0	, 0	, 0	},
-  {"SURFACE"			, 76	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"SURFACEM"			, 77	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"SURFACEZ"			, 78	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"SURFACEZM"			, 79	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"TIN"			, 80	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"TINM"			, 81	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"TINZ"			, 82	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"TINZM"			, 83	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
-  {"Z"				, 84	, EWKT_KWD_MODIF	, GEO_A_Z		, 0	, 0	, 0	, 0	},
-  {"ZM"				, 85	, EWKT_KWD_MODIF	, GEO_A_Z | GEO_A_M	, 0	, 0	, 0	, 0	} };
+  {"BBOX"			,  0	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 3	, 1	},
+  {"BBOX2D"			,  1	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 2	, 1	},
+  {"BBOX3D"			,  2	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 3	, 1	},
+  {"BBOXM"			,  3	, EWKT_KWD_GEO_TYPE	, GEO_BOX_M		, 1	, 3	, 4	, 1	},
+  {"BBOXZ"			,  4	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 4	, 1	},
+  {"BBOXZM"			,  5	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z_M		, 1	, 4	, 4	, 1	},
+  {"BOX"			,  6	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 3	, 0	},
+  {"BOX2D"			,  7	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 2	, 1	},
+  {"BOX3D"			,  8	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 3	, 0	},
+  {"BOXM"			,  9	, EWKT_KWD_GEO_TYPE	, GEO_BOX_M		, 1	, 3	, 4	, 0	},
+  {"BOXZ"			, 10	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 4	, 1	},
+  {"BOXZM"			, 11	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z_M		, 1	, 4	, 4	, 0	},
+  {"CIRCULARSTRING"		, 12	, EWKT_KWD_GEO_TYPE	, GEO_ARCSTRING		, 1	, 2	, 2	, 0	},
+  {"CIRCULARSTRINGM"		, 13	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CIRCULARSTRINGZ"		, 14	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CIRCULARSTRINGZM"		, 15	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"COMPOUNDCURVE"		, 16	, EWKT_KWD_GEO_TYPE	, GEO_CURVE		, 1	, 2	, 2	, 0	},
+  {"COMPOUNDCURVEM"		, 17	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"COMPOUNDCURVEZ"		, 18	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"COMPOUNDCURVEZM"		, 19	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CURVE"			, 20	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CURVEM"			, 21	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CURVEPOLYGON"		, 22	, EWKT_KWD_GEO_TYPE	, GEO_CURVEPOLYGON	, 2	, -1	, -1	, 0	},
+  {"CURVEPOLYGONM"		, 27	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CURVEPOLYGONZ"		, 23	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CURVEPOLYGONZM"		, 24	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CURVEZ"			, 25	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"CURVEZM"			, 26	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"EMPTY"			, 28	, EWKT_KWD_GEO_TYPE	, GEO_NULL_SHAPE	, 0	, 0	, 0	, 0	},
+  {"ENVELOPE"			, 29	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 3	, 1	},
+  {"ENVELOPE2D"			, 30	, EWKT_KWD_GEO_TYPE	, GEO_BOX		, 1	, 2	, 2	, 1	},
+  {"ENVELOPE3D"			, 31	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 3	, 1	},
+  {"ENVELOPEM"			, 32	, EWKT_KWD_GEO_TYPE	, GEO_BOX_M		, 1	, 3	, 4	, 1	},
+  {"ENVELOPEZ"			, 33	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z		, 1	, 3	, 4	, 1	},
+  {"ENVELOPEZM"			, 34	, EWKT_KWD_GEO_TYPE	, GEO_BOX_Z_M		, 1	, 4	, 4	, 1	},
+  {"GEOMETRY"			, 35	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"GEOMETRYCOLLECTION"		, 36	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION	, -1	, -1	, -1	, 0	},
+  {"GEOMETRYCOLLECTIONM"	, 37	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION_M	, -1	, -1	, -1	, 0	},
+  {"GEOMETRYCOLLECTIONZ"	, 38	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION_Z	, -1	, -1	, -1	, 0	},
+  {"GEOMETRYCOLLECTIONZM"	, 39	, EWKT_KWD_GEO_TYPE	, GEO_COLLECTION_Z_M	, -1	, -1	, -1	, 0	},
+  {"GEOMETRYZ"			, 40	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"GEOMETRYZM"			, 41	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"LINEARRING"			, 42	, EWKT_KWD_GEO_TYPE	, GEO_RING		, 1	, 2	, 3	, 1	},	/* LINEARRING[Z][M] is a non-standard tag introduced by com.vividsolutions.jts.io.WKTWriter and then migrated to GEOS */
+  {"LINEARRINGM"		, 43	, EWKT_KWD_GEO_TYPE	, GEO_RING_M		, 1	, 3	, 4	, 1	},
+  {"LINEARRINGZ"		, 44	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z		, 1	, 3	, 4	, 1	},
+  {"LINEARRINGZM"		, 45	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z_M		, 1	, 4	, 4	, 1	},
+  {"LINESTRING"			, 46	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING	, 1	, 2	, 3	, 0	},
+  {"LINESTRINGM"		, 47	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING_M	, 1	, 3	, 4	, 0	},
+  {"LINESTRINGZ"		, 48	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING_Z	, 1	, 3	, 4	, 0	},
+  {"LINESTRINGZM"		, 49	, EWKT_KWD_GEO_TYPE	, GEO_LINESTRING_Z_M	, 1	, 4	, 4	, 0	},
+  {"M"				, 50	, EWKT_KWD_MODIF	, GEO_A_M		, 0	, 0	, 0	, 0	},
+  {"MULTICURVE"			, 51	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_CURVE	, 2	, 2	, 2	, 0	},
+  {"MULTICURVEM"		, 52	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"MULTICURVEZ"		, 53	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"MULTICURVEZM"		, 54	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"MULTILINESTRING"		, 55	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING	, 2	, 2	, 3	, 0	},
+  {"MULTILINESTRINGM"		, 56	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_M, 2	, 3	, 4	, 0	},
+  {"MULTILINESTRINGZ"		, 57	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_Z, 2	, 3	, 4	, 0	},
+  {"MULTILINESTRINGZM"		, 58	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_Z_M, 2	, 4	, 4	, 0	},
+  {"MULTIPATCH"			, 59	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"MULTIPOINT"			, 60	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST		, 1	, 2	, 3	, 0	},
+  {"MULTIPOINTM"		, 61	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST_M	, 1	, 3	, 4	, 0	},
+  {"MULTIPOINTZ"		, 62	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST_Z	, 1	, 3	, 4	, 0	},
+  {"MULTIPOINTZM"		, 63	, EWKT_KWD_GEO_TYPE	, GEO_POINTLIST_Z_M	, 1	, 4	, 4	, 0	},
+  {"MULTIPOLYGON"		, 64	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON	, 3	, 2	, 3	, 0	},
+  {"MULTIPOLYGONM"		, 65	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON_M	, 3	, 3	, 4	, 0	},
+  {"MULTIPOLYGONZ"		, 66	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON_Z	, 3	, 3	, 4	, 0	},
+  {"MULTIPOLYGONZM"		, 67	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_POLYGON_Z_M	, 3	, 4	, 4	, 0	},
+  {"MULTISURFACE"		, 68	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"MULTISURFACEM"		, 69	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"MULTISURFACEZ"		, 70	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"MULTISURFACEZM"		, 71	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"POINT"			, 72	, EWKT_KWD_GEO_TYPE	, GEO_POINT		, 1	, 2	, 3	, 0	},
+  {"POINTM"			, 73	, EWKT_KWD_GEO_TYPE	, GEO_POINT_M		, 1	, 3	, 4	, 0	},
+  {"POINTZ"			, 74	, EWKT_KWD_GEO_TYPE	, GEO_POINT_Z		, 1	, 3	, 4	, 0	},
+  {"POINTZM"			, 75	, EWKT_KWD_GEO_TYPE	, GEO_POINT_Z_M		, 1	, 4	, 4	, 0	},
+  {"POLYGON"			, 76	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON		, 2	, 2	, 3	, 0	},
+  {"POLYGONM"			, 77	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON_M		, 2	, 3	, 4	, 0	},
+  {"POLYGONZ"			, 78	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON_Z		, 2	, 3	, 4	, 0	},
+  {"POLYGONZM"			, 79	, EWKT_KWD_GEO_TYPE	, GEO_POLYGON_Z_M	, 2	, 4	, 4	, 0	},
+  {"POLYHEDRALSURFACE"		, 80	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"POLYHEDRALSURFACEM"		, 81	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"POLYHEDRALSURFACEZ"		, 82	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"POLYHEDRALSURFACEZM"	, 83	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"POLYLINE"			, 84	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING	, 2	, 2	, 3	, 1	},
+  {"POLYLINEM"			, 85	, EWKT_KWD_GEO_TYPE	, -1			, 2	, 2	, 2	, 1	},
+  {"POLYLINEZ"			, 86	, EWKT_KWD_GEO_TYPE	, GEO_MULTI_LINESTRING_Z, 2	, 3	, 3	, 1	},
+  {"RING"			, 87	, EWKT_KWD_GEO_TYPE	, GEO_RING		, 1	, 2	, 3	, 0	},
+  {"RINGM"			, 88	, EWKT_KWD_GEO_TYPE	, GEO_RING_M		, 1	, 3	, 4	, 0	},
+  {"RINGZ"			, 89	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z		, 1	, 3	, 4	, 0	},
+  {"RINGZM"			, 90	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z_M		, 1	, 4	, 4	, 0	},
+  {"SRID"			, 91	, EWKT_KWD_EXT		, EWKT_KWD_SRID		, 0	, 0	, 0	, 0	},
+  {"SURFACE"			, 92	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"SURFACEM"			, 93	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"SURFACEZ"			, 94	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"SURFACEZM"			, 95	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"TIN"			, 96	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"TINM"			, 97	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"TINZ"			, 98	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"TINZM"			, 99	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
+  {"Z"				,100	, EWKT_KWD_MODIF	, GEO_A_Z		, 0	, 0	, 0	, 0	},
+  {"ZM"				,101	, EWKT_KWD_MODIF	, GEO_A_Z | GEO_A_M	, 0	, 0	, 0	, 0	} };
 
 dk_hash_t *ewkt_geotype_metas = NULL;
 
@@ -1388,7 +1406,7 @@ ewkt_find_metas_by_geotype (int geotype)
 	    continue;
 	  if (0 > ptr->kwd_subtype)
 	    continue;
-	  old = gethash (((void *) ((ptrlong) (ptr->kwd_subtype))), ewkt_geotype_metas);
+          old = (ewkt_kwd_metas_t *)gethash (((void *)((ptrlong)(ptr->kwd_subtype))), ewkt_geotype_metas);
 	  if (NULL != old)
 	    {
 	      if (ptr->kwd_is_alias)
@@ -1422,6 +1440,19 @@ ewkt_get_token (ewkt_input_t * in, ewkt_token_val_t * val)
 	  }
         res = EWKT_NUM_BAD; break;
       }
+    case '<':
+      {
+        in->ewkt_tail++;
+        val->v_iri_begin_and_end[0] = in->ewkt_tail;
+        while (NULL == strchr ("> \t\r\n", in->ewkt_tail[0])) in->ewkt_tail++;
+        if ('>' == in->ewkt_tail[0])
+          {
+            val->v_iri_begin_and_end[1] = in->ewkt_tail;
+            in->ewkt_tail++; res = EWKT_IRI; break;
+          }
+        val->v_kwd = NULL;
+        return EWKT_BAD;
+      }
     default:
       if (isalpha (in->ewkt_tail[0]))
 	{
@@ -1452,6 +1483,15 @@ ewkt_signal (ewkt_input_t * in, const char *error)
   longjmp (in->ewkt_error_ctx, 1);
 }
 
+NORETURN void
+ewkt_signal_coord (ewkt_input_t *in, const char *error, int point_idx1, int dim_idx1)
+{
+  in->ewkt_error_point_idx1 = point_idx1;
+  in->ewkt_error_dim_idx1 = dim_idx1;
+  in->ewkt_error = error;
+  longjmp (in->ewkt_error_ctx, 1);
+}
+
 void
 ewkt_expect_token (ewkt_input_t * in, int expected)
 {
@@ -1466,8 +1506,10 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 {
   int coretype = GEO_TYPE_CORE (head_metas->kwd_subtype);
   int tkn, dim = 0, dim_idx = 0;
-  int lpar_before_point = 0;
+  int lpar_before_point = 0; /* nonzero if we believe that the point is enclosed in (). That may be not true if a whole list is enclosed in redundand () so if lpar_before_list then lpar_before_point is never 1 */
+  int lpar_before_list = 0; /* nonzero if we believe that the list of points is enclosed in (). lpar_before_point() is replaced with lpar_before_list if ',' is found the point instead of ')' */
   ewkt_token_val_t val;
+  int check_ctr;
   in->ekwt_point_count = 0;
   for (;;)
     {
@@ -1496,36 +1538,18 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	  switch (tkn)
 	    {
 	    case EWKT_NUM:
-	      if (3 < dim_idx)
+              {
+                int final_dim_idx = dim_idx;
+                if ((in->ewkt_swap_latlong_to_longlat) && (2 > final_dim_idx))
+                  final_dim_idx = 1 - final_dim_idx;
+                if (4 < final_dim_idx)
 		ewkt_signal (in, "Too many coordinates are listed for a point");
-	      if (dim_idx >= head_metas->kwd_max_nums)
+                if (final_dim_idx >= head_metas->kwd_max_nums)
 		ewkt_signal (in, "The point has more coordinates than permitted by the spatial type");
-              if (GEO_SR_SPHEROID_DEGREES (in->ewkt_srcode))
-                {
-                  switch (dim_idx)
-                    {
-                    case 0:
-                      if ((val.v_geoc < -270.0) || (val.v_geoc > 450.0))
-                        ewkt_signal (in, "The point coordinates are spherical degrees and the longitude is out of range -270..450");
-                    break;
-                    case 1:
-                      if ((val.v_geoc < -90.0) || (val.v_geoc > 90.0))
-                        {
-                          geo_flags_t core_type = GEO_TYPE_CORE (head_metas->kwd_subtype);
-                          if ((GEO_BOX != core_type) || ((val.v_geoc < -181.0) || (val.v_geoc > 181.0)))
-                            ewkt_signal (in, "The point coordinates are spherical degrees and the latitude is out of range -90..90");
-                          val.v_geoc = ((val.v_geoc < 0) ? -90 : 90.0); /* Special case for bounding boxes calculated by ill algorithms */
-                        }
-                    break;
-                    }
-                }
-              else
-                {
-                  if ((val.v_geoc <= -0.5 * geoc_FARAWAY) || (val.v_geoc >= 0.5 * geoc_FARAWAY))
-                    ewkt_signal (in, "The point coordinate is out of range -5E37..+5E37");
-                }
-	      in->ekwt_Cs[dim_idx++][in->ekwt_point_count] = val.v_geoc;
+                in->ekwt_Cs[final_dim_idx][in->ekwt_point_count] = val.v_geoc;
+                dim_idx++;
 	      continue;
+              }
 	    case EWKT_NUM_BAD:
 	      ewkt_signal (in, "Syntax error in numeric value");
 	      break;
@@ -1535,7 +1559,7 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	      if (0 < dim_idx)
 		ewkt_signal (in, "EMPTY keyword can not be mixed with other coordinates of the point");
 	      if ((GEO_LINESTRING == coretype) || (GEO_ARCSTRING == coretype))
-		ewkt_signal (in, "EMPTY coordinates can be assigned to a point, but not to vertex of a LINE- or ARC-string.");
+                ewkt_signal (in, "EMPTY coordinates can be assigned to a point, but not to vertex of a polygon, LINE- or ARC-string.");
 	      in->ekwt_Cs[0][in->ekwt_point_count] =
 		  in->ekwt_Cs[1][in->ekwt_point_count] =
               in->ekwt_Cs[2][in->ekwt_point_count] =
@@ -1545,24 +1569,68 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	    case '(':
 	      if (0 != dim_idx)
 		ewkt_signal (in, "Unexpected '(' in the middle of a point");
-	      if (lpar_before_point)
+              if (lpar_before_point || lpar_before_list)
 		ewkt_signal (in, "Too many '(' before coordinates of a point");
 	      lpar_before_point = 1;
 	      continue;
 	    case ')':
-	      if (!lpar_before_point)
-		break;
+              if (lpar_before_point)
 	      lpar_before_point = 0;
+              else if (lpar_before_list)
+                lpar_before_list = 0;
+              else break;
 	      continue;
 	    case ',':
 	      if (lpar_before_point)
+                {
+                  if (0 != in->ekwt_point_count)
 		ewkt_signal (in, "Unexpected ',' in the middle of a point, the point begins with '(' but not ended with ')'");
+                  else
+                    {
+                      lpar_before_point = 0;
+                      lpar_before_list = 1;
+                    }
+                }
 	      break;
 	    }
 	  if (0xFF != dim_idx)
 	    {
 	      if (dim_idx < head_metas->kwd_min_nums)
+                {
+                  if ((GEO_BOX == GEO_TYPE (head_metas->kwd_subtype)) && (1 == dim_idx) && (0 == in->ekwt_point_count++))
+                    { /* This is special case of BOX (min_long, max_long, max_lat, min_lat), prehistoric non-Postgres WKT syntax
+Note that the order of values is neither one for two points not Windows-style LaTRouB */
+                      geoc corners[4];
+                      int corner_idx;
+                      corners[0] = in->ekwt_Cs[in->ewkt_swap_latlong_to_longlat ? 1 : 0][0];
+                      for (corner_idx = 1; corner_idx < 4; corner_idx++)
+                        {
+                          tkn = ewkt_get_token (in, &val);
+                          if (EWKT_NUM != tkn)
+                            ewkt_signal (in, "The BOX '(l,r,t,b)' notation requires number after comma");
+                          corners[corner_idx] = val.v_geoc;
+                          tkn = ewkt_get_token (in, &val);
+                          if (3 == corner_idx)
+                            {
+                              if (')' != tkn)
+                                ewkt_signal (in, "The BOX '(l,r,t,b)' notation requires closing ')'");
+                            }
+                          else
+                            {
+                              if (',' != tkn)
+                                ewkt_signal (in, "The BOX '(l,r,t,b)' notation requires comma after number");
+                            }
+                        }
+                      in->ekwt_Cs[0][0] = corners[0];
+                      in->ekwt_Cs[0][1] = corners[1];
+                      in->ekwt_Cs[1][1] = corners[2];
+                      in->ekwt_Cs[1][0] = corners[3];
+                      dim = 2;
+                      in->ekwt_point_count = 2;
+                      goto final_checks; /* see below */
+                    }
 		ewkt_signal (in, "The point has less coordinates than permitted by the spatial type");
+                }
 	      if ((0 == in->ekwt_point_count) || (0 == dim))
 		dim = dim_idx;
 	      else if (dim != dim_idx)
@@ -1580,10 +1648,50 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 		    ewkt_signal (in, "Points with unspecified coordinates are not allowed");
 		  in->ekwt_point_count = 0;
 		}
-	      return dim;
+              goto final_checks /* see below */;
 	    }
 	  ewkt_signal (in, "Syntax error in the list of points");
 	}
+    }
+
+final_checks:
+  for (check_ctr = 0; check_ctr < in->ekwt_point_count; check_ctr++)
+    {
+      geoc c = in->ekwt_Cs[0][check_ctr];
+      if (geoc_FARAWAY == c)
+        continue;
+      if (GEO_SR_SPHEROID_DEGREES (in->ewkt_srcode))
+        {
+          if ((c < -270.0) || (c > 450.0))
+            ewkt_signal_coord (in, "The point coordinates are spherical degrees and the longitude is out of range -270..450", check_ctr+1, 1);
+          c = in->ekwt_Cs[1][check_ctr];
+          if ((c < -90.0) || (c > 90.0))
+            {
+              if (GEO_BOX == coretype)
+                {
+                  if ((c < -181.0) || (c > 181.0))
+                    ewkt_signal_coord (in, "The bounding box latitude is out of range -90..90 and even out of stretched range -181..181", check_ctr+1, 2);
+                  in->ekwt_Cs[1][check_ctr] = ((c < 0) ? -90 : 90.0); /* Special case for bounding boxes calculated by ill algorithms */
+                }
+              else
+                ewkt_signal_coord (in, "The point coordinates are spherical degrees and the latitude is out of range -90..90", check_ctr+1, 2);
+            }
+          dim_idx = 2;
+        }
+      else
+        dim_idx = 0;
+      for (/* no init */; dim_idx < dim; dim_idx++)
+        {
+          c = in->ekwt_Cs[dim_idx][check_ctr];
+          if ((c <= -0.5 * geoc_FARAWAY) || (c >= 0.5 * geoc_FARAWAY))
+            ewkt_signal_coord (in, "The point coordinate is out of range -5E37..+5E37", check_ctr+1, dim_idx+1);
+        }
+    }
+  if (GEO_BOX == coretype)
+    {
+      for (dim_idx = 0; dim_idx < dim; dim_idx++)
+        if (in->ekwt_Cs[dim_idx][0] > in->ekwt_Cs[dim_idx][1])
+          ewkt_signal_coord (in, "The \"minimum\" coordinate of a bounding box is greater than the \"maximum\" one", 0, dim_idx+1);
     }
   if (GEO_ARCSTRING == coretype)
     {
@@ -1594,7 +1702,7 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	{
 	  if ((fabs (in->ekwt_Cs[0][p_idx - 1] - in->ekwt_Cs[0][p_idx]) +
 		  fabs (in->ekwt_Cs[1][p_idx - 1] - in->ekwt_Cs[1][p_idx])) <= 2 * geoc_EPSILON)
-	    ewkt_signal (in, "Neighbor points of an ARCSTRING are too close to each other");
+            ewkt_signal_coord (in, "Neighbor points of an ARCSTRING are too close to each other", p_idx, 0);
 	}
     }
   if (head_metas->kwd_subtype & GEO_A_CLOSED)
@@ -1603,10 +1711,19 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	ewkt_signal (in, "Closed ring contains too few points");
       for (dim_idx = dim; dim_idx--; /* no step */ )
 	{
-	  if (fabs (in->ekwt_Cs[dim_idx][in->ekwt_point_count - 1] - in->ekwt_Cs[dim_idx][0]) >= geoc_EPSILON)
+          geoc last_c = in->ekwt_Cs[dim_idx][in->ekwt_point_count-1];
+          geoc first_c = in->ekwt_Cs[dim_idx][0];
+          if (fabs (last_c - first_c) < geoc_EPSILON)
+            continue;
+          if ((dim_idx == (dim-1)) && (head_metas->kwd_subtype & GEO_A_Z))
+            { /* Mileage of a closed ring is an exception: points can have mileage from 0 to max or in reverse order, so M of endpoint may be 0 and non-0 */
+              if ((fabs (first_c) < geoc_EPSILON) || (fabs (last_c) < geoc_EPSILON))
+                continue;
+            }
 	    ewkt_signal (in, "The distance between ends of a closed ring is too big");
 	}
     }
+  return dim;
 }
 
 int
@@ -1913,24 +2030,46 @@ ewkt_destroy_input (ewkt_input_t * in)
 geo_t *
 ewkt_parse (const char *strg, caddr_t * err_ret)
 {
-  return ewkt_parse_2 (strg, SRID_DEFAULT, err_ret);
+  return ewkt_parse_2 (strg, GEO_SRCODE_OF_SRID (SRID_DEFAULT), err_ret);
 }
 
 geo_t *
-ewkt_parse_2 (const char *strg, int dflt_srid, caddr_t * err_ret)
+ewkt_parse_2 (const char *strg, int dflt_srcode, caddr_t *err_ret)
 {
   geo_t *res;
   ewkt_input_t in;
   int tkn;
   ewkt_token_val_t val;
   memset (&in, 0, sizeof (ewkt_input_t));
-  in.ewkt_srid = dflt_srid;
-  in.ewkt_srcode = GEO_SRCODE_OF_SRID (dflt_srid);
+  in.ewkt_srid = GEO_SRID(dflt_srcode);
+  in.ewkt_srcode = dflt_srcode;
   in.ewkt_source = in.ewkt_tail = in.ewkt_row_begin = (const unsigned char *) strg;
   if (0 == setjmp (in.ewkt_error_ctx))
     {
       ewkt_ws_skip (&in);
       tkn = ewkt_get_token (&in, &val);
+      if (EWKT_IRI == tkn)
+        {
+          caddr_t sr_iri = box_dv_short_nchars ((const char *)(val.v_iri_begin_and_end[0]), val.v_iri_begin_and_end[1] - val.v_iri_begin_and_end[0]);
+          boxint srid = geo_sr_iri_to_srid (sr_iri);
+          if ((SRID_WGS84 == srid) && !strcmp (sr_iri, "http://www.opengis.net/def/crs/EPSG/0/4326"))
+            in.ewkt_swap_latlong_to_longlat = 1;
+          else if ((-1 == srid) && !strcmp (sr_iri, "http://www.opengis.net/def/crs/EPSG/0/4979"))
+            srid = 4979;
+          dk_free_box (sr_iri);
+          if (-1 == srid)
+            ewkt_signal (&in, "IRI is not known, consider registring it via DB.DBA.SYS_PROJ4_SR_IRIS");
+          else if (0 > srid)
+            ewkt_signal (&in, "IRI is known but can not be used for parsing geometries");
+          else if (4979 == srid)
+            {
+              srid = SRID_WGS84;
+              in.ewkt_swap_latlong_to_longlat = 1;
+            }
+          in.ewkt_srid = srid;
+          in.ewkt_srcode = GEO_SRCODE_OF_SRID(in.ewkt_srid);
+          tkn = ewkt_get_token (&in, &val);
+        }
       while (EWKT_KWD_EXT == tkn)
 	{
 	  if (EWKT_KWD_SRID == val.v_kwd->kwd_subtype)
@@ -1959,8 +2098,26 @@ ewkt_parse_2 (const char *strg, int dflt_srid, caddr_t * err_ret)
   else
     {
       if (err_ret != NULL)
-	err_ret[0] = srv_make_new_error ("22023", "GEO11", "%s (near row %d col %d of '%.200s')",
-	    in.ewkt_error, 1 + in.ewkt_row_no, (int) (1 + (in.ewkt_tail - in.ewkt_row_begin)), strg);
+        {
+          char point_buf[50];
+          const char *dim_text = "";
+          if (in.ewkt_error_point_idx1 && (1 < in.ekwt_point_count))
+            sprintf (point_buf, "point %d of %d ", in.ewkt_error_point_idx1, in.ekwt_point_count);
+          else
+            point_buf[0] = '\0';
+          if (in.ewkt_error_dim_idx1 && !strstr (in.ewkt_error, "latitude") && !strstr (in.ewkt_error, "longitude"))
+            {
+              switch (in.ewkt_error_dim_idx1)
+                {
+                case 0: dim_text = (GEO_SR_SPHEROID_DEGREES (in.ewkt_srcode) ? "longitude, " : "X coordinate, "); break;
+                case 1: dim_text = (GEO_SR_SPHEROID_DEGREES (in.ewkt_srcode) ? "latitude, " : "Y coordinate, "); break;
+                case 2: dim_text = "3rd coordinate, "; break;
+                case 3: dim_text = "M coordinate, "; break;
+                }
+            }
+          err_ret[0] = srv_make_new_error ("22023", "GEO11", "%s (%s%snear row %d col %d of '%.200s')",
+            in.ewkt_error, dim_text, point_buf, 1 + in.ewkt_row_no, (int)(1 + (in.ewkt_tail - in.ewkt_row_begin)), strg );
+        }
       res = NULL;
     }
   ewkt_destroy_input (&in);
@@ -2070,6 +2227,305 @@ ewkt_print_sf12 (geo_t * g, dk_session_t * ses)
     }
   ewkt_print_sf12_one (g, ses, 1);
 }
+
+/* WKB printer */
+#ifndef DISABLE_WKB
+#ifndef _IEEE_FLOATS
+#error "WKB is implemented only for systems with IEEE doubles, sorry (_IEEE_FLOATS should be defined). To build the rest of Virtuoso, put DISABLE_WKB define in compilation options, and/or file the support request to authors"
+#endif
+#if 0
+#if 8 != sizeof (double)
+#error "WKB is implemented only for systems with 8-bit doubles, sorry. To build the rest of Virtuoso, put DISABLE_WKB define in compilation options, and/or file the support request to authors"
+#endif
+#endif
+
+#define WKB_PRINT_BYTE(ses,n) do { session_buffered_write_char (n, ses); } while (0)
+#define WKB_PRINT_INT32(ses,n) do { uint32 d=(n); session_buffered_write (ses, (char *)(&d), 4); } while (0)
+#define WKB_PRINT_DOUBLE(ses,n) do { double d=(n); session_buffered_write (ses, (char *)(&d), 8); } while (0)
+#if  __BYTE_ORDER == __BIG_ENDIAN
+#define WKB_PRINT_BOM(ses) WKB_PRINT_BYTE (ses, 0)
+#elif  __BYTE_ORDER == __LITTLE_ENDIAN
+#define WKB_PRINT_BOM(ses) WKB_PRINT_BYTE (ses, 1)
+#else
+#error "WKB is implemented only for big-endian and little-endian systems, sorry. To build the rest of Virtuoso, put DISABLE_WKB define in compilation options, and/or file the support request to authors"
+#endif
+
+
+void
+wkb_print_pcount_and_points (dk_session_t *ses, int geo_flags, int pcount, geoc *Xs, geoc *Ys, geoc *Zs,  geo_measure_t *Ms)
+{
+  int inx;
+  WKB_PRINT_INT32 (ses, pcount);
+  for (inx = 0; inx < pcount; inx++)
+    {
+      WKB_PRINT_DOUBLE (ses, Xs[inx]);
+      WKB_PRINT_DOUBLE (ses, Ys[inx]);
+      if (geo_flags & GEO_A_Z)
+        WKB_PRINT_DOUBLE (ses, Zs[inx]);
+      if (geo_flags & GEO_A_M)
+        WKB_PRINT_DOUBLE (ses, Ms[inx]);
+    }
+}
+
+#define WKB_POINT		1
+#define WKB_LINESTRING		2
+#define WKB_POLYGON		3
+#define WKB_MULTIPOINT		4
+#define WKB_MULTILINESTRING	5
+#define WKB_MULTIPOLYGON	6
+#define WKB_GEOMETRYCOLLECTION	7
+
+#define WKB_TYPE_WITH_ZM(base,flags) (base + (((flags) & GEO_A_Z) ? 1000 : 0) + (((flags) & GEO_A_M) ? 2000 : 0))
+
+void
+wkb_print_box_as_polygon (dk_session_t *ses, geo_t *g)
+{
+  WKB_PRINT_INT32 (ses, WKB_POLYGON);
+  WKB_PRINT_INT32 (ses, 1);
+  WKB_PRINT_INT32 (ses, 5);
+  WKB_PRINT_DOUBLE (ses, g->XYbox.Xmin); WKB_PRINT_DOUBLE (ses, g->XYbox.Ymin);
+  WKB_PRINT_DOUBLE (ses, g->XYbox.Xmax); WKB_PRINT_DOUBLE (ses, g->XYbox.Ymin);
+  WKB_PRINT_DOUBLE (ses, g->XYbox.Xmax); WKB_PRINT_DOUBLE (ses, g->XYbox.Ymax);
+  WKB_PRINT_DOUBLE (ses, g->XYbox.Xmin); WKB_PRINT_DOUBLE (ses, g->XYbox.Ymax);
+  WKB_PRINT_DOUBLE (ses, g->XYbox.Xmin); WKB_PRINT_DOUBLE (ses, g->XYbox.Ymin);
+}
+
+void
+wkb_print (geo_t *g, dk_session_t *ses, int basic_wkb_only, char set_byte_order)
+{
+  int g_type_no_zm = GEO_TYPE_NO_ZM (g->geo_flags);
+  WKB_PRINT_BOM(ses);
+  switch (g_type_no_zm)
+    {
+    case GEO_POINT:
+      WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (WKB_POINT, g->geo_flags));
+      WKB_PRINT_DOUBLE (ses, g->XYbox.Xmin);
+      WKB_PRINT_DOUBLE (ses, g->XYbox.Ymin);
+      if (g->geo_flags & GEO_A_Z)
+        WKB_PRINT_DOUBLE (ses, g->_.point.point_ZMbox.Zmin);
+      if (g->geo_flags & GEO_A_M)
+        WKB_PRINT_DOUBLE (ses, g->_.point.point_ZMbox.Mmin);
+      return;
+    case GEO_BOX:
+      if (!(g->geo_flags & (GEO_A_Z | GEO_A_M)))
+        {
+          wkb_print_box_as_polygon (ses, g);
+          return;
+        }
+      sqlr_new_error ("22023", "GEO13", "BOXZ, BOXM and BOXZM geometries can not be represented as (E)WKB and BOX is only emulated by a rectangular polygon");
+    case GEO_LINESTRING: case GEO_RING:
+      WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (WKB_LINESTRING, g->geo_flags));
+      wkb_print_pcount_and_points (ses, g->geo_flags, g->_.pline.len, g->_.pline.Xs, g->_.pline.Ys, g->_.pline.Zs, g->_.pline.Ms);
+      return;
+    case GEO_POLYGON:
+      {
+        int inx, len = g->_.parts.len;
+        WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (WKB_POLYGON, g->geo_flags));
+        WKB_PRINT_INT32 (ses, len);
+        for (inx=0; inx < len; inx++)
+          {
+            geo_t *itm = g->_.parts.items[inx];
+            if (GEO_TYPE (itm->geo_flags) != (GEO_RING | (g->geo_flags & (GEO_A_Z | GEO_A_M))))
+              sqlr_new_error ("22023", "GEO12", "(E)WKB serialization does not support weird polygons with non-ring internals");
+            wkb_print_pcount_and_points (ses, itm->geo_flags, itm->_.pline.len, itm->_.pline.Xs, itm->_.pline.Ys, itm->_.pline.Zs, itm->_.pline.Ms);
+          }
+        return;
+      }
+    case GEO_POINTLIST:
+      {
+        int inx, len = g->_.pline.len;
+        WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (WKB_MULTIPOINT, g->geo_flags));
+        WKB_PRINT_INT32 (ses, len);
+        for (inx=0; inx < len; inx++)
+          {
+            WKB_PRINT_BOM(ses);
+            WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (WKB_POINT, g->geo_flags));
+            WKB_PRINT_DOUBLE (ses, g->_.pline.Xs[inx]);
+            WKB_PRINT_DOUBLE (ses, g->_.pline.Ys[inx]);
+            if (g->geo_flags & GEO_A_Z)
+              WKB_PRINT_DOUBLE (ses, g->_.pline.Zs[inx]);
+            if (g->geo_flags & GEO_A_M)
+              WKB_PRINT_DOUBLE (ses, g->_.pline.Ms[inx]);
+          }
+        return;
+      }
+    case GEO_MULTI_LINESTRING: case GEO_MULTI_POLYGON: case GEO_COLLECTION:
+      {
+        int inx, len = g->_.parts.len;
+        int wkb_type_base = (
+          (GEO_MULTI_LINESTRING == g_type_no_zm) ? WKB_MULTILINESTRING : (
+            (GEO_MULTI_POLYGON == g_type_no_zm) ? WKB_MULTIPOLYGON : WKB_GEOMETRYCOLLECTION ) );
+        WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (wkb_type_base, g->geo_flags));
+        WKB_PRINT_INT32 (ses, len);
+        for (inx=0; inx < len; inx++)
+          {
+            geo_t *itm = g->_.parts.items[inx];
+            wkb_print (itm, ses, basic_wkb_only, set_byte_order);
+          }
+        return;
+      }
+    default:
+      sqlr_new_error ("22023", "GEO13", "(E)WKB serialization of geometries of type %d is not supported", GEO_TYPE (g->geo_flags));
+    }
+}
+
+/* WKB reader */
+
+#define UINT32_SWAP_ENDIAN(x) ((((x) & 0xff000000) >> 24) | (((x) & 0x00ff0000) >> 8) | (((x) & 0x0000ff00) << 8) | (((x) & 0x000000ff) << 24))
+#define WKB_READ_BYTE(ses,n) do { (n) = session_buffered_read_char (ses); } while (0)
+#define WKB_READ_INT32(ses,n) do { \
+  uint32 res; \
+  if (ses->dks_in_fill - ses->dks_in_read >= 4) \
+    { \
+      res = ((int32 *)((void *)(ses->dks_in_buffer + ses->dks_in_read)))[0]; \
+      ses->dks_in_read += 4; \
+    } \
+  else \
+    session_buffered_read (ses, (caddr_t) (& res), 4); \
+  if (!bom_eq_our) \
+    res = UINT32_SWAP_ENDIAN(res); \
+  (n) = res; \
+} while (0)
+
+#define WKB_READ_DOUBLE(ses,n) do { \
+  union \
+    { \
+      uint32 l[2]; \
+      double d; \
+    } ds, ds2; \
+  if (ses->dks_in_fill - ses->dks_in_read >= 8) \
+    { \
+      ds.d = ((double *)((void *)(ses->dks_in_buffer + ses->dks_in_read)))[0]; \
+      ses->dks_in_read += 8; \
+    } \
+  else \
+    session_buffered_read (ses, (caddr_t) (&(ds.d)), 8); \
+  if (bom_eq_our) \
+    (n) = ds.d; \
+  else \
+    { \
+      ds2.l[0] = UINT32_SWAP_ENDIAN(ds.l[1]); \
+      ds2.l[1] = UINT32_SWAP_ENDIAN(ds.l[0]); \
+      (n) = ds2.d; \
+    } \
+  } while (0)
+#if  __BYTE_ORDER == __BIG_ENDIAN
+#define WKB_READ_BOM(ses) do { bom_eq_our = (0 == session_buffered_read_char (ses)); } while (0)
+#else
+#define WKB_READ_BOM(ses) do { bom_eq_our = (1 == session_buffered_read_char (ses)); } while (0)
+#endif
+
+
+void
+wkb_read_ses_points (dk_session_t *ses, int bom_eq_our, int geo_flags, int pcount, geoc *Xs, geoc *Ys, geoc *Zs,  geo_measure_t *Ms)
+{
+  int inx;
+  for (inx = 0; inx < pcount; inx++)
+    {
+      WKB_READ_DOUBLE (ses, Xs[inx]);
+      WKB_READ_DOUBLE (ses, Ys[inx]);
+      if (geo_flags & GEO_A_Z)
+        WKB_READ_DOUBLE (ses, Zs[inx]);
+      if (geo_flags & GEO_A_M)
+        WKB_READ_DOUBLE (ses, Ms[inx]);
+    }
+}
+
+#define ZM_OF_WKB_TYPE(type) ((((type)/2000) ? GEO_A_M : 0) | ((((type) % 2000) / 1000) ? GEO_A_Z : 0))
+#define BASE_OF_WKB_TYPE(type) ((type)%1000)
+
+geo_t *
+wkb_read_ses (dk_session_t *ses, int srcode, int basic_wkb_only)
+{
+  geo_t *g;
+  int bom_eq_our, wkb_type, wkb_base_type, expected_wkb_subtype, g_zm, inx, len;
+  WKB_READ_BOM(ses);
+  WKB_READ_INT32(ses, wkb_type);
+  g_zm = ZM_OF_WKB_TYPE(wkb_type);
+  wkb_base_type = BASE_OF_WKB_TYPE(wkb_type);
+  switch (wkb_base_type)
+    {
+    case WKB_POINT:
+      g = geo_alloc (GEO_POINT | g_zm, 0, srcode);
+      WKB_READ_DOUBLE (ses, g->XYbox.Xmin);
+      WKB_READ_DOUBLE (ses, g->XYbox.Ymin);
+      if (g->geo_flags & GEO_A_Z)
+        WKB_READ_DOUBLE (ses, g->_.point.point_ZMbox.Zmin);
+      if (g->geo_flags & GEO_A_M)
+        WKB_READ_DOUBLE (ses, g->_.point.point_ZMbox.Mmin);
+      return g;
+    case WKB_LINESTRING:
+      WKB_READ_INT32 (ses, len);
+      g = geo_alloc (GEO_LINESTRING | g_zm, len, srcode);
+      wkb_read_ses_points (ses, bom_eq_our, g->geo_flags, len, g->_.pline.Xs, g->_.pline.Ys, g->_.pline.Zs, g->_.pline.Ms);
+      return g;
+    case WKB_POLYGON:
+      WKB_READ_INT32 (ses, len);
+      g = geo_alloc (GEO_POLYGON | g_zm, len, srcode);
+      for (inx=0; inx < len; inx++)
+        {
+          int ring_len;
+          geo_t *itm;
+          WKB_READ_INT32 (ses, ring_len);
+          itm = g->_.parts.items[inx] = geo_alloc (GEO_RING | g_zm, ring_len, srcode);
+          wkb_read_ses_points (ses, bom_eq_our, itm->geo_flags, itm->_.pline.len, itm->_.pline.Xs, itm->_.pline.Ys, itm->_.pline.Zs, itm->_.pline.Ms);
+        }
+      return g;
+    case WKB_MULTIPOINT:
+      WKB_READ_INT32 (ses, len);
+      g = geo_alloc (GEO_POINTLIST | g_zm, len, srcode);
+      expected_wkb_subtype = WKB_TYPE_WITH_ZM (WKB_POINT, g_zm);
+      for (inx=0; inx < len; inx++)
+        {
+          int wkb_subtype;
+          WKB_READ_BOM(ses);
+          WKB_READ_INT32 (ses, wkb_subtype);
+          if (wkb_subtype != expected_wkb_subtype)
+            {
+              dk_free_box ((caddr_t)g);
+              sqlr_new_error ("22023", "GEO14", "WKB multipoint (type %d) contains sub-geometry of type %d, expected type is %d", wkb_type, wkb_subtype, expected_wkb_subtype);
+            }
+          WKB_READ_DOUBLE (ses, g->_.pline.Xs[inx]);
+          WKB_READ_DOUBLE (ses, g->_.pline.Ys[inx]);
+          if (g->geo_flags & GEO_A_Z)
+            WKB_READ_DOUBLE (ses, g->_.pline.Zs[inx]);
+          if (g->geo_flags & GEO_A_M)
+            WKB_READ_DOUBLE (ses, g->_.pline.Ms[inx]);
+        }
+      return g;
+    case WKB_MULTILINESTRING: case WKB_MULTIPOLYGON: case WKB_GEOMETRYCOLLECTION:
+      {
+        int g_type_no_zm = (
+          (WKB_MULTILINESTRING == wkb_base_type) ? GEO_MULTI_LINESTRING : (
+            (WKB_MULTIPOLYGON == wkb_base_type) ? GEO_MULTI_POLYGON : GEO_COLLECTION ) );
+        WKB_READ_INT32 (ses, len);
+        g = geo_alloc (g_type_no_zm | g_zm, len, srcode);
+        QR_RESET_CTX
+          {
+            for (inx=0; inx < len; inx++)
+              {
+                g->_.parts.items[inx] = wkb_read_ses (ses, srcode, basic_wkb_only);
+              }
+          }
+        QR_RESET_CODE
+          {
+            caddr_t err = thr_get_error_code (THREAD_CURRENT_THREAD);
+            dk_free_box ((caddr_t)g);
+            POP_QR_RESET;
+            sqlr_resignal (err);
+          }
+        END_QR_RESET
+        return g;
+      }
+    default:
+      sqlr_new_error ("22023", "GEO15", "WKB contains unsupported geometry type %d", wkb_type);
+    }
+  return NULL;
+}
+
+#endif /* DISABLE_WKB */
+
+/* DXF printer */
 
 #define SES_DXF_REAL(ses,mark,v) do { char tmpbuf[60]; snprintf (tmpbuf, sizeof(tmpbuf), "\n%3d\n" GEOC_DXF_STAR_FMT, (mark), GEOC_DXF_PREC, (double)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
 
@@ -2184,14 +2640,14 @@ Old types:
   GEO_NULL_SHAPE: 1b flags, 2b? SRID
   GEO_POINT: 1b flags, 2b? SRID, 2coords
   GEO_BOX: 1b flags, 2b? SRID, 4 coords
-  GEO_LINESTRING: 1b flags, 2b? SRID, 2|5b len, 2*len coords
+  GEO_LINESTRING: 1b flags, 2b? SRID, 2|5b (1+len*2), 2*len coords
 New types:
   (Note that more significant byte 0xNN00 is AFTER less significant byte 0X00NN !)
   point/box types:
     2b flags, 2b? SRID, coords as listed in the structure (2 to 8 coords)
   linestring and arcstring types:
     2b flags, 2b? SRID,
-    2|5b len, XYbbox?, chainboxes?, ZMbbox?, coords as listed in the structure (2 to 4 coords)
+    2|5b (1+len*2), XYbbox?, chainboxes?, ZMbbox?, coords as listed in the structure (2 to 4 coords)
   any collections and groups of items:
     2b flags, 2b? SRID (recorded only at top level),
     2|5b total len of the serialization (with all subchildren but without the leading DV_GEO and the length of the "length of the serialization" itself, recorded only at top level),
@@ -2325,7 +2781,15 @@ geo_calc_length_of_serialization (geo_t * g, int is_topmost)
 	{
         case GEO_POINT: return len + dims * coord_len;
         case GEO_BOX: return len + 2 * dims * coord_len;
-        case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+        case GEO_LINESTRING:
+          /* Bug 18355: God only knows why the length of plain old non-chainboxes GEO_LINESTRING is stored as (1 + (g->_.pline.len * 2)) */
+          if (GEO_LINESTRING == (g->geo_flags & (GEO_TYPE_MASK | GEO_IS_CHAINBOXED)))
+            {
+              ct = g->_.pline.len;
+              return len + DV_INT_SERIALIZATION_LENGTH(1 + ct*2) + ct * dims * coord_len;
+            }
+          /* no break */
+        case GEO_POINTLIST: case GEO_ARCSTRING:
 	  ct = g->_.pline.len;
 	  return len + DV_INT_SERIALIZATION_LENGTH (ct) + ct * dims * coord_len;
 	}
@@ -2894,7 +3358,7 @@ geo_XY_inoutside_ring (geoc pX, geoc pY, geo_t * ring)
   geoc *Ys = ring->_.pline.Ys;
   if ((ring->geo_flags & GEO_IS_CHAINBOXED) && ring->_.pline.pline_gcb->gcb_is_set)
     {
-      geo_XYbox_t *gcb_ptr = gcb_ptr = ring->_.pline.pline_gcb->gcb_boxes;
+      geo_XYbox_t *gcb_ptr = ring->_.pline.pline_gcb->gcb_boxes;
       int inx;
       int gcb_next_stop;
       int gcb_step = MIN ((len - 1), ring->_.pline.pline_gcb->gcb_step);
@@ -3284,7 +3748,9 @@ geo_modify_by_projection (geo_t *g, void *geo_proj)
     }
   switch (GEO_TYPE_CORE (flags))
     {
-    case GEO_NULL_SHAPE: case GEO_BOX:
+    case GEO_NULL_SHAPE:
+      return NULL;
+    case GEO_BOX:
       XYBOX_PROJECT(g->XYbox);
       return NULL;
     case GEO_POINT:
