@@ -150,6 +150,15 @@ endif
 if !WITH_RUBY
 REM_RUBY_C=;
 endif
+if !WITH_PROJ4
+REM_PROJ4_C=;
+endif
+if !WITH_GEOS
+REM_GEOS_C=;
+endif
+if !WITH_SHAPEFILEIO
+REM_SHAPEFILEIO_C=;
+endif
 
 do_subst = \
 	sed -e 's,[@]PREFIX[@],$(prefix),g' \
@@ -165,7 +174,10 @@ do_subst = \
 	    -e 's,[@]REM_PHP5[@],$(REM_PHP5_C),g' \
 	    -e 's,[@]REM_PYTHON[@],$(REM_PYTHON_C),g' \
 	    -e 's,[@]REM_PERL[@],$(REM_PERL_C),g' \
-	    -e 's,[@]REM_RUBY[@],$(REM_RUBY_C),g'
+	    -e 's,[@]REM_RUBY[@],$(REM_RUBY_C),g' \
+	    -e 's,[@]REM_PROJ4[@],$(REM_PROJ4_C),g' \
+	    -e 's,[@]REM_GEOS[@],$(REM_GEOS_C),g' \
+	    -e 's,[@]REM_SHAPEFILEIO[@],$(REM_SHAPEFILEIO_C),g'
 
 install-data-local:
 	$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"
