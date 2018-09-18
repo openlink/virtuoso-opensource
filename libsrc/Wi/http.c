@@ -208,6 +208,8 @@ void * tcpses_get_sslctx (session_t * ses);
 void tcpses_set_sslctx (session_t * ses, void * ssl_ctx);
 extern int ssl_ctx_set_cipher_list (SSL_CTX *ctx, char *cipher_list);
 extern int ssl_ctx_set_protocol_options (SSL_CTX *ctx, char *protocols);
+extern int ssl_ctx_set_dhparam (SSL_CTX *ctx, char *dhparam);
+extern int ssl_ctx_set_ecdh_curve (SSL_CTX *ctx, char *curve);
 #endif
 
 #ifdef _IMSG
@@ -1920,6 +1922,16 @@ char http_server_id_string_buf [1024];
 char *http_server_id_string = NULL;
 char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
 
+static char hsts_header_buf[128];
+
+static inline char *
+hsts_header_line (ws_connection_t * ws)
+{
+  if (https_hsts_max_age >= 0 && tcpses_get_ssl (ws->ws_session->dks_session) != NULL)
+    return hsts_header_buf;
+  return "";
+}
+
 #define IS_CHUNKED_OUTPUT(ws) \
 	((ws) && strses_is_ws_chunked_output ((ws)->ws_strses))
 
@@ -2478,6 +2490,8 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       if (ws->ws_status_code != 101)
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 
+      SES_PRINT (ws->ws_session, hsts_header_line(ws));
+
       if (ws->ws_header) /* user-defined headers */
 	{
 	  SES_PRINT (ws->ws_session, ws->ws_header);
@@ -2826,6 +2840,7 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       "Date: %s\r\n"
       "Server: %.1000s\r\n"
       "Connection: %s\r\n"
+      "%s"
       "\r\n"
       "--THIS_STRING_SEPARATES\r\n"
       ,
@@ -2834,7 +2849,8 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       last_modify,
       date_now,
       http_server_id_string,
-      ws->ws_try_pipeline ? "Keep-Alive" : "close");
+      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+      hsts_header_line (ws));
   SES_PRINT (ws->ws_session, head);
   fprintf (stdout, "Head_mp = %s\n", head);
 
@@ -3114,6 +3130,7 @@ ws_file (ws_connection_t * ws)
 	      "Connection: %s\r\n"
 	      "%s"
 	      "%s"
+	      "%s"
 	      "%s",
 	      head_beg,
 	      (OFF_T_PRINTF_DTP) off,
@@ -3123,6 +3140,7 @@ ws_file (ws_connection_t * ws)
 	      date_now,
 	      http_server_id_string,
 	      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+	      hsts_header_line(ws),
 	      (MAINTENANCE) ? "Retry-After: 1800\r\n" : "",
 	      ws->ws_header ? ws->ws_header : "",
 	      ranges_buffer
@@ -8933,6 +8951,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char *skey = NULL;
   char *ciphers = https_cipher_list;
   char *protocols = https_protocols;
+  char *curve = https_ecdh_curve;
+  char *dhparam = https_dhparam;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
   ssl_meth = SSLv23_server_method ();
@@ -8966,6 +8986,10 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_client_verify = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
 	    extra = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_dhparam") && DV_STRINGP (https_opts [i + 1]))  /* DH param */
+	    dhparam = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_ecdh_curve") && DV_STRINGP (https_opts [i + 1]))  /* ECDH curve */
+	    curve = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_cipher_list") && DV_STRINGP (https_opts [i + 1]))  /* Ciphers */
 	    ciphers = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_protocols") && DV_STRINGP (https_opts [i + 1]))  /* Protocols */
@@ -8989,13 +9013,28 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   if (!ssl_ctx_set_protocol_options (ssl_ctx, protocols))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Error setting SSL Protocols options: %s", err_buf);
+      log_error ("HTTPS: Error setting SSL Protocols [%s]: %s", protocols, err_buf);
       goto err_exit;
     }
+
   if (!ssl_ctx_set_cipher_list (ssl_ctx, ciphers))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
+      log_error ("HTTPS: Error setting SSL Cipher list [%s]: %s", ciphers, err_buf);
+      goto err_exit;
+    }
+
+  if (!ssl_ctx_set_dhparam (ssl_ctx, dhparam))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL DH param [%s]: %s", dhparam, err_buf);
+      goto err_exit;
+    }
+
+  if (!ssl_ctx_set_ecdh_curve (ssl_ctx, curve))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL ECDH curve [%s]: %s", curve, err_buf);
       goto err_exit;
     }
 
@@ -11468,6 +11507,8 @@ http_init_part_one ()
       http_server_id_string = http_server_id_string_buf;
     }
 
+  snprintf (hsts_header_buf, sizeof (hsts_header_buf), "Strict-Transport-Security: max-age=%d\r\n", https_hsts_max_age);
+
   dns_host_name = get_qualified_host_name ();
   return 1;
 }
@@ -11651,7 +11692,21 @@ http_init_part_two ()
       if (!ssl_ctx_set_cipher_list (ssl_ctx, https_cipher_list))
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
+	  log_error ("HTTPS: Error setting SSL Cipher list : %s", err_buf);
+	  goto init_ssl_exit;
+	}
+
+      if (!ssl_ctx_set_dhparam (ssl_ctx, https_dhparam))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL DH param [%s]: %s", https_dhparam, err_buf);
+	  goto init_ssl_exit;
+	}
+
+      if (!ssl_ctx_set_ecdh_curve (ssl_ctx, https_ecdh_curve))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL ECDH curve [%s]: %s", https_ecdh_curve, err_buf);
 	  goto init_ssl_exit;
 	}
 
