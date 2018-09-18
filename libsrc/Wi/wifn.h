@@ -377,7 +377,7 @@ extern int rn_n_col_leaves;
 /* disk.c */
 
 dbe_storage_t * dbs_open_slice (dbe_storage_t * top_dbs, disk_segment_t * seg, int slice_no, int create);
-void dbs_slice_close  (cluster_map_t * clm, dbe_storage_t * top_dbs, dbe_storage_t * dbs, int delete);
+void dbs_slice_close  (cluster_map_t * clm, dbe_storage_t * top_dbs, dbe_storage_t * dbs, int unlink_files);
 void cl_dbs_read_cfg (dbe_storage_t * dbs);
 void dbs_slice_init (dbe_storage_t * top_dbs, dbe_storage_t * dbs, int exists);
 int word_free_bit (dp_addr_t w);

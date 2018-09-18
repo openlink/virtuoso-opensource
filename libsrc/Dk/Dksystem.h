@@ -85,7 +85,7 @@
 #if !defined(__FreeBSD__)
 #ifdef HAVE_MALLOC_H
 # include <malloc.h>
-#else
+#elif !defined (__cplusplus)
 void *malloc ();
 void *calloc ();
 void *realloc ();
@@ -180,6 +180,14 @@ char *strtok_r ();
 #endif
 
 
+#ifndef __attribute__
+/* This feature is available in gcc versions 2.5 and later.  */
+# if (! defined __GNUC__ || __GNUC__ < 2 \
+      || (__GNUC__ == 2 && __GNUC_MINOR__ < 5))
+#  define __attribute__(Spec) /* empty */
+# endif
+#endif
+
 /*
  *  Easier way of checking GCC version
  */
@@ -200,10 +208,14 @@ char *strtok_r ();
 #  define NORETURN		/*NOTHING*/
 #endif
 
+#ifdef __cplusplus
+#define DK_INLINE	inline
+#else
 #ifdef __GNUC__
 # define DK_INLINE	__inline__
 #else
 # define DK_INLINE
+#endif
 #endif
 
 #endif

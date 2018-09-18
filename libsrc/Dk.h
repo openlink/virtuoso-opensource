@@ -29,6 +29,20 @@
 #ifndef _DK_H
 #define _DK_H	/* libutil needs this name !!! */
 
+#ifndef VIRT_C_LINKAGE
+#ifdef __cplusplus
+#define VIRT_C_LINKAGE "C"
+#define VIRT_API_BEGIN extern "C" {
+#define VIRT_API_END }
+#else
+#define VIRT_C_LINKAGE
+#define VIRT_API_BEGIN
+#define VIRT_API_END
+#endif
+#endif
+
+#include "Dk/Dksystem.h"
+
 #include "plugin/exe_export.h"
 
 #ifdef LONGJMP_DEBUG
@@ -36,8 +50,6 @@
 extern void ldbg_longjmp (jmp_buf env, int value);
 #define longjmp(buf,val) ldbg_longjmp((buf),(val))
 #endif
-
-#include "Dk/Dksystem.h"
 
 /* These are about to disappear when merge is complete */
 #define PMN_THREADS	/* Activate new threading model */
@@ -69,6 +81,10 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 # define LOW_ORDER_FIRST
 #endif
 
+# define _IEEE_FLOATS
+
+VIRT_API_BEGIN
+
 #include "Dk/Dkparam.h"
 #include "Dk/Dktypes.h"
 #include "Dk/Dktrace.h"
@@ -98,6 +114,8 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 
 #include "Dk/Dkstubs.h"
 
+VIRT_API_END
+
 /*
  * Localization macros
  */
@@ -119,10 +137,5 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #  define gettext(X)		X
 
 #endif /* ENABLE_NLS */
-
-#if defined (MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9)
-#include <xmmintrin.h>
-#define __builtin_ia32_loadups(p) _mm_loadu_ps((p))
-#endif
 
 #endif /* _DK_H */
