@@ -5125,7 +5125,6 @@ int
 ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 {
   int proto = SSL_PROTOCOL_NONE;
-  long ctx_options;
   int i;
 
   /*
@@ -5191,71 +5190,68 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   /*
    *   Start by enabling all options
    */
-  ctx_options = SSL_OP_ALL;
+  SSL_CTX_set_options (ctx, SSL_OP_ALL);
 
   /*
    *  Always disable SSLv2, as per RFC 6176
    */
-  ctx_options |= SSL_OP_NO_SSLv2;
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SSLv2);
 
   /*
-   *  Warn when user enables SSLv3 protocol
+   *  Always disable SSLv3 as well
    */
-  if (!(proto & SSL_PROTOCOL_SSLV3))
-    ctx_options |= SSL_OP_NO_SSLv3;
-  else
-    log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vulnerable");
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SSLv3);
 
+  /*
+   *  Show warning if user enabled the TLSv1 protocol
+   */
+#if defined (SSL_OP_NO_TLSv1)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1);
   if (!(proto & SSL_PROTOCOL_TLSV1))
-    ctx_options |= SSL_OP_NO_TLSv1;
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1);
   else
     log_warning ("SSL: Enabling legacy protocol TLS 1.0 which may be vulnerable");
+#endif
 
   /*
    *  Check rest of protocols
    */
-
 #if defined (SSL_OP_NO_TLSv1_1)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_1);
   if (!(proto & SSL_PROTOCOL_TLSV1_1))
-    ctx_options |= SSL_OP_NO_TLSv1_1;
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_1);
 #endif
 
 #if defined (SSL_OP_NO_TLSv1_2)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_2);
   if (!(proto & SSL_PROTOCOL_TLSV1_2))
-    ctx_options |= SSL_OP_NO_TLSv1_2;
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_2);
+#endif
+
+#if defined (SSL_OP_NO_TLSv1_3)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_3);
+  if (!(proto & SSL_PROTOCOL_TLSV1_3))
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_3);
 #endif
 
   /*
    *  Disable compression on OpenSSL >= 1.0 to fix "CRIME" attack
    */
 #ifdef SSL_OP_NO_COMPRESSION
-  ctx_options |= SSL_OP_NO_COMPRESSION;
+  SSL_CTX_set_options (ctx, SSL_OP_NO_COMPRESSION);
 #endif
 
   /*
    *  Server prefers cipher in order it listed
    */
 #ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
-  ctx_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+  SSL_CTX_set_options (ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 #endif
 
-  /*
-   *  Configure additional options
-   */
-  ctx_options |= SSL_OP_SINGLE_DH_USE;
 
 #ifdef SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION
-  ctx_options |= SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION;
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
 #endif
-
-  /*
-   *  Set options
-   */
-  if (!SSL_CTX_set_options (ctx, ctx_options))
-    {
-      log_error ("SSL: Failed setting protocol options [%s] [%lx]", protocol, ctx_options);
-      return 0;
-    }
 
   return 1;
 }
