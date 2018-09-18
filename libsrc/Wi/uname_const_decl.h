@@ -27,6 +27,13 @@
 #define UNAME_CONST_DECL_H
 #include "Dk.h"
 
+/*				 0         1         2         3         */
+/*				 012345678901234567890123456789012345678 */
+#define OPENLINKSW_BIF_NS_URI	"http://www.openlinksw.com/schemas/bif#"
+#define OPENLINKSW_SQL_NS_URI	"http://www.openlinksw.com/schemas/sql#"
+#define OPENLINKSW_BIF_NS_URI_LEN 38
+#define OPENLINKSW_SQL_NS_URI_LEN 38
+
 /*				 0         1         2         3        */
 /*				 01234567890123456789012345678901234567 */
 #define SWAP_REIFY_NS_URI	"http://www.w3.org/2000/10/swap/reify#"
