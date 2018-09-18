@@ -5428,13 +5428,32 @@ ssl_server_init ()
   SSL_load_error_strings ();
   ERR_load_crypto_strings ();
 
-#ifndef WIN32
+  /*
+   *  Make sure the PRNG is properly seeded
+   */
+  do
   {
     unsigned char tmp[1024];
-    RAND_bytes (tmp, sizeof (tmp));
-    RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
-  }
+      int pid;
+      timeout_t tm;
+
+#ifndef NDEBUG
+      log_debug ("Initializing PRNG");
 #endif
+
+      /* Add current pid to seed */
+      pid = getpid ();
+      RAND_seed (&pid, sizeof (pid));
+
+      /* Add current time in secs + usec to seed */
+      get_real_time (&tm);
+      RAND_seed (&tm, sizeof (tm));
+
+      /* Read one block of random bytes and feed it back to seed */
+    RAND_bytes (tmp, sizeof (tmp));
+      RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp) * 0.9));
+  }
+  while (!RAND_status ());
 
   SSLeay_add_all_algorithms ();
   PKCS12_PBE_add ();		/* stub */
