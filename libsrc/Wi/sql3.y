@@ -574,7 +574,7 @@
 %token CASCADE CHARACTER CHECK CLOSE COMMIT CONSTRAINT CONTINUE CREATE CUBE CURRENT
 %token CURSOR DECIMAL_L DECLARE DEFAULT DELETE_L DESC DISTINCT DOUBLE_L
 %token DROP ESCAPE EXISTS FETCH FLOAT_L FOREIGN FOUND FROM GOTO GO
-%token GRANT GROUP GROUPING HAVING IN_L INDEX INDEX_NO_FILL INDEX_ONLY INDICATOR INSERT INTEGER INTO
+%token GRANT GROUP GROUPING_L HAVING IN_L INDEX INDEX_NO_FILL INDEX_ONLY INDICATOR INSERT INTEGER INTO
 %token IS KEY LANGUAGE ENCODING LIKE NULLX NUMERIC OF ON OPEN OPTION
 %token PRECISION PRIMARY PRIVILEGES PROCEDURE
 %token PUBLIC REAL REFERENCES RESTRICT ROLLBACK ROLLUP SCHEMA SELECT SET
@@ -2247,7 +2247,7 @@ opt_group_by_clause
 		{
 			$$ = (ST*) t_list_to_array(t_CONS (t_list_to_array ($3), NULL));
 		}
-	| GROUP BY GROUPING SETS '(' grouping_set_list ')'
+	| GROUP BY GROUPING_L SETS '(' grouping_set_list ')'
 		{
 			$$ = (ST *) t_list_to_array ($6);
  		}
@@ -2759,7 +2759,7 @@ function_call
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdatetime"), t_list (1, $3));
 		}
-	| GROUPING '(' column_ref ')'
+	| GROUPING_L '(' column_ref ')'
 		{
 		  caddr_t bit = t_box_num (0);
 		  caddr_t bit_index = t_box_num (0);
