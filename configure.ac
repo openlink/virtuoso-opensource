@@ -1266,7 +1266,7 @@ then
     PROJ4_LIBS="-lproj"
 
     CPPFLAGS="$CPPFLAGS $PROJ4_CPPFLAGS"
-    LIBS="$LIBS $PROJ4_LDFLAGS $PROJ4_LIBS"
+    LIBS="$LIBS $PROJ4_LDFLAGS $PROJ4_LIBS -lpthread -lm"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_proj4/lib"
     export LD_LIBRARY_PATH
@@ -1343,7 +1343,7 @@ then
     GEOS_LIBS="-lgeos"
 
     CPPFLAGS="$CPPFLAGS $GEOS_CPPFLAGS"
-    LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c -lgeos -lc++"
+    LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c -lgeos -lstdc++ -lm"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_geos/lib"
     export LD_LIBRARY_PATH
@@ -1573,7 +1573,7 @@ then
     save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
     CFLAGS="$CFLAGS $IM_CFLAGS"
-    LIBS="$LIBS $IM_LIBS"
+    LIBS="$LIBS $IM_LIBS -lpthread"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib"
     export LD_LIBRARY_PATH
@@ -1870,7 +1870,7 @@ then
 	   ;;
 	*)
 	   LZMA_CFLAGS="-I$with_lzma/include"
-	   LZMA_LDFLAGS="-L$with_lzma/lib -llzma"
+	   LZMA_LDFLAGS="-L$with_lzma/lib -llzma -lpthread"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_lzma/lib"
 	   export LD_LIBRARY_PATH
 	   ;;
