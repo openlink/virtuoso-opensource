@@ -41,7 +41,6 @@ libthrs_la_SOURCES = \
 	thread_attr.c \
 	timer_queue.c \
 	io_unix.c \
-        thread_rwlock.c \
 	sched_single.c
 			     
 libthrs_la_CFLAGS  = @VIRT_AM_CFLAGS@

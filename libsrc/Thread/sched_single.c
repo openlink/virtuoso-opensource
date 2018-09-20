@@ -353,3 +353,51 @@ mutex_enter (dk_mutex_t * mtx)
   return (mutex_enter_dbg (__LINE__, __FILE__, mtx));
 }
 #endif
+
+/******************************************************************************
+ *
+ *  rwlock
+ *
+ ******************************************************************************/
+
+rwlock_t *
+rwlock_allocate (void)
+{
+  return (rwlock_t *) 1L;
+}
+
+
+void
+rwlock_free (rwlock_t * l)
+{
+}
+
+
+void
+rwlock_rdlock (rwlock_t * l)
+{
+}
+
+
+int
+rwlock_tryrdlock (rwlock_t * l)
+{
+}
+
+
+void
+rwlock_wrlock (rwlock_t * l)
+{
+}
+
+
+int
+rwlock_trywrlock (rwlock_t * l)
+{
+}
+
+
+void
+rwlock_unlock (rwlock_t * l)
+{
+}
