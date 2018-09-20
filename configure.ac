@@ -2174,6 +2174,7 @@ AC_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs])dnl
 ##########################################################################
 
 LIBRDL=""
+RDLFLAGS=""
 _save_LIBS=$LIBS
 
 AC_MSG_CHECKING(for --with-editline)
@@ -2182,34 +2183,34 @@ AC_HELP_STRING([--with-editline(=DIR)], [use editline library])dnl
 ], [
   AC_MSG_RESULT($withval)
   AC_DEFINE(WITH_EDITLINE, 1, [editline])
-  if test -d "$withval"
+  if test -d "$withval/lib"
   then
-      LDFLAGS="$LDFLAGS -L$withval"
+      RDLFLAGS="-L$withval/lib"
   fi
   # first check if we can compile without lib termcap
   AC_MSG_CHECKING(for -ledit without -ltermcap)
   # check if libedit exists
-  LIBS="$LIBS -ledit"
+  LIBS="$RDLFLAGS -ledit"
   AC_TRY_LINK(extern char *readline();,char *line=readline();,
   [
 	BUILD_OPTS="$BUILD_OPTS editline"
-	LIBRDL="-ledit"
+	LIBRDL="$RDLFLAGS -ledit"
 	AC_MSG_RESULT(yes)
   ], [
 	AC_MSG_RESULT(no)
 	AC_CHECKING(for -ledit that needs -ltermcap)
 	termcap=
-	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
-	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
-	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
 	AC_CHECK_LIB(ncurses, tgetent, [termcap=ncurses], [
+	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
+	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
+	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
 	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-editline)])])])])
 	LIBS="$LIBS -l$termcap"
 	AC_MSG_CHECKING(for -ledit)
 	AC_TRY_LINK(extern char *readline();, char *line=readline();,
 	[
 	   BUILD_OPTS="$BUILD_OPTS editline"
-	   LIBRDL="-ledit -l$termcap"
+	   LIBRDL="$RDLFLAGS -ledit -l$termcap"
 	   AC_MSG_RESULT(yes)
 	], [
 	   AC_ERROR(no working editline library found -- do not use --with-editline)
