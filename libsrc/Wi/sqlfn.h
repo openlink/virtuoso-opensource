@@ -247,14 +247,15 @@ caddr_t qr_quick_exec (query_t * qr, client_connection_t * cli, char * id,
 char * ddl_complete_table_name (query_instance_t * qi, char *name);
 void ddl_ensure_univ_tables (void);
 
-void ddl_std_proc (const char * text, int is_public);
-void ddl_std_proc_1 (const char *text, int is_public, int to_recompile);
 #define DDL_STD_REENTRANT 0x40
-void ddl_ensure_table (const char *name, const char *text);
-void ddl_ensure_column (const char *table, const char *col, const char *text, int is_drop);
-void ddl_sel_for_effect (const char *str);
-caddr_t qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...);
 
+EXE_EXPORT (void, ddl_std_proc, (const char * text, int is_public));
+EXE_EXPORT (void, ddl_std_proc_1, (const char *text, int ddl_std_flags, int to_recompile));
+EXE_EXPORT (void, ddl_ensure_table, (const char *name, const char *text));
+EXE_EXPORT (void, ddl_ensure_column, (const char *table, const char *col, const char *text, int is_drop));
+EXE_EXPORT (void, ddl_sel_for_effect, (const char *str));
+
+caddr_t qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...);
 
 void ddl_create_table (query_instance_t * cli, const char * name, caddr_t * cols);
 
@@ -848,20 +849,14 @@ void ts_aq_result (table_source_t * ts, caddr_t * inst);
 caddr_t deref_node_main_row (it_cursor_t * it, buffer_desc_t ** buf,
     dbe_key_t * key, it_cursor_t * main_itc);
 
-client_connection_t * sqlc_client (void);
+EXE_EXPORT (client_connection_t *, sqlc_client, (void));
+EXE_EXPORT (char *, cli_owner, (client_connection_t * cli));
+EXE_EXPORT (char *, sch_full_proc_name, (dbe_schema_t * sc, const char * ref_name, char * q_def, char * o_def));
+EXE_EXPORT (char *, sch_full_proc_name_1, (dbe_schema_t * sc, const char * ref_name, char * q_def, char * o_def, char *m_def));
+EXE_EXPORT (char *, sch_full_module_name, (dbe_schema_t * sc, char * ref_name, char * q_def, char * o_def));
+EXE_EXPORT (char *, cli_qual, (client_connection_t * cli));
 
-char * cli_owner (client_connection_t * cli);
-
-char * sch_full_proc_name (dbe_schema_t * sc, const char * ref_name,
-    char * q_def, char * o_def);
-char * sch_full_proc_name_1 (dbe_schema_t * sc, const char * ref_name,
-    char * q_def, char * o_def, char *m_def);
-char * sch_full_module_name (dbe_schema_t * sc, char * ref_name,
-    char * q_def, char * o_def);
-char * cli_qual (client_connection_t * cli);
-
-long bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
-    db_buf_t to, int max_bytes);
+long bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli, db_buf_t to, int max_bytes);
 void bh_set_it_fields (blob_handle_t *bh);
 
 void cli_end_blob_read (client_connection_t * cli);

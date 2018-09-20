@@ -1266,7 +1266,7 @@ then
     PROJ4_LIBS="-lproj"
 
     CPPFLAGS="$CPPFLAGS $PROJ4_CPPFLAGS"
-    LIBS="$LIBS $PROJ4_LDFLAGS $PROJ4_LIBS"
+    LIBS="$LIBS $PROJ4_LDFLAGS $PROJ4_LIBS -lpthread -lm"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_proj4/lib"
     export LD_LIBRARY_PATH
@@ -1286,6 +1286,7 @@ main ()
   exit (0);
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS proj"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1343,7 +1344,7 @@ then
     GEOS_LIBS="-lgeos"
 
     CPPFLAGS="$CPPFLAGS $GEOS_CPPFLAGS"
-    LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c -lgeos -lc++"
+    LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c -lgeos -lstdc++ -lm"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_geos/lib"
     export LD_LIBRARY_PATH
@@ -1366,6 +1367,7 @@ main ()
   exit (0);
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS geos"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1428,6 +1430,7 @@ then
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_shapefileio/lib"
     export LD_LIBRARY_PATH
 
+    BUILD_OPTS="$BUILD_OPTS shapefileio"
     AC_MSG_RESULT(using internal library)
 
     LIBS="$save_LIBS"
@@ -1510,6 +1513,7 @@ main ()
   exit (1);
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS hslookup"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1573,7 +1577,7 @@ then
     save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
     CFLAGS="$CFLAGS $IM_CFLAGS"
-    LIBS="$LIBS $IM_LIBS"
+    LIBS="$LIBS $IM_LIBS -lpthread"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib"
     export LD_LIBRARY_PATH
@@ -1592,6 +1596,7 @@ main ()
   return 0;
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS im"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1664,6 +1669,7 @@ main ()
   return 0;
 }],
 [
+ BUILD_OPTS="$BUILD_OPTS wbxml2"
  AC_MSG_RESULT(good)
 ],
 [
@@ -1870,7 +1876,7 @@ then
 	   ;;
 	*)
 	   LZMA_CFLAGS="-I$with_lzma/include"
-	   LZMA_LDFLAGS="-L$with_lzma/lib -llzma"
+	   LZMA_LDFLAGS="-L$with_lzma/lib -llzma -lpthread"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_lzma/lib"
 	   export LD_LIBRARY_PATH
 	   ;;
@@ -2168,6 +2174,7 @@ AC_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs])dnl
 ##########################################################################
 
 LIBRDL=""
+RDLFLAGS=""
 _save_LIBS=$LIBS
 
 AC_MSG_CHECKING(for --with-editline)
@@ -2176,34 +2183,34 @@ AC_HELP_STRING([--with-editline(=DIR)], [use editline library])dnl
 ], [
   AC_MSG_RESULT($withval)
   AC_DEFINE(WITH_EDITLINE, 1, [editline])
-  if test -d "$withval"
+  if test -d "$withval/lib"
   then
-      LDFLAGS="$LDFLAGS -L$withval"
+      RDLFLAGS="-L$withval/lib"
   fi
   # first check if we can compile without lib termcap
   AC_MSG_CHECKING(for -ledit without -ltermcap)
   # check if libedit exists
-  LIBS="$LIBS -ledit"
+  LIBS="$RDLFLAGS -ledit"
   AC_TRY_LINK(extern char *readline();,char *line=readline();,
   [
 	BUILD_OPTS="$BUILD_OPTS editline"
-	LIBRDL="-ledit"
+	LIBRDL="$RDLFLAGS -ledit"
 	AC_MSG_RESULT(yes)
   ], [
 	AC_MSG_RESULT(no)
 	AC_CHECKING(for -ledit that needs -ltermcap)
 	termcap=
-	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
-	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
-	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
 	AC_CHECK_LIB(ncurses, tgetent, [termcap=ncurses], [
+	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
+	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
+	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
 	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-editline)])])])])
 	LIBS="$LIBS -l$termcap"
 	AC_MSG_CHECKING(for -ledit)
 	AC_TRY_LINK(extern char *readline();, char *line=readline();,
 	[
 	   BUILD_OPTS="$BUILD_OPTS editline"
-	   LIBRDL="-ledit -l$termcap"
+	   LIBRDL="$RDLFLAGS -ledit -l$termcap"
 	   AC_MSG_RESULT(yes)
 	], [
 	   AC_ERROR(no working editline library found -- do not use --with-editline)

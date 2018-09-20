@@ -23,12 +23,17 @@ if WITH_PROJ4
 hosting_LTLIBRARIES = proj4.la
 endif
 
+GEN=$(SHELL) ${top_srcdir}/bin/generate
+
 proj4_la_SOURCES = \
 	proj4_plugin.c \
 	sql_code_proj4.c \
 	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
 
+BUILT_SOURCES = sql_code_proj4.c
+
 proj4_la_CFLAGS  = @VIRT_AM_CFLAGS@
+proj4_la_CFLAGS  += -D_USRDLL
 proj4_la_CFLAGS  += -I$(top_srcdir)/libsrc
 proj4_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 proj4_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
@@ -41,9 +46,9 @@ proj4_la_LDFLAGS = -module -avoid-version -export-dynamic
 proj4_la_LDFLAGS += -export-symbols proj4.exp
 proj4_la_LIBADD = @PROJ4_LDFLAGS@ @PROJ4_LIBS@ -lm
 
-sql_code_proj4.c: proj4.sql $(SQL_AWK_DEPS)
-        $(GEN) $(GAWK) -o $@  \
-                -f $(TOP)/libsrc//Wi/sql_to_c.awk \
+sql_code_proj4.c: proj4.sql $(SQL_AWK_DEPS) Makefile.am
+	$(GEN) $(GAWK) -o $@  \
+                -f $(top_srcdir)/libsrc/Wi/sql_to_c.awk \
                 -v init_name=_proj4 \
                 -v extra_include=import_gate_virtuoso.h \
                 -v pl_stats=$(PLSTATS) \
