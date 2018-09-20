@@ -32,6 +32,7 @@ geos_la_SOURCES = \
 	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
 
 geos_la_CXXFLAGS  = @VIRT_AM_CFLAGS@
+geos_la_CXXFLAGS  += -D_USRDLL
 geos_la_CXXFLAGS  += -I$(top_srcdir)/libsrc
 geos_la_CXXFLAGS  += -I$(top_srcdir)/libsrc/Dk
 geos_la_CXXFLAGS  += -I$(top_srcdir)/libsrc/Wi
@@ -41,6 +42,7 @@ geos_la_CXXFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
 geos_la_CXXFLAGS  +=  @GEOS_CPPFLAGS@
 
 geos_la_CFLAGS  = @VIRT_AM_CFLAGS@
+geos_la_CFLAGS  += -D_USRDLL
 geos_la_CFLAGS  += -I$(top_srcdir)/libsrc
 geos_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 geos_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
