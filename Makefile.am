@@ -39,6 +39,7 @@ dist_doc_DATA = \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README \
 	$(srcdir)/README.GIT.md \
+	$(srcdir)/README.GeoSPARQL.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.jsse.md \
