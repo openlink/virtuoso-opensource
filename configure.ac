@@ -1286,6 +1286,7 @@ main ()
   exit (0);
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS proj"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1366,6 +1367,7 @@ main ()
   exit (0);
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS geos"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1428,6 +1430,7 @@ then
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_shapefileio/lib"
     export LD_LIBRARY_PATH
 
+    BUILD_OPTS="$BUILD_OPTS shapefileio"
     AC_MSG_RESULT(using internal library)
 
     LIBS="$save_LIBS"
@@ -1510,6 +1513,7 @@ main ()
   exit (1);
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS hslookup"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1592,6 +1596,7 @@ main ()
   return 0;
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS im"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1664,6 +1669,7 @@ main ()
   return 0;
 }],
 [
+ BUILD_OPTS="$BUILD_OPTS wbxml2"
  AC_MSG_RESULT(good)
 ],
 [
