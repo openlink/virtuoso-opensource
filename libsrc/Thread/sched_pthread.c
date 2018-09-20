@@ -1467,9 +1467,9 @@ mutex_leave (dk_mutex_t *mtx)
 
 
 void
-mutex_stat ()
+mutex_stat (int mode, int max)
 {
-  #ifdef MTX_METER
+#ifdef MTX_METER
   DO_HT (dk_mutex_t *, mtx, void*, ign, all_mtxs)
     {
       if (!mtx->mtx_enters)
@@ -1484,7 +1484,7 @@ mutex_stat ()
 #endif
     }
   END_DO_SET();
-  #else
+#else
   printf ("Mutex stats not enabled.}\n");
 #endif
 }
