@@ -838,7 +838,7 @@ add_protected_sequence ('vad_tmp')
 add_protected_sequence ('vdd_init')
 ;
 
-create table SYS_X509_CERTIFICATES (
+create table DB.DBA.SYS_X509_CERTIFICATES (
     	C_U_ID	int,			-- user id
     	C_ID varchar, 			-- key id
 	C_DATA long varchar, 		-- certificate (and possibly key) pem format
@@ -847,9 +847,9 @@ create table SYS_X509_CERTIFICATES (
 	primary key (C_U_ID, C_KIND, C_ID))
 ;
 
-create procedure X509_CA_CERTIFICATES_INIT ()
+create procedure DB.DBA.X509_CA_CERTIFICATES_INIT ()
 {
-  for select C_DATA from SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 do
+  for select C_DATA from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 do
     {
       x509_ca_cert_add (cast (C_DATA as varchar));
     }
@@ -857,10 +857,10 @@ create procedure X509_CA_CERTIFICATES_INIT ()
 ;
 
 --!AFTER
-X509_CA_CERTIFICATES_INIT ()
+DB.DBA.X509_CA_CERTIFICATES_INIT ()
 ;
 
-create procedure X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
+create procedure DB.DBA.X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
 {
   declare ki varchar;
   declare name, subj varchar;
@@ -888,13 +888,13 @@ create procedure X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
 	  name := subseq (name, pos + 1);
 	  name := split_and_decode (replace (name, '\\x', '%'))[0];
 	}
-      insert soft SYS_X509_CERTIFICATES (C_U_ID, C_ID, C_DATA, C_KIND, C_NAME) values (user_id, ki, cert, kind, name);
+      insert soft DB.DBA.SYS_X509_CERTIFICATES (C_U_ID, C_ID, C_DATA, C_KIND, C_NAME) values (user_id, ki, cert, kind, name);
       x509_ca_cert_add (cert);
     }
 }
 ;
 
-create procedure X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
+create procedure DB.DBA.X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
 {
   declare ki varchar;
   declare name, subj varchar;
@@ -910,20 +910,46 @@ create procedure X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
       ki := get_certificate_info (6, cert, 0, '');
       if (ki is null)
 	signal ('22023', 'Can not get certificate id');
-      delete from SYS_X509_CERTIFICATES where C_U_ID = user_id and C_KIND = kind and C_ID = ki;
+      delete from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = user_id and C_KIND = kind and C_ID = ki;
     }
   x509_ca_certs_remove ();
-  X509_CA_CERTIFICATES_INIT ();
+  DB.DBA.X509_CA_CERTIFICATES_INIT ();
 }
 ;
 
-create procedure X509_ROOT_CA_CERTS ()
+create procedure DB.DBA.X509_ROOT_CA_CERTS ()
 {
   declare ret any;
-  ret := (select vector_agg (C_DATA) from SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1);
+  ret := (select vector_agg (C_DATA) from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1);
   return ret;
 }
 ;
+
+create procedure DB.DBA.X509_STRING_DATE (
+  in val varchar)
+{
+  declare ret, tmp any;
+  declare exit handler for sqlstate '*'
+  {
+    return null;
+  };
+
+  ret := NULL;
+  val := regexp_replace (val, '[ ]+', ' ', 1, null);
+  -- Jan 11 14:36:33 2012 GMT
+  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{1,} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
+  {
+    tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
+    if (tmp is not null and length (tmp) > 3)
+    {
+      ret := http_string_date (sprintf ('Wee, %s %s %s %s GMT', tmp[1], tmp[0], tmp[3], tmp[2]));
+      ret := dt_set_tz (ret, 0);
+    }
+  }
+  return ret;
+}
+;
+
 
 create procedure uptime ()
 {

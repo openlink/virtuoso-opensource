@@ -5982,7 +5982,7 @@ INTO GRAPH <http://%{WSHost}s/pki>
     key_iri, cert_modulus, cert_exponent,
     webid, cer_iri,
     cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer,
-    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)),
+    DB..date_iso8601 (DB.DBA.X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB.DBA.X509_STRING_DATE (cert_val_not_after)),
     cert_serial, tag,
     case when san is not null then sprintf ('oplcert:subjectAltName <%s> ; ', san) else '' end,
     case when ian is not null then sprintf ('oplcert:issuerAltName <%s> ;', ian) else '' end,
