@@ -1,6 +1,6 @@
 # Virtuoso GeoSPARQL support
 
-_Copyright (C) 2018 OpenLink Software
+_Copyright (C) 2018 OpenLink Software_
 
 ## Introduction
 This release marks the addition of GeoSPARQL function support to Virtuoso Open Source Edition.
@@ -14,8 +14,8 @@ extend Virtuoso's functionality:
 
 
 ## Requirements
-Two of these plugins can only be build against very specific versions of third party libraries which
-may not be available on every OS distribution so probably will need to be build by you prior to
+Two of these plugins can only be built against very specific versions of third party libraries which
+may not be available on every OS distribution so probably will need to be built by you prior to
 building Virtuoso.
 ```
   Package         Version         From
@@ -24,7 +24,7 @@ building Virtuoso.
   geo             3.5.1           https://www.osgeo.org/geos/
 ```
 The new plugins are automatically added to the build process if the third party libraries and header
-files are found when running the configure tool. 
+files are found when running the configure tool.
 
 The following new options have been added:
 ```
@@ -49,7 +49,7 @@ including Linux, Mac OS X and Windows.
 
 ### The proj4 plugin
 
-The proj4 plugin adds an interface between the Virtuoso engine and the [__PROJ__ library](https://proj4.org) 
+The proj4 plugin adds an interface between the Virtuoso engine and the [__PROJ__ library](https://proj4.org)
 currently maintained by Frank Warmerdam et al.
 
 This plugin adds support for transforming geospatial coordinates from one coordinate reference
@@ -159,7 +159,7 @@ The shapefile library uses the following license:
   OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
   CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-  SHAPELIB MODIFICATIONS 
+  SHAPELIB MODIFICATIONS
   I am pleased to receive bug fixes, and improvements for Shapelib. Unless the submissions indicate
   otherwise I will assume that changes submitted to me remain under the the above "dual license"
   terms. If changes are made to the library with the intention that those changes should be protected
@@ -167,7 +167,7 @@ The shapefile library uses the following license:
   changes into the core of Shapelib that are protected under the LGPL as this would effectively limit
   the whole file and distribution to LGPL terms.
 
-  Opting for LGPL 
+  Opting for LGPL
   For licensee's opting to use Shapelib under LGPL as opposed to the MIT Style license above, and
   wishing to redistribute the software based on Shapelib, I would ask that all "dual license" modules
   be updated to indicate that only the LGPL (and not the MIT Style license) applies. This action
@@ -198,13 +198,17 @@ directory to the existing __DirsAllowed__ setting like this:
   ..
   ..
   DirsAllowed                     = ., /opt/virtuoso-opensource/vad, /usr/share/proj
-  .. 
+  ..
   ..
 ```
 
 After making these modifications to the virtuoso.ini file, you need to restart the virtuoso engine
-so these additional functions become available. If the plugins are successfully build and installed
-you should see the following lines in your virtuoso.log file:
+so these additional functions become available.
+
+
+## Troubleshooting
+If the plugins are successfully build and installed you should see the following lines in your
+virtuoso.log file:
 ```
   12:08:51 { Loading plugin 8: Type `plain', file `proj4' in `/opt/virtuoso-opensource/hosting'
   12:08:51   plain version 3230 from OpenLink Software
@@ -224,7 +228,7 @@ If you see the following lines near the bottom of you virtuoso.log file then you
 proj-data package if your operating distribution has this available.
 ```
   12:23:17 PL LOG: Initial setup of DB.DBA.SYS_PROJ4_SRIDS data from files in "/usr/share/proj"
-  12:23:17 PL LOG: Error during initial setup of DB.DBA.SYS_PROJ4_SRIDS data: 39000: FA005: 
+  12:23:17 PL LOG: Error during initial setup of DB.DBA.SYS_PROJ4_SRIDS data: 39000: FA005:
   Can't open file '/usr/share/proj/epsg', error 2
 ```
 
