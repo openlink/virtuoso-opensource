@@ -1759,7 +1759,7 @@ create procedure WS.WS.PUT (
   declare _atomPub integer;
   declare _path, _destination, _oldName, _name, _what, _method, _category varchar;
   declare _xtree, _content, _parts any;
-  declare client_etag, server_etag, slug, res_name_, rc_type varchar;
+  declare client_etag, server_etag, res_name_, rc_type varchar;
   declare res_id_, id_ integer;
   declare mod_time datetime;
   declare o_perms, o_uid, o_gid any;
@@ -1883,14 +1883,7 @@ create procedure WS.WS.PUT (
 
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
-
   full_path := DAV_CONCAT_PATH ('/', path);
-  slug := WS.WS.FINDPARAM (lines, 'Slug');
-  if (slug <> '')
-  {
-    full_path := rtrim (full_path, '/') || '/' || slug;
-    path := vector_concat (path, vector (slug));
-  }
 
   uid := null;
   gid := null;
