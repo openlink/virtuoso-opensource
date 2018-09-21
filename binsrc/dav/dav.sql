@@ -6908,7 +6908,8 @@ create procedure DB.DBA.LDP_CREATE (
   in id_parent any := null)
 {
   -- dbg_obj_princ ('LDP_CREATE (', path, ')');
-  declare path_parent, graph, graph_parent varchar;
+  declare tmp, path_parent, graph, graph_parent varchar;
+  declare graphIdn, graphParentIdn any;
 
   -- macOS metadata files
   if (DB.DBA.DAV_MAC_METAFILE (path))
@@ -6923,7 +6924,20 @@ create procedure DB.DBA.LDP_CREATE (
     graph_parent := WS.WS.DAV_IRI (path_parent);
     graph := WS.WS.DAV_IRI (path);
     set_user_id ('dba');
-    TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph), graph_parent, graph_parent);
+
+    -- delete old data
+    graphIdn := __i2idn (graph);
+    graphParentIdn := __i2idn (graph_parent);
+    delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#mtime') and S = graphIdn;
+    delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#size') and S = graphIdn;
+
+    tmp := sprintf (' <%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph);
+    for (select DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as _size, RES_MOD_TIME as _mod_time from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path) do
+    {
+      tmp := tmp || sprintf (' <%s> <http://www.w3.org/ns/posix/stat#mtime> %d .', graph, datediff ('second', stringdate ('1970-1-1'), _mod_time));
+      tmp := tmp || sprintf (' <%s> <http://www.w3.org/ns/posix/stat#size> %d .', graph, _size);
+    }
+    DB.DBA.TTLP (tmp, '', graph_parent);
   }
 }
 ;
@@ -6933,8 +6947,8 @@ create procedure DB.DBA.LDP_DELETE (
   in allData integer := 0)
 {
   -- dbg_obj_princ ('LDP_DELETE (', path, ')');
-  declare graph varchar;
-  declare graphIdn any;
+  declare graph, graph_parent varchar;
+  declare graphIdn, graphParentIdn any;
 
   -- macOS metadata files
   if (DB.DBA.DAV_MAC_METAFILE (path))
@@ -6942,6 +6956,8 @@ create procedure DB.DBA.LDP_DELETE (
 
   graph := WS.WS.DAV_IRI (path);
   graphIdn := __i2idn (graph);
+  graph_parent := WS.WS.DAV_IRI (DB.DBA.DAV_DET_PATH_PARENT (path, 1));
+  graphParentIdn := __i2idn (graph_parent);
   if (allData)
   {
     SPARQL clear graph ?:graph;
@@ -6951,7 +6967,9 @@ create procedure DB.DBA.LDP_DELETE (
     delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and O = __i2idn ('http://www.w3.org/ns/ldp#Resource');
     delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and O = __i2idn ('http://www.w3.org/2000/01/rdf-schema#Resource');
   }
-  delete from DB.DBA.RDF_QUAD where P = __i2idn ('http://www.w3.org/ns/ldp#contains') and O = graphIdn;
+  delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/ldp#contains') and O = graphIdn;
+  delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#mtime') and S = graphIdn;
+  delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#size') and S = graphIdn;
 }
 ;
 
