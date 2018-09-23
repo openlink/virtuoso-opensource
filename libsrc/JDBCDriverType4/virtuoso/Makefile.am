@@ -19,7 +19,7 @@
 #  
 #  
 
-SUBDIRS = jdbc2
+SUBDIRS = jdbc
 
 # ----------------------------------------------------------------------
 #
@@ -29,4 +29,4 @@ SUBDIRS = jdbc2
 EXTRA_DIST= \
 	javax/*.java \
 	sql/*.java \
-	jdbc2/*.java
+	jdbc/*.java

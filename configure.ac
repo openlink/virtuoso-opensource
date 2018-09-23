@@ -3171,10 +3171,8 @@ AC_CONFIG_FILES([
 	docsrc/xmlsource/Makefile
 	libsrc/Dk/Makefile
 	libsrc/JDBCDriverType4/Makefile
-	libsrc/JDBCDriverType4/testsuite_2.0/Makefile
-	libsrc/JDBCDriverType4/testsuite_3.0/Makefile
 	libsrc/JDBCDriverType4/testsuite_4.0/Makefile
-	libsrc/JDBCDriverType4/virtuoso/jdbc2/Makefile
+	libsrc/JDBCDriverType4/virtuoso/jdbc/Makefile
 	libsrc/JDBCDriverType4/virtuoso/Makefile
 	libsrc/langfunc/Makefile
 	libsrc/odbcsdk/Makefile

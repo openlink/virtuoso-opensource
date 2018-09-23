@@ -56,7 +56,7 @@ run-tests:
 #
 .PHONY: jdk4-target
 jdk4-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) std4
 
 .PHONY: jdk4-test
 jdk4-test:
@@ -64,7 +64,7 @@ jdk4-test:
 
 .PHONY: jdk4-doc
 jdk4-doc:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) doc4
 
 
 #
@@ -72,7 +72,7 @@ jdk4-doc:
 #
 .PHONY: jdk4_1-target
 jdk4_1-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_1
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) std4_1
 
 .PHONY: jdk4_1-test
 jdk4_1-test:
@@ -80,7 +80,7 @@ jdk4_1-test:
 
 .PHONY: jdk4_1-doc
 jdk4_1-doc:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4_1
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) doc4_1
 
 
 #
@@ -88,7 +88,7 @@ jdk4_1-doc:
 #
 .PHONY: jdk4_2-target
 jdk4_2-target:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_2
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) std4_2
 
 .PHONY: jdk4_2-test
 jdk4_2-test:
@@ -96,7 +96,7 @@ jdk4_2-test:
 
 .PHONY: jdk4_2-doc
 jdk4_2-doc:
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) doc4_2
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) doc4_2
 
 
 #
