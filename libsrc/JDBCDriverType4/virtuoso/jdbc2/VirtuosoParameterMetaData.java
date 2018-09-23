@@ -157,7 +157,6 @@ public class VirtuosoParameterMetaData implements ParameterMetaData
      }
    }
 
-#if JDK_VER >= 16
     /**
      * Returns an object that implements the given interface to allow access to
      * non-standard methods, or standard methods not exposed by the proxy.
@@ -205,5 +204,4 @@ public class VirtuosoParameterMetaData implements ParameterMetaData
     // This works for classes that aren't actually wrapping anything
     return iface.isInstance(this);
   }
-#endif
 }

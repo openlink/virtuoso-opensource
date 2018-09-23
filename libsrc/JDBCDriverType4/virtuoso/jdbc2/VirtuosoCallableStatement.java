@@ -627,7 +627,6 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
 	return ((BigDecimal) obj);
    }
 
-#if JDK_VER >= 12
    /**
     * Returns an object representing the value of OUT parameter
     * i and uses map for the custom mapping of the parameter value.
@@ -659,7 +658,6 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
    {
      throw new VirtuosoException ("REF not supported", VirtuosoException.NOTIMPLEMENTED);
    }
-#endif
 
    /**
     * Gets the value of a JDBC BLOB parameter as a
@@ -673,11 +671,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
     * @see java.sql.CallableStatement#getBlob
     */
    public
-#if JDK_VER >= 12
    Blob
-#else
-   VirtuosoBlob
-#endif
    getBlob(int parameterIndex) throws VirtuosoException
    {
       // Check parameters
@@ -688,11 +682,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
         return null;
       else
         return
-#if JDK_VER >= 12
            (Blob)
-#else
-	   (VirtuosoBlob)
-#endif
            objparams.elementAt(parameterIndex - 1);
    }
 
@@ -709,11 +699,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
     * @see java.sql.CallableStatement#getClob
     */
    public
-#if JDK_VER >= 12
    Clob
-#else
-   VirtuosoClob
-#endif
    getClob(int parameterIndex) throws VirtuosoException
    {
       // Check parameters
@@ -724,15 +710,10 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
         return null;
       else
         return
-#if JDK_VER >= 12
          (Clob)
-#else
-	 (VirtuosoClob)
-#endif
          objparams.elementAt(parameterIndex - 1);
    }
 
-#if JDK_VER >= 12
    /**
     * Gets the value of a JDBC <code>ARRAY</code> parameter as an
     * {@link Array} object in the Java programming language.
@@ -747,7 +728,6 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
    {
      throw new VirtuosoException ("ARRAY not supported", VirtuosoException.NOTIMPLEMENTED);
    }
-#endif
 
    /**
     * Gets the value of a JDBC DATE parameter as a java.sql.Date object, using
@@ -839,7 +819,6 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
    }
 
 
-#if JDK_VER >= 14
    /* JDK 1.4 functions */
 
    public void registerOutParameter(String parameterName,
@@ -1109,7 +1088,6 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
        throw new VirtuosoException ("DATALINK type not supported", VirtuosoException.NOTIMPLEMENTED);
      }
 
-#if JDK_VER >= 16
   private int findParam (String paramName) throws SQLException {
        throw new VirtuosoException ("Named parameters not supported", VirtuosoException.NOTIMPLEMENTED);
   }
@@ -2013,6 +1991,4 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
 
 #endif
 
-#endif
-#endif
 }

@@ -63,10 +63,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     protected int recvbs = 0;
     protected boolean roundrobin = false;
 
-#if JDK_VER >= 16
     protected boolean usepstmtpool = false;
     protected int pstmtpoolsize = 0;
-#endif
 
 
     protected transient java.io.PrintWriter logWriter;
@@ -103,10 +101,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_recvbs = "recvbs";
     final static String n_roundrobin = "roundrobin";
 
-#if JDK_VER >= 16
     final static String n_usepstmtpool = "usepstmtpool";
     final static String n_pstmtpoolsize = "pstmtpoolsize";
-#endif
 
 
   public VirtuosoDataSource ()
@@ -181,25 +177,17 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
     ref.add(new StringRefAddr(VirtuosoDataSource.n_roundrobin, String.valueOf(roundrobin)));
 
-#if JDK_VER >= 16
     ref.add(new StringRefAddr(VirtuosoDataSource.n_usepstmtpool, String.valueOf(usepstmtpool)));
 
     if (pstmtpoolsize != 0)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_pstmtpoolsize, String.valueOf(pstmtpoolsize)));
-#endif
 
   }
 
 
   // Referenceable members
   public Reference getReference() throws NamingException {
-#if JDK_VER < 14
-     Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc2.VirtuosoDataSourceFactory", null);
-#elif JDK_VER < 16
-     Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc3.VirtuosoDataSourceFactory", null);
-#else
      Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc4.VirtuosoDataSourceFactory", null);
-#endif
      addProperties(ref);
      return ref;
   }
@@ -244,10 +232,8 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     if (recvbs != 0)  prop.setProperty("recvbs", String.valueOf(recvbs));
     if (roundrobin)  prop.setProperty("roundrobin", "1");
 
-#if JDK_VER >= 16
     if (usepstmtpool)  prop.setProperty("usepstmtpool", "1");
     if (pstmtpoolsize != 0)  prop.setProperty("pstmtpoolsize", String.valueOf(pstmtpoolsize));
-#endif
 
     return prop;
   }
@@ -578,7 +564,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return this.roundrobin;
   }
 
-#if JDK_VER >= 16
   public void setUsepstmtpool (boolean value)
   {
     this.usepstmtpool = value;
@@ -664,7 +649,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
   {
      throw new VirtuosoFNSException ("getParentLogger()  not supported", VirtuosoException.NOTIMPLEMENTED);
   }
-#endif
 #endif
 
 

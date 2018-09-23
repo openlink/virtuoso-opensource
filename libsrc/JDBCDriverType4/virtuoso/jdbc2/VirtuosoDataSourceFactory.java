@@ -42,25 +42,6 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
     Reference ref = (Reference)obj;
     DataSource ds;
     String className = ref.getClassName();
-#if JDK_VER < 14
-    if (className.equals("virtuoso.jdbc2.VirtuosoDataSource"))
-      ds = new VirtuosoDataSource();
-    else if (className.equals("virtuoso.jdbc2.VirtuosoConnectionPoolDataSource"))
-      ds = new VirtuosoConnectionPoolDataSource();
-    else if (className.equals("virtuoso.jdbc2.VirtuosoXADataSource"))
-      ds = new VirtuosoXADataSource();
-    else
-      return null;
-#elif JDK_VER < 16
-    if (className.equals("virtuoso.jdbc3.VirtuosoDataSource"))
-      ds = new VirtuosoDataSource();
-    else if (className.equals("virtuoso.jdbc3.VirtuosoConnectionPoolDataSource"))
-      ds = new VirtuosoConnectionPoolDataSource();
-    else if (className.equals("virtuoso.jdbc3.VirtuosoXADataSource"))
-      ds = new VirtuosoXADataSource();
-    else
-      return null;
-#else
     if (className.equals("virtuoso.jdbc4.VirtuosoDataSource"))
       ds = new VirtuosoDataSource();
     else if (className.equals("virtuoso.jdbc4.VirtuosoConnectionPoolDataSource"))
@@ -69,7 +50,6 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
       ds = new VirtuosoXADataSource();
     else
       return null;
-#endif
 
     if (ds != null) {
       StringRefAddr refS;
@@ -150,13 +130,11 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_roundrobin)) != null)
           ((VirtuosoDataSource) ds).setRoundrobin(Boolean.getBoolean((String)refS.getContent()));
 
-#if JDK_VER >= 16
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_usepstmtpool)) != null)
           ((VirtuosoDataSource) ds).setUsepstmtpool(Boolean.getBoolean((String)refS.getContent()));
 
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_pstmtpoolsize)) != null)
           ((VirtuosoDataSource) ds).setPstmtpoolsize(Integer.parseInt((String)refS.getContent()));
-#endif
 
       if (ds instanceof virtuoso.jdbc2.VirtuosoConnectionPoolDataSource) {
 

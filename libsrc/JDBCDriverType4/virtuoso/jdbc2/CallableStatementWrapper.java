@@ -46,11 +46,9 @@ import java.sql.SQLWarning;
 import java.sql.SQLException;
 import java.sql.Connection;
 
-#if JDK_VER >= 16
 import java.sql.RowId;
 import java.sql.SQLXML;
 import java.sql.NClob;
-#endif
 
 public class CallableStatementWrapper
           extends PreparedStatementWrapper implements CallableStatement{
@@ -247,11 +245,7 @@ public class CallableStatementWrapper
   }
 
 
-#if JDK_VER >= 16
   public Object getObject(int i, Map<String,Class<?>> map) throws SQLException {
-#else
-  public Object getObject(int i, Map map) throws SQLException {
-#endif
     check_close();
     try {
       return ((CallableStatement)stmt).getObject(i, map);
@@ -341,7 +335,6 @@ public class CallableStatementWrapper
     }
   }
 
-#if JDK_VER >= 14
   //--------------------------JDBC 3.0-----------------------------
 
   public void registerOutParameter(String parameterName, int sqlType)
@@ -812,11 +805,7 @@ public class CallableStatementWrapper
     }
   }
 
-#if JDK_VER >= 16
   public Object getObject (String parameterName, Map<String,Class<?>> map)
-#else
-  public Object getObject (String parameterName, Map map)
-#endif
      throws SQLException
   {
     check_close();
@@ -916,7 +905,6 @@ public class CallableStatementWrapper
     }
   }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
 
   public RowId getRowId(int parameterIndex) throws SQLException
@@ -1309,7 +1297,5 @@ public class CallableStatementWrapper
 
 #endif
 
-#endif
-#endif
 
 }

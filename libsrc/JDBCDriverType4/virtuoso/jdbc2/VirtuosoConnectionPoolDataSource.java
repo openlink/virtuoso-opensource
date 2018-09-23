@@ -67,11 +67,7 @@ public class VirtuosoConnectionPoolDataSource
     private volatile boolean isClosed = false;
     private VirtuosoPoolStatistic stat;
     private Object  initLock ;
-#if JDK_VER >= 16
     private TreeSet<Object> propQueue;
-#else
-    private TreeSet propQueue;
-#endif
     private long  propEnforceTime = 0;
 
 
@@ -81,11 +77,7 @@ public class VirtuosoConnectionPoolDataSource
     initLock = new Object();
     stat = new VirtuosoPoolStatistic();
     connPool = new ConnCache(this);
-#if JDK_VER >= 16
     propQueue = new TreeSet<Object>( new Comparator<Object>() {
-#else
-    propQueue = new TreeSet( new Comparator() {
-#endif
           public int compare(Object a, Object b) {
             long a_time = ((NewProperty)a).enforceTime;
             long b_time = ((NewProperty)b).enforceTime;
@@ -228,13 +220,7 @@ public class VirtuosoConnectionPoolDataSource
 
 
   public Reference getReference() throws NamingException {
-#if JDK_VER < 14
-     Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc2.VirtuosoDataSourceFactory", null);
-#elif JDK_VER < 16
-     Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc3.VirtuosoDataSourceFactory", null);
-#else
      Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc4.VirtuosoDataSourceFactory", null);
-#endif
      addProperties(ref);
      return ref;
   }

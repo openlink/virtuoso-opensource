@@ -27,9 +27,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import javax.sql.XAConnection;
 import javax.sql.ConnectionEventListener;
-#if JDK_VER >= 16
 import javax.sql.StatementEventListener;
-#endif
 import javax.transaction.xa.XAResource;
 
 public class VirtuosoXAConnection implements XAConnection {
@@ -143,7 +141,6 @@ public class VirtuosoXAConnection implements XAConnection {
     pconn.removeConnectionEventListener(listener);
   }
 
-#if JDK_VER >= 16
 	/**
 	 * Registers a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.  Components that
 	 * wish to be notified when  <code>PreparedStatement</code>s created by the
@@ -175,6 +172,5 @@ public class VirtuosoXAConnection implements XAConnection {
   {
 //??TODO    throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "removeStatementEventListener(listener)");
   }
-#endif
 
 }

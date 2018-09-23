@@ -28,7 +28,6 @@ import java.util.*;
 public class VirtuosoPoolStatistic implements Cloneable {
 
   protected String name;
-#if JDK_VER >= 16
   protected volatile int conn_unUsed;
   protected volatile int connIn_Use;
   protected volatile int cacheSize = 0;
@@ -37,16 +36,6 @@ public class VirtuosoPoolStatistic implements Cloneable {
   protected volatile long _max_wtime = 0L;
   protected volatile long _min_wtime = 0L;
   protected volatile long _cum_wtime = 0L;
-#else
-  protected int conn_unUsed;
-  protected int connIn_Use;
-  protected int cacheSize = 0;
-  protected int _hits = 0;
-  protected int _misses = 0;
-  protected long _max_wtime = 0L;
-  protected long _min_wtime = 0L;
-  protected long _cum_wtime = 0L;
-#endif
 
   protected VirtuosoPoolStatistic() {
   }

@@ -67,12 +67,8 @@ public class VirtuosoFNSException extends SQLFeatureNotSupportedException
     */
    public VirtuosoFNSException(Exception e, int vendor)
    {
-#if JDK_VER >= 14
       super("General error","42000",vendor);
       initCause (e);
-#else
-      super(e.getMessage(),"42000",vendor);
-#endif
    }
 
 }

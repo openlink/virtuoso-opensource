@@ -1900,11 +1900,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
    * @param map the mapping from SQL type names to Java classes
    * @return an object representing the SQL value
    */
-#if JDK_VER >= 16
   public synchronized Object getObject(int colIndex, Map<String,Class<?>> map)
-#else
-  public synchronized Object getObject(int colIndex, Map map)
-#endif
    throws SQLException
   {
     check_close();
@@ -1964,11 +1960,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
    * @param map the mapping from SQL type names to Java classes
    * @return an object representing the SQL value
    */
-#if JDK_VER >= 16
   public synchronized Object getObject(String colName, Map<String,Class<?>> map)
-#else
-  public synchronized Object getObject(String colName, Map map)
-#endif
      throws SQLException
   {
     check_close();
@@ -2115,7 +2107,6 @@ public class OPLJdbcRowSet extends BaseRowSet {
     return rs.getTimestamp(columnName, cal);
   }
 
-#if JDK_VER >= 14
     //-------------------------- JDBC 3.0 ----------------------------------------
     /**
      * Retrieves the value of the designated column in the current row
@@ -2293,7 +2284,6 @@ public class OPLJdbcRowSet extends BaseRowSet {
     rs.updateArray(columnName, x);
   }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
 
     /**
@@ -3782,8 +3772,6 @@ public class OPLJdbcRowSet extends BaseRowSet {
 #endif
 
 
-#endif
-#endif
 
   private void check_close()  throws SQLException
   {

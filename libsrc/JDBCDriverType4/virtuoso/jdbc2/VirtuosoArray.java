@@ -81,14 +81,12 @@ public class VirtuosoArray implements Array {
                         case Types.OTHER:
                             this.data.add(new VirtuosoExplicitString((String)x, VirtuosoTypes.DV_ANY,conn));
                             break;
-#if JDK_VER >= 16
                         case Types.NCHAR:
                         case Types.NVARCHAR:
                         case Types.LONGNVARCHAR:
                         case Types.NCLOB:
                             this.data.add(new VirtuosoExplicitString((String)x, VirtuosoTypes.DV_WIDE,conn));
                             break;
-#endif
                         default:
                             this.data.add(x);
                             break;
@@ -291,11 +289,7 @@ public class VirtuosoArray implements Array {
      * @since 1.2
      */
     public ResultSet getResultSet() throws SQLException {
-#if JDK_VER >= 16
         throw new VirtuosoFNSException ("getResultSet  not supported", VirtuosoException.NOTIMPLEMENTED);
-#else
-        throw new VirtuosoException ("getResultSet  not supported", VirtuosoException.NOTIMPLEMENTED);
-#endif
     }
 
     /**
@@ -361,11 +355,7 @@ public class VirtuosoArray implements Array {
      * @since 1.2
      */
     public ResultSet getResultSet(long index, int count) throws SQLException {
-#if JDK_VER >= 16
         throw new VirtuosoFNSException ("getResultSet  not supported", VirtuosoException.NOTIMPLEMENTED);
-#else
-        throw new VirtuosoException ("getResultSet  not supported", VirtuosoException.NOTIMPLEMENTED);
-#endif
     }
 
     /**
@@ -407,7 +397,6 @@ public class VirtuosoArray implements Array {
     	return getResultSet(index, count);
     }
 
-#if JDK_VER >= 16
     /**
      * This method frees the <code>Array</code> object and releases the resources that
      * it holds. The object is invalid once the <code>free</code>
@@ -429,6 +418,5 @@ public class VirtuosoArray implements Array {
     public void free() throws SQLException {
         data = null;
     }
-#endif
 
 }

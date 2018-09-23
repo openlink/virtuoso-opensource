@@ -525,7 +525,6 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
 
-#if JDK_VER >= 16
     /**
      * Returns an object that implements the given interface to allow access to
      * non-standard methods, or standard methods not exposed by the proxy.
@@ -574,7 +573,6 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
     return iface.isInstance(this);
   }
 
-#endif
 
   private Coldesc check_index(int column) throws SQLException
   {

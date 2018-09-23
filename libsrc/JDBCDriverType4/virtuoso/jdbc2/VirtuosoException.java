@@ -151,9 +151,7 @@ public class VirtuosoException extends SQLException
    public VirtuosoException(Exception e, String data, int vendor)
    {
       super(data,"42000",vendor);
-#if JDK_VER >= 14
       initCause (e);
-#endif
 
    }
 
@@ -178,12 +176,8 @@ public class VirtuosoException extends SQLException
     */
    public VirtuosoException(Exception e, int vendor)
    {
-#if JDK_VER >= 14
       super("General error","42000",vendor);
       initCause (e);
-#else
-      super(e.getMessage(),"42000",vendor);
-#endif
    }
 
 }

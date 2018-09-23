@@ -137,7 +137,6 @@ class VirtuosoOutputStream extends BufferedOutputStream
      switch(tag = whatIs(obj))
        {
 	 case VirtuosoTypes.DV_LIST_OF_POINTER:
-#if JDK_VER >= 12
 	       {
 		 //System.out.println("DV_ARRAY_OF_POINTER");
 		 List o = (List)obj;
@@ -150,7 +149,6 @@ class VirtuosoOutputStream extends BufferedOutputStream
 		   }
 		 return;
 	       }
-#endif
 	 case VirtuosoTypes.DV_ARRAY_OF_POINTER:
 	       {
 		 //System.out.println("DV_ARRAY_OF_POINTER");
@@ -850,12 +848,10 @@ class VirtuosoOutputStream extends BufferedOutputStream
          return VirtuosoTypes.DV_ARRAY_OF_DOUBLE;
       if(obj instanceof VectorOfFloat)
          return VirtuosoTypes.DV_ARRAY_OF_FLOAT;
-#if JDK_VER >= 12
       if(obj instanceof LinkedList)
          return VirtuosoTypes.DV_LIST_OF_POINTER;
        if(obj instanceof ArrayList)
            return VirtuosoTypes.DV_LIST_OF_POINTER;
-#endif
       if(obj instanceof openlink.util.Vector)
          return VirtuosoTypes.DV_ARRAY_OF_POINTER;
       // Treat Short object
@@ -912,17 +908,9 @@ class VirtuosoOutputStream extends BufferedOutputStream
       if(obj instanceof java.util.Date)
          return VirtuosoTypes.DV_DATETIME;
       // Treat blob objects
-#if JDK_VER >= 12
       if(obj instanceof Clob)
-#else
-      if(obj instanceof VirtuosoClob)
-#endif
          return VirtuosoTypes.DV_BLOB;
-#if JDK_VER >= 12
       if(obj instanceof Blob)
-#else
-      if(obj instanceof VirtuosoBlob)
-#endif
          return VirtuosoTypes.DV_BLOB_BIN;
       if (obj instanceof VirtuosoExplicitString)
 	{

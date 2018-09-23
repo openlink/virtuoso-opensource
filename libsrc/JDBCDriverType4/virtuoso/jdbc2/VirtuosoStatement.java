@@ -44,13 +44,7 @@ public class VirtuosoStatement implements Statement
    // Parameters for a prepared statement
    protected openlink.util.Vector parameters, objparams;
 
-#if JDK_VER >= 16
    protected LinkedList<Object> batch;
-#elif JDK_VER >= 12
-   protected LinkedList batch;
-#else
-   protected openlink.util.Vector batch;
-#endif
 
    // The concurrency to use for this Statement
    private int concurrency;
@@ -110,10 +104,8 @@ public class VirtuosoStatement implements Statement
 
    protected boolean closeOnCompletion = false;
 
-#if JDK_VER >= 14
    // Its params data
    protected VirtuosoParameterMetaData paramsMetaData = null;
-#endif
 
    /**
     * Constructs a new VirtuosoStatement that is forward-only and read-only.
@@ -175,7 +167,6 @@ public class VirtuosoStatement implements Statement
        }
        arrLong[1] = new Long(0);
        arrLong[2] = new Long(maxRows);
-#if JDK_VER >= 14
        if (connection.getGlobalTransaction()) {
            VirtuosoXAConnection xac = (VirtuosoXAConnection) connection.xa_connection;
 	   if (VirtuosoFuture.rpc_log != null)
@@ -186,9 +177,6 @@ public class VirtuosoStatement implements Statement
        } else {
            arrLong[3] = new Long(txn_timeout * 1000);
        }
-#else
-       arrLong[3] = new Long(txn_timeout * 1000);
-#endif
      if (VirtuosoFuture.rpc_log != null)
        {
 	     VirtuosoFuture.rpc_log.println ("VirtuosoStatement.getStmtOpts (txn_timeout=" + arrLong[3] + ") (con=" + connection.hashCode() + ") :" + hashCode());
@@ -801,19 +789,9 @@ public class VirtuosoStatement implements Statement
       if(sql == null)
          return;
       if(batch == null)
-#if JDK_VER >= 16
          batch = new LinkedList<Object>();
       // Add the sql request at the end
       batch.add(sql);
-#elif JDK_VER >= 12
-         batch = new LinkedList();
-      // Add the sql request at the end
-      batch.add(sql);
-#else
-         batch = new openlink.util.Vector(10,10);
-      // Add the sql request at the end
-      batch.addElement(sql);
-#endif
    }
 
    /**
@@ -825,11 +803,7 @@ public class VirtuosoStatement implements Statement
    {
       // Check if the batch vector exists
       if(batch != null)
-#if JDK_VER >= 12
          batch.clear();
-#else
-         batch.removeAllElements();
-#endif
    }
 
    /**
@@ -853,20 +827,12 @@ public class VirtuosoStatement implements Statement
       // Flag to say if there's a problem
       boolean error = false;
       VirtuosoException ex = null;
-#if JDK_VER >= 12
       i = 0;
       for(ListIterator it = batch.listIterator(); it.hasNext(); )
-#else
-      for(i = 0; i < batch.size(); i++)
-#endif
       {
          try
          {
-#if JDK_VER >= 12
             String stmt =  (String)it.next();
-#else
-            String stmt = (String)batch.elementAt(i);
-#endif
             VirtuosoResultSet rset = sendQuery(stmt);
             result[i] = rset.getUpdateCount();
             if(rset.kindop()==VirtuosoTypes.QT_SELECT)
@@ -882,15 +848,9 @@ public class VirtuosoStatement implements Statement
             ex = e;
          }
          outcount++;
-#if JDK_VER >= 12
          i++;
-#endif
       }
-#if JDK_VER >= 12
       batch.clear();
-#else
-      batch.removeAllElements();
-#endif
       if(error)
       {
          outres = new int[outcount];
@@ -936,7 +896,6 @@ public class VirtuosoStatement implements Statement
      return close_flag;
    }
 
-#if JDK_VER >= 14
    /* JDK 1.4 functions */
 
    public boolean getMoreResults(int current) throws SQLException
@@ -998,7 +957,6 @@ public class VirtuosoStatement implements Statement
      {
        return ResultSet.CLOSE_CURSORS_AT_COMMIT;
      }
-#endif
 
    protected void notify_error (Throwable e) throws VirtuosoException
    {
@@ -1009,14 +967,11 @@ public class VirtuosoStatement implements Statement
        else
        {
 	   VirtuosoException ve = new VirtuosoException(e.getMessage(), VirtuosoException.IOERROR);
-#if JDK_VER >= 14
            ve.initCause (e);
-#endif
 	   throw ve;
        }
    }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
   private boolean isPoolable = true;
     /**
@@ -1155,6 +1110,5 @@ public class VirtuosoStatement implements Statement
     }
   }
 
-#endif
 #endif
 }

@@ -287,11 +287,7 @@ class VirtuosoColumn
 	return Types.LONGVARBINARY;
 
       case VirtuosoTypes.DV_BLOB_WIDE:
-#if JDK_VER >= 16
         return Types.LONGNVARCHAR;
-#else
-	return -16; /* SQL_WLONGVARCHAR */
-#endif
 
       case VirtuosoTypes.DV_DATE:
 	return Types.DATE;
@@ -310,11 +306,7 @@ class VirtuosoColumn
 
       case VirtuosoTypes.DV_WIDE:
       case VirtuosoTypes.DV_LONG_WIDE:
-#if JDK_VER >= 16
         return Types.NVARCHAR;
-#else
-	return -9; /* SQL_NVARCHAR */
-#endif
 
       /* custom cases follow */
       case VirtuosoTypes.DV_DB_NULL:

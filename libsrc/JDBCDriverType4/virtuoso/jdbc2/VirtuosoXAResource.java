@@ -298,11 +298,7 @@ public class VirtuosoXAResource implements XAResource
         if (param != XAResource.TMSTARTRSCAN)
             return new Xid[0];
 
-#if JDK_VER >= 16
         Vector<VirtuosoXid> xidv = new Vector<VirtuosoXid> ();
-#else
-        Vector xidv = new Vector ();
-#endif
 
         try {
             VirtuosoConnection con = vConnection.getVirtuosoConnection();

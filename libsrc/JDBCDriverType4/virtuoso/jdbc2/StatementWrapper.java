@@ -34,11 +34,7 @@ public class StatementWrapper implements Statement, Closeable {
 
   protected Statement stmt;
   protected ConnectionWrapper wconn;
-#if JDK_VER >= 16
   protected HashMap<Object,Object> objsToClose = new HashMap<Object,Object>();
-#else
-  protected HashMap objsToClose = new HashMap();
-#endif
   protected volatile boolean isClosed = false;
 
 
@@ -363,7 +359,6 @@ public class StatementWrapper implements Statement, Closeable {
   }
 
 
-#if JDK_VER >= 14
     //-------------------------- JDBC 3.0 ----------------------------------------
 
   public boolean getMoreResults(int current) throws SQLException {
@@ -462,7 +457,6 @@ public class StatementWrapper implements Statement, Closeable {
     }
   }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
   public boolean isClosed() throws SQLException
   {
@@ -544,8 +538,6 @@ public class StatementWrapper implements Statement, Closeable {
   }
 #endif
 
-#endif
-#endif
 
   protected synchronized void check_close()
     throws SQLException

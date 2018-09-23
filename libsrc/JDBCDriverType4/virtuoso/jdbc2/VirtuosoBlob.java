@@ -34,12 +34,8 @@ import java.io.*;
  * @see java.sql.Blob
  */
 public class VirtuosoBlob
-#if JDK_VER >= 12
   implements Blob, Clob
-#if JDK_VER >= 16
    ,NClob
-#endif
-#endif
 {
    // A flag to say if it may do some requests
    private boolean request = true;
@@ -631,7 +627,6 @@ public class VirtuosoBlob
       }
    }
 
-#if JDK_VER >= 12
    /**
     * Determines the byte position in the <code>BLOB</code> value
     * designated by this <code>Blob</code> object at which
@@ -672,7 +667,6 @@ public class VirtuosoBlob
          throw new VirtuosoException("SQL error occurred : " + e.getMessage(),VirtuosoException.SQLERROR);
       }
    }
-#endif
 
    /**
     * Determines the character position at which the specified substring
@@ -709,7 +703,6 @@ public class VirtuosoBlob
       }
    }
 
-#if JDK_VER >= 12
    /**
     * Determines the character position at which the specified
     * <code>Clob</code> object <code>searchstr</code> appears in this
@@ -750,7 +743,6 @@ public class VirtuosoBlob
          throw new VirtuosoException("SQL error occurred : " + e.getMessage(),VirtuosoException.SQLERROR);
       }
    }
-#endif
 
    // --------------------------- Object ------------------------------
    /**
@@ -788,7 +780,6 @@ public class VirtuosoBlob
 */
    }
 
-#if JDK_VER >= 14
    /* JDK 1.4 functions */
 
    public int setString(long pos, String str, int offset, int len) throws SQLException
@@ -831,7 +822,6 @@ public class VirtuosoBlob
        throw new VirtuosoException ("Not implemented function", VirtuosoException.NOTIMPLEMENTED);
      }
 
-#endif
 
 
     /**

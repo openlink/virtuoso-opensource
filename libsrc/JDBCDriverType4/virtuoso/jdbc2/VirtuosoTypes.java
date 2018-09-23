@@ -460,11 +460,7 @@ class VirtuosoTypes
 		return x.toString();
 
 	  case Types.LONGVARCHAR:
-#if JDK_VER >= 12
               if (x instanceof java.sql.Clob || x instanceof java.sql.Blob || x instanceof java.lang.String)
-#else
-              if (x instanceof VirtuosoClob || x instanceof VirtuosoBlob || x instanceof java.lang.String)
-#endif
                 return x;
               else
 		return x.toString();
@@ -589,9 +585,7 @@ class VirtuosoTypes
           case Types.SMALLINT:
           case Types.TINYINT:
           case Types.BIT:
-#if JDK_VER >= 14
           case Types.BOOLEAN:
-#endif
               if (x instanceof java.lang.Short)
                 return x;
               else if (x instanceof java.lang.String)
@@ -601,12 +595,8 @@ class VirtuosoTypes
 	      break;
 
 	  case Types.ARRAY:
-#if JDK_VER >= 14
 	  case Types.DATALINK:
-#endif
-#if JDK_VER >= 16
       case Types.ROWID:
-#endif
           case Types.DISTINCT:
 	  case Types.REF:
 	      throw new VirtuosoException ("Type not supported", VirtuosoException.NOTIMPLEMENTED);
@@ -617,11 +607,7 @@ class VirtuosoTypes
               break;
 
           case Types.LONGVARBINARY:
-#if JDK_VER >= 12
               if (x instanceof java.sql.Blob || x instanceof byte [])
-#else
-              if (x instanceof VirtuosoBlob || x instanceof byte [])
-#endif
                 return x;
               break;
 

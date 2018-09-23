@@ -34,9 +34,7 @@ import java.util.*;
 import javax.sql.PooledConnection;
 import javax.sql.ConnectionEventListener;
 import javax.sql.ConnectionEvent;
-#if JDK_VER >= 16
 import javax.sql.StatementEventListener;
-#endif
 
 /**
  * A PooledConnection object is a connection object that provides hooks
@@ -247,7 +245,6 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
     return conn.isClosed() || conn.isConnectionLost(timeout_sec);
   }
 
-#if JDK_VER >= 16
 	/**
 	 * Registers a <code>StatementEventListener</code> with this <code>PooledConnection</code> object.  Components that
 	 * wish to be notified when  <code>PreparedStatement</code>s created by the
@@ -279,7 +276,6 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
   {
 //??TODO    errx_Method_XX_not_yet_implemented, "removeStatementEventListener(listener)");
   }
-#endif
 
 
   protected boolean isClosed() {

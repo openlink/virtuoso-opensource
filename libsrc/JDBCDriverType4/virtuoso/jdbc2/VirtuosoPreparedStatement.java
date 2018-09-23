@@ -28,11 +28,9 @@ import java.io.*;
 import java.math.*;
 import openlink.util.*;
 
-#if JDK_VER >= 16
 import java.sql.RowId;
 import java.sql.SQLXML;
 import java.sql.NClob;
-#endif
 
 /**
  * The VirtuosoPreparedStatement class is an implementation of the PreparedStatement interface
@@ -49,11 +47,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 {
    // The sql string with ?
    protected String sql;
-#if JDK_VER <= 14
-   private static final int _EXECUTE_FAILED = -3;
-#else
    private static final int _EXECUTE_FAILED = Statement.EXECUTE_FAILED;
-#endif
    protected VirtuosoResultSet ps_vresultSet;
 
    /**
@@ -343,7 +337,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public void close() throws VirtuosoException
    {
-#if JDK_VER >= 16
     if (isCached) {
       close_flag = true;
       try {
@@ -353,7 +346,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       }
       return;
     }
-#endif
 
      if(close_flag)
        return;
@@ -965,19 +957,9 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       if(parameters == null)
          return;
       if(batch == null)
-#if JDK_VER >= 16
          batch = new LinkedList<Object>();
-#elif JDK_VER >= 12
-         batch = new LinkedList();
-#else
-         batch = new openlink.util.Vector(10,10);
-#endif
       // Add the sql request at the end
-#if JDK_VER >= 12
       batch.add(objparams.clone());
-#else
-      batch.addElement(objparams.clone());
-#endif
    }
 
    /**
@@ -1032,18 +1014,13 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	}
       finally
         {
-#if JDK_VER >= 12
 	  batch.clear();
-#else
-	  batch.removeAllElements();
-#endif
 	}
 
 
       return result;
    }
 
-#if JDK_VER >= 12
    /**
     * Sets an Array parameter.
     *
@@ -1065,7 +1042,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
           objparams.setElementAt(x,i - 1);
       }
    }
-#endif
 
    /**
     * Sets a BLOB parameter.
@@ -1075,11 +1051,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     * @exception virtuoso.jdbc2.VirtuosoException if a database access error occurs
     * @see java.sql.PreparedStatement#setBlob
     */
-#if JDK_VER >= 12
    public void setBlob(int i, Blob x) throws VirtuosoException
-#else
-   public void setBlob(int i, VirtuosoBlob x) throws VirtuosoException
-#endif
    {
       // Check parameters
       if(i < 1 || i > parameters.capacity())
@@ -1180,11 +1152,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     * @exception virtuoso.jdbc2.VirtuosoException if a database access error occurs
     * @see java.sql.PreparedStatement#setClob
     */
-#if JDK_VER >= 12
    public void setClob(int i, Clob x) throws VirtuosoException
-#else
-   public void setClob(int i, VirtuosoClob x) throws VirtuosoException
-#endif
    {
       // Check parameters
       if(i < 1 || i > parameters.capacity())
@@ -1211,7 +1179,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       setNull(paramIndex,sqlType);
    }
 
-#if JDK_VER >= 12
    /**
     * Sets a REF(&lt;structured-type&gt;) parameter.
     *
@@ -1228,7 +1195,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       if(x == null) this.setNull(i, Types.REF);
       else objparams.setElementAt(x,i - 1);
    }
-#endif
 
    /**
     * Sets the designated parameter to a java.sql.Date value,
@@ -1315,7 +1281,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	   objparams.setElementAt(x,parameterIndex - 1);
 	 }
      }
-#if JDK_VER >= 14
    /* JDK 1.4 functions */
 
     /**
@@ -1349,7 +1314,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        return paramsMetaData == null ? new VirtuosoParameterMetaData(null, connection) : paramsMetaData;
      }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
 
     /**
@@ -1836,8 +1800,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
   {
     throw new VirtuosoFNSException ("Method  setNClob(parameterIndex, reader)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
   }
-#endif
-#endif
 
   protected synchronized void setClosed(boolean flag)
   {

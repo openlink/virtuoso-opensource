@@ -32,18 +32,13 @@ import java.util.*;
 import java.security.*;
 import java.security.cert.*;
 import javax.net.ssl.*;
-#if JDK_VER < 14
-import com.sun.net.ssl.*;
-#endif
 #endif
 import openlink.util.*;
 import java.util.Vector;
-#if JDK_VER >= 16
 import openlink.util.OPLHeapNClob;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
-#endif
 
 /**
  * The VirtuosoConnection class is an implementation of the Connection interface
@@ -77,11 +72,7 @@ public class VirtuosoConnection implements Connection
    private VirtuosoOutputStream out;
 
    // Hash table from future id to the VirtuosoFuture instance
-#if JDK_VER >= 16
    private Hashtable<Integer,VirtuosoFuture> futures;
-#else
-   private Hashtable futures;
-#endif
 
    // Serial number of last issued future, 0 is first
    private int req_no, con_no;
@@ -93,11 +84,7 @@ public class VirtuosoConnection implements Connection
    private int _case;
    protected openlink.util.Vector client_defaults;
    protected openlink.util.Vector client_charset;
-#if JDK_VER >= 16
    protected Hashtable<Character,Byte> client_charset_hash;
-#else
-   protected Hashtable client_charset_hash;
-#endif
    protected SQLWarning warning = null;
 
    // String sent by server as answer to "caller_identification" RPC
@@ -146,16 +133,13 @@ public class VirtuosoConnection implements Connection
   
 
    // set if the connection is managed through VirtuosoPooledConnection;
-#if JDK_VER >= 14
    protected VirtuosoPooledConnection pooled_connection = null;
    protected VirtuosoXAConnection xa_connection = null;
-#endif
 
    protected String charset;
    protected boolean charset_utf8 = false;
 
    
-#if JDK_VER >= 16
    protected Hashtable<Integer,String> rdf_type_hash = null;
    protected Hashtable<Integer,String> rdf_lang_hash = null;
    protected Hashtable<String,Integer> rdf_type_rev = null;
@@ -164,14 +148,6 @@ public class VirtuosoConnection implements Connection
   private LRUCache<String,VirtuosoPreparedStatement> pStatementCache;
   private boolean  useCachePrepStatements = false;
   private Vector<VhostRec> hostList = new Vector<VhostRec>();
-#else
-   protected Hashtable rdf_type_hash = null;
-   protected Hashtable rdf_lang_hash = null;
-   protected Hashtable rdf_type_rev = null;
-   protected Hashtable rdf_lang_rev = null;
-
-  private Vector hostList = new Vector();
-#endif
    protected boolean rdf_type_loaded = false;
    protected boolean rdf_lang_loaded = false;
 
@@ -208,15 +184,9 @@ public class VirtuosoConnection implements Connection
    }
 
 
-#if JDK_VER >= 16
    protected Vector<VhostRec> parse_vhost(String vhost, String _host, int _port) throws VirtuosoException
    {
      Vector<VhostRec> hostlist =  new Vector<VhostRec>();
-#else
-   protected Vector parse_vhost(String vhost, String _host, int _port) throws VirtuosoException
-   {
-     Vector hostlist =  new Vector();
-#endif
 
      String port = Integer.toString(_port);
      String attr = null;
@@ -340,27 +310,16 @@ public class VirtuosoConnection implements Connection
          pwdclear = "0";
       //System.err.println ("4PwdClear is " + pwdclear);
       // Create the hash table
-#if JDK_VER >= 16
       futures = new Hashtable<Integer,VirtuosoFuture>();
       // RDF box type & lang
       rdf_type_hash = new Hashtable<Integer,String> ();
       rdf_lang_hash = new Hashtable<Integer,String> ();
       rdf_type_rev = new Hashtable<String,Integer> ();
       rdf_lang_rev = new Hashtable<String,Integer> ();
-#else
-      futures = new Hashtable();
-      // RDF box type & lang
-      rdf_type_hash = new Hashtable ();
-      rdf_lang_hash = new Hashtable ();
-      rdf_type_rev = new Hashtable ();
-      rdf_lang_rev = new Hashtable ();
-#endif
 
-#if JDK_VER >= 16
       useCachePrepStatements = getBoolAttr(prop, "usepstmtpool", false);
       int poolSize = getIntAttr(prop, "pstmtpoolsize", 25);
       createCaches(poolSize);
-#endif
 
       useRoundRobin = getBoolAttr(prop, "roundrobin", false);
       if (hostList.size() <= 1)
@@ -614,10 +573,8 @@ public class VirtuosoConnection implements Connection
 	 if (timeout > 0)
 	   socket.setSoTimeout(timeout);
 	 socket.setTcpNoDelay(true);
-#if JDK_VER >= 12
          socket.setReceiveBufferSize(recvbs);
          socket.setSendBufferSize(sendbs);
-#endif
 
          // Get streams corresponding to the socket
          in = new VirtuosoInputStream(this,socket, recvbs);
@@ -700,11 +657,7 @@ public class VirtuosoConnection implements Connection
 			   {
 			     client_charset = (openlink.util.Vector)obj;
 			     String table = (String)client_charset.elementAt (1);
-#if JDK_VER >= 16
 			     client_charset_hash = new Hashtable<Character,Byte> (256);
-#else
-			     client_charset_hash = new Hashtable (256);
-#endif
 			     for (int i = 0; i < 255; i++)
 			       {
 				 if (i < table.length())
@@ -851,7 +804,6 @@ public class VirtuosoConnection implements Connection
 	     VirtuosoFuture.rpc_log.print ("  >> (conn " + hashCode() + ") OUT ");
 	     VirtuosoFuture.rpc_log.println (obj != null ? obj.toString() : "<null>");
        }
-#if JDK_VER >= 14
     try {
         out.write_object(obj);
         out.flush();
@@ -876,15 +828,10 @@ public class VirtuosoConnection implements Connection
         }
         throw ex;
     }
-#else
-    out.write_object(obj);
-    out.flush();
-#endif
    }
 
    protected void write_bytes(byte [] bytes) throws IOException, VirtuosoException
    {
-#if JDK_VER >= 14
     try {
         for (int k = 0; k < bytes.length; k++)
             out.write(bytes[k]);
@@ -901,11 +848,6 @@ public class VirtuosoConnection implements Connection
             throw ex;
         }
     }
-#else
-    for (int k = 0; k < bytes.length; k++)
-        out.write(bytes[k]);
-    out.flush();
-#endif
    }
 
    /**
@@ -969,7 +911,6 @@ public class VirtuosoConnection implements Connection
        throw new VirtuosoException ("Activity on a closed connection", "IM001", VirtuosoException.SQLERROR);
      //System.out.println ("req start");
      Object _result;
-#if JDK_VER >= 14
      try {
         _result = in.read_object();
      } catch (IOException ex) {
@@ -993,9 +934,6 @@ public class VirtuosoConnection implements Connection
         }
         throw ex;
      }
-#else
-    _result = in.read_object();
-#endif
      //System.out.println ("req end");
      if (VirtuosoFuture.rpc_log != null)
        {
@@ -1150,16 +1088,12 @@ public class VirtuosoConnection implements Connection
              socket.close();
              socket = null;
            }
-#if JDK_VER >= 16
            pStatementCache.clear();
-#endif
            // Clear some variables
            user = url = password = null;
            futures = null;
-#if JDK_VER >= 14
            pooled_connection = null;
            xa_connection = null;
-#endif
          }
       }
       catch(IOException e)
@@ -1460,7 +1394,6 @@ public class VirtuosoConnection implements Connection
     */
    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws VirtuosoException
    {
-#if JDK_VER >= 16
      if (useCachePrepStatements) {
        VirtuosoPreparedStatement ps = null;
        synchronized(pStatementCache) {
@@ -1480,7 +1413,6 @@ public class VirtuosoConnection implements Connection
 
      }
      else
-#endif
      {
        return new VirtuosoPreparedStatement(this,sql,resultSetType,resultSetConcurrency);
      }
@@ -1586,7 +1518,6 @@ public class VirtuosoConnection implements Connection
       return qualifier;
    }
 
-#if JDK_VER >= 12
    /**
     * Gets the type map object associated with this connection.
     * Unless the application has added an entry to the type map,
@@ -1597,11 +1528,7 @@ public class VirtuosoConnection implements Connection
     * @exception virtuoso.jdbc2.VirtuosoException No errors returned (just implementation).
     * @see java.sql.Connection#getTypeMap
     */
-#if JDK_VER >= 16
    public java.util.Map<String, Class<?>> getTypeMap() throws VirtuosoException
-#else
-   public Map getTypeMap() throws VirtuosoException
-#endif
    {
       return null;
    }
@@ -1617,14 +1544,9 @@ public class VirtuosoConnection implements Connection
     * @exception virtuoso.jdbc2.VirtuosoException No errors returned (just implementation).
     * @see java.sql.Connection#setTypeMap
     */
-#if JDK_VER >= 16
    public void setTypeMap(java.util.Map<String,Class<?>> map) throws VirtuosoException
-#else
-   public void setTypeMap(Map map) throws VirtuosoException
-#endif
    {
    }
-#endif
 
    protected void setSocketTimeout (int timeout) throws VirtuosoException
      {
@@ -1781,7 +1703,6 @@ public class VirtuosoConnection implements Connection
 	 }
      }
 
-#if JDK_VER >= 14
    /* JDK 1.4 functions */
 
    /**
@@ -1919,7 +1840,6 @@ public class VirtuosoConnection implements Connection
             throw new VirtuosoException("The connection is already closed.",VirtuosoException.DISCONNECTED);
     }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
     /**
      * Constructs an object that implements the <code>Clob</code> interface. The object
@@ -2605,8 +2525,6 @@ public class VirtuosoConnection implements Connection
     }
   }
 
-#endif
-#endif
 
 
     /* Global XA transaction support */
@@ -2639,17 +2557,13 @@ public class VirtuosoConnection implements Connection
 	if (!(e instanceof VirtuosoException))
 	{
 	    vex = new VirtuosoException(e.getMessage(), VirtuosoException.IOERROR);
-#if JDK_VER >= 14
 	    vex.initCause (e);
-#endif
 	}
 	else
 	    vex = (VirtuosoException) e;
-#if JDK_VER >= 14
         if (pooled_connection != null && isCriticalError(vex)) {
             pooled_connection.sendErrorEvent(vex);
 	}
-#endif
 	return vex;
     }
 
@@ -2698,14 +2612,7 @@ class VirtX509TrustManager implements X509TrustManager
       return true;
     }
 
-#if JDK_VER < 14
-  public java.security.cert.X509Certificate[] getAcceptedIssuers()
-    {
-      return null;
-    }
-#endif
 
-#if JDK_VER >= 14
   /* JDK 1.4 fucntions */
   /**
    * note - ALLWAYS true - means no effective certificate check
@@ -2727,7 +2634,6 @@ class VirtX509TrustManager implements X509TrustManager
     {
       return null;
     }
-#endif
 }
 
 

@@ -44,11 +44,9 @@ import java.sql.SQLException;
 import java.sql.Connection;
 import java.sql.Types;
 
-#if JDK_VER >= 16
 import java.sql.RowId;
 import java.sql.SQLXML;
 import java.sql.NClob;
-#endif
 
 public class PreparedStatementWrapper
           extends StatementWrapper implements PreparedStatement {
@@ -427,7 +425,6 @@ public class PreparedStatementWrapper
     }
   }
 
-#if JDK_VER >= 14
     //------------------------- JDBC 3.0 -----------------------------------
 
   public void setURL(int parameterIndex, java.net.URL x) throws SQLException {
@@ -451,7 +448,6 @@ public class PreparedStatementWrapper
   }
 
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
   public void setRowId(int parameterIndex, RowId x) throws SQLException
   {
@@ -657,7 +653,5 @@ public class PreparedStatementWrapper
     }
   }
 
-#endif
-#endif
 
 }

@@ -36,9 +36,7 @@ import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.LinkedList;
 import java.util.Properties;
-#if JDK_VER >= 14
 import java.sql.Savepoint;
-#if JDK_VER >= 16
 /*DROP_FOR_JDBC3*/
 import java.sql.RowId;
 import java.sql.SQLXML;
@@ -48,8 +46,6 @@ import java.sql.Blob;
 import java.sql.SQLClientInfoException;
 import java.sql.Array;
 import java.sql.Struct;
-#endif
-#endif
 import javax.transaction.xa.Xid;
 
 
@@ -63,11 +59,7 @@ public class ConnectionWrapper implements java.sql.Connection {
   private Integer r_TxnIsolation;
   private Integer r_Holdability;
 
-#if JDK_VER >= 16
   private HashMap<Object,Object> objsToClose;
-#else
-  private HashMap objsToClose;
-#endif
 //--  protected StmtCache pStmtPool;
 
 //--  private int maxStatements;
@@ -81,11 +73,7 @@ public class ConnectionWrapper implements java.sql.Connection {
   {
     rconn = rConn;
     pconn = pConn;
-#if JDK_VER >= 16
     objsToClose  = new HashMap<Object,Object>(100);
-#else
-    objsToClose  = new HashMap(100);
-#endif
   }
 
   public void finalize () throws Throwable {
@@ -347,11 +335,7 @@ public class ConnectionWrapper implements java.sql.Connection {
     }
   }
 
-#if JDK_VER >= 16
   public Map<String,Class<?>> getTypeMap() throws SQLException {
-#else
-  public Map getTypeMap() throws SQLException {
-#endif
     try {
       check_conn();
       return rconn.getTypeMap();
@@ -361,16 +345,11 @@ public class ConnectionWrapper implements java.sql.Connection {
     }
   }
 
-#if JDK_VER >= 16
   public void setTypeMap(Map<String,Class<?>> map) throws SQLException {
-#else
-  public void setTypeMap(Map map) throws SQLException {
-#endif
     check_conn();
     rconn.setTypeMap(map);
   }
 
-#if JDK_VER >= 14
    //-------------------------- JDBC 3.0 ----------------------------------------
   public int getHoldability()
     throws SQLException
@@ -538,7 +517,6 @@ public class ConnectionWrapper implements java.sql.Connection {
     }
   }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
   public Clob createClob() throws SQLException
   {
@@ -750,8 +728,6 @@ public class ConnectionWrapper implements java.sql.Connection {
   }
 #endif
 
-#endif
-#endif
 
 
   protected void setXAResource(VirtuosoXAResource val)
@@ -829,11 +805,7 @@ public class ConnectionWrapper implements java.sql.Connection {
 
 
   private void close_objs() {
-#if JDK_VER >= 16
     HashMap<Object,Object> copy = (HashMap<Object,Object>) objsToClose.clone();
-#else
-    HashMap copy = (HashMap) objsToClose.clone();
-#endif
     synchronized(objsToClose) {
       for (Iterator i = copy.keySet().iterator(); i.hasNext(); )
         try {

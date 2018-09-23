@@ -42,11 +42,7 @@ import openlink.util.*;
 public class VirtuosoResultSetMetaData implements ResultSetMetaData
 {
    // Hash table to sort columns by their names
-#if JDK_VER >= 16
    protected Hashtable<VirtuosoColumn,Integer> hcolumns;
-#else
-   protected Hashtable hcolumns;
-#endif
 
    // Description of columns
    private openlink.util.Vector columnsMetaData = new openlink.util.Vector(10,20);
@@ -60,11 +56,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    protected VirtuosoResultSetMetaData (VirtuosoConnection conn, String [] columns, int [] dtps)
    {
       // Create the hash table
-#if JDK_VER >= 16
       hcolumns = new Hashtable<VirtuosoColumn,Integer>();
-#else
-      hcolumns = new Hashtable();
-#endif
       // Process args in DV format
       for(int i = 0;i < columns.length;i++)
       {
@@ -87,11 +79,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
       else
          return;
       // Create the hash table
-#if JDK_VER >= 16
       hcolumns = new Hashtable<VirtuosoColumn,Integer>();
-#else
-      hcolumns = new Hashtable();
-#endif
       // Process args in DV format
       for(int i = 0;i < vect.size();i++)
       {
@@ -412,17 +400,9 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
             return "VARBINARY";
          case Types.VARCHAR:
             return "VARCHAR";
-#if JDK_VER >= 16
          case Types.NVARCHAR:
-#else
-	 case -9:
-#endif
 	    return "NVARCHAR";
-#if JDK_VER >= 16
          case Types.LONGNVARCHAR:
-#else
-	 case -16:
-#endif
 	    return "LONG NVARCHAR";
       }
       ;
@@ -571,7 +551,6 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
      }
 
 
-#if JDK_VER >= 16
     /**
      * Returns an object that implements the given interface to allow access to
      * non-standard methods, or standard methods not exposed by the proxy.
@@ -619,7 +598,6 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
     // This works for classes that aren't actually wrapping anything
     return iface.isInstance(this);
   }
-#endif
 
 }
 

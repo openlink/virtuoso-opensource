@@ -1,5 +1,4 @@
 AC_PREREQ(2.59)
-AC_REVISION($Id$)
 #
 #  configure.ac
 #
@@ -2414,54 +2413,6 @@ AM_CONDITIONAL(WITH_IODBC, test "x$virt_with_iodbc" = "xyes" )
 
 AC_MSG_CHECKING(for Java options)
 
-ac_jdk2_path="none"
-AC_ARG_WITH(jdk2, [dnl
-AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.3.x at the specified location])
-], [
-    case "${withval}" in
-      yes)
-          AC_MSG_ERROR("You need to specify a directory")
-	  ;;
-
-      no)
-	  ac_jdk2_path="none"
-	  ;;
-
-      *)
-	  if test -d "${withval}" ; then
-	      ac_jdk2_path="${withval}"
-	  else
-	      AC_MSG_ERROR("Directory specified with --with-jdk2 does not exist")
-	  fi
-	  ;;
-    esac
-])
-
-ac_jdk3_path="none"
-AC_ARG_WITH(jdk3, [dnl
-AC_HELP_STRING([--with-jdk3=DIR], [use the Sun JDK 1.4.x or 1.5.x at the specified location])dnl
-], [
-    case "${withval}" in
-      yes)
-          AC_MSG_ERROR("You need to specify a directory")
-	  ;;
-
-      no)
-	  ac_jdk3_path="none"
-	  ;;
-
-      *)
-	  if test -d "${withval}" ; then
-	      ac_jdk3_path="${withval}"
-	  else
-	      AC_MSG_ERROR("Directory specified with --with-jdk3 does not exist")
-	  fi
-	  ;;
-    esac
-    ])
-AC_MSG_RESULT(done)
-
-
 ac_jdk4_path="none"
 AC_ARG_WITH(jdk4, [dnl
 AC_HELP_STRING([--with-jdk4=DIR], [use the Sun JDK 1.6.x at the specified location])dnl
@@ -2590,17 +2541,11 @@ EOF
 fi
 ])
 
-AC_PROG_JAVA_WORKS($ac_jdk2_path, 3, 3)
-ac_jdk2_works="$ac_cv_prog_java_works"
-ac_jdk2_path="$ac_jw_jdk"
-AM_CONDITIONAL(WITH_JDK2, test "x$ac_jdk2_works" = "xyes")
-AC_SUBST(ac_jdk2_path)
-
-AC_PROG_JAVA_WORKS($ac_jdk3_path, 4, 5)
-ac_jdk3_works="$ac_cv_prog_java_works"
-ac_jdk3_path="$ac_jw_jdk"
-AM_CONDITIONAL(WITH_JDK3, test "x$ac_jdk3_works" = "xyes")
-AC_SUBST(ac_jdk3_path)
+#
+#  Removed support for JDK1.2 - JDK1.5
+#
+AM_CONDITIONAL(WITH_JDK2, false)
+AM_CONDITIONAL(WITH_JDK3, false)
 
 AC_PROG_JAVA_WORKS($ac_jdk4_path, 6, 6)
 ac_jdk4_works="$ac_cv_prog_java_works"
@@ -2627,10 +2572,6 @@ elif test "x$ac_jdk4_1_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_1_path/.."
 elif test "x$ac_jdk4_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_path/.."
-elif test "x$ac_jdk3_works" = "xyes" ; then
-  ac_integ_jdk="$ac_jdk3_path/.."
-elif test "x$ac_jdk2_works" = "xyes"; then
-  ac_integ_jdk="ac_jdk2_path/.."
 fi
 
 if test "x$ac_integ_jdk" != "x" ; then

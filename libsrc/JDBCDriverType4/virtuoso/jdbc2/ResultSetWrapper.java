@@ -42,11 +42,9 @@ import java.util.Map;
 import java.util.Calendar;
 import java.net.URL;
 
-#if JDK_VER >= 16
 import java.sql.RowId;
 import java.sql.SQLXML;
 import java.sql.NClob;
-#endif
 
 public class ResultSetWrapper implements ResultSet, Closeable {
   private ConnectionWrapper wconn;
@@ -1213,11 +1211,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
     return wstmt;
   }
 
-#if JDK_VER >= 16
   public Object getObject(int i, Map<String,Class<?>> map)
-#else
-  public Object getObject(int i, Map map)
-#endif
      throws SQLException
   {
     check_close();
@@ -1269,11 +1263,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
     }
   }
 
-#if JDK_VER >= 16
   public Object getObject(String colName, Map<String,Class<?>> map)
-#else
-  public Object getObject(String colName, Map map)
-#endif
     throws SQLException
   {
     check_close();
@@ -1385,7 +1375,6 @@ public class ResultSetWrapper implements ResultSet, Closeable {
     }
   }
 
-#if JDK_VER >= 14
     //-------------------------- JDBC 3.0 ----------------------------------------
   public java.net.URL getURL(int columnIndex) throws SQLException
   {
@@ -1490,7 +1479,6 @@ public class ResultSetWrapper implements ResultSet, Closeable {
   }
 
 
-#if JDK_VER >= 16
 
     //------------------------- JDBC 4.0 -----------------------------------
 
@@ -2073,8 +2061,6 @@ public class ResultSetWrapper implements ResultSet, Closeable {
 
 
 
-#endif
-#endif
 
   private void check_close()  throws SQLException
   {

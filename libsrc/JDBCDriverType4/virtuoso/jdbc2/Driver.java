@@ -92,15 +92,7 @@ public class Driver implements java.sql.Driver
      try
        {
 	 String log_file = System.getProperty(
-#if JDK_VER < 12
-	     "JDBC_LOG"
-#elif JDK_VER < 14
-	     "JDBC2_LOG"
-#elif JDK_VER < 16
-	     "JDBC3_LOG"
-#else
 	     "JDBC4_LOG"
-#endif
 	     );
 	 //log_file="/home/O12/logs/log." + System.currentTimeMillis () + "." + new java.util.Random ().nextInt() + ".log";
 	 if (log_file != null)
@@ -499,7 +491,6 @@ public class Driver implements java.sql.Driver
       }
 #endif
 
-#if JDK_VER >= 16
       if(info.get("usepstmtpool") == null)
       {
          pr = new DriverPropertyInfo("usepstmtpool",null);
@@ -512,7 +503,6 @@ public class Driver implements java.sql.Driver
          pr.required = false;
          pinfo.add(pr);
       }
-#endif
       DriverPropertyInfo drv_info[] = new DriverPropertyInfo[pinfo.size()];
       pinfo.copyInto(drv_info);
       return drv_info;

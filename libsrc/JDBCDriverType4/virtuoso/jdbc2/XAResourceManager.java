@@ -33,13 +33,8 @@ class XAResourceManager {
     private String serverName;
     private int portNumber;
 
-#if JDK_VER >= 16
     private HashMap<VirtuosoXid,XATransaction> transactions = new HashMap<VirtuosoXid,XATransaction>();
     private static ArrayList<XAResourceManager> managers = new ArrayList<XAResourceManager>();
-#else
-    private HashMap transactions = new HashMap();
-    private static ArrayList managers = new ArrayList();
-#endif
 
     private XAResourceManager(String serverName, int portNumber) {
      if (VirtuosoFuture.rpc_log != null)

@@ -27,11 +27,7 @@ import java.util.*;
 
 class VirtuosoPoolManager {
 
-#if JDK_VER >= 16
   private static WeakHashMap<Object,Object> connPools = new WeakHashMap<Object,Object>(50);
-#else
-  private static WeakHashMap connPools = new WeakHashMap(50);
-#endif
   private static VirtuosoPoolManager poolMgr = null;
   private static Object lock = new Object();
   private static ThreadGroup thrGroup = null;

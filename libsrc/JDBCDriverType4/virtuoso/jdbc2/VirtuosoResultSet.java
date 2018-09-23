@@ -551,9 +551,7 @@ public class VirtuosoResultSet implements ResultSet
                   {
                      Object obj = v.elementAt(3);
                      statement.objparams = null;
-#if JDK_VER >= 14
 		     statement.paramsMetaData = null;
-#endif
                      if(obj!=null && obj instanceof openlink.util.Vector)
 		       {
 		         fixReturnedData((openlink.util.Vector)obj);
@@ -573,10 +571,8 @@ public class VirtuosoResultSet implements ResultSet
 			   }
 
 			 is_complete = true;
-#if JDK_VER >= 14
 			 statement.paramsMetaData =
                           new VirtuosoParameterMetaData ((openlink.util.Vector)obj, statement.connection);
-#endif
 		       }
 		     else
 		       {
@@ -2018,7 +2014,6 @@ public class VirtuosoResultSet implements ResultSet
       updateObject(findColumn(columnName),x);
    }
 
-#if JDK_VER >= 12
    /**
     * Returns the value in the specified column as a Java object.
     * This method uses the specified <code>Map</code> object for
@@ -2046,7 +2041,6 @@ public class VirtuosoResultSet implements ResultSet
       // First get the column number
       return getRef(findColumn(columnName));
    }
-#endif
 
    /**
     * Gets a BLOB value in the current row of this <code>ResultSet</code> object.
@@ -2057,11 +2051,7 @@ public class VirtuosoResultSet implements ResultSet
     * @see virtuoso.jdbc2.VirtuosoBlob
     */
    public
-#if JDK_VER >= 12
    Blob
-#else
-   VirtuosoBlob
-#endif
    getBlob(String columnName) throws VirtuosoException
    {
       // First get the column number
@@ -2077,18 +2067,13 @@ public class VirtuosoResultSet implements ResultSet
     * @see virtuoso.jdbc2.VirtuosoClob
     */
    public
-#if JDK_VER >= 12
    Clob
-#else
-   VirtuosoClob
-#endif
    getClob(String columnName) throws VirtuosoException
    {
       // First get the column number
       return getClob(findColumn(columnName));
    }
 
-#if JDK_VER >= 12
    /**
     * Gets an SQL ARRAY value in the current row of this <code>ResultSet</code> object.
     *
@@ -2101,7 +2086,6 @@ public class VirtuosoResultSet implements ResultSet
       // First get the column number
       return getArray(findColumn(columnName));
    }
-#endif
 
    /**
     * Gets the value of a column in the current row as a java.sql.Date
@@ -2604,11 +2588,7 @@ public class VirtuosoResultSet implements ResultSet
     * the specified column
     */
    public
-#if JDK_VER >= 12
    Blob
-#else
-   VirtuosoBlob
-#endif
    getBlob(int i) throws VirtuosoException
    {
       // Get and check the current row number
@@ -2626,11 +2606,7 @@ public class VirtuosoResultSet implements ResultSet
     * the specified column
     */
    public
-#if JDK_VER >= 12
    Clob
-#else
-   VirtuosoClob
-#endif
    getClob(int i) throws VirtuosoException
    {
       // Get and check the current row number
@@ -3378,7 +3354,6 @@ public class VirtuosoResultSet implements ResultSet
    }
 
    // ==================================================================
-#if JDK_VER >= 12
    /**
     * Returns the value of a column in the current row as a Java object.
     * This method uses the given <code>Map</code> object
@@ -3415,7 +3390,6 @@ public class VirtuosoResultSet implements ResultSet
    {
       return null;
    }
-#endif
 
    protected void sendBlobData (openlink.util.Vector result) throws VirtuosoException
      {
@@ -3505,7 +3479,6 @@ public class VirtuosoResultSet implements ResultSet
    }
 
 
-#if JDK_VER >= 14
     /**
      * Retrieves the value of the designated column in the current row
      * of this <code>ResultSet</code> object as a <code>java.net.URL</code>
@@ -3679,7 +3652,6 @@ public class VirtuosoResultSet implements ResultSet
      }
 
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
 
     /**
@@ -5155,7 +5127,5 @@ public class VirtuosoResultSet implements ResultSet
 
 #endif
 
-#endif
-#endif
 }
 

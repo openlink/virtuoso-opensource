@@ -24,9 +24,7 @@
 package virtuoso.jdbc2;
 
 import java.sql.*;
-#if JDK_VER >= 16
 import java.sql.RowIdLifetime;
-#endif
 
 /**
  * The DatabaseMetaData class is an implementation of the DatabaseMetaData interface
@@ -1770,13 +1768,11 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "charset_recode (name_part(\\KEY_TABLE,2), 'UTF-8', '_WIDE_') AS \\TABLE_NAME NVARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
 	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
 	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
 	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
 	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
-#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1794,13 +1790,11 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "charset_recode (name_part(\\KEY_TABLE,2), 'UTF-8', '_WIDE_') AS \\TABLE_NAME NVARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
 	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
 	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
 	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
 	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
-#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1821,13 +1815,11 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "name_part(\\KEY_TABLE,2) AS \\TABLE_NAME VARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
 	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
 	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
 	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
 	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
-#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1845,13 +1837,11 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "name_part(\\KEY_TABLE,2) AS \\TABLE_NAME VARCHAR(128)," +
          "table_type(\\KEY_TABLE)  AS \\TABLE_TYPE VARCHAR(128)," +
 	 "NULL AS \\REMARKS VARCHAR(254) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\TYPE_CAT  VARCHAR(128) " +
 	 ",NULL AS \\TYPE_SCHEM VARCHAR(128) " +
 	 ",NULL AS \\TYPE_NAME VARCHAR(128) " +
 	 ",NULL AS \\SELF_REFERENCING_COL_NAME VARCHAR(128) " +
 	 ",NULL AS \\REF_GENERATION VARCHAR(128) " +
-#endif
        "FROM DB.DBA.SYS_KEYS " +
        "WHERE " +
          "__any_grants(\\KEY_TABLE) AND " +
@@ -1950,14 +1940,14 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    private static final String getSchemasText =
 	"select distinct" +
 	" name_part(KEY_TABLE, 1) AS \\TABLE_SCHEM VARCHAR(128)" +
-#if JDK_VER >= 14
+#if 1
 	", name_part(KEY_TABLE, 0) AS \\TABLE_CAT VARCHAR(128)" +
 #endif
 	"from DB.DBA.SYS_KEYS";
    private static final String getWideSchemasText =
 	"select distinct" +
 	" charset_recode (name_part(KEY_TABLE, 1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)" +
-#if JDK_VER >= 14
+#if 1
 	", charset_recode (name_part(KEY_TABLE, 0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128)" +
 #endif
 	"from DB.DBA.SYS_KEYS";
@@ -1965,16 +1955,12 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    private static final String getSchemasText =
 	"select distinct" +
 	" name_part(KEY_TABLE, 1) AS \\TABLE_SCHEM VARCHAR(128)" +
-#if JDK_VER >= 14
 	", null AS \\TABLE_CAT VARCHAR(128)" +
-#endif
 	"from DB.DBA.SYS_KEYS";
    private static final String getWideSchemasText =
 	"select distinct" +
 	" charset_recode (name_part(KEY_TABLE, 1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)" +
-#if JDK_VER >= 14
 	", null AS \\TABLE_CAT NVARCHAR(128)" +
-#endif
 	"from DB.DBA.SYS_KEYS";
    /**
     * Gets the schema names available in this database.  The results
@@ -2073,12 +2059,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
 	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
-#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -2114,12 +2098,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
 	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
-#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -2156,12 +2138,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
 	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
-#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -2197,12 +2177,10 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 	 "NULL AS \\CHAR_OCTET_LENGTH INTEGER, " +
 	 "NULL AS \\ORDINAL_POSITION INTEGER, " +
 	 "NULL AS \\IS_NULLABLE VARCHAR(10) " +
-#if JDK_VER >= 14
 	 ",NULL AS \\SCOPE_CATLOG VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_SCHEMA VARCHAR(128) " +
 	 ",NULL AS \\SCOPE_TABLE VARCHAR(128) " +
 	 ",NULL AS \\SOURCE_DATA_TYPE SMALLINT " +
-#endif
        "FROM " +
          "DB.DBA.SYS_KEYS k, " +
 	 "DB.DBA.SYS_KEY_PARTS kp, " +
@@ -3936,7 +3914,6 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
      return new VirtuosoResultSet (connection, col_names, col_dtps);
    }
 
-#if JDK_VER >= 14
    /* JDK 1.4 functions */
 
     // ------------------- JDBC 3.0 -------------------------
@@ -4358,7 +4335,6 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
      }
 
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
 
     /**
@@ -4930,7 +4906,5 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 
 #endif
 
-#endif
-#endif
 
 }

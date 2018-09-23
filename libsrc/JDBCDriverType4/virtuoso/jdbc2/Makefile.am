@@ -30,18 +30,6 @@
 # Settings
 ###########################################
 
-if WITH_JDK2
-CLASSPATH2=$(CLASSPATH2)
-JDK2=@ac_jdk2_path@
-JDK2_FLAGS=-g
-endif
-
-if WITH_JDK3
-CLASSPATH3=$(CLASSPATH3)
-JDK3=@ac_jdk3_path@
-JDK3_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
-endif
-
 if WITH_JDK4
 CLASSPATH4=$(CLASSPATH4)
 JDK4=@ac_jdk4_path@
@@ -61,10 +49,7 @@ JDK4_2_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
 
-jdbc1_defs = -DJDK_VER=11 '-DVIRT_JDBC_VER="1.x"' -Djdbc2=jdbc
-jdbc2_defs = -DJDK_VER=13 '-DVIRT_JDBC_VER="2.x"'
-jdbc3_defs = -DJDK_VER=14 -Djdbc2=jdbc3 '-DVIRT_JDBC_VER="3.x"'
-jdbc4_defs = -DJDK_VER=16 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.0"'
+jdbc4_defs   = -DJDK_VER=16 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.0"'
 jdbc4_1_defs = -DJDK_VER=17 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.1"'
 jdbc4_2_defs = -DJDK_VER=18 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.2"'
 
@@ -162,180 +147,6 @@ javaxfiles = \
 sqlfiles = \
 	ExtendedString.java \
 	RdfBox.java
-
-
-###########################################
-# JDBC 2.x
-###########################################
-std2javafiles = \
-	$(utilfiles:%.java=outstd2/openlink/util/%.java) \
-	$(sqlfiles:%.java=outstd2/virtuoso/sql/%.java) \
-	$(infiles:%.java=outstd2/virtuoso/jdbc2/%.java)
-
-
-.PHONY: doc2
-doc2: ../../virtjdbc2.jar
-	@cd outstd2 ; $(JDK2)/javadoc -d ../../../doc/virtjdbc2 -classpath . virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-
-
-.PHONY: std2
-std2: ../../virtjdbc2.jar
-
-../../virtjdbc2.jar: outstd2 $(std2javafiles)
-	@echo jdbc2 javac $(JDK2_FLAGS)
-	@cd outstd2 ; $(JDK2)/javac $(JDK2_FLAGS) -classpath .  virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/sql/*.java
-	@cd outstd2 ; $(JDK2)/jar cf ../../../virtjdbc2.jar virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
-	@echo "............. Virtuoso pure Java 2.0 built"
-
-outstd2:
-	@mkdir outstd2
-	@mkdir outstd2/virtuoso
-	@mkdir outstd2/virtuoso/jdbc2
-	@mkdir outstd2/virtuoso/sql
-	@mkdir outstd2/openlink
-	@mkdir outstd2/openlink/util
-
-outstd2/virtuoso/jdbc2/%.java: %.java
-	$(JAVACPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
-
-outstd2/openlink/util/%.java: ../../openlink/util/%.java
-	$(JAVACPP) -P $(JCPPOPTS) $(jdbc2_defs) $< >$@
-
-outstd2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outstd2/virtuoso/sql; cp ../../../$< .
-
-
-###########################################
-# JDBC 2.x (SSL)
-###########################################
-ssl2javafiles = \
-	$(infiles:%.java=outssl2/virtuoso/jdbc2/%.java) \
-        $(sqlfiles:%.java=outssl2/virtuoso/sql/%.java) \
-	$(utilfiles:%.java=outssl2/openlink/util/%.java)
-
-jssljars = ../../../security/jcert.jar:../../../security/jnet.jar:../../../security/jsse.jar
-
-.PHONY: ssl2
-ssl2: ../../virtjdbc2ssl.jar
-
-../../virtjdbc2ssl.jar: outssl2 $(ssljavafiles)
-	@echo jdbc2 javac $(JDK2_FLAGS)
-	@cd outssl2 ; $(JDK2)/javac -classpath ".:$(jssljars)" $(JDK2_FLAGS) virtuoso/jdbc2/*.java openlink/util/*.java virtuoso/sql/*.java
-	@cd outssl2 ; $(JDK2)/jar cfm ../../../virtjdbc2ssl.jar ../../../manifest2.main virtuoso/jdbc2/*.class openlink/util/*.class virtuoso/sql/*.class
-	@echo "............. Virtuoso pure Java SSL 2.0 built"
-
-outssl2:
-	@mkdir outssl2
-	@mkdir outssl2/virtuoso
-	@mkdir outssl2/virtuoso/jdbc2
-	@mkdir outssl2/virtuoso/sql
-	@mkdir outssl2/openlink
-	@mkdir outssl2/openlink/util
-
-outssl2/virtuoso/jdbc2/%.java: %.java
-	$(JAVACPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
-
-outssl2/openlink/util/%.java: ../../openlink/util/%.java
-	$(JAVACPP) -P -DSSL $(JCPPOPTS) $(jdbc2_defs) $< >$@
-
-outssl2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outssl/virtuoso/sql; cp ../../../$< .
-
-
-###########################################
-# JDBC 3.x
-###########################################
-std3javafiles = \
-	$(utilfiles:%.java=outstd3/openlink/util/%.java) \
-	$(sqlfiles:%.java=outstd3/virtuoso/sql/%.java) \
-	$(util3files:%.java=outstd3/openlink/util/%.java) \
-	$(in3files:%.java=outstd3/virtuoso/jdbc3/%.java) \
-	$(infiles:%.java=outstd3/virtuoso/jdbc3/%.java) \
-	$(javaxfiles:%.java=outstd3/virtuoso/javax/%.java)
-
-
-.PHONY: doc3
-doc3: ../../virtjdbc3.jar
-	@cd outstd3 ; $(JDK3)/javadoc -d ../../../doc/virtjdbc3 -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-
-
-.PHONY: std3
-std3: ../../virtjdbc3.jar
-
-../../virtjdbc3.jar: outstd3 $(std3javafiles)
-	@echo jdbc3 javac $(JDK3_FLAGS)
-	@cd outstd3 ; $(JDK3)/javac $(JDK3_FLAGS) -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outstd3 ; $(JDK3)/jar cfm ../../../virtjdbc3.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
-	@echo "............. Virtuoso pure Java 3.0 built"
-
-outstd3:
-	@mkdir outstd3
-	@mkdir outstd3/virtuoso
-	@mkdir outstd3/virtuoso/jdbc3
-	@mkdir outstd3/virtuoso/sql
-	@mkdir outstd3/openlink
-	@mkdir outstd3/openlink/util
-	@mkdir outstd3/virtuoso/javax
-	@mkdir outstd3/META-INF
-	@mkdir outstd3/META-INF/services
-	@cp ../../java.sql.Driver3 outstd3/META-INF/services/java.sql.Driver
-
-outstd3/virtuoso/jdbc3/%.java: %.java
-	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
-
-outstd3/openlink/util/%.java: ../../openlink/util/%.java
-	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
-
-outstd3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outstd3/virtuoso/sql; cp ../../../$< .
-
-outstd3/virtuoso/javax/%.java: ../javax/%.java
-	$(JAVACPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
-
-
-###########################################
-# JDBC 3.x (SSL)
-###########################################
-ssl3javafiles = \
-	$(utilfiles:%.java=outssl3/openlink/util/%.java) \
-	$(sqlfiles:%.java=outssl3/virtuoso/sql/%.java) \
-	$(util3files:%.java=outssl3/openlink/util/%.java) \
-	$(in3files:%.java=outssl3/virtuoso/jdbc3/%.java) \
-	$(infiles:%.java=outssl3/virtuoso/jdbc3/%.java) \
-	$(javaxfiles:%.java=outssl3/virtuoso/javax/%.java)
-
-.PHONY: ssl3
-ssl3: ../../virtjdbc3ssl.jar
-
-../../virtjdbc3ssl.jar: outssl3 $(ssl3javafiles)
-	@echo jdbc3 ssl javac $(JDK3_FLAGS)
-	@cd outssl3 ; $(JDK3)/javac $(JDK3_FLAGS) -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl3 ; $(JDK3)/jar cfm ../../../virtjdbc3ssl.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class  META-INF
-	@echo "............. Virtuoso pure Java SSL 3.0 built"
-
-outssl3:
-	@mkdir outssl3
-	@mkdir outssl3/virtuoso
-	@mkdir outssl3/virtuoso/jdbc3
-	@mkdir outssl3/virtuoso/sql
-	@mkdir outssl3/openlink
-	@mkdir outssl3/openlink/util
-	@mkdir outssl3/virtuoso/javax
-	@mkdir outssl3/META-INF
-	@mkdir outssl3/META-INF/services
-	@cp ../../java.sql.Driver3 outssl3/META-INF/services/java.sql.Driver
-
-outssl3/virtuoso/jdbc3/%.java: %.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
-
-outssl3/openlink/util/%.java: ../../openlink/util/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
-
-outssl3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outssl3/virtuoso/sql; cp ../../../$< .
-
-outssl3/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
 
 
 ###########################################
