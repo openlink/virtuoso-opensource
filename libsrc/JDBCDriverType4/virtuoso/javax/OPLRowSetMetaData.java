@@ -95,10 +95,10 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's table's catalog name, if any.
+   * Specify the column table's catalog name, if any.
    *
    * @param column the first column is 1, the second is 2, ...
-   * @param catalogName column's catalog name.
+   * @param catalogName column catalog name.
    *
    * @exception SQLException if a database-access error occurs.
    */
@@ -124,7 +124,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's normal max width in chars.
+   * Specify the column normal max width in chars.
    *
    * @param column the first column is 1, the second is 2, ...
    * @param size size of the column
@@ -159,10 +159,10 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's SQL type.
+   * Specify the column SQL type.
    *
    * @param column the first column is 1, the second is 2, ...
-   * @param SQLType column's SQL type.
+   * @param SQLType column SQL type.
    * @exception SQLException if a database-access error occurs.
    * @see Types
    */
@@ -171,7 +171,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's data source specific type name, if any.
+   * Specify the column data source specific type name, if any.
    *
    * @param column the first column is 1, the second is 2, ...
    * @param typeName data source specific type name.
@@ -194,7 +194,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify whether the column's value can be set to NULL.
+   * Specify whether the column value can be set to NULL.
    *
    * @param column the first column is 1, the second is 2, ...
    * @param property is either one of columnNoNulls, columnNullable
@@ -207,7 +207,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's number of decimal digits.
+   * Specify the column number of decimal digits.
    *
    * @param column the first column is 1, the second is 2, ...
    * @param precision number of decimal digits.
@@ -218,7 +218,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's number of digits to right of the decimal point.
+   * Specify the column number of digits to right of the decimal point.
    *
    * @param column the first column is 1, the second is 2, ...
    * @param scale number of digits to right of decimal point.
@@ -229,7 +229,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's table's schema, if any.
+   * Specify the column table's schema, if any.
    *
    * @param column the first column is 1, the second is 2, ...
    * @param schemaName the schema name
@@ -267,10 +267,10 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Specify the column's table name, if any.
+   * Specify the column table name, if any.
    *
    * @param column the first column is 1, the second is 2, ...
-   * @param tableName column's table name.
+   * @param tableName column table name.
    * @exception SQLException if a database-access error occurs.
    */
   public void setTableName(int column, String tableName) throws java.sql.SQLException {
@@ -302,7 +302,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
   /**
-   * Indicates whether a column's case matters.
+   * Indicates whether a column case matters.
    *
    * @param column the first column is 1, the second is 2, ...
    * @return <code>true</code> if so; <code>false</code> otherwise
@@ -358,7 +358,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Indicates the designated column's normal maximum width in characters.
+     * Indicates the designated column normal maximum width in characters.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return the normal maximum number of characters allowed as the width
@@ -370,7 +370,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Gets the designated column's suggested title for use in printouts and
+     * Gets the designated column suggested title for use in printouts and
      * displays.
      *
      * @param column the first column is 1, the second is 2, ...
@@ -382,7 +382,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Get the designated column's name.
+     * Get the designated column name.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return column name
@@ -393,7 +393,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Get the designated column's table's schema.
+     * Get the designated column table's schema.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return schema name or "" if not applicable
@@ -404,7 +404,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Get the designated column's number of decimal digits.
+     * Get the designated column number of decimal digits.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return precision
@@ -415,7 +415,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Gets the designated column's number of digits to right of the decimal point.
+     * Gets the designated column number of digits to right of the decimal point.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return scale
@@ -426,7 +426,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Gets the designated column's table name.
+     * Gets the designated column table name.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return table name or "" if not applicable
@@ -437,7 +437,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Gets the designated column's table's catalog name.
+     * Gets the designated column table's catalog name.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return column name or "" if not applicable
@@ -448,7 +448,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Retrieves the designated column's SQL type.
+     * Retrieves the designated column SQL type.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return SQL type from java.sql.Types
@@ -460,7 +460,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   }
 
     /**
-     * Retrieves the designated column's database-specific type name.
+     * Retrieves the designated column database-specific type name.
      *
      * @param column the first column is 1, the second is 2, ...
      * @return type name used by the database. If the column type is
@@ -545,7 +545,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Unable_to_unwrap_to_XX, iface.toString());
@@ -569,7 +569,7 @@ public class OPLRowSetMetaData implements RowSetMetaData, Serializable {
      */
   public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
   {
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 

@@ -411,7 +411,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 		"IM001", VirtuosoException.NOTIMPLEMENTED);
 	}
 
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
 	{
 	  ((VirtuosoBlob)_obj).setInputStream(x,length);
@@ -497,7 +497,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 		"IM001", VirtuosoException.NOTIMPLEMENTED);
 	}
 
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
 	{
 	  ((VirtuosoBlob)_obj).setInputStream(x,length);
@@ -563,7 +563,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 		"IM001", VirtuosoException.NOTIMPLEMENTED);
 	}
 
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
 	{
 	  ((VirtuosoBlob)_obj).setInputStream(x,length);
@@ -808,7 +808,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     */
    public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) throws VirtuosoException
    {
-      if(x == null) { 
+      if(x == null) {
           this.setNull(parameterIndex, Types.OTHER);
           return;
       }
@@ -825,7 +825,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	}
       // After check, check if a Blob object is already associated or not
       Object _obj = objparams.elementAt(parameterIndex - 1);
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
       {
          ((VirtuosoBlob)_obj).setObject(x);
@@ -835,7 +835,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       x = VirtuosoTypes.mapJavaTypeToSqlType (x, targetSqlType, scale);
       if (x instanceof java.io.Serializable)
 	{
-	  if (x instanceof String && parameters != null 
+	  if (x instanceof String && parameters != null
 	       && parameters.elementAt(parameterIndex - 1) instanceof openlink.util.Vector)
 	    {
 	      openlink.util.Vector pd = (openlink.util.Vector)parameters.elementAt(parameterIndex - 1);
@@ -995,11 +995,11 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
          return new int[0];
       // Else execute one by one SQL request
       int[] result = new int[batch.size()];
-      // Flag to say if there's a problem
+      // Flag to say if there is a problem
       boolean error = false;
 
       if (this instanceof VirtuosoCallableStatement && ((VirtuosoCallableStatement)this).hasOut())
-	throwBatchUpdateException (result, "Batch can't execute calls with out params", 0);
+	throwBatchUpdateException (result, "Batch cannot execute calls with out params", 0);
 
       try
 	{
@@ -1133,7 +1133,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // After check, check if a Blob object is already associated or not
       //System.err.println ("after check");
       Object _obj = objparams.elementAt(parameterIndex - 1);
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
       {
          ((VirtuosoBlob)_obj).setReader(x,length);
@@ -1332,7 +1332,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
      */
   public void setRowId(int parameterIndex, RowId x) throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setRowId(parameterIndex, x)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setRowId(parameterIndex, x)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
 
@@ -1509,7 +1509,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       */
   public synchronized void setSQLXML(int parameterIndex, SQLXML xmlObject) throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setSQLXML(parameterIndex, xmlObject)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setSQLXML(parameterIndex, xmlObject)  is not supported", VirtuosoException.NOTIMPLEMENTED);
 /*********
 //??TODO
 *******/
@@ -1623,7 +1623,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
   public void setAsciiStream(int parameterIndex, java.io.InputStream x)
 	    throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setAsciiStream(parameterIndex, x)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setAsciiStream(parameterIndex, x)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
     /**
@@ -1651,7 +1651,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
   public void setBinaryStream(int parameterIndex, java.io.InputStream x)
     throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setAsciiStream(parameterIndex, x)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setAsciiStream(parameterIndex, x)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
    /**
@@ -1682,7 +1682,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
   public void setCharacterStream(int parameterIndex,
        			  java.io.Reader reader) throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setCharacterStream(parameterIndex, reader)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setCharacterStream(parameterIndex, reader)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
   /**
@@ -1710,7 +1710,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
      */
   public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setNCharacterStream(parameterIndex, value)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setNCharacterStream(parameterIndex, value)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
     /**
@@ -1738,7 +1738,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
   public void setClob(int parameterIndex, Reader reader)
        throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setClob(parameterIndex, reader)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setClob(parameterIndex, reader)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
     /**
@@ -1769,7 +1769,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
   public void setBlob(int parameterIndex, InputStream inputStream)
         throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setBlob(parameterIndex, inputStream)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setBlob(parameterIndex, inputStream)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
     /**
@@ -1798,7 +1798,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
   public void setNClob(int parameterIndex, Reader reader)
        throws SQLException
   {
-    throw new VirtuosoFNSException ("Method  setNClob(parameterIndex, reader)  isn't supported", VirtuosoException.NOTIMPLEMENTED);
+    throw new VirtuosoFNSException ("Method  setNClob(parameterIndex, reader)  is not supported", VirtuosoException.NOTIMPLEMENTED);
   }
 
   protected synchronized void setClosed(boolean flag)

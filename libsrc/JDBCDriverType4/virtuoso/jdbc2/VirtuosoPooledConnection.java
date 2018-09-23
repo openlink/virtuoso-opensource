@@ -90,7 +90,7 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
       v.tmClosed = tmClosed;
       return v;
     } catch (CloneNotSupportedException e) {
-      // this shouldn't happen, since we are Cloneable
+      // this should not happen, since we are Cloneable
       throw new InternalError();
     }
   }

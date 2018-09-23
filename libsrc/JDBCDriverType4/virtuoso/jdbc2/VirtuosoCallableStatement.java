@@ -546,7 +546,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
 	return null;
-      else	
+      else
         return (java.sql.Time)obj;
    }
 
@@ -789,7 +789,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
    public java.sql.Timestamp getTimestamp(int parameterIndex, Calendar cal) throws SQLException
    {
      java.sql.Timestamp _ts, val;
-     
+
      _ts = val = this.getTimestamp(parameterIndex);
 
       if(cal != null && _ts != null)
@@ -1901,10 +1901,10 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
   public <T> T getObject(int parameterIndex, Class<T> type) throws SQLException
   {
     if (type == null) {
-      throw new VirtuosoException ("Type parameter can not be null", 
+      throw new VirtuosoException ("Type parameter cannot be null",
                     "S1009", VirtuosoException.BADPARAM);
     }
-		
+
     if (type.equals(String.class)) {
       return (T) getString(parameterIndex);
     } else if (type.equals(BigDecimal.class)) {
@@ -1938,19 +1938,19 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
     } else if (type.equals(java.net.URL.class)) {
       return (T) getURL(parameterIndex);
 //		} else if (type.equals(Struct.class)) {
-//				
-//			} 
+//
+//			}
 //		} else if (type.equals(RowId.class)) {
-//			
+//
 //		} else if (type.equals(NClob.class)) {
-//			
+//
 //		} else if (type.equals(SQLXML.class)) {
-			
+
     } else {
       try {
         return (T) getObject(parameterIndex);
       } catch (ClassCastException cce) {
-         throw new VirtuosoException ("Conversion not supported for type " + type.getName(), 
+         throw new VirtuosoException ("Conversion not supported for type " + type.getName(),
                     "S1009", VirtuosoException.BADPARAM);
       }
     }

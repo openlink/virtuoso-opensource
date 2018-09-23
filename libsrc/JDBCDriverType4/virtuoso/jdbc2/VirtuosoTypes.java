@@ -482,7 +482,7 @@ class VirtuosoTypes
 	         return new java.sql.Date(((java.sql.Date)x).getTime());
 	      else if (x instanceof String)
 	         return VirtuosoTypes.strToDate((String)x);
-	      else if (x instanceof java.util.Date) 
+	      else if (x instanceof java.util.Date)
 	         return new java.sql.Date(((java.util.Date)x).getTime());
 	      break;
 
@@ -508,7 +508,7 @@ class VirtuosoTypes
               break;
 
 	  case Types.TIMESTAMP:
-	      
+
               if (x instanceof VirtuosoTimestamp)
                  return ((VirtuosoTimestamp)x).clone();
               else if(x instanceof VirtuosoTime)

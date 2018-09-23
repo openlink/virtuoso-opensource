@@ -126,7 +126,7 @@ public class VirtuosoConnection implements Connection
 
    // timezoneless datetimes setting
    protected int timezoneless_datetimes = 0;
-  
+
 
    // set if the connection is managed through VirtuosoPooledConnection;
    protected VirtuosoPooledConnection pooled_connection = null;
@@ -135,7 +135,7 @@ public class VirtuosoConnection implements Connection
    protected String charset;
    protected boolean charset_utf8 = false;
 
-   
+
    protected Hashtable<Integer,String> rdf_type_hash = null;
    protected Hashtable<Integer,String> rdf_lang_hash = null;
    protected Hashtable<String,Integer> rdf_type_rev = null;
@@ -325,7 +325,7 @@ public class VirtuosoConnection implements Connection
       pingStatement = createStatement();
    }
 
-   public synchronized boolean isConnectionLost(int timeout_sec) 
+   public synchronized boolean isConnectionLost(int timeout_sec)
    {
      ResultSet rs = null;
      try{
@@ -419,7 +419,7 @@ public class VirtuosoConnection implements Connection
       }
 
       // Set database with statement
-      if(db!=null) 
+      if(db!=null)
         try {
           new VirtuosoStatement(this).executeQuery("use "+db);
         } catch (VirtuosoException ve) {
@@ -536,7 +536,7 @@ public class VirtuosoConnection implements Connection
                        fis.close();
                    }
 
-    
+
                    tmf.init(tks);
                    tma = tmf.getTrustManagers();
                } else {
@@ -866,9 +866,9 @@ public class VirtuosoConnection implements Connection
      return fut;
    }
 
-   protected void clearFutures() 
+   protected void clearFutures()
    {
-     if (futures != null) 
+     if (futures != null)
         synchronized (futures)
         {
 	  futures.clear();
@@ -1035,7 +1035,7 @@ public class VirtuosoConnection implements Connection
    // --------------------------- JDBC 1.0 ------------------------------
    /**
     * Clears all the warnings reported on this Connection object.
-    * Virtuoso doesn't generate warnings, so this function does nothing, but we
+    * Virtuoso does not generate warnings, so this function does nothing, but we
     * must declare it to be compliant with the JDBC API.
     *
     * @exception virtuoso.jdbc2.VirtuosoException No errors returned (just an implementation question).
@@ -1178,7 +1178,7 @@ public class VirtuosoConnection implements Connection
    /**
     * Retrieves the first warning reported by calls on this Connection.
     * Subsequent Connection warnings will be chained to this
-    * SQLWarning. Virtuoso doesn't generate warnings, so this function
+    * SQLWarning. Virtuoso does not generate warnings, so this function
     * returns always null.
     *
     * @return SQLWarning   The first SQLWarning or null (must be null for the moment)
@@ -1225,7 +1225,7 @@ public class VirtuosoConnection implements Connection
    /**
     * Checks if the connection is closed.
     *
-    * @return boolean   True if the connection is closed, false if it's still open.
+    * @return boolean   True if the connection is closed, false if it is still open.
     */
    public boolean isClosed()
    {
@@ -1836,7 +1836,7 @@ public class VirtuosoConnection implements Connection
      * the <code>Clob</code> interface may be used to add data to the <code>Clob</code>.
      * @return An object that implements the <code>Clob</code> interface
      * @throws SQLException if an object that implements the
-     * <code>Clob</code> interface can not be constructed, this method is
+     * <code>Clob</code> interface cannot be constructed, this method is
      * called on a closed connection or a database access error occurs.
      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
      * this data type
@@ -1855,7 +1855,7 @@ public class VirtuosoConnection implements Connection
      * the <code>Blob</code>.
      * @return  An object that implements the <code>Blob</code> interface
      * @throws SQLException if an object that implements the
-     * <code>Blob</code> interface can not be constructed, this method is
+     * <code>Blob</code> interface cannot be constructed, this method is
      * called on a closed connection or a database access error occurs.
      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
      * this data type
@@ -1874,7 +1874,7 @@ public class VirtuosoConnection implements Connection
      * be used to add data to the <code>NClob</code>.
      * @return An object that implements the <code>NClob</code> interface
      * @throws SQLException if an object that implements the
-     * <code>NClob</code> interface can not be constructed, this method is
+     * <code>NClob</code> interface cannot be constructed, this method is
      * called on a closed connection or a database access error occurs.
      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
      * this data type
@@ -1892,7 +1892,7 @@ public class VirtuosoConnection implements Connection
      * <code>setString</code> method of the <code>SQLXML</code> interface may be used to add data to the <code>SQLXML</code>
      * object.
      * @return An object that implements the <code>SQLXML</code> interface
-     * @throws SQLException if an object that implements the <code>SQLXML</code> interface can not
+     * @throws SQLException if an object that implements the <code>SQLXML</code> interface cannot
      * be constructed, this method is
      * called on a closed connection or a database access error occurs.
      * @exception SQLFeatureNotSupportedException if the JDBC driver does not support
@@ -1932,7 +1932,7 @@ public class VirtuosoConnection implements Connection
     if (isClosed())
       return false;
 
-    boolean isLost = true;		
+    boolean isLost = true;
     try {
       try {
         isLost = isConnectionLost(_timeout);
@@ -1940,7 +1940,7 @@ public class VirtuosoConnection implements Connection
         try {
           abortInternal();
         } catch (Throwable ignoreThrown) {
-          // we're dead now anyway
+          // we are dead now anyway
         }
 
         return false;
@@ -1948,7 +1948,7 @@ public class VirtuosoConnection implements Connection
     } catch (Throwable t) {
       return false;
     }
-		
+
     return !isLost;
   }
 
@@ -2180,7 +2180,7 @@ public class VirtuosoConnection implements Connection
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw new VirtuosoException ("Unable to unwrap to "+iface.toString(), "22023", VirtuosoException.BADPARAM);
@@ -2207,7 +2207,7 @@ public class VirtuosoConnection implements Connection
     if(isClosed())
       throw new VirtuosoException("The connection is closed.",VirtuosoException.DISCONNECTED);
 
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 
@@ -2234,7 +2234,7 @@ public class VirtuosoConnection implements Connection
     * @see #getSchema
     * @since 1.7
     */
-  public void setSchema(String schema) throws java.sql.SQLException 
+  public void setSchema(String schema) throws java.sql.SQLException
   {
     if(isClosed())
       throw new VirtuosoException("The connection is closed.",VirtuosoException.DISCONNECTED);
@@ -2295,15 +2295,15 @@ public class VirtuosoConnection implements Connection
   public void abort(java.util.concurrent.Executor executor) throws java.sql.SQLException
   {
     SecurityManager sec = System.getSecurityManager();
-		
+
     if (sec != null)
       sec.checkPermission(ABORT_PERM);
-		
+
     if (executor == null)
-      throw new VirtuosoException ("Executor can not be null", 
+      throw new VirtuosoException ("Executor cannot be null",
                     VirtuosoException.BADPARAM);
-		
-    executor.execute(new Runnable() 
+
+    executor.execute(new Runnable()
     {
       public void run() {
         try {
@@ -2339,7 +2339,7 @@ public class VirtuosoConnection implements Connection
      * JDBC connection is accessible to the administrator thread.
      * The <code>setNetworkTimeout</code> method will cover cases where
      * there is no administrator thread, or it has no access to the
-     * connection. This method is severe in it's effects, and should be
+     * connection. This method is severe in it is effects, and should be
      * given a high enough value so it is never triggered before any more
      * normal timeouts, such as transaction timeouts.
      * <p>
@@ -2407,22 +2407,22 @@ public class VirtuosoConnection implements Connection
      * @see Executor
      * @since 1.7
      */
-  public void setNetworkTimeout(java.util.concurrent.Executor executor, 
+  public void setNetworkTimeout(java.util.concurrent.Executor executor,
   			 final int milliseconds) throws java.sql.SQLException
   {
     SecurityManager sec = System.getSecurityManager();
-		
+
     if (sec != null)
       sec.checkPermission(SET_NETWORK_TIMEOUT_PERM);
-		
+
     if (executor == null)
-      throw new VirtuosoException ("Executor can not be null", 
+      throw new VirtuosoException ("Executor cannot be null",
                     VirtuosoException.BADPARAM);
-		
+
     if(isClosed())
       throw new VirtuosoException("The connection is closed.",VirtuosoException.DISCONNECTED);
 
-    executor.execute(new Runnable() 
+    executor.execute(new Runnable()
     {
       public void run() {
           try {
@@ -2461,7 +2461,7 @@ public class VirtuosoConnection implements Connection
 #endif
 
 
-  private void abortInternal() throws java.sql.SQLException 
+  private void abortInternal() throws java.sql.SQLException
   {
     if (isClosed())
       return;
@@ -2473,7 +2473,7 @@ public class VirtuosoConnection implements Connection
   }
 
 
-  
+
   private void createCaches(int cacheSize)
   {
     pStatementCache = new LRUCache<String,VirtuosoPreparedStatement>(cacheSize) {
@@ -2560,9 +2560,9 @@ public class VirtuosoConnection implements Connection
       if (ex == null)
         return false;
       String SQLstate = ex.getSQLState();
-      if (SQLstate != null && SQLstate.startsWith("08") 
-          && SQLstate != "08C04" 
-          && SQLstate != "08C03" 
+      if (SQLstate != null && SQLstate.startsWith("08")
+          && SQLstate != "08C04"
+          && SQLstate != "08C03"
           && SQLstate != "08001"
           && SQLstate != "08003"
           && SQLstate != "08006"

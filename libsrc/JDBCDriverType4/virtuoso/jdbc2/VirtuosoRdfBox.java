@@ -159,7 +159,7 @@ public class VirtuosoRdfBox implements RdfBox
       return (k != null ? k.shortValue () : (short) RDF_BOX_DEFAULT_TYPE);
     }
 
-    private void fillHashFromSQL (Hashtable<Integer,String> ht, Hashtable<String,Integer> rev, String sql) 
+    private void fillHashFromSQL (Hashtable<Integer,String> ht, Hashtable<String,Integer> rev, String sql)
     {
 	try
 	{
@@ -254,18 +254,18 @@ public class VirtuosoRdfBox implements RdfBox
         if (this.rb_box != null) {
           String o_type = getType();
 
-          if (o_type!=null && o_type.equals(gYear)) 
+          if (o_type!=null && o_type.equals(gYear))
           {
-            if (rb_box instanceof VirtuosoDate) 
+            if (rb_box instanceof VirtuosoDate)
               retVal = ((VirtuosoDate) rb_box).toXSD_String().substring(0,4);
             else if (rb_box instanceof VirtuosoTimestamp)
               retVal = ((VirtuosoTimestamp) rb_box).toXSD_String().substring(0,4);
             else
     	      retVal = this.rb_box.toString ();
-    	  } 
-    	  else if (o_type!=null && o_type.equals(gYearMonth)) 
+    	  }
+    	  else if (o_type!=null && o_type.equals(gYearMonth))
     	  {
-            if (rb_box instanceof VirtuosoDate) 
+            if (rb_box instanceof VirtuosoDate)
               retVal = ((VirtuosoDate) rb_box).toXSD_String().substring(0,7);
             else if (rb_box instanceof VirtuosoTimestamp)
               retVal = ((VirtuosoTimestamp) rb_box).toXSD_String().substring(0,7);

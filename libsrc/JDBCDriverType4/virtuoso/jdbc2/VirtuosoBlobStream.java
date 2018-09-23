@@ -67,7 +67,7 @@ class VirtuosoBlobStream extends InputStream
    {
       try
       {
-         // Check if it's the end of the stream
+         // Check if it is the end of the stream
          return (pos > blob.length()) ? -1 : (blob.getBytes(pos++,1))[0];
       }
       catch(Exception e)
@@ -100,7 +100,7 @@ class VirtuosoBlobStream extends InputStream
          // Check parameters
          if(len <= 0)
             return 0;
-         // Check if it's the end of the stream
+         // Check if it is the end of the stream
          if((pos + len) > blob.length())
          {
 	   int to_read = (int)(blob.length() - pos + 1);

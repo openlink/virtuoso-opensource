@@ -124,7 +124,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Indicates whether a column's case matters.
+    * Indicates whether a column case matters.
     *
     * @param column the first column is 1, the second is 2, ...
     * @return boolean   True if so.
@@ -210,7 +210,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Indicates the column's normal max width in chars.
+    * Indicates the column normal max width in chars.
     *
     * @param column the first column is 1, the second is 2, ...
     * @return the normal maximum number of characters allowed as the width
@@ -242,7 +242,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Gets a column's name.
+    * Gets a column name.
     *
     * @param column the first column is 1, the second is 2, ...
     * @returnString  The column name.
@@ -268,10 +268,10 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Gets a column's number of decimal digits.
+    * Gets a column number of decimal digits.
     *
     * @param column the first column is 1, the second is 2, ...
-    * @return int The column's precision.
+    * @return int The column precision.
     * @exception virtuoso.jdbc2.VirtuosoException If an internal error occurred.
     * @see java.sql.ResultSetMetaData#getPrecision
     */
@@ -285,10 +285,10 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Gets a column's number of digits to right of the decimal point.
+    * Gets a column number of digits to right of the decimal point.
     *
     * @param column the first column is 1, the second is 2, ...
-    * @return int The column's scale.
+    * @return int The column scale.
     * @exception virtuoso.jdbc2.VirtuosoException If an internal error occurred.
     * @see java.sql.ResultSetMetaData#getScale
     */
@@ -302,7 +302,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Retrieves a column's SQL type.
+    * Retrieves a column SQL type.
     *
     * @param column the first column is 1, the second is 2, ...
     * @return int SQL type.
@@ -320,7 +320,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Retrieves a column's database-specific type name.
+    * Retrieves a column database-specific type name.
     *
     * @param column the first column is 1, the second is 2, ...
     * @return type name used by the database. If the column type is
@@ -475,7 +475,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Gets a column's table's schema.
+    * Gets a column table's schema.
     *
     * @param column the first column is 1, the second is 2, ...
     * @return schema name or "" if not applicable
@@ -487,7 +487,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Gets a column's table name.
+    * Gets a column table name.
     *
     * @param column the first column is 1, the second is 2, ...
     * @return table name or "" if not applicable
@@ -499,7 +499,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
    }
 
    /**
-    * Gets a column's table's catalog name.
+    * Gets a column table's catalog name.
     *
     * @param column the first column is 1, the second is 2, ...
     * @return column name or "" if not applicable.
@@ -571,7 +571,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw new VirtuosoException ("Unable to unwrap to "+iface.toString(), "22023", VirtuosoException.BADPARAM);
@@ -595,7 +595,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
      */
   public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
   {
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 

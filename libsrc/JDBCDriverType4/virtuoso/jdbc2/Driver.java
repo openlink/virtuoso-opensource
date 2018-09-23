@@ -162,7 +162,7 @@ public class Driver implements java.sql.Driver
     * Returns true if the driver thinks that it can open a connection
     * to the given URL.  Typically drivers will return true if they
     * understand the subprotocol specified in the URL and false if
-    * they don't.
+    * they do not.
     *
     * @param url the URL of the database
     * @return true if this driver can connect to the given URL

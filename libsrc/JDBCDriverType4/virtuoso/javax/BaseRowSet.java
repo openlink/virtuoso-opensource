@@ -2280,7 +2280,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
    * Set the rowset's command property.
    *
    * This property is optional.  The command property may not be needed
-   * when a rowset is produced by a data source that doesn't support
+   * when a rowset is produced by a data source that does not support
    * commands, such as a spreadsheet.
    *
    * @param cmd a command string, may be null

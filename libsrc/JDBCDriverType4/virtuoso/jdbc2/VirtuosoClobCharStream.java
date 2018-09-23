@@ -78,7 +78,7 @@ class VirtuosoClobCharStream extends Reader
       try
       {
 	 //System.err.print ("(conn " + hashCode() + ") IN ");
-         // Check if it's the end of the stream
+         // Check if it is the end of the stream
          return (pos > clob.length()) ? -1 : clob.getSubString(pos++,1).length();
       }
       catch(Exception e)
@@ -114,7 +114,7 @@ class VirtuosoClobCharStream extends Reader
          // Check parameters
          if(len <= 0)
             return 0;
-         // Check if it's the end of the stream
+         // Check if it is the end of the stream
          if((pos + len) > clob.length())
          {
 	    int to_read = (int)(clob.length() - pos + 1);

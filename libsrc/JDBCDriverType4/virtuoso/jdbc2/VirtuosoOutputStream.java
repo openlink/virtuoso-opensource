@@ -116,7 +116,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
    /**
     * Check if the output stream is closed.
     *
-    * @return true if the connection is closed, false if it's still open.
+    * @return true if the connection is closed, false if it is still open.
     */
    protected boolean isClosed()
    {
@@ -536,7 +536,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
                write(VirtuosoTypes.DV_NULL);
                return;
             }
-      // Here, it's a pure Big Decimal ....
+      // Here, it is a pure Big Decimal ....
       int flags = ((bd.signum() == -1) ? 1 : 0);
       if(bd.signum() == -1)
          bd = bd.negate();
@@ -757,7 +757,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
       write(((_minute << 2) & 0xfc) | ((yday >> 4) & 0x3));
       temp = _frac / 1000;
       write((yday << 4) | ((temp >> 16) & 0xf));
-      // Send the fraction if it's a time stamp
+      // Send the fraction if it is a time stamp
       write(temp >> 8);
       write(temp);
       // Send the time zone

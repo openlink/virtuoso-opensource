@@ -38,40 +38,40 @@ class VirtuosoColumn
    // The type of object stored by this column
    private int typeObject;
 
-   // The column's name
+   // The column name
    private String name;
 
    // The SQL type corresponding to this column
    private int typeSQL;
 
-   // The column's normal max width in chars
+   // The column normal max width in chars
    private int length;
 
-   // The column's scale
+   // The column scale
    private int scale;
 
-   // The column's precision
+   // The column precision
    private int precision;
 
-   // The column's auto increment flag
+   // The column auto increment flag
    private boolean isAutoIncrement = false;
 
-   // The column's case sensitive flag
+   // The column case sensitive flag
    private boolean isCaseSensitive = false;
 
-   // The column's currency flag
+   // The column currency flag
    private boolean isCurrency = false;
 
-   // The column's nullable flag
+   // The column nullable flag
    private int isNullable = ResultSetMetaData.columnNullable;
 
-   // The column's searchable flag
+   // The column searchable flag
    private boolean isSearchable = false;
 
-   // The column's updateable flag
+   // The column updateable flag
    private boolean isUpdateable = false;
 
-   // The column's signed flag
+   // The column signed flag
    private boolean isSigned = false;
 
    // The case mode
@@ -81,14 +81,14 @@ class VirtuosoColumn
    private boolean _isXml = false;
 
    /**
-    * Construct a new VirtuosoColumn class which stores only the column's name.
+    * Construct a new VirtuosoColumn class which stores only the column name.
     * (Useful to use equals and hashCode without others parameters).
     *
-    * @param String  The column's name.
+    * @param String  The column name.
     */
    VirtuosoColumn(String name, int dtp, VirtuosoConnection connection)
    {
-      // Set column's name
+      // Set column name
       this.name = name;
       this._case = connection.getCase();
       this.typeObject = dtp;
@@ -238,7 +238,7 @@ class VirtuosoColumn
    }
 
    /**
-    * Indicates the column's normal max width in chars.
+    * Indicates the column normal max width in chars.
     *
     * @return int The max length of the column.
     * @see java.sql.ResultSetMetaData#getColumnDisplaySize
@@ -347,9 +347,9 @@ class VirtuosoColumn
   }
 
    /**
-    * Returns the column's number of decimal digits.
+    * Returns the column number of decimal digits.
     *
-    * @return int The column's precision.
+    * @return int The column precision.
     * @see java.sql.ResultSetMetaData#getPrecision
     */
    protected int getPrecision()
@@ -358,9 +358,9 @@ class VirtuosoColumn
    }
 
    /**
-    * Returns the column's number of digits to right of the decimal point.
+    * Returns the column number of digits to right of the decimal point.
     *
-    * @return int The column's scale.
+    * @return int The column scale.
     * @see java.sql.ResultSetMetaData#getScale
     */
    protected int getScale()
@@ -380,7 +380,7 @@ class VirtuosoColumn
    }
 
    /**
-    * Indicates whether a column's case matters.
+    * Indicates whether a column case matters.
     *
     * @return boolean   The case sensitive flag.
     * @see java.sql.ResultSetMetaData#isCaseSensitive

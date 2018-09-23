@@ -593,7 +593,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw new VirtuosoException("Unable to unwrap to "+iface.toString(), VirtuosoException.OK);
@@ -617,7 +617,7 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
      */
   public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
   {
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 

@@ -28,7 +28,7 @@ import java.io.*;
 import java.util.*;
 import java.sql.*;
 
-public class VirtuosoPoint 
+public class VirtuosoPoint
 {
     public double x;
     public double y;

@@ -28,7 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.sql.*;
 
-public class VirtuosoDate extends java.sql.Date 
+public class VirtuosoDate extends java.sql.Date
 {
     int timezone = 0;
     boolean with_timezone = false;

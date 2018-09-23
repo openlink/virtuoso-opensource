@@ -28,7 +28,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.sql.*;
 
-class DateObject 
+class DateObject
 {
     java.util.Calendar cal_dat = new java.util.GregorianCalendar ();
     int day;
@@ -40,7 +40,7 @@ class DateObject
     int type;
 
     protected DateObject(int _day, int _hour, int _minute, int _second,
-        int _fraction, int _tz, int _type) 
+        int _fraction, int _tz, int _type)
     {
       this.day = _day;
       this.hour = _hour;
@@ -188,7 +188,7 @@ class DateObject
 
 
 
-   
+
    static final int GREG_JDAYS = 577737;
    static final int GREG_LAST_DAY = 14;
    static final int GREG_FIRST_DAY = 5;

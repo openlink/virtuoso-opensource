@@ -441,7 +441,7 @@ class VirtuosoRow
 	     return new java.sql.Date(((java.sql.Date)obj).getTime());
 	   else if (obj instanceof String)
 	     return VirtuosoTypes.strToDate((String)obj);
-	   else if (obj instanceof java.util.Date) 
+	   else if (obj instanceof java.util.Date)
 	     return new java.sql.Date(((java.util.Date)obj).getTime());
 	   else
              throw new VirtuosoException("Column does not contain a Date.",VirtuosoException.CASTERROR);
@@ -927,7 +927,7 @@ class VirtuosoRow
          else if (obj instanceof VirtuosoDate)
              return ((VirtuosoDate)obj).clone();
 	 else if(obj instanceof java.sql.Date)
-	   {                                          
+	   {
 	     return new java.sql.Date(((java.sql.Date)obj).getTime());
 	   }
          else if(obj instanceof java.sql.Time)

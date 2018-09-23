@@ -78,7 +78,7 @@ public class ConnectionWrapper implements java.sql.Connection {
 
   public void finalize () throws Throwable {
       VirtuosoPooledConnection pc = pconn;
-      if (pc!=null) 
+      if (pc!=null)
         pc.sendCloseEvent();
       pconn = null;
   }
@@ -95,7 +95,7 @@ public class ConnectionWrapper implements java.sql.Connection {
     }
   }
 
-  // close the physical connection & clear the statement's cache
+  // close the physical connection & clear the statement cache
   protected synchronized void closeAll() throws SQLException{
     close_objs();
     pconn = null;
@@ -660,7 +660,7 @@ public class ConnectionWrapper implements java.sql.Connection {
   {
     try {
       check_conn();
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return rconn.isWrapperFor(iface);
     } catch (SQLException ex) {
       exceptionOccurred(ex);
@@ -671,7 +671,7 @@ public class ConnectionWrapper implements java.sql.Connection {
 
 #if JDK_VER >= 17
    //--------------------------JDBC 4.1 -----------------------------
-  public void setSchema(String schema) throws java.sql.SQLException 
+  public void setSchema(String schema) throws java.sql.SQLException
   {
     try {
       check_conn();
@@ -704,7 +704,7 @@ public class ConnectionWrapper implements java.sql.Connection {
     }
   }
 
-  public void setNetworkTimeout(java.util.concurrent.Executor executor, 
+  public void setNetworkTimeout(java.util.concurrent.Executor executor,
   			 final int milliseconds) throws java.sql.SQLException
   {
     try {

@@ -88,13 +88,13 @@ public class VirtuosoException extends SQLException
    public static final int SQLERROR = -8;
 
    /**
-    * Error occurred on a DV tag. A such error doesn't occur. It's only returned if the Virtuoso
+    * Error occurred on a DV tag. A such error does not occur. It's only returned if the Virtuoso
     * DBMS used with the currently driver is too recent. It's reserved for futures cases.
     */
    public static final int BADTAG = -9;
 
    /**
-    * Cast error occurred on an object. A such error doesn't occur. It's only returned if the Virtuoso
+    * Cast error occurred on an object. A such error does not occur. It's only returned if the Virtuoso
     * DBMS used with the currently driver is too recent. It's reserved for futures cases.
     */
    public static final int CASTERROR = -10;

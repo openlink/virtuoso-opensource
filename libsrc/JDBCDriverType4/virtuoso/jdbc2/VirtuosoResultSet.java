@@ -516,7 +516,7 @@ public class VirtuosoResultSet implements ResultSet
                      if (statement != null)
                      {
                         if (statement.getExecType() == VirtuosoTypes.QT_SELECT)
-                          throw new VirtuosoException("executeUpdate can't execute update/insert/delete queries",VirtuosoException.BADPARAM);
+                          throw new VirtuosoException("executeUpdate cannot execute update/insert/delete queries",VirtuosoException.BADPARAM);
                      }
                      if(!(statement instanceof VirtuosoPreparedStatement))
                      {
@@ -525,7 +525,7 @@ public class VirtuosoResultSet implements ResultSet
 			    new VirtuosoResultSetMetaData(null,statement.connection);
                         break;
                      }
-                  // An error will occur or it's a null query
+                  // An error will occur or it is a null query
                   }
                   else
                   {
@@ -535,7 +535,7 @@ public class VirtuosoResultSet implements ResultSet
                         if (statement.getExecType() == VirtuosoTypes.QT_UPDATE && kindop == VirtuosoTypes.QT_SELECT)
                           throw new VirtuosoException("executeUpdate can execute only update/insert/delete queries",VirtuosoException.BADPARAM);
                         if (statement.getExecType() == VirtuosoTypes.QT_SELECT && kindop == VirtuosoTypes.QT_UPDATE)
-                          throw new VirtuosoException("executeUpdate can't execute update/insert/delete queries",VirtuosoException.BADPARAM);
+                          throw new VirtuosoException("executeUpdate cannot execute update/insert/delete queries",VirtuosoException.BADPARAM);
                      }
                   }
                   //mutexKindOp.freeSem();
@@ -546,7 +546,7 @@ public class VirtuosoResultSet implements ResultSet
 		      new VirtuosoResultSetMetaData(v,statement.connection);
 		  //more_result = true;
                   //mutexMetaData.freeSem();
-                  // Check if it's a prepared statement
+                  // Check if it is a prepared statement
                   if(statement instanceof PreparedStatement && isPrepare)
                   {
                      Object obj = v.elementAt(3);
@@ -712,7 +712,7 @@ public class VirtuosoResultSet implements ResultSet
    /**
     * Retrieves the first warning reported by calls on this ResultSet.
     * Subsequent ResultSet warnings will be chained to this
-    * SQLWarning. Virtuoso doesn't generate warnings, so this function
+    * SQLWarning. Virtuoso does not generate warnings, so this function
     * will return always null.
     *
     * @return SQLWarning   The first SQLWarning or null (must be null for the moment)
@@ -726,7 +726,7 @@ public class VirtuosoResultSet implements ResultSet
 
    /**
     * Clears all the warnings reported on this ResultSet object.
-    * Virtuoso doesn't generate warnings, so this function does nothing.
+    * Virtuoso does not generate warnings, so this function does nothing.
     *
     * @exception virtuoso.jdbc2.VirtuosoException No errors returned (just an implementation question).
     * @see java.sql.ResultSet#clearWarnings
@@ -912,8 +912,8 @@ public class VirtuosoResultSet implements ResultSet
    /**
     * Returns the column number corresponding to the name.
     *
-    * @param name   The column's name.
-    * @return int   The column's number corresponding to the name.
+    * @param name   The column name.
+    * @return int   The column number corresponding to the name.
     * @exception virtuoso.jdbc2.VirtuosoException If an internal error occurred.
     * @see java.sql.ResultSet#findColumn
     */
@@ -927,9 +927,9 @@ public class VirtuosoResultSet implements ResultSet
 	    new VirtuosoColumn(name, VirtuosoTypes.DV_STRING, statement.connection)));
 
       if (i == null)
-         throw new VirtuosoException("findColumn() can't found column with name '"+name+"' in resultSet", "S0022", VirtuosoException.MISCERROR);
-      
-      // Return column's number
+         throw new VirtuosoException("findColumn() cannot found column with name '"+name+"' in resultSet", "S0022", VirtuosoException.MISCERROR);
+
+      // Return column number
       return i.intValue() + 1;
    }
 
@@ -2182,7 +2182,7 @@ public class VirtuosoResultSet implements ResultSet
          statement = null;
       }
 #endif
-      if (statement != null) 
+      if (statement != null)
       {
          statement.close_rs(false, is_prepared);
          if (!is_prepared) {
@@ -2275,7 +2275,7 @@ public class VirtuosoResultSet implements ResultSet
 	   }
 	   // Call the extended fetch RPC
 	   extended_fetch(VirtuosoTypes.SQL_FETCH_NEXT,0,(prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch);
-	   // Here, it's a statid or dynamic cursor, and there are no more results in the row set
+	   // Here, it is a statid or dynamic cursor, and there are no more results in the row set
 	   if(rows.size() == 0)
 	   {
 	       currentRow = 1;
@@ -2336,7 +2336,7 @@ public class VirtuosoResultSet implements ResultSet
    {
       // The JDBC spec
       if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
-         throw new VirtuosoException("Can't access to the previous row, the type is forward only.",VirtuosoException.ERRORONTYPE);
+         throw new VirtuosoException("Cannot access to the previous row, the type is forward only.",VirtuosoException.ERRORONTYPE);
       if (currentRow == 0)
 	return false;
       // Try to go to the previous row
@@ -2357,7 +2357,7 @@ public class VirtuosoResultSet implements ResultSet
          int book = getRow();
          // Call the extended fetch RPC
          extended_fetch(VirtuosoTypes.SQL_FETCH_PRIOR,0,(prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch);
-         // Here, it's a statid or dynamic cursor, and there are no more results in the row set
+         // Here, it is a statid or dynamic cursor, and there are no more results in the row set
          if(rows.size() == 0)
          {
             currentRow = 0;
@@ -2384,7 +2384,7 @@ public class VirtuosoResultSet implements ResultSet
 	   book = row.getBookmark();
          // Call the extended fetch RPC
          extended_fetch(VirtuosoTypes.SQL_FETCH_PRIOR,0,(prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch);
-         // Here, it's a statid or dynamic cursor, and there are no more results in the row set
+         // Here, it is a statid or dynamic cursor, and there are no more results in the row set
          if(rows.size() == 0)
          {
             currentRow = 0;
@@ -2530,10 +2530,10 @@ public class VirtuosoResultSet implements ResultSet
    {
       // The JDBC spec
       if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
-         throw new VirtuosoException("Can't go before the first row, the type is forward only.",VirtuosoException.ERRORONTYPE);
+         throw new VirtuosoException("Cannot go before the first row, the type is forward only.",VirtuosoException.ERRORONTYPE);
       // Call the extended fetch RPC
       extended_fetch(VirtuosoTypes.SQL_FETCH_ABSOLUTE,row,(prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch);
-      // Here, it's a statid or dynamic cursor, and there are no more results in the row set
+      // Here, it is a statid or dynamic cursor, and there are no more results in the row set
       if(rows.size() == 0)
       {
          currentRow = (row > 0) ? 0 : 1;
@@ -2555,10 +2555,10 @@ public class VirtuosoResultSet implements ResultSet
    {
       // The JDBC spec
       if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
-         throw new VirtuosoException("Can't go before the first row, the type is forward only.",VirtuosoException.ERRORONTYPE);
+         throw new VirtuosoException("Cannot go before the first row, the type is forward only.",VirtuosoException.ERRORONTYPE);
       // Call the extended fetch RPC
       extended_fetch(VirtuosoTypes.SQL_FETCH_RELATIVE,row,(prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch);
-      // Here, it's a statid or dynamic cursor, and there are no more results in the row set
+      // Here, it is a statid or dynamic cursor, and there are no more results in the row set
       if(rows.size() == 0)
       {
          currentRow = (row > 0) ? 0 : 1;
@@ -3062,7 +3062,7 @@ public class VirtuosoResultSet implements ResultSet
       }
       // After check, check if a Blob object is already associated or not
       Object _obj = row[columnIndex - 1];
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
       {
          ((VirtuosoBlob)_obj).setInputStream(x,length);
@@ -3101,7 +3101,7 @@ public class VirtuosoResultSet implements ResultSet
       }
       // After check, check if a Blob object is already associated or not
       Object _obj = row[columnIndex - 1];
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
       {
          ((VirtuosoBlob)_obj).setInputStream(x,length);
@@ -3140,7 +3140,7 @@ public class VirtuosoResultSet implements ResultSet
       }
       // After check, check if a Blob object is already associated or not
       Object _obj = row[columnIndex - 1];
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
       {
          ((VirtuosoBlob)_obj).setReader(x,length);
@@ -3178,7 +3178,7 @@ public class VirtuosoResultSet implements ResultSet
       }
       // After check, check if a Blob object is already associated or not
       Object _obj = row[columnIndex - 1];
-      // Check now if it's a Blob
+      // Check now if it is a Blob
       if(_obj instanceof VirtuosoBlob)
       {
          ((VirtuosoBlob)_obj).setObject(x);
@@ -3220,7 +3220,7 @@ public class VirtuosoResultSet implements ResultSet
     */
    public void cancelRowUpdates() throws VirtuosoException
    {
-      // Check if there's a row to update
+      // Check if there is a row to update
       if(row != null)
          row = null;
    }
@@ -4976,7 +4976,7 @@ public class VirtuosoResultSet implements ResultSet
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw new VirtuosoException ("Unable to unwrap to "+iface.toString(), "22023", VirtuosoException.BADPARAM);
@@ -5000,7 +5000,7 @@ public class VirtuosoResultSet implements ResultSet
      */
   public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
   {
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 
@@ -5037,10 +5037,10 @@ public class VirtuosoResultSet implements ResultSet
   public <T> T getObject(int columnIndex, Class<T> type) throws SQLException
   {
     if (type == null) {
-      throw new VirtuosoException ("Type parameter can not be null", 
+      throw new VirtuosoException ("Type parameter cannot be null",
                     "S1009", VirtuosoException.BADPARAM);
     }
-		
+
     if (type.equals(String.class)) {
       return (T) getString(columnIndex);
     } else if (type.equals(BigDecimal.class)) {
@@ -5074,19 +5074,19 @@ public class VirtuosoResultSet implements ResultSet
     } else if (type.equals(java.net.URL.class)) {
       return (T) getURL(columnIndex);
 //		} else if (type.equals(Struct.class)) {
-//				
-//			} 
+//
+//			}
 //		} else if (type.equals(RowId.class)) {
-//			
+//
 //		} else if (type.equals(NClob.class)) {
-//			
+//
 //		} else if (type.equals(SQLXML.class)) {
-			
+
     } else {
       try {
         return (T) getObject(columnIndex);
       } catch (ClassCastException cce) {
-         throw new VirtuosoException ("Conversion not supported for type " + type.getName(), 
+         throw new VirtuosoException ("Conversion not supported for type " + type.getName(),
                     "S1009", VirtuosoException.BADPARAM);
       }
     }

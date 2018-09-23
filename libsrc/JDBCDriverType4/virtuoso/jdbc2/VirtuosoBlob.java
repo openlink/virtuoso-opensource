@@ -296,7 +296,7 @@ public class VirtuosoBlob
 	       //System.out.println ("vb: rewind pos:" + pos + " ofs:" + bh_offset());
 	       rewind();
 	     }
-	   
+
 	   if (pos - 1 > bh_offset ())
 	     init_read_len = new Long (pos - bh_offset() - 1);
 

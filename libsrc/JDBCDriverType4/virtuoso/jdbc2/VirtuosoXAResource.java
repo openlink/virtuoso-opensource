@@ -373,7 +373,7 @@ public class VirtuosoXAResource implements XAResource
         } catch (SQLException ex) {
           throw new XAException(ex.toString());
         }
-	
+
 	rpc(con, action, encodedXid);
 	rpc(con, SQL_XA_WAIT, encodedXid);
     }

@@ -43,7 +43,7 @@ public class VirtuosoXADataSource
 
 
 //==================== interface Referenceable
-    public Reference getReference() throws NamingException 
+    public Reference getReference() throws NamingException
     {
       Reference ref = new Reference(getClass().getName(), "virtuoso.jdbc4.VirtuosoDataSourceFactory", null);
       addProperties(ref);

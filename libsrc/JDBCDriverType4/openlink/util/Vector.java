@@ -37,7 +37,7 @@ public class Vector
    // The number of valid objects in the array
    protected int elementCount;
 
-   // The increment of the array when ther's no space left
+   // The increment of the array when there is no space left
    protected int capacityIncrement;
 
    /**

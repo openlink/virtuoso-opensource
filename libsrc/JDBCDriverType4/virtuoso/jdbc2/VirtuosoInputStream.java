@@ -134,7 +134,7 @@ class VirtuosoInputStream extends BufferedInputStream
    /**
     * Check if the input stream is closed.
     *
-    * @return true if the connection is closed, false if it's still open.
+    * @return true if the connection is closed, false if it is still open.
     */
    protected boolean isClosed()
    {
@@ -719,7 +719,7 @@ class VirtuosoInputStream extends BufferedInputStream
       return bd;
    }
 
-   
+
    private VirtuosoRdfBox readRdfBox () throws IOException, VirtuosoException
    {
       int flags = read ();
@@ -732,7 +732,7 @@ class VirtuosoInputStream extends BufferedInputStream
       VirtuosoRdfBox rb;
 
       //System.out.println ("flags:" + flags);
-      if (0 != (flags & VirtuosoRdfBox.RBS_EXT_TYPE)) 
+      if (0 != (flags & VirtuosoRdfBox.RBS_EXT_TYPE))
       {
         int ID_ONLY = VirtuosoRdfBox.RBS_HAS_LANG | VirtuosoRdfBox.RBS_HAS_TYPE;
         if ((flags & ID_ONLY) == ID_ONLY) {
@@ -783,7 +783,7 @@ class VirtuosoInputStream extends BufferedInputStream
         }
         else
           box = read_object ();
-      
+
         if (0 != (flags & VirtuosoRdfBox.RBS_OUTLINED))
         {
 	  if (0 != (flags & VirtuosoRdfBox.RBS_64))

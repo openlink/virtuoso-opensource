@@ -51,8 +51,8 @@ import openlink.util.OPLHeapNClob;
  * an Enterprise JavaBeans component running in a server environment over
  * a network to a client running in a web browser.  A second use for
  * OPLCachedRowSets is to provide scrolling and updating for ResultSets that
- * don't provide these capabilities themselves.  A OPLCachedRowSet can be
- * used to augment the capabilities of a JDBC driver that doesn't have
+ * do not provide these capabilities themselves.  A OPLCachedRowSet can be
+ * used to augment the capabilities of a JDBC driver that does not have
  * full support for scrolling and updating.  Finally, a OPLCachedRowSet can
  * be used to provide Java applications with access to tabular data in an
  * environment such as a thin client or PDA, where it would be
@@ -71,7 +71,7 @@ import openlink.util.OPLHeapNClob;
  * a JDBC connection briefly while data is being read from the database
  * and used to populate it with rows, and again while updated rows are being
  * propagated back to the underlying database.  During the remainder of
- * its lifetime, a OPLCachedRowSet object isn't associated with an
+ * its lifetime, a OPLCachedRowSet object is not associated with an
  * underlying database connection. A OPLCachedRowSet object can simply be
  * thought of as a disconnected set of rows that are being cached outside
  * of a data source.  Since all data is cached in memory, OPLCachedRowSets are
@@ -181,7 +181,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * is set to the first "updated" row that resulted in an exception, in
    * the case that an exception is thrown.  With one exception, if the row
    * that caused the exception is a "deleted" row, then in the usual case,
-   * when deleted rows are not shown, the current row isn't affected.
+   * when deleted rows are not shown, the current row is not affected.
    *
    * When successful, calling acceptChanges() replaces the original value
    * of the rowset with the current value.  Note: Both the original and
@@ -226,7 +226,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Like acceptChanges() above, but takes a Connection argument.  The
    * Connection is used internally when doing the updates.  This form
-   * isn't used unless the underlying data source is a JDBC data source.
+   * is not used unless the underlying data source is a JDBC data source.
    *
    * @param _conn a database connection
    *
@@ -268,7 +268,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Populates the rowset with data.  The first form uses the properties:
    * url/data source name, user, and password to create a database
-   * connection.  If these properties haven't been set, an exception is
+   * connection.  If these properties have not been set, an exception is
    * thrown.  The second form uses an existing JDBC connection object
    * instead.  The values of the url/data source name, user, and password
    * properties are ignored when the second form is used.  Execute() closes
@@ -292,7 +292,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Populate the OPLCachedRowSet object with data from a ResultSet.  This
    * method is an alternative to execute() for filling the rowset with
-   * data.  Populate() doesn't require that the properties needed by
+   * data.  Populate() does not require that the properties needed by
    * execute(), such as the command property, be set. A RowSetChangedEvent
    * is sent to all registered listeners prior to returning.
    *
@@ -420,7 +420,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * Sets the identifier for the table from which this rowset was derived
    * to the given table name.
    *
-   * Note: You don't usually need to set a table name, because the OPLCachedRowSet tries
+   * Note: You do not usually need to set a table name, because the OPLCachedRowSet tries
    * to determine the table name from your SQL query command.
    *
    * @param _tabName - a String object that identifies the table from which
@@ -446,7 +446,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * Sets this OPLCachedRowSet object's keyCols field with the given array of column numbers,
    * which forms a key for uniquely identifying a row in this rowset.
    *
-   * Note: If you don't set the keyCols, the OPLCachedRowSet will set automatically
+   * Note: If you do not set the keyCols, the OPLCachedRowSet will set automatically
    * based on RowSetMetaData
    *
    * @param keys - an array of int indicating the columns that form a key for
@@ -475,7 +475,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * has changed.  After calling cancelRowDelete()
    * the current row is no longer marked for deletion.  An exception is
    * thrown if there is no current row.  Note:  This method can be
-   * ignored if deleted rows aren't being shown (the normal case).
+   * ignored if deleted rows are not being shown (the normal case).
    *
    * @exception SQLException if an error occurs.
    */
@@ -497,7 +497,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Cancels insertion of the current row and notifies listeners that a row
    * has changed.  An exception is thrown if
-   * the row isn't an inserted row.  The current row is immediately removed
+   * the row is not an inserted row.  The current row is immediately removed
    * from the rowset.  This operation cannot be undone.
    *
    * @exception SQLException if an error occurs.
@@ -703,7 +703,7 @@ public class OPLCachedRowSet extends BaseRowSet
 
   /**
    * Return a column of the rowset as a collection.  Makes a copy of the
-   * column's data.
+   * column data.
    *
    * @return a collection object
    *
@@ -754,7 +754,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * a copy of a rowset is completely independent from the original.
    * Making a copy saves the cost of creating an identical rowset from
    * first principles, which can be quite expensive.
-   * For example, it doesn't do the query to a remote database server.
+   * For example, it does not do the query to a remote database server.
    *
    * @return a copy of the rowset
    * @exception SQLException if an error occurs.
@@ -2013,7 +2013,7 @@ public class OPLCachedRowSet extends BaseRowSet
    *
    * <p>This method will return the value of the given column as a
    * Java object.  The type of the Java object will be the default
-   * Java object type corresponding to the column's SQL type,
+   * Java object type corresponding to the column SQL type,
    * following the mapping for built-in types specified in the JDBC
    * spec.
    *
@@ -2256,7 +2256,7 @@ public class OPLCachedRowSet extends BaseRowSet
    *
    * <p>This method will return the value of the given column as a
    * Java object.  The type of the Java object will be the default
-   * Java object type corresponding to the column's SQL type,
+   * Java object type corresponding to the column SQL type,
    * following the mapping for built-in types specified in the JDBC
    * spec.
    *
@@ -3344,7 +3344,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Date
    * object.  Use the calendar to construct an appropriate millisecond
-   * value for the Date, if the underlying database doesn't store
+   * value for the Date, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -3368,7 +3368,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Date
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Date, if the underlying database doesn't store
+   * value for the Date, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -3383,7 +3383,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Time
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Time, if the underlying database doesn't store
+   * value for the Time, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -3407,7 +3407,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Time
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Time, if the underlying database doesn't store
+   * value for the Time, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -3422,7 +3422,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Timestamp
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Timestamp, if the underlying database doesn't store
+   * value for the Timestamp, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -3451,7 +3451,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Timestamp
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Timestamp, if the underlying database doesn't store
+   * value for the Timestamp, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -5034,7 +5034,7 @@ public class OPLCachedRowSet extends BaseRowSet
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Unable_to_unwrap_to_XX, iface.toString());
@@ -5058,7 +5058,7 @@ public class OPLCachedRowSet extends BaseRowSet
      */
   public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
   {
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 
@@ -5095,9 +5095,9 @@ public class OPLCachedRowSet extends BaseRowSet
   public <T> T getObject(int columnIndex, Class<T> type) throws SQLException
   {
     if (type == null) {
-      throw new SQLException("Type parameter can not be null", "S1009");
+      throw new SQLException("Type parameter cannot be null", "S1009");
     }
-		
+
     if (type.equals(String.class)) {
       return (T) getString(columnIndex);
     } else if (type.equals(BigDecimal.class)) {
@@ -5131,19 +5131,19 @@ public class OPLCachedRowSet extends BaseRowSet
     } else if (type.equals(java.net.URL.class)) {
       return (T) getURL(columnIndex);
 //		} else if (type.equals(Struct.class)) {
-//				
-//			} 
+//
+//			}
 //		} else if (type.equals(RowId.class)) {
-//			
+//
 //		} else if (type.equals(NClob.class)) {
-//			
+//
 //		} else if (type.equals(SQLXML.class)) {
-			
+
     } else {
       try {
         return (T) getObject(columnIndex);
       } catch (ClassCastException cce) {
-         throw new SQLException ("Conversion not supported for type " + type.getName(), 
+         throw new SQLException ("Conversion not supported for type " + type.getName(),
                     "S1009");
       }
     }
@@ -6256,7 +6256,7 @@ public class OPLCachedRowSet extends BaseRowSet
     private boolean doUpdate(OPLCachedRowSet crs) throws SQLException {
       ResultSet rs_orig = crs.getOriginalRow();
       if (!rs_orig.next())
-        return true; //ERROR , data isn't found
+        return true; //ERROR , data is not found
 
       StringBuffer tmpSQL = new StringBuffer(updateSQL);
       LinkedList<Object> setData = new LinkedList<Object>();
@@ -6298,7 +6298,7 @@ public class OPLCachedRowSet extends BaseRowSet
         pstmt.setObject(++par, i.next());
 
       if (pstmt.executeUpdate() != 1)
-        return true; //ERROR , data wasn't updated
+        return true; //ERROR , data was not updated
 
       pstmt.close();
       return false;
@@ -6316,7 +6316,7 @@ public class OPLCachedRowSet extends BaseRowSet
       }
 
       if (insertPStmt.executeUpdate() != 1)
-        return true; //ERROR , data wasn't inserted
+        return true; //ERROR , data was not inserted
 
       return false;
     }
@@ -6324,7 +6324,7 @@ public class OPLCachedRowSet extends BaseRowSet
     private boolean doDelete(OPLCachedRowSet crs) throws SQLException {
       ResultSet rs = crs.getOriginalRow();
       if (!rs.next())
-        return true; //ERROR , data isn't found
+        return true; //ERROR , data is not found
 
       String delWhere = createWhere(keyCols, rs);
       PreparedStatement pstmt = conn.prepareStatement(deleteSQL + delWhere);
@@ -6339,7 +6339,7 @@ public class OPLCachedRowSet extends BaseRowSet
         pstmt.setObject(++par, i.next());
 
       if (pstmt.executeUpdate() != 1)
-        return true; //ERROR , data wasn't deleted
+        return true; //ERROR , data was not deleted
 
       pstmt.close();
       return false;

@@ -116,7 +116,7 @@ class XATransaction
 
 
     private XAException createException(int nstatus) {
-      XAException ex = new XAException("Can't change transaction state from "+getName(status)+" to "+getName(nstatus));
+      XAException ex = new XAException("Cannot change transaction state from "+getName(status)+" to "+getName(nstatus));
       ex.errorCode = XAException.XAER_RMFAIL;
       return ex;
     }

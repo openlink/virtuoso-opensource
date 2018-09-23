@@ -150,7 +150,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    }
 
    /**
-    * Returns the name of this database product. In our case it's OpenLink Virtuoso DBMS.
+    * Returns the name of this database product. In our case it is OpenLink Virtuoso DBMS.
     *
     * @return the database product name.
     * @exception virtuoso.jdbc2.VirtuosoException No errors returned (just an implementation question).
@@ -172,7 +172,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    }
 
    /**
-    * Returns the name of this JDBC driver. In our case it's OpenLink Virtuoso JDBC pure Java.
+    * Returns the name of this JDBC driver. In our case it is OpenLink Virtuoso JDBC pure Java.
     *
     * @return the JDBC driver name.
     * @exception virtuoso.jdbc2.VirtuosoException No errors returned (just an implementation question).
@@ -337,7 +337,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
 
    /**
     * What's the string used to quote SQL identifiers?
-    * This returns a space " " if identifier quoting isn't supported.
+    * This returns a space " " if identifier quoting is not supported.
     *
     * A JDBC Compliant<sup><font size=-2>TM</font></sup>
     * driver always uses a double quote character.
@@ -1936,7 +1936,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
       return rs;
    }
 
-/****** create problem for DbVisualizer, bug in DbVisualizer, it doesn't support new JDBC specification
+/****** create problem for DbVisualizer, bug in DbVisualizer, it does not support new JDBC specification
    private static final String getSchemasText =
 	"select distinct" +
 	" name_part(KEY_TABLE, 1) AS \\TABLE_SCHEM VARCHAR(128)" +
@@ -3308,7 +3308,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    /**
     * Gets a description of the foreign key columns in the foreign key
     * table that reference the primary key columns of the primary key
-    * table (describe how one table imports another's key.) This
+    * table (describe how one table imports anothere is key.) This
     * should normally return a single foreign key/primary key pair
     * (most tables only import a foreign key from a table once.)  They
     * are ordered by FKTABLE_CAT, FKTABLE_SCHEM, FKTABLE_NAME, and
@@ -4134,14 +4134,14 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
      *      does not allow NULL values; "YES" means the column might
      *      allow NULL values.  An empty string means unknown.
      *  <LI><B>SCOPE_CATALOG</B> String => catalog of table that is the
-     *      scope of a reference attribute (<code>null</code> if DATA_TYPE isn't REF)
+     *      scope of a reference attribute (<code>null</code> if DATA_TYPE is not REF)
      *  <LI><B>SCOPE_SCHEMA</B> String => schema of table that is the
-     *      scope of a reference attribute (<code>null</code> if DATA_TYPE isn't REF)
+     *      scope of a reference attribute (<code>null</code> if DATA_TYPE is not REF)
      *  <LI><B>SCOPE_TABLE</B> String => table name that is the scope of a
-     *      reference attribute (<code>null</code> if the DATA_TYPE isn't REF)
+     *      reference attribute (<code>null</code> if the DATA_TYPE is not REF)
      * <LI><B>SOURCE_DATA_TYPE</B> short => source type of a distinct type or user-generated
      *      Ref type,SQL type from java.sql.Types (<code>null</code> if DATA_TYPE
-     *      isn't DISTINCT or user-generated REF)
+     *      is not DISTINCT or user-generated REF)
      *  </OL>
      * @param catalog a catalog name; must match the catalog name as it
      *        is stored in the database; "" retrieves those without a catalog;
@@ -4755,7 +4755,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw new VirtuosoException ("Unable to unwrap to "+iface.toString(), "22023", VirtuosoException.BADPARAM);
@@ -4779,7 +4779,7 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
      */
   public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
   {
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 

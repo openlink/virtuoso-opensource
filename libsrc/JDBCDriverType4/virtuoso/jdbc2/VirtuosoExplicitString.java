@@ -64,7 +64,7 @@ public class VirtuosoExplicitString
 	      dtp == VirtuosoTypes.DV_LONG_WIDE ||
 	      dtp == VirtuosoTypes.DV_BLOB_WIDE)
 	    {
-	      // If it's an wide parameter
+	      // If it is an wide parameter
 	      bytes = str.getBytes ("UTF8");
 	      if (bytes.length < 256)
 		this.dtp = VirtuosoTypes.DV_WIDE;
@@ -72,13 +72,13 @@ public class VirtuosoExplicitString
 		this.dtp = VirtuosoTypes.DV_LONG_WIDE;
 	      this.str = str;
 	    }
-	  else if (dtp == VirtuosoTypes.DV_STRING || 
+	  else if (dtp == VirtuosoTypes.DV_STRING ||
 	      dtp == VirtuosoTypes.DV_SHORT_STRING_SERIAL ||
-	      dtp == VirtuosoTypes.DV_STRICT_STRING || 
+	      dtp == VirtuosoTypes.DV_STRICT_STRING ||
 	      dtp == VirtuosoTypes.DV_C_STRING ||
 	      dtp == VirtuosoTypes.DV_BLOB)
 	    {
-	      // If it's an narrow parameter
+	      // If it is an narrow parameter
  	      if (con != null && con.charset_utf8)
 	        bytes = str.getBytes ("UTF8");
 	      else if (con != null && con.charset != null)
@@ -108,7 +108,7 @@ public class VirtuosoExplicitString
 		    bytes = str.getBytes ("UTF8");
 		    this.dtp = (bytes.length < 256) ? VirtuosoTypes.DV_WIDE : VirtuosoTypes.DV_LONG_WIDE;
 		    this.str = str;
-                  } 
+                  }
                   else {
 		    cli_wide_to_narrow (str, con != null ? con.client_charset_hash : null);
 	            this.dtp = (bytes.length < 256) ? VirtuosoTypes.DV_SHORT_STRING_SERIAL : VirtuosoTypes.DV_STRING;

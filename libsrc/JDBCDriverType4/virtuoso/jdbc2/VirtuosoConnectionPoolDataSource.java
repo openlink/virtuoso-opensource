@@ -626,7 +626,7 @@ public class VirtuosoConnectionPoolDataSource
         for(ListIterator i = connList.listIterator(); i.hasNext(); ) {
           try {
             ((VirtuosoPooledConnection)i.next()).close();
-          } catch (Exception e) { 
+          } catch (Exception e) {
           } finally {
             connPool.cacheSize.decrementAndGet();
           }
@@ -780,7 +780,7 @@ public class VirtuosoConnectionPoolDataSource
         pconn.close();
       } finally {
         cacheSize.decrementAndGet();
-      } 
+      }
     }
 
 
@@ -822,7 +822,7 @@ public class VirtuosoConnectionPoolDataSource
 
 
     private boolean checkForNewConn() {
-      synchronized(lck_new) 
+      synchronized(lck_new)
       {
         if (maxPoolSize == 0 || cacheSize.get() < maxPoolSize) {
           cacheSize.incrementAndGet();
@@ -852,7 +852,7 @@ public class VirtuosoConnectionPoolDataSource
         return pconn;
       }
 
-    // if couldn't found an unused Connection
+    // if could not found an unused Connection
       if (checkForNewConn()) {
         // establish a new Connection
         try {
