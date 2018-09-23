@@ -69,10 +69,8 @@ public class Driver implements java.sql.Driver
    private String port = "1111";
    private String  user, password, database, charset, pwdclear;
    private Integer timeout, log_enable;
-#ifdef SSL
    private String keystore_cert, keystore_pass, keystore_path;
    private String ssl_provider;
-#endif
    private Integer fbs, sendbs, recvbs;
 
    private final String VirtPrefix = "jdbc:virtuoso://";
@@ -364,7 +362,6 @@ public class Driver implements java.sql.Driver
             pr.required = false;
             pinfo.add(pr);
          }
-#ifdef SSL
          if(info.get("cert") == null)
          {
             pr = new DriverPropertyInfo("cert",null);
@@ -401,7 +398,6 @@ public class Driver implements java.sql.Driver
             pr.required = false;
             pinfo.add(pr);
          }
-#endif
          DriverPropertyInfo drv_info[] = new DriverPropertyInfo[pinfo.size()];
          pinfo.copyInto(drv_info);
          return drv_info;
@@ -452,7 +448,6 @@ public class Driver implements java.sql.Driver
          pr.required = false;
          pinfo.add(pr);
       }
-#ifdef SSL
       if(info.get("cert") == null)
       {
          pr = new DriverPropertyInfo("cert",null);
@@ -489,7 +484,6 @@ public class Driver implements java.sql.Driver
          pr.required = false;
          pinfo.add(pr);
       }
-#endif
 
       if(info.get("usepstmtpool") == null)
       {
@@ -541,11 +535,7 @@ public class Driver implements java.sql.Driver
 
    public static void main(String args[])
    {
-#ifdef SSL
       System.out.println("OpenLink Virtuoso(TM) Driver with SSL support for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
-#else
-      System.out.println("OpenLink Virtuoso(TM) Driver for JDBC(TM) Version " + VIRT_JDBC_VER + " [Build " + major + "." + minor + "]");
-#endif
    }
 
 #if JDK_VER >= 17

@@ -57,7 +57,6 @@ run-tests:
 .PHONY: jdk4-target
 jdk4-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4
 
 .PHONY: jdk4-test
 jdk4-test:
@@ -74,7 +73,6 @@ jdk4-doc:
 .PHONY: jdk4_1-target
 jdk4_1-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_1
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4_1
 
 .PHONY: jdk4_1-test
 jdk4_1-test:
@@ -91,7 +89,6 @@ jdk4_1-doc:
 .PHONY: jdk4_2-target
 jdk4_2-target:
 	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) std4_2
-	@cd virtuoso/jdbc2; $(MAKE) -$(MAKEFLAGS) ssl4_2
 
 .PHONY: jdk4_2-test
 jdk4_2-test:
@@ -109,9 +106,9 @@ install-data-local:
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.1"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.2"
-	-cp virtjdbc4.jar virtjdbc4ssl.jar "$(DESTDIR)${libdir}/jdbc-4.0"
-	-cp virtjdbc4_1.jar virtjdbc4_1ssl.jar "$(DESTDIR)${libdir}/jdbc-4.1"
-	-cp virtjdbc4_2.jar virtjdbc4_2ssl.jar "$(DESTDIR)${libdir}/jdbc-4.2"
+	-cp virtjdbc4.jar   "$(DESTDIR)${libdir}/jdbc-4.0"
+	-cp virtjdbc4_1.jar "$(DESTDIR)${libdir}/jdbc-4.1"
+	-cp virtjdbc4_2.jar "$(DESTDIR)${libdir}/jdbc-4.2"
 
 uninstall-local:
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.0"
@@ -138,8 +135,5 @@ EXTRA_DIST = \
 	test4_2.bat \
 	test4_2.sh \
 	virtjdbc4.jar \
-	virtjdbc4ssl.jar \
 	virtjdbc4_1.jar \
-	virtjdbc4_1ssl.jar \
-	virtjdbc4_2.jar \
-	virtjdbc4_2ssl.jar
+	virtjdbc4_2.jar

@@ -49,14 +49,12 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     protected String pwdclear;
     protected int log_enable = -1;
 
-#ifdef SSL
     protected String certificate;
     protected String keystorepass;
     protected String keystorepath;
     protected String provider;
     protected String truststorepass;
     protected String truststorepath;
-#endif
     protected boolean ssl = false;
     protected int fbs = 0;
     protected int sendbs = 0;
@@ -86,7 +84,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_pwdclear = "pwdclear";
     final static String n_log_enable = "log_enable";
 
-#ifdef SSL
     final static String n_certificate = "certificate";
     final static String n_keystorepass = "keystorepass";
     final static String n_keystorepath = "keystorepath";
@@ -94,7 +91,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     final static String n_truststorepass = "truststorepass";
     final static String n_truststorepath = "truststorepath";
     final static String n_ssl = "ssl";
-#endif
 
     final static String n_fbs = "fbs";
     final static String n_sendbs = "sendbs";
@@ -144,7 +140,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     if (log_enable != 1)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_log_enable, String.valueOf(log_enable)));
 
-#ifdef SSL
     if (certificate != null)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_certificate, certificate));
 
@@ -164,7 +159,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
       ref.add(new StringRefAddr(VirtuosoDataSource.n_truststorepath, truststorepath));
 
     ref.add(new StringRefAddr(VirtuosoDataSource.n_ssl, String.valueOf(ssl)));
-#endif
 
     if (fbs != 0)
       ref.add(new StringRefAddr(VirtuosoDataSource.n_fbs, String.valueOf(fbs)));
@@ -217,7 +211,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
 
     if (log_enable != -1)  prop.setProperty("log_enable", String.valueOf(log_enable));
 
-#ifdef SSL
     if (certificate!=null)      prop.setProperty("certificate", certificate);
     if (keystorepass!=null)  prop.setProperty("keystorepass", keystorepass);
     if (keystorepath!=null)  prop.setProperty("keystorepath", keystorepath);
@@ -225,7 +218,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     if (truststorepass!=null)  prop.setProperty("truststorepass", truststorepass);
     if (truststorepath!=null)  prop.setProperty("truststorepath", truststorepath);
     if (ssl)  prop.setProperty("ssl", "1");
-#endif
 
     if (fbs != 0)  prop.setProperty("fbs", String.valueOf(fbs));
     if (sendbs != 0)  prop.setProperty("sendbs", String.valueOf(sendbs));
@@ -462,7 +454,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return log_enable;
   }
 
-#ifdef SSL
   public void setCertificate (String value)
   {
     this.certificate = value;
@@ -526,7 +517,6 @@ public class VirtuosoDataSource implements DataSource, Referenceable, Serializab
     return this.ssl;
   }
 
-#endif
 
   public void setFbs (int value)
   {

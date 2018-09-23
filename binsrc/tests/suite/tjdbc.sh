@@ -33,7 +33,7 @@ CURRDIR=`pwd`
 
 BANNER "STARTED JDBC Driver TEST (tjdbc.sh)"
 
-if [ "x$JDK4" != "x" -a -f $JDBCDIR/virtjdbc4ssl.jar -a -f  $JDBCDIR/testsuite4.jar ]
+if [ "x$JDK4" != "x" -a -f  $JDBCDIR/testsuite4.jar ]
 then
     STOP_SERVER
     rm -f $DBLOGFILE
@@ -71,7 +71,8 @@ then
     SHUTDOWN_SERVER
 fi # JDK4
 
-if [ "x$JDK4_1" != "x" -a -f $JDBCDIR/virtjdbc4_1ssl.jar -a -f  $JDBCDIR/testsuite4.jar ]
+
+if [ "x$JDK4_1" != "x" -a -f  $JDBCDIR/testsuite4.jar ]
 then
     STOP_SERVER
     rm -f $DBLOGFILE
@@ -108,6 +109,45 @@ then
 
     SHUTDOWN_SERVER
 fi # JDK4_1
+
+
+if [ "x$JDK4_2" != "x" -a -f  $JDBCDIR/testsuite4.jar ]
+then
+    STOP_SERVER
+    rm -f $DBLOGFILE
+    rm -f $DBFILE
+    MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
+
+    START_SERVER $PORT 1000
+
+    ECHO "STARTED: JDBC 4_2 Test suite"
+    cd $JDBCDIR
+    sh $JDBCDIR/test4_2.sh "jdbc:virtuoso://localhost:$PORT/" > $CURRDIR/jdbc4_2.out 2>&1
+    cd $CURRDIR
+
+    passed=`egrep "PASSED\$" jdbc4_2.out`
+    passed_cnt=`egrep "PASSED\$" jdbc4_2.out | wc -l`
+    failed=`egrep "FAILED\$" jdbc4_2.out`
+    failed_cnt=`egrep "FAILED\$" jdbc4_2.out | wc -l`
+
+    errors=0
+    if [ $failed_cnt -gt 0 ]
+    then
+	errors=1
+	ECHO "*** FAILED: $failed_cnt JDBC 4_2 Tests failed (check jdbc4_2.out): $failed"
+    fi
+    if [ $passed_cnt -eq 0 ]
+    then
+	errors=1
+	ECHO "*** FAILED: no JDBC 4_2 Tests passed! (check jdbc4_2.out)"
+    fi
+    if [ $errors -eq 0 ]
+    then
+	ECHO "PASSED: JDBC 4_2 Test suite"
+    fi
+
+    SHUTDOWN_SERVER
+fi # JDK4_2
 
 CHECK_LOG
 

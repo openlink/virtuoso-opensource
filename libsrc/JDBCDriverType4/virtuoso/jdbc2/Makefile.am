@@ -173,7 +173,7 @@ doc4: ../../virtjdbc4.jar
 std4: ../../virtjdbc4.jar
 
 ../../virtjdbc4.jar: outstd4 $(std4javafiles)
-	@echo jdbc4 ssl javac $(JDK4_FLAGS)
+	@echo jdbc4 javac $(JDK4_FLAGS)
 	@cd outstd4 ; $(JDK4)/javac $(JDK4_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
 	@cd outstd4 ; $(JDK4)/jar cfm ../../../virtjdbc4.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java 4.0 built"
@@ -204,53 +204,6 @@ outstd4/virtuoso/javax/%.java: ../javax/%.java
 
 
 ###########################################
-# JDBC 4.x (SSL)
-###########################################
-ssl4javafiles = \
-	$(utilfiles:%.java=outssl4/openlink/util/%.java) \
-	$(sqlfiles:%.java=outssl4/virtuoso/sql/%.java) \
-	$(util3files:%.java=outssl4/openlink/util/%.java) \
-	$(util4files:%.java=outssl4/openlink/util/%.java) \
-	$(in3files:%.java=outssl4/virtuoso/jdbc4/%.java) \
-	$(in4files:%.java=outssl4/virtuoso/jdbc4/%.java) \
-	$(infiles:%.java=outssl4/virtuoso/jdbc4/%.java) \
-	$(javaxfiles:%.java=outssl4/virtuoso/javax/%.java)
-
-.PHONY: ssl4
-ssl4: ../../virtjdbc4ssl.jar
-
-../../virtjdbc4ssl.jar: outssl4 $(ssl4javafiles)
-	@echo jdbc4 ssl javac $(JDK4_FLAGS)
-	@cd outssl4 ; $(JDK4)/javac $(JDK4_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl4 ; $(JDK4)/jar cfm ../../../virtjdbc4ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
-	@echo "............. Virtuoso pure Java SSL 4.0 built"
-
-outssl4:
-	@mkdir outssl4
-	@mkdir outssl4/virtuoso
-	@mkdir outssl4/virtuoso/jdbc4
-	@mkdir outssl4/virtuoso/sql
-	@mkdir outssl4/openlink
-	@mkdir outssl4/openlink/util
-	@mkdir outssl4/virtuoso/javax
-	@mkdir outssl4/META-INF
-	@mkdir outssl4/META-INF/services
-	@cp ../../java.sql.Driver4 outssl4/META-INF/services/java.sql.Driver
-
-outssl4/virtuoso/jdbc4/%.java: %.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
-
-outssl4/openlink/util/%.java: ../../openlink/util/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
-
-outssl4/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outssl4/virtuoso/sql; cp ../../../$< .
-
-outssl4/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
-
-
-###########################################
 # JDBC 4.1
 ###########################################
 std4_1javafiles = \
@@ -274,7 +227,7 @@ doc4_1: ../../virtjdbc4_1.jar
 std4_1: ../../virtjdbc4_1.jar
 
 ../../virtjdbc4_1.jar: outstd4_1 $(std4_1javafiles)
-	@echo jdbc4_1 ssl javac $(JDK4_1_FLAGS)
+	@echo jdbc4_1 javac $(JDK4_1_FLAGS)
 	@cd outstd4_1 ; $(JDK4_1)/javac $(JDK4_1_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
 	@cd outstd4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java 4.1 built"
@@ -305,53 +258,6 @@ outstd4_1/virtuoso/javax/%.java: ../javax/%.java
 
 
 ###########################################
-# JDBC 4.1 (SSL)
-###########################################
-ssl4_1javafiles = \
-	$(utilfiles:%.java=outssl4_1/openlink/util/%.java) \
-	$(sqlfiles:%.java=outssl4_1/virtuoso/sql/%.java) \
-	$(util3files:%.java=outssl4_1/openlink/util/%.java) \
-	$(util4files:%.java=outssl4_1/openlink/util/%.java) \
-	$(in3files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-	$(in4files:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-	$(infiles:%.java=outssl4_1/virtuoso/jdbc4/%.java) \
-	$(javaxfiles:%.java=outssl4_1/virtuoso/javax/%.java)
-
-.PHONY: ssl4_1
-ssl4_1: ../../virtjdbc4_1ssl.jar
-
-../../virtjdbc4_1ssl.jar: outssl4_1 $(ssl4_1javafiles)
-	@echo jdbc4_1 ssl javac $(JDK4_1_FLAGS)
-	@cd outssl4_1 ; $(JDK4_1)/javac $(JDK4_1_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
-	@echo "............. Virtuoso pure Java SSL 4.1 built"
-
-outssl4_1:
-	@mkdir outssl4_1
-	@mkdir outssl4_1/virtuoso
-	@mkdir outssl4_1/virtuoso/jdbc4
-	@mkdir outssl4_1/virtuoso/sql
-	@mkdir outssl4_1/openlink
-	@mkdir outssl4_1/openlink/util
-	@mkdir outssl4_1/virtuoso/javax
-	@mkdir outssl4_1/META-INF
-	@mkdir outssl4_1/META-INF/services
-	@cp ../../java.sql.Driver4 outssl4_1/META-INF/services/java.sql.Driver
-
-outssl4_1/virtuoso/jdbc4/%.java: %.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
-
-outssl4_1/openlink/util/%.java: ../../openlink/util/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
-
-outssl4_1/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outssl4_1/virtuoso/sql; cp ../../../$< .
-
-outssl4_1/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@
-
-
-###########################################
 # JDBC 4.2
 ###########################################
 std4_2javafiles = \
@@ -375,7 +281,7 @@ doc4_2: ../../virtjdbc4_2.jar
 std4_2: ../../virtjdbc4_2.jar
 
 ../../virtjdbc4_2.jar: outstd4_2 $(std4_2javafiles)
-	@echo jdbc4_2 ssl javac $(JDK4_2_FLAGS)
+	@echo jdbc4_2 javac $(JDK4_2_FLAGS)
 	@cd outstd4_2 ; $(JDK4_2)/javac $(JDK4_2_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
 	@cd outstd4_2 ; $(JDK4_2)/jar cfm ../../../virtjdbc4_2.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java 4.2 built"
@@ -403,53 +309,6 @@ outstd4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 
 outstd4_2/virtuoso/javax/%.java: ../javax/%.java
 	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
-
-
-###########################################
-# JDBC 4.2 (SSL)
-###########################################
-ssl4_2javafiles = \
-	$(utilfiles:%.java=outssl4_2/openlink/util/%.java) \
-	$(sqlfiles:%.java=outssl4_2/virtuoso/sql/%.java) \
-	$(util3files:%.java=outssl4_2/openlink/util/%.java) \
-	$(util4files:%.java=outssl4_2/openlink/util/%.java) \
-	$(in3files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-	$(in4files:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-	$(infiles:%.java=outssl4_2/virtuoso/jdbc4/%.java) \
-	$(javaxfiles:%.java=outssl4_2/virtuoso/javax/%.java)
-
-.PHONY: ssl4_2
-ssl4_2: ../../virtjdbc4_2ssl.jar
-
-../../virtjdbc4_2ssl.jar: outssl4_2 $(ssl4_2javafiles)
-	@echo jdbc4_2 ssl javac $(JDK4_2_FLAGS)
-	@cd outssl4_2 ; $(JDK4_2)/javac $(JDK4_2_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl4_2 ; $(JDK4_2)/jar cfm ../../../virtjdbc4_2ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
-	@echo "............. Virtuoso pure Java SSL 4.2 built"
-
-outssl4_2:
-	@mkdir outssl4_2
-	@mkdir outssl4_2/virtuoso
-	@mkdir outssl4_2/virtuoso/jdbc4
-	@mkdir outssl4_2/virtuoso/sql
-	@mkdir outssl4_2/openlink
-	@mkdir outssl4_2/openlink/util
-	@mkdir outssl4_2/virtuoso/javax
-	@mkdir outssl4_2/META-INF
-	@mkdir outssl4_2/META-INF/services
-	@cp ../../java.sql.Driver4 outssl4_2/META-INF/services/java.sql.Driver
-
-outssl4_2/virtuoso/jdbc4/%.java: %.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
-
-outssl4_2/openlink/util/%.java: ../../openlink/util/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
-
-outssl4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
-	cd outssl4_2/virtuoso/sql; cp ../../../$< .
-
-outssl4_2/virtuoso/javax/%.java: ../../virtuoso/javax/%.java
-	$(JAVACPP) -P $(JCPPOPTS) -DSSL $(jdbc4_2_defs) $< >$@
 
 
 ###########################################

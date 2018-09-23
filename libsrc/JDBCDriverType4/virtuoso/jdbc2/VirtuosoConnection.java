@@ -27,12 +27,10 @@ import java.sql.*;
 import java.net.*;
 import java.io.*;
 import java.util.*;
-#ifdef SSL
 #undef sun
 import java.security.*;
 import java.security.cert.*;
 import javax.net.ssl.*;
-#endif
 import openlink.util.*;
 import java.util.Vector;
 import openlink.util.OPLHeapNClob;
@@ -102,14 +100,12 @@ public class VirtuosoConnection implements Connection
    // The login used to connect to the database.
    private String user, password, pwdclear;
 
-#ifdef SSL
    // The SSL parameters
    private String cert_alias;
    private String keystore_path, keystore_pass;
    private String truststore_path, truststore_pass;
    private String ssl_provider;
    private boolean use_ssl;
-#endif
    private String con_delegate;
 
    // The transaction isolation
@@ -296,7 +292,6 @@ public class VirtuosoConnection implements Connection
       if (fbs <= 0)
           fbs = VirtuosoTypes.DEFAULTPREFETCH;;
       //System.err.println ("3PwdClear is " + pwdclear);
-#ifdef SSL
       truststore_path = (String)prop.get("truststorepath");
       truststore_pass = (String)prop.get("truststorepass");
       keystore_pass = (String)prop.get("keystorepass");
@@ -304,7 +299,6 @@ public class VirtuosoConnection implements Connection
       ssl_provider = (String)prop.get("provider");
       cert_alias = (String)prop.get("cert");
       use_ssl = getBoolAttr(prop, "ssl", false);
-#endif
       con_delegate = (String)prop.get("delegate");
       if(pwdclear == null)
          pwdclear = "0";
@@ -472,7 +466,6 @@ public class VirtuosoConnection implements Connection
    }
 
 
-#ifdef SSL
     private Collection getCertificates(InputStream fis)
     	throws CertificateException
     {
@@ -480,7 +473,6 @@ public class VirtuosoConnection implements Connection
         cf = CertificateFactory.getInstance("X.509");
         return cf.generateCertificates(fis);
     }
-#endif
 
    /**
     * Connect to the Virtuoso database and set streams.
@@ -496,7 +488,6 @@ public class VirtuosoConnection implements Connection
       try
       {
          // Establish the connection
-#ifdef SSL
         if(use_ssl || truststore_path != null || keystore_path != null)
 	  {
 	    //System.out.println ("Will do SSL");
@@ -567,7 +558,6 @@ public class VirtuosoConnection implements Connection
 
 	  }
 	else
-#endif
 	 socket = new Socket(host,port);
 
 	 if (timeout > 0)
@@ -755,7 +745,6 @@ public class VirtuosoConnection implements Connection
       {
          throw new VirtuosoException("Connection failed: ["+(fname!=null?fname:"")+"] "+e.getMessage(),VirtuosoException.IOERROR);
       }
-#ifdef SSL
       catch(ClassNotFoundException e)
       {
          throw new VirtuosoException("Class not found: " + e.getMessage(),VirtuosoException.MISCERROR);
@@ -788,7 +777,6 @@ public class VirtuosoConnection implements Connection
       {
          throw new VirtuosoException("Encryption failed: ["+(fname!=null?fname:"") +"]" + e.getMessage(),VirtuosoException.MISCERROR);
       }
-#endif
    }
 
    /**
@@ -2598,7 +2586,6 @@ public class VirtuosoConnection implements Connection
 
 }
 
-#ifdef SSL
 class VirtX509TrustManager implements X509TrustManager
 {
 
@@ -2744,4 +2731,3 @@ class VirtX509KeyManager extends X509ExtendedKeyManager {
 }
 
 
-#endif
