@@ -61,25 +61,14 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     private int fetchDir = ResultSet.FETCH_FORWARD;
     private int fetchSize = 0;
 
-#if JDK_VER >= 16
     protected java.util.Map<String,Class<?>> map = null;
     private LinkedList<RowSetListener> listeners;
     private ArrayList<Parameter> params;
-#else
-    private Map map = null;
-    private LinkedList listeners;
-    private ArrayList params;
-#endif
 
 
   public BaseRowSet() {
-#if JDK_VER >= 16
     listeners = new LinkedList<RowSetListener>();
     params = new ArrayList<Parameter>();
-#else
-    listeners = new LinkedList();
-    params = new ArrayList();
-#endif
   }
 
 
@@ -273,11 +262,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
    * @return a map object
    * @exception SQLException if a database-access error occurs.
    */
-#if JDK_VER >= 16
   public Map<String,Class<?>> getTypeMap() throws SQLException{
-#else
-  public Map getTypeMap() throws SQLException{
-#endif
     return map;
   }
 
@@ -412,7 +397,6 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     param.jType = Parameter.jObject;
   }
 
-#if JDK_VER >= 16
   /**
      * Sets the designated parameter to a <code>InputStream</code> object.  The inputstream must contain  the number
      * of characters specified by length otherwise a <code>SQLException</code> will be
@@ -1000,7 +984,6 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setNClob(parameterIndex, reader)");
   }
 
-#endif
 
   /**
    * Set a parameter to a Java boolean value.
@@ -1075,7 +1058,6 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     param.length = length;
   }
 
-#if JDK_VER >= 16
 
   /**
    * Sets the designated parameter in this <code>RowSet</code> object's command
@@ -1278,7 +1260,6 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setNCharacterStream(parameterIndex, value)");
   }
 
-#endif
 
   /**
    * Set a CLOB parameter.
@@ -1710,7 +1691,6 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   }
 
 
-#if JDK_VER >= 16
   /**
      * Sets the designated parameter to SQL <code>NULL</code>.
      *
@@ -2295,13 +2275,12 @@ public abstract class BaseRowSet implements RowSet, Serializable {
     throw OPLMessage_x.makeFExceptionV(OPLMessage_x.errx_Method_XX_not_yet_implemented, "setTimestamp(parameterName, x, cal)");
   }
 
-#endif
 
   /**
    * Set the rowset's command property.
    *
    * This property is optional.  The command property may not be needed
-   * when a rowset is produced by a data source that doesn't support
+   * when a rowset is produced by a data source that does not support
    * commands, such as a spreadsheet.
    *
    * @param cmd a command string, may be null
@@ -2474,11 +2453,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
    * @param map a map object
    * @exception SQLException if a database-access error occurs.
    */
-#if JDK_VER >= 16
   public void setTypeMap(Map<String,Class<?>> value) throws SQLException
-#else
-  public void setTypeMap(Map value) throws SQLException
-#endif
   {
      map = value;
   }
