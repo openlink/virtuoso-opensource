@@ -1018,9 +1018,54 @@ SQLConnect (SQLHDBC hdbc,
   TCHAR *pwd;
   TCHAR *pcmd = &(cmd[0]);
 
-  StrCopyInW (&dsn, (TCHAR *) szDSN, cbDSN);
-  StrCopyInW (&uid, (TCHAR *) szUID, cbUID);
-  StrCopyInW (&pwd, (TCHAR *) szPWD, cbPWD);
+#ifdef UNICODE
+  if (sizeof(TCHAR) == 4)
+    {
+      int wsize = 4;
+      char *ch;
+
+       // try detect charset in szDSN string
+      ch = (char *) szDSN;
+#ifdef WORDS_BIGENDIAN
+      if (ch && ch[0]==0 && ch[1]!=0 && ch[2]==0)
+        wsize = 2;
+#else
+      if (ch && ch[0]!=0 && ch[1]==0 && ch[2]!=0)
+        wsize = 2;
+#endif
+      if (wsize == 4)
+        {
+          // try recheck charset in szUID string
+          ch = (char *) szUID;
+#ifdef WORDS_BIGENDIAN
+          if (ch && ch[0]==0 && ch[1]!=0 && ch[2]==0)
+            wsize = 2;
+#else
+          if (ch && ch[0]!=0 && ch[1]==0 && ch[2]!=0)
+            wsize = 2;
+#endif
+        }
+
+      if (wsize == 2)
+        {
+          StrCopyInUTF16 (&dsn, (TCHAR *) szDSN, cbDSN);
+          StrCopyInUTF16 (&uid, (TCHAR *) szUID, cbUID);
+          StrCopyInUTF16 (&pwd, (TCHAR *) szPWD, cbPWD);
+        }
+      else
+        {
+          StrCopyInW (&dsn, (TCHAR *) szDSN, cbDSN);
+          StrCopyInW (&uid, (TCHAR *) szUID, cbUID);
+          StrCopyInW (&pwd, (TCHAR *) szPWD, cbPWD);
+        }
+    }
+  else
+#endif
+    {
+      StrCopyInW (&dsn, (TCHAR *) szDSN, cbDSN);
+      StrCopyInW (&uid, (TCHAR *) szUID, cbUID);
+      StrCopyInW (&pwd, (TCHAR *) szPWD, cbPWD);
+    }
 
   if ((cbDSN < 0 && cbDSN != SQL_NTS) || (cbUID < 0 && cbUID != SQL_NTS) || (cbPWD < 0 && cbPWD != SQL_NTS))
     {
