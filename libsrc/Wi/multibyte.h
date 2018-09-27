@@ -55,6 +55,7 @@ extern const wchar_t *virt_wcsstr (const wchar_t *__wcs, const wchar_t *__wc);
 extern const wchar_t *virt_wcsrstr (const wchar_t *__wcs, const wchar_t *__wc);
 extern const wchar_t *virt_wmemmem (const wchar_t *haystack, size_t haystacklen, const wchar_t *needle, size_t needlelen);
 size_t virt_wcslen (const wchar_t *__wcs);
+size_t virt_ucs2len (const uint16 *__wcs);
 int virt_wcsncmp (const wchar_t *wcs1, const wchar_t *wcs2, size_t len);
 #define virt_wmemcmp(ptr1,ptr2,num) memcmp ((ptr1), (ptr2), (num) * sizeof(wchar_t))
 
@@ -65,6 +66,13 @@ extern caddr_t DBG_NAME (box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size
 #ifdef MALLOC_DEBUG
 #define box_wide_as_utf8_char(w,l,d) dbg_box_wide_as_utf8_char (__FILE__,__LINE__,(w),(l),(d))
 #endif
+
+extern caddr_t DBG_NAME (box_utf16_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp_t dtp);
+#ifdef MALLOC_DEBUG
+#define box_utf16_as_utf8_char(w,l,d) dbg_box_utf16_as_utf8_char (__FILE__,__LINE__,(w),(l),(d))
+#endif
+
+
 extern caddr_t mp_box_wide_as_utf8_char (mem_pool_t * mp, ccaddr_t _wide, size_t wide_len, dtp_t dtp);
 wchar_t CHAR_TO_WCHAR (unsigned char uchar, wcharset_t *charset);
 unsigned char WCHAR_TO_CHAR (wchar_t wchar, wcharset_t *charset);
@@ -88,9 +96,21 @@ void wide_charset_free (wcharset_t *charset);
 
 size_t cli_wide_to_narrow (wcharset_t * charset, int flags, const wchar_t *src, size_t max_wides,
     unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+size_t cli_utf16_to_narrow (wcharset_t * charset, int flags, const uint16 *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+size_t cli_wide_to_utf16 (int flags, const wchar_t *src, size_t max_wides,
+    unsigned char *dest, size_t max_len);
+size_t cli_utf16_to_wide (int flags, const char *src, size_t max_len,
+    wchar_t *dest, size_t max_wides);
+
 size_t cli_narrow_to_wide (wcharset_t *charset, int flags, const unsigned char *src, size_t max_wides,
     wchar_t *dest, size_t max_len);
+size_t cli_narrow_to_utf16 (wcharset_t * charset, int flags, const unsigned char *src, size_t max_len,
+    uint16 *dest, size_t max_wides);
+
 size_t cli_wide_to_escaped (wcharset_t *charset, int flags, const wchar_t *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+size_t cli_utf16_to_escaped (wcharset_t * charset, int flags, const uint16 *src, size_t max_wides,
     unsigned char *dest, size_t max_len, char *default_char, int *default_used);
 
 char *cli_box_wide_to_narrow (const wchar_t * in);
