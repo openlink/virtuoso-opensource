@@ -24,12 +24,12 @@ private:
   geos::geom::Point *export_Point (geo_t *g);
   geos::geom::LineString *export_LineString (geo_t *g);
   geos::geom::LinearRing *export_LinearRing (geo_t *g);
-  geos::geom::Polygon *export_Polygon (geo_t *g);
+  geos::geom::Geometry *export_Polygon (geo_t *g);		/*!< \returns either a polygon or an empty geometry */
   geos::geom::MultiPoint *export_MultiPoint (geo_t *g);
   geos::geom::MultiLineString *export_MultiLineString (geo_t *g);
   geos::geom::MultiPolygon *export_MultiPolygon (geo_t *g);
   geos::geom::GeometryCollection *export_GeometryCollection (geo_t *g);
-  geos::geom::CoordinateSequence *export_CoordinateSequence (int len, geoc *Xs, geoc *Ys, geoc *Zs_or_null);
+  geos::geom::CoordinateSequence *export_CoordinateSequence (int len, geoc *Xs, geoc *Ys, geoc *Zs_or_null, int spare_len_at_end);
   geo_exporter_to_geos(const geo_exporter_to_geos& other); // to make the type noncopyable
   geo_exporter_to_geos& operator=(const geo_exporter_to_geos& rhs); // to make the type noncopyable
 };

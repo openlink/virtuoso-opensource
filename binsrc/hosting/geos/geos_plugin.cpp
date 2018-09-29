@@ -388,7 +388,7 @@ bif_geos_get_coordinate (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   } while (0);
 
 #define CATCH_BIF_GEXXX(unwind,bifname) catch (const geos::util::GEOSException &gexxx) { BIF_GEXXX(gexxx,unwind,bifname) }
-   
+
 static caddr_t
 bif_geos_get_centroid (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
@@ -793,7 +793,13 @@ bif_geos_is_simple (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   if (arg_err)
     return NEW_DB_NULL;
   int res;
-  try { res = arg1.get()->isSimple(); }
+  try
+    {
+      if (0 == arg1.get()->getNumGeometries())
+        res = 0;
+      else
+        res = arg1.get()->isSimple();
+    }
   CATCH_BIF_GEXXX((arg1.reset()), "GEOS isSimple")
   return box_num (res ? 1 : 0);
 }
@@ -1045,6 +1051,21 @@ bif_geos_relate (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   if (argfail & GEO_ARGPAIR_NOT_MAY_INTERSECT)
     return box_num (0);
   caddr_t res;
+  if (NULL == arg1.get())
+    {
+      if (NULL == arg2.get())
+        {
+          arg1.reset (get_GeometryFactory_by_srid (SRID_DEFAULT)->createEmptyGeometry());
+          arg2.reset (get_GeometryFactory_by_srid (SRID_DEFAULT)->createEmptyGeometry());
+        }
+      else
+        arg1.reset (arg2.get()->getFactory()->createEmptyGeometry());
+    }
+  else
+    {
+      if (NULL == arg2.get())
+        arg2.reset (arg1.get()->getFactory()->createEmptyGeometry());
+    }
   try
     {
       if (NULL != de9im_pattern_strg)
@@ -1070,6 +1091,21 @@ bif_geos_s_relate (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   if (argfail & GEO_ARGPAIR_NOT_MAY_INTERSECT)
     return box_num (0);
   caddr_t res;
+  if (NULL == arg1.get())
+    {
+      if (NULL == arg2.get())
+        {
+          arg1.reset (get_GeometryFactory_by_srid (SRID_DEFAULT)->createEmptyGeometry());
+          arg2.reset (get_GeometryFactory_by_srid (SRID_DEFAULT)->createEmptyGeometry());
+        }
+      else
+        arg1.reset (arg2.get()->getFactory()->createEmptyGeometry());
+    }
+  else
+    {
+      if (NULL == arg2.get())
+        arg2.reset (arg1.get()->getFactory()->createEmptyGeometry());
+    }
   try
     {
       if (NULL != de9im_pattern_strg)

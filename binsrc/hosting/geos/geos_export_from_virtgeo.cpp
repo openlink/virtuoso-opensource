@@ -37,6 +37,7 @@ geo_exporter_to_geos::export_one (geo_t *g)
       geos::geom::Geometry *result;
       switch (GEO_TYPE_NO_ZM (g->geo_flags))
         {
+        case GEO_NULL_SHAPE:	result = factory.createEmptyGeometry (); break;
         case GEO_POINT:		result = export_Point (g);		break;
         case GEO_LINESTRING:	result = export_LineString (g);		break;
         case GEO_POLYGON:		result = export_Polygon (g);		break;
@@ -74,7 +75,8 @@ geo_exporter_to_geos::export_one (geo_t *g)
     }
   catch (const geos::util::GEOSException &gexxx)
     {
-      blocking_error = srv_make_new_error ("22023", "GEO20", "Unable to export geometry of type %d to GEOS library: GEOS error: %s", GEO_TYPE (g->geo_flags), gexxx.what());
+      if (NULL == blocking_error)
+        blocking_error = srv_make_new_error ("22023", "GEO20", "Unable to export geometry of type %d to GEOS library: GEOS error: %s", GEO_TYPE (g->geo_flags), gexxx.what());
       return NULL;
     }
 }
@@ -91,18 +93,30 @@ geo_exporter_to_geos::export_Point (geo_t *g)
 geos::geom::LineString *
 geo_exporter_to_geos::export_LineString (geo_t *g)
 {
-  geos::geom::CoordinateSequence *pts = export_CoordinateSequence (g->_.pline.len, g->_.pline.Xs, g->_.pline.Ys, (g->geo_flags & GEO_A_Z) ? g->_.pline.Zs : NULL);
+  geos::geom::CoordinateSequence *pts = export_CoordinateSequence (g->_.pline.len, g->_.pline.Xs, g->_.pline.Ys, (g->geo_flags & GEO_A_Z) ? g->_.pline.Zs : NULL, 0);
   return factory.createLineString(pts);
 }
 
 geos::geom::LinearRing *
 geo_exporter_to_geos::export_LinearRing (geo_t *g)
 {
-  geos::geom::CoordinateSequence *pts = export_CoordinateSequence (g->_.pline.len, g->_.pline.Xs, g->_.pline.Ys, (g->geo_flags & GEO_A_Z) ? g->_.pline.Zs : NULL);
+  geos::geom::CoordinateSequence *pts;
+  int len = g->_.pline.len;
+  int lastidx = len-1;
+  if ((g->_.pline.Xs[0] == g->_.pline.Xs[lastidx]) && (g->_.pline.Ys[0] == g->_.pline.Ys[lastidx]))
+    pts = export_CoordinateSequence (len, g->_.pline.Xs, g->_.pline.Ys, (g->geo_flags & GEO_A_Z) ? g->_.pline.Zs : NULL, 0);
+  else
+    {
+      pts = export_CoordinateSequence (len, g->_.pline.Xs, g->_.pline.Ys, (g->geo_flags & GEO_A_Z) ? g->_.pline.Zs : NULL, 1);
+      pts->setOrdinate (len, 0, g->_.pline.Xs[0]);
+      pts->setOrdinate (len, 1, g->_.pline.Ys[0]);
+      if (g->geo_flags & GEO_A_Z)
+        pts->setOrdinate (len, 2, g->_.pline.Zs[0]);
+    }
   return factory.createLinearRing(pts);
 }
 
-geos::geom::Polygon *
+geos::geom::Geometry *
 geo_exporter_to_geos::export_Polygon (geo_t *g)
 {
   int numRings = g->_.parts.len;
@@ -110,13 +124,32 @@ geo_exporter_to_geos::export_Polygon (geo_t *g)
   std::vector<geos::geom::Geometry *>*holes = NULL;
   try
     {
-      if (numRings > 0)
-        shell = export_LinearRing (g->_.parts.items[0]);
-      if (numRings > 1)
+      if (numRings <= 0)
+        return factory.createEmptyGeometry ();
+      else
         {
-          holes = new std::vector<geos::geom::Geometry *>(numRings - 1);
-          for (int i = 1; i < numRings; i++)
-            holes[0][i-1] = (geos::geom::Geometry *)export_LinearRing (g->_.parts.items[i]);
+          geo_t *g_shell = g->_.parts.items[0];
+          if ((GEO_NULL_SHAPE == GEO_TYPE_NO_ZM(g_shell->geo_flags)) || (2 >= g_shell->_.pline.len))
+            return factory.createEmptyGeometry ();
+          shell = export_LinearRing (g_shell);
+          if (numRings > 1)
+            {
+              holes = new std::vector<geos::geom::Geometry *>(numRings - 1);
+              int out_idx = 0;
+              for (int i = 1; i < numRings; i++)
+                {
+                  geo_t *g_hole = g->_.parts.items[i];
+                  if ((GEO_NULL_SHAPE == GEO_TYPE_NO_ZM(g_hole->geo_flags)) || (2 >= g_hole->_.pline.len))
+                    holes->resize(holes->size()-1);
+                  else
+                  holes[0][out_idx++] = (geos::geom::Geometry *)export_LinearRing (g_hole);
+                }
+              if (!holes->size())
+                {
+                  delete holes;
+                  holes = NULL;
+                }
+            }
         }
       return factory.createPolygon(shell, holes);
     }
@@ -209,15 +242,15 @@ geo_exporter_to_geos::export_GeometryCollection (geo_t *g)
 }
 
 geos::geom::CoordinateSequence *
-geo_exporter_to_geos::export_CoordinateSequence (int len, geoc *Xs, geoc *Ys, geoc *Zs_or_null)
+geo_exporter_to_geos::export_CoordinateSequence (int len, geoc *Xs, geoc *Ys, geoc *Zs_or_null, int spare_len_at_end)
 {
-  geos::geom::CoordinateSequence *seq = factory.getCoordinateSequenceFactory()->create(len, (NULL != Zs_or_null) ? 3 : 2);
+  geos::geom::CoordinateSequence *seq = factory.getCoordinateSequenceFactory()->create(len + spare_len_at_end, (NULL != Zs_or_null) ? 3 : 2);
   for (int i = 0; i < len; i++)
-    {
-      seq->setOrdinate (i, 0, Xs[i]);
-      seq->setOrdinate (i, 1, Ys[i]);
-      if (NULL != Zs_or_null)
-        seq->setOrdinate (i, 2, Zs_or_null[i]);
-    }
+    seq->setOrdinate (i, 0, Xs[i]);
+  for (int i = 0; i < len; i++)
+    seq->setOrdinate (i, 1, Ys[i]);
+  if (NULL != Zs_or_null)
+    for (int i = 0; i < len; i++)
+      seq->setOrdinate (i, 2, Zs_or_null[i]);
   return seq;
 }

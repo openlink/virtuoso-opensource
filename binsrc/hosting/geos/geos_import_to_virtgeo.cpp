@@ -16,7 +16,7 @@
 #include "geos_plugin.h"
 
 geo_t *
-geo_importer_from_geos::import_one(const Geometry &geom) 
+geo_importer_from_geos::import_one(const Geometry &geom)
 {
   outputDimension = defaultOutputDimension;
   if ( outputDimension > geom.getCoordinateDimension() )
@@ -61,7 +61,7 @@ geo_importer_from_geos::import_Point(const geos::geom::Point &geom)
 }
 
 geo_t *
-geo_importer_from_geos::import_LineString (const geos::geom::LineString &geom, int geo_type_no_zm) 
+geo_importer_from_geos::import_LineString (const geos::geom::LineString &geom, int geo_type_no_zm)
 {
   const geos::geom::CoordinateSequence* cs = geom.getCoordinatesRO();
   int len = cs->size();
@@ -75,7 +75,7 @@ geo_importer_from_geos::import_LineString (const geos::geom::LineString &geom, i
 }
 
 geo_t *
-geo_importer_from_geos::import_MultiPoint (const geos::geom::MultiPoint &geom) 
+geo_importer_from_geos::import_MultiPoint (const geos::geom::MultiPoint &geom)
 {
   int len = geom.getNumGeometries();
   geo_t *g = geo_alloc ((3 == outputDimension) ? GEO_POINTLIST_Z : GEO_POINTLIST, len, GEO_SRCODE_OF_SRID (geom.getSRID()));
@@ -88,7 +88,7 @@ geo_importer_from_geos::import_MultiPoint (const geos::geom::MultiPoint &geom)
 }
 
 geo_t *
-geo_importer_from_geos::import_Polygon (const geos::geom::Polygon &geom) 
+geo_importer_from_geos::import_Polygon (const geos::geom::Polygon &geom)
 {
   int len = (geom.isEmpty() ? 0 : (1 + geom.getNumInteriorRing()));
   geo_t *g = geo_alloc ((3 == outputDimension) ? GEO_POLYGON_Z : GEO_POLYGON, len, GEO_SRCODE_OF_SRID (geom.getSRID()));
@@ -104,7 +104,7 @@ geo_importer_from_geos::import_Polygon (const geos::geom::Polygon &geom)
 }
 
 geo_t *
-geo_importer_from_geos::import_GeometryCollection (const GeometryCollection &geom, int geo_type_no_zm) 
+geo_importer_from_geos::import_GeometryCollection (const GeometryCollection &geom, int geo_type_no_zm)
 {
   int len = geom.getNumGeometries();
   geo_t *g = geo_alloc (geo_type_no_zm | ((3 == outputDimension) ? GEO_A_Z : 0), len, GEO_SRCODE_OF_SRID (geom.getSRID()));
