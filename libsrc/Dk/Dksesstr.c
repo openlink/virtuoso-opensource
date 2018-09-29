@@ -1322,7 +1322,7 @@ strses_get_part_1 (dk_session_t * ses, void *buf2, int64 starting_ofs, long nbyt
 		  dest_readed = 0;
 		  do
 		    {
-		      long to_read = MIN (sizeof (buffer), src_n_bytes);
+		      long to_read = MIN (sizeof (src_buffer), src_n_bytes);
 		      readed = strf_read (ses_file, src_buffer, to_read);
 		      if (readed == -1)
 			break;
