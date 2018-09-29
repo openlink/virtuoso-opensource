@@ -116,7 +116,7 @@ build_argv_from_string (const char *s, int *pargc, char ***pargv)
 	      if (++argc >= nargv - 1)
 		{
 		  nargv += INCR;
-		  argv = (char **) s_realloc (argv, nargv * sizeof (char **));
+		  argv = (char **) s_realloc (argv, nargv * sizeof (char *));
 		}
 	    }
 	  optptr = option;
@@ -135,7 +135,7 @@ build_argv_from_string (const char *s, int *pargc, char ***pargv)
   *pargc = argc;
   *pargv = argv;
   if (argc >= nargv)
-    argv = (char **) s_realloc (argv, ++nargv * sizeof (char **));
+    argv = (char **) s_realloc (argv, ++nargv * sizeof (char *));
   while (argc < nargv)
     argv[argc++] = NULL;
 
