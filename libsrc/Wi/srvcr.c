@@ -2099,7 +2099,6 @@ bif_scroll_cr_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       params[0][inx] = box_copy_tree (bif_arg (qst, args, inx + 1, "__scroll_cr_open"));
     }
-  memset (opts, 0, sizeof (opts));
   opts->so_concurrency = SQL_CONCUR_LOCK;
   opts->so_cursor_type = stmt->sst_query->qr_cursor_type;
 
