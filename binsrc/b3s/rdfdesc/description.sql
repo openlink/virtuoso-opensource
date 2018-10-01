@@ -292,73 +292,59 @@ create procedure b3s_uri_local_part (in uri varchar)
 -- vector (vector (<type_iri>, <short_form>, <label or null>), vector (...), ...)
 --
 
-create procedure
+create function
 b3s_get_types (in _s varchar,
                in _from varchar,
                in langs any) {
   declare stat, msg, meta, data any;
   declare t_a any;
-  declare i int;
-  declare stmt varchar;
+  declare i, len integer;
+  declare q_txt any;
+  if (not length (_s))
+    return vector ();
 
-  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%s> a ?tp } }', _from, _s);
-  data := null;
-  t_a := vector();
-
-  if (length (_s))
-    {
+  vectorbld_init (t_a);
       data := null;
-      exec (stmt, stat, msg, vector (), 100, meta, data);
-
-      if (length(data)) 
-        {
+  q_txt := string_output ();
+  http ('sparql select distinct ?tp ' || _from || ' where { quad map virtrdf:DefaultQuadMap { ', q_txt);
+  http_sparql_object (__bft (_s, 1), q_txt);
+  http (' a ?tp } }', q_txt);
+  exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
+  len := length(data);
 	  for (i := 0;i < length(data); i := i + 1) 
             {
---                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
-                if (__box_flags (data[i][0]))
-		t_a := vector_concat (t_a, 
-                                      vector (vector (data[i][0], 
-                                      b3s_uri_curie (data[i][0]),
-                                      b3s_label (data[i][0], langs))));
-            }
+      declare tp any;
+      tp := data[i][0];
+--    dbg_printf ('data[%d][0]: %s', i, tp);
+      vectorbld_acc (t_a, vector (tp, b3s_uri_curie (tp), b3s_label (tp, langs)));
         }
+  if (len)
+    goto skip_virt_graphs;
+  q_txt := string_output ();
+  http ('sparql select distinct ?tp ' || _from || ' where { graph ?g { ', q_txt);
+  http_sparql_object (__bft (_s, 1), q_txt);
+  http (' a ?tp } }', q_txt);
+  exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
+  len := length(data);
+  for (i := 0; i < length(data); i := i + 1)
+    {
+      declare tp any;
+      tp := data[i][0];
+--    dbg_printf ('data[%d][0]: %s', i, tp);
+      vectorbld_acc (t_a, vector (tp, b3s_uri_curie (tp), b3s_label (tp, langs)));
     }
+skip_virt_graphs:
+  vectorbld_final (t_a);
   return (t_a);
 }                 
 ;
 
-create procedure
+create function
 b3s_get_all_types (in _s varchar,
                in _from varchar,
-               in langs any) {
-  declare stat, msg, meta, data any;
-  declare t_a any;
-  declare i int;
-  declare stmt varchar;
-
-  stmt := sprintf ('sparql select distinct ?tp %s where { <%s> a ?tp }', _from, _s);
-  data := null;
-  t_a := vector();
-
-  if (length (_s))
-    {
-      data := null;
-      exec (stmt, stat, msg, vector (), 100, meta, data);
-
-      if (length(data)) 
+               in langs any)
         {
-	  for (i := 0;i < length(data); i := i + 1) 
-            {
---                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
-                if (__box_flags (data[i][0]))
-		t_a := vector_concat (t_a, 
-                                      vector (vector (data[i][0], 
-                                      b3s_uri_curie (data[i][0]),
-                                      b3s_label (data[i][0], langs))));
-            }
-        }
-    }
-  return (t_a);
+  return b3s_get_types (_s, _from, langs);
 }                 
 ;
 
@@ -1454,6 +1440,33 @@ create procedure b3s_get_user_graph_permissions (
     else
       view_mode := 'read-only';
   }
+
+  quad_maps := sparql_quad_maps_for_quad (NULL, NULL, NULL, uname(sub));
+  foreach (any qm_item in quad_maps) do
+    {
+      declare qm any;
+      declare stat, msg varchar;
+      qm := qm_item[0];
+      if (qm = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap')
+        goto ps_done;
+      q_txt := string_output();
+      http ('sparql select ?p ?s where { graph ?g { quad map ', q_txt);
+      http_sparql_object (qm, q_txt);
+      http (' { ?s ?p ', q_txt);
+      http_sparql_object (__box_flags_tweak (sub, 1), q_txt);
+      http (' } } } limit ' || (per_page + __max (total_len - skip, 0)), q_txt);
+      stat := '00000';
+      rset := null;
+      exec (string_output_string (q_txt), stat, msg, vector(), vector ('use_cache', 1, 'max_rows', maxrws), null, rset);
+      rset_len := length (rset);
+      dbg_obj_princ (string_output_string (q_txt));
+      dbg_obj_princ (stat, msg, rset_len);
+      for (inx := __max (skip - total_len, 0); inx < rset_len; inx := inx + 1)
+        result (rset[inx][0], rset[inx][1], 1);
+      total_len := total_len + rset_len;
+    }
+ps_done: ;
+
 }
 ;
 
