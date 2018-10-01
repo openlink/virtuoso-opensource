@@ -183,14 +183,21 @@ again:
     page := atoi (get_keyword ('gp', params, '1')) - 1;
   else
     page := atoi (get_keyword ('p', params, '1')) - 1;
+
+  -- Sanity checks
+  if (page is not null) {
+    if (page < 0) page := 0;
+    if (page > _last) page := _last;
+  }
+
   --topof := '';
   b3s_dbg_out (dbg_out, 'sid     : ' || sid);
   b3s_dbg_out (dbg_out, 'gr      : ' || gr);
 
   arr := rfc1808_parse_uri (gr);
 
-  if (gr[0] <> '#'[0] and arr[0] = '' and arr[1] = '' and arr[2] <> '')
-    gr := 'http://' || gr;
+--   if (gr[0] <> '#'[0] and arr[0] = '' and arr[1] = '' and arr[2] <> '')
+--     gr := 'http://' || gr;
 
   arr := rfc1808_parse_uri (gr);
   arr [5] := '';
@@ -257,7 +264,12 @@ again:
   -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
   if (get_keyword ('sp', params) = '1')
     {
-      DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from <%s> where { ?x ?y ?z . }', _G), 'SPARQL', 1);
+      q_txt := string_output ();
+      http ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from ', q_txt);
+      http_sparql_object (__box_flags_tweak (_G, 1), q_txt);
+      http (' where { ?x ?y ?z . }', q_txt);
+      DB.DBA.EXEC_AS (string_output_string (q_txt), 'SPARQL', 1);
+
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
@@ -289,7 +301,7 @@ again:
     if (sp_done)
       {
         http_status_set (302);
-	http_header (sprintf ('Location: /describe/?url=%U%s\r\n', _G, ses_parms));
+	http_header (sprintf ('Location: /describe/?url=%U%s\r\n', page_resource_uri, ses_parms));
         return;
       }
   }
@@ -347,10 +359,11 @@ again:
   rdf_link := sprintf ('/sparql?query=%U', __box_flags_tweak (sprintf ('define sql:describe-mode "CBD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S), 2)); 
   __box_flags_set (rdf_link, 2);
 
-  declare __res_desc, qs, qv, best_variant, accept varchar;
+  declare __res_desc, qs, qv, best_variant, accept, protocol varchar;
   declare best_q, curr float;
   declare inx int;
 
+  protocol := 'http'; if (is_https_ctx()) protocol := 'https';
   accept := http_request_header_full (lines, 'Accept', 'text/html');
   if (accept = '*/*')
     accept := 'text/html';
@@ -377,12 +390,12 @@ again:
       http_rewrite ();
       http_status_set (406);
       http_header ('Alternates: ');
-      http_header (http_header_get () || sprintf ('{ "http://%{WSHost}s/describe/?url=%U" 0.5 {type text/html}}', gr));
+      http_header (http_header_get () || sprintf ('{ "%s://%{WSHost}s/describe/?url=%U" 0.5 {type text/html}}', protocol, gr));
       inx := 0;
       foreach (varchar q in qs) do
         {
 	  if (q  not in ('text/html', 'application/xhtml+xml'))
-	    http_header (http_header_get () || sprintf (', { "http://%{WSHost}s%s&format=%U" %.2f {type %s}}', rdf_link, q, qv[inx], q));
+	    http_header (http_header_get () || sprintf (', { "%s://%{WSHost}s%s&format=%U" %.2f {type %s}}', protocol, rdf_link, q, qv[inx], q));
           inx := inx + 1;
 	}
       http_header (http_header_get () || '\r\n');
@@ -392,7 +405,7 @@ again:
     {
       http_rewrite ();
       http_status_set (303);
-      http_header (sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nLocation: http://%{WSHost}s%s&format=%U\r\n', rdf_link, best_variant));
+      http_header (sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nLocation: %s://%{WSHost}s%s&format=%U\r\n', protocol, rdf_link, best_variant));
       return;
     }
   __res_desc := b3s_uri_curie(page_resource_uri);
@@ -433,7 +446,7 @@ again:
 
 ?>
 <head>
-    <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
+    <base href="/fct/rdfdesc/" />
     <title>About: <?vsp if (length (label)) http_value (label); else http_value (b3s_uri_curie (page_resource_uri));?></title>
     <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
 
@@ -452,7 +465,7 @@ again:
     <script type="text/javascript" src="s/description.js"></script>
 <?vsp fct_links_mup (_S, rdf_link); ?>
 </head>
-<body>
+<body about="<?V page_resource_uri ?>">
   <div id="PG">
     <div id="HD">
     <?vsp fct_desc_page_head (); ?>
@@ -464,11 +477,11 @@ again:
       <?vsp } else { ?>
       <li><a href="/fct/">Facets (new session)</a></li>
       <?vsp } ?>
-      <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?V _S ?><?V ses_parms ?>" class="sel">Description</a></li>
+      <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?U b3s_u2w(_S) ?><?V ses_parms ?>" class="sel">Description</a></li>
       <li id="mnu_usage">
         <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Metadata</a>
       </li>
-      <li id="mnu_settings"><a href="settings.vsp?g=<?U _S ?><?V ses_parms ?>">Settings</a>
+      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w(_S) ?><?V ses_parms ?>">Settings</a>
         <div id="settings_popup" style="display: none">
           <ul>
             <li>
@@ -594,15 +607,15 @@ if (_subject <> '') {
 
       if (length (_F) or 1 = sys_stat ('cl_run_local_only'))
       {
-      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
+      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT any, 0 as FLAG int from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
       }
       else
       {
         gs_check_cond := case gs_check_needed when 0 then '' else sprintf (' AND DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, %d, 1)', gs_user_id) end;
-      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) %s ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1',
+      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT any, 0 as FLAG int from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) %s ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1',
         tbinf, _S, gs_check_cond, tbsas);
       }
-      dt2 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 1 as FLAG int from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
+      dt2 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT any, 1 as FLAG int from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
 
       --topof := '';
       qry_str := sprintf ('select %s PRED, OBJECT, FLAG from (%s UNION ALL %s) un0', topof, dt1, dt2);
@@ -612,7 +625,7 @@ if (_subject <> '') {
         {
 	  if (length (_F) or 1 = sys_stat ('cl_run_local_only'))
             {
-	      dt1 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
+	      dt1 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
 	    }
           else
 	    {
@@ -620,17 +633,33 @@ if (_subject <> '') {
               dt1 := sprintf ('select count(*) as cnt from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) %s ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1',
                 tbinf, _S, gs_check_cond, tbsas);
 	    }
-	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
-	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
+	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
+
+	  declare cnt1, cnt2 integer;
+
+	  count_str := dt1;
+          if (dist = 0)
+            count_str := replace (count_str, 'distinct', '');
+          count_str := replace (count_str, 'order by 1', '');
+	  exec (count_str, null, null, vector (), 0, meta, data);
+	  if (length (data) and length (data[0]))
+	    cnt1 := data[0][0]; -- sum is supposed to have always number
+	  else
+	    cnt1 := 0;
+
+	  count_str := dt2;
           if (dist = 0)
           count_str := replace (count_str, 'distinct', '');
           count_str := replace (count_str, 'order by 1', '');
-	  -- dbg_obj_princ ('count_str = ', count_str);
 	  exec (count_str, null, null, vector (), 0, meta, data);
 	  if (length (data) and length (data[0]))
-	    _last := data[0][0]; -- sum is supposed to have always number
+	    cnt2 := data[0][0]; -- sum is supposed to have always number
           else
-	    _last := n_per_page;
+	    cnt2 := 0;
+
+          _last := cnt1 + cnt2;
+	  --if (_last = 0)
+	  --_last := n_per_page;
 	  _last := _last / n_per_page;
         }
 
@@ -658,7 +687,7 @@ if (_subject <> '') {
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (page_resource_uri, OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
+           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;
 	   inx := inx + 1;
 	   skip:;
@@ -677,8 +706,7 @@ if (_subject <> '') {
 	  -- The view dataset is empty.
 	  -- Rather than display an empty result set, force automatic sponging.
 
-	  declare spongeUrl, protocol varchar;
-	  protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+	  declare spongeUrl varchar;
 	  spongeUrl := sprintf ('%s://%s/describe/?url=%U&sponger:get=add&sr=clean', protocol, host, gr);
 
 	  if (not sponge_request)
@@ -690,15 +718,26 @@ if (_subject <> '') {
 	  }
 	}
 
-	http_request_status ('HTTP/1.1 404 Not found');
+	if (err is not null)
+	{
+	  http_request_status ('HTTP/1.1 400 Bad Request');
+	  http ('<tr><td colspan="2"><div id="err">');
+	  http_value (err);
+	  http ('</div></td></tr>');
+	}
+	else
+	{
+	  http_request_status ('HTTP/1.1 404 Not Found');
 	http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');
+      }
+
       }
 ?>
       </table>
       <div id="nav">
 	  <form action="/describe/" method="get">
 	  <div>
-	      <input type="hidden" name="url" value="<?V gr ?>" />
+	      <input type="hidden" name="url" value="<?V page_resource_uri ?>" />
               <input type="submit" name="go" value="Go" style="width: 0px; height: 0px; margin: 0px; padding: 0px; outline: none; border: 0px;" />
 	      <input type="hidden" name="distinct" value="<?V dist ?>" />
 	      <?vsp if (connection_get ('inf') is not null) { ?>
@@ -730,8 +769,8 @@ if (_subject <> '') {
 	      <button type="submit" value="" name="last" <?vsp if (dis_next) { http ('disabled="disabled"'); } ?>>Last &#9656;&#9656;</button>
 	       &nbsp;&nbsp;&nbsp;
 	       Page <?V page + 1 ?> of <?V _last + 1 ?>  &nbsp;&nbsp;&nbsp;
-	       <input type="text" value="<?V page + 1 ?>" size="5" name="gp" /> &nbsp;
-	       <button type="submit" value="" name="go">Go</button>
+	       <input type="text" value="<?V page + 1 ?>" size="5" name="gp" <?vsp if (page <= 0 AND dis_next) { http('disabled="disabled"'); }?> /> &nbsp; 
+	       <button type="submit" value="" name="go" <?vsp if (page <= 0 AND dis_next) { http('disabled="disabled"'); }?> >Go</button>
 	<?vsp } } ?>
 	</div>
 	</form>
@@ -807,13 +846,13 @@ if (_subject <> '') {
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0"/></a>
         <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
 
-	<!--span 
+	<span about=""
 	resource="http://www.w3.org/TR/rdfa-syntax"
 	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
-	<a href="http://validator.w3.org/check?uri=referer"><img
-	    src="http://www.w3.org/Icons/valid-xhtml-rdfa"
+	<a href="//validator.w3.org/check?uri=referer"><img
+	    src="//www.w3.org/Icons/valid-xhtml-rdfa"
 	    alt="Valid XHTML + RDFa" height="27" /></a>
-	</span-->
+	</span>
 	<br />
 	<?vsp fct_virt_info (); ?><br />
 	<?vsp

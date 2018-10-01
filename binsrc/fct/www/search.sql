@@ -264,8 +264,8 @@ create procedure get_curie (in val any)
     return val;
 
   res := null;
-  if (strstr (val, 'http://dbpedia.org/resource/') = 0 ) res :=  'dbpedia';
-  if (strstr (val, 'http://dbpedia.org/property/') = 0 ) res :=  'dbpprop';
+  if (strstr (val, 'http://dbpedia.org/resource/') = 0 ) res :=  'dbr';
+  if (strstr (val, 'http://dbpedia.org/property/') = 0 ) res :=  'dbp';
   if (strstr (val, 'http://dbpedia.openlinksw.com/wikicompany/') = 0 ) res :=  'wikicompany';
   if (strstr (val, 'http://dbpedia.org/class/yago/') = 0 ) res :=  'yago';
   if (strstr (val, 'http://www.w3.org/2003/01/geo/wgs84_pos#') = 0 ) res :=  'geo';
@@ -284,7 +284,7 @@ create procedure get_curie (in val any)
   if (strstr (val, 'http://purl.org/ontology/bibo/') = 0 ) res :=  'bibo';
   if (strstr (val, 'http://purl.org/goodrelations/v1#') = 0 ) res :=  'gr';
   if (strstr (val, 'http://linkedgeodata.org/vocabulary#') = 0 ) res :=  'lgv';
-  if (strstr (val, 'http://dbpedia.org/resource/Category:') = 0 ) res :=  'category';
+  if (strstr (val, 'http://dbpedia.org/resource/Category:') = 0 ) res :=  'dbc';
   if (strstr (val, 'http://www.georss.org/georss/') = 0 ) res :=  'grs';
 
   if (res is null)
@@ -858,17 +858,17 @@ s3 := '\')) .
       'sparql SELECT ?road ?lat ?long WHERE ' ||
       '  { ' ||
       '    { ' ||
---      '     ?services dbpprop:road ?road . ' ||
+--      '     ?services dbp:road ?road . ' ||
       '      ?road a yago:MotorwaysInEngland . ' ||
-      '      ?services dbpprop:lat ?lat . ' ||
-      '      ?services dbpprop:long ?long . ' ||
+      '      ?services dbp:lat ?lat . ' ||
+      '      ?services dbp:long ?long . ' ||
       '    } ' ||
       '    UNION ' ||
       '    { ' ||
---      '      ?services dbpprop:road ?road . ' ||
+--      '      ?services dbp:road ?road . ' ||
       '      ?road a yago:MotorwaysInScotland . ' ||
-      '      ?services dbpprop:lat ?lat . ' ||
-      '      ?services dbpprop:long ?long . ' ||
+      '      ?services dbp:lat ?lat . ' ||
+      '      ?services dbp:long ?long . ' ||
       '    } ' ||
       '    FILTER (?lat > ';
       validate_input(val);
@@ -927,7 +927,7 @@ s3 := '\')) .
   }
   else if ( smode='17' )
   {
-    if (isnull(val)  or val = '') val := 'category:History_of_Wisconsin';
+    if (isnull(val)  or val = '') val := 'dbc:History_of_Wisconsin';
     if (isnull(val2)  or val2 = '') val2 := 'en';
     if (isnull(val3)  or val3 = '') val3 := 'en';
     if (isnull(val4)  or val4 = '') val4 := 'http://dbpedia.org/resource/Category:Metropolitan_areas_of_Wisconsin';
@@ -953,7 +953,7 @@ s3 := '\')) .
    s2 := concat (val, ' . ');
    s3 := '         ?c skos:broaderTransitive ?trans ' ||
        '           OPTION ( TRANSITIVE, t_distinct, t_in (?c), t_out (?trans), t_max (3),  t_step ( ''step_no'' ) as ?dist ) .  '||
-       '           ?m dbpprop:abstract ?d . ' ||
+       '           ?m dbp:abstract ?d . ' ||
        '           ?m grs:point ?p . ' ||
        '           FILTER ( lang(?n) = "';
    s4 := concat(val2, '" ) . FILTER ( lang(?d) = "', val3, '" ) ');

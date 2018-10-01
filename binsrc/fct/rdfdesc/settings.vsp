@@ -15,7 +15,7 @@
     gr := 'http://' || gr;
 
   page_resource_uri := gr;
-  page_resource_uri := replace (page_resource_uri, '%23', '#');
+  --page_resource_uri := replace (page_resource_uri, '%23', '#');
 
   pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/settings.vsp', sprintf ('g=%U', page_resource_uri));
 
@@ -41,7 +41,7 @@
     }
 ?>
 <head>
-  <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
+  <base href="/fct/rdfdesc/" />
   <title>Settings</title>
 
   <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
@@ -66,7 +66,7 @@
         <li id="mnu_usage" class="sel">
           <a href="usage.vsp?g=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Metadata</a>
         </li>
-        <li id="mnu_settings"><a href="settings.vsp?uri=<?V b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
+        <li id="mnu_settings"><a href="settings.vsp?uri=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
       </ul>
 
     </div> <!-- #HD -->

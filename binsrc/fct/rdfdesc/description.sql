@@ -152,23 +152,28 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 create procedure 
 b3s_e_type (in subj varchar)
 {
+  declare stat, msg any;
   declare meta, data, ll any;
   declare i int;
-  declare stat, msg any;
 
   ll := 'http://www.w3.org/2002/07/owl#Thing';
 
   if (length (subj))
-    {	
+    {
+      declare q_txt any;
       stat := '00000';
       data := null;
-      exec (sprintf ('sparql select ?tp where { <%s> a ?tp }', subj), stat, msg, vector (), 100, meta, data);
+      q_txt := string_output ();
+      http ('sparql select ?tp where { ', q_txt);
+      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      http (' a ?tp }', q_txt);
+      exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
 
       if (length (data))
 	{
 	  for (i := 0; i < length (data); i := i + 1) 
             {
-              if (data[i][0] is not null)
+              if (data[i][0] is not null and __box_flags (data[i][0]) = 1)
   	        return data[i][0];
             }
 	}
@@ -183,6 +188,7 @@ b3s_type (in subj varchar,
           out url varchar,
           out c_iri varchar)
 {
+  declare stat, msg any;
   declare meta, data, ll any;
   declare i int;
 
@@ -192,9 +198,12 @@ b3s_type (in subj varchar,
 
   if (length (subj))
     {
-      exec (sprintf ('sparql select ?l ?tp %s where { <%s> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
-	  null, null, vector (), 100, meta, data);
-
+      declare q_txt any;
+      q_txt := string_output ();
+      http ('sparql select ?l ?tp ' || _from || ' where { ', q_txt);
+      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      http (' a ?tp optional { ?tp rdfs:label ?l } }', q_txt);
+      exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
       if (length (data))
 	{
 	  for (i := 0; i < length (data); i := i + 1)
@@ -241,18 +250,24 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
 	return 1;
     }
 
-  declare stmt, st, msg varchar;
+  declare st, msg varchar;
   declare meta,data any;
+  declare q_txt any;
   data := null;
   st := '00000';
   msg:= '';
-
-  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%s> }}', _f, _s);
-
-  exec (stmt, st, msg, vector(), 1, meta, data);
-
+  q_txt := string_output ();
+  http ('sparql select ?to ' || _f || ' where { quad map virtrdf:DefaultQuadMap { ?to a ', q_txt);
+  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  http (' }}', q_txt);
+  exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
   if (length (data)) return 1;
-
+  q_txt := string_output ();
+  http ('sparql select ?to ' || _f || ' where { graph ?g { ?to a ', q_txt);
+  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  http (' }}', q_txt);
+  exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
+  if (length (data)) return 1;
   return 0;
 }
 ;
@@ -277,71 +292,59 @@ create procedure b3s_uri_local_part (in uri varchar)
 -- vector (vector (<type_iri>, <short_form>, <label or null>), vector (...), ...)
 --
 
-create procedure
+create function
 b3s_get_types (in _s varchar,
                in _from varchar,
                in langs any) {
   declare stat, msg, meta, data any;
   declare t_a any;
-  declare i int;
-  declare stmt varchar;
+  declare i, len integer;
+  declare q_txt any;
+  if (not length (_s))
+    return vector ();
 
-  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%s> a ?tp } }', _from, _s);
+  vectorbld_init (t_a);
   data := null;
-  t_a := vector();
-
-  if (length (_s))
+  q_txt := string_output ();
+  http ('sparql select distinct ?tp ' || _from || ' where { quad map virtrdf:DefaultQuadMap { ', q_txt);
+  http_sparql_object (__bft (_s, 1), q_txt);
+  http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
+  exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
+  len := length(data);
+  for (i := 0;i < length(data); i := i + 1) 
     {
-      data := null;
-      exec (stmt, stat, msg, vector (), 100, meta, data);
-
-      if (length(data)) 
-        {
-	  for (i := 0;i < length(data); i := i + 1) 
-            {
---                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
-		t_a := vector_concat (t_a, 
-                                      vector (vector (data[i][0], 
-                                      b3s_uri_curie (data[i][0]),
-                                      b3s_label (data[i][0], langs))));
-            }
-        }
+      declare tp any;
+      tp := data[i][0];
+--    dbg_printf ('data[%d][0]: %s', i, tp);
+      vectorbld_acc (t_a, vector (tp, b3s_uri_curie (tp), b3s_label (tp, langs)));
     }
+  if (len)
+    goto skip_virt_graphs;
+  q_txt := string_output ();
+  http ('sparql select distinct ?tp ' || _from || ' where { graph ?g { ', q_txt);
+  http_sparql_object (__bft (_s, 1), q_txt);
+  http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
+  exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
+  len := length(data);
+  for (i := 0; i < length(data); i := i + 1)
+    {
+      declare tp any;
+      tp := data[i][0];
+--    dbg_printf ('data[%d][0]: %s', i, tp);
+      vectorbld_acc (t_a, vector (tp, b3s_uri_curie (tp), b3s_label (tp, langs)));
+    }
+skip_virt_graphs:
+  vectorbld_final (t_a);
   return (t_a);
 }                 
 ;
 
-create procedure
+create function
 b3s_get_all_types (in _s varchar,
                in _from varchar,
-               in langs any) {
-  declare stat, msg, meta, data any;
-  declare t_a any;
-  declare i int;
-  declare stmt varchar;
-
-  stmt := sprintf ('sparql select distinct ?tp %s where { <%s> a ?tp }', _from, _s);
-  data := null;
-  t_a := vector();
-
-  if (length (_s))
-    {
-      data := null;
-      exec (stmt, stat, msg, vector (), 100, meta, data);
-
-      if (length(data)) 
+               in langs any)
         {
-	  for (i := 0;i < length(data); i := i + 1) 
-            {
---                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
-		t_a := vector_concat (t_a, 
-                                      vector (vector (data[i][0], 
-                                      b3s_uri_curie (data[i][0]),
-                                      b3s_label (data[i][0], langs))));
-            }
-        }
-    }
-  return (t_a);
+  return b3s_get_types (_s, _from, langs);
 }                 
 ;
 
@@ -515,26 +518,22 @@ b3s_render_ses_params (in with_graph int := 1)
 {
   declare i,s,ifp,sid varchar;
   declare grs any;
-
+  declare ses any;
+  ses := string_output ();
   i := connection_get ('inf');
   s := connection_get ('sas');
   sid := connection_get ('sid');
   grs := connection_get ('graphs', null);
 
-  if (i is not null) i := '&inf=' || sprintf ('%U', i);
-  if (s is not null) i := i || '&sas=' || sprintf ('%V', s);
-  if (sid is not null) i := i || '&sid=' || sprintf ('%V', sid);
-
+  if (i is not null) http (sprintf ('&inf=%U', i), ses);
+  if (s is not null) http (sprintf ('&sas=%V', s), ses);
+  if (sid is not null) http (sprintf ('&sid=%V', sid), ses);
   if (grs is not null and with_graph)
     {
       foreach (any x in grs) do
-	{
-	  i := i || sprintf ('&graph=%U', x);
+        http (sprintf ('&graph=%U', x), ses);
 	}
-    }
-
-  if (i is not null) return i;
-  else return '';
+  return string_output_string (ses);
 }
 ;
 
@@ -640,6 +639,44 @@ create procedure b3s_label_get (inout data any, in langs any)
 }
 ;
 
+create procedure 
+b3s_rel_print (in val any, in rel any, in flag int := 0)
+{
+  declare delim, delim1, delim2, delim3 integer;
+  declare inx int;
+  declare nss, loc, nspref varchar;
+
+  delim1 := coalesce (strrchr (val, '/'), -1);
+  delim2 := coalesce (strrchr (val, '#'), -1);
+  delim3 := coalesce (strrchr (val, ':'), -1);
+  delim := __max (delim1, delim2, delim3);
+  nss := null;
+  loc := val;
+  if (delim < 0) return loc;
+  nss := subseq (val, 0, delim + 1);
+  loc := subseq (val, delim + 1);
+
+  nspref := __xml_get_ns_prefix (nss, 2);
+  if (nspref is null)
+    {
+      inx := connection_get ('ns_ctr');
+      connection_set ('ns_ctr', inx + 1);
+      nspref := sprintf ('ns%d', inx);
+    }
+
+
+  nss := sprintf ('xmlns:%s="%s"', nspref, nss);
+  if (flag)
+    loc := sprintf ('property="%s:%s"', nspref, loc);
+  else if (rel)
+    loc := sprintf ('rel="%s:%s"', nspref, loc);
+  else
+    loc := sprintf ('rev="%s:%s"', nspref, loc);
+  return concat (loc, ' ', nss);
+}
+;
+
+
 create procedure
 b3s_uri_curie (in uri varchar)
 {
@@ -722,14 +759,14 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null, 
   if (length (_from))
     i := sprintf ('%s&graph=%U', i, _from);
   wurl := charset_recode (url, 'UTF-8', '_WIDE_');
-  return sprintf ('/describe/?url=%U%s', case when wurl <> 0 then wurl else url end, i);
+  return sprintf ('/describe/?url=%U%s', coalesce (wurl, url), i);
 };
 
 create procedure b3s_u2w (in u any)
 {
   declare w any;
   w := charset_recode (u, 'UTF-8', '_WIDE_');
-  return case when w <> 0 then w else u end;
+  return coalesce (w, u);
 }
 ;
 
@@ -851,12 +888,18 @@ create procedure b3s_o_is_img (in x any)
 ;
 
 create procedure
-b3s_http_print_r (in subj any, in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
+b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
-   declare lang, rdfs_type, rdfa, visible, itemid any;
+   declare lang, rdfs_type, rdfa, visible any;
+   declare robotsrel varchar;
 
    if (_object is null)
      return;
+
+   robotsrel := registry_get('fct_robots_rel');
+   if(robotsrel is null or robotsrel='' or robotsrel=0) {
+    robotsrel:=' rel="nofollow" ';
+   }
 
    if (__tag (_object) = 230)
      {
@@ -877,19 +920,9 @@ b3s_http_print_r (in subj any, in _object any, in sid varchar, in prop any, in l
    if (__tag of IRI_ID = __tag (rdfs_type))
      rdfs_type := id_to_iri (rdfs_type);
 
-   rdfa := sprintf ('itemprop="%s"', prop);
+   rdfa := b3s_rel_print (prop, rel, 1);
    visible := b3s_str_lang_check (lang, acc);
-   itemid := subj;
-   if (flag = 1 and (__tag (_object) = 243 or 
-     (isstring (_object) and (__box_flags (_object)= 1 or _object like 'nodeID://%' or _object like 'http://%'))))
-     {
-       if (__tag of IRI_ID = __tag (_object))
-	 itemid := id_to_iri (_object);
-       else
-	 itemid := _object;
-     }
-   http (sprintf ('\t<li%s itemid="%s" itemscope itemtype="%s"><span class="literal">', 
-   	case visible when 0 then ' style="display:none;"' else '' end, itemid, b3s_e_type (itemid)));
+   http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
 again:
    if (__tag (_object) = 246)
      {
@@ -912,14 +945,46 @@ again:
 
        http (sprintf ('<!-- %d -->', length (_url)));
 
-       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
-	 {
-	   declare src any;
-	   whenever not found goto usual_iri;
-	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where
-	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
-	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0" sandbox=""><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
-	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _object else subj end));
+       rdfa := b3s_rel_print (prop, rel, 0);
+       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _url like '%#content%') {
+          declare src, abody, mt any;
+          -- whenever not found goto usual_iri;
+           mt := null;
+          mt := (select top 1 __ro2sq(o) from DB.DBA.RDF_QUAD where S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#type', 0) );
+           if (rdf_box_data(mt) not like 'text/%') {
+            goto usual_iri;
+           }
+           src := ( select top 1 coalesce(id_to_iri(O), NULL) from DB.DBA.RDF_QUAD where S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0) );
+           abody:='';
+           if(src is not NULL and length(src)>5) {
+             abody := sprintf('<iframe src="%s" width="100%%" height="100%%" frameborder="0" sandbox="sandbox"><p>Your browser does not support iframes.</p></iframe></div><br/>', src);
+           } else {
+               if(mt like '%html%') {
+                 abody := (select top 1 __rdf_sqlval_of_obj(O) from RDF_QUAD
+                     where S=iri_to_id(_url)
+                     and P=iri_to_id('http://bblfish.net/work/atom-owl/2006-06-06/#body'));
+                }
+            }
+           if(abody is not null) {
+             abody := cast(abody as varchar);
+             if(length(abody)>5) {
+		declare lbl, vlbl any;
+		lbl := '';
+		if ((registry_get ('fct_desc_value_labels') = '1' or registry_get ('fct_desc_value_labels') = 0) and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
+		  lbl := b3s_label (_url, langs, 1);
+		if ((not isstring(lbl)) or length (lbl) = 0)
+		  lbl := b3s_uri_curie(_url);
+		http (sprintf ('<a %s class="uri" %s href="%s">', robotsrel, rdfa, b3s_http_url (_url, sid, _from)));
+		vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
+		http_value (case when vlbl <> 0 then vlbl else lbl end);
+		http (sprintf ('</a>'));
+		if (b3s_o_is_out (prop))
+		  http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
+                http(sprintf('<div id="x_content" class="content embedded">%s</div>', cast(abody as varchar)));
+             }
+           } else {
+                goto usual_iri;
+           }
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or b3s_o_is_img (prop))
 	 {
@@ -941,12 +1006,11 @@ again:
 	     lbl := b3s_uri_curie(_url);
 	   -- XXX: must encode as wide label to print correctly
 	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
-	   http (sprintf ('<a class="uri" href="%s">', b3s_http_url (_url, sid, _from)));
+	   http (sprintf ('<a %s class="uri" %s href="%s">', robotsrel, rdfa, b3s_http_url (_url, sid, _from)));
 	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
-	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _url else subj end));
-	   if (b3s_o_is_out (prop) and flag = 0)
+	   if (b3s_o_is_out (prop))
 	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
 	 }
 
@@ -993,7 +1057,7 @@ again:
        else
          http_value (vlbl);
        http ('</span>');
-       lang := '';
+       --lang := '';
      }
    else if (__tag (_object) = 211)
      {
@@ -1039,7 +1103,7 @@ again:
 
    if (lang is not NULL and lang <> '')
      {
-       http (sprintf ('(%s)', lang));
+       http (sprintf (' <small>(%s)</small>', lang));
      }
 
    http ('</span></li>');
@@ -1134,8 +1198,13 @@ fct_make_selector (in subj any, in sid integer)
 create procedure fct_make_curie (in url varchar, in lines any)
 {
   declare curie, chost, dhost varchar;
-  if (__proc_exists ('WS.CURI.curi_make_curi') is null)
+  declare len integer;
+
+  len := cast (registry_get('c_uri_min_url_len') as integer);
+  if (len = 0) len := 255;
+  if (__proc_exists ('WS.CURI.curi_make_curi') is null OR length(url) < len)
     return url;
+
   curie := WS.CURI.curi_make_curi (url);
   dhost := registry_get ('URIQADefaultHost');
   chost := http_request_header(lines, 'Host', null, dhost);
@@ -1257,6 +1326,66 @@ create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
   if (r = 0)
     return 100;
   return r;
+}
+;
+
+
+create function DB.DBA.FCT_GRAPH_USAGE_SUMMARY (in subj_iri any, in fld varchar, in lim integer := 20) returns any
+{
+  declare qr varchar;
+  declare q_txt, tot_dict, phy_dict, quad_maps, rset, tmp_res, res any;
+  declare tot_dict_size, ctr, len integer;
+  quad_maps := case fld when 'S' then sparql_quad_maps_for_quad (NULL, uname(subj_iri), NULL, NULL) else sparql_quad_maps_for_quad (NULL, NULL, NULL, uname(subj_iri)) end;
+  tot_dict_size := lim + length (quad_maps) * 2;
+  tot_dict := dict_new (tot_dict_size);
+  phy_dict := dict_new (lim);
+  qr := 'sparql define input:storage ""
+select str(?g) count (*)
+where
+  { graph ?g { ' || case fld when 'S' then '`iri(??)`' else '?s' end || ' ?p ' || case fld when 'O' then '`iri(??)`' else '?o' end || '
+      } } group by ?g order by desc 2 limit ' || cast (tot_dict_size as varchar);
+  rset := null;
+  exec (qr, null, null, vector (subj_iri), vector ('max_rows', lim), null, rset);
+  foreach (any g_and_cnt in rset) do
+    {
+      dict_put (phy_dict, g_and_cnt[0], g_and_cnt[1]);
+      dict_inc_or_put (tot_dict, g_and_cnt[0], g_and_cnt[1]);
+    }
+  foreach (any qm_item in quad_maps) do
+    {
+      declare qm any;
+      declare stat, msg varchar;
+      declare inx, rset_len integer;
+      qm := qm_item[0];
+      if (qm = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap')
+        goto done;
+      q_txt := string_output();
+      http ('sparql select str(?g) count (1) where { graph ?g { quad map ', q_txt);
+      http_sparql_object (qm, q_txt);
+      http (' { ', q_txt);
+      if ('O' = fld) http ('?s ?p ', q_txt);
+      http_sparql_object (__box_flags_tweak (subj_iri, 1), q_txt);
+      if ('S' = fld) http (' ?p ?o', q_txt);
+      http (' } } } limit ' || tot_dict_size, q_txt);
+      stat := '00000';
+      rset := null;
+      exec (string_output_string (q_txt), stat, msg, vector(), vector ('use_cache', 1, 'max_rows', tot_dict_size), null, rset);
+      rset_len := length (rset);
+      --dbg_obj_princ (string_output_string (q_txt));
+      --dbg_obj_princ (stat, msg, rset_len);
+      for (inx := 0; inx < rset_len; inx := inx + 1)
+        dict_inc_or_put (tot_dict, rset[inx][0], rset[inx][1]);
+    }
+done: ;
+  tmp_res := dict_to_vector (tot_dict, 2);
+  len := length (tmp_res) / 2;
+  res := make_array (len, 'any');
+  for (ctr := 0; ctr < len; ctr := ctr + 1)
+    res[ctr] := vector (tmp_res[ctr*2], tmp_res[ctr*2+1], dict_get (phy_dict, tmp_res[ctr*2], 0));
+  rowvector_digit_sort (res, 1, 0);
+  if (len > lim)
+  return subseq (res, 0, lim);
+  return res;
 }
 ;
 

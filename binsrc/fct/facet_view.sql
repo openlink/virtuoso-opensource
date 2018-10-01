@@ -871,11 +871,11 @@ fct_pretty_sparql (in q varchar, in lev int := 0)
   ses := string_output ();
   --q := sprintf ('%V', q);
   q := replace (q, '\n', ' ');
-  q := replace (q, '}', ' } ');
-  q := replace (q, '{', ' { ');
-  q := replace (q, ')', ' ) ');
-  q := replace (q, '(', ' ( ');
-  q := regexp_replace (q, '\\s\\s+', ' ', 1, null);
+  --q := replace (q, '}', ' } ');
+  --q := replace (q, '{', ' { ');
+  --q := replace (q, ')', ' ) ');
+  --q := replace (q, '(', ' ( ');
+  --q := regexp_replace (q, '\\s\\s+', ' ', 1, null);
   arr := split_and_decode (q, 0, '\0\0 ');
   inx := 0;
   fct_pretty_sparql_1 (arr, inx, length (arr), ses, lev);
@@ -1677,12 +1677,9 @@ if (isstring (http_param ('dbg_out')))
 
         <button id="new_lbl_btn">Describe</button><br/>
       </div>
-      '); if (registry_get ('urilbl_ac_init_status') <> '2') { http ('
-      <div class="ac_info">
-        <img class="txt_i" alt="info" src="/fct/images/info.png"/>
-        <span class="ac_info">Lookup data (re)generation in progress. Results will be incomplete.</span>
-      </div>
-      '); } http ('
+      ');
+      urilbl_ac_init_state(1);
+      http ('
     </div>
     <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
       <h2>Precision Search &amp; Find</h2>
@@ -1701,6 +1698,9 @@ if (isstring (http_param ('dbg_out')))
                autocomplete="off"/>
         <button id="new_uri_btn">Describe</button><br/>
       </div>
+      ');
+      urilbl_ac_init_state(1);
+      http ('
     </div> <!-- #TAB_PAGE_URI -->
   </div> <!-- #main_srch -->
   <div class="main_expln"><br/>
@@ -1827,11 +1827,12 @@ fct_open_iri (in tree any, in sid int, in iri varchar)
 
   http ('select xmlelement ("result", xmlagg (xmlelement ("row", xmlelement ("column", __ro2sq ("c1")), xmlelement ("column", fct_label ("c1", 0, ''facets'')), xmlelement ("column", xmlattributes (fct_lang ("c2") as "xml:lang", fct_dtp ("c2") as "datatype"), __ro2sq ("c2"))))) from (sparql define output:valmode "LONG" ', txt);
 
-  http (sprintf (' %s %s %s select ?c1 ?c2 where { <%s> ?c1 ?c2 } limit 10000) xx',
+  http (sprintf (' %s %s %s select ?c1 ?c2 where { ',
     	fct_graph_clause (tree),
 	fct_inf_clause (tree),
-	fct_sas_clause (tree),
-	iri), txt);
+	fct_sas_clause (tree) ), txt);
+  http_sparql_object (__box_flags_tweak (iri, 1), txt);
+  http (' ?c1 ?c2 } limit 10000) xx', txt);
 
   sqls:= '00000';
 

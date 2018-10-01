@@ -1194,12 +1194,12 @@ OAT.Map.loadApi = function(provider, optObj) {
     }
 
     var providers = {
-	'google':'http://maps.google.com/maps?file=api&v=2.x&async=2',
-	'googlev3':'http://maps.google.com/maps/api/js?sensor=true',
-	'yahoo':'http://api.maps.yahoo.com/ajaxymap?v=3.8',
-	'openlayers':'http://openlayers.org/api/OpenLayers.js',
-	'msve':'http://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.2',
-	'msve_atlascompat':'http://dev.virtualearth.net/mapcontrol/v6.2/js/atlascompat.js'
+	'google':'https://maps.google.com/maps?file=api&v=2.x&async=2',
+	'googlev3':'https://maps.google.com/maps/api/js?sensor=true',
+	'yahoo':'https://api.maps.yahoo.com/ajaxymap?v=3.8',
+	'openlayers':'https://openlayers.org/api/OpenLayers.js',
+	'msve':'https://dev.virtualearth.net/mapcontrol/mapcontrol.ashx?v=6.2',
+	'msve_atlascompat':'https://dev.virtualearth.net/mapcontrol/v6.2/js/atlascompat.js'
     };
 
     var options = {

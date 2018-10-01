@@ -319,12 +319,14 @@
       </label>
       <select name="limit">
         <xsl:attribute name="id"><xsl:value-of select="$pfx"/>_nres</xsl:attribute>
+	  <xsl:attribute name="onchange">javascript:fct_pager_go_to('<xsl:value-of select="$pfx"/>');</xsl:attribute>
         <xsl:call-template name="render-limit-opts">
           <xsl:with-param name="lim-list">20 50 100 150 200 300 400 500</xsl:with-param>
           <xsl:with-param name="limit" select="$limit"/>
         </xsl:call-template>
       </select>
       <span class="pager_stats">
+	<xsl:text> </xsl:text>
         <xsl:value-of select="$offs"/> - <xsl:value-of select="$offs + $rowcnt - 1"/> <xsl:text> of </xsl:text>
 	<xsl:value-of select="/facets/processed"/> <xsl:text> total&#8194;</xsl:text>
       </span>

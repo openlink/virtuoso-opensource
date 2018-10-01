@@ -175,7 +175,7 @@ create procedure fct_search () __soap_http 'text/html'
   else  
     {
       http_status_set (303);
-      http_header (sprintf ('Location: /sparql?query=%U&format=%U\r\n', fct_query (xtree_doc (cnt)), accept));
+      http_header (sprintf ('Location: /sparql?query=%U&format=%U&timeout=%s\r\n', fct_query (xtree_doc (cnt)), accept, registry_get ('fct_timeout_max')));
     }
 ret:
   return '';

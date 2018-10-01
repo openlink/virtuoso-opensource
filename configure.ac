@@ -3087,11 +3087,11 @@ AC_CONFIG_FILES([
 	docsrc/Makefile
 	libsrc/Makefile
 	binsrc/bpel/Makefile
-	binsrc/b3s/Makefile
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile
 	binsrc/dbpedia/Makefile
 	binsrc/driver/Makefile
+	binsrc/fct/Makefile
 	binsrc/hibernate/Makefile
 	binsrc/hosting/Makefile
 	binsrc/hosting/mono/Makefile
