@@ -85,7 +85,7 @@
     gr := 'http://' || gr;
 
   page_resource_uri := gr;
-  page_resource_uri := replace (page_resource_uri, '%23', '#');
+  --page_resource_uri := replace (page_resource_uri, '%23', '#');
 
   pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/usage.vsp', sprintf ('g=%U', page_resource_uri));
 
