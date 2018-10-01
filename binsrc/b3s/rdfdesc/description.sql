@@ -1328,8 +1328,8 @@ where
       rset := null;
       exec (string_output_string (q_txt), stat, msg, vector(), vector ('use_cache', 1, 'max_rows', tot_dict_size), null, rset);
       rset_len := length (rset);
-      dbg_obj_princ (string_output_string (q_txt));
-      dbg_obj_princ (stat, msg, rset_len);
+      --dbg_obj_princ (string_output_string (q_txt));
+      --dbg_obj_princ (stat, msg, rset_len);
       for (inx := 0; inx < rset_len; inx := inx + 1)
         dict_inc_or_put (tot_dict, rset[inx][0], rset[inx][1]);
     }
