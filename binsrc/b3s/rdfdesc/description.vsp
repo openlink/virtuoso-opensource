@@ -718,8 +718,19 @@ if (_subject <> '') {
 	  }
 	}
 
-	http_request_status ('HTTP/1.1 404 Not found');
+	if (err is not null)
+	{
+	  http_request_status ('HTTP/1.1 400 Bad Request');
+	  http ('<tr><td colspan="2"><div id="err">');
+	  http_value (err);
+	  http ('</div></td></tr>');
+	}
+	else
+	{
+	  http_request_status ('HTTP/1.1 404 Not Found');
 	http ('<tr><td colspan="2"><p>No further information is available.</p></td></tr>');
+      }
+
       }
 ?>
       </table>
