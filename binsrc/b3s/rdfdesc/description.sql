@@ -993,7 +993,7 @@ again:
        else
          http_value (vlbl);
        http ('</span>');
-       lang := '';
+       --lang := '';
      }
    else if (__tag (_object) = 211)
      {
