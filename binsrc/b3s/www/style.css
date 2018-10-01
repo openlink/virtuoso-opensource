@@ -73,3 +73,5 @@ a.rdf_source img { vertical-align: middle;margin-right: 5px;}
 #ft_l { float: left;}
 #ft_r { float: right;}
 #ft_l label { margin-right: 5px;}
+
+div.content.embedded { padding: 0.25em; height: 105%; margin-bottom: 1em; display: block; float: none; clear: both; }
