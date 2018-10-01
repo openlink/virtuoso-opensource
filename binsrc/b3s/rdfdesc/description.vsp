@@ -705,7 +705,7 @@ if (_subject <> '') {
       <div id="nav">
 	  <form action="/describe/" method="get">
 	  <div>
-	      <input type="hidden" name="url" value="<?V gr ?>" />
+	      <input type="hidden" name="url" value="<?V page_resource_uri ?>" />
               <input type="submit" name="go" value="Go" style="width: 0px; height: 0px; margin: 0px; padding: 0px; outline: none; border: 0px;" />
 	      <input type="hidden" name="distinct" value="<?V dist ?>" />
 	      <?vsp if (connection_get ('inf') is not null) { ?>
