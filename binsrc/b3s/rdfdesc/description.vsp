@@ -264,7 +264,12 @@ again:
   -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
   if (get_keyword ('sp', params) = '1')
     {
-      DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from <%s> where { ?x ?y ?z . }', _G), 'SPARQL', 1);
+      q_txt := string_output ();
+      http ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from ', q_txt);
+      http_sparql_object (__box_flags_tweak (_G, 1), q_txt);
+      http (' where { ?x ?y ?z . }', q_txt);
+      DB.DBA.EXEC_AS (string_output_string (q_txt), 'SPARQL', 1);
+
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
