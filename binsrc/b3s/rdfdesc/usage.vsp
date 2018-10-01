@@ -104,8 +104,12 @@
 
   label := b3s_label_get (data, langs);
 
-  exec (sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
-                  select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S), null, null, vector (), 0, meta, data);
+  q_txt := string_output ();
+  http (sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
+                  select ?o (lang(?o)) where { ', inf), q_txt);
+  http_sparql_object (__box_flags_tweak (_S, 1), q_txt);
+  http (' rdfs:comment ?o }', q_txt);
+  exec (string_output_string (q_txt), null, null, vector (), 0, meta, data);
   _subject := b3s_label_get (data, langs);
 
   rdf_link := sprintf ('/sparql?query=%U', sprintf ('define sql:describe-mode "CBD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S)); 

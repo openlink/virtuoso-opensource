@@ -152,17 +152,22 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 create procedure 
 b3s_e_type (in subj varchar)
 {
+  declare stat, msg any;
   declare meta, data, ll any;
   declare i int;
-  declare stat, msg any;
 
   ll := 'http://www.w3.org/2002/07/owl#Thing';
 
   if (length (subj))
-    {	
+    {
+      declare q_txt any;
       stat := '00000';
       data := null;
-      exec (sprintf ('sparql select ?tp where { <%s> a ?tp }', subj), stat, msg, vector (), 100, meta, data);
+      q_txt := string_output ();
+      http ('sparql select ?tp where { ', q_txt);
+      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      http (' a ?tp }', q_txt);
+      exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
 
       if (length (data))
 	{
@@ -183,6 +188,7 @@ b3s_type (in subj varchar,
           out url varchar,
           out c_iri varchar)
 {
+  declare stat, msg any;
   declare meta, data, ll any;
   declare i int;
 
@@ -192,9 +198,12 @@ b3s_type (in subj varchar,
 
   if (length (subj))
     {
-      exec (sprintf ('sparql select ?l ?tp %s where { <%s> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
-	  null, null, vector (), 100, meta, data);
-
+      declare q_txt any;
+      q_txt := string_output ();
+      http ('sparql select ?l ?tp ' || _from || ' where { ', q_txt);
+      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      http (' a ?tp optional { ?tp rdfs:label ?l } }', q_txt);
+      exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
       if (length (data))
 	{
 	  for (i := 0; i < length (data); i := i + 1)
@@ -241,18 +250,24 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
 	return 1;
     }
 
-  declare stmt, st, msg varchar;
+  declare st, msg varchar;
   declare meta,data any;
+  declare q_txt any;
   data := null;
   st := '00000';
   msg:= '';
-
-  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%s> }}', _f, _s);
-
-  exec (stmt, st, msg, vector(), 1, meta, data);
-
+  q_txt := string_output ();
+  http ('sparql select ?to ' || _f || ' where { quad map virtrdf:DefaultQuadMap { ?to a ', q_txt);
+  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  http (' }}', q_txt);
+  exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
   if (length (data)) return 1;
-
+  q_txt := string_output ();
+  http ('sparql select ?to ' || _f || ' where { graph ?g { ?to a ', q_txt);
+  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  http (' }}', q_txt);
+  exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
+  if (length (data)) return 1;
   return 0;
 }
 ;
@@ -517,26 +532,22 @@ b3s_render_ses_params (in with_graph int := 1)
 {
   declare i,s,ifp,sid varchar;
   declare grs any;
-
+  declare ses any;
+  ses := string_output ();
   i := connection_get ('inf');
   s := connection_get ('sas');
   sid := connection_get ('sid');
   grs := connection_get ('graphs', null);
 
-  if (i is not null) i := '&inf=' || sprintf ('%U', i);
-  if (s is not null) i := i || '&sas=' || sprintf ('%V', s);
-  if (sid is not null) i := i || '&sid=' || sprintf ('%V', sid);
-
+  if (i is not null) http (sprintf ('&inf=%U', i), ses);
+  if (s is not null) http (sprintf ('&sas=%V', s), ses);
+  if (sid is not null) http (sprintf ('&sid=%V', sid), ses);
   if (grs is not null and with_graph)
     {
       foreach (any x in grs) do
-	{
-	  i := i || sprintf ('&graph=%U', x);
+        http (sprintf ('&graph=%U', x), ses);
 	}
-    }
-
-  if (i is not null) return i;
-  else return '';
+  return string_output_string (ses);
 }
 ;
 
@@ -724,14 +735,14 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null, 
   if (length (_from))
     i := sprintf ('%s&graph=%U', i, _from);
   wurl := charset_recode (url, 'UTF-8', '_WIDE_');
-  return sprintf ('/describe/?url=%U%s', case when wurl <> 0 then wurl else url end, i);
+  return sprintf ('/describe/?url=%U%s', coalesce (wurl, url), i);
 };
 
 create procedure b3s_u2w (in u any)
 {
   declare w any;
   w := charset_recode (u, 'UTF-8', '_WIDE_');
-  return case when w <> 0 then w else u end;
+  return coalesce (w, u);
 }
 ;
 

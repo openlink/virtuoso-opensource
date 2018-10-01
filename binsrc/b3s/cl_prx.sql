@@ -134,12 +134,20 @@ end_loop:;
           else
             if ("url" not like 'nodeID://%')
 	      {
-	        exec (sprintf ('sparql %s %s %s CONSTRUCT { ?s ?p ?o } FROM <%S> WHERE { ?s ?p ?o }',
-	              defs, login, sponge, "url"), stat, msg, vector (), 0, metas, rset);
+	        declare q_ses any;
+	        q_ses := string_output ();
+	        http (sprintf ('sparql %s %s %s CONSTRUCT { ?s ?p ?o } FROM ', defs, login, sponge), q_ses);
+	        http_sparql_obj (__box_flags_tweak ("url", 1), q_ses);
+	        http (' WHERE { ?s ?p ?o }', q_ses);
+	        exec (string_output_string (q_ses), stat, msg, vector (), 0, metas, rset);
               }
 	    else
 	      {
-	        exec (sprintf ('sparql %s DESCRIBE <%S>', defs, "url"), stat, msg, vector (), 0, metas, rset);
+	        declare q_ses any;
+	        q_ses := string_output ();
+	        http (sprintf ('sparql %s DESCRIBE ', defs), q_ses);
+	        http_sparql_obj (__box_flags_tweak ("url", 1), q_ses);
+	        exec (string_output_string (q_ses), stat, msg, vector (), 0, metas, rset);
 	      }
 
 	  if (stat <> '00000')

@@ -1827,11 +1827,12 @@ fct_open_iri (in tree any, in sid int, in iri varchar)
 
   http ('select xmlelement ("result", xmlagg (xmlelement ("row", xmlelement ("column", __ro2sq ("c1")), xmlelement ("column", fct_label ("c1", 0, ''facets'')), xmlelement ("column", xmlattributes (fct_lang ("c2") as "xml:lang", fct_dtp ("c2") as "datatype"), __ro2sq ("c2"))))) from (sparql define output:valmode "LONG" ', txt);
 
-  http (sprintf (' %s %s %s select ?c1 ?c2 where { <%s> ?c1 ?c2 } limit 10000) xx',
+  http (sprintf (' %s %s %s select ?c1 ?c2 where { ',
     	fct_graph_clause (tree),
 	fct_inf_clause (tree),
-	fct_sas_clause (tree),
-	iri), txt);
+	fct_sas_clause (tree) ), txt);
+  http_sparql_object (__box_flags_tweak (iri, 1), txt);
+  http (' ?c1 ?c2 } limit 10000) xx', txt);
 
   sqls:= '00000';
 
