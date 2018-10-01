@@ -196,8 +196,8 @@ again:
 
   arr := rfc1808_parse_uri (gr);
 
-  if (gr[0] <> '#'[0] and arr[0] = '' and arr[1] = '' and arr[2] <> '')
-    gr := 'http://' || gr;
+--   if (gr[0] <> '#'[0] and arr[0] = '' and arr[1] = '' and arr[2] <> '')
+--     gr := 'http://' || gr;
 
   arr := rfc1808_parse_uri (gr);
   arr [5] := '';
