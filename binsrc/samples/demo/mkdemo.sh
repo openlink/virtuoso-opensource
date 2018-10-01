@@ -247,7 +247,7 @@ then
     if [ "x$HOST_OS" = "x" ]
     then
 	(cd $HOME/appsrc ; make)
-	(cd $HOME/binsrc/b3s ; make)
+	(cd $HOME/binsrc/fct ; make)
 	(cd $HOME/binsrc/bpel; make)
 	(cd $HOME/binsrc/isparql ; make)
 	(cd $HOME/binsrc/rdf_mappers ; make)
@@ -339,7 +339,7 @@ fi
 BREAK
 ECHO "Collecting and installing VAD packages"
 
-$LN $HOME/binsrc/b3s/fct_dav.vad .
+$LN $HOME/binsrc/fct/fct_dav.vad .
 $LN $HOME/binsrc/bpel/bpel_dav.vad .
 $LN $HOME/binsrc/isparql/isparql_dav.vad .
 $LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
