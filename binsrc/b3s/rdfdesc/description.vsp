@@ -737,8 +737,8 @@ if (_subject <> '') {
 	      <button type="submit" value="" name="last" <?vsp if (dis_next) { http ('disabled="disabled"'); } ?>>Last &#9656;&#9656;</button>
 	       &nbsp;&nbsp;&nbsp;
 	       Page <?V page + 1 ?> of <?V _last + 1 ?>  &nbsp;&nbsp;&nbsp;
-	       <input type="text" value="<?V page + 1 ?>" size="5" name="gp" /> &nbsp;
-	       <button type="submit" value="" name="go">Go</button>
+	       <input type="text" value="<?V page + 1 ?>" size="5" name="gp" <?vsp if (page <= 0 AND dis_next) { http('disabled="disabled"'); }?> /> &nbsp; 
+	       <button type="submit" value="" name="go" <?vsp if (page <= 0 AND dis_next) { http('disabled="disabled"'); }?> >Go</button>
 	<?vsp } } ?>
 	</div>
 	</form>
