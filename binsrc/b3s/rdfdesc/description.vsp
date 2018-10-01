@@ -347,10 +347,11 @@ again:
   rdf_link := sprintf ('/sparql?query=%U', __box_flags_tweak (sprintf ('define sql:describe-mode "CBD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S), 2)); 
   __box_flags_set (rdf_link, 2);
 
-  declare __res_desc, qs, qv, best_variant, accept varchar;
+  declare __res_desc, qs, qv, best_variant, accept, protocol varchar;
   declare best_q, curr float;
   declare inx int;
 
+  protocol := 'http'; if (is_https_ctx()) protocol := 'https';
   accept := http_request_header_full (lines, 'Accept', 'text/html');
   if (accept = '*/*')
     accept := 'text/html';
@@ -377,12 +378,12 @@ again:
       http_rewrite ();
       http_status_set (406);
       http_header ('Alternates: ');
-      http_header (http_header_get () || sprintf ('{ "http://%{WSHost}s/describe/?url=%U" 0.5 {type text/html}}', gr));
+      http_header (http_header_get () || sprintf ('{ "%s://%{WSHost}s/describe/?url=%U" 0.5 {type text/html}}', protocol, gr));
       inx := 0;
       foreach (varchar q in qs) do
         {
 	  if (q  not in ('text/html', 'application/xhtml+xml'))
-	    http_header (http_header_get () || sprintf (', { "http://%{WSHost}s%s&format=%U" %.2f {type %s}}', rdf_link, q, qv[inx], q));
+	    http_header (http_header_get () || sprintf (', { "%s://%{WSHost}s%s&format=%U" %.2f {type %s}}', protocol, rdf_link, q, qv[inx], q));
           inx := inx + 1;
 	}
       http_header (http_header_get () || '\r\n');
@@ -392,7 +393,7 @@ again:
     {
       http_rewrite ();
       http_status_set (303);
-      http_header (sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nLocation: http://%{WSHost}s%s&format=%U\r\n', rdf_link, best_variant));
+      http_header (sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nLocation: %s://%{WSHost}s%s&format=%U\r\n', protocol, rdf_link, best_variant));
       return;
     }
   __res_desc := b3s_uri_curie(page_resource_uri);
@@ -677,8 +678,7 @@ if (_subject <> '') {
 	  -- The view dataset is empty.
 	  -- Rather than display an empty result set, force automatic sponging.
 
-	  declare spongeUrl, protocol varchar;
-	  protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+	  declare spongeUrl varchar;
 	  spongeUrl := sprintf ('%s://%s/describe/?url=%U&sponger:get=add&sr=clean', protocol, host, gr);
 
 	  if (not sponge_request)
