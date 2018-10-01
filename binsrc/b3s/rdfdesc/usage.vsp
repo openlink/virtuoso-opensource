@@ -152,7 +152,7 @@
 
 <!-- header -->
 <head>
-    <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
+    <base href="/fct/rdfdesc/" />
     <title>Metadata about: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
     <link rel="stylesheet" type="text/css" href="styles/default.css" charset="utf-8" />
