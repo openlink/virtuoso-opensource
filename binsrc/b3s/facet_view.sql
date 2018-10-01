@@ -1677,12 +1677,9 @@ if (isstring (http_param ('dbg_out')))
 
         <button id="new_lbl_btn">Describe</button><br/>
       </div>
-      '); if (registry_get ('urilbl_ac_init_status') <> '2') { http ('
-      <div class="ac_info">
-        <img class="txt_i" alt="info" src="/fct/images/info.png"/>
-        <span class="ac_info">Lookup data (re)generation in progress. Results will be incomplete.</span>
-      </div>
-      '); } http ('
+      ');
+      urilbl_ac_init_state(1);
+      http ('
     </div>
     <div id="TAB_PAGE_URI" class="tab_page" style="display: none">
       <h2>Precision Search &amp; Find</h2>
@@ -1701,6 +1698,9 @@ if (isstring (http_param ('dbg_out')))
                autocomplete="off"/>
         <button id="new_uri_btn">Describe</button><br/>
       </div>
+      ');
+      urilbl_ac_init_state(1);
+      http ('
     </div> <!-- #TAB_PAGE_URI -->
   </div> <!-- #main_srch -->
   <div class="main_expln"><br/>

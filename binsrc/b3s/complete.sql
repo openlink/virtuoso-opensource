@@ -238,6 +238,35 @@ urilbl_ac_init_log (in msg varchar)
 }
 ;
 
+create procedure
+urilbl_ac_init_state(in info integer := 1)
+{
+    declare sts integer;
+    declare msg varchar;
+
+    sts := cast (registry_get ('urilbl_ac_init_status') as integer);
+    msg := case sts
+	when 0		then 'Entity Lookup table has not been generated.'
+	when 1		then 'Entity Lookup table (re)generation in progress.'
+	when 2		then 'Entity Lookup table has been successfully generated.'
+	when 4711 	then 'Entity Lookup table generation failed.'
+	else 		      sprintf('Entity Lookup table in unknown state: %d', sts)
+    end;
+
+    if (info = 1) {
+	if (sts = 2) return;
+	http (sprintf ('
+	    <div class="ac_info">
+		<a href="urilbl_status.vsp"><img class="txt_i" alt="info" src="/fct/images/info.png"/></a>
+		<span class="ac_info">%V Contact the site administrator.</span>
+	    </div>
+	', msg));
+    } else {
+	http(sprintf (' <p>%V</p', msg));
+    }
+}
+;
+
 
 -- Originally from rdf_mappers/rdfdesc.sql
 -- Determine q of given lang based on value of Accept-Language hdr
