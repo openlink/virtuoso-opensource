@@ -940,13 +940,32 @@ again:
        http (sprintf ('<!-- %d -->', length (_url)));
 
        rdfa := b3s_rel_print (prop, rel, 0);
-       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
-	 {
-	   declare src any;
-	   whenever not found goto usual_iri;
-	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where
-	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
-	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0" sandbox=""><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
+       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _url like '%#content%') {
+          declare src, abody, mt any;
+          -- whenever not found goto usual_iri;
+           mt := null;
+          mt := (select top 1 __ro2sq(o) from DB.DBA.RDF_QUAD where S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#type', 0) );
+           if (rdf_box_data(mt) not like 'text/%') {
+            goto usual_iri;
+           }
+           src := ( select top 1 coalesce(id_to_iri(O), NULL) from DB.DBA.RDF_QUAD where S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0) );
+           abody:='';
+           if(src is not NULL and length(src)>5) {
+             abody := sprintf('<iframe src="%s" width="100%%" height="100%%" frameborder="0" sandbox="sandbox"><p>Your browser does not support iframes.</p></iframe></div><br/>', src);
+           } else {
+               if(mt like '%html%') {
+                 abody := (select top 1 __rdf_sqlval_of_obj(O) from RDF_QUAD
+                     where S=iri_to_id(_url)
+                     and P=iri_to_id('http://bblfish.net/work/atom-owl/2006-06-06/#body'));
+                }
+            }
+           if(abody is not null) {
+             abody := cast(abody as varchar);
+             if(length(abody)>5) {
+                http(sprintf('<div id="x_content" class="content embedded">%s</div>', cast(abody as varchar)));
+             }
+             goto usual_iri;
+           }
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or b3s_o_is_img (prop))
 	 {
