@@ -388,8 +388,8 @@
 	<span about=""
 	resource="http://www.w3.org/TR/rdfa-syntax"
 	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
-	<a href="http://validator.w3.org/check?uri=referer"><img
-	    src="http://www.w3.org/Icons/valid-xhtml-rdfa"
+	<a href="//validator.w3.org/check?uri=referer"><img
+	    src="//www.w3.org/Icons/valid-xhtml-rdfa"
 	    alt="Valid XHTML + RDFa" height="27" /></a>
 	</span>
 	<br />
