@@ -304,26 +304,26 @@ b3s_get_types (in _s varchar,
     return vector ();
 
   vectorbld_init (t_a);
-      data := null;
+  data := null;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { quad map virtrdf:DefaultQuadMap { ', q_txt);
   http_sparql_object (__bft (_s, 1), q_txt);
-  http (' a ?tp } }', q_txt);
+  http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
   len := length(data);
-	  for (i := 0;i < length(data); i := i + 1) 
-            {
+  for (i := 0;i < length(data); i := i + 1) 
+    {
       declare tp any;
       tp := data[i][0];
 --    dbg_printf ('data[%d][0]: %s', i, tp);
       vectorbld_acc (t_a, vector (tp, b3s_uri_curie (tp), b3s_label (tp, langs)));
-        }
+    }
   if (len)
     goto skip_virt_graphs;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { graph ?g { ', q_txt);
   http_sparql_object (__bft (_s, 1), q_txt);
-  http (' a ?tp } }', q_txt);
+  http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
   len := length(data);
   for (i := 0; i < length(data); i := i + 1)
