@@ -1198,8 +1198,13 @@ fct_make_selector (in subj any, in sid integer)
 create procedure fct_make_curie (in url varchar, in lines any)
 {
   declare curie, chost, dhost varchar;
-  if (__proc_exists ('WS.CURI.curi_make_curi') is null)
+  declare len integer;
+
+  len := cast (registry_get('c_uri_min_url_len') as integer);
+  if (len = 0) len := 255;
+  if (__proc_exists ('WS.CURI.curi_make_curi') is null OR length(url) < len)
     return url;
+
   curie := WS.CURI.curi_make_curi (url);
   dhost := registry_get ('URIQADefaultHost');
   chost := http_request_header(lines, 'Host', null, dhost);
