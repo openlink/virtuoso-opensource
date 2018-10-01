@@ -64,7 +64,7 @@ urilbl_ac_init_db ()
   commit work;
   cl_exec('registry_set (''urilbl_ac_init_status'',''2'')');
  finished:;
-  urilbl_ac_init_log (sprintf ('urilbl_ac_init_db: Finished. %d rows, %d ins, %d strange./n',
+  urilbl_ac_init_log (sprintf ('urilbl_ac_init_db: Finished. %d rows, %d ins, %d strange.',
               n, n_ins, n_strange));
 }
 ;
