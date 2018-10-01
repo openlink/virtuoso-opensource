@@ -607,15 +607,15 @@ if (_subject <> '') {
 
       if (length (_F) or 1 = sys_stat ('cl_run_local_only'))
       {
-      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
+      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT any, 0 as FLAG int from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
       }
       else
       {
         gs_check_cond := case gs_check_needed when 0 then '' else sprintf (' AND DB.DBA.RDF_GRAPH_USER_PERMS_ACK (G, %d, 1)', gs_user_id) end;
-      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 0 as FLAG int from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) %s ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1',
+      dt1 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT any, 0 as FLAG int from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) %s ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1',
         tbinf, _S, gs_check_cond, tbsas);
       }
-      dt2 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT LONG VARCHAR, 1 as FLAG int from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
+      dt2 := sprintf ('select id_to_iri ("p") as PRED, __ro2sq ("o") as OBJECT any, 1 as FLAG int from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
 
       --topof := '';
       qry_str := sprintf ('select %s PRED, OBJECT, FLAG from (%s UNION ALL %s) un0', topof, dt1, dt2);
@@ -625,7 +625,7 @@ if (_subject <> '') {
         {
 	  if (length (_F) or 1 = sys_stat ('cl_run_local_only'))
             {
-	      dt1 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
+	      dt1 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { <%s> ?p ?o }  order by 1) sp1', inf, _F, _S);
 	    }
           else
 	    {
@@ -633,7 +633,7 @@ if (_subject <> '') {
               dt1 := sprintf ('select count(*) as cnt from (SELECT DISTINCT p, o FROM DB.DBA.RDF_QUAD %s where s = __i2idn (\'%s\' , 1) %s ORDER BY 1 ASC OPTION (QUIETCAST %s)) sp1',
                 tbinf, _S, gs_check_cond, tbsas);
 	    }
-	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
+	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "AUTO" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
 
 	  declare cnt1, cnt2 integer;
 
