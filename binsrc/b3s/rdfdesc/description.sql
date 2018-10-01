@@ -1039,7 +1039,7 @@ again:
 
    if (lang is not NULL and lang <> '')
      {
-       http (sprintf ('(%s)', lang));
+       http (sprintf (' <small>(%s)</small>', lang));
      }
 
    http ('</span></li>');
