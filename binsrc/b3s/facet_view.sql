@@ -871,11 +871,11 @@ fct_pretty_sparql (in q varchar, in lev int := 0)
   ses := string_output ();
   --q := sprintf ('%V', q);
   q := replace (q, '\n', ' ');
-  q := replace (q, '}', ' } ');
-  q := replace (q, '{', ' { ');
-  q := replace (q, ')', ' ) ');
-  q := replace (q, '(', ' ( ');
-  q := regexp_replace (q, '\\s\\s+', ' ', 1, null);
+  --q := replace (q, '}', ' } ');
+  --q := replace (q, '{', ' { ');
+  --q := replace (q, ')', ' ) ');
+  --q := replace (q, '(', ' ( ');
+  --q := regexp_replace (q, '\\s\\s+', ' ', 1, null);
   arr := split_and_decode (q, 0, '\0\0 ');
   inx := 0;
   fct_pretty_sparql_1 (arr, inx, length (arr), ses, lev);
