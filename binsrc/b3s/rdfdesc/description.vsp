@@ -634,16 +634,32 @@ if (_subject <> '') {
                 tbinf, _S, gs_check_cond, tbsas);
 	    }
 	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%s> } order by 1) sp2', inf, _F, _S);
-	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
+
+	  declare cnt1, cnt2 integer;
+
+	  count_str := dt1;
+          if (dist = 0)
+            count_str := replace (count_str, 'distinct', '');
+          count_str := replace (count_str, 'order by 1', '');
+	  exec (count_str, null, null, vector (), 0, meta, data);
+	  if (length (data) and length (data[0]))
+	    cnt1 := data[0][0]; -- sum is supposed to have always number
+	  else
+	    cnt1 := 0;
+
+	  count_str := dt2;
           if (dist = 0)
           count_str := replace (count_str, 'distinct', '');
           count_str := replace (count_str, 'order by 1', '');
-	  -- dbg_obj_princ ('count_str = ', count_str);
 	  exec (count_str, null, null, vector (), 0, meta, data);
 	  if (length (data) and length (data[0]))
-	    _last := data[0][0]; -- sum is supposed to have always number
+	    cnt2 := data[0][0]; -- sum is supposed to have always number
           else
-	    _last := n_per_page;
+	    cnt2 := 0;
+
+          _last := cnt1 + cnt2;
+	  --if (_last = 0)
+	  --_last := n_per_page;
 	  _last := _last / n_per_page;
         }
 
