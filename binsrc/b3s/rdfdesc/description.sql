@@ -891,9 +891,15 @@ create procedure
 b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
    declare lang, rdfs_type, rdfa, visible any;
+   declare robotsrel varchar;
 
    if (_object is null)
      return;
+
+   robotsrel := registry_get('fct_robots_rel');
+   if(robotsrel is null or robotsrel='' or robotsrel=0) {
+    robotsrel:=' rel="nofollow" ';
+   }
 
    if (__tag (_object) = 230)
      {
@@ -987,7 +993,7 @@ again:
 	     lbl := b3s_uri_curie(_url);
 	   -- XXX: must encode as wide label to print correctly
 	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
-	   http (sprintf ('<a class="uri" %s href="%s">', rdfa, b3s_http_url (_url, sid, _from)));
+	   http (sprintf ('<a %s class="uri" %s href="%s">', robotsrel, rdfa, b3s_http_url (_url, sid, _from)));
 	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
