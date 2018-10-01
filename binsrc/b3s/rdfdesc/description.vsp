@@ -472,11 +472,11 @@ again:
       <?vsp } else { ?>
       <li><a href="/fct/">Facets (new session)</a></li>
       <?vsp } ?>
-      <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?V _S ?><?V ses_parms ?>" class="sel">Description</a></li>
+      <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?U b3s_u2w(_S) ?><?V ses_parms ?>" class="sel">Description</a></li>
       <li id="mnu_usage">
         <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Metadata</a>
       </li>
-      <li id="mnu_settings"><a href="settings.vsp?g=<?U _S ?><?V ses_parms ?>">Settings</a>
+      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w(_S) ?><?V ses_parms ?>">Settings</a>
         <div id="settings_popup" style="display: none">
           <ul>
             <li>
