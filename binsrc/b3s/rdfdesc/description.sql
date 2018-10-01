@@ -968,9 +968,22 @@ again:
            if(abody is not null) {
              abody := cast(abody as varchar);
              if(length(abody)>5) {
+		declare lbl, vlbl any;
+		lbl := '';
+		if ((registry_get ('fct_desc_value_labels') = '1' or registry_get ('fct_desc_value_labels') = 0) and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
+		  lbl := b3s_label (_url, langs, 1);
+		if ((not isstring(lbl)) or length (lbl) = 0)
+		  lbl := b3s_uri_curie(_url);
+		http (sprintf ('<a %s class="uri" %s href="%s">', robotsrel, rdfa, b3s_http_url (_url, sid, _from)));
+		vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
+		http_value (case when vlbl <> 0 then vlbl else lbl end);
+		http (sprintf ('</a>'));
+		if (b3s_o_is_out (prop))
+		  http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/fct-linkout-16-blk.png" border="0"/></a>', _url));
                 http(sprintf('<div id="x_content" class="content embedded">%s</div>', cast(abody as varchar)));
              }
-             goto usual_iri;
+           } else {
+                goto usual_iri;
            }
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or b3s_o_is_img (prop))
