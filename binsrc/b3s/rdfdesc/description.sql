@@ -1259,6 +1259,66 @@ create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
 }
 ;
 
+
+create function DB.DBA.FCT_GRAPH_USAGE_SUMMARY (in subj_iri any, in fld varchar, in lim integer := 20) returns any
+{
+  declare qr varchar;
+  declare q_txt, tot_dict, phy_dict, quad_maps, rset, tmp_res, res any;
+  declare tot_dict_size, ctr, len integer;
+  quad_maps := case fld when 'S' then sparql_quad_maps_for_quad (NULL, uname(subj_iri), NULL, NULL) else sparql_quad_maps_for_quad (NULL, NULL, NULL, uname(subj_iri)) end;
+  tot_dict_size := lim + length (quad_maps) * 2;
+  tot_dict := dict_new (tot_dict_size);
+  phy_dict := dict_new (lim);
+  qr := 'sparql define input:storage ""
+select str(?g) count (*)
+where
+  { graph ?g { ' || case fld when 'S' then '`iri(??)`' else '?s' end || ' ?p ' || case fld when 'O' then '`iri(??)`' else '?o' end || '
+      } } group by ?g order by desc 2 limit ' || cast (tot_dict_size as varchar);
+  rset := null;
+  exec (qr, null, null, vector (subj_iri), vector ('max_rows', lim), null, rset);
+  foreach (any g_and_cnt in rset) do
+    {
+      dict_put (phy_dict, g_and_cnt[0], g_and_cnt[1]);
+      dict_inc_or_put (tot_dict, g_and_cnt[0], g_and_cnt[1]);
+    }
+  foreach (any qm_item in quad_maps) do
+    {
+      declare qm any;
+      declare stat, msg varchar;
+      declare inx, rset_len integer;
+      qm := qm_item[0];
+      if (qm = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap')
+        goto done;
+      q_txt := string_output();
+      http ('sparql select str(?g) count (1) where { graph ?g { quad map ', q_txt);
+      http_sparql_object (qm, q_txt);
+      http (' { ', q_txt);
+      if ('O' = fld) http ('?s ?p ', q_txt);
+      http_sparql_object (__box_flags_tweak (subj_iri, 1), q_txt);
+      if ('S' = fld) http (' ?p ?o', q_txt);
+      http (' } } } limit ' || tot_dict_size, q_txt);
+      stat := '00000';
+      rset := null;
+      exec (string_output_string (q_txt), stat, msg, vector(), vector ('use_cache', 1, 'max_rows', tot_dict_size), null, rset);
+      rset_len := length (rset);
+      dbg_obj_princ (string_output_string (q_txt));
+      dbg_obj_princ (stat, msg, rset_len);
+      for (inx := 0; inx < rset_len; inx := inx + 1)
+        dict_inc_or_put (tot_dict, rset[inx][0], rset[inx][1]);
+    }
+done: ;
+  tmp_res := dict_to_vector (tot_dict, 2);
+  len := length (tmp_res) / 2;
+  res := make_array (len, 'any');
+  for (ctr := 0; ctr < len; ctr := ctr + 1)
+    res[ctr] := vector (tmp_res[ctr*2], tmp_res[ctr*2+1], dict_get (phy_dict, tmp_res[ctr*2], 0));
+  rowvector_digit_sort (res, 1, 0);
+  if (len > lim)
+  return subseq (res, 0, lim);
+  return res;
+}
+;
+
 create procedure b3s_gs_check_needed ()
 {
   declare gs_user_id integer;
@@ -1440,33 +1500,6 @@ create procedure b3s_get_user_graph_permissions (
     else
       view_mode := 'read-only';
   }
-
-  quad_maps := sparql_quad_maps_for_quad (NULL, NULL, NULL, uname(sub));
-  foreach (any qm_item in quad_maps) do
-    {
-      declare qm any;
-      declare stat, msg varchar;
-      qm := qm_item[0];
-      if (qm = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap')
-        goto ps_done;
-      q_txt := string_output();
-      http ('sparql select ?p ?s where { graph ?g { quad map ', q_txt);
-      http_sparql_object (qm, q_txt);
-      http (' { ?s ?p ', q_txt);
-      http_sparql_object (__box_flags_tweak (sub, 1), q_txt);
-      http (' } } } limit ' || (per_page + __max (total_len - skip, 0)), q_txt);
-      stat := '00000';
-      rset := null;
-      exec (string_output_string (q_txt), stat, msg, vector(), vector ('use_cache', 1, 'max_rows', maxrws), null, rset);
-      rset_len := length (rset);
-      dbg_obj_princ (string_output_string (q_txt));
-      dbg_obj_princ (stat, msg, rset_len);
-      for (inx := __max (skip - total_len, 0); inx < rset_len; inx := inx + 1)
-        result (rset[inx][0], rset[inx][1], 1);
-      total_len := total_len + rset_len;
-    }
-ps_done: ;
-
 }
 ;
 

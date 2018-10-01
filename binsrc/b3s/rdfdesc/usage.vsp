@@ -40,7 +40,7 @@
   declare dbg_enable varchar;
   declare dbg_out any;
   declare inf_rule varchar;
-  declare ses_parms varchar;
+  declare ses_params varchar;
   declare pageUrl varchar;
   declare user_permissions int;
 
@@ -74,7 +74,7 @@
 
   if (inf_rule is null) { inf_rule := 'b3sifp'; }
 
-  ses_parms := b3s_render_ses_params();
+  ses_params := b3s_render_ses_params ();
 
   host := http_request_header (http_request_header (), 'Host');
   langs := http_request_header_full (lines, 'Accept-Language', 'en');
@@ -172,11 +172,11 @@
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
       <?vsp } ?>
-      <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Description</a></li>
+      <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (page_resource_uri) ?><?V ses_params ?>">Description</a></li>
       <li id="mnu_usage" class="sel">
         <a href="javascript:void()" class="sel">Metadata</a>
       </li>
-      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
+      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w (page_resource_uri) ?><?V ses_params ?>">Settings</a></li>
     </ul>
 
   </div> <!-- #HD -->
@@ -198,19 +198,19 @@
     <div id="TAB_ROW">
       <div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
 	  <a  title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *subject* of one or more *RDF* based sentences' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *entity* of one or more *EAV* based sentences' end  ?>"
-	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Subject of Sentences In Document</a>
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_params ?>">Subject of Sentences In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
 	  <a title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *object* of one or more *RDF* based sentences' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *value* of one or more *EAV* based sentences' end ?>"
-	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Object of Sentences In Document</a>
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_params ?>">Object of Sentences In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
         <a title="A list of reconciled identifiers resulting from interpretation of equivalence by name semantics defined by the Web Ontology (OWL)."
-           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_parms ?>">Explicit Coreferences</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=3<?V ses_params ?>">Explicit Coreferences</a>
       </div>
       <div class="tab <?vsp http (case when tp = 4 then ' tab_selected' else '' end); ?>">
         <a title="A list of reconciled identifiers resulting from interpretation of equivalence by value using inverse functional property designation semantics defined by the Web Ontology (OWL)."
-           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_parms ?>">Implicit Coreferences</a>
+           href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=4<?V ses_params ?>">Implicit Coreferences</a>
       </div>
     </div> <!-- TAB_ROW -->
     <form name="f" action="usage.vsp?g=<?U page_resource_uri ?><?V b3s_render_ses_params(0) ?>" method="post">
@@ -221,59 +221,66 @@
 	    declare qr varchar;
 	    declare tgr any;
 	    tgr := vector ();
-	    if (tp = 1) -- refd in data sets
+  if (tp in (1, 2)) -- refd in data sets
 	      {
-		qr := 'sparql define input:storage "" select ?g count (*) where { graph ?g { `iri(??)` ?p ?o }} group by ?g order by desc 2 limit 20';
+      declare graph_usages any;
+      declare row_ctr, row_count integer;
+      graph_usages := DB.DBA.FCT_GRAPH_USAGE_SUMMARY (_S, case tp when 1 then 'S' else 'O' end, 20);
                 http ('<tr><th class="property">Graph IRI</th><th class="value">Count</th></tr>\n');
-	      }
-	    if (tp = 2) -- defd in data sets
+      row_count := length (graph_usages);
+      for (row_ctr := 0; row_ctr < row_count; row_ctr := row_ctr + 1)
 	      {
-	        qr := 'sparql define input:storage "" select ?g count (*) where { graph ?g { ?s ?p `iri(??)` }} group by ?g order by desc 2 limit 20';
-                http ('<tr><th>Graph IRI</th><th>Count</th></tr>\n');
+          declare grvar any;
+          declare tot, phy integer;
+          grvar := graph_usages[row_ctr][0];
+          tot := graph_usages[row_ctr][1];
+          phy := graph_usages[row_ctr][2];
+          http ('<tr>');
+          if (position (grvar, grs))
+            tgr := vector_concat (tgr, vector (grvar));
+          http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&graph=%U%s">%V</a></td>', 
+             grvar, 
+             case when position (grvar, grs) then 'checked' else '' end,
+             b3s_u2w (page_resource_uri), 
+             grvar,
+             ses_params,
+             grvar));
+          http ('<td align="right">');
+          http (case when phy = tot then sprintf ('%d triples', tot) when phy = 0 then sprintf ('%d virtual triples', tot) else sprintf ('%d triples: %d physical + %d virtual', tot, phy, tot - phy) end);
+          http ('</td></tr>\n');
+        }
 	      }
 	    if (tp = 3) -- Expanded sas
 	      {
-	         qr := 'sparql define input:storage "" select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = iri(??) ) } order by desc 2 limit 20';
 		 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n', 'Identifier (URI)'));
+      for (sparql define input:storage ""
+        select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) as ?rnk
+        where
+          {
+              { select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) .
+            filter (!isliteral (?syn) && ?s = iri(?:_S))
+          }
+        order by desc 2 limit 20) do
+        {
+          http ('<tr>');
+          http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', "syn", ses_params, b3s_uri_curie ("syn")));
+          http (sprintf ('<td align="right">%.6g</td>', "rnk"));
+          http ('</tr>\n');
+        }
 	      }
 	    if (tp = 4) -- Expanded ifp
 	      {
-	         qr := sprintf ('sparql define input:storage "" select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { `iri(??)` ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("%s", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', coalesce (inf_rule, 'b3sifp'));
+      qr := 'sparql define input:storage "" select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { `iri(??)` ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("' || coalesce (inf_rule, 'b3sifp') || '", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20';
 		 http (sprintf ('<tr><th>%s</th><th>%s</th><th>%s</th><th>Rank</th></tr>\n', fct_s_term (), fct_p_term (), fct_o_term ()));
-	      }
-
             b3s_dbg_out(dbg_out, qr);
-
 	    exec (qr, null, null, vector (_S), 0, null, null, h1); 
 	    while (0 = exec_next (h1, null, null, data))
 	      {
 	         http ('<tr>');
-                 if (tp = 1 or tp = 2)
-		   {
-		     declare grvar any;
-	             grvar := data[0];
-		     if (position (grvar, grs))
-		       tgr := vector_concat (tgr, vector (grvar));
-		     http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&graph=%U%s">%V</a></td>', 
-			grvar, 
-			case when position (grvar, grs) then 'checked' else '' end,
-			b3s_u2w (page_resource_uri), 
-			grvar, 
-			b3s_render_ses_params(), 
-			data[0]));
-		     http (sprintf ('<td align="right">%d</td>', data[1]));
-		   }
-		 else if (tp = 3)
-		  {
- 		     http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[0], b3s_render_ses_params(), b3s_uri_curie (data[0])));
-		     http (sprintf ('<td align="right">%.6g</td>', data[1]));
-		  }
-                 else if (tp = 4)
-		  {
- 		     http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[0], b3s_render_ses_params(), b3s_uri_curie (data[0])));
-		     http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[1], b3s_render_ses_params(), b3s_uri_curie (data[1])));
+          http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[0], ses_params, b3s_uri_curie (data[0])));
+          http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[1], ses_params, b3s_uri_curie (data[1])));
 		     if (__box_flags (data[2]) = 1)
-		       http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[2], b3s_render_ses_params(), b3s_uri_curie (data[2])));
+            http (sprintf ('<td><a href="/describe/?url=%U%s">%V</a></td>', data[2], ses_params, b3s_uri_curie (data[2])));
 		     else
                        {
 		         declare tmp any;
@@ -288,12 +295,10 @@
 		       }
 		     http (sprintf ('<td align="right">%.06g</td>', cast (data[3] as decimal)));
 		     --http (sprintf ('<td align="right">%s</td>', data[3]));
-		  }
 	         http ('</tr>\n');
 	      }
 	    exec_close (h1);
-	  ?>
-	  <?vsp 
+    }
 	  if (tp = 1 or tp = 2) { 
             foreach (any g in grs) do
               {
@@ -359,7 +364,6 @@
 	|
 	<?vsp } ?>
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
-
         &nbsp; &nbsp; Raw Data in:
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
