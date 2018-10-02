@@ -1,4 +1,252 @@
+2018-10-02  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.6-rc1
+
+	Fixed issue building with --debug-mtx
+
+	Moved binsrc/yacutia binsrc/conductor
+
+	Fixed missing variable declaration
+
+2018-10-02  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Revert "Fixed use TTLP_V"
+
+	This reverts commit 33568d4754b3d94b6049bb6bed38e9d30a7cb071.
+
+2018-10-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fct_fixes' into develop/7
+
+	Renamed binsrc/b3s to binsrc/fct
+
+	Updated VAD version
+
+	Fixed issue "Value of ANY type column too long" with long shapes
+
+	Fixed error handling
+
+	Fixed do counts separately instead of using UNION to avoid issue with expected/generated columns error
+
+	Fixed i18n issue
+
+	Fixed bad check
+
+	Fixed use TTLP_V
+
+	Disabled unwanted 'extra' decoding
+
+	Fixed bad URL encoding in tabs
+
+	Fixed URL encoding in pager
+
+	Fixed redirect URL encoding after sponging
+
+	Fixed missing call to onchange so page refreshes when Show x rows selector changes
+
+	Fixed typo
+
+	Added function urilbl_ac_init_state to reflect state of Entity Data generation
+
+	Fixed disable input fields to goto specific page if there is only a single page
+
+	Added check to make sure page is in range 0 .. last
+
+	Added guard against shortning already short URLs
+
+	Fixed issues loading insecure content into secure page
+
+	Fixed use https:// to work well with secure pages
+
+	Fixed issues with https in /describe content negotiation Alternates and Location headers
+
+	Fixed move usual proxyIRI-handling above embedded fragments
+
+	Fixed missing css
+
+	Added support for optionally tagging links as 'nofollow'
+
+	Added preview snippet for embedded content
+
+	Fixed issues with /describe page behind a (ssl) proxy
+
+	Fixed issues in b3s_get_types on weird data
+
+	Fixed issues using current prefixes for DBpedia in demos
+
+	Commented out debug lines
+
+	Fixed use RDFa instead of microdata
+
+	Commented out test code
+
+	Added statistics about users of IRI as subject or object in graph to Metadata page
+
+	Added support for IRIs from RDFviews
+
+	Fixed i18n issues in fct
+
+	Added timeout to the sparql query
+
+	Fixed types are always IRIs not a number or literal
+
+	Fixed fct_pretty_print could alter text inside strings leadign to mssing records in /sparql call
+
+	Fixed plink
+
+	Fixed show lang type in <small> font
+
+	Fixed show language if available
+
+2018-09-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed compiler warning
+
+	Removed duplicate memset
+
+	Fixed wrong sizeof potentially resulting in read io overhead
+
+	Fixed handling of empty and invalid geometries in exporter of geo_t to geos::geom::Geometry and in DE9-IM relate()
+
+2018-09-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/jdbc_cleanup' into develop/7
+
+	Rebuild JDBC drivers
+
+	Updated JDBC driver version
+
+	Files to ignore
+
+	Removed old ifdefs
+
+	Regenerated JDBC drivers
+
+	Updated JDBC driver version
+
+	Renamed default namespace from jdbc2 to jdbc4
+
+	Fixed spelling removing dangling quote e.g. cann't to cannot
+
+	Moved SSL support into the regular driver to save disk space
+
+	Removed support for JDK 1.1, 1.2, 1.3, 1.4 and 1.5
+
+	Fixed missign source file
+
+2018-09-23  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix close() for PreparedStatement
+
+2018-09-21  VOS Maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue with LDP POST command
+
+	Fixed LDP folder content return (by GET)
+
+2018-09-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed typos
+
+	Added new README.GeoSPARQL.md to documentation list
+
+	Added initial README for GeoSPARQL functionality
+
+	Added missing file
+
+	Merge branch 'feature/geosparql_port' into develop/7
+
+	Fixed order of libraries checked for tgetent to use with -ledit
+
+	Add plugin names to BUILD_OPTS when libraries check out
+
+	Fixed portability issues with testing features from libraries
+
+	Fixed portability
+
+	Added /usr/share/proj to allowed dirs for proj4 init
+
+	Fixed small issues building plugins
+
+	Added missing X509_STRING_DATE
+
+	Fixed indentation
+
+	Added stubs for single thread rwlock
+
+	Added more functions for plugin usage
+
+	Added option to pass extra include file to generated c code
+
+	Fixed conflict with GROUPING keyword and langinfo.h
+
+2018-09-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/geosparql_plugins' into develop/7
+
+	Updated engine version to 3230
+
+	Added proj4, geos and shapefileio plugins to build environment
+
+2018-09-18  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Initial merge of GeoSPARQL functionaly into VOS
+
+	Fixed issues with C++ compiler
+
+2018-09-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed namespace check for bif: and sql: and issues with system functions
+
+	Fixed issues using plugins with C++ compiler
+
+	Updated dict to use rwlock instead of mutex
+
+	Fixed issue building on windows
+
+	Merge branch 'feature/ssl' into develop/7
+
+	Fixed default cipher list
+
+	Fixed issues with SSL_CTX options
+
+	Fixed set default protocol to TLSv1.2 or newer when possible
+
+	Added support for Strict-Transport-Security header
+
+	Added check to make sure RPNG is properly seeded
+
+	Added support for Forward Secrecy using DH and ECDH
+
+	Fixed issue setting cipherlist on https ctx
+
+2018-08-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.5.1' into develop/7
+
+	Tagged v7.2.5.1 for release
+
+2018-08-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'hotfix/7.2.5.1' into stable/7
+
+	Fixed issue installing duplicate doc files
+
 2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Started new development cycle 7.2.6-dev
+
+2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.5' into develop/7
+
+	Tagged version 7.2.5 as next stable release
+
+2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.5' into stable/7
+
+	Updated changelog
 
 	Updated version to 7.2.5.3229 for stable release
 
@@ -6,7 +254,7 @@
 
 2018-08-15  Sergey Malinin  <smalinin@openlinksw.com>
 
-	Fixed VS projects
+	Fix VS projects
 
 2018-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
 

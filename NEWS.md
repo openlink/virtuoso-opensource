@@ -1,6 +1,50 @@
 NEWS
 ====
 
+October 2, 2018, v7.2.6-dev:
+----------------------------
+
+  * Virtuoso Engine
+    - Added new plugins proj4, geos and shapefileio for GeoSPARQL
+    - Added support for Strict-Transport-Security header
+    - Added check to make sure RPNG is properly seeded
+    - Added support for Forward Secrecy using DH and ECDH
+    - Added missing X509_STRING_DATE
+    - Added support for rwlock in dict
+    - Fixed default cipher list
+    - Fixed issues with SSL_CTX options
+    - Fixed set default protocol to TLSv1.2 or newer when possible
+    - Fixed issue setting cipherlist on https ctx
+
+  * SPARQL
+    - Added initial support for GeoSPARQL functions
+    - Fixed namespace check for bif: and sql: and issues with system functions
+
+  * JDBC Driver
+    - Fixed issue with closing stmt handle in PreparedStatement
+    - Removed support for deprecated versions of JDKs 1.1, 1.2, 1.3, 1.4 and 1.5
+    - Moved SSL connectivity into regular jdbc drivers
+
+  * Faceted Browser
+    - Added page to show state of Entity Data generation
+    - Added preview for embedded content
+    - Added statistics about users of IRI as subject or object in graph to Metadata page
+    - Added support for IRIs from RDFviews
+    - Fixed number of i18n issues with URL encodings in /describe
+    - Fixed issues with long values such as geo shapes
+    - Fixed issue with pager in /describe
+    - Fixed issue with page refresh when Show x rows selector changes
+    - Fixed issues with https in /describe content negotiation in Alternates and Location headers
+    - Fixed issues with /describe page behind a (ssl) proxy
+
+  * Conductor
+    - Moved binsrc/yacutia binsrc/conductor
+
+  * DAV
+    - Fixed issue with LDP POST command
+    - Fixed LDP folder content return (by GET)
+
+
 August 15, 2018, v7.2.5
 -----------------------
   * Virtuoso Engine
