@@ -67,6 +67,7 @@
   declare stat, msg varchar;
   declare metas, rset any;
   declare auto_sponge_on_empty_graph int;
+  declare q_txt any;
 
   if (registry_get ('fct_auto_sponge') = '1')
     auto_sponge_on_empty_graph := 1;
