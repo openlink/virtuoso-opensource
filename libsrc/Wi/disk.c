@@ -1567,7 +1567,7 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
 }
 
 int enable_buf_mprotect = 0;
-#ifdef PAGE_DEBUG
+#if defined(PAGE_DEBUG) || defined(MTX_DEBUG)
 void
 buf_prot_read (buffer_desc_t * buf)
 {
