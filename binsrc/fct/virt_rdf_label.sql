@@ -25,7 +25,7 @@
 
 delete from RDF_QUAD where G = iri_to_id ('virtrdf-label');
 
-TTLP_V (
+TTLP (
 '@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .

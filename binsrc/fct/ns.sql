@@ -35,7 +35,7 @@ DB.DBA.XML_SET_NS_DECL ('grs', 'http://www.georss.org/georss/', 2);
 
 --delete from rdf_quad where g = iri_to_id ('b3sonto');
 
-TTLP_V ('
+ttlp ('
 @prefix foaf: <http://xmlns.com/foaf/0.1/>
 @prefix dc: <http://purl.org/dc/elements/1.1/>
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -53,7 +53,7 @@ foaf:nick rdfs:subPropertyOf b3s:label .
 rdfs_rule_set ('b3s', 'b3sonto');
 
 
-TTLP_V ('
+ttlp ('
 @prefix foaf: <http://xmlns.com/foaf/0.1/>
 @prefix owl: <http://www.w3.org/2002/07/owl#>
 @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
