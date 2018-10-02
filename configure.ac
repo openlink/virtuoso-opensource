@@ -31,7 +31,7 @@ AC_PREREQ(2.59)
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
 m4_define(vos_patch,	[6])
-m4_define(vos_devel,	[-dev])
+m4_define(vos_devel,	[-rc1])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
