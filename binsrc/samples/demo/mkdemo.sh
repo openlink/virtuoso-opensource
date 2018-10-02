@@ -255,7 +255,7 @@ then
 	(cd $HOME/binsrc/samples/image_magick ; make)
 	(cd $HOME/binsrc/samples/sparql_demo ; make)
 	(cd $HOME/binsrc/tutorial ; make)
-	(cd $HOME/binsrc/yacutia ; make)
+	(cd $HOME/binsrc/conductor ; make)
     fi
 else
     (cd $HOME/binsrc/bpel; make )
@@ -346,7 +346,7 @@ $LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
 $LN $HOME/binsrc/rdb2rdf/rdb2rdf_dav.vad .
 $LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
 $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
-$LN $HOME/binsrc/yacutia/conductor_dav.vad .
+$LN $HOME/binsrc/conductor/conductor_dav.vad .
 
 [ -f conductor_dav.vad ] && DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
 [ -f fct_dav.vad ] && DO_COMMAND "vad_install ('fct_dav.vad')" dba dba

@@ -3159,7 +3159,7 @@ AC_CONFIG_FILES([
 	binsrc/ws/Makefile
 	binsrc/ws/wsrm/Makefile
 	binsrc/xddl/Makefile
-	binsrc/yacutia/Makefile
+	binsrc/conductor/Makefile
 	docsrc/chm/Makefile
 	docsrc/docwiki/Makefile
 	docsrc/html_virt/Makefile
