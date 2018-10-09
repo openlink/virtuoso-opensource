@@ -599,7 +599,7 @@ int
 ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg)
 {
   size_t boxlen = box_length (box);
-  char buf[100];
+  char buf[150];
   char *colon;
   if (boxlen > MAX_XML_QNAME_LENGTH)
     {
@@ -984,7 +984,25 @@ resume_sniffing:
         }
       else
         {
+          caddr_t msg = ERR_MESSAGE(err);
+          caddr_t longer_msg;
           /* ttlyydebug = 0; */
+          if ((strncmp (msg, "RDF29", 5) && strncmp (msg, "RDF30", 5)) && !THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &msg, 2000+2000))
+            { /* non-syntax error is not aware of file name and line, they should be imprinted */
+              char temp[2000];
+              int lineno = ttlp->ttlp_lexlineno;
+              const char *raw_text = ttlp->ttlp_raw_text;
+              snprintf (temp, sizeof (temp), "%.400s, line %d%.6s%.1000s%.6s: ",
+                ttlp->ttlp_err_hdr,
+                lineno,
+                ((NULL == raw_text) ? "" : " (at "),
+                ((NULL == raw_text) ? "" : raw_text),
+                ((NULL == raw_text) ? "" : ")" ) );
+              temp[sizeof(temp)-1] = '\0';
+              longer_msg = box_dv_short_strconcat (temp, msg);
+              ERR_MESSAGE(err) = longer_msg;
+              dk_free_box (msg);
+            }
           ttlp->ttlp_catched_error = err;
           if (NULL != ttlp->ttlp_iter_abend)
             {
@@ -1070,7 +1088,7 @@ bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	continue;
       dk_set_push (&report, box_dv_short_string (""));
       dk_set_push (&report,
-        box_sprintf (0x100, "#define % 25s %d /* '%s' (%c) */",
+        box_sprintf (0x100, "#define %25s %d /* '%s' (%c) */",
 	  ld->ld_yname, ld->ld_val, ld->ld_fmt, ld->ld_fmttype ) );
       for (cmd_idx = 0; cmd_idx < BOX_ELEMENTS(ld->ld_tests); cmd_idx++)
 	{
