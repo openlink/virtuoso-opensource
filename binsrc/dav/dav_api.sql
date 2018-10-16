@@ -5504,18 +5504,26 @@ create procedure DAV_RES_CONTENT_META (
 {
   -- dbg_obj_princ ('DAV_RES_CONTENT_META (', path, ', [content], [type], ', content_mode, extern, auth_uname, auth_pwd, ')');
   declare rc, auth_uid integer;
+  declare what varchar;
   declare id, cont any;
 
   if (path like '%,meta')
     path := subseq (path, 0, length (path) - length (',meta'));
 
-  id := DAV_SEARCH_ID (path, 'R');
+  what := 'R';
+  id := DAV_SEARCH_ID (path, what);
   if (DAV_HIDE_ERROR (id) is null)
-    return id;
+  {
+    what := 'C';
+    path := DAV_CONCAT_PATH (path, '/');
+    id := DAV_SEARCH_ID (path, what);
+    if (DAV_HIDE_ERROR (id) is null)
+      return id;
+  }
 
   if (extern)
   {
-    auth_uid := DAV_AUTHENTICATE (id, 'R', '1__', auth_uname, auth_pwd);
+    auth_uid := DAV_AUTHENTICATE (id, what, '1__', auth_uname, auth_pwd);
     if (auth_uid < 0)
       return auth_uid;
   }

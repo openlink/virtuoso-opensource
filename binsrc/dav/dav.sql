@@ -2491,19 +2491,25 @@ again:
 
   if (_res_id is null and _col_id is null)
   {
-    declare meta_path varchar;
+    declare meta_path, meta_what varchar;
     declare meta_id any;
     declare content_, type any;
 
     meta_path := DAV_CONCAT_PATH ('/', full_path);
     if (meta_path like '%,meta')
     {
+      meta_what := 'R';
       meta_path := subseq (meta_path, 0, length (meta_path) - length (',meta'));
-      meta_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (meta_path, 'R'));
+      meta_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (meta_path, meta_what));
+      if (meta_id is null)
+      {
+        meta_what := 'C';
+        meta_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (meta_path, '/'), meta_what));
+      }
       if (meta_id is null)
         goto _404;
 
-      rc := DAV_AUTHENTICATE_HTTP (meta_id, 'R', '1__', 1, lines, uname, upwd, uid, gid, perms);
+      rc := DAV_AUTHENTICATE_HTTP (meta_id, meta_what, '1__', 1, lines, uname, upwd, uid, gid, perms);
       if ((rc < 0) and (rc <> -1))
         goto _403;
 
