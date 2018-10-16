@@ -25,6 +25,8 @@
 #include "geo.h"
 #include "import_gate_virtuoso.h"
 
+#define PLUGIN_VERSION "1.0"
+
 query_t *srid_to_proj4_string_qr = NULL;
 id_hash_t *virt_proj4_sr_iri_to_srid = NULL;
 id_hash_t *virt_proj4_sr_srid_to_iri = NULL;
@@ -468,7 +470,7 @@ virt_proj4_plugin_connect ()
 
 static unit_version_t virt_proj4_version = {
   PLAIN_PLUGIN_TYPE,		/*!< Title of unit, filled by unit */
-  DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,	/*!< Version number, filled by unit */
+  PLUGIN_VERSION "." DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,	/*!< Version number, filled by unit */
   "OpenLink Software",		/*!< Plugin's developer, filled by unit */
   "Cartographic Projections support based on Frank Warmerdam's proj4 library",	/*!< Any additional info, filled by unit */
   0,				/*!< Error message, filled by unit loader */
