@@ -130,6 +130,7 @@ create procedure "DynaRes_DAV_AUTHENTICATE" (
   declare pacl any;
   declare _perms, a_gid any;
   declare webid, serviceId varchar;
+  declare a_cert any;
   whenever not found goto _exit;
 
   select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_ACL into pperms, puid, pgid, pacl from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
@@ -150,8 +151,9 @@ create procedure "DynaRes_DAV_AUTHENTICATE" (
       return a_uid;
   }
 
-  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid, a_cert))
     return a_uid;
+
 
   -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
@@ -204,6 +206,7 @@ create procedure "DynaRes_DAV_AUTHENTICATE_HTTP" (
   declare pacl any;
   declare u_password, pperms varchar;
   declare allow_anon integer;
+  declare a_cert any;
 
   -- used for error reporting in case of NetID or OAuth login
   declare webid, serviceId varchar;
@@ -229,8 +232,9 @@ create procedure "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
     if (rc < 0)
     {
-      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid, a_cert))
         return a_uid;
+
 
       -- Normalize the service variables for error handling in VAL
       if (not webid is null and serviceId is null)
