@@ -21,6 +21,8 @@
  *
  */
 
+#define PLUGIN_VERSION "1.0"
+
 #include <stdio.h>
 #include <iostream>
 #include <iomanip>
@@ -1325,7 +1327,7 @@ virt_geos_plugin_connect (void *data)
 
 static unit_version_t virt_geos_version = {
   PLAIN_PLUGIN_TYPE,		/*!< Title of unit, filled by unit */
-  DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,	/*!< Version number, filled by unit */
+  PLUGIN_VERSION "." DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,	/*!< Version number, filled by unit */
   "OpenLink Software",		/*!< Plugin's developer, filled by unit */
   "GEOS plugin based on Geometry Engine Open Source library from Open Source Geospatial Foundation",	/*!< Any additional info, filled by unit */
   0,				/*!< Error message, filled by unit loader */
