@@ -2231,23 +2231,12 @@ create function DAV_AUTHENTICATE_SSL_WEBID (
   inout webidGraph varchar,
   inout cert any := null)
 {
+  -- dbg_obj_princ ('DAV_AUTHENTICATE_SSL_WEBID (', webid, ')');
   webid := connection_get ('__webid');
   webidGraph := connection_get ('__webidGraph');
   if (isnull (webid))
   {
     declare fing, vtype any;
-
-    if (cert is null or cert = 0)
-      cert := client_attr ('client_certificate');
-
-    if (cert is null or cert = 0)
-    {
-      https_renegotiate (3);
-      cert := client_attr ('client_certificate');
-    }
-
-    if (cert is null or cert = 0)
-      return null;
 
     fing := get_certificate_info (6, cert);
     webidGraph := 'http:' || replace (fing, ':', '');
@@ -2454,6 +2443,18 @@ create function DAV_AUTHENTICATE_SSL (
     return rc;
 
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
+
+  if (a_cert is null or a_cert = 0)
+    a_cert := client_attr ('client_certificate');
+
+  if (a_cert is null or a_cert = 0)
+  {
+    https_renegotiate (3);
+    a_cert := client_attr ('client_certificate');
+  }
+
+  if (a_cert is null or a_cert = 0)
+    return rc;
 
   webidGraph := null;
   DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (a_webid, webidGraph, a_cert);
