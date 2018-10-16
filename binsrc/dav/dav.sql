@@ -2197,6 +2197,12 @@ create procedure WS.WS.PATCH (
   {
     declare giid, meta, data any;
 
+    if (_col is not null and _res_id is null)
+    {
+      DB.DBA.DAV_SET_HTTP_STATUS (412, '412 Precondition Failed', '412 Precondition Failed', 'The command is not applied to collections.');
+      return;
+    }
+
     if (not WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines))
       return;
 
