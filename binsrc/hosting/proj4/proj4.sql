@@ -162,18 +162,33 @@ create procedure DB.DBA.PROJ4_LOAD_SYS_SRIDS (in projdir varchar := '/usr/share/
       if (exists (select 1 from DB.DBA.SYS_PROJ4_SRIDS))
         return;
       {
-        whenever sqlstate '*' goto err;
-        log_message ('Initial setup of DB.DBA.SYS_PROJ4_SRIDS data from files in "' || projdir || '"');
+        whenever sqlstate '*' goto err1;
+        log_message ('Initializing DB.DBA.SYS_PROJ4_SRIDS');
+	log_message ('... checking for data files in "' || projdir || '"');
         DB.DBA.PROJ4_LOAD_SYS_SRIDS (projdir, 0);
         if (exists (select 1 from DB.DBA.SYS_PROJ4_SRIDS))
           log_message ('DB.DBA.SYS_PROJ4_SRIDS now contains ' || (select count(1) from DB.DBA.SYS_PROJ4_SRIDS) || ' spatial reference systems');
         return;
       }
-err:
+err1:
+      if (__SQL_STATE <> '42000' and __SQL_STATE <> '39000')
       log_message ('Error during initial setup of DB.DBA.SYS_PROJ4_SRIDS data: ' || __SQL_STATE || ': ' || __SQL_MESSAGE);
       rollback work;
+
+      whenever sqlstate '*' goto err2;
+
       delete from DB.DBA.SYS_PROJ4_SRIDS;
       commit work;
+
+      log_message ('... using built-in data');
+      DB.DBA.PROJ4_INIT_DATA();
+
+      commit work;
+      return;
+
+err2:
+      rollback work;
+      log_message ('Error during loading of built-in data into DB.DBA.SYS_PROJ4_SRIDS: ' || __SQL_STATE || ': ' || __SQL_MESSAGE);
       return;
     }
   DB.DBA.PROJ4_LOAD_INIT_FILE (projdir || '/epsg', 'EPSG');

@@ -46,13 +46,13 @@ proj4_la_LDFLAGS = -module -avoid-version -export-dynamic
 proj4_la_LDFLAGS += -export-symbols proj4.exp
 proj4_la_LIBADD = @PROJ4_LDFLAGS@ @PROJ4_LIBS@ -lm
 
-sql_code_proj4.c: proj4.sql $(SQL_AWK_DEPS) Makefile.am
+sql_code_proj4.c: proj4.sql proj4_init.sql $(SQL_AWK_DEPS) Makefile.am
 	$(GEN) $(GAWK) -o $@  \
                 -f $(top_srcdir)/libsrc/Wi/sql_to_c.awk \
                 -v init_name=_proj4 \
                 -v extra_include=import_gate_virtuoso.h \
                 -v pl_stats=$(PLSTATS) \
-                proj4.sql
+                proj4_init.sql proj4.sql
 
 .PHONY: generated
 generated: sql_code_proj4.c
@@ -65,4 +65,5 @@ generated: sql_code_proj4.c
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	$(srcdir)/proj4.exp \
-	$(srcdir)/proj4.sql
+	$(srcdir)/proj4.sql \
+	$(srcdir)/proj4_init.sql
