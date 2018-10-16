@@ -396,6 +396,8 @@ start_pass:
               int first_new_point_ofs, addon_count;
               switch (GEO_TYPE_NO_ZM (itm->geo_flags))
                 {
+                case GEO_NULL_SHAPE:
+                  continue;
                 case GEO_POINT:
                   if ((fabs (itm->XYbox.Xmin - prevX) <= geoc_EPSILON) && (fabs (itm->XYbox.Ymin - prevY) <= geoc_EPSILON))
                     continue;

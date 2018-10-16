@@ -89,6 +89,8 @@ export_geo_as_Geometry (geo_t *g)
   geos::geom::GeometryFactory *gf = get_GeometryFactory_by_srid (g->geo_srcode);
   switch (GEO_TYPE (g->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      return gf->createEmptyGeometry ();
     case GEO_POINT:
       return gf->createPoint (geos::geom::Coordinate (g->XYbox.Xmin, g->XYbox.Ymin));
     case GEO_POINT_Z:

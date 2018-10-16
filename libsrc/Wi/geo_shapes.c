@@ -819,6 +819,9 @@ geo_calc_bounding (geo_t * g, int flags)
   int res = 0;
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      GEO_XYBOX_SET_EMPTY(g->XYbox);
+      return GEO_LONG360ADD_NO_CHANGE;
     case GEO_POINT: case GEO_BOX:
       return GEO_LONG360ADD_NO_CHANGE;
     case GEO_POINTLIST:
@@ -1087,7 +1090,7 @@ geo_calc_bounding (geo_t * g, int flags)
       geo_ZMbox_t bbox;
       switch (GEO_TYPE_NO_ZM (g->geo_flags))
 	{
-	  /* case GEO_POINT: case GEO_BOX: --- note the "return" above, in the first switch */
+        /* case GEO_NULL_SHAPE: case GEO_POINT: case GEO_BOX: --- note the "return" above, in the first switch */
         case GEO_LINESTRING: case GEO_RING: case GEO_POINTLIST:
         case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
 	  {
@@ -1169,7 +1172,7 @@ geo_get_ZMbox_field (geo_t * g)
 {
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
-    case GEO_POINT: case GEO_BOX:
+    case GEO_NULL_SHAPE: case GEO_POINT: case GEO_BOX:
       return &(g->_.point.point_ZMbox);
     case GEO_LINESTRING: case GEO_RING: case GEO_POINTLIST:
     case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
@@ -1190,6 +1193,8 @@ geo_get_bounding_XYbox (geo_t * g, geo_t * box, geoc prec_x, geoc prec_y)
   box->geo_flags = GEO_BOX;
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      goto faraway; /* see below */
     case GEO_POINT:
       if (geoc_FARAWAY == Xkey (g))
 	goto faraway;		/* see below */
@@ -2175,6 +2180,8 @@ ewkt_print_sf12_one (geo_t * g, dk_session_t * ses, int named)
     }
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      return;
     case GEO_POINT:
       ewkt_print_sf12_points (ses, g->geo_flags, ((geoc_FARAWAY == g->XYbox.Xmin) ? 0 : 1),
 	  &(g->XYbox.Xmin), &(g->XYbox.Ymin), &(g->_.point.point_ZMbox.Zmin), &(g->_.point.point_ZMbox.Mmin));
@@ -2297,6 +2304,10 @@ wkb_print (geo_t *g, dk_session_t *ses, int basic_wkb_only, char set_byte_order)
   WKB_PRINT_BOM(ses);
   switch (g_type_no_zm)
     {
+    case GEO_NULL_SHAPE:
+      WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (WKB_POLYGON, 0));
+      WKB_PRINT_INT32 (ses, 0);
+      return;
     case GEO_POINT:
       WKB_PRINT_INT32 (ses, WKB_TYPE_WITH_ZM (WKB_POINT, g->geo_flags));
       WKB_PRINT_DOUBLE (ses, g->XYbox.Xmin);
@@ -2574,6 +2585,8 @@ geo_print_as_dxf_entity (geo_t *g, caddr_t *attrs, dk_session_t *ses)
   int flags_no_zm = GEO_TYPE_NO_ZM (g->geo_flags);
   switch (flags_no_zm)
     {
+    case GEO_NULL_SHAPE:
+      break;
     case GEO_POINT:
       SES_DXF_ID (ses, 0, "POINT");
       SES_DXF_XYZ (ses, 10, g->XYbox.Xmin, g->XYbox.Ymin, g->_.point.point_ZMbox.Zmin, g->geo_flags);
@@ -2709,6 +2722,7 @@ dv_geo_length (db_buf_t dv, long *hl, long *l)
       if (GEO_A_M & flags) dims++;
       switch (GEO_TYPE_CORE (flags))
 	{
+        case GEO_NULL_SHAPE: *l = len; return;
         case GEO_POINT: *l = len + dims * coord_len; return;
         case GEO_BOX: *l = len + 2 * dims * coord_len; return;
         case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
@@ -2779,6 +2793,7 @@ geo_calc_length_of_serialization (geo_t * g, int is_topmost)
 	len += (2 * dims * coord_len);	/* bbox */
       switch (GEO_TYPE_CORE (flags))
 	{
+        case GEO_NULL_SHAPE: return len;
         case GEO_POINT: return len + dims * coord_len;
         case GEO_BOX: return len + 2 * dims * coord_len;
         case GEO_LINESTRING:
