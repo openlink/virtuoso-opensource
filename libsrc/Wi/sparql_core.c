@@ -4839,8 +4839,8 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     }
   if (NULL != tail_to_check_for_infection_chars)
     for (c = tail_to_check_for_infection_chars; '\0' != c[0]; c++)
-      if (strchr ("\'\"\\()., +-/*|\t\n\r", c[0]))
-        spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt of bypassing security restrictions", fname);
+      if (strchr ("\'\"\\().,+/*|\t\n\r", c[0]))
+        spar_error (sparp, "Function name \"%.200s\" contains invalid characters; this may be an attempt to bypass security restrictions", fname);
   return;
 restricted:
   spar_error (sparp, "Function %.200s() cannot be used in text of SPARQL query due to security restrictions", fname);
