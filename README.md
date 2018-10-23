@@ -3,45 +3,46 @@
 
 Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>
 
+## Table of contents
 
-- [Introduction](#introduction)
-- [Package Dependencies](#package-dependencies)
-- [Diskspace Requirements](#diskspace-requirements)
-- [Make FAQ](#make-faq)
-    - [Generic build environment](#generic-build-environment)
-    - [AIX 4.x 32-bit](#aix-4.x-32-bit)
-    - [AIX 4.x 64-bit](#aix-4.x-64-bit)
-    - [AIX 5.x 32-bit](#aix-5.x-32-bit)
-    - [AIX 5.x 32-bit](#aix-5.x-32-bit)
-    - [Digital Unix/OSF1 V5.0 64-bit](#digital-unix/osf1-v5.0-64-bit)
-    - [HP/UX 11.00 32-bit](#hp/ux-11.00-32-bit)
-    - [HP/UX 11.00 64-bit](#hp/ux-11.00-64-bit)
-    - [HP/UX 11.23 Itanium 32-bit](#hp/ux-11.23-itanium-32-bit)
-    - [HP/UX 11.23 Itanium 64-bit](#hp/ux-11.23-itanium-64-bit)
-    - [Linux 32-bit](#linux-32-bit)
-    - [Linux 64-bit](#linux-64-bit)
-    - [Mac OS X 10.2 and 10.3 PPC 32-bit](#mac-os-x-10.2-and-10.3-ppc-32-bit)
-    - [Mac OS X 10.4 PPC 32-bit](#mac-os-x-10.4-ppc-32-bit)
-    - [Mac OS X 10.4 PPC 64-bit](#mac-os-x-10.4-ppc-64-bit)
-    - [Mac OS X 10.4 Universal 32-bit](#mac-os-x-10.4-universal-32-bit)
-    - [Mac OS X 10.5 32-bit](#mac-os-x-10.5-32-bit)
-    - [Mac OS X 10.5 64-bit](#mac-os-x-10.5-64-bit)
-    - [Mac OS X 10.5 Universal](#mac-os-x-10.5-universal)
-    - [Mac OS X 10.6 32-bit](#mac-os-x-10.6-32-bit)
-    - [Mac OS X 10.6 64-bit](#mac-os-x-10.6-64-bit)
-    - [Mac OS X 10.6 Universal](#mac-os-x-10.6-universal)
-    - [Mac OS X 10.7 32-bit](#mac-os-x-10.7-32-bit)
-    - [Mac OS X 10.7 64-bit](#mac-os-x-10.7-64-bit)
-    - [Mac OS X 10.7 Universal](#mac-os-x-10.7-universal)
-    - [Solaris 2.x i386 32-bit](#solaris-2.x-i386-32-bit)
-    - [Solaris 2.10 Opteron 32-bit](#solaris-2.10-opteron-32-bit)
-    - [Solaris 2.10 Opteron 64-bit](#solaris-2.10-opteron-64-bit)
-    - [Solaris 2.8 and above SPARC 32-bit](#solaris-2.8-and-above-sparc-32-bit)
-    - [Solaris 2.8 and above SPARC 32-bit](#solaris-2.8-and-above-sparc-32-bit)
-- [Installation](#installation)
-    - [Test Suite](#test-suite)
-- [Getting Started](#getting-started)
-    - [VAD Packages](#vad-packages)
+- Introduction
+- Package Dependencies
+- Diskspace Requirements
+- Make FAQ
+    - Generic build environment
+    - AIX 4.x 32-bit
+    - AIX 4.x 64-bit
+    - AIX 5.x 32-bit
+    - AIX 5.x 32-bit
+    - Digital Unix/OSF1 V5.0 64-bit
+    - HP/UX 11.00 32-bit
+    - HP/UX 11.00 64-bit
+    - HP/UX 11.23 Itanium 32-bit
+    - HP/UX 11.23 Itanium 64-bit
+    - Linux 32-bit
+    - Linux 64-bit
+    - Mac OS X 10.2 and 10.3 PPC 32-bit
+    - Mac OS X 10.4 PPC 32-bit
+    - Mac OS X 10.4 PPC 64-bit
+    - Mac OS X 10.4 Universal 32-bit
+    - Mac OS X 10.5 32-bit
+    - Mac OS X 10.5 64-bit
+    - Mac OS X 10.5 Universal
+    - Mac OS X 10.6 32-bit
+    - Mac OS X 10.6 64-bit
+    - Mac OS X 10.6 Universal
+    - Mac OS X 10.7 32-bit
+    - Mac OS X 10.7 64-bit
+    - Mac OS X 10.7 Universal
+    - Solaris 2.x i386 32-bit
+    - Solaris 2.10 Opteron 32-bit
+    - Solaris 2.10 Opteron 64-bit
+    - Solaris 2.8 and above SPARC 32-bit
+    - Solaris 2.8 and above SPARC 32-bit
+- Installation
+    - Test Suite
+- Getting Started
+    - VAD Packages
 
 
 
@@ -392,7 +393,9 @@ Note: on Solaris or Open Solaris we recommend you use gmake either from
 
 After running configure && make,
 
-    make install
+```bash
+make install
+```
 
 at the root of the build tree copies the files to the locations
 specified by the `--prefix` option to configure. The default of `--prefix`
@@ -442,8 +445,8 @@ of free disk space.
 Run
 
 ```bash
-    cd var/lib/virtuoso/db 
-    virtuoso-t -f &
+cd var/lib/virtuoso/db 
+virtuoso-t -f &
 ```
 
 to start the server in the background. It will not detach from the shell,
