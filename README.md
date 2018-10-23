@@ -1,56 +1,52 @@
 # Virtuoso Open-Source Edition: Building
-----------------------------------------
+
 
 Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>
 
 
-<!-- MarkdownTOC -->
-
-- ## Introduction
-- ## Package Dependencies
-- ## Diskspace Requirements
-- ## Make FAQ
-- ### Generic build environment
-- ### AIX 4.x 32-bit
-- ### AIX 4.x 64-bit
-- ### AIX 5.x 32-bit
-- ### AIX 5.x 32-bit
-- ### Digital Unix/OSF1 V5.0 64-bit
-- ### HP/UX 11.00 32-bit
-- ### HP/UX 11.00 64-bit
-- ### HP/UX 11.23 Itanium 32-bit
-- ### HP/UX 11.23 Itanium 64-bit
-- ### Linux 32-bit
-- ### Linux 64-bit
-- ### Mac OS X 10.2 and 10.3 PPC 32-bit
-- ### Mac OS X 10.4 PPC 32-bit
-- ### Mac OS X 10.4 PPC 64-bit
-- ### Mac OS X 10.4 Universal 32-bit
-- ### Mac OS X 10.5 32-bit
-- ### Mac OS X 10.5 64-bit
-- ### Mac OS X 10.5 Universal
-- ### Mac OS X 10.6 32-bit
-- ### Mac OS X 10.6 64-bit
-- ### Mac OS X 10.6 Universal
-- ### Mac OS X 10.7 32-bit
-- ### Mac OS X 10.7 64-bit
-- ### Mac OS X 10.7 Universal
-- ### Solaris 2.x i386 32-bit
-- ### Solaris 2.10 Opteron 32-bit
-- ### Solaris 2.10 Opteron 64-bit
-- ### Solaris 2.8 and above SPARC 32-bit
-- ### Solaris 2.8 and above SPARC 32-bit
-- ## Installation
-- ### Test Suite
-- ## Getting Started
-- ### VAD Packages
-
-<!-- /MarkdownTOC -->
+- [Introduction](#introduction)
+- [Package Dependencies](#package-dependencies)
+- [Diskspace Requirements](#diskspace-requirements)
+- [Make FAQ](#make-faq)
+    - [Generic build environment](#generic-build-environment)
+    - [AIX 4.x 32-bit](#aix-4.x-32-bit)
+    - [AIX 4.x 64-bit](#aix-4.x-64-bit)
+    - [AIX 5.x 32-bit](#aix-5.x-32-bit)
+    - [AIX 5.x 32-bit](#aix-5.x-32-bit)
+    - [Digital Unix/OSF1 V5.0 64-bit](#digital-unix/osf1-v5.0-64-bit)
+    - [HP/UX 11.00 32-bit](#hp/ux-11.00-32-bit)
+    - [HP/UX 11.00 64-bit](#hp/ux-11.00-64-bit)
+    - [HP/UX 11.23 Itanium 32-bit](#hp/ux-11.23-itanium-32-bit)
+    - [HP/UX 11.23 Itanium 64-bit](#hp/ux-11.23-itanium-64-bit)
+    - [Linux 32-bit](#linux-32-bit)
+    - [Linux 64-bit](#linux-64-bit)
+    - [Mac OS X 10.2 and 10.3 PPC 32-bit](#mac-os-x-10.2-and-10.3-ppc-32-bit)
+    - [Mac OS X 10.4 PPC 32-bit](#mac-os-x-10.4-ppc-32-bit)
+    - [Mac OS X 10.4 PPC 64-bit](#mac-os-x-10.4-ppc-64-bit)
+    - [Mac OS X 10.4 Universal 32-bit](#mac-os-x-10.4-universal-32-bit)
+    - [Mac OS X 10.5 32-bit](#mac-os-x-10.5-32-bit)
+    - [Mac OS X 10.5 64-bit](#mac-os-x-10.5-64-bit)
+    - [Mac OS X 10.5 Universal](#mac-os-x-10.5-universal)
+    - [Mac OS X 10.6 32-bit](#mac-os-x-10.6-32-bit)
+    - [Mac OS X 10.6 64-bit](#mac-os-x-10.6-64-bit)
+    - [Mac OS X 10.6 Universal](#mac-os-x-10.6-universal)
+    - [Mac OS X 10.7 32-bit](#mac-os-x-10.7-32-bit)
+    - [Mac OS X 10.7 64-bit](#mac-os-x-10.7-64-bit)
+    - [Mac OS X 10.7 Universal](#mac-os-x-10.7-universal)
+    - [Solaris 2.x i386 32-bit](#solaris-2.x-i386-32-bit)
+    - [Solaris 2.10 Opteron 32-bit](#solaris-2.10-opteron-32-bit)
+    - [Solaris 2.10 Opteron 64-bit](#solaris-2.10-opteron-64-bit)
+    - [Solaris 2.8 and above SPARC 32-bit](#solaris-2.8-and-above-sparc-32-bit)
+    - [Solaris 2.8 and above SPARC 32-bit](#solaris-2.8-and-above-sparc-32-bit)
+- [Installation](#installation)
+    - [Test Suite](#test-suite)
+- [Getting Started](#getting-started)
+    - [VAD Packages](#vad-packages)
 
 
 
 ## Introduction
----------------
+
 
 This document explains steps to take after obtaining a Virtuoso source
 snapshot or git clone.
@@ -61,14 +57,14 @@ with them.
 
 
 ## Package Dependencies
------------------------
+
 
 To generate the configure script and all other build files necessary,
 please make sure the following packages and recommended versions are
 installed on your system.
 
 |Package|Version|From|
-|:-----:|:-----:|:--:|
+|-------|-------|----|
 |autoconf|2.57|[http://www.gnu.org/software/autoconf/](http://www.gnu.org/software/autoconf/)|
 |automake|1.9|[http://www.gnu.org/software/automake/](http://www.gnu.org/software/automake/)|
 |libtool|1.5.16|[http://www.gnu.org/software/libtool/](http://www.gnu.org/software/libtool/)|
@@ -129,7 +125,7 @@ to get development headers & libraries for OpenSSL.
 
 
 ## Diskspace Requirements
--------------------------
+
 
 The build produces a demo database and Virtuoso application packages
 that are quite large. At least 800 MB of free space should be available
@@ -150,7 +146,7 @@ executable, depending on platform and options.
 
 
 ## Make FAQ
------------
+
 
 In the root directory of the checkout perform the following commands:
 
@@ -183,7 +179,7 @@ If your system requires additional flags not listed below, please contact
 us at <vos.admin@openlinksw.com>.
 
 ### Generic build environment
------------------------------
+
     CC=cc
     CFLAGS="-O"
     export CFLAGS CC
@@ -192,7 +188,7 @@ us at <vos.admin@openlinksw.com>.
     make install
 
 ### AIX 4.x 32-bit
-------------------
+
     CC=cc_r7
     CFLAGS="-O -q32"
     LDFLAGS="-brtl"
@@ -201,7 +197,7 @@ us at <vos.admin@openlinksw.com>.
     ./configure ...
 
 ### AIX 4.x 64-bit
-------------------
+
     CC=cc_r7
     CFLAGS="-O -q64"
     LDFLAGS="-brtl"
@@ -210,7 +206,7 @@ us at <vos.admin@openlinksw.com>.
     ./configure ...
 
 ### AIX 5.x 32-bit
-------------------
+
     CC=cc_r
     CFLAGS="-O -q32"
     LDFLAGS="-brtl"
@@ -219,7 +215,7 @@ us at <vos.admin@openlinksw.com>.
     ./configure ...
 
 ### AIX 5.x 32-bit
-------------------
+
     CC=cc_r
     CFLAGS="-O -q64"
     LDFLAGS="-brtl"
@@ -228,127 +224,127 @@ us at <vos.admin@openlinksw.com>.
     ./configure ...
 
 ### Digital Unix/OSF1 V5.0 64-bit
----------------------------------
+
     CFLAGS="-O"
     export CFLAGS
     ./configure ...
 
 ### HP/UX 11.00 32-bit
-----------------------
+
     CFLAGS="-O -Ae +DA1.1"
     export CFLAGS
     ./configure ...
 
 ### HP/UX 11.00 64-bit
-----------------------
+
     CFLAGS="-O -Ae +DA2.0W"
     export CFLAGS
     ./configure ...
 
 ### HP/UX 11.23 Itanium 32-bit
-------------------------------
+
     CFLAGS="-O -Ae +DD32"
     export CFLAGS
     ./configure ...
 
 ### HP/UX 11.23 Itanium 64-bit
-------------------------------
+
     CFLAGS="-O -Ae +DD64"
     export CFLAGS
     ./configure ...
 
 ### Linux 32-bit
-----------------
+
     CFLAGS="-O2"
     export CFLAGS
     ./configure ...
 
 ### Linux 64-bit
-----------------
+
     CFLAGS="-O2 -m64"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.2 and 10.3 PPC 32-bit
--------------------------------------
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.4 PPC 32-bit
-----------------------------
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.4 PPC 64-bit
-----------------------------
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.4 Universal 32-bit
-----------------------------------
+
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
 ### Mac OS X 10.5 32-bit
-------------------------
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.5"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.5 64-bit
-------------------------
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.5"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.5 Universal 
----------------------------
+
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.5.sdk -arch ppc -arch i386 -arch ppc64 -arch x86_64 -mmacosx-version-min=10.5"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
 ### Mac OS X 10.6 32-bit
-------------------------
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.6"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.6 64-bit
-------------------------
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.6"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.6 Universal 
----------------------------
+
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.6.sdk -arch i386 -arch x86_64 -mmacosx-version-min=10.6"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
 ### Mac OS X 10.7 32-bit
-------------------------
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.7"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.7 64-bit
-------------------------
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.7"
     export CFLAGS
     ./configure ...
 
 ### Mac OS X 10.7 Universal 
----------------------------
+
     CFLAGS="-O -arch i386 -arch x86_64 -mmacosx-version-min=10.7"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
 ### Solaris 2.x i386 32-bit
----------------------------
+
 Note: on Solaris or Open Solaris we recommend you use gmake either from
 /usr/ sfw/bin/ or install it from sunfreeware, as long as it's version
 3.80 or better.
@@ -360,7 +356,7 @@ Note: on Solaris or Open Solaris we recommend you use gmake either from
     ./configure ...
 
 ### Solaris 2.10 Opteron 32-bit
--------------------------------
+
     CC=cc
     CFLAGS="-O -xtarget=opteron"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
@@ -368,7 +364,7 @@ Note: on Solaris or Open Solaris we recommend you use gmake either from
     ./configure ...
 
 ### Solaris 2.10 Opteron 64-bit
--------------------------------
+
     CC=cc
     CFLAGS="-O -xtarget=opteron -xarch=amd64"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
@@ -376,7 +372,7 @@ Note: on Solaris or Open Solaris we recommend you use gmake either from
     ./configure ...
 
 ### Solaris 2.8 and above SPARC 32-bit
---------------------------------------
+
     CC=cc
     CFLAGS="-O"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
@@ -384,7 +380,7 @@ Note: on Solaris or Open Solaris we recommend you use gmake either from
     ./configure ...
 
 ### Solaris 2.8 and above SPARC 32-bit
---------------------------------------
+
     CC=cc
     CFLAGS="-O -xtarget=ultra -xarch=v9"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
@@ -392,7 +388,7 @@ Note: on Solaris or Open Solaris we recommend you use gmake either from
     ./configure ...
 
 ## Installation
----------------
+
 
 After running configure && make,
 
@@ -428,7 +424,6 @@ As of version 5.0.3, the demo is a VAD package, not a separate directory.
 
 
 ### Test Suite
---------------
 
 Optionally, you can run
 
@@ -442,7 +437,7 @@ of free disk space.
 
 
 ## Getting Started
-------------------
+
 
 Run
 
@@ -476,7 +471,7 @@ You will see a checkpoint in the terminal for each package selected:
 To connect with the command line SQL tool,
 
 ```bash
-    isql 1112 dba dba
+isql 1112 dba dba
 ```
 
 gives a SQL> prompt.
@@ -503,7 +498,6 @@ the Tutorial vad package into your database, then point the browser to:
 
 
 ### VAD Packages
-----------------
 
 The different VAD packages can be installed via ISQL using the following
 command (if the installation packages reside in the filesystem):
