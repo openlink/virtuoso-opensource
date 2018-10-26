@@ -296,7 +296,7 @@
             _error := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
           	goto _end_share;
           };
-          DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params), 1);
+          WEBDAV.DBA.aci_params (params);
         }
       _end_share:;
       }

@@ -3746,7 +3746,7 @@
 
                         -- ACI (Web Access)
                       dav_aci := WEBDAV.DBA.aci_params (params);
-                      DB.DBA.ACL_VALIDATE (dav_aci);
+                      --DB.DBA.ACL_VALIDATE (dav_aci);
 
                     _test_15:;
 
