@@ -85,8 +85,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	      parse_sql();
 	      // Send RPC call
 	      Object[] args = new Object[4];
-	      args[0] = (statid == null) ? statid = new String("s" + connection.hashCode() + (req_no++)) : statid;
-	      //args[0] = statid = new String("s" + connection.hashCode() + (req_no++));
+	      args[0] = (statid == null) ? statid = new String("ps" + connection.hashCode() + (req_no++)) : statid;
 	      args[1] = connection.escapeSQL(sql);
 	      args[2] = new Long(0);
 	      args[3] = getStmtOpts();

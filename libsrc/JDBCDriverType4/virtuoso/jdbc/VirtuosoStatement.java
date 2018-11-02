@@ -331,7 +331,7 @@ public class VirtuosoStatement implements Statement
 	       return;
 	     // Cancel current result set
 	     cancel_rs();
-             if (!result_opened)
+             if (!close_stmt && !result_opened)
                return;
 	     // Build the args array
 	     Object[] args = new Object[2];
