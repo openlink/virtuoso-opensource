@@ -5302,7 +5302,7 @@ ssl_ctx_set_ecdh_curve (SSL_CTX * ctx, char *curve)
     if (!strcasecmp(curve, "auto"))
       curve = "prime256v1";
 
-    nid = OBJ_dn2nid(curve);
+    nid = OBJ_sn2nid(curve);
     if (nid == 0)
 	return 0;
     eckey = EC_KEY_new_by_curve_name (nid);
