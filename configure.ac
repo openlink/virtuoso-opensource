@@ -884,7 +884,9 @@ AC_MSG_CHECKING([OpenSSL version])
 AC_TRY_COMPILE([
 #include <openssl/opensslv.h>
 ],[
-#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+#ifdef LIBRESSL_VERSION_NUMBER
+/* LibreSSL defines OPENSSL_VERSION_NUMBER 0x20000000L but uses a compatible API to OpenSSL v1.0.x */
+#elif OPENSSL_VERSION_NUMBER >= 0x1010000fL
 #error OpenSSL version too new
 #endif
     ],[
