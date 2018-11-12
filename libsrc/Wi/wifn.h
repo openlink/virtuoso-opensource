@@ -767,7 +767,7 @@ void sch_split_name (const char *q_default, const char *name, char *q, char *o, 
 dbe_key_t * sch_table_key (dbe_schema_t * sc, const char *table, const char *key, int non_primary);
 
 
-struct query_s * sch_proc_def (dbe_schema_t * sch, const char * name);
+EXE_EXPORT (struct query_s * ,sch_proc_def, (dbe_schema_t * sch, const char * name));
 struct query_s * sch_partial_proc_def (dbe_schema_t * sc, caddr_t name, char *q_def, char *o_def);
 struct query_s * sch_proc_exact_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_module_def (dbe_schema_t * sch, const char * name);
