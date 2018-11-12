@@ -2518,6 +2518,7 @@ again:
         goto _500;
 
       DB.DBA.DAV_SET_HTTP_STATUS (200);
+      http_header ('Content-Type: text/turtle\r\n');
       http (content_);
     }
     else
