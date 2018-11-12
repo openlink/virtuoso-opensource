@@ -9988,7 +9988,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
 	}
-      ssl->state = SSL_ST_ACCEPT;
+      SSL_in_accept_init (ssl);
       while (SSL_renegotiate_pending (ssl) && ctr < 1000)
 	{
 	  timeout_t to = { 0, 1000 };
