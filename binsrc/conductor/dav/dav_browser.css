@@ -41,6 +41,11 @@ a:hover {
   text-decoration: underline;
 }
 
+.link {
+  color: blue;
+	cursor: pointer;
+}
+
 /* Fields */
 .field-text {
   width: 500px;
@@ -89,6 +94,7 @@ div.c1 {
 
 div.tabs {
   top: 0px;
+  margin-top: 0;
   font-size: 100%;
   padding: 0px 0px 3px 0px;
 }

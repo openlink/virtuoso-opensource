@@ -564,8 +564,8 @@
               if (not isnull (tmp))
                 return tmp;
 
-              if (get_keyword ('formRight', params, '') <> '')
-                return case when formFieldName = '===' then coalesce (tmp, '') else tmp end;
+              if ((get_keyword ('formRight', params, '0') <> '0') and (formFieldName = '==='))
+                return coalesce (tmp, '');
 
               if ((self.command = 10) and (self.command_mode in (0, 5, 6)))
                 return defaultValue;
@@ -1738,6 +1738,20 @@
               }
               }
             ?>
+            <?vsp
+              if (self.mode <> 'webdav')
+              {
+            ?>
+            <div style="float: right; padding-right: 0.3em; padding-top: 20px;">
+              <input name="keywords" value="" onkeypress="javascript: if (checkNotEnter(event)) return true; vspxPost('action', '_cmd', 'search', 'mode', 'simple'); return false;" />
+              &amp;nbsp;
+              <span onclick="vspxPost('action', '_cmd', 'search', 'mode', 'simple'); return false;" title="Simple Search" class="link">Search</span>
+              |
+              <span onclick="vspxPost('action', '_cmd', 'search', 'mode', 'advanced'); return false;" title="Advanced Search" class="link">Advanced</span>
+            </div>
+            <?vsp
+              }
+            ?>
           </div>
           <br style="clear: both;" />
           <?vsp
@@ -2017,6 +2031,37 @@
                       }
                       self.command_push (100, 0);
                     }
+                    else if (_action = 'search')
+                    {
+                      if (get_keyword ('mode', params) = 'simple')
+                      {
+                        self.command_set (0, 2);
+                        if (self.dir_path = '')
+                          self.dir_path := '/DAV/';
+
+                        self.search_simple := trim (get_keyword ('keywords', params));
+                      }
+                      else if (get_keyword ('mode', params) = 'advanced')
+                      {
+                        self.command_set (0, 3);
+                        if (self.dir_path = '')
+                          self.dir_path := '/DAV/';
+
+                        WEBDAV.DBA.dc_set_base (self.search_dc, 'path', WEBDAV.DBA.real_path (self.dir_path));
+                        _tmp := trim (get_keyword ('keywords', params));
+                        if (_tmp = '')
+                          _tmp := trim (self.simple.ufl_value);
+
+                        if (_tmp <> '')
+                          WEBDAV.DBA.dc_set_criteria (self.search_dc, '0', 'RES_NAME', 'like', _tmp);
+
+                        self.simple.ufl_value := '';
+                      }
+                    }
+                    else if (_action = 'cancelSearch')
+                    {
+                      self.command_set (0, 0);
+                    }
                     self.vc_data_bind (self.vc_page.vc_event);
                    ]]>
                  </v:on-post>
@@ -2032,9 +2077,9 @@
               <v:text name="simple" value="--self.search_simple" fmt-function="WEBDAV.DBA.utf2wide" xhtml_onkeypress="return submitEnter(event, \'F1\')" xhtml_class="textbox" xhtml_size="70%" />
               &amp;nbsp;
               |
-              <v:url url="home.vspx?mode=advanced" xhtml_onclick="javascript: vspxPost(\'action\', \'_cmd\', \'search\', \'mode\', \'advanced\'); return false;" value="Advanced" xhtml_title="Advanced Search"/>
+              <span onclick="vspxPost('action', '_cmd', 'search', 'mode', 'advanced'); return false;" title="Advanced Search" class="link">Advanced</span>
               |
-              <v:url url="home.vspx" value="Cancel" xhtml_title="Cancel" />
+              <span onclick="vspxPost('action', '_cmd', 'cancelSearch'); return false;" title="Cancel" class="link">Cancel</span>
             </div>
           </v:template>
 
