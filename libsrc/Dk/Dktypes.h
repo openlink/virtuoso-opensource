@@ -221,7 +221,9 @@ round (double x)
 #ifdef _finite
 #define isfinite(val) _finite (val)
 #else
+#ifndef __cplusplus
 #error "Neither isfinite() nor _finite() is defined in standard headers"
+#endif
 #endif
 #endif
 
