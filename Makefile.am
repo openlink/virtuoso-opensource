@@ -38,7 +38,7 @@ dist_doc_DATA = \
 	$(srcdir)/NEWS \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README \
-	$(srcdir)/README.GIT.md \
+	$(srcdir)/.github/README.md \
 	$(srcdir)/README.GeoSPARQL.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
@@ -111,7 +111,7 @@ EXTRA_DIST = \
 	$(srcdir)/LICENSE.md \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README \
-	$(srcdir)/README.GIT.md \
+	$(srcdir)/.github/README.md \
 	$(srcdir)/README.MACOSX.md \
 	$(srcdir)/README.OpenSSL.md \
 	$(srcdir)/README.UPGRADE.md \
