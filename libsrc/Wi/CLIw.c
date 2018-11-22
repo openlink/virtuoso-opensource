@@ -254,7 +254,7 @@ extern int virt_wide_as_utf16;
       wcharset_t *_charset = charset; \
       if ((con) && (con)->con_defs.cdef_utf8_execs) \
         _charset = CHARSET_UTF8; \
-      if (cb##param > 0) \
+      if (SQL_SUCCEEDED(rc) && cb##param > 0) \
         { \
           if (wide_as_utf16) \
             { \
@@ -338,7 +338,7 @@ extern int virt_wide_as_utf16;
 #define SET_AND_FREE_OUTPUT_NONCHAR_NARROW_1(wide, len, plen, con) \
   if (wide && len > 0) \
     { \
-      size_t len2 = (!_##plen || *_##plen) == SQL_NTS ? strlen (_##wide) : *_##plen; \
+      size_t len2 = (!_##plen || (_##plen && *_##plen == SQL_NTS)) ? strlen (_##wide) : *_##plen; \
       wcharset_t *_charset = charset; \
       if ((con)->con_defs.cdef_utf8_execs) \
         _charset = CHARSET_UTF8; \
