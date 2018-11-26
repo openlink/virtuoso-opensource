@@ -220,6 +220,16 @@ SQLBindCol (
   STMT (stmt, hstmt);
   col_binding_t *col = stmt_nth_col (stmt, icol);
 
+  if (cbValueMax == 0 && icol > 0 && fCType != SQL_C_DEFAULT)
+  {
+    /*
+     * If fCType == SQL_C_DEFAULT, we need to know the SQL type of the data to
+     * determine which ODBC C type to use. Depending on when SQLBindCol
+     * is called, we may not be able to determine the SQL type now
+     */
+    cbValueMax = sqlc_sizeof (fCType, cbValueMax);
+  }
+
   col->cb_c_type = fCType;
   col->cb_place = (caddr_t) rgbValue;
   col->cb_length = pcbValue;
@@ -2175,9 +2185,6 @@ virtodbc__SQLBindParameter (
 
   if (fCType == SQL_C_DEFAULT)
     fCType = sql_type_to_sqlc_default (fSqlType);
-
-  if (fCType == SQL_C_WCHAR && cbValueMax % sizeof (wchar_t))
-    cbValueMax = ((SQLLEN) (cbValueMax / sizeof (wchar_t))) * sizeof (wchar_t);
 
   pb->pb_c_type = fCType;
   pb->pb_sql_type = fSqlType;
