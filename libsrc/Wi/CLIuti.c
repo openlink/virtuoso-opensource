@@ -1718,7 +1718,7 @@ str_box_to_buffer (
       if (string_length_ptr != NULL)
 	{
 	  if (length_is_long)
-	    *(SDWORD *) string_length_ptr = len;
+	    *(SQLINTEGER *) string_length_ptr = len;
 	  else
 	    *(SQLSMALLINT *) string_length_ptr = len;
 	}
@@ -1739,7 +1739,7 @@ str_box_to_buffer (
       if (string_length_ptr != NULL)
 	{
 	  if (length_is_long)
-	    *(SDWORD *) string_length_ptr = 0;
+	    *(SQLINTEGER *) string_length_ptr = 0;
 	  else
 	    *(SQLSMALLINT *) string_length_ptr = 0;
 	}
