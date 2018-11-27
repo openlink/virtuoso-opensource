@@ -5104,7 +5104,7 @@ SQLPutData (
       if (newValue % 2)
 	{
 	  set_error (&stmt->stmt_error, "S1010", "CL054",
-	      "Invalid buffer length (even) in passing character data to binary column in SQLPutData");
+	      "Invalid buffer length (odd) in passing character data to binary column in SQLPutData" );
 
 	  return SQL_ERROR;
 	}
@@ -5115,8 +5115,7 @@ SQLPutData (
 	  if ((chr < '0' || chr > '9') && (chr < 'A' || chr > 'F'))
 	    {
 	      set_error (&stmt->stmt_error, "S1010", "CL055",
-		  "Invalid buffer length (even) in passing character data to binary column in SQLPutData");
-
+		  "Characters should be hexadecimal digits, 0 to 9 and A to F in passing data to binary column in SQLPutData" );
 	      return SQL_ERROR;
 	    }
 	}
@@ -5146,7 +5145,7 @@ SQLPutData (
 		  {
 		    _lo = toupper (src[1]);
 		    _hi = toupper (src[0]);
-		    _res = ((_hi - (_hi <= '9' ? '0' : 'A' + 10)) << 4) | (_lo - (_lo <= '9' ? '0' : 'A' + 10));
+		    _res = ((_hi - (_hi <= '9' ? '0' : ('A' - 10))) << 4) | (_lo - (_lo <= '9' ? '0' : ('A' - 10)));
 		    session_buffered_write_char (_res, ses);
 		  }
 	      }

@@ -589,9 +589,9 @@ void
 set_data_truncated_success_info (cli_stmt_t *stmt, const char *virt_state, SQLUSMALLINT icol)
 {
   char *base_col = NULL;
-  char icol_buf[30];
+  char icol_buf[40];
   char base_tbl_col[MAX_QUAL_NAME_LEN + MAX_NAME_LEN + 20];
-  char buf[MAX_QUAL_NAME_LEN + MAX_NAME_LEN + 100];
+  char buf[MAX_QUAL_NAME_LEN + MAX_NAME_LEN + 110];
   int is_select = stmt->stmt_compilation && stmt->stmt_compilation->sc_is_select && (icol > 0);
   col_desc_t *jammed_col = NULL;
   char *alias_name = NULL;
@@ -1462,17 +1462,17 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	    if (len1 % 2)
 	      {
 		set_error (&err_stmt->stmt_error, "22002", "CL069",
-		    "Invalid (odd) length in conversion from SQL_C_CHAR to SQL_BINARY");
+		    "Invalid (odd) length in conversion from SQL_C_CHAR to SQL_BINARY" );
 		return NULL;
 	      }
 
 	    for (src = (unsigned char *) place; src - ((unsigned char *) place) < len1; src++)
 	      {
 		chr = toupper (*src);
-		if ((chr < '0' || chr > '9') && (chr < 'A' || chr > 'F'))
+		if (!isxdigit (chr))
 		  {
 		    set_error (&err_stmt->stmt_error, "S1010", "CL070",
-			"Invalid buffer length (even) in passing character data to binary column in SQLPutData");
+                      "Characters should be hexadecimal digits, 0 to 9 and A to F in conversion from SQL_C_CHAR to SQL_BINARY" );
 		    return NULL;
 		  }
 	      }
@@ -1483,7 +1483,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	      {
 		_lo = toupper (src[1]);
 		_hi = toupper (src[0]);
-		*ptr = ((_hi - (_hi <= '9' ? '0' : 'A' + 10)) << 4) | (_lo - (_lo <= '9' ? '0' : 'A' + 10));
+		*ptr = ((_hi - (_hi <= '9' ? '0' : ('A' - 10))) << 4) | (_lo - (_lo <= '9' ? '0' : ('A' - 10)));
 	      }
 #else
 	    res = dk_alloc_box (len1, DV_BIN);
