@@ -139,7 +139,11 @@ static SQLRETURN SQL_API virtodbc__SQLDriverConnect (SQLHDBC hdbc, HWND hwnd, SQ
 
 #define DEFAULT_DATABASE_PER_USER _T("<Server Default>")
 
-int virt_wide_as_utf16;
+#ifndef UNICODE
+int virt_wide_as_utf16 = 0;
+#else
+extern int virt_wide_as_utf16;
+#endif
 
 typedef struct
 {
