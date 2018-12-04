@@ -1,55 +1,53 @@
-Virtuoso Open-Source Edition: Building
-======================================
+# Virtuoso Open-Source Edition: Building
+
 
 Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>
 
+## Table of contents
 
-Table of Contents
------------------
-
-* Building Virtuoso Open-Source Edition
- * .. Introduction
- * .. Package Dependencies
- * .. Diskspace Requirements
- * .. Make FAQ
- * .... Generic build environment
- * .... AIX 4.x 32-bit
- * .... AIX 4.x 64-bit
- * .... AIX 5.x 32-bit
- * .... AIX 5.x 32-bit
- * .... Digital Unix/OSF1 V5.0 64-bit
- * .... HP/UX 11.00 32-bit
- * .... HP/UX 11.00 64-bit
- * .... HP/UX 11.23 Itanium 32-bit
- * .... HP/UX 11.23 Itanium 64-bit
- * .... Linux 32-bit
- * .... Linux 64-bit
- * .... Mac OS X 10.2 and 10.3 PPC 32-bit
- * .... Mac OS X 10.4 PPC 32-bit
- * .... Mac OS X 10.4 PPC 64-bit
- * .... Mac OS X 10.4 Universal 32-bit
- * .... Mac OS X 10.5 32-bit
- * .... Mac OS X 10.5 64-bit
- * .... Mac OS X 10.5 Universal
- * .... Mac OS X 10.6 32-bit
- * .... Mac OS X 10.6 64-bit
- * .... Mac OS X 10.6 Universal
- * .... Mac OS X 10.7 32-bit
- * .... Mac OS X 10.7 64-bit
- * .... Mac OS X 10.7 Universal
- * .... Solaris 2.x i386 32-bit
- * .... Solaris 2.10 Opteron 32-bit
- * .... Solaris 2.10 Opteron 64-bit
- * .... Solaris 2.8 and above SPARC 32-bit
- * .... Solaris 2.8 and above SPARC 32-bit
- * .. Installation
- * .... Test Suite
- * .. Getting Started
- * .... VAD Packages
+- Introduction
+- Package Dependencies
+- Diskspace Requirements
+- Make FAQ
+    - Generic build environment
+    - AIX 4.x 32-bit
+    - AIX 4.x 64-bit
+    - AIX 5.x 32-bit
+    - AIX 5.x 32-bit
+    - Digital Unix/OSF1 V5.0 64-bit
+    - HP/UX 11.00 32-bit
+    - HP/UX 11.00 64-bit
+    - HP/UX 11.23 Itanium 32-bit
+    - HP/UX 11.23 Itanium 64-bit
+    - Linux 32-bit
+    - Linux 64-bit
+    - Mac OS X 10.2 and 10.3 PPC 32-bit
+    - Mac OS X 10.4 PPC 32-bit
+    - Mac OS X 10.4 PPC 64-bit
+    - Mac OS X 10.4 Universal 32-bit
+    - Mac OS X 10.5 32-bit
+    - Mac OS X 10.5 64-bit
+    - Mac OS X 10.5 Universal
+    - Mac OS X 10.6 32-bit
+    - Mac OS X 10.6 64-bit
+    - Mac OS X 10.6 Universal
+    - Mac OS X 10.7 32-bit
+    - Mac OS X 10.7 64-bit
+    - Mac OS X 10.7 Universal
+    - Solaris 2.x i386 32-bit
+    - Solaris 2.10 Opteron 32-bit
+    - Solaris 2.10 Opteron 64-bit
+    - Solaris 2.8 and above SPARC 32-bit
+    - Solaris 2.8 and above SPARC 32-bit
+- Installation
+    - Test Suite
+- Getting Started
+    - VAD Packages
 
 
-Introduction
-============
+
+## Introduction
+
 
 This document explains steps to take after obtaining a Virtuoso source
 snapshot or git clone.
@@ -59,25 +57,28 @@ components are produced by the make process and how one can interact
 with them.
 
 
-Package Dependencies
-====================
+## Package Dependencies
+
 
 To generate the configure script and all other build files necessary,
 please make sure the following packages and recommended versions are
 installed on your system.
 
-    Package  Version                         From
-    -------  -------                         ----
-    autoconf 2.57               http://www.gnu.org/software/autoconf/
-    automake 1.9                http://www.gnu.org/software/automake/
-    libtool  1.5.16             http://www.gnu.org/software/libtool/
-    flex     2.5.33 (was 2.5.4) http://www.gnu.org/software/non-gnu/flex/
-    bison    2.3 (was 1.35)     http://www.gnu.org/software/bison/
-    gperf    2.7.2              http://www.gnu.org/software/gperf/
-    gawk     3.1.1              http://www.gnu.org/software/gawk/
-    m4       1.4.1              http://www.gnu.org/software/m4/
-    make     3.79.1             http://www.gnu.org/software/make/
-    OpenSSL  0.9.8e             http://www.openssl.org/
+|Package|Version|From|
+|-------|-------|----|
+|autoconf|2.57|[http://www.gnu.org/software/autoconf/](http://www.gnu.org/software/autoconf/)|
+|automake|1.9|[http://www.gnu.org/software/automake/](http://www.gnu.org/software/automake/)|
+|libtool|1.5.16|[http://www.gnu.org/software/libtool/](http://www.gnu.org/software/libtool/)|
+|flex|2.5.33 (was 2.5.4)|[http://www.gnu.org/software/non-gnu/flex/](http://www.gnu.org/software/non-gnu/flex/)|
+|bison|2.3 (was 1.35)|[http://www.gnu.org/software/bison/](http://www.gnu.org/software/bison/)|
+|gperf|2.7.2|[http://www.gnu.org/software/gperf/](http://www.gnu.org/software/gperf/)|
+|gawk|3.1.1|[http://www.gnu.org/software/gawk/](http://www.gnu.org/software/gawk/)|
+|m4|1.4.1|[http://www.gnu.org/software/m4/](http://www.gnu.org/software/m4/)|
+|make|3.79.1|[http://www.gnu.org/software/make/](http://www.gnu.org/software/make/)|
+|OpenSSL|0.9.8e|[http://www.openssl.org/](http://www.openssl.org/)|
+
+
+
 
 and any GNU packages required by these. The autogen.sh and configure
 scripts check for the presence and right version of some of the required
@@ -90,16 +91,18 @@ build problems.
 To check the version number of the tools installed on your system,
 use one of the following commands:
 
-    $ autoconf --version
-    $ automake --version
-    $ libtoolize --version
-    $ flex --version
-    $ bison --version
-    $ gperf --version
-    $ gawk --version
-    $ m4 --version
-    $ make --version
-    $ openssl version
+```bash
+autoconf --version
+automake --version
+libtoolize --version
+flex --version
+bison --version
+gperf --version
+gawk --version
+m4 --version
+make --version
+openssl version
+```
 
 If you have an older version than automake version 1.9 you can edit
 the configure.ac script around line 47 using the examples provided for
@@ -109,28 +112,33 @@ Note that uptodate operating systems (particularly all Linux distibutions)
 split some of these packages into runtime and development
 packages, so users of these platforms may need to run e.g.:
 
-    apt-get install libssl-dev
+```bash
+apt install libssl-dev
+```
 
 or
 
-    yum install openssl-devel 
+```bash
+dnf install openssl-devel 
+```
 
 to get development headers & libraries for OpenSSL.
 
 
-Diskspace Requirements
-======================
+## Diskspace Requirements
+
 
 The build produces a demo database and Virtuoso application packages
 that are quite large. At least 800 MB of free space should be available
 in the build file system.
 
-When running `make install', the target file system should have about 460
+When running `make install`, the target file system should have about 460
 MB free. By default, the install target directories are under /usr/local/,
 but you can specify
 
-    ./configure --prefix=/path/to/dir
-
+```bash
+./configure --prefix=/path/to/dir
+```
 instead.
 
 The minimum working configuration consists of the server executable
@@ -138,14 +146,16 @@ and config files plus database, no more than a few MB for the server
 executable, depending on platform and options.
 
 
-Make FAQ
-========
+## Make FAQ
+
 
 In the root directory of the checkout perform the following commands:
 
-    ./autogen.sh        # should only be needed in git clone
-    ./configure
-    make
+```bash
+./autogen.sh        # should only be needed in git clone
+./configure
+make
+```
 
 to produce the default binaries, VAD packages and demo database. This
 takes some time, principally due to building and filling the demo
@@ -169,8 +179,8 @@ CFLAGS="-O2" is known to work but there are reports of -O3 failing.
 If your system requires additional flags not listed below, please contact
 us at <vos.admin@openlinksw.com>.
 
-Generic build environment
--------------------------
+### Generic build environment
+
     CC=cc
     CFLAGS="-O"
     export CFLAGS CC
@@ -178,8 +188,8 @@ Generic build environment
     make
     make install
 
-AIX 4.x 32-bit
---------------
+### AIX 4.x 32-bit
+
     CC=cc_r7
     CFLAGS="-O -q32"
     LDFLAGS="-brtl"
@@ -187,8 +197,8 @@ AIX 4.x 32-bit
     export CC CFLAGS LDFLAGS OBJECT_MODE
     ./configure ...
 
-AIX 4.x 64-bit
---------------
+### AIX 4.x 64-bit
+
     CC=cc_r7
     CFLAGS="-O -q64"
     LDFLAGS="-brtl"
@@ -196,8 +206,8 @@ AIX 4.x 64-bit
     export CC CFLAGS LDFLAGS OBJECT_MODE
     ./configure ...
 
-AIX 5.x 32-bit
---------------
+### AIX 5.x 32-bit
+
     CC=cc_r
     CFLAGS="-O -q32"
     LDFLAGS="-brtl"
@@ -205,8 +215,8 @@ AIX 5.x 32-bit
     export CC CFLAGS LDFLAGS OBJECT_MODE
     ./configure ...
 
-AIX 5.x 32-bit
---------------
+### AIX 5.x 32-bit
+
     CC=cc_r
     CFLAGS="-O -q64"
     LDFLAGS="-brtl"
@@ -214,128 +224,128 @@ AIX 5.x 32-bit
     export CC CFLAGS LDFLAGS OBJECT_MODE
     ./configure ...
 
-Digital Unix/OSF1 V5.0 64-bit
------------------------------
+### Digital Unix/OSF1 V5.0 64-bit
+
     CFLAGS="-O"
     export CFLAGS
     ./configure ...
 
-HP/UX 11.00 32-bit
-------------------
+### HP/UX 11.00 32-bit
+
     CFLAGS="-O -Ae +DA1.1"
     export CFLAGS
     ./configure ...
 
-HP/UX 11.00 64-bit
-------------------
+### HP/UX 11.00 64-bit
+
     CFLAGS="-O -Ae +DA2.0W"
     export CFLAGS
     ./configure ...
 
-HP/UX 11.23 Itanium 32-bit
---------------------------
+### HP/UX 11.23 Itanium 32-bit
+
     CFLAGS="-O -Ae +DD32"
     export CFLAGS
     ./configure ...
 
-HP/UX 11.23 Itanium 64-bit
---------------------------
+### HP/UX 11.23 Itanium 64-bit
+
     CFLAGS="-O -Ae +DD64"
     export CFLAGS
     ./configure ...
 
-Linux 32-bit
-------------
+### Linux 32-bit
+
     CFLAGS="-O2"
     export CFLAGS
     ./configure ...
 
-Linux 64-bit
-------------
+### Linux 64-bit
+
     CFLAGS="-O2 -m64"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.2 and 10.3 PPC 32-bit
----------------------------------
+### Mac OS X 10.2 and 10.3 PPC 32-bit
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.4 PPC 32-bit
-------------------------
+### Mac OS X 10.4 PPC 32-bit
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.4 PPC 64-bit
-------------------------
+### Mac OS X 10.4 PPC 64-bit
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.4 Universal 32-bit
-------------------------------
+### Mac OS X 10.4 Universal 32-bit
+
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.4u.sdk -arch ppc -arch i386 -mmacosx-version-min=10.4"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
-Mac OS X 10.5 32-bit
---------------------
+### Mac OS X 10.5 32-bit
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.5"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.5 64-bit
---------------------
+### Mac OS X 10.5 64-bit
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.5"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.5 Universal 
------------------------
+### Mac OS X 10.5 Universal 
+
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.5.sdk -arch ppc -arch i386 -arch ppc64 -arch x86_64 -mmacosx-version-min=10.5"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
-Mac OS X 10.6 32-bit
---------------------
+### Mac OS X 10.6 32-bit
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.6"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.6 64-bit
---------------------
+### Mac OS X 10.6 64-bit
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.6"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.6 Universal 
------------------------
+### Mac OS X 10.6 Universal 
+
     CFLAGS="-O -isysroot /Developer/SDKs/MacOSX10.6.sdk -arch i386 -arch x86_64 -mmacosx-version-min=10.6"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
-Mac OS X 10.7 32-bit
---------------------
+### Mac OS X 10.7 32-bit
+
     CFLAGS="-O -m32 -mmacosx-version-min=10.7"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.7 64-bit
---------------------
+### Mac OS X 10.7 64-bit
+
     CFLAGS="-O -m64 -mmacosx-version-min=10.7"
     export CFLAGS
     ./configure ...
 
-Mac OS X 10.7 Universal 
------------------------
+### Mac OS X 10.7 Universal 
+
     CFLAGS="-O -arch i386 -arch x86_64 -mmacosx-version-min=10.7"
     export CFLAGS
     ./configure --disable-dependency-tracking ...
 
-Solaris 2.x i386 32-bit
------------------------
+### Solaris 2.x i386 32-bit
+
 Note: on Solaris or Open Solaris we recommend you use gmake either from
 /usr/ sfw/bin/ or install it from sunfreeware, as long as it's version
 3.80 or better.
@@ -346,100 +356,105 @@ Note: on Solaris or Open Solaris we recommend you use gmake either from
     export CFLAGS CC PATH
     ./configure ...
 
-Solaris 2.10 Opteron 32-bit
----------------------------
+### Solaris 2.10 Opteron 32-bit
+
     CC=cc
     CFLAGS="-O -xtarget=opteron"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
     export CFLAGS CC PATH
     ./configure ...
 
-Solaris 2.10 Opteron 64-bit
----------------------------
+### Solaris 2.10 Opteron 64-bit
+
     CC=cc
     CFLAGS="-O -xtarget=opteron -xarch=amd64"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
     export CFLAGS CC PATH
     ./configure ...
 
-Solaris 2.8 and above SPARC 32-bit
-----------------------------------
+### Solaris 2.8 and above SPARC 32-bit
+
     CC=cc
     CFLAGS="-O"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
     export CFLAGS CC PATH
     ./configure ...
 
-Solaris 2.8 and above SPARC 32-bit
-----------------------------------
+### Solaris 2.8 and above SPARC 32-bit
+
     CC=cc
     CFLAGS="-O -xtarget=ultra -xarch=v9"
     PATH=/opt/SUNWspro/bin:/usr/ccs/bin:$PATH
     export CFLAGS CC PATH
     ./configure ...
 
-Installation
-============
+## Installation
+
 
 After running configure && make,
 
-    make install
+```bash
+make install
+```
 
 at the root of the build tree copies the files to the locations
-specified by the --prefix option to configure. The default of --prefix
-is /usr/local/. You can override this by specifying `make install
-prefix=/home/virtuoso' instead, for example.
+specified by the `--prefix` option to configure. The default of `--prefix`
+is `/usr/local/`. You can override this by specifying `make install
+prefix=/home/virtuoso` instead, for example.
 
 These subdirectories are all appended to the specified prefix,
-i.e. /usr/local/ by default:
+i.e. `/usr/local/` by default:
 
- * share/virtuoso/doc/html
- * share/virtuoso/doc/pdf
- * share/virtuoso/vad - VAD packages BPEL, Conductor, tutorials, documentation
- * var/lib/virtuoso/db - Empty database
- * var/lib/virtuoso/demo - Demo database - obsolete as of version 5.0.3
- * bin/ - The virtuoso-t, isql, isqlw, virt_mail, virtuoso-sample-t, inifile
+ * `share/virtuoso/doc/html`
+ * `share/virtuoso/doc/pdf`
+ * `share/virtuoso/vad` - VAD packages BPEL, Conductor, tutorials, documentation
+ * `var/lib/virtuoso/db` - Empty database
+ * `var/lib/virtuoso/demo` - Demo database - obsolete as of version 5.0.3
+ * `bin/` - The `virtuoso-t`, `isql`, `isqlw`, `virt_mail`, `virtuoso-sample-t`, `inifile`
     executables
- * lib/ - libvirtuoso-t.a libvirtuoso-t.la virtodbc32.a virtodbc32.la
-    virtodbc32 r.a virtodbc32_r.la virtodbc_r.so wikiv.so, plus any plugins
+ * `lib/` - `libvirtuoso-t.a` `libvirtuoso-t.la` `virtodbc32.a` `virtodbc32.la`
+    `virtodbc32` `r.a` `virtodbc32_r.la` `virtodbc_r.so` `wikiv.so`, plus any plugins
     that may be enabled.
- * lib/virtuoso - hosting sample.a hosting_sample.la hosting_sample.so
-    plugin_sample.a plugin_sample.so
+ * `lib/virtuoso` - `hosting` `sample.a` `hosting_sample.la` `hosting_sample.so`
+    `plugin_sample.a` `plugin_sample.so`
 
-Note: as of version 5.0.2, the ./configure script supports different
-subdirectory structures with the --with-layout= parameter. If you've
+Note: as of version 5.0.2, the `./configure` script supports different
+subdirectory structures with the `--with-layout=` parameter. If you've
 specified something other than the default, the above may differ
 accordingly.
 
 As of version 5.0.3, the demo is a VAD package, not a separate directory.
 
 
-Test Suite
-==========
+### Test Suite
 
 Optionally, you can run
 
-    make check
+```bash
+make check
+```
 
 at the root of the build tree to start the automated test suite. This
 takes about an hour on a 2GHz machine and requires approximately 1 GB
 of free disk space.
 
 
-Getting Started
-===============
+## Getting Started
+
 
 Run
 
-    cd var/lib/virtuoso/db 
-    virtuoso-t -f &
+```bash
+cd var/lib/virtuoso/db 
+virtuoso-t -f &
+```
 
 to start the server in the background. It will not detach from the shell,
 so you see the startup messages.
 
 By default, when no -c parameter is specified, virtuoso will use the
 virtuoso.ini file in this directory, which is generated as part of
-`make install'.
+`make install`.
 
 The first time it's run, it will create the empty database (no special
 commands required) and install the Conductor VAD package. From here, you
@@ -448,9 +463,9 @@ use the System Administration / Packages page to install other packages
 such as Demo and the ODS suite (addressbook, weblog, feeds manager and
 other applications) etc. 
 
-The default login is `dba' with a password of `dba' for the Conductor and
-isql (for DAV functions, the default login is `dav' with a password of
-`dav').
+The default login is `dba` with a password of `dba` for the Conductor and
+isql (for DAV functions, the default login is `dav` with a password of
+`dav`).
 
 You will see a checkpoint in the terminal for each package selected:
 
@@ -458,7 +473,9 @@ You will see a checkpoint in the terminal for each package selected:
 
 To connect with the command line SQL tool,
 
-    isql 1112 dba dba
+```bash
+isql 1112 dba dba
+```
 
 gives a SQL> prompt.
 
@@ -466,25 +483,24 @@ If you've installed the demo VAD above, type
     SQL> use Demo;
 
 to switch to the demo database, containing the Microsoft Northwind sample
-tables. The `help' command in isql gives further instructions.
+tables. The `help` command in isql gives further instructions.
 
 
 To use the web admin interface, point the browser to: 
 
-    http://localhost:8890/conductor
+[http://localhost:8890/conductor](http://localhost:8890/conductor)
 
 To read the documents online: 
 
-    http://localhost:8890/doc/html
+[http://localhost:8890/doc/html](http://localhost:8890/doc/html)
 
 To experiment with online tutorials you can use the conductor to install
 the Tutorial vad package into your database, then point the browser to:
 
-    http://localhost:8890/tutorial
+[http://localhost:8890/tutorial](http://localhost:8890/tutorial)
 
 
-VAD Packages
-============
+### VAD Packages
 
 The different VAD packages can be installed via ISQL using the following
 command (if the installation packages reside in the filesystem):
