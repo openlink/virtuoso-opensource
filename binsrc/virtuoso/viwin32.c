@@ -198,7 +198,7 @@ int		cfg_setup (void);
 int		db_check_in_use (void);
 static void	sigh_do_action (int is_asynchronous);
 static int	set_virtuoso_dir (void);
-void		viwin32_terminate (int n)
+void		viwin32_terminate (int n);
 
 /* Program options */
 struct pgm_option options[] =
