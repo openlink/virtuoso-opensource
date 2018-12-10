@@ -3989,7 +3989,6 @@ create procedure WEBDAV.DBA.DAV_DELETE (
   in check_locks integer := 1)
 {
   -- dbg_obj_princ ('WEBDAV.DBA.DAV_DELETE (', path, ')');
-  declare detType varchar;
 
   WEBDAV.DBA.DAV_API_PARAMS (auth_name, auth_pwd);
   if ((WEBDAV.DBA.path_type (path) = 'C') and (WEBDAV.DBA.det_type (path, 'C') = 'SyncML'))
@@ -5830,14 +5829,16 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
     }
     for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = work_id) do
     {
-      if (enabled and (RES_TYPE in ('text/turtle', 'application/ld+json')))
+      if (enabled)
       {
-        ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
-        TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
-        TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), ruri, ruri);
+        DB.DBA.LDP_CREATE_RES (RES_FULL_PATH);
+        if (RES_TYPE in ('text/turtle', 'application/ld+json'))
         {
-          declare continue handler for sqlstate '*';
-          TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+          ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
+          {
+            declare continue handler for sqlstate '*';
+            TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+          }
         }
       }
       else
@@ -5854,6 +5855,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
 
   for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = work_id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
   {
+    commit work;
     WEBDAV.DBA.ldp_recovery_aq (path || COL_NAME || '/', enabled);
   }
 }
