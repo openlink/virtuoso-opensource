@@ -69,7 +69,7 @@ GLOBALREF struct pgm_info program_info;
 
 BEGIN_CPLUSPLUS
 
-void	terminate (int);
+void	terminate_program (int);
 void	expand_argv (int *, char ***, int);
 void	initialize_program (int *, char ***);
 void	default_usage (void);

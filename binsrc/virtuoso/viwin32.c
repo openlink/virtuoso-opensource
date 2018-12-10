@@ -198,6 +198,7 @@ int		cfg_setup (void);
 int		db_check_in_use (void);
 static void	sigh_do_action (int is_asynchronous);
 static int	set_virtuoso_dir (void);
+void		viwin32_terminate (int n)
 
 /* Program options */
 struct pgm_option options[] =
@@ -1013,7 +1014,7 @@ main (int argc, char **argv)
   dbg_malloc_enable();
 #endif
 
-  process_exit_hook = terminate;
+  process_exit_hook = viwin32_terminate;
 
   srv_set_cfg (new_cfg_replace_log, new_cfg_set_checkpoint_interval, new_db_read_cfg, new_dbs_read_cfg, new_cfg_read_storages);
 
@@ -1113,7 +1114,7 @@ sigh_do_action (int is_asynchronous)
   switch (sigh_mode)
     {
     case SIGH_EXIT:
-      terminate (1);
+      viwin32_terminate (1);
 
     case SIGH_BLOCK:
       log_info ("Server shutdown pending", sigh_pending_signal);
@@ -1179,7 +1180,7 @@ CtrlEventHandler (DWORD sig)
  *  Take the necessary action to shutdown this application
  */
 void
-terminate (int n)
+viwin32_terminate (int n)
 {
   if (is_in_use)
     {
@@ -1208,7 +1209,7 @@ terminate (int n)
 static void
 server_is_down (void)
 {
-  terminate (0);
+  viwin32_terminate (0);
 }
 
 
@@ -1305,7 +1306,7 @@ usage (void)
     "  %s +service start +instance MyService\n",
     program_info.program_name, program_info.program_name);
 
-  terminate (1);
+  viwin32_terminate (1);
 }
 
 
@@ -1453,20 +1454,20 @@ ApplicationMain (int argc, char **argv)
 
   /* change to virtuoso directory */
   if (set_virtuoso_dir () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   if (kernel_init () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   dk_box_initialize (); /* This should happen before cfg_setup() because loading plugins may result in calls of bif_define() and thus calls of box_dv_uname_string() and the like */
 
   /* parse configuration file */
   if (cfg_setup () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   /* make sure database is not in use */
   if (db_check_in_use () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   /* mark .lck file for removal */
   is_in_use = 1;
@@ -1490,7 +1491,7 @@ ApplicationMain (int argc, char **argv)
       srv_global_init (f_mode);
       os_sigh_action (SIGH_EXIT);
       db_to_log ();
-      terminate (0);
+      viwin32_terminate (0);
     }
 
   if (recover_file_prefix)
@@ -1498,7 +1499,7 @@ ApplicationMain (int argc, char **argv)
       os_sigh_action (SIGH_BLOCK);
       srv_global_init (f_mode);
       os_sigh_action (SIGH_EXIT);
-      terminate (0);
+      viwin32_terminate (0);
     }
 
   if (f_crash_dump)
@@ -1515,7 +1516,7 @@ ApplicationMain (int argc, char **argv)
       db_recover_keys (f_dump_keys);
       log_info ("Using mode \'%s\'", f_mode);
       db_crash_to_log (f_mode);
-      terminate (0);
+      viwin32_terminate (0);
     }
 
   /* begin normal server operation */
@@ -1560,7 +1561,7 @@ ApplicationMain (int argc, char **argv)
   if (!DKSESSTAT_ISSET (listening, SST_LISTENING))
     {
       log_error ("Failed to start listening at SQL port '%s'", c_serverport);
-      terminate (1);
+      viwin32_terminate (1);
     }
 
   ssl_server_listen ();

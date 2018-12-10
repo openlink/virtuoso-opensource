@@ -31,7 +31,7 @@
 
 
 void
-terminate (int n)
+terminate_program (int n)
 {
 #ifdef WIN32
   EndNTApplication ();

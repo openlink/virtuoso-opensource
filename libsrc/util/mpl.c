@@ -58,7 +58,7 @@ getcore (memsz_t size)
       abort ();
 # endif
       log (L_ERR, "out of memory");
-      terminate (1);
+      terminate_program (1);
     }
 #endif
 

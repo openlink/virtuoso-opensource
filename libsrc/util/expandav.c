@@ -110,7 +110,7 @@ handle_response (char *response)
   if ((response_fd = fopen (response, "r")) == NULL)
     {
       log (L_ERR, N_("unable to open response file %s"), response);
-      terminate (1);
+      terminate_program (1);
     }
 
   while ((token = get_token (response_fd)) != NULL)

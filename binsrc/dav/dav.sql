@@ -23,85 +23,78 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
-  declare full_path varchar;
+  declare _det varchar;
   declare _path_id, _res_id any;
+  declare _etag, _ldp_head varchar;
+  declare _name varchar;
+  declare _id integer;
+  declare _mod_time datetime;
+  whenever not found goto not_found;
 
-  full_path := DAV_CONCAT_PATH ('/', DAV_CONCAT_PATH (path, '/'));
-  _path_id := DAV_SEARCH_ID (full_path, 'C');
-  _res_id := DAV_SEARCH_ID (DAV_CONCAT_PATH ('/', path), 'R');
-  if (isarray (_path_id))
+  _path_id := DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_CONCAT_PATH ('/', DB.DBA.DAV_CONCAT_PATH (path, '/')), 'C');
+  if (DB.DBA.DAV_HIDE_ERROR (_path_id) is not null)
   {
-    if (_path_id[0] = UNAME'CalDAV')
+    _det := DB.DBA.DAV_DET_NAME (_path_id);
+    if (_det = 'CalDAV')
     {
-      http_header (concat (
-        'Content-Type: text/xml\r\n',
-        'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-        'DAV: 1, 2, access-control, calendar-access\r\n',
-        'MS-Author-Via: DAV\r\n'));
+      WS.WS.OPTIONS_DET (allow=>'OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT', dav=>'1, 2, access-control, calendar-access');
       return;
     }
-    if (_path_id[0] = UNAME'CardDAV')
+    if (_det = UNAME'CardDAV')
     {
-      http_header (concat (
-        'Content-Type: text/xml\r\n',
-        'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-        'DAV: 1, 2, 3, access-control, addressbook\r\n',
-        'MS-Author-Via: DAV\r\n'));
+      WS.WS.OPTIONS_DET (allow=>'OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT', dav=>'1, 2, 3, access-control, addressbook');
       return;
+    }
+    else if (not isvector (_path_id))
+    {
+      if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _path_id and COL_DET = 'CalDAV'))
+      {
+        WS.WS.OPTIONS_DET (allow=>'OPTIONS, GET, HEAD, POST, TRACE, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT', dav=>'1, 2, access-control, calendar-access');
+        return;
+      }
+      if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _path_id and COL_DET = 'CardDAV'))
+      {
+        WS.WS.OPTIONS_DET (allow=>'OPTIONS, GET, HEAD, POST, TRACE, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT', dav=>'1, 2, access-control, addressbook');
+        return;
+      }
+    }
+  }
+
+  _etag := '';
+  _ldp_head := '';
+
+  if (DB.DBA.DAV_HIDE_ERROR (_path_id) is not null)
+  {
+    -- Collection
+    if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_path_id)))
+    {
+      -- DAV based collection
+      --
+      select COL_NAME, COL_MOD_TIME into _name, _mod_time from WS.WS.SYS_DAV_COL where COL_ID = DB.DBA.DAV_DET_DAV_ID (_path_id);
+      _id := _path_id;
+
+      _etag := sprintf ('ETag: "%s"\r\n', WS.WS.ETAG (_name, _id, _mod_time));
+      if (DB.DBA.LDP_ENABLED (_id))
+        _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\nLink: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
     }
   }
   else
   {
-    if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _path_id and COL_DET = 'CalDAV'))
+    _res_id := DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_CONCAT_PATH ('/', path), 'R');
+    if (DB.DBA.DAV_HIDE_ERROR (_res_id) is not null)
     {
-      http_header (concat (
-        'Content-Type: text/xml\r\n',
-        'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT\r\n',
-        'DAV: 1, 2, access-control, calendar-access\r\n',
-        'MS-Author-Via: DAV\r\n')
-      );
-      return;
-    }
-    if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _path_id and COL_DET = 'CardDAV'))
-    {
-      http_header (concat (
-        'Content-Type: text/xml\r\n',
-        'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-        'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT\r\n',
-        'DAV: 1, 2, access-control, addressbook\r\n',
-        'MS-Author-Via: DAV\r\n')
-      );
-      return;
-    }
-  }
+      -- Resource
+      if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_res_id)))
+      {
+        -- DAV based resource
+        --
+        select RES_COL, RES_NAME, RES_MOD_TIME into _id, _name, _mod_time from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (_res_id);
 
-  declare _etag, _ldp_head varchar;
-
-  _ldp_head := '';
-  if (not isvector (_path_id) and not isvector (_res_id))
-  {
-    declare _name varchar;
-    declare _id integer;
-    declare _mod_time datetime;
-    whenever not found goto not_found;
-
-    if (_path_id <> -1)
-    {
-      select COL_NAME, COL_MOD_TIME into _name, _mod_time from WS.WS.SYS_DAV_COL where COL_ID = _path_id;
-      _id := _path_id;
-      if (LDP_ENABLED (_path_id))
-        _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\nLink: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+        _etag := sprintf ('ETag: "%s"\r\n', WS.WS.ETAG (_name, _id, _mod_time));
+        if (DB.DBA.LDP_ENABLED (_id))
+          _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
+      }
     }
-    else
-    {
-      select RES_COL, RES_NAME, RES_MOD_TIME into _id, _name, _mod_time from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
-      if (LDP_ENABLED (_id))
-        _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
-    }
-    _etag := sprintf ('ETag: "%s"\r\n', WS.WS.ETAG (_name, _id, _mod_time));
   }
 
 not_found: ;
@@ -138,6 +131,17 @@ not_found: ;
     acceptPost ||
     msAuthor
   );
+}
+;
+
+create procedure WS.WS.OPTIONS_DET (
+  in contentType varchar := 'text/xml',
+  in allow varchar,
+  in dav varchar,
+  in msAuthor varchar := 'DAV')
+{
+  DB.DBA.DAV_SET_HTTP_STATUS (204);
+  http_header (sprintf ('Content-Type: %s\r\nAllow: OPTIONS, %s\r\nDAV: %s\r\nMS-Author-Via: %s\r\n', contentType, allow, dav, msAuthor));
 }
 ;
 
@@ -6196,6 +6200,9 @@ create function WS.WS.DAV_DIR_LIST (
   declare _user_name, _group_name varchar;
   declare _user_id, _group_id integer;
   declare action, feedAction any;
+
+  if (http_request_get ('REQUEST_METHOD') = 'OPTIONS')
+    return 0;
 
   if ((length (params) = 4) and (__tag (params[1]) = 185) and (params[2] = 'attr-Content'))
     params := __http_stream_params ();

@@ -74,7 +74,7 @@ usage (void)
   		  " <section> will be\ndeleted.\n\n"));
   fprintf(stderr, _("If both <key> and <value> contain a single - character "
   		  " the whole <section>\nwill be deleted.\n"));
-  terminate (1);
+  terminate_program (1);
 }
 
 

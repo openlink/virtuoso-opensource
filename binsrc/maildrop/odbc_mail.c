@@ -111,6 +111,8 @@ PKVPair macros;
 
 char *ExpandMacro (char *str);
 
+void maildrop_terminate (int n);
+
 /*
  *  For debugging purposes
  *  Note that this also gets into the bounced message
@@ -307,7 +309,7 @@ ExpandMacro (char *str)
     {
       Error ("Macro expansion recursion overflow");
       BounceText ("InternalError");
-      terminate (EX_SOFTWARE);
+      maildrop_terminate (EX_SOFTWARE);
     }
 
   return level ? str : strdup (str);
@@ -450,7 +452,7 @@ DB_VerifyRecipient (void)
   if (SQLPrepare (hstmt, (SQLCHAR *) sqlRequest, SQL_NTS) == SQL_ERROR)
     {
       DB_Errors ("SQLPrepare");
-      terminate (EX_CONFIG);	/* most likely */
+      maildrop_terminate (EX_CONFIG);	/* most likely */
     }
 
   /* do we need to check procedure return value? */
@@ -471,14 +473,14 @@ DB_VerifyRecipient (void)
 	    NULL) == SQL_ERROR)
 	{
 	  DB_Errors ("SQLBindParameter1");
-	  terminate (EX_SOFTWARE);
+	  maildrop_terminate (EX_SOFTWARE);
 	}
     }
 
   if (SQLExecute (hstmt) == SQL_ERROR)
     {
       DB_Errors ("SQLExecute");
-      terminate (EX_SOFTWARE);
+      maildrop_terminate (EX_SOFTWARE);
     }
 
   if (useRetCode)
@@ -528,7 +530,7 @@ DB_VerifyRecipient (void)
       if (rc == SQL_ERROR)
 	{
 	  DB_Errors ("SQLFetch");
-	  terminate (EX_SOFTWARE);
+	  maildrop_terminate (EX_SOFTWARE);
 	}
     }
 
@@ -553,7 +555,7 @@ DB_DeliverMessage (char *msgTxt, int32 msgLen)
     {
       Error ("Missing Deliver statement in [Options]");
       BounceText ("InternalError");
-      terminate (EX_CONFIG);
+      maildrop_terminate (EX_CONFIG);
     }
 
   DefMacro ("message", "?");
@@ -578,7 +580,7 @@ DB_DeliverMessage (char *msgTxt, int32 msgLen)
   if (SQLPrepare (hstmt, (SQLCHAR *) sqlRequest, SQL_NTS) == SQL_ERROR)
     {
       DB_Errors ("SQLPrepare");
-      terminate (EX_CONFIG);	/* most likely */
+      maildrop_terminate (EX_CONFIG);	/* most likely */
     }
 
   iParno = 1;
@@ -598,7 +600,7 @@ DB_DeliverMessage (char *msgTxt, int32 msgLen)
 	    NULL) == SQL_ERROR)
 	{
 	  DB_Errors ("SQLBindParameter1");
-	  terminate (EX_SOFTWARE);
+	  maildrop_terminate (EX_SOFTWARE);
 	}
     }
 
@@ -616,13 +618,13 @@ DB_DeliverMessage (char *msgTxt, int32 msgLen)
 	NULL) == SQL_ERROR)
     {
       DB_Errors ("SQLBindParameter3");
-      terminate (EX_SOFTWARE);
+      maildrop_terminate (EX_SOFTWARE);
     }
 
   if (SQLExecute (hstmt) == SQL_ERROR)
     {
       DB_Errors ("SQLExecute");
-      terminate (EX_SOFTWARE);
+      maildrop_terminate (EX_SOFTWARE);
     }
 
   SQLFreeStmt (hstmt, SQL_CLOSE);
@@ -631,7 +633,7 @@ DB_DeliverMessage (char *msgTxt, int32 msgLen)
     {
       Debug ("DeliverCheckReturn want=%d got=%d", wantCode, retCode);
       BounceText ("UserUnknown");
-      terminate (EX_NOUSER);
+      maildrop_terminate (EX_NOUSER);
     }
 }
 
@@ -665,7 +667,7 @@ dump_environ (int argc, char **argv)
 
 
 void
-terminate (int n)
+maildrop_terminate (int n)
 {
   if (n == EX_OK)
     Debug ("++ TERMINATE SUCCESS ++");
@@ -724,7 +726,7 @@ MailTo (void)
     {
       Error ("Recipient not specified");
       BounceText ("InternalError");
-      terminate (EX_CONFIG);
+      maildrop_terminate (EX_CONFIG);
     }
 
   mailLOCAL = strdup (f_local);
@@ -777,7 +779,7 @@ MailHeaders (MPL *mailPool)
 	bad_env:
 	  Error ("Bad environment");
 	  BounceText ("InternalError");
-	  terminate (EX_SOFTWARE);
+	  maildrop_terminate (EX_SOFTWARE);
 	}
       break;
 
@@ -929,7 +931,7 @@ FallbackDeliver (void)
 	    default:
 	      /* let's hope we just ran out of resources - retry */
 	      Error ("exec failed (%m)");
-	      terminate (EX_IOERR);
+	      maildrop_terminate (EX_IOERR);
 	    }
 #endif
 	}
@@ -952,7 +954,7 @@ OpenConfig (char *argv0)
     cfg_not_found:
       Error ("Cannot open configuration file %s", f_config);
       BounceText ("InternalError");	/* don't try to look this up */
-      terminate (EX_OSFILE);
+      maildrop_terminate (EX_OSFILE);
     }
 
   /* Check type & permissions */
@@ -960,7 +962,7 @@ OpenConfig (char *argv0)
     {
       Error ("Invalid configuration file %s", f_config);
       BounceText ("InternalError");		/* don't try to look this up */
-      terminate (EX_CONFIG);
+      maildrop_terminate (EX_CONFIG);
     }
 
   /* Open the configuration file */
@@ -973,7 +975,7 @@ OpenConfig (char *argv0)
     {
       Error ("Bad permissions on %s", f_config);
       BounceText ("InternalError");
-      terminate (EX_TEMPFAIL);
+      maildrop_terminate (EX_TEMPFAIL);
     }
 #endif
 }
@@ -1073,7 +1075,7 @@ usage (void)
   fprintf (stderr, "  -m exim (same as -m sendmail)\n");
   fprintf (stderr, "  -m qmail\n");
   fprintf (stderr, "  -m courier\n");
-  terminate (EX_USAGE);
+  maildrop_terminate (EX_USAGE);
 }
 
 
@@ -1091,7 +1093,6 @@ main (int argc, char **argv)
   int32 mailSizeMax;
   char *mailMesg;
   char *mailDebug;
-
 
   initialize_program (&argc, &argv);
 
@@ -1148,8 +1149,8 @@ main (int argc, char **argv)
   if (DB_Connect (szDSN) != 0)
     {
       DB_Errors ("DB_Connect");
-      /* terminate (EX_UNAVAILABLE); */
-      terminate (EX_TEMPFAIL);
+      /* maildrop_terminate (EX_UNAVAILABLE); */
+      maildrop_terminate (EX_TEMPFAIL);
     }
 
   /* Verify the recipient */
@@ -1158,7 +1159,7 @@ main (int argc, char **argv)
       /* user not found */
       FallbackDeliver ();
       BounceText ("UserUnknown");
-      terminate (EX_NOUSER);
+      maildrop_terminate (EX_NOUSER);
     }
 
   /* Construct the posted message into memory pool */
@@ -1185,7 +1186,7 @@ main (int argc, char **argv)
 	{
 	  Error ("Read failure");
 	  BounceText ("InternalError");
-	  terminate (EX_IOERR);
+	  maildrop_terminate (EX_IOERR);
 	}
       if (len == 0)
 	break;
@@ -1195,7 +1196,7 @@ main (int argc, char **argv)
 	{
 	  Debug ("Message is too long (%ld)", (long) mailSize);
 	  BounceText ("TooLong");
-	  terminate (EX_NOPERM);
+	  maildrop_terminate (EX_NOPERM);
 	}
     }
 
@@ -1220,7 +1221,7 @@ main (int argc, char **argv)
 
   /* All done */
   DB_Disconnect ();
-  terminate (EX_OK);
+  maildrop_terminate (EX_OK);
 
   return 0; /* keep cc happy */
 }
