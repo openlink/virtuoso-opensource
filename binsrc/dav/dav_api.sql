@@ -2814,7 +2814,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     }
     else if (pid > 0)
     {
-      det := (select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid and connection_get ('dav_store') is null);
+      det := (select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = pid and connection_get ('dav_store') is null);
     }
     else
     {
@@ -3010,6 +3010,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     if (_is_xper_res)
       update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where current of res_cr;
   }
+  DB.DBA.LDP_CREATE_RES (path);
+
   return rc;
 
 unhappy_upload:
@@ -6134,13 +6136,21 @@ create procedure WS.WS.DAV_HOST ()
 create procedure WS.WS.DAV_IRI (
   in path varchar)
 {
-  declare S any;
+  declare parts any;
+  declare retValue varchar;
 
-  S := string_output ();
-  http_dav_url (path, null, S);
-  S := string_output_string (S);
+  if (DB.DBA.is_empty_or_null (path))
+    return path;
 
-  return WS.WS.DAV_HOST () || S;
+  retValue := '';
+  parts := split_and_decode (path, 0, '\0\0/');
+  foreach (varchar part in parts) do
+  {
+    retValue := retValue || case when (part = '') then '/' else sprintf ('%U/', part) end;
+  }
+  retValue := subseq (retValue, 0, length(retValue)-1);
+
+  return WS.WS.DAV_HOST () || retValue;
 }
 ;
 

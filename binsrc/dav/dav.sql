@@ -7043,8 +7043,7 @@ create procedure DB.DBA.LDP_RENAME (
     else if (what = 'R')
     {
       DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
-      if (mimeType in ('text/turtle', 'application/ld+json'))
-        DB.DBA.LDP_CREATE_RES (newPath);
+      DB.DBA.LDP_CREATE_RES (newPath);
     }
   }
   else if ((oldLDP = 1) and (newLDP = 0))
@@ -7073,8 +7072,7 @@ create procedure DB.DBA.LDP_RENAME (
     {
       DB.DBA.LDP_DELETE (oldPath);
       DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
-      if (mimeType in ('text/turtle', 'application/ld+json'))
-        DB.DBA.LDP_CREATE_RES (newPath);
+      DB.DBA.LDP_CREATE_RES (newPath);
     }
   }
 }
@@ -7149,14 +7147,16 @@ create procedure DB.DBA.LDP_REFRESH (
     }
     for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
     {
-      ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
-      if (enabled and (RES_TYPE in ('text/turtle', 'application/ld+json')))
+      if (enabled)
       {
-        TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
-        TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', ruri), ruri, ruri);
+        DB.DBA.LDP_CREATE_RES (RES_FULL_PATH);
+        if (RES_TYPE in ('text/turtle', 'application/ld+json'))
         {
-          declare continue handler for sqlstate '*';
-          TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+          ruri := WS.WS.DAV_IRI (RES_FULL_PATH);
+          {
+            declare continue handler for sqlstate '*';
+            TTLP (cast (RES_CONTENT as varchar), ruri, ruri, 255);
+          }
         }
       }
       else
@@ -7173,6 +7173,7 @@ create procedure DB.DBA.LDP_REFRESH (
 
   for (select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id and COL_DET is null) do
   {
+    commit work;
     DB.DBA.LDP_REFRESH (path || COL_NAME || '/', enabled);
   }
 }
