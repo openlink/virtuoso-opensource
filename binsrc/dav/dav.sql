@@ -3351,7 +3351,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   -- dbg_obj_princ ('WS.WS.GET_EXT_DAV_LDP (', _res_id, _col_id, ')');
   declare accept, accept_mime, accept_full, accept_profile, name_ varchar;
   declare mod_time datetime;
-  declare gr, as_part varchar;
+  declare gr, as_define, as_part, as_part2 varchar;
   declare id_ integer;
   declare pref_mime varchar;
 
@@ -3479,12 +3479,38 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
     http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
 
   accept_profile := case when (accept = 'application/ld+json') then DB.DBA.LDP_ACCEPT_PARAM (accept_full, accept_mime, 'profile') else null end;
-  as_part := '';
+  as_define := '';
+  as_part := ' ?dyn_s ?p ?dyn_o . ';
+  as_part2 := ' ?dyn_o a ?t . ';
   if (accept_profile = '"https://www.w3.org/ns/activitystreams"')
-    as_part := '<http://www.w3.org/ns/activitystreams#items> owl:equivalentProperty <http://www.w3.org/ns/ldp#contains> . <http://www.w3.org/ns/activitystreams#Collection> owl:equivalentClass <http://www.w3.org/ns/ldp#Container> .';
+  {
+    as_define := 'define input:inference "asEquivalent" ';
+    as_part := ' ?dyn_s `if (regex (str (?p), \'http://www.w3.org/ns/activitystreams#\') || regex (str (?p), \'http://www.w3.org/1999/02/22-rdf-syntax-ns#\'), ?p, ?x)` `if (regex (str (?dyn_o), \'http://www.w3.org/ns/activitystreams#\') || regex (str (?p), \'http://www.w3.org/ns/activitystreams\'), ?dyn_o, ?y)` .' ;
+    as_part2 := '';
+  }
 
-  qr := sprintf ('define sql:select-option "order" define input:storage "" construct { %s `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o option (table_option "index G") . optional { graph ?g { ?o a ?t option (table_option "index primary key") } }  } order by ?s ?p ?o limit %d offset %d', as_part, n_per_page, n_per_page * (page - 1));
-
+  qr := sprintf ('define sql:select-option "order" ' ||
+                 'define input:storage "" %s ' ||
+                 'construct ' ||
+                 '  { ' ||
+                 '     %s %s' ||
+                 '  } ' ||
+                 'where ' ||
+                 '  { ' ||
+                 '    ?s ?p ?o option (table_option "index G") . ' ||
+                 '    optional { graph ?g { ?o a ?t option (table_option "index primary key") } } . ' ||
+                 '    BIND (sql:dynamic_host_name(?s) as ?dyn_s) .' ||
+                 '    BIND (sql:dynamic_host_name(?o) as ?dyn_o) .' ||
+                 '  } ' ||
+                 'order by ?s ?p ?o ' ||
+                 'limit %d ' ||
+                 'offset %d ',
+                 as_define,
+                 as_part,
+                 as_part2,
+                 n_per_page,
+                 n_per_page * (page - 1)
+                );
 execqr:
   DB.DBA.DAV_SET_HTTP_STATUS (200);
   connection_set ('SPARQLUserId', 'SPARQL_ADMIN');

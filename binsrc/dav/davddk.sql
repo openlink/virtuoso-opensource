@@ -1205,13 +1205,39 @@ WS.WS.SYS_DAV_INIT_1 ()
 
 create procedure WS.WS.SYS_DAV_INIT_RDF ()
 {
-  DB.DBA.TTLP ('@prefix ldp: <http://www.w2.org/ns/ldp#> .
-  @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-  ldp:BasicContainer rdfs:subClassOf ldp:Container .
-  ldp:DirectContainer rdfs:subClassOf ldp:Container .
-  ldp:IndirectContainer rdfs:subClassOf ldp:Container .', 'http://www.w3.org/ns/ldp#', 'http://www.w3.org/ns/ldp#');
-  DB.DBA.rdfs_rule_set ('ldp','http://www.w3.org/ns/ldp#');
-  DB.DBA.XML_SET_NS_DECL ('ldp','http://www.w3.org/ns/ldp#',2);
+  -- Remove bad triples with bad prefix from previous update
+  --
+  sparql
+  prefix ldp: <http://www.w2.org/ns/ldp#>
+  prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+  delete from <http://www.w3.org/ns/ldp#> { ?s rdfs:subClassOf ldp:Container } where { ?s rdfs:subClassOf ldp:Container };
+
+  DB.DBA.TTLP (
+    '@prefix ldp: <http://www.w3.org/ns/ldp#> .
+     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+     ldp:BasicContainer rdfs:subClassOf ldp:Container .
+     ldp:DirectContainer rdfs:subClassOf ldp:Container .
+     ldp:IndirectContainer rdfs:subClassOf ldp:Container .',
+     'http://www.w3.org/ns/ldp#',
+     'http://www.w3.org/ns/ldp#'
+  );
+  DB.DBA.rdfs_rule_set ('ldp', 'http://www.w3.org/ns/ldp#');
+  DB.DBA.XML_SET_NS_DECL ('ldp', 'http://www.w3.org/ns/ldp#', 2);
+
+  DB.DBA.TTLP (
+    '@prefix as: <http://www.w3.org/ns/activitystreams#> .
+     @prefix ldp: <http://www.w3.org/ns/ldp#> .
+     @prefix owl: <http://www.w3.org/2002/07/owl#> .
+     @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+     as:items owl:equivalentProperty ldp:contains .
+     as:Collection owl:equivalentClass ldp:Container .',
+     'xx',
+     'asEquivalent'
+  );
+  DB.DBA.rdfs_rule_set ('asEquivalent', 'asEquivalent');
+  DB.DBA.XML_SET_NS_DECL ('as', 'http://www.w3.org/ns/activitystreams#', 2);
 }
 ;
 
