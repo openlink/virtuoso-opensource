@@ -109,6 +109,8 @@
               val_realm := null;
               if (VAL.DBA.authentication_details_for_connection (sid=>val_sid, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser, realm=>val_realm))
               {
+                self.sid := val_sid;
+                self.realm := val_realm;
                 if (val_isRealUser)
                 {
                   connection_set ('vspx_user', val_uname);
@@ -180,7 +182,6 @@
           <v:variable persist="0" name="account_role" type="varchar" default="'R'" />
           <v:variable persist="0" name="account_name" type="varchar" default="null"/>
           <v:variable persist="0" name="account_password" type="varchar" default="null"/>
-          <?vsp http (sprintf ('<input type="hidden" name="sid" id="sid" value="%s" />', get_keyword ('sid', self.vc_page.vc_event.ve_params, ''))); ?>
           <?vsp http (sprintf ('<input type="hidden" name="mode" id="mode" value="%s" />', get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav'))); ?>
           <vm:dav_browser mode="webdav" />
         </v:form>
