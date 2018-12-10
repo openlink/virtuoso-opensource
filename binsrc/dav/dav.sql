@@ -1949,22 +1949,17 @@ create procedure WS.WS.PUT (
   if ((res_id_ is not null or _col is not null) and length (client_etag))
   {
     server_etag := client_etag;
-    if (res_id_ is not null)
+    if (isinteger (res_id_))
     {
-      if (isinteger(res_id_))
-      {
-        select RES_COL, RES_NAME, RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS into id_, res_name_, mod_time, o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
-        server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
-      }
+      select RES_COL, RES_NAME, RES_MOD_TIME, RES_OWNER, RES_GROUP, RES_PERMS into id_, res_name_, mod_time, o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
+      server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
     }
-    else
+    else if (isinteger (_col))
     {
-      if (isinteger(_col))
-      {
-        select COL_ID, COL_NAME, COL_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col;
-        server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
-      }
+      select COL_ID, COL_NAME, COL_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col;
+      server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
     }
+
     if (client_etag <> server_etag)
     {
       http_status_set (412);
@@ -1973,6 +1968,11 @@ create procedure WS.WS.PUT (
   }
   if ((res_id_ is not null) and isinteger (res_id_) and (length (client_etag) = 0))
   {
+    if (DB.DBA.LDP_ENABLED (_col_parent_id))
+    {
+      http_status_set (428);
+      return;
+    }
     select RES_OWNER, RES_GROUP, RES_PERMS into o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
   }
   if (registry_get ('LDP_strict_put') = '1' and _method = 'PUT'
@@ -2037,6 +2037,11 @@ create procedure WS.WS.PUT (
       }
       else
       {
+        if (DB.DBA.LDP_ENABLED (_col))
+        {
+          http_status_set (409);
+          return;
+        }
         rc := _col;
       }
 
@@ -2050,16 +2055,18 @@ create procedure WS.WS.PUT (
       }
 
       http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (newpath)));
-      http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, newpath));
+      http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, newpath, content_type));
 
       goto rcck;
     }
     http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (full_path)));
-    http_header (http_header_get () || WS.WS.LDP_HDRS (0, 1, 0, 0, full_path));
+    http_header (http_header_get () || WS.WS.LDP_HDRS (0, 1, 0, 0, full_path, content_type));
   }
   else
   {
-    http_header (sprintf ('Location: %s\r\nLink: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n', WS.WS.DAV_LINK (full_path)));
+    http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (full_path)));
+    if (DB.DBA.LDP_ENABLED (_col_parent_id))
+      http_header (http_header_get () || WS.WS.LDP_HDRS (0, 1, 0, 0, full_path, content_type));
   }
 
   rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, o_perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, o_uid, o_gid, 0, 1);
@@ -2121,6 +2128,7 @@ error_ret:
   DAV_SET_HTTP_REQUEST_STATUS (rc);
   if (rc = -44)
     http_value (connection_get ('__sql_message'), 'p');
+
   if ((rc < 0) and bit_and (sys_stat ('public_debug'), 2))
     http_value (callstack_dump (), 'pre');
 }
@@ -2523,6 +2531,10 @@ again:
 
       DB.DBA.DAV_SET_HTTP_STATUS (200);
       http_header ('Content-Type: text/turtle\r\n');
+      server_etag := WS.WS.ETAG_BY_ID (meta_id, meta_what);
+      if (server_etag is not null)
+        http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
+
       http (content_);
     }
     else
@@ -3193,7 +3205,7 @@ again:
                 return;
             }
 
-            http_header (http_header_get () || WS.WS.LDP_HDRS (0, LDP_ENABLED (_col), 0, 0, full_path));
+            http_header (http_header_get () || WS.WS.LDP_HDRS (0, LDP_ENABLED (_col), 0, 0, full_path, cont_type));
             if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
             {
               commit work;
@@ -3270,7 +3282,8 @@ create procedure WS.WS.LDP_HDRS (
   in add_rel integer := 0,
   in page integer := 0,
   in last integer := 0,
-  in path any := null)
+  in path varchar := null,
+  in contentType varchar := null)
 {
   declare link, header, msAuthor, acceptPatch, acceptPost, netID any;
 
@@ -3290,7 +3303,15 @@ create procedure WS.WS.LDP_HDRS (
   {
     header := header || 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
     if (is_col)
-	    header := header || 'Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+      header := header || 'Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+
+    if (not is_col and (contentType <> 'text/turtle'))
+    {
+      header := header || 'Link: <http://www.w3.org/ns/ldp#NonRDFSource>; rel="type"\r\n';
+
+      link := WS.WS.DAV_LINK (rtrim (path, '/'));
+      header := header || sprintf ('Link: <%s,meta>; rel="describedby"\r\n', link);
+    }
   }
 
   if (page > 0)
@@ -6913,17 +6934,18 @@ create procedure DB.DBA.LDP_CREATE_COL (
 
   graph := WS.WS.DAV_IRI (path);
   set_user_id ('dba');
-  TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#BasicContainer>, <http://www.w3.org/ns/ldp#Container> .', graph), graph, graph);
+  TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#BasicContainer>, <http://www.w3.org/ns/ldp#Container>, <http://www.w3.org/ns/ldp#RDFSource> .', graph), graph, graph);
   DB.DBA.LDP_CREATE (path, id_parent);
 }
 ;
 
 create procedure DB.DBA.LDP_CREATE_RES (
   in path any,
+  in mimeType varchar,
   in id_parent any := null)
 {
   -- dbg_obj_princ ('LDP_CREATE_RES (', path, ')');
-  declare graph any;
+  declare graph, rdfSource varchar;
 
   -- macOS metadata files
   if (DB.DBA.DAV_MAC_METAFILE (path))
@@ -6937,7 +6959,8 @@ create procedure DB.DBA.LDP_CREATE_RES (
 
   graph := WS.WS.DAV_IRI (path);
   set_user_id ('dba');
-  TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', graph), graph, graph);
+  rdfSource := case when (mimeType in ('text/turtle', 'application/ld+json')) then ', <http://www.w3.org/ns/ldp#RDFSource> ' else '' end;
+  TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> %s.', graph, rdfSource), graph, graph);
   DB.DBA.LDP_CREATE (path, id_parent);
 }
 ;
@@ -6987,7 +7010,7 @@ create procedure DB.DBA.LDP_DELETE (
 {
   -- dbg_obj_princ ('LDP_DELETE (', path, ')');
   declare graph, graph_parent varchar;
-  declare graphIdn, graphParentIdn any;
+  declare graphIdn, graphParentIdn, tmpIdn any;
 
   -- macOS metadata files
   if (DB.DBA.DAV_MAC_METAFILE (path))
@@ -7003,8 +7026,11 @@ create procedure DB.DBA.LDP_DELETE (
   }
   else
   {
-    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and O = __i2idn ('http://www.w3.org/ns/ldp#Resource');
-    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and O = __i2idn ('http://www.w3.org/2000/01/rdf-schema#Resource');
+    tmpIdn := __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
+    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = tmpIdn and O = __i2idn ('http://www.w3.org/ns/ldp#Resource');
+    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = tmpIdn and O = __i2idn ('http://www.w3.org/2000/01/rdf-schema#Resource');
+    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = tmpIdn and O = __i2idn ('http://www.w3.org/ns/ldp#RDFSource');
+    delete from DB.DBA.RDF_QUAD where G = graphIdn and S = graphIdn and P = tmpIdn and O = __i2idn ('http://www.w3.org/ns/ldp#NonRDFSource');
   }
   delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/ldp#contains') and O = graphIdn;
   delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#mtime') and S = graphIdn;
@@ -7043,7 +7069,7 @@ create procedure DB.DBA.LDP_RENAME (
     else if (what = 'R')
     {
       DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
-      DB.DBA.LDP_CREATE_RES (newPath);
+      DB.DBA.LDP_CREATE_RES (newPath, mimeType);
     }
   }
   else if ((oldLDP = 1) and (newLDP = 0))
@@ -7072,7 +7098,7 @@ create procedure DB.DBA.LDP_RENAME (
     {
       DB.DBA.LDP_DELETE (oldPath);
       DB.DBA.LDP_RENAME_GRAPH (oldGraph, newGraph);
-      DB.DBA.LDP_CREATE_RES (newPath);
+      DB.DBA.LDP_CREATE_RES (newPath, mimeType);
     }
   }
 }
@@ -7139,7 +7165,7 @@ create procedure DB.DBA.LDP_REFRESH (
     uri := WS.WS.DAV_IRI (path);
     if (enabled)
     {
-      TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
+      TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container, ldp:RDFSource .', uri, uri);
     }
     else
     {
@@ -7149,7 +7175,7 @@ create procedure DB.DBA.LDP_REFRESH (
     {
       if (enabled)
       {
-        DB.DBA.LDP_CREATE_RES (RES_FULL_PATH);
+        DB.DBA.LDP_CREATE_RES (RES_FULL_PATH, RES_TYPE);
         if (RES_TYPE in ('text/turtle', 'application/ld+json'))
         {
           ruri := WS.WS.DAV_IRI (RES_FULL_PATH);

@@ -3010,7 +3010,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     if (_is_xper_res)
       update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where current of res_cr;
   }
-  DB.DBA.LDP_CREATE_RES (path);
+  DB.DBA.LDP_CREATE_RES (path, type);
 
   return rc;
 
