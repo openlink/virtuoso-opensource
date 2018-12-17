@@ -308,7 +308,7 @@ ssg_assert_sd_flags (spar_sqlgen_t *ssg, int sd_needed_flags, const char *featur
 }
 
 int
-ssg_fields_are_equal (SPART *tree1, SPART *tree2)
+ssg_fields_are_equal (sparp_t *sparp, SPART *tree1, SPART *tree2)
 {
   int type1, type2;
   if (tree1 == tree2)
@@ -325,8 +325,27 @@ ssg_fields_are_equal (SPART *tree1, SPART *tree2)
       return !strcmp (tree1->_.qname.val, tree2->_.qname.val);
     case SPAR_LIT:
       return box_hash ((caddr_t)tree1) == box_hash ((caddr_t)tree2);
+    case SPAR_PPATH:
+      {
+        int partctr, partcount;
+        if (tree1->_.ppath.subtype != tree2->_.ppath.subtype)
+          return 0;
+        if (tree1->_.ppath.num_of_invs != tree2->_.ppath.num_of_invs)
+          return 0;
+        if (tree1->_.ppath.minrepeat != tree2->_.ppath.minrepeat)
+          return 0;
+        if (tree1->_.ppath.maxrepeat != tree2->_.ppath.maxrepeat)
+          return 0;
+        partcount = BOX_ELEMENTS (tree1->_.ppath.parts);
+        if (partcount != BOX_ELEMENTS (tree2->_.ppath.parts))
+          return 0;
+        for (partctr = 0; partctr < partcount; partctr++)
+          if (!ssg_fields_are_equal (sparp, tree1->_.ppath.parts[partctr], tree2->_.ppath.parts[partctr]))
+            return 0;
+        return 1;
+      }
     }
-  GPF_T1 ("ssg_" "fields_are_equal: unsupported tree type");
+  spar_internal_error (sparp, "ssg_" "fields_are_equal(): unsupported tree type");
   return 0;
 }
 
@@ -1202,7 +1221,7 @@ args_printed:
                 need_new_graph = 0;
               }
             else
-              should_close_graph = need_new_graph = !ssg_fields_are_equal (ssg->ssg_sd_prev_graph, curr_graph);
+              should_close_graph = need_new_graph = !ssg_fields_are_equal (ssg->ssg_sparp, ssg->ssg_sd_prev_graph, curr_graph);
           }
         else
           {
@@ -1218,7 +1237,7 @@ args_printed:
           {
             if ((OPTIONAL_L == tree->_.triple.subtype) ||
              place_qm || should_close_graph || need_new_graph ||
-             !ssg_fields_are_equal (ssg->ssg_sd_prev_subj, tree->_.triple.tr_subject) )
+             !ssg_fields_are_equal (ssg->ssg_sparp, ssg->ssg_sd_prev_subj, tree->_.triple.tr_subject) )
               {
                 ssg_puts (" .");
                 ssg->ssg_indent -= 4;
@@ -1273,7 +1292,7 @@ args_printed:
             ssg->ssg_sd_prev_pred = tree->_.triple.tr_predicate;
             ssg->ssg_indent += 2;
           }
-        else if (!ssg_fields_are_equal (ssg->ssg_sd_prev_pred, tree->_.triple.tr_predicate))
+        else if (!ssg_fields_are_equal (ssg->ssg_sparp, ssg->ssg_sd_prev_pred, tree->_.triple.tr_predicate))
           {
             ssg_puts (" ;");
             ssg->ssg_indent -= 2;
