@@ -814,7 +814,9 @@ internal_sql_connect (
 
   if (con->con_charset)
     {
-      wide_charset_free (con->con_charset);
+      if (con->con_charset != CHARSET_UTF8)
+        wide_charset_free (con->con_charset);
+
       con->con_charset = NULL;
     }
   strncpy (addr_lst, dsn, (sizeof (addr_lst) - 1));
@@ -1057,31 +1059,38 @@ internal_sql_connect (
 
       con_set_defaults (con, login_res);
 
-      if (BOX_ELEMENTS (login_res) > LG_CHARSET)
-	{
-	  caddr_t *cs_info = (caddr_t *) login_res[LG_CHARSET];
-	  if (cs_info && DV_TYPE_OF (cs_info) == DV_ARRAY_OF_POINTER && BOX_ELEMENTS (cs_info) > 1)
-	    con->con_charset =
-		wide_charset_create (cs_info[0], (wchar_t *) cs_info[1], box_length (cs_info[1]) / sizeof (wchar_t) - 1, NULL);
-	}
-
-      if (con->con_charset_name && (!con->con_charset || strcmp (con->con_charset->chrs_name, con->con_charset_name)))
-	{
-	  if (strcmp ("ISO-8859-1", con->con_charset_name))
+      if (con->con_string_is_utf8)
+        {
+          con->con_charset = CHARSET_UTF8;
+        }
+      else
+        {
+          if (BOX_ELEMENTS (login_res) > LG_CHARSET)
 	    {
-	      snprintf (err, sizeof (err),
-		  "Charset %s not available. Server default %s will be used.",
-		  con->con_charset_name, con->con_charset ? con->con_charset->chrs_name : "ISO-8859-1");
-	      set_success_info (&con->con_error, "2C000", "CL035", err, 0);
+	      caddr_t *cs_info = (caddr_t *) login_res[LG_CHARSET];
+	      if (cs_info && DV_TYPE_OF (cs_info) == DV_ARRAY_OF_POINTER && BOX_ELEMENTS (cs_info) > 1)
+	        con->con_charset =
+		    wide_charset_create (cs_info[0], (wchar_t *) cs_info[1], box_length (cs_info[1]) / sizeof (wchar_t) - 1, NULL);
+	    }
+
+          if (con->con_charset_name && (!con->con_charset || strcmp (con->con_charset->chrs_name, con->con_charset_name)))
+	    {
+	      if (strcmp ("ISO-8859-1", con->con_charset_name))
+	        {
+	          snprintf (err, sizeof (err),
+		      "Charset %s not available. Server default %s will be used.",
+		      con->con_charset_name, con->con_charset ? con->con_charset->chrs_name : "ISO-8859-1");
+	          set_success_info (&con->con_error, "2C000", "CL035", err, 0);
+	          rc = SQL_SUCCESS_WITH_INFO;
+	        }
+	    }
+          else if (!con->con_charset_name && con->con_charset && strcmp ("ISO-8859-1", con->con_charset->chrs_name))
+	    {
+	      snprintf (err, sizeof (err), "Switching to the server default charset %s.", con->con_charset->chrs_name);
+	      set_success_info (&con->con_error, "01S02", "CL036", err, 0);
 	      rc = SQL_SUCCESS_WITH_INFO;
 	    }
-	}
-      else if (!con->con_charset_name && con->con_charset && strcmp ("ISO-8859-1", con->con_charset->chrs_name))
-	{
-	  snprintf (err, sizeof (err), "Switching to the server default charset %s.", con->con_charset->chrs_name);
-	  set_success_info (&con->con_error, "01S02", "CL036", err, 0);
-	  rc = SQL_SUCCESS_WITH_INFO;
-	}
+        }
 
       if (con->con_charset_name)
 	dk_free_box (con->con_charset_name);
@@ -1702,7 +1711,7 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
   if (con->con_bookmarks)
     hash_table_free (con->con_bookmarks);
 
-  if (con->con_charset)
+  if (con->con_charset && con->con_charset != CHARSET_UTF8)
     wide_charset_free (con->con_charset);
 
   if (con->con_user)
