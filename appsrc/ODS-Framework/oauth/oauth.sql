@@ -605,7 +605,13 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
   declare consumer_secret, oauth_token, oauth_secret varchar;
 
   nonce := xenc_rand_bytes (8, 1);
-  timest := datediff ('second', stringdate ('1970-1-1'), curdatetime_tz ());
+
+  declare current_date_time dateTime;
+
+  current_date_time := curdatetime_tz();
+
+  timest := datediff ('second', dt_set_tz(stringdate ('1970-1-1'),timezone(current_date_time)), current_date_time);
+
   if (tz)
     timest := timest - timezone (curdatetime_tz()) * 60; 
   if (length (params) and params not like '%&')

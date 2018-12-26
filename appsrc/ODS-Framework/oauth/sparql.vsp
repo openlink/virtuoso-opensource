@@ -5,6 +5,14 @@
   declare meth, pars, hdr, content_type, host any;
   declare cookie_str, cookie_vec any;
 
+  declare http_protocol varchar;
+  if (client_attr ('client_ssl') = 1)
+  {
+    http_protocol := 'https';
+  } else {
+    http_protocol := 'http';
+  }
+ 
   debug := get_keyword ('debug', params, case (get_keyword ('query', params, '')) when '' then '1' else '' end);
   def_qry := cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultQuery');
   if (def_qry is null)
@@ -14,7 +22,7 @@
   connection_set ('client_ip', client_attr ('client_ip'));
   consumer_key := {?'key'};
   host := http_request_header (lines, 'Host', null, 'localhost:'||server_http_port ());
-  srv := sprintf ('http://%s/OAuth/', host);
+  srv := sprintf ('%s://%s/OAuth/', http_protocol, host);
   sid := null;
   res := '';
   hdr := '';
@@ -52,7 +60,7 @@
         }
     }
 
-  meth := 'http://'||host||'/oauth/sparql.vsp';
+  meth := sprintf('%s://%s/oauth/sparql.vsp', http_protocol, host);
   if ({?'oauth_signature'} is not null)
     {
       declare uid, rc varchar;
@@ -80,7 +88,7 @@
       res := http_get (url);
       sid := OAUTH..parse_response (sid, consumer_key, res);
       OAUTH..set_session_data (sid, params);
-      ret_url := sprintf ('http://%s/oauth/sparql.vsp?ready=%U', host, sid);
+      ret_url := sprintf ('%s://%s/oauth/sparql.vsp?ready=%U', http_protocol, host, sid);
       url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', srv, OAUTH..get_auth_token (sid), ret_url); 
       http_status_set (302);
       http_header (sprintf ('Location: %s\r\nSet-Cookie: oauth.sid=; expires=%s; path=/\r\n', 
