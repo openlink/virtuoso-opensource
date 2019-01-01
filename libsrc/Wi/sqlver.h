@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 #ifndef SQLVER_H
 #define SQLVER_H
 
-#define PRODUCT_COPYRIGHT	"Copyright (C) 1998-2018 OpenLink Software"
+#define PRODUCT_COPYRIGHT	"Copyright (C) 1998-2019 OpenLink Software"
 #define PRODUCT_NAME		"OpenLink Virtuoso"
 
 /* DBMS Server */

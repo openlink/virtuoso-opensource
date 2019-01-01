@@ -15,7 +15,7 @@ AlwaysCreateUninstallIcon=true
 
 
 MinVersion=0,5.0.2195
-AppCopyright=© 1998-2018 OpenLink Software
+AppCopyright=© 1998-2019 OpenLink Software
 WizardImageFile=compiler:WizModernImage14.bmp
 WizardSmallImageFile=compiler:WizModernSmallImage14.bmp
 DisableStartupPrompt=true

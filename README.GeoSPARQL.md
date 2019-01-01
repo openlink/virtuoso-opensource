@@ -1,6 +1,6 @@
 # Virtuoso GeoSPARQL support
 
-_Copyright (C) 2018 OpenLink Software_
+_Copyright (C) 2018-2019 OpenLink Software_
 
 ## Introduction
 This release marks the addition of GeoSPARQL function support to Virtuoso Open Source Edition.

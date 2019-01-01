@@ -1,7 +1,7 @@
 Building Virtuoso Open Source Edition on Mac OS X
 =================================================
 
-*Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>*
+*Copyright (C) 1998-2019 OpenLink Software <vos.admin@openlinksw.com>*
 
 
 ## Introduction
