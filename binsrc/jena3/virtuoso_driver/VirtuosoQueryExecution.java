@@ -30,6 +30,12 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSetMetaData;
 
+import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonObject;
+/**
+import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.sparql.lib.RDFTerm2Json;
+**/
 import virtuoso.sql.*;
 
 import org.apache.jena.graph.NodeFactory;
@@ -329,6 +335,44 @@ public class VirtuosoQueryExecution implements QueryExecution {
             throw new JenaException("Convert results has FAILED.:" + e);
         }
         return ret;
+    }
+
+    @Override
+    public JsonArray execJson() {
+        throw new JenaException("Unsupported Operation");
+/*** checkme
+        JsonArray jsonArray = new JsonArray() ;
+        try {
+            stmt = graph.createStatement(false);
+            if (timeout > 0)
+                stmt.setQueryTimeout((int) (timeout / 1000));
+            java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
+
+            VResultSet vrs = new VResultSet(graph, stmt, rs);
+
+            List<String> resultVars = vrs.getResultVars();
+            while(vrs.hasNext())
+            {
+                Binding binding = vrs.nextBinding();
+                JsonObject jsonObject = new JsonObject() ;
+                for (String resultVar : resultVars) {
+                    Node n = binding.get(Var.alloc(resultVar)) ;
+                    JsonValue value = RDFTerm2Json.fromNode(n) ;
+                    jsonObject.put(resultVar, value) ;
+                }
+                jsonArray.add(jsonObject) ;
+            }
+            return jsonArray;
+        } catch (Exception e) {
+            throw new JenaException("Can not create ResultSet.:" + e);
+        }
+ ***/
+    }
+
+
+    @Override
+    public Iterator<JsonObject> execJsonItems() {
+        throw new JenaException("Unsupported Operation");
     }
 
 

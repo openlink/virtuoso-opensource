@@ -29,6 +29,7 @@ import javax.transaction.xa.*;
 
 import org.apache.jena.graph.impl.*;
 import org.apache.jena.query.ReadWrite;
+import org.apache.jena.query.TxnType;
 import org.apache.jena.shared.*;
 
 import static virtuoso.jena.driver.VirtIsolationLevel.*;
@@ -38,9 +39,13 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
     private VirtGraph graph = null;
     private Boolean m_transactionsSupported = null;
     private ReadWrite readWrite;
+    private TxnType txnType;
 
     protected ReadWrite getReadWrite() {
         return this.readWrite;
+    }
+    protected TxnType getTxnType() {
+        return this.txnType;
     }
 
     public VirtTransactionHandler(VirtGraph _graph) {
@@ -189,6 +194,7 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
                     c.setAutoCommit(false);
                 }
                 this.readWrite = ReadWrite.READ;
+                this.txnType = TxnType.WRITE;
             } catch (SQLException e) {
                 throw new JenaException("Transaction begin failed: ", e);
             }
@@ -206,6 +212,34 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
                     c.setAutoCommit(false);
                 }
                 this.readWrite = _readWrite;
+            } catch (SQLException e) {
+                throw new JenaException("Transaction begin failed: ", e);
+            }
+        } else {
+            notSupported("begin transaction");
+        }
+    }
+
+    public void begin(TxnType _txnType) {
+        checkNotXA("begin");
+        if (transactionsSupported()) {
+            try {
+                Connection c = graph.getConnection();
+                if (c.getAutoCommit()) {
+                    c.setAutoCommit(false);
+                }
+                this.txnType = _txnType;
+                switch (_txnType){
+                    case READ:
+                        this.readWrite = ReadWrite.READ;
+                        break;
+                    case READ_PROMOTE:
+                    case READ_COMMITTED_PROMOTE:
+                    case WRITE:
+                    default:
+                        this.readWrite = ReadWrite.WRITE;
+                        break;
+                }
             } catch (SQLException e) {
                 throw new JenaException("Transaction begin failed: ", e);
             }
