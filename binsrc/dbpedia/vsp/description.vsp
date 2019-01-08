@@ -151,10 +151,10 @@
        rdf_link3 := rdf_link || '&format=application%2Frdf%2Bjson';
        rdf_link4 := rdf_link || '&format=application%2Frdf%2Bjson';
        rdf_link5 := rdf_link  || '&format=text%2Fturtle';
-       rdf_link := rdf_link  || '&format=text%2Fn3';
        atom_link := rdf_link || '&format=application%2Fatom%2Bxml';
        jsod := rdf_link      || '&format=application%2Fodata%2Bjson';
        ntriples := rdf_link  || '&format=text%2Fplain';
+       rdf_link := rdf_link  || '&format=text%2Fn3';
      }
    else
      {
