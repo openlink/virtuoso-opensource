@@ -45,7 +45,7 @@
 #  include <odbcinst.h>
 #  define ERR_STRING	"[OpenLink][Virtuoso ODBC Driver]"
 # else
-#  define ERR_STRING	"[OpenLink][Virtuoso iODBC Driver]"
+#  define ERR_STRING	"[OpenLink][Virtuoso ODBC Driver]"
 # endif
 
 # ifndef SQL_COPT_SS_BASE

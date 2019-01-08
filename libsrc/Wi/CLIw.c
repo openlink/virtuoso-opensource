@@ -72,10 +72,19 @@ extern int virt_wide_as_utf16;
   }
 #endif
 
+
 #define MAKE_INPUT_NARROW_1(param, con) \
   if (wsz##param) \
   { \
-    if (!(con)->con_defs.cdef_utf8_execs) \
+    if ((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8) \
+    { \
+      len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
+      if ((con)->con_wide_as_utf16) \
+        sz##param = (SQLCHAR *) box_utf16_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+      else \
+        sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+    } \
+    else \
     { \
       len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
       sz##param = (SQLCHAR *) dk_alloc_box (len + 1, DV_LONG_STRING); \
@@ -84,14 +93,6 @@ extern int virt_wide_as_utf16;
       else \
         cli_wide_to_narrow (charset, 0, WCHAR_CAST wsz##param, len, sz##param, len, NULL, NULL); \
       sz##param[len] = 0; \
-    } \
-    else \
-    { \
-      len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-      if ((con)->con_wide_as_utf16) \
-        sz##param = (SQLCHAR *) box_utf16_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
-      else \
-        sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
     } \
   }
 
@@ -125,7 +126,20 @@ extern int virt_wide_as_utf16;
 #define MAKE_INPUT_ESCAPED_NARROW_1(param, con) \
   if (wsz##param) \
   { \
-    if (!(con)->con_defs.cdef_utf8_execs) \
+    if ((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8) \
+      { \
+        if ((con)->con_wide_as_utf16) \
+          { \
+	    len = cb##param > 0 ? cb##param : virt_ucs2len ((uint16 *) wsz##param); \
+	    sz##param = (SQLCHAR *) box_utf16_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+          } \
+        else \
+          { \
+	    len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
+	    sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+          } \
+      } \
+    else \
       { \
         unsigned out_len; \
         if ((con)->con_wide_as_utf16) \
@@ -141,19 +155,6 @@ extern int virt_wide_as_utf16;
             sz##param = (SQLCHAR *) dk_alloc_box (len * 9 + 1, DV_LONG_STRING); \
             out_len = (unsigned) cli_wide_to_escaped (charset, 0, WCHAR_CAST wsz##param, len, sz##param, len * 9, NULL, NULL); \
             sz##param[out_len] = 0; \
-          } \
-      } \
-    else \
-      { \
-        if ((con)->con_wide_as_utf16) \
-          { \
-	    len = cb##param > 0 ? cb##param : virt_ucs2len ((uint16 *) wsz##param); \
-	    sz##param = (SQLCHAR *) box_utf16_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
-          } \
-        else \
-          { \
-	    len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-	    sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
           } \
       } \
   }
@@ -197,12 +198,12 @@ extern int virt_wide_as_utf16;
 #define DEFINE_OUTPUT_CHAR_NARROW(param, con, type) \
   SQLCHAR *sz##param = NULL; \
   type _vpcb##param, *_pcb##param = &_vpcb##param; \
-  type _cb##param = MAX_MESSAGE_LEN + cb##param * ((con)->con_defs.cdef_utf8_execs ? VIRT_MB_CUR_MAX : 1)
+  type _cb##param = MAX_MESSAGE_LEN + cb##param * (((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8)? VIRT_MB_CUR_MAX : 1)
 
 #define MAKE_OUTPUT_CHAR_NARROW(param, con) \
   if (wsz##param) \
     { \
-      if ((con)->con_defs.cdef_utf8_execs) \
+      if ((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8) \
 	sz##param = (SQLCHAR *) dk_alloc_box (cb##param * VIRT_MB_CUR_MAX, DV_LONG_STRING); \
       else \
 	sz##param = (SQLCHAR *) dk_alloc_box (_cb##param, DV_LONG_STRING); \
@@ -281,7 +282,7 @@ extern int virt_wide_as_utf16;
 
 
 #define DEFINE_OUTPUT_NONCHAR_NARROW(wide, len, pcb, con, type) \
-  type _##len = (type) (len / (wide_as_utf16 ? sizeof(uint16) : sizeof (wchar_t)) * (( (con) && (con)->con_defs.cdef_utf8_execs) ? VIRT_MB_CUR_MAX : 1)); \
+  type _##len = (type) (len / (wide_as_utf16 ? sizeof(uint16) : sizeof (wchar_t)) * (( (con) && ((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8)) ? VIRT_MB_CUR_MAX : 1)); \
   caddr_t _##wide = NULL; \
   type _v##pcb, * _##pcb = &_v##pcb
 
@@ -289,7 +290,7 @@ extern int virt_wide_as_utf16;
 #define MAKE_OUTPUT_NONCHAR_NARROW(wide, len, con) \
   if (wide && len > 0) \
     { \
-      if ((con) && (con)->con_defs.cdef_utf8_execs) \
+      if ((con) && ((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8)) \
 	_##wide = (char *) dk_alloc_box (_##len * VIRT_MB_CUR_MAX + 1, DV_LONG_STRING); \
       else \
 	_##wide = (char *) dk_alloc_box (_##len + 1, DV_LONG_STRING); \
@@ -386,7 +387,7 @@ extern int virt_wide_as_utf16;
       }
 
 #define MAKE_INPUT_NONCHAR_NARROW(wide, len, con) \
-    if ((con)->con_defs.cdef_utf8_execs) \
+    if ((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8) \
       { \
 	if (_##len > 0 && wide) \
 	  { \
@@ -692,11 +693,14 @@ SQLErrorW (
   wcharset_t *charset = con ? con->con_charset : (stmt ? stmt->stmt_connection->con_charset : NULL);
   SQLCHAR szSqlState[6];
   SQLRETURN rc;
-  int wide_as_utf16 = con ? con->con_wide_as_utf16 : virt_wide_as_utf16;
+  int wide_as_utf16 = virt_wide_as_utf16;
+
 
   if (con || stmt)
     {
       cli_connection_t *conn = con ? con : stmt->stmt_connection;
+      wide_as_utf16 = conn->con_wide_as_utf16;
+
       DEFINE_OUTPUT_CHAR_NARROW (ErrorMsg, conn, SQLSMALLINT);
 
       MAKE_OUTPUT_CHAR_NARROW (ErrorMsg, conn);
@@ -1019,7 +1023,7 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
   cli_connection_t *conn = (HandleType == SQL_HANDLE_DBC ? con :
       (HandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
 	  (HandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
-  int wide_as_utf16 = con ? con->con_wide_as_utf16 : virt_wide_as_utf16;
+  int wide_as_utf16 = conn ? conn->con_wide_as_utf16 : virt_wide_as_utf16;
 
   if (conn)
     {

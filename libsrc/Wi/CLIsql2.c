@@ -1070,14 +1070,17 @@ virtodbc__SQLGetConnectOption (
 
     case SQL_CHARSET:
       {
-	char *chrs_name = "";
-	if (CON_CONNECTED (con))
+	char *chrs_name = "UTF-8";
+	if (!con->con_string_is_utf8)
 	  {
-	    if (con->con_charset->chrs_name)
-	      chrs_name = con->con_charset->chrs_name;
+	    if (CON_CONNECTED (con))
+	      {
+	        if (con->con_charset->chrs_name)
+	          chrs_name = con->con_charset->chrs_name;
+	      }
+	    else
+	      chrs_name = (char *) con->con_charset;
 	  }
-	else
-	  chrs_name = (char *) con->con_charset;
 	V_SET_ODBC_STR (chrs_name, pvParam, StringLength, StringLengthPtr, &con->con_error);
       }
       break;
@@ -1229,59 +1232,62 @@ virtodbc__SQLSetConnectOption (
       break;
 
     case SQL_CHARSET:
-      if (CON_CONNECTED (con))
-	{
-	  SQLHSTMT stmt;
-	  SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
-	  wchar_t charset_table[256];
-	  char szCharsetName[50];
-	  SQLLEN nCharsetLen;
-
-	  if (SQL_SUCCESS != rc)
-	    return rc;
-
-	  if (vParam)
+      if (!con->con_string_is_utf8)
+        {
+          if (CON_CONNECTED (con))
 	    {
-	      int i;
+	      SQLHSTMT stmt;
+	      SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
+	      wchar_t charset_table[256];
+	      char szCharsetName[50];
+	      SQLLEN nCharsetLen;
 
-	      for (i = 0; i < 49 && ((char *) vParam)[i]; i++)
-		((char *) charset_table)[i] = szCharsetName[i] = toupper (((char *) vParam)[i]);
+	      if (SQL_SUCCESS != rc)
+	        return rc;
 
-	      ((char *) charset_table)[i] = szCharsetName[i] = 0;
-	      nCharsetLen = i;
+	      if (vParam)
+	        {
+	          int i;
+
+	          for (i = 0; i < 49 && ((char *) vParam)[i]; i++)
+		    ((char *) charset_table)[i] = szCharsetName[i] = toupper (((char *) vParam)[i]);
+
+	          ((char *) charset_table)[i] = szCharsetName[i] = 0;
+	          nCharsetLen = i;
+	        }
+	      else
+	        {
+	          szCharsetName[0] = 0;
+	          charset_table[0] = 0;
+	          nCharsetLen = SQL_NULL_DATA;
+	        }
+
+	      rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT_OUTPUT,
+	          SQL_C_CHAR, SQL_CHAR, 0, 0, (char *) charset_table, sizeof (charset_table), &nCharsetLen);
+
+	      if (rc == SQL_SUCCESS)
+	        rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
+
+	      if (rc == SQL_SUCCESS && nCharsetLen > 0)
+	        {
+	          if (con->con_charset)
+		    wide_charset_free (con->con_charset);
+
+	          con->con_charset = wide_charset_create (szCharsetName,
+		      (wchar_t *) charset_table, (int) (nCharsetLen - 1 / sizeof (wchar_t)), NULL);
+	        }
+
+	      virtodbc__SQLFreeStmt (stmt, SQL_DROP);
+
+	      return rc;
 	    }
-	  else
-	    {
-	      szCharsetName[0] = 0;
-	      charset_table[0] = 0;
-	      nCharsetLen = SQL_NULL_DATA;
-	    }
-
-	  rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT_OUTPUT,
-	      SQL_C_CHAR, SQL_CHAR, 0, 0, (char *) charset_table, sizeof (charset_table), &nCharsetLen);
-
-	  if (rc == SQL_SUCCESS)
-	    rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
-
-	  if (rc == SQL_SUCCESS && nCharsetLen > 0)
+          else
 	    {
 	      if (con->con_charset)
-		wide_charset_free (con->con_charset);
+	        dk_free_box ((box_t) con->con_charset);
 
-	      con->con_charset = wide_charset_create (szCharsetName,
-		  (wchar_t *) charset_table, (int) (nCharsetLen - 1 / sizeof (wchar_t)), NULL);
+	      con->con_charset = vParam ? (wcharset_t *) box_string ((char *) vParam) : NULL;
 	    }
-
-	  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
-
-	  return rc;
-	}
-      else
-	{
-	  if (con->con_charset)
-	    dk_free_box ((box_t) con->con_charset);
-
-	  con->con_charset = vParam ? (wcharset_t *) box_string ((char *) vParam) : NULL;
 	}
       break;
 

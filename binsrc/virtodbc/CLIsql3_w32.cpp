@@ -48,6 +48,7 @@ extern BOOL virtodbc_LoginDlg (TKVList &props, HWND hWnd);
 extern TZCBrowser _zcbrowser;
 extern "C" int isdts_mode;
 
+extern "C" int virt_wide_as_utf16 = 0;
 
 static LPWSTR
 StrCopyInW (SQLCHAR *inStr, int size)
@@ -321,6 +322,17 @@ virtodbc_connect (
       p->Unref ();
     }
 #endif
+
+  if ((szStr = props.Value (_T("Charset"))) != NULL)
+    {
+      char *cs = virt_wide_to_ansi (szStr);
+      if (!strcmp (cs, "UTF-8"))
+	{
+	  props.Undefine(_T("Charset"));
+	  con->con_string_is_utf8 = 1;
+	}
+      dk_free_box (cs);
+    }
 
   mutex_enter (con->con_environment->env_mtx);
 

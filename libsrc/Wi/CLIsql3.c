@@ -817,13 +817,14 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   if (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data))
     {
       char * cs = virt_wide_to_ansi (cfgdata[oCHARSET].data);
-      if (!strcmp (cs, "UTF-8"))
+      if (cs && !strcmp (cs, "UTF-8"))
 	{
 	  free (cfgdata[oCHARSET].data);
 	  cfgdata[oCHARSET].data = NULL;
 	  cfgdata[oCHARSET].supplied = FALSE;
 	  con->con_string_is_utf8 = 1;
 	}
+      free_wide_buffer(cs);
     }
 
   CHARSETW = (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data)) ? cfgdata[oCHARSET].data : NULL;
