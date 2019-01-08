@@ -187,7 +187,7 @@
 
    links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', page_resource_uri);
    links := links || sprintf ('<%s>; rev="describedby", ', page_resource_uri);
-   links := links || sprintf ('<http://mementoarchive.lanl.gov/dbpedia/timegate/%s>; rel="timegate"\r\n', _resource_);
+   links := links || sprintf ('<http://dbpedia.mementodepot.org/timegate/%s>; rel="timegate"\r\n', _resource_);
 
    -- set for white page
    if (lower (host) <> 'dbpedia.org')
@@ -242,7 +242,7 @@
     <link rel="alternate" type="application/ld+json" 		href="<?V charset_recode (json_ld_link, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (JSON-LD format)" />
     <link rel="alternate" type="text/x-html-script-ld+json"	href="<?V charset_recode (embed_json, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (HTML with embedded JSON-LD)" />
     <link rel="alternate" type="text/x-html-script-turtle"	href="<?V charset_recode (embed_turtle, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (HTML with embedded Turtle)" />
-    <link rel="timegate" type="text/html" 			href="http://mementoarchive.lanl.gov/dbpedia/timegate/<?V charset_recode(_resource_, 'UTF-8', '_WIDE_') ?>" title="Time Machine" />
+    <link rel="timegate" type="text/html" 			href="http://dbpedia.mementodepot.org/timegate/<?V charset_recode(_resource_, 'UTF-8', '_WIDE_') ?>" title="Time Machine" />
     <link rel="foaf:primarytopic" 				href="<?V charset_recode (page_resource_uri, 'UTF-8', '_WIDE_') ?>"/>
     <link rev="describedby" 					href="<?V charset_recode (page_resource_uri, 'UTF-8', '_WIDE_') ?>"/>
     <link rel="stylesheet" type="text/css"			href="/statics/css/bootstrap.min.css" />
