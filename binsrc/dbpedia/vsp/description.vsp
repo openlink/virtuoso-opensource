@@ -32,7 +32,7 @@
 
    declare _G, _S, _P, _O, odd_position any;
    declare _resource_, project_name, project_home_page any;
-   declare page_resource_uri, rdf_link, rdf_link2, rdf_link3, rdf_link4, atom_link, jsod, ntriples, label, true_label, _subject, csv_link, cxml_link, gen_rdf_link, text_link, md_json_link, json_ld_link, embed_json, embed_turtle any;
+   declare page_resource_uri, rdf_link, rdf_link2, rdf_link3, rdf_link4, rdf_link5, atom_link, jsod, ntriples, label, true_label, _subject, csv_link, cxml_link, gen_rdf_link, text_link, md_json_link, json_ld_link, embed_json, embed_turtle any;
    declare iri_type, iri_uri, white_page, pkgs, txt, host, links, langs, dset, tmp_lines any;
 
    -- INIT VALLUES
@@ -150,7 +150,8 @@
        rdf_link2 := rdf_link || '&format=rdf';
        rdf_link3 := rdf_link || '&format=application%2Frdf%2Bjson';
        rdf_link4 := rdf_link || '&format=application%2Frdf%2Bjson';
-       rdf_link := rdf_link  || '&format=n3';
+       rdf_link5 := rdf_link  || '&format=text%2Fturtle';
+       rdf_link := rdf_link  || '&format=text%2Fn3';
        atom_link := rdf_link || '&format=application%2Fatom%2Bxml';
        jsod := rdf_link      || '&format=application%2Fodata%2Bjson';
        ntriples := rdf_link  || '&format=text%2Fplain';
@@ -160,6 +161,7 @@
        rdf_link := rdf_link2  || '.n3';
        rdf_link3 := rdf_link2 || '.json';
        rdf_link4 := rdf_link2 || '.jrdf';
+       rdf_link5 := rdf_link2 || '.ttl';
        atom_link := rdf_link2 || '.atom';
        jsod := rdf_link2      || '.jsod';
        ntriples := rdf_link2  || '.ntriples';
@@ -168,7 +170,8 @@
 
    links := 'Link: <http://creativecommons.org/licenses/by-sa/3.0/>;rel="license", ';
    links := links || sprintf ('<%s>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)", ', rdf_link2);
-   links := links || sprintf ('<%s>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)", ',rdf_link);
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3 format)", ',rdf_link);
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/turtle"; title="Structured Descriptor Document (Turtle format)", ',rdf_link5);
    links := links || sprintf ('<%s>; rel="alternate"; type="application/json"; title="Structured Descriptor Document (RDF/JSON format)", ', rdf_link3);
    links := links || sprintf ('<%s>; rel="alternate"; type="application/atom+xml"; title="OData (Atom+Feed format)", ', atom_link);
    links := links || sprintf ('<%s>; rel="alternate"; type="text/csv"; title="Structured Descriptor Document (CSV format)", ', csv_link);
@@ -224,7 +227,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>About: <?V charset_recode (label, 'UTF-8', '_WIDE_') ?></title>
     <link rel="alternate" type="application/rdf+xml" 		href="<?V charset_recode (rdf_link2, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (RDF/XML format)" />
-    <link rel="alternate" type="text/rdf+n3" 			href="<?V charset_recode (rdf_link, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (N3/Turtle format)" />
+    <link rel="alternate" type="text/n3" 			href="<?V charset_recode (rdf_link, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (N3 format)" />
+    <link rel="alternate" type="text/turtle" 			href="<?V charset_recode (rdf_link5, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (Turtle format)" />
     <link rel="alternate" type="application/json+rdf" 		href="<?V charset_recode (rdf_link4, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (RDF/JSON format)" />
     <link rel="alternate" type="application/json" 		href="<?V charset_recode (rdf_link3, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (RDF/JSON format)" />
     <link rel="alternate" type="application/atom+xml" 		href="<?V charset_recode (atom_link, 'UTF-8', '_WIDE_') ?>" title="OData (Atom+Feed format)" />
@@ -279,7 +283,8 @@
 		<ul class="dropdown-menu">
 		<li>&nbsp;RDF:</li>
 		    <li><a href="<?= charset_recode(ntriples, 'UTF-8', '_WIDE_') ?>">N-Triples</a></li>
-		    <li><a href="<?= charset_recode(rdf_link, 'UTF-8', '_WIDE_') ?>">N3/Turtle</a></li>
+		    <li><a href="<?= charset_recode(rdf_link, 'UTF-8', '_WIDE_') ?>">N3</a></li>
+		    <li><a href="<?= charset_recode(rdf_link5, 'UTF-8', '_WIDE_') ?>">Turtle</a></li>
 		    <li><a href="<?= charset_recode(rdf_link3, 'UTF-8', '_WIDE_') ?>">JSON</a></li>
 		    <li><a href="<?= charset_recode(rdf_link2, 'UTF-8', '_WIDE_') ?>">XML</a></li>
 		<li class="divider"></li>
