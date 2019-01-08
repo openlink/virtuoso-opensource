@@ -693,11 +693,14 @@ SQLErrorW (
   wcharset_t *charset = con ? con->con_charset : (stmt ? stmt->stmt_connection->con_charset : NULL);
   SQLCHAR szSqlState[6];
   SQLRETURN rc;
-  int wide_as_utf16 = con ? con->con_wide_as_utf16 : virt_wide_as_utf16;
+  int wide_as_utf16 = virt_wide_as_utf16;
+
 
   if (con || stmt)
     {
       cli_connection_t *conn = con ? con : stmt->stmt_connection;
+      wide_as_utf16 = conn->con_wide_as_utf16;
+
       DEFINE_OUTPUT_CHAR_NARROW (ErrorMsg, conn, SQLSMALLINT);
 
       MAKE_OUTPUT_CHAR_NARROW (ErrorMsg, conn);
@@ -1020,7 +1023,7 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
   cli_connection_t *conn = (HandleType == SQL_HANDLE_DBC ? con :
       (HandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
 	  (HandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
-  int wide_as_utf16 = con ? con->con_wide_as_utf16 : virt_wide_as_utf16;
+  int wide_as_utf16 = conn ? conn->con_wide_as_utf16 : virt_wide_as_utf16;
 
   if (conn)
     {
