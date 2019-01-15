@@ -153,8 +153,6 @@ public class VirtuosoConnection implements Connection
 #endif
 
   private boolean useRoundRobin;
-  // The pingStatement to know if the connection is still available
-  private Statement pingStatement = null;
 
 
    protected class VhostRec
@@ -321,16 +319,16 @@ public class VirtuosoConnection implements Connection
 
       // Connect to the database
       connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? (Integer.parseInt(prop.getProperty("log_enable"))) : -1));
-
-      pingStatement = createStatement();
    }
 
    public synchronized boolean isConnectionLost(int timeout_sec)
    {
      ResultSet rs = null;
+     Statement st = null;
      try{
-	pingStatement.setQueryTimeout(timeout_sec);
-        rs = pingStatement.executeQuery("select 1");
+        st = createStatement();
+	st.setQueryTimeout(timeout_sec);
+        rs = st.executeQuery("select 1");
         return false;
      } catch (Exception e ) {
         return true;
@@ -338,6 +336,10 @@ public class VirtuosoConnection implements Connection
        if (rs!=null)
          try{
            rs.close();
+         } catch(Exception e){}
+       if (st!=null)
+         try{
+           st.close();
          } catch(Exception e){}
      }
    }
