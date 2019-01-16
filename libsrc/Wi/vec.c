@@ -1361,11 +1361,11 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
     case DV_SINGLE_FLOAT:
       SSL_FIXED_STR_BOX (DV_SINGLE_FLOAT, sizeof (float));
     default:
-      if (DCT_BOXES & val_dc->dc_type)
+      if (!(DCT_BOXES & val_dc->dc_type))
+	GPF_T1 ("dc of unsupported dtp for single value qst_get");
 	if (val_dc->dc_n_values <= (uint32) row_no)
 	  return NULL;
       return ((caddr_t *) val_dc->dc_values)[row_no];
-      GPF_T1 ("dc of unsupported dtp for single value qst_get");
     }
   return 0;
 }
