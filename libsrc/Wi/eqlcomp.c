@@ -1375,16 +1375,17 @@ ks_free (key_source_t * ks)
   cv_free (ks->ks_local_test);
   cv_free (ks->ks_local_code);
   if (ks->ks_out_map || ks->ks_v_out_map)
-    dk_free_box ((caddr_t) ks->ks_out_map);
-    dk_free_box ((caddr_t) ks->ks_v_out_map);
-    dk_free_box ((caddr_t) ks->ks_vec_source);
-    dk_free_box ((caddr_t) ks->ks_vec_cast);
-    dk_free_box ((caddr_t) ks->ks_dc_val_cast);
-    dk_free_box (ks->ks_cast_null);
-    dk_free_box ((caddr_t) ks->ks_scalar_partition);
-    dk_free_box ((caddr_t) ks->ks_scalar_cp);
-    dk_free_box ((caddr_t) ks->ks_vec_cp);
-
+    { /* There was no { and } here so there was unconditional free of everything after ks->ks_out_map . That was supposedly safe but waste of time */
+      dk_free_box ((caddr_t) ks->ks_out_map);
+      dk_free_box ((caddr_t) ks->ks_v_out_map);
+      dk_free_box ((caddr_t) ks->ks_vec_source);
+      dk_free_box ((caddr_t) ks->ks_vec_cast);
+      dk_free_box ((caddr_t) ks->ks_dc_val_cast);
+      dk_free_box (ks->ks_cast_null);
+      dk_free_box ((caddr_t) ks->ks_scalar_partition);
+      dk_free_box ((caddr_t) ks->ks_scalar_cp);
+      dk_free_box ((caddr_t) ks->ks_vec_cp);
+    }
   dk_set_free (ks->ks_always_null);
   dk_free_box ((caddr_t)ks->ks_qf_output);
   if (ks->ks_cl_order)
