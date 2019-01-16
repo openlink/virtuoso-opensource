@@ -291,7 +291,7 @@ bh_fill_page_generic (
 		{
 		  log_error (
 		      "Incomplete UTF-8 char found in filling up a BLOB."
-		      " The wide blob data may be garbaled.");
+		      " The wide blob data may be garbled.");
 		  memset (buffer, '?', ilen);
 		  ret = ilen;
 		}
@@ -3922,7 +3922,7 @@ wide_blob_buffered_read (
 	  /*GPF_T1 ("Received bad UTF8 string");*/
 	  /*return -1;*/
           state->count = 0;
-          log_error ("Invalid UTF-8 char (%02X) read in filling up a BLOB. The wide blob data may be garbaled.",
+          log_error ("Invalid UTF-8 char (%02X) read in filling up a BLOB. The wide blob data may be garbled.",
               utf8_char);
           utf8_char = '?';
 	}
