@@ -277,9 +277,6 @@ create procedure WS.WS.PROPFIND (
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 create function WS.WS.PROPFIND_RESPONSE (
   in lpath varchar,
   in ppath varchar,
@@ -1037,9 +1034,6 @@ create procedure WS.WS.REPORT (
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 create function WS.WS.REPORT_RESPONSE (
   in lpath varchar,
   in ppath varchar,
@@ -1742,9 +1736,6 @@ create procedure WS.WS.DAV_LINK (in p varchar)
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 create procedure WS.WS.PUT (
   in path varchar,
   inout params varchar,

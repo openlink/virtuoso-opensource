@@ -44,11 +44,6 @@ CREATE TYPE SOAP_CLIENT_REQ AS
       	)
 ;
 
---#IF VER=5
---!AFTER
-alter type SOAP_CLIENT_REQ add attribute security_schema any
-;
---#ENDIF
 
 create type WSA_CLI as
 	(
@@ -118,11 +113,6 @@ CREATE TABLE SYS_WSRM_OUT_MESSAGE_LOG (
 )
 ;
 
---#IF VER=5
---!AFTER
-alter table SYS_WSRM_OUT_MESSAGE_LOG add OML_RESPONSE long xml
-;
---#ENDIF
 
 CREATE TABLE SYS_WSRM_OUT_SEQUENCES
 	(
@@ -144,11 +134,6 @@ create trigger SYS_WSRM_OUT_SEQUENCES_D after delete on SYS_WSRM_OUT_SEQUENCES
 }
 ;
 
---#IF VER=5
---!AFTER
-alter table SYS_WSRM_OUT_SEQUENCES add WOS_LAST_SENT integer
-;
---#ENDIF
 
 create type soap_parameter as
 		(

@@ -156,15 +156,9 @@ create trigger HOSTFS_RES_META_U after update on WS.WS.HOSTFS_RES_META referenci
 ;
 
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index (fix_identifier_case ('WS.WS.HOSTFS_RES_META'), fix_identifier_case ('RESM_DATA'), fix_identifier_case ('RESM_ID'), 2, 0, NULL, 0, '*ini*', '*ini*')
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_batch_update (fix_identifier_case ('WS.WS.HOSTFS_RES_META'), 'ON', 1)
 ;
 
@@ -310,15 +304,9 @@ done:
 }
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index (fix_identifier_case ('WS.WS.HOSTFS_RES_CACHE'), fix_identifier_case ('RESC_DATA'), fix_identifier_case ('RESC_ID'), 2, 0, NULL, 1, '*ini*', '*ini*')
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_batch_update (fix_identifier_case ('WS.WS.HOSTFS_RES_CACHE'), 'ON', 5)
 ;
 

@@ -44,23 +44,6 @@ create table DB.DBA.URL_REWRITE_RULE (
   primary key (URR_RULE) )
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_ACCEPT_PATTERN varchar
-;
-
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_NO_CONTINUATION int
-;
-
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_REDIRECT int
-;
-
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_HEADERS varchar
-;
---#ENDIF
 
 create table DB.DBA.HTTP_VARIANT_MAP (
     VM_ID		integer identity,
@@ -78,11 +61,6 @@ create table DB.DBA.HTTP_VARIANT_MAP (
 create unique index HTTP_VARIANT_MAP_ID on DB.DBA.HTTP_VARIANT_MAP (VM_ID)
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.HTTP_VARIANT_MAP add VM_CONTENT_LOCATION_HOOK  varchar
-;
---#ENDIF
 
 create procedure DB.DBA.URLREWRITE_CREATE_RULE (
   in rule_type int,
@@ -1436,15 +1414,9 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 virt_proxy_init ()
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 grant execute on ext_http_proxy to PROXY
 ;
 

@@ -664,11 +664,6 @@ create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
 )
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
-;
---#ENDIF
 
 create table DB.DBA.RDF_WEBID_ACL_GROUPS (
 	AG_WEBID varchar,
@@ -759,9 +754,6 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
 }
 ;
 
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.SYS_HTTP_SPONGE HS_FROM_IRI !
---#ENDIF
 create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHANGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
 {
 
@@ -1374,39 +1366,6 @@ create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID) partition clus
 create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID) partition cluster replicated
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_ENABLED integer default 1
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_OPTIONS any
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
-;
-
---!AFTER
-create procedure DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
-{
-  declare id int;
-  update DB.DBA.SYS_RDF_MAPPERS set RM_PID = RM_ID where RM_PID is null;
-  if (row_count() = 0)
-    return;
-  id := (select max (RM_PID) from DB.DBA.SYS_RDF_MAPPERS) + 1;
-  DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', id);
-}
-;
-
---!AFTER
-DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
-;
---#ENDIF
 
 create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr any,
 	in meth any := 'GET', in req_hdr varchar := null, in cnt any := null, in proxy any := null, in sig int := 1)

@@ -57,10 +57,6 @@ alter index SYS_ANN_PHRASE_SET on DB.DBA.SYS_ANN_PHRASE_SET partition cluster re
 create unique index SYS_ANN_PHRASE_SET_APS_NAME on DB.DBA.SYS_ANN_PHRASE_SET (APS_NAME) partition cluster replicated
 ;
 
---#IF VER=5
-alter table DB.DBA.SYS_ANN_PHRASE_SET add APS_LOAD_AT_BOOT integer not null
-;
---#ENDIF
 
 create table DB.DBA.SYS_ANN_PHRASE
 (
@@ -74,10 +70,6 @@ create table DB.DBA.SYS_ANN_PHRASE
 alter index SYS_ANN_PHRASE on DB.DBA.SYS_ANN_PHRASE partition cluster replicated
 ;
 
---#IF VER=5
-alter table DB.DBA.SYS_ANN_PHRASE add AP_LINK_DATA_LONG long varchar
-;
---#ENDIF
 
 create table DB.DBA.SYS_ANN_AD_ACCOUNT (
   AAA_ID integer not null primary key,
@@ -116,35 +108,6 @@ create table DB.DBA.SYS_ANN_AD_RULE (
 alter index SYS_ANN_AD_RULE on DB.DBA.SYS_ANN_AD_RULE partition cluster replicated
 ;
 
---#IF VER=5
-delete from SYS_TRIGGERS where T_NAME in (
-  fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_I'),
-  fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_U'),
-  fix_identifier_case ('DBA.SYS_ANN_PHRASE_CLASS_BD'),
-  fix_identifier_case ('DBA.SYS_ANN_PHRASE_SET_I'),
-  fix_identifier_case ('DBA.SYS_ANN_PHRASE_SET_U'),
-  fix_identifier_case ('DBA.SYS_ANN_PHRASE_SET_BD') )
-;
-
-delete from SYS_PROCEDURES where P_NAME in (
-  fix_identifier_case ('DB.DBA.AP_EXEC_NO_ERROR'),
-  fix_identifier_case ('DB.DBA.ANN_BOOT'),
-  fix_identifier_case ('DB.DBA.ANN_ZAP'),
-  fix_identifier_case ('DB.DBA.ANN_AUTHENTICATE'),
-  fix_identifier_case ('DB.DBA.ANN_GETID'),
-  fix_identifier_case ('DB.DBA.ANN_PHRASE_CLASS_ADD'),
-  fix_identifier_case ('DB.DBA.ANN_PHRASE_CLASS_ADD_INT'),
-  fix_identifier_case ('DB.DBA.ANN_PHRASE_CLASS_DEL'),
-  fix_identifier_case ('DB.DBA.ANN_PHRASE_SET_ADD'),
-  fix_identifier_case ('DB.DBA.ANN_PHRASE_SET_ADD_INT'),
-  fix_identifier_case ('DB.DBA.ANN_PHRASE_SET_DEL'),
-  fix_identifier_case ('DB.DBA.ANN_LINK_ADD'),
-  fix_identifier_case ('DB.DBA.ANN_LINK_MODIFY'),
-  fix_identifier_case ('DB.DBA.ANN_LINK_DEL'),
-  fix_identifier_case ('DB.DBA.ANN_AD_RULE_ADD'),
-  fix_identifier_case ('DB.DBA.ANN_AD_RULE_DEL') )
-;
---#ENDIF
 
 create trigger SYS_ANN_PHRASE_CLASS_I after insert on DB.DBA.SYS_ANN_PHRASE_CLASS referencing new as N
 {

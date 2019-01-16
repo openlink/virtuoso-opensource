@@ -8003,9 +8003,6 @@ create procedure DB.DBA.RDF_REPL_DEL (inout rquads any)
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
 {
   declare g_iid IRI_ID;
@@ -17681,9 +17678,6 @@ final_qm_reload:
 DB.DBA.RDF_QUAD_FT_UPGRADE ()
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.USER_CREATE !
---#ENDIF
 DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 ;
 

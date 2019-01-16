@@ -50,13 +50,6 @@ method xmla_get_property (pname varchar, deflt any) returns any,
 method xmla_command () returns any
 ;
 
---#IF VER=5
-call exec_quiet ('alter type xmla_discover add method xmla_dbschema_foreign_keys () returns any')
-;
-
-call exec_quiet ('alter type xmla_discover add method xmla_dbschema_primary_keys () returns any')
-;
---#ENDIF
 
 create constructor method
 xmla_discover (in request_type varchar, in restrictions any, in properties any) for xmla_discover

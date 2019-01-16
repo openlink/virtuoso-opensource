@@ -92,28 +92,10 @@ HA_LIMIT  integer default 0,
 PRIMARY KEY (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG))
 ;
 
---#IF VER=5
--- HTTP_ACL table upgrade
---!AFTER
-alter table HTTP_ACL add HA_LIST varchar not null
-;
-
---!AFTER
-alter table HTTP_ACL add HA_ORDER integer not null
-;
-
---!AFTER
-alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
-;
-
---#ENDIF
 alter table HTTP_ACL add HA_LIMIT integer default 0
 ;
 
 -- triggers to keep in sync in-memory representation
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
---#ENDIF
 create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 {
   declare def_rate int;
@@ -126,9 +108,6 @@ create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 ;
 
 -- triggers to keep in sync in-memory representation
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
---#ENDIF
 create trigger HTTP_ACL_U after update on DB.DBA.HTTP_ACL referencing old as O, new as N
 {
   http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
@@ -294,31 +273,6 @@ values ( '*sslini*', '*sslini*', '/vsmx', '/vsmx/', 0, 0, 'vsmx.vspx', NULL, NUL
 )
 ;
 
---#IF VER=5
-create procedure HTTP_PATH_UPGRADE ()
-{
-declare arr, new_vhost any;
-if (registry_get ('__http_vd_upgrade') = 'done')
-return;
-for select HP_HOST vhost, HP_LISTEN_HOST lhost, HP_LPATH lpath from DB.DBA.HTTP_PATH where HP_HOST not in ('*ini*', '*sslini*') do
-{
-  arr := split_and_decode (vhost, 0, ':=:');
-  if (length (arr) > 1)
-    {
-      new_vhost := arr[0];
-      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = new_vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath))
-	log_message (sprintf ('The virtual directory at host=[%s] path=[%s] conflict with an existing, and cannot be upgraded.', vhost, lpath));
-      else
-	update DB.DBA.HTTP_PATH set HP_HOST = new_vhost where HP_HOST = vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath;
-    }
-}
-registry_set ('__http_vd_upgrade', 'done');
-}
-;
-
-HTTP_PATH_UPGRADE ()
-;
---#ENDIF
 
 create procedure HTTP_SET_DBA_ADMIN (in realm varchar)
 {
@@ -380,9 +334,6 @@ return http_map_del (lpath, '*ini*', '*ini*');
 ;
 
 -- Add new virtual host / directory
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.HTTP_PATH HP_IS_DEFAULT_HOST !
---#ENDIF
 create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
 			   in lhost varchar := '*ini*',
 			   in lpath varchar,

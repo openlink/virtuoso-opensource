@@ -474,8 +474,5 @@ create procedure DB.DBA.vt_drop_ftt (in tb varchar, in dbcol varchar)
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 grant execute on DB.DBA.vt_create_text_index to public
 ;

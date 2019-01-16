@@ -2179,27 +2179,6 @@ create procedure DB.DBA.col_of_type (in tb varchar, in col varchar, in type_need
 
 -- Added new columns for schema in SYS_VT_INDEX (backward compatibility)
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_ID_CONSTR varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_OFFBAND_COLS varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_OPTIONS varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_LANGUAGE varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_ENCODING varchar
-;
---#ENDIF
 
 
 charset_define ('MIK', N'\x1\x2\x3\x4\x5\x6\x7\x8\x9\xA\xB\xC\xD\xE\xF\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B\x2C\x2D\x2E\x2F\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3A\x3B\x3C\x3D\x3E\x3F\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4A\x4B\x4C\x4D\x4E\x4F\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5A\x5B\x5C\x5D\x5E\x5F\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6A\x6B\x6C\x6D\x6E\x6F\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7A\x7B\x7C\x7D\x7E\x7F\x410\x411\x412\x413\x414\x415\x416\x417\x418\x419\x41A\x41B\x41C\x41D\x41E\x41F\x420\x421\x422\x423\x424\x425\x426\x427\x428\x429\x42A\x42B\x42C\x42D\x42E\x42F\x430\x431\x432\x433\x434\x435\x436\x437\x438\x439\x43A\x43B\x43C\x43D\x43E\x43F\x440\x441\x442\x443\x444\x445\x446\x447\x448\x449\x44A\x44B\x44C\x44D\x44E\x44F\x2514\x2534\x252C\x251C\x2500\x253C\x2563\x2551\x255A\x2554\x2569\x2566\x2560\x2550\x256C\x2510\x2591\x2592\x2593\x2502\x2524\x2116\xA7\x2557\x255D\x2518\x250C\x2588\x2584\x258C\x2590\x2580\x3B1\x3B2\x393\x3C0\x3A3\x3C3\x3BC\x3C4\x3A6\x398\x3A9\x3B4\x221E\x2205\x2208\x2229\x2261\xB1\x2265\x2264\x2320\x2321\xF7\x2248\xB0\x2219\xB7\x221A\x207F\xB2\x25A0\xA0', vector ('999', 'CP999'))
@@ -3076,29 +3055,7 @@ alter index SYS_SOAP_DATATYPES on DB.DBA.SYS_SOAP_DATATYPES partition cluster re
 ;
 
 
---#IF VER=5
---!AFTER
-create procedure
-DB.DBA.SOAP_DATATYPES_UPGRADE ()
-{
-  if (exists (select 1 from SYS_COLS where \TABLE = 'DB.DBA.SYS_SOAP_DATATYPES' and \COLUMN = 'SDT_TYPE') and
-      exists (select 1 from SYS_COLS where \TABLE = 'DB.DBA.SYS_SOAP_DATATYPES' and \COLUMN = 'SDT_UDT') )
-    return;
-  log_message ('Upgrading the SYS_SOAP_DATATYPES table');
-  execstr ('alter table DB.DBA.SYS_SOAP_DATATYPES rename DB.DBA.SYS_SOAP_DATATYPES_OLD');
-  execstr ('create table DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME varchar, SDT_SCH long varchar, SDT_SOAP_SCH long varchar, SDT_TYPE integer, SDT_UDT varchar, primary key (SDT_NAME, SDT_TYPE))');
-  execstr ('insert into DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME, SDT_SCH, SDT_SOAP_SCH, SDT_TYPE) select (case when strrchr (SDT_NAME, '':'') is null then concat (''services.wsdl:'',SDT_NAME) else SDT_NAME end) , SDT_SCH, SDT_SOAP_SCH, 0 from DB.DBA.SYS_SOAP_DATATYPES_OLD');
-}
-;
 
---!AFTER
-DB.DBA.SOAP_DATATYPES_UPGRADE ()
-;
---#ENDIF
-
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.SYS_SOAP_DATATYPES SDT_TYPE !
---#ENDIF
 create procedure
 soap_dt_define (in name varchar, in sch varchar, in udt_name varchar := null)
 {
@@ -3412,185 +3369,6 @@ DB.DBA.__XML_TEMPLATE (in path any, in params any, in lines any, in enc any := n
 }
 ;
 
---#IF VER=5
---!AFTER
-create procedure vt_upgrade_text_index (
-    in tb varchar,
-    in is_xml integer := -1,
-    in _func integer :=  -1,
-    in _lang varchar := '*ini*',
-    in _enc varchar := '*ini*')
-{
-  declare text_id_col, kn, func, ufunc, col, obd, vtlog_suff, tb_suff varchar;
-  declare t1, t2, t3 any;
-  declare f_xml integer;
-
-  if (_lang is null)
-    _lang := '*ini*';
-
-  if (_enc is null)
-    _enc := '*ini*';
-
-  tb := complete_table_name ((tb), 1);
-
-  vtlog_suff := concat (name_part (tb, 0), '_', name_part (tb, 1), '_', name_part (tb, 2));
-  tb_suff := DB.DBA.SYS_ALFANUM_NAME (vtlog_suff);
-
-
-  if (not exists (select 1 from DB.DBA.SYS_KEYS where 0 = casemode_strcmp (KEY_TABLE,  tb)))
-    {
-      signal ('42S02', sprintf ('No table ''%s'' in create text index', tb), 'FT021');
-    }
-
-  if (not exists (select 1 from DB.DBA.SYS_VT_INDEX where 0 = casemode_strcmp (VI_TABLE,  tb)))
-    {
-      signal ('42S01', 'Text index is not defined for table', 'FT022');
-    }
-
-  select  VI_COL, VI_ID_COL, deserialize(VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING
-      into col, text_id_col, obd, _lang, _enc from SYS_VT_INDEX where VI_TABLE = tb;
-
-  func := null;
-  ufunc := null;
-
-  if (_func = 1 or _func < 0)
-    {
-       func := coalesce ((select P_NAME from DB.DBA.SYS_PROCEDURES where
-		   0 =  casemode_strcmp (P_NAME, sprintf ('%s_%s_INDEX_HOOK', tb, col))), NULL);
-       if (func is null)
-         func := __proc_exists (sprintf ('%s_%s_INDEX_HOOK', tb, col));
-
-       ufunc := coalesce ((select P_NAME from DB.DBA.SYS_PROCEDURES where
-		     0 = casemode_strcmp (P_NAME, sprintf ('%s_%s_UNINDEX_HOOK', tb, col))), NULL);
-
-       if (ufunc is null)
-         ufunc := __proc_exists (sprintf ('%s_%s_UNINDEX_HOOK', tb, col));
-    }
-
-  if (_func < 0 and (func is null or ufunc is null))
-    {
-      func := null;
-      ufunc := null;
-    }
-
-  if (_func = 1 and (func is null or ufunc is null))
-    signal ('37000', 'The hook functions are not available.', 'FT023');
-
-  whenever not found goto eof;
-  select coalesce (T_TEXT, blob_to_string (T_MORE)) into t1 from SYS_TRIGGERS
-    where T_TABLE = tb and T_NAME like concat ('%.', tb_suff, '_VTI_log');
-  select coalesce (T_TEXT, blob_to_string (T_MORE)) into t2 from SYS_TRIGGERS
-    where T_TABLE = tb and T_NAME like concat ('%.', tb_suff, '_VTU_log');
-  select coalesce (T_TEXT, blob_to_string (T_MORE)) into t3 from SYS_TRIGGERS
-    where T_TABLE = tb and T_NAME like concat ('%.', tb_suff, '_VTD_log');
-eof:
-
-  f_xml := 0;
-  if (isstring (t1) and strstr (t1, '(1 = 1)') is not null)
-    f_xml := f_xml + 1;
-  if (isstring (t2) and strstr (t2, '(1 = 1)') is not null)
-    f_xml := f_xml + 1;
-  if (isstring (t3) and strstr (t3, '(1 = 1)') is not null)
-    f_xml := f_xml + 1;
-
-  if (_func < 0 and isstring (t1) and isstring (func) and strstr (t1, name_part (func, 2)) is null)
-    {
-      func := NULL;
-      ufunc := NULL;
-    }
-  if (_func < 0 and isstring (t3) and isstring (ufunc) and strstr (t3, name_part (ufunc, 2)) is null)
-    {
-      func := NULL;
-      ufunc := NULL;
-    }
-
-  if (is_xml < 0 and f_xml = 3)
-    is_xml := 1;
-  else if (is_xml < 0)
-    is_xml := 0;
-
-  if (tb = 'DB.DBA.MAIL_MESSAGE' or
-      tb = 'DB.DBA.NEWS_MSG' or
-      tb = 'WS.WS.SYS_DAV_RES')
-    is_xml := 2;
-
-  if (_lang is null)
-    _lang := '*ini*';
-
-  if (_enc is null)
-    _enc := '*ini*';
-  declare hits_proc varchar;
-  hits_proc := NULL;
-  for select coalesce (P_TEXT, blob_to_string (P_MORE)) as txt from DB.DBA.SYS_PROCEDURES
-    where 0 = casemode_strcmp (P_NAME, concat (name_part (tb,0),'.',name_part(tb,1),'.VT_HITS_', name_part (tb, 2))) do
-      {
-        hits_proc := txt;
-      }
-
-  --dbg_obj_print (tb, ' is_xml: ', is_xml, ' hooks: ', func, ' & ', ufunc, _lang, _enc);
-  DB.DBA.vt_free_text_proc_gen (tb, text_id_col, col, is_xml, obd, func, ufunc, _lang, _enc);
-  DB.DBA.vt_create_update_log (tb, is_xml, 1, obd, func, ufunc, _lang, _enc, 0);
-  if (hits_proc is not null)
-    DB.DBA.execstr (hits_proc);
-  return 0;
-}
-;
-
---!AFTER
-create procedure
-VT_INDEX_UPGRADE ()
-{
-  declare st, msg varchar;
-  declare ver, db_ver any;
-  ver := registry_get ('__FTI_VERSION__');
-  db_ver := sys_stat ('db_ver_string');
-  db_ver := atoi (replace (db_ver, '.', ''));
-  if (not isstring (ver))
-    ver := 0;
-  else
-    ver := atoi (ver);
-
-  if (ver > 2204)
-    return;
-
-  registry_set ('__FTI_VERSION__', '2205');
-
-  if (db_ver > 250)
-    return;
-
-  log_message ('Upgrading the old type text indexes');
-  for select VI_TABLE from DB.DBA.SYS_VT_INDEX do
-    {
-      declare tablename, vtlog_suff,q,o varchar;
-      tablename := VI_TABLE;
-      q := name_part (tablename, 0);
-      o := name_part (tablename, 1);
-      tablename := complete_table_name ((tablename), 1);
-      vtlog_suff := concat (name_part (tablename, 0), '_', name_part (tablename, 1), '_', name_part (tablename, 2));
-      if ((not exists
-	  (select 1 from SYS_COLS where \COLUMN = 'VT_GZ_WORDUMP' and \TABLE =
-	   sprintf ('%s.%s.VTLOG_%s', q, o, vtlog_suff)))
-       or (not exists
-          (select 1 from SYS_COLS where \COLUMN = 'VT_OFFBAND_DATA' and \TABLE =
-	   sprintf ('%s.%s.VTLOG_%s', q, o, vtlog_suff))))
-        {
-          log_message (
-          sprintf ('The text index on table %s can''t be upgraded, please drop the index and recreate', VI_TABLE));
-	}
-      else
-	{
---          log_message (sprintf ('Upgrading the old type text indexes on %s', VI_TABLE));
-          vt_upgrade_text_index (VI_TABLE);
-	}
-    }
-}
-;
-
-
---!AFTER
-VT_INDEX_UPGRADE ()
-;
---#ENDIF
 
 --!AWK PUBLIC
 create procedure
@@ -3676,9 +3454,6 @@ DB.DBA.SQLX_OR_SPARQL_TEMPLATE (inout q varchar, inout params any, inout ses any
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 xslt_sheet ('__xml_template_default', xml_tree_doc (xml_tree(
 '<?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" >
@@ -4211,9 +3986,6 @@ create procedure exec_quiet (in expn varchar)
 
 -- __ANY is a placeholder in a long any col declaration, not to be instantiated.
 
---#IF VER=5
---!AFTER
---#ENDIF
 exec_quiet ('create type __ANY as (__any any)')
 ;
 
@@ -4258,34 +4030,6 @@ as (
   constructor method XMLType (_src any, _schema varchar, _validated integer, _wellformed integer)
 ;
 
---#IF VER=5
-call exec_quiet ('alter type XMLType add method transform (_xsl any) returns XMLType')
-;
-
-call exec_quiet ('alter type XMLType add method transform (_xsl any, _param_map any) returns XMLType')
-;
-
-call exec_quiet ('alter type XMLType drop method getStringVal () returns varchar')
-;
-
-call exec_quiet ('alter type XMLType drop method getNamespace () returns any')
-;
-
-call exec_quiet ('alter type XMLType add method query (_xquery varchar) returns any')
-;
-
-call exec_quiet ('alter type XMLType add method getStringVal () returns nvarchar')
-;
-
-call exec_quiet ('alter type XMLType add method getNamespace () returns nvarchar')
-;
-
-call exec_quiet ('alter type XMLType add method setSchemaValidated () returns integer')
-;
-
-call exec_quiet ('alter type XMLType add method setSchemaValidated (_flag integer) returns integer')
-;
---#ENDIF
 
 create method existsNode (in _xpath varchar) returns integer for XMLType
 {

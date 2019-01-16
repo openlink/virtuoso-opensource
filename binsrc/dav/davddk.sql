@@ -51,26 +51,6 @@ create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID) partition (COL_
 create not null index SYS_DAV_COL_IID on WS.WS.SYS_DAV_COL (COL_IID) partition (COL_IID int (0hexffff00))
 ;
 
---#IF VER=5
-alter table WS.WS.SYS_DAV_COL add COL_DET varchar
-;
-
-alter table WS.WS.SYS_DAV_COL add COL_ACL long varbinary
-;
-
-alter table WS.WS.SYS_DAV_COL modify COL_PERMS char (11)
-;
-
-alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID_8
-;
-
-alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
-;
-
-alter table WS.WS.SYS_DAV_COL add COL_ADD_TIME datetime
-;
-
---#ENDIF
 
 alter table WS.WS.SYS_DAV_COL add COL_CREATOR IRI_ID_8
 ;
@@ -108,26 +88,6 @@ alter index SYS_DAV_RES on WS.WS.SYS_DAV_RES partition (RES_ID int)
 create index SYS_DAV_RES_IID on WS.WS.SYS_DAV_RES (RES_IID) partition (RES_IID int (0hexffff00))
 ;
 
---#IF VER=5
-alter table WS.WS.SYS_DAV_RES add ROWGUID varchar
-;
-
-alter table WS.WS.SYS_DAV_RES add RES_ACL long varbinary
-;
-
-alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
-;
-
-alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
-;
-
-alter table WS.WS.SYS_DAV_RES add RES_SIZE integer
-;
-
-alter table WS.WS.SYS_DAV_RES add RES_ADD_TIME datetime
-;
-
---#ENDIF
 
 alter table WS.WS.SYS_DAV_RES add RES_CREATOR IRI_ID_8
 ;
@@ -160,15 +120,9 @@ create procedure WS.WS.SYS_DAV_RES_RES_CONTENT_UNINDEX_HOOK (
 }
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_RES', 'RES_CONTENT', 'RES_ID', 2, 0, vector ('RES_FULL_PATH', 'RES_OWNER', 'RES_MOD_TIME', 'RES_TYPE'), 1, '*ini*', '*ini*')
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 DB.DBA.vt_create_ftt ('WS.WS.SYS_DAV_RES', 'RES_ID', 'RES_CONTENT', 2)
 ;
 
@@ -188,12 +142,6 @@ alter index SYS_DAV_PROP on WS.WS.SYS_DAV_PROP partition (PROP_PARENT_ID int)
 create unique index SYS_DAV_PROP_ID on WS.WS.SYS_DAV_PROP (PROP_ID) partition (PROP_ID int)
 ;
 
---#IF VER=5
-update DB.DBA.SYS_COLS set COL_DTP = 125 where "TABLE" = 'WS.WS.SYS_DAV_PROP' and "COLUMN" = 'PROP_VALUE'
-;
-__ddl_changed ('WS.WS.SYS_DAV_PROP')
-;
---#ENDIF
 
 
 -- WebDAV Locks
@@ -277,19 +225,6 @@ alter index SYS_RDF_SCHEMAS on WS.WS.SYS_RDF_SCHEMAS partition cluster replicate
 create unique index SYS_RDF_SCHEMAS_CATNAME on WS.WS.SYS_RDF_SCHEMAS (RS_CATNAME) partition cluster replicated
 ;
 
---#IF VER=5
-alter table WS.WS.SYS_RDF_SCHEMAS add RS_COMPILATION_DATE datetime
-;
-
-alter table WS.WS.SYS_RDF_SCHEMAS add RS_CATNAME varchar
-;
-
-alter table WS.WS.SYS_RDF_SCHEMAS add RS_PROP_CATNAMES long varchar
-;
-
-alter table WS.WS.SYS_RDF_SCHEMAS add RS_DEPRECATED integer
-;
---#ENDIF
 
 -- Known uses of RDF schemas for particular MIME types
 create table WS.WS.SYS_MIME_RDFS (
@@ -464,9 +399,6 @@ create procedure WS.WS.SYS_DAV_TAG_DT_TAGS_UNINDEX_HOOK (
 }
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_TAG', 'DT_TAGS', 'DT_FT_ID', 2, 0, vector ('DT_U_ID', 'DT_RES_ID'), 1, 'x-ViDoc', '*ini*')
 ;
 
@@ -1292,9 +1224,6 @@ WS.WS.SYS_DAV_PROP_PROP_VALUE_UNINDEX_HOOK (inout vtb any, inout d_id integer)
 }
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index ('WS.WS.SYS_DAV_PROP', 'PROP_VALUE', 'PROP_ID', 2, 0, vector (), 1, '*ini*', '*ini*')
 ;
 

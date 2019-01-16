@@ -115,59 +115,6 @@ create table WS.WS.VFS_SITE_RDF_MAP (
     primary key (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_SEQ))
 ;
 
---#IF VER=5
-create procedure WS.WS.VFS_TBL_UPGRADE ()
-{
-  declare _err, _state varchar;
-  _state := null;
-  exec ('select VS_OPAGE from WS.WS.VFS_SITE', _state, _err);
-  if (_state is not null)
-    DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_OPAGE varchar');
-  _state := null;
-  exec ('select VS_OTHER from WS.WS.VFS_SITE', _state, _err);
-  if (_state is not null)
-    DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_OTHER char (10)');
-  _state := null;
-  exec ('select VQ_OTHER from WS.WS.VFS_QUEUE', _state, _err);
-  if (_state is not null)
-    DB.DBA.execstr ('alter table WS.WS.VFS_QUEUE add VQ_OTHER varchar');
-  _state := null;
-  exec ('select VQ_ERROR from WS.WS.VFS_QUEUE', _state, _err);
-  if (_state is not null)
-    DB.DBA.execstr ('alter table WS.WS.VFS_QUEUE add VQ_ERROR long varchar');
-  _state := null;
-  exec ('select VU_OTHER from WS.WS.VFS_URL', _state, _err);
-  if (_state is not null)
-    DB.DBA.execstr ('alter table WS.WS.VFS_URL add VU_OTHER varchar');
-  _state := null;
-  exec ('select VS_REDIRECT from WS.WS.VFS_SITE', _state, _err);
-  if (_state is not null)
-    {
-      DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_REDIRECT int default 1');
-      DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_STORE int default 1');
-      DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_UDATA long varbinary');
-    }
-  _state := null;
-  exec ('select VS_EXTRACT_FN from WS.WS.VFS_SITE', _state, _err);
-  if (_state is not null)
-    {
-      DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_EXTRACT_FN varchar');
-      DB.DBA.execstr ('alter table WS.WS.VFS_SITE add VS_STORE_FN varchar');
-    }
-}
-;
-
---!AFTER
-WS.WS.VFS_TBL_UPGRADE ()
-;
-
---!AFTER
-alter table WS.WS.VFS_SITE add VS_DLOAD_META int default 0
-;
-
-alter table WS.WS.VFS_SITE add VS_INST_ID  int
-;
---#ENDIF
 
 alter table WS.WS.VFS_SITE add VS_DEPTH int default null
 ;

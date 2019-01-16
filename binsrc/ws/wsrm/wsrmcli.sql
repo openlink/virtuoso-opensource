@@ -76,9 +76,6 @@ create constructor method wsrm_cli (in addr WSA_CLI, in url varchar) for wsrm_cl
   }
 ;
 
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.SYS_WSRM_OUT_SEQUENCES WOS_LAST_SENT !
---#ENDIF
 create constructor method wsrm_cli (in addr WSA_CLI, in url varchar, in seq varchar) for wsrm_cli
   {
     self.url := url;
@@ -143,9 +140,6 @@ create method send_message (in req soap_client_req)
   }
 ;
 
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.SYS_WSRM_OUT_SEQUENCES WOS_LAST_SENT !
---#ENDIF
 create method send_message (in req soap_client_req, in last int)
   for wsrm_cli
   {
