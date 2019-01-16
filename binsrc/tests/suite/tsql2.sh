@@ -27,6 +27,7 @@
 
 SCROLL=${SCROLL-$VIRTUOSO_TEST/../scroll}
 GETDATA=${GETDATA-$VIRTUOSO_TEST/../getdata}
+BLOBS=${BLOBS-$VIRTUOSO_TEST/../blobs}
 LOGFILE=tsql2.output
 export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
@@ -87,7 +88,7 @@ then
     exit 1
 fi
 
-$VIRTUOSO_TEST/../blobs $PORT
+$BLOBS $PORT >> $LOGFILE
 
 LOG + running sql script terror
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/terror.sql
