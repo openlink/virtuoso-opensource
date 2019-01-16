@@ -643,7 +643,7 @@ dbms_status_report (void)
   char mem[100];
   char rpc[200];
   char col_ac_str[100];
-  char w_rate[20];
+  char w_rate[40];
   long read_percent = 0, write_percent = 0, interval_msec = 0;
   static long last_time;
   static long last_read_cum_time, last_write_cum_time;
@@ -2694,8 +2694,8 @@ dbg_print_d_id_aux (FILE *out, d_id_t *d_id_buf_ptr)
     goto print_d_id_as_binary;
   for (ctr = 0; ctr < 4; ctr++)
     fprintf (out, "%02x", (unsigned int)(d_id_buf_ptr->id[ctr]));
-    return;
-  print_d_id_as_binary:
+  return;
+print_d_id_as_binary:
   for (ctr = 0; ctr < 32; ctr++)
     fprintf (out, "%02x", (unsigned int)(d_id_buf_ptr->id[ctr]));
 }
@@ -3537,7 +3537,7 @@ dbg_page_structure_error (buffer_desc_t * buf, db_buf_t ptr)
   trace [0] = 0;
   for (inx = 0, p = trace; inx < 32; inx++, p += 3)
     {
-       char buf [3];
+       char buf [5];
        snprintf (buf, sizeof (buf), "%02x ", ptr[inx]);
        strcat_ck (trace, buf);
     }

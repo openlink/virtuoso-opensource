@@ -510,12 +510,10 @@ sqlo_col_scope_1 (sqlo_t * so, ST * col_ref, int generate)
     return 1;
   if (!generate)
     return 0;
-    {
-      char cn[MAX_NAME_LEN * 5 + 10];
-      if (col_ref->_.col_ref.prefix)
-	snprintf (cn, sizeof (cn), "%s.%s", col_ref->_.col_ref.prefix, col_ref->_.col_ref.name);
-      sqlc_error (so->so_sc->sc_cc, "S0022", "No column %s.", col_ref->_.col_ref.prefix ? cn : col_ref->_.col_ref.name);
-    }
+  if (col_ref->_.col_ref.prefix)
+    sqlc_error (so->so_sc->sc_cc, "S0022", "No column %s.%s.", col_ref->_.col_ref.prefix, col_ref->_.col_ref.name);
+  else
+    sqlc_error (so->so_sc->sc_cc, "S0022", "No column %s.", col_ref->_.col_ref.name);
   return 0; /* dummy */
 }
 
@@ -1625,9 +1623,11 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  continue;
 	}
       if (inx >= surely_option_idx)
-	sqlc_error (sc->sc_cc, "37000",
-          "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, EXT_FTI, GEO, GEO_RDF, PRECISION",
-	  inx + 1, sqlo_spec_predicate_name(type), arg );
+	{
+	  sqlc_error (sc->sc_cc, "37000",
+	      "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, EXT_FTI, GEO, GEO_RDF, PRECISION",
+	      inx + 1, sqlo_spec_predicate_name (type), arg);
+	}
     }
   if (off)
     ot->ot_text_offband = (op_virt_col_t **) list_to_array (off);

@@ -148,7 +148,7 @@ static const char *xpyyerror_msg_tooshallow = "Too many closing parentheses";
 static void xpyyerror_if_long_lname (xpp_t *xpp, caddr_t box, const char *lex_type_descr)
 {
   size_t boxlen = box_length (box);
-  char buf[100];
+  char buf[150];
   if (boxlen > MAX_XML_LNAME_LENGTH)
     {
       snprintf (buf, sizeof (buf), "%.90s is too long", lex_type_descr);
@@ -198,7 +198,7 @@ static void xpyyerror_if_long_lname (xpp_t *xpp, caddr_t box, const char *lex_ty
 static void xpyyerror_if_long_qname (xpp_t *xpp, caddr_t box, const char *lex_type_descr)
 {
   size_t boxlen = box_length (box);
-  char buf[100];
+  char buf[150];
   char *colon;
   if (boxlen > MAX_XML_QNAME_LENGTH)
     {
