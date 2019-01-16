@@ -6139,17 +6139,16 @@ create procedure WS.WS.DAV_IRI (
   declare parts any;
   declare retValue varchar;
 
-  if (DB.DBA.is_empty_or_null (path))
-    return path;
-
   retValue := '';
-  parts := split_and_decode (path, 0, '\0\0/');
-  foreach (varchar part in parts) do
+  if (not DB.DBA.is_empty_or_null (path))
   {
-    retValue := retValue || case when (part = '') then '/' else sprintf ('%U/', part) end;
+    parts := split_and_decode (path, 0, '\0\0/');
+    foreach (varchar part in parts) do
+    {
+      retValue := retValue || case when (part = '') then '/' else sprintf ('%U/', part) end;
+    }
+    retValue := subseq (retValue, 0, length(retValue)-1);
   }
-  retValue := subseq (retValue, 0, length(retValue)-1);
-
   return WS.WS.DAV_HOST () || retValue;
 }
 ;

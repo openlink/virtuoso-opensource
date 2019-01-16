@@ -3363,9 +3363,11 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   -- dbg_obj_princ ('WS.WS.GET_EXT_DAV_LDP (', _res_id, _col_id, ')');
   declare accept, accept_mime, accept_full, accept_profile, name_ varchar;
   declare mod_time datetime;
-  declare gr, as_define, as_part, as_part2 varchar;
+  declare gr, as_define, as_part, as_part2, as_limit, as_offset varchar;
   declare id_ integer;
   declare pref_mime varchar;
+  declare fmt, etag, qr varchar;
+  declare n_page, n_count, n_last, n_per_page, is_col integer;
 
   -- macOS WebDAV request
   if (strstr (WS.WS.FINDPARAM (lines, 'User-Agent'), 'WebDAVFS') is not null)
@@ -3402,11 +3404,6 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   if (accept not in ('text/turtle', 'application/ld+json'))
     return 0;
 
-  declare fmt, etag, qr any;
-  declare page, cnt, last, n_per_page, is_col int;
-
-  n_per_page := 10000;
-  page := atoi (get_keyword ('p', params, '1'));
   fmt := accept;
   is_col := 0;
   if (fmt = 'text/turtle')
@@ -3421,12 +3418,12 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
     grs := string_output ();
     pwd := null;
     auid := http_dav_uid ();
-    cid := DAV_SEARCH_ID (full_path, 'P');
-    ppath := DAV_SEARCH_PATH (cid, 'C');
+    cid := DB.DBA.DAV_SEARCH_ID (full_path, 'P');
+    ppath := DB.DBA.DAV_SEARCH_PATH (cid, 'C');
     if (length (full_path) > length (ppath))
       mask := subseq (full_path, length (ppath));
 
-    dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, mask, 'dba', pwd, auid);
+    dir := DB.DBA.DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, mask, 'dba', pwd, auid);
     foreach (any x in dir) do
     {
       http (sprintf ('<%s>,', WS.WS.DAV_IRI (x[0])), grs);
@@ -3442,7 +3439,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   {
     id_ := coalesce (_res_id, _col_id);
     if (_col_id is null)
-      _col_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_res_id, 'R'), 'P');
+      _col_id := DB.DBA.DAV_SEARCH_ID (DAV_SEARCH_PATH (_res_id, 'R'), 'P');
 
     name_ := '';
     mod_time := now ();
@@ -3483,10 +3480,14 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
     DB.DBA.DAV_SET_HTTP_STATUS (406, '406 Not Acceptable', '406 Not Acceptable', sprintf ('<p>An appropriate representation of the requested resource %s could not be found on this server.</p>', full_path));
     return 1;
   }
+
+  n_per_page := 10000;
+  n_page := atoi (get_keyword ('p', params, '1'));
+  n_count := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
+  n_last := (n_count / n_per_page) + 1;
+  http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, n_page, n_last, full_path)));
+
   etag := WS.WS.ETAG (name_, id_, mod_time);
-  cnt := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
-  last := (cnt / n_per_page) + 1;
-  http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, page, last, full_path)));
   if (isstring (etag))
     http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
 
@@ -3500,6 +3501,13 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
     as_part := ' ?dyn_s `if (regex (str (?p), \'http://www.w3.org/ns/activitystreams#\') || regex (str (?p), \'http://www.w3.org/1999/02/22-rdf-syntax-ns#\'), ?p, ?x)` `if (regex (str (?dyn_o), \'http://www.w3.org/ns/activitystreams#\') || regex (str (?p), \'http://www.w3.org/ns/activitystreams\'), ?dyn_o, ?y)` .' ;
     as_part2 := '';
   }
+  as_limit := '';
+  if (n_count > n_per_page)
+    as_limit := sprintf ('limit %d', n_per_page);
+
+  as_offset := '';
+  if ((n_per_page * (n_page - 1)) > 0)
+    as_offset := sprintf ('offset %d', n_per_page * (n_page - 1));
 
   qr := sprintf ('define sql:select-option "order" ' ||
                  'define input:storage "" %s ' ||
@@ -3515,13 +3523,12 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
                  '    BIND (sql:dynamic_host_name(?o) as ?dyn_o) .' ||
                  '  } ' ||
                  'order by ?s ?p ?o ' ||
-                 'limit %d ' ||
-                 'offset %d ',
+                 '%s %s',
                  as_define,
                  as_part,
                  as_part2,
-                 n_per_page,
-                 n_per_page * (page - 1)
+                 as_limit,
+                 as_offset
                 );
 execqr:
   DB.DBA.DAV_SET_HTTP_STATUS (200);
@@ -6978,17 +6985,20 @@ create procedure DB.DBA.LDP_CREATE (
     graph := WS.WS.DAV_IRI (path);
     set_user_id ('dba');
 
-    -- delete old data
-    graphIdn := __i2idn (graph);
-    graphParentIdn := __i2idn (graph_parent);
-    delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#mtime') and S = graphIdn;
-    delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#size') and S = graphIdn;
-
     tmp := sprintf (' <%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph);
-    for (select DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as _size, RES_MOD_TIME as _mod_time from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path) do
+    if ((path <> '') and (path[length(path)-1] <> 47))
     {
-      tmp := tmp || sprintf (' <%s> <http://www.w3.org/ns/posix/stat#mtime> %d .', graph, datediff ('second', stringdate ('1970-1-1'), _mod_time));
-      tmp := tmp || sprintf (' <%s> <http://www.w3.org/ns/posix/stat#size> %d .', graph, _size);
+      -- delete old data
+      graphIdn := __i2idn (graph);
+      graphParentIdn := __i2idn (graph_parent);
+      delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#mtime') and S = graphIdn;
+      delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#size') and S = graphIdn;
+      for (select DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as _size, RES_MOD_TIME as _mod_time from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path) do
+      {
+        tmp := tmp ||
+               sprintf (' <%s> <http://www.w3.org/ns/posix/stat#mtime> %d .', graph, datediff ('second', stringdate ('1970-1-1Z'), adjust_timezone (_mod_time, 0, 1))) ||
+               sprintf (' <%s> <http://www.w3.org/ns/posix/stat#size> %d .', graph, _size);
+      }
     }
     DB.DBA.TTLP (tmp, '', graph_parent);
   }
