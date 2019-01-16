@@ -2060,13 +2060,15 @@ static int dtd_compile (vxml_parser_t *parser)
 	}
       xml_dbg_printf (("\n\nFSM for children of %s, grammar %s:", el->ee_name, el->ee_grammar));
       if (NULL == el->ee_grammar)
-	{
-	  if (!el->ee_is_any && !el->ee_is_empty)
-	    xmlparser_logprintf (parser, parser->validator.dv_curr_config.dc_names_unresolved, 100+strlen (el->ee_name),
-	      "Element name '%s' is undefined but DTD contains references to it",
-	      el->ee_name );
-	    el->ee_is_any = 1;
-	}
+        {
+          if (!el->ee_is_any && !el->ee_is_empty)
+            {
+              xmlparser_logprintf (parser, parser->validator.dv_curr_config.dc_names_unresolved, 100+strlen (el->ee_name),
+                "Element name '%s' is undefined but DTD contains references to it",
+                el->ee_name );
+                el->ee_is_any = 1; /* This assigment was unconditional but it's better to not set it for EMPTY even if EMPTY takes precedence over ANY atm. */
+            }
+        }
       else
 	{
 	  ecm_grammar_to_fsa (ctr, dtd);
