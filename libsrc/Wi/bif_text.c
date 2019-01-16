@@ -1223,18 +1223,18 @@ xte_vtb_feed (caddr_t * xte, vt_batch_t * vtb, lh_word_callback_t *cbk, char **t
       caddr_t name;
       size_t namelen;
       if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (head))
-	sqlr_new_error ("22023", "FT011", "Bad XML entity tree in vt_batch_feed");
-	name = head[0];
-	if (!DV_STRINGP (name))
-	  sqlr_new_error ("22023", "FT012", "Bad XML entity tree in vt_batch_feed");
-	if (' ' == name[0])
-	  {
-	    if (!strcmp(name," root"))
-	      goto process_tag; /* see below */
-	    return hider;
-	  }
-	if(box_length(name)>(XML_MAX_EXP_NAME-2))
-	  sqlr_new_error ("22023", "FT013", "Bad XML entity tree in vt_batch_feed");
+        sqlr_new_error ("22023", "FT011", "Bad XML entity tree in vt_batch_feed");
+      name = head[0];
+      if (!DV_STRINGP (name))
+        sqlr_new_error ("22023", "FT012", "Bad XML entity tree in vt_batch_feed");
+      if (' ' == name[0])
+        {
+          if (!strcmp(name," root"))
+            goto process_tag; /* see below */
+          return hider;
+        }
+      if(box_length(name)>(XML_MAX_EXP_NAME-2))
+        sqlr_new_error ("22023", "FT013", "Bad XML entity tree in vt_batch_feed");
 process_tag:
       attr_idx_max = BOX_ELEMENTS(head) - 1;
       for (attr_idx = 1; attr_idx < attr_idx_max; attr_idx += 2)

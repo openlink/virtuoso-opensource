@@ -5286,25 +5286,23 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 	if (BOX_ELEMENTS (elem) < 1)
 	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
 
-	  if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
-	    { /* XMLATTRIBUTES */
-	      int inx, attr_length = BOX_ELEMENTS (elem);
+	if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
+	  {				/* XMLATTRIBUTES */
+	    int inx, attr_length = BOX_ELEMENTS (elem);
 
-	      for (inx = 1; inx < attr_length; inx += 2)
-		{
-		  if (elem_is_writeable)
-		    {
-		      if (bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 0,
-			  ((caddr_t *) elem)[inx + 1]))
-			((caddr_t *) elem)[inx] = NULL;
-		      ((caddr_t *) elem)[inx + 1] = NULL;
-		    }
-		  else
-		    bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 1,
-			box_copy_tree (((caddr_t *) elem)[inx + 1]));
-		}
-              goto array_arg_done;
-	    }
+	    for (inx = 1; inx < attr_length; inx += 2)
+	      {
+		if (elem_is_writeable)
+		  {
+		    if (bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 0, ((caddr_t *) elem)[inx + 1]))
+		      ((caddr_t *) elem)[inx] = NULL;
+		    ((caddr_t *) elem)[inx + 1] = NULL;
+		  }
+		else
+		  bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 1, box_copy_tree (((caddr_t *) elem)[inx + 1]));
+	      }
+	    goto array_arg_done;
+	  }
 	if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (((caddr_t *)elem)[0]) || BOX_ELEMENTS (((caddr_t *)elem)[0]) < 1)
 	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
         if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (XTE_HEAD (elem))))

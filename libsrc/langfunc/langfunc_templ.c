@@ -41,7 +41,7 @@ int LH_COUNT_WORDS_NAME (const unichar *buf, size_t bufsize, lh_word_check_t *ch
 	    continue;
 	  if (NULL!=check && 0 == check(buf+word_start, word_length))
 	    continue;
-	    res++;
+	  res++;
 	  continue;
 	}
       if (prop & UCP_IDEO)

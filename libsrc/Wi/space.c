@@ -69,14 +69,13 @@ it_cache_check (index_tree_t * it, int mode)
 	      /* This can be legitimate if a thread is in freeze mode and one itc is on a table scan and another is in order by or hash fill, so that the freeze is in the temp space operation . */
 	      /* error = 1; */
 	    }
-	  if (dbs_cache_check_enable && DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)
-	      && IT_CHECK_FAST != mode)
+	  if (dbs_cache_check_enable && (DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)) && (IT_CHECK_FAST != mode))
 	    pg_check_map_1 (buf);
-	    if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
-	      {
-		log_error ("Buffer %p dirty but no remap, tree %s", buf, it->it_key ? it->it_key->key_name : "no key");
-		dbg_page_map_log (buf, "missed_flush.txt", "Dirty page with no remap");
-	      }
+          if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
+            {
+              log_error ("Buffer %p dirty but no remap, tree %s", buf, it->it_key ? it->it_key->key_name : "no key");
+              dbg_page_map_log (buf, "missed_flush.txt", "Dirty page with no remap");
+            }
 	  if (((dp_addr_t) dp) != buf->bd_page)
 	    {
 	      log_error ("*** Buffer %p cache dp %ld buf dp %ld \n",

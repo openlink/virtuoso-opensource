@@ -1497,29 +1497,29 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
       {
         if ((NULL == g1) || (NULL == g2))
           return 0;
-          if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
-            {
-              if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
-                {
-                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)))
-                    return 1;
-                  return 0;
-                }
-              if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
-                {
-                  geoc boxproximaX = ((Xkey(g2) > g1->XYbox.Xmax) ? g1->XYbox.Xmax : ((Xkey(g2) < g1->XYbox.Xmin) ? g1->XYbox.Xmin : Xkey(g2)));
-                  geoc boxproximaY = ((Ykey(g2) > g1->XYbox.Ymax) ? g1->XYbox.Ymax : ((Ykey(g2) < g1->XYbox.Ymin) ? g1->XYbox.Ymin : Ykey(g2)));
-                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g2), Ykey(g2), boxproximaX, boxproximaY))
-                    return 1;
-                  return 0;
-                }
-              if ( (Xkey(g2) < g1->XYbox.Xmin - prec)
-                || (Xkey(g2) > g1->XYbox.Xmax + prec)
-                || (Ykey(g2) < g1->XYbox.Ymin - prec)
-                || (Ykey(g2) > g1->XYbox.Ymax + prec) )
+        if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
+          {
+            if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
+              {
+                if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)))
+                  return 1;
                 return 0;
-              return 1;
-            }
+              }
+            if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
+              {
+                geoc boxproximaX = ((Xkey(g2) > g1->XYbox.Xmax) ? g1->XYbox.Xmax : ((Xkey(g2) < g1->XYbox.Xmin) ? g1->XYbox.Xmin : Xkey(g2)));
+                geoc boxproximaY = ((Ykey(g2) > g1->XYbox.Ymax) ? g1->XYbox.Ymax : ((Ykey(g2) < g1->XYbox.Ymin) ? g1->XYbox.Ymin : Ykey(g2)));
+                if (prec >= geo_distance (g1->geo_srcode, Xkey(g2), Ykey(g2), boxproximaX, boxproximaY))
+                  return 1;
+                return 0;
+              }
+            if ( (Xkey(g2) < g1->XYbox.Xmin - prec)
+              || (Xkey(g2) > g1->XYbox.Xmax + prec)
+              || (Ykey(g2) < g1->XYbox.Ymin - prec)
+              || (Ykey(g2) > g1->XYbox.Ymax + prec) )
+              return 0;
+            return 1;
+          }
         if ( (g2->XYbox.Xmin < g1->XYbox.Xmin - prec)
           || (g2->XYbox.Xmax > g1->XYbox.Xmax + prec)
           || (g2->XYbox.Ymin < g1->XYbox.Ymin - prec)

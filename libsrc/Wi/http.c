@@ -1399,7 +1399,8 @@ ws_check_caps (ws_connection_t * ws)
     return 1;
   end = expect + strlen (expect) - 1;
   while (isspace (*expect)) expect++;
-  while (isspace (*end)) end--; end ++;
+  while (isspace (*end)) end--;
+  end ++;
   /* 100 continue is supported */
   if ((end - expect) == 12 && 0 == strnicmp (expect, "100-continue", 12))
     return 1;

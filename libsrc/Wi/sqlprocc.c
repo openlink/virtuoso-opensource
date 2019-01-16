@@ -826,25 +826,25 @@ sqlc_set_brk (query_t *qr, long line1, int what, caddr_t * inst)
 	inside_handler = 0;
       if (inside_handler && line1 <= 0)
 	continue;
-	if (instr->ins_type == INS_BREAKPOINT)
-	  {
-	    if ((line1 > 0 && instr->_.breakpoint.line_no >= line1) || line1 <= 0)
-	      {
-		if (line1 >= 0)
-		  instr->_.breakpoint.brk_set = what;
-		else
-		  instr->_.breakpoint.brk_set = (instr->_.breakpoint.brk_set & 2) | (what & 1);
-/*		fprintf (stderr, "Set Brkp %p at (%ld)\n", instr, instr->_.breakpoint.line_no);*/
-		rc++;
-		if (line1 >= 0)
-		  {
-		    rc = instr->_.breakpoint.line_no;
-		    if (inst)
-		      *inst = (caddr_t) instr;
-		    break;
-		  }
-	      }
-	  }
+      if (instr->ins_type == INS_BREAKPOINT)
+        {
+          if ((line1 > 0 && instr->_.breakpoint.line_no >= line1) || line1 <= 0)
+            {
+              if (line1 >= 0)
+                instr->_.breakpoint.brk_set = what;
+              else
+                instr->_.breakpoint.brk_set = (instr->_.breakpoint.brk_set & 2) | (what & 1);
+              /* fprintf (stderr, "Set Brkp %p at (%ld)\n", instr, instr->_.breakpoint.line_no);*/
+              rc++;
+              if (line1 >= 0)
+                {
+                  rc = instr->_.breakpoint.line_no;
+                  if (inst)
+                    *inst = (caddr_t) instr;
+                  break;
+                }
+            }
+        }
     }
   END_DO_INSTR;
   return rc;
