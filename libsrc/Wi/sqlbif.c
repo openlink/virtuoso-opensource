@@ -626,6 +626,18 @@ bif_long_low_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
   return arg;
 }
 
+boxint
+bif_boxint_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, boxint low, boxint hi)
+{
+  boxint arg = bif_long_arg (qst, args, nth, func);
+  if (arg < low)
+    sqlr_new_error ("22023", "SR339", "Function %s needs an integer not less than " BOXINT_FMT " as argument %d, but called with " BOXINT_FMT,
+  func, low, nth + 1, arg);
+  if (arg > hi)
+    sqlr_new_error ("22023", "SR340", "Function %s needs an integer not greater than than " BOXINT_FMT " as argument %d, but called with " BOXINT_FMT,
+  func, hi, nth + 1, arg);
+  return arg;
+}
 
 boxint
 bif_long_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull)

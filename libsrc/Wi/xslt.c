@@ -3820,7 +3820,7 @@ bif_dict_inc_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_inc_or_put", 0);
   caddr_t key = bif_arg (qst, args, 1, "dict_inc_or_put");
-  boxint inc_val = bif_long_range_arg (qst, args, 2, "dict_inc_or_put", 0, 0xffff);
+  boxint inc_val = bif_boxint_range_arg (qst, args, 2, "dict_inc_or_put", 0, BOXINT_MAX);
   return dict_inc_or_put_impl (hit, key, inc_val, 1 /*signal_unsafe_args*/);
 }
 
@@ -3893,7 +3893,7 @@ bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "dict_dec_or_remove", 0);
   caddr_t key = bif_arg (qst, args, 1, "dict_dec_or_remove");
-  boxint dec_val = bif_long_range_arg (qst, args, 2, "dict_dec_or_remove", 0, 0xffff);
+  boxint dec_val = bif_boxint_range_arg (qst, args, 2, "dict_dec_or_remove", 0, BOXINT_MAX);
   return dict_dec_or_remove_impl (hit, key, dec_val, 1 /*signal_unsafe_args*/);
 }
 
