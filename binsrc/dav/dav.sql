@@ -23,15 +23,17 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
+  -- dbg_obj_princ ('WS.WS.OPTIONS (', path, params, lines, ')');
   declare _det varchar;
   declare _path_id, _res_id any;
   declare _etag, _ldp_head varchar;
-  declare _name varchar;
+  declare _name, _type, _path varchar;
   declare _id integer;
   declare _mod_time datetime;
   whenever not found goto not_found;
 
-  _path_id := DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_CONCAT_PATH ('/', DB.DBA.DAV_CONCAT_PATH (path, '/')), 'C');
+  _path := DB.DBA.DAV_CONCAT_PATH ('/', DB.DBA.DAV_CONCAT_PATH (path, '/'));
+  _path_id := DB.DBA.DAV_SEARCH_ID (_path, 'C');
   if (DB.DBA.DAV_HIDE_ERROR (_path_id) is not null)
   {
     _det := DB.DBA.DAV_DET_NAME (_path_id);
@@ -74,12 +76,12 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
       _id := _path_id;
 
       _etag := sprintf ('ETag: "%s"\r\n', WS.WS.ETAG (_name, _id, _mod_time));
-      if (DB.DBA.LDP_ENABLED (_id))
-        _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\nLink: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+      _ldp_head := WS.WS.LDP_HDRS (1, DB.DBA.LDP_ENABLED (_id), 0, 0, _path);
     }
   }
   else
   {
+    _path := DB.DBA.DAV_CONCAT_PATH ('/', path);
     _res_id := DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_CONCAT_PATH ('/', path), 'R');
     if (DB.DBA.DAV_HIDE_ERROR (_res_id) is not null)
     {
@@ -88,11 +90,10 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
       {
         -- DAV based resource
         --
-        select RES_COL, RES_NAME, RES_MOD_TIME into _id, _name, _mod_time from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (_res_id);
+        select RES_COL, RES_NAME, RES_TYPE, RES_MOD_TIME into _id, _name, _type, _mod_time from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (_res_id);
 
         _etag := sprintf ('ETag: "%s"\r\n', WS.WS.ETAG (_name, _id, _mod_time));
-        if (DB.DBA.LDP_ENABLED (_id))
-          _ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
+        _ldp_head := WS.WS.LDP_HDRS (0, DB.DBA.LDP_ENABLED (_id), 0, 0, _path, _type);
       }
     }
   }
@@ -100,7 +101,7 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
 not_found: ;
   declare headers, acceptPatch, acceptPost, msAuthor any;
 
-  http_methods_set ('GET','HEAD','POST','PUT','DELETE','OPTIONS','PROPFIND','PROPPATCH','COPY','MOVE','LOCK','UNLOCK','TRACE','PATCH');
+  http_methods_set ('COPY', 'DELETE', 'GET', 'HEAD', 'LOCK', 'MKCOL', 'MOVE', 'OPTIONS', 'PATCH', 'POST', 'PROPFIND', 'PROPPATCH', 'PUT', 'TRACE', 'UNLOCK');
   WS.WS.GET (path, params, lines);
   http_rewrite ();
 
@@ -109,22 +110,18 @@ not_found: ;
   if (acceptPatch <> '')
     acceptPatch := sprintf ('Accept-Patch: %s\r\n', acceptPatch);
 
-  acceptPost := http_request_header (headers, 'Accept-Post', null, '*/*');
-  if (acceptPost <> '')
-    acceptPost := sprintf ('Accept-Post: %s\r\n', acceptPost);
-
+  acceptPost := sprintf ('Accept-Post: %s\r\n', http_request_header (headers, 'Accept-Post', null, 'text/turtle, text/html, application/xhtml+xml, application/ld+json'));
   msAuthor := sprintf ('MS-Author-Via: %s\r\n', http_request_header (headers, 'MS-Author-Via', null, 'DAV'));
 
   DB.DBA.DAV_SET_HTTP_STATUS (204);
   http_header (
     'X-Powered-By: Virtuoso Universal Server ' || sys_stat ('st_dbms_ver') || '\r\n' ||
-    'Vary: Origin, Access-Control-Request-Headers\r\n' ||
     _etag ||
     'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n' ||
     _ldp_head ||
-    'Access-Control-Allow-Methods: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
-    'Access-Control-Allow-Headers: Authorization, Accept, Slug, Link, Origin, Content-Type\r\n' ||
-    'Access-Control-Expose-Headers: Authorization, User, Location, Link, Vary, Last-Modified, ETag, Accept-Patch, Accept-Post, Updates-Via, Allow, WAC-Allow, Content-Length, WWW-Authenticate\r\n' ||
+    'Access-Control-Allow-Methods: COPY, DELETE, GET, HEAD, LOCK, MOVE, MKCOL, OPTIONS, PATCH, POST, PROPFIND, PROPPATCH, PUT, TRACE, UNLOCK\r\n' ||
+    'Access-Control-Allow-Headers: Accept, Authorization, Content-Length, Content-Type, If-None-Match, Link, Location, On-Behalf-Of, Origin, Slug, X-Requested-With\r\n' ||
+    'Access-Control-Expose-Headers: Accept-Patch, Accept-Post, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Origin, Allow, Authorization, Content-Length, Content-Type, ETag, Last-Modified, Link, Location, Updates-Via, User, Vary, WAC-Allow, WWW-Authenticate\r\n' ||
     'Access-Control-Allow-Credentials: true\r\n' ||
     'Access-Control-Max-Age: 1728000\r\n' ||
     acceptPatch ||
