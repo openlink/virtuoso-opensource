@@ -146,7 +146,7 @@ geo_alloc_safe (geo_flags_t geo_flags_, int len_, int srcode_, dk_session_t * se
     case GEO_RING_Z:			GEO_ALLOC_PLINE(_.pline.pline_ZMbox.Zmax, 3, 0,  0x80, 0x20, 1); GEO_SET_CVECT(_.pline.Zs); break;
     case GEO_RING_M:			GEO_ALLOC_PLINE(_.pline.Ms		, 2, 1,  0x80, 0x20, 1); GEO_SET_MVECT(_.pline.Ms); break;
     case GEO_RING_Z_M:			GEO_ALLOC_PLINE(_.pline.Ms		, 3, 1,  0x80, 0x20, 1); GEO_SET_CVECT(_.pline.Zs); GEO_SET_MVECT(_.pline.Ms); break;
-    case GEO_POINTLIST:			GEO_ALLOC_PLINE(_.pline.Ys		, 2, 0, 0x200, 0x20, 0);
+    case GEO_POINTLIST:			GEO_ALLOC_PLINE(_.pline.Ys		, 2, 0, 0x200, 0x20, 0); break;
     case GEO_POINTLIST_Z:		GEO_ALLOC_PLINE(_.pline.pline_ZMbox.Zmax, 3, 0, 0x200, 0x20, 0); GEO_SET_CVECT(_.pline.Zs); break;
     case GEO_POINTLIST_M:		GEO_ALLOC_PLINE(_.pline.Ms		, 2, 1, 0x200, 0x20, 0); GEO_SET_MVECT(_.pline.Ms); break;
     case GEO_POINTLIST_Z_M:		GEO_ALLOC_PLINE(_.pline.Ms		, 3, 1, 0x200, 0x20, 0); GEO_SET_CVECT(_.pline.Zs); GEO_SET_MVECT(_.pline.Ms); break;
@@ -328,7 +328,7 @@ geo_copy (geo_t *src)
     case GEO_RING_Z:			GEO_COPY_PLINE(_.pline.pline_ZMbox.Zmax, 3, 0); GEO_RESET_CVECT(_.pline.Zs); break;
     case GEO_RING_M:			GEO_COPY_PLINE(_.pline.Ms, 2, 1); GEO_RESET_MVECT(_.pline.Ms); break;
     case GEO_RING_Z_M:			GEO_COPY_PLINE(_.pline.Ms, 3, 1); GEO_RESET_CVECT(_.pline.Zs); GEO_RESET_MVECT(_.pline.Ms); break;
-    case GEO_POINTLIST:			GEO_COPY_PLINE(_.pline.Ys, 2, 0);
+    case GEO_POINTLIST:			GEO_COPY_PLINE(_.pline.Ys, 2, 0); break;
     case GEO_POINTLIST_Z:		GEO_COPY_PLINE(_.pline.pline_ZMbox.Zmax, 3, 0); GEO_RESET_CVECT(_.pline.Zs); break;
     case GEO_POINTLIST_M:		GEO_COPY_PLINE(_.pline.Ms, 2, 1); GEO_RESET_MVECT(_.pline.Ms); break;
     case GEO_POINTLIST_Z_M:		GEO_COPY_PLINE(_.pline.Ms, 3, 1); GEO_RESET_CVECT(_.pline.Zs); GEO_RESET_MVECT(_.pline.Ms); break;
@@ -402,7 +402,7 @@ mp_geo_copy (mem_pool_t * mp, geo_t *src)
     case GEO_RING_Z:			GEO_MP_COPY_PLINE(_.pline.pline_ZMbox.Zmax, 3, 0); GEO_RESET_CVECT(_.pline.Zs); break;
     case GEO_RING_M:			GEO_MP_COPY_PLINE(_.pline.Ms, 2, 1); GEO_RESET_MVECT(_.pline.Ms); break;
     case GEO_RING_Z_M:			GEO_MP_COPY_PLINE(_.pline.Ms, 3, 1); GEO_RESET_CVECT(_.pline.Zs); GEO_RESET_MVECT(_.pline.Ms); break;
-    case GEO_POINTLIST:			GEO_MP_COPY_PLINE(_.pline.Ys, 2, 0);
+    case GEO_POINTLIST:			GEO_MP_COPY_PLINE(_.pline.Ys, 2, 0); break;
     case GEO_POINTLIST_Z:		GEO_MP_COPY_PLINE(_.pline.pline_ZMbox.Zmax, 3, 0); GEO_RESET_CVECT(_.pline.Zs); break;
     case GEO_POINTLIST_M:		GEO_MP_COPY_PLINE(_.pline.Ms, 2, 1); GEO_RESET_MVECT(_.pline.Ms); break;
     case GEO_POINTLIST_Z_M:		GEO_MP_COPY_PLINE(_.pline.Ms, 3, 1); GEO_RESET_CVECT(_.pline.Zs); GEO_RESET_MVECT(_.pline.Ms); break;
