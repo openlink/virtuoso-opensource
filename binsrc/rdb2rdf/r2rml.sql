@@ -721,7 +721,7 @@ create method R2RML_MAKE_QM_IMPL_REL_PO (in tmap IRI_ID, in tmap2 IRI_ID, in tma
           } }
     order by 1 2 3 4 5) do
     {
-      p_md5 := md5_box (vector (__rdf_strsqlval ("constp"), null, null));
+      p_md5 := md5_box (vector (tmap, __rdf_strsqlval ("constp"), null, null));
       if (self.prev_p_md5 is null or self.prev_p_md5 <> p_md5)
         {
           if (self.prev_p_md5 is not null)
@@ -816,7 +816,7 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
           } }
     order by 1 2 3 4 5 6 7 8 9) do
     {
-      p_md5 := md5_box (vector (__rdf_strsqlval("constp"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("pcol")), __rdf_strsqlval("ptmpl")));
+      p_md5 := md5_box (vector (tmap, __rdf_strsqlval("constp"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("pcol")), __rdf_strsqlval("ptmpl")));
       if (self.prev_p_md5 is null or self.prev_p_md5 <> p_md5)
         {
           if (self.prev_p_md5 is not null)
@@ -998,7 +998,7 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
       if (needs_inner_g_field)
         {
           declare g_md5 any;
-          g_md5 := md5_box (vector (coalesce ("constg", self.default_constg), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("gcol")), __rdf_strsqlval("gtmpl")));
+          g_md5 := md5_box (vector ("tmap", coalesce ("constg", self.default_constg), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("gcol")), __rdf_strsqlval("gtmpl")));
           if (prev_g_md5 is null or prev_g_md5 <> g_md5)
             {
               if (prev_g_md5 is not null)
@@ -1016,7 +1016,7 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
               prev_g_md5 := g_md5;
             }
         }
-      s_md5 := md5_box (vector (__rdf_strsqlval("consts"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("scol")), __rdf_strsqlval("stmpl"), __rdf_strsqlval("stt")));
+      s_md5 := md5_box (vector ("tmap", __rdf_strsqlval("consts"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("scol")), __rdf_strsqlval("stmpl"), __rdf_strsqlval("stt")));
       if (prev_s_md5 is null or prev_s_md5 <> s_md5)
         {
           if (prev_s_md5 is not null)
@@ -1034,7 +1034,7 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
         }
       if ("sclass" is not null)
         {
-          p_md5 := 'rdf:type';
+          p_md5 := md5_box (vector ("tmap", __bft ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 1), null, null));
           if (self.prev_p_md5 is null or self.prev_p_md5 <> p_md5)
             {
               if (self.prev_p_md5 is not null)
