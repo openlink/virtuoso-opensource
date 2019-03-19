@@ -4367,8 +4367,7 @@ void
 http_set_client_address (ws_connection_t * ws)
 {
   caddr_t xfwd;
-  if (!IS_GATEWAY_PROXY (ws))
-    return;
+
   if (ws && ws->ws_lines && NULL != (xfwd = ws_mime_header_field (ws->ws_lines, "X-Forwarded-For", NULL, 1)))
     {
       dk_free_box (ws->ws_client_ip);
