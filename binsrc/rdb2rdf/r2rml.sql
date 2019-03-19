@@ -451,7 +451,7 @@ create function DB.DBA.R2RML_XSD_TYPE_OF_DTP (in dtp integer)
   if (__tag of numeric = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of real = dtp) return 'http://www.w3.org/2001/XMLSchema#float';
   if (230) return 'http://www.w3.org/2001/XMLSchema#XMLLiteral';
-  if (238) return 'http://www.openlinksw.com/schemas/virtrdf#Geometry';
+  if (238) return default_geo_type();
   return 'http://www.w3.org/2001/XMLSchema#any';
 }
 ;
@@ -885,8 +885,8 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
                     union
                       { ?gfld rr:column ?gcol }
                     union
-                      { ?gfld rr:template ?gtmpl } }
-                filter (?gcontainer in (?sfld, ?pofld)) }
+                      { ?gfld rr:template ?gtmpl } } }
+              filter (?gcontainer in (?sfld, ?pofld) || !(bound(?gcontainer)))
           } }
     order by 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16) do
     {
