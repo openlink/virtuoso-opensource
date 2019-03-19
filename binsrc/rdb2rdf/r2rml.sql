@@ -838,59 +838,162 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
 
 create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns any for DB.DBA.R2RML_MAP
 {
-  declare prev_g_md5, prev_s_md5 any;
-  -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS(', needs_inner_g_field, ')');
+  declare prev_g_md5, prev_s_md5, childs any;
+  -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS(', needs_inner_g_field, '), graph_iid is ', self.graph_iid);
   -- For each combination of mapclasses and graph
   prev_g_md5 := prev_s_md5 := null;
   self.prev_p_md5 := null;
+
+-- There was this query here but it fails for unknown reason.
+--  for (sparql define input:storage "" define output:valmode "LONG" define 
+--    select ?constg, ?gcol, ?gtmpl, ?tmap, ?sfld, ?consts, ?scol, ?stmpl, ?stt, ?sclass, ?pofld, ?pconst, ?pfld, ?oconst, ?ofld, ?tmap2, ?tmap2sfld
+--    where { graph `iri(?:self.graph_iid)` {
+--            ?tmap a rr:TriplesMap .
+--              { ?tmap rr:subject ?consts }
+--            union
+--              {
+--                ?tmap rr:subjectMap ?sfld .
+--                  { ?sfld rr:constant ?consts }
+--                union
+--                  { ?sfld rr:column ?scol }
+--                union
+--                  { ?sfld rr:template ?stmpl }
+--                optional { ?sfld rr:termType ?stt }
+--              }
+--              {
+--                ?sfld rr:class ?sclass .
+--              }
+--            union
+--              {
+--                ?tmap rr:predicateObjectMap ?pofld .
+--                  { ?pofld rr:predicate ?pconst }
+--                union
+--                  { ?pofld rr:predicateMap ?pfld }
+--                  { ?pofld rr:object ?oconst }
+--                union
+--                  { ?pofld rr:objectMap ?ofld
+--                    optional {
+--                        ?ofld rr:parentTriplesMap ?tmap2 .
+--                        ?tmap2 a rr:TriplesMap ;
+--                          rr:subjectMap ?tmap2sfld . }
+--                  }
+--              }
+--            optional {
+--                  { ?gcontainer rr:graph ?constg . }
+--                union
+--                  {
+--                    ?gcontainer rr:graphMap ?gfld .
+--                      { ?gfld rr:constant ?constg }
+--                    union
+--                      { ?gfld rr:column ?gcol }
+--                    union
+--                      { ?gfld rr:template ?gtmpl } } }
+--              filter (?gcontainer in (?sfld, ?pofld) || !(bound(?gcontainer)))
+--          } }
+--    order by 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16) do
+--    {
+
+
+  vectorbld_init (childs);
   for (sparql define input:storage "" define output:valmode "LONG"
-    select ?constg, ?gcol, ?gtmpl, ?tmap, ?sfld, ?consts, ?scol, ?stmpl, ?stt, ?sclass, ?pofld, ?pconst, ?pfld, ?oconst, ?ofld, ?tmap2, ?tmap2sfld
+    select ?tmap
     where { graph `iri(?:self.graph_iid)` {
-            ?tmap a rr:TriplesMap .
-              { ?tmap rr:subject ?consts }
-            union
-              {
-                ?tmap rr:subjectMap ?sfld .
-                  { ?sfld rr:constant ?consts }
-                union
-                  { ?sfld rr:column ?scol }
-                union
-                  { ?sfld rr:template ?stmpl }
-                optional { ?sfld rr:termType ?stt }
-              }
-              {
-                ?sfld rr:class ?sclass .
-              }
-            union
-              {
-                ?tmap rr:predicateObjectMap ?pofld .
-                  { ?pofld rr:predicate ?pconst }
-                union
-                  { ?pofld rr:predicateMap ?pfld }
-                  { ?pofld rr:object ?oconst }
-                union
-                  { ?pofld rr:objectMap ?ofld
-                    optional {
-                        ?ofld rr:parentTriplesMap ?tmap2 .
-                        ?tmap2 a rr:TriplesMap ;
-                          rr:subjectMap ?tmap2sfld . }
-                  }
-              }
-            optional {
-                  { ?gcontainer rr:graph ?constg . }
+            ?tmap a rr:TriplesMap . } } ) do
+    {
+      -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: tmap woudl be ', "tmap");
+      for (sparql define input:storage "" define output:valmode "LONG"
+        select ?sfld, ?consts, ?scol, ?stmpl, ?stt
+        where { graph `iri(?:self.graph_iid)` {
+                  { ?:"tmap" rr:subject ?consts }
                 union
                   {
-                    ?gcontainer rr:graphMap ?gfld .
-                      { ?gfld rr:constant ?constg }
+                    ?:"tmap" rr:subjectMap ?sfld .
+                      { ?sfld rr:constant ?consts }
                     union
-                      { ?gfld rr:column ?gcol }
+                      { ?sfld rr:column ?scol }
                     union
-                      { ?gfld rr:template ?gtmpl } } }
-              filter (?gcontainer in (?sfld, ?pofld) || !(bound(?gcontainer)))
-          } }
-    order by 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16) do
+                      { ?sfld rr:template ?stmpl }
+                    optional { ?sfld rr:termType ?stt }
+                  } } } ) do
+        {
+          -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: tmap would be ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt");
+          for (sparql define input:storage "" define output:valmode "LONG"
+            select ?sclass, ?pofld, ?pconst, ?pfld, ?oconst, ?ofld, ?tmap2, ?tmap2sfld, ?constg, ?gcol, ?gtmpl
+            where { graph `iri(?:self.graph_iid)` {
+                      {
+                        ?:"sfld" rr:class ?sclass .
+                      }
+                    union
+                      {
+                        ?:"tmap" rr:predicateObjectMap ?pofld .
+                          { ?pofld rr:predicate ?pconst }
+                        union
+                          { ?pofld rr:predicateMap ?pfld }
+                          { ?pofld rr:object ?oconst }
+                        union
+                          { ?pofld rr:objectMap ?ofld
+                            optional {
+                                ?ofld rr:parentTriplesMap ?tmap2 .
+                                ?tmap2 a rr:TriplesMap ;
+                                  rr:subjectMap ?tmap2sfld . }
+                          }
+                      }
+                    optional {
+                          { ?gcontainer rr:graph ?constg . }
+                        union
+                          {
+                            ?gcontainer rr:graphMap ?gfld .
+                              { ?gfld rr:constant ?constg }
+                            union
+                              { ?gfld rr:column ?gcol }
+                            union
+                              { ?gfld rr:template ?gtmpl } } }
+                      filter (?gcontainer in (?:"sfld", ?pofld) || !(bound(?gcontainer)))
+                  } } ) do
+            {
+              -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: g would be ', "constg", "gcol", "gtmpl", '; tmap is ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt", "sclass", '; po is ', "pconst", "pfld", ' and ', "oconst", "ofld");
+              vectorbld_acc (childs, vector ("constg", "gcol", "gtmpl", "tmap", "sfld", "consts", "scol", "stmpl", "stt", "sclass", "pofld", "pconst", "pfld", "oconst", "ofld", "tmap2", "tmap2sfld"));
+            }
+        }
+    }
+  vectorbld_final (childs);
+  rowvector_obj_sort (childs, 15, 1);
+  rowvector_obj_sort (childs, 14, 1);
+  rowvector_obj_sort (childs, 13, 1);
+  rowvector_obj_sort (childs, 12, 1);
+  rowvector_obj_sort (childs, 11, 1);
+  rowvector_obj_sort (childs, 10, 1);
+  rowvector_obj_sort (childs, 9, 1);
+  rowvector_obj_sort (childs, 8, 1);
+  rowvector_obj_sort (childs, 7, 1);
+  rowvector_obj_sort (childs, 6, 1);
+  rowvector_obj_sort (childs, 5, 1);
+  rowvector_obj_sort (childs, 4, 1);
+  rowvector_obj_sort (childs, 3, 1);
+  rowvector_obj_sort (childs, 2, 1);
+  rowvector_obj_sort (childs, 1, 1);
+  rowvector_obj_sort (childs, 0, 1);
+  foreach (any tmap_case in childs) do
     {
+      declare "constg", "gcol", "gtmpl", "tmap", "sfld", "consts", "scol", "stmpl", "stt", "sclass", "pofld", "pconst", "pfld", "oconst", "ofld", "tmap2", "tmap2sfld" any;
       declare s_md5, p_md5 varchar;
+      "constg" := tmap_case[0];
+      "gcol" := tmap_case[1];
+      "gtmpl" := tmap_case[2];
+      "tmap" := tmap_case[3];
+      "sfld" := tmap_case[4];
+      "consts" := tmap_case[5];
+      "scol" := tmap_case[6];
+      "stmpl" := tmap_case[7];
+      "stt" := tmap_case[8];
+      "sclass" := tmap_case[9];
+      "pofld" := tmap_case[10];
+      "pconst" := tmap_case[11];
+      "pfld" := tmap_case[12];
+      "oconst" := tmap_case[13];
+      "ofld" := tmap_case[14];
+      "tmap2" := tmap_case[15];
+      "tmap2sfld" := tmap_case[16];
       -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: g is ', "constg", "gcol", "gtmpl", '; tmap is ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt", "sclass", '; po is ', "pconst", "pfld", ' and ', "oconst", "ofld");
       if (needs_inner_g_field)
         {

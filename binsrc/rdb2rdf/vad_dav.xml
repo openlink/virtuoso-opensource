@@ -34,8 +34,8 @@
       <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdb2rdf/download"/>
       <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdb2rdf/download"/>
     </name>
-    <version package="1.00.0003">
-      <prop name="Release Date" value="2011-09-05 12:01"/>
+    <version package="1.00.0275">
+      <prop name="Release Date" value="2019-03-07 12:00"/>
       <prop name="Build" value="Release, optimized"/>
     </version>
   </caption>
