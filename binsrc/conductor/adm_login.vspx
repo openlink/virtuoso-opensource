@@ -61,6 +61,7 @@
 	  }
 	if (is_https_ctx () and __proc_exists ('DB.DBA.FOAF_SSL_AUTH_ACL'))
 	  {
+	  commit work;
   	    if (FOAF_SSL_AUTH_ACL ('CONDUCTOR', 'virtuoso_admin'))
 	      {
 	        declare pars, fing any;
