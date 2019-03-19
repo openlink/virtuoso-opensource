@@ -703,7 +703,7 @@ create method R2RML_MAKE_QM_IMPL_REL_PO (in tmap IRI_ID, in tmap2 IRI_ID, in tma
 {
   declare p_md5 varchar;
   declare where_is_opened integer;
-  -- dbg_obj_princ ('R2RML_MAKE_QM: cross from ', "tmap", ' to ', "tmap2" );
+  -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_REL_PO: cross from ', "tmap", ' to ', "tmap2" );
   for (sparql define input:storage "" define output:valmode "LONG"
     select ?constp, ?consto, ?ocol, ?otmpl, ?ott
     where { graph `iri(?:self.graph_iid)` {
@@ -839,6 +839,7 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
 create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns any for DB.DBA.R2RML_MAP
 {
   declare prev_g_md5, prev_s_md5 any;
+  -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS(', needs_inner_g_field, ')');
   -- For each combination of mapclasses and graph
   prev_g_md5 := prev_s_md5 := null;
   self.prev_p_md5 := null;
@@ -890,7 +891,7 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
     order by 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16) do
     {
       declare s_md5, p_md5 varchar;
-      -- dbg_obj_princ ('R2RML_MAKE_QM: g is ', "constg", "gcol", "gtmpl", '; tmap is ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt", "sclass", '; po is ', "pconst", "pfld", ' and ', "oconst", "ofld");
+      -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: g is ', "constg", "gcol", "gtmpl", '; tmap is ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt", "sclass", '; po is ', "pconst", "pfld", ' and ', "oconst", "ofld");
       if (needs_inner_g_field)
         {
           declare g_md5 any;
@@ -1020,7 +1021,7 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
               { ?gfld rr:column ?c }
             union { ?gfld rr:template ?t }
             filter (?gcontainer in (?smap, ?pomap)) } } );
---  -- dbg_obj_princ ('const_graph_count = ', const_graph_count, ', var_graph_count = ', var_graph_count);
+  -- dbg_obj_princ ('const_graph_count = ', const_graph_count, ', var_graph_count = ', var_graph_count);
   http ('alter quad storage ' || self.R2RML_IRI_ID_AS_QNAME (storage_iid) || '\n', self.codegen_ses);
   iter := self.triplesmap_metas_cache;
   for (dict_iter_rewind (iter); dict_iter_next (iter, iter_tmap, iter_metas); )
