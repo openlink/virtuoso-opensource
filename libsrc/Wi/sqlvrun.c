@@ -2458,7 +2458,8 @@ ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_buf_re
 	SRC_IN_STATE (ts, inst) = NULL;
 	ts_aq_result (ts, inst);
 	if (qi->qi_client->cli_activity.da_anytime_result)
-	  cli_anytime_timeout (qi->qi_client);return 1;
+	  cli_anytime_timeout (qi->qi_client);
+        return 1;
       }
     }
   return 0;
