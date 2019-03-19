@@ -531,7 +531,8 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
-
+  if (is_atomic ())
+    signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
   declare exit handler for sqlstate '37000' {
     if (app_env <> 0)
       {
