@@ -1940,11 +1940,7 @@
                         }
 			if (length (self.cors) > 0)
 			  {
-			    self.global_opts := vector ('cors', self.cors, 'cors_restricted', self.cors_rej);
-			  }
-			else   
-                                    {
-                                      self.global_opts := null;
+                                      self.global_opts := vector_concat (self.global_opts, vector('cors', self.cors, 'cors_restricted', self.cors_rej));
                                     }
                         commit work;
                                             if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath) )
