@@ -646,9 +646,17 @@ TCHAR *web_query_string = NULL;	/* from environment variable QUERY_STRING */
 int web_mode = 0;		/* Is set to 1 in the beginning of main if used
 			       as a cgi-script */
 int kubl_mode = 1;		/* Currently affects only how MAXROWS are handled. */
-int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0,
-    explain_mode = 0, sparql_translate_mode = 0, vert_row_out_mode = 0,
-    csv_mode = 0, csv_rfc4180_mode = 0, profile_mode = 0;
+int print_banner_flag = 1;
+int print_types_also = 1;
+int verbose_mode = 1;
+int echo_mode = 0;
+int explain_mode = 0;
+int sparql_translate_mode = 0;
+int vert_row_out_mode = 0;
+int csv_mode = 0;
+int csv_rfc4180_mode = 0;
+int profile_mode = 0;
+int json_mode = 0;
 int flag_newlines_at_eor = 1;	/* By default print one nl at the end of row */
 long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
@@ -698,6 +706,9 @@ void print_csv_banner ();
 void print_csv_rfc4180_banner ();
 int print_csv_row();
 int print_csv_rfc4180_row();
+void print_json_banner (void);
+void print_json_footer (void);
+int print_json_row(int row_nr);
 
 /* Only after fully_connected has been set to non-zero (i.e. after
 full connection to data source and statement allocation)
@@ -2648,6 +2659,7 @@ struct name_var_pair isql_variables[] =
   add_var_def (_T("CSV_RFC4180_FIELD_SEPARATOR"), (&csv_rfc4180_field_separator), CHARPTR_VAR, NULL),
   add_var_def (_T("CSV_ROW_SEPARATOR"), (&csv_row_separator), CHARPTR_VAR, NULL),
   add_var_def (_T("CSV_RFC4180_ROW_SEPARATOR"), (&csv_rfc4180_row_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("JSON"), (&json_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("HIDDEN_CRS"), (&clear_hidden_crs_flag), INT_FLAG, PRESERVED_CLEARED),
   add_var_def (_T("BINARY_OUTPUT"), (&flag_binary_output), INT_FLAG, OFF_ON),
   add_var_def (_T("BANNER"), (&print_banner_flag), INT_FLAG, OFF_ON),
@@ -5144,6 +5156,52 @@ print_blob_col_csv_rfc4180 (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_ty
   return rc;
 }
 
+int
+print_blob_col_json (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
+{
+  static TCHAR blob_buffer[BLOB_BUFFER_SIZE + 1];
+  TCHAR *ch;
+  int got_n_bytes;
+  SQLULEN total = 0;
+  int rc;
+
+  for (;;)
+    {
+      SQLLEN n_recv;
+      rc = SQLGetData (stmt, n_col, SQL_C_TCHAR, blob_buffer, BLOB_BUFFER_SIZE, &n_recv);
+      /* Here we got either SQL_NO_DATA or an error. */
+      if ((rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) || n_recv == SQL_NULL_DATA)
+	{			/* This ^ means really a blob of length 0, not real NULL ??? */
+	  /* Tell calling function that everything is still all right, no panic: */
+	  if (SQL_NO_DATA_FOUND == rc)
+	    rc = SQL_SUCCESS;
+	  break;
+	}
+
+      /* If we get SQL_NO_TOTAL, then we have to use isqlt_tcslen. This doesn't
+         work with true binary data with null bytes in the last part. */
+      got_n_bytes = (int) ((rc == SQL_SUCCESS) ? ((n_recv != SQL_NO_TOTAL) ? n_recv : isqlt_tcslen (blob_buffer)) : BLOB_BUFFER_SIZE - 1);	/* Not the last part. */
+      total += got_n_bytes;
+
+      isqlt_puttchar ('"');
+      for (ch = blob_buffer; *ch; ++ch)
+	{
+	  if (!isprint (*ch))
+	    isqlt_tprintf (_T ("%%%2.2hX"), (short) *ch);
+	  else if (*ch == (TCHAR) ('"'))
+	    isqlt_tprintf (_T ("\"\""));
+	  else
+	    isqlt_puttchar (*ch);
+	}
+      isqlt_puttchar ('"');
+
+      if (rc == SQL_SUCCESS)	/* No more data after this one. */
+	break;
+    }
+
+  return rc;
+}
+
 void
 print_datetime_col (TCHAR *timebinstr, SQLULEN width, int rightp,
 		    SQLLEN collen, int type, int inx)
@@ -5395,6 +5453,21 @@ print_csv_rfc4180_banner ()
     }
 }
 
+
+void
+print_json_banner (void)
+{
+  isqlt_fputts (_T ("[ {\n"), stdout);
+}
+
+
+void
+print_json_footer (void)
+{
+  isqlt_fputts (_T ("\n} ]\n"), stdout);
+}
+
+
 void
 print_datetime_col_csv ( TCHAR *data, SQLULEN width, SQLLEN collen, int type, int inx, int n_cols)
 {
@@ -5445,6 +5518,32 @@ print_datetime_col_csv_rfc4180 ( TCHAR *data, SQLULEN width, SQLLEN collen, int 
     }
   if (inx < n_cols - 1)  /* not the rightmost column? */
     isqlt_fputts (csv_rfc4180_field_separator, stdout);
+}
+
+
+void
+print_datetime_col_json (TCHAR * data, SQLULEN width, SQLLEN collen, int type, int inx, int n_cols)
+{
+  if (type == SQL_DATE)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      DATE_STRUCT *ts = (DATE_STRUCT *) data;
+      isqlt_tprintf (_T ("\"%04d-%02d-%02d\""), ts->year, ts->month, ts->day);
+    }
+  else if (type == SQL_TIME)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIME_STRUCT *ts = (TIME_STRUCT *) data;
+
+      isqlt_tprintf (_T ("\"%02d:%02d.%02d\""), ts->hour, ts->minute, ts->second);
+    }
+  else if (type == SQL_TIMESTAMP)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIMESTAMP_STRUCT *ts = (TIMESTAMP_STRUCT *) data;
+      isqlt_tprintf (_T ("\"%04d-%02d-%02dT%02d:%02d:%02d.%ldZ\""), ts->year, ts->month, ts->day, ts->hour, ts->minute, ts->second,
+	  (long) ts->fraction);
+    }
 }
 
 
@@ -5523,6 +5622,88 @@ print_csv_rfc4180_row()
 
   return (rc);
 }
+
+
+/* Returns either SQL_SUCCESS or the last return code returned by
+   print_blob_col (which calls SQLGetData in the loop.) */
+int
+print_json_row (int row_nr)
+{
+  int inx;
+  int rc = SQL_SUCCESS;
+
+  if (row_nr)
+    isqlt_fputts (_T ("\n},{\n"), stdout);
+
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      TCHAR *o_buffer = (TCHAR *) out_cols[inx].o_buffer;
+      SQLULEN o_width = out_cols[inx].o_width;
+      SQLLEN o_col_len = out_cols[inx].o_col_len;
+      int o_type = out_cols[inx].o_type;
+      int use_quote = 1;
+
+      isqlt_tprintf (_T ("    \"%") PCT_S _T ("\" : "), out_cols[inx].o_title ? out_cols[inx].o_title : (TCHAR *) _T (""));
+
+      if (o_col_len == SQL_NULL_DATA)
+	isqlt_fputts (_T ("null"), stdout);
+      else
+	switch (o_type)
+	  {
+	  case SQL_DATE:
+	  case SQL_TIME:
+	  case SQL_TIMESTAMP:
+	    print_datetime_col_json (o_buffer, o_width, o_col_len, o_type, inx, n_out_cols);
+	    break;
+
+	  case SQL_LONGVARBINARY:
+	  case SQL_LONGVARCHAR:
+	  case SQL_WLONGVARCHAR:
+	    /* Note zero-based indexing here. print_blob_col needs one+ */
+	    if ((rc = print_blob_col_json (stmt, ((UWORD) (inx + 1)), o_width, o_type)) != SQL_SUCCESS)
+	      return (rc);
+	    break;
+
+	  case SQL_DECIMAL:
+	  case SQL_DOUBLE:
+	  case SQL_FLOAT:
+	  case SQL_INTEGER:
+	  case SQL_NUMERIC:
+	  case SQL_REAL:
+	  case SQL_SMALLINT:
+	    use_quote = 0;
+	    /* FALLTRHOUGH */
+
+	  default:
+	    {
+	      TCHAR *ch;
+
+	      if (use_quote)
+		isqlt_puttchar ('"');
+
+	      for (ch = o_buffer; *ch; ++ch)
+		{
+		  if (!isprint (*ch))
+		    isqlt_tprintf (_T ("%%%2.2hX"), (short) *ch);
+		  else if (*ch == (TCHAR) ('"'))
+		    isqlt_tprintf (_T ("\"\""));
+		  else
+		    isqlt_puttchar (*ch);
+		}
+
+	      if (use_quote)
+		isqlt_puttchar ('"');
+	    }
+	    break;
+	  }
+
+      if (inx < n_out_cols - 1)
+	isqlt_fputts (_T (",\n"), stdout);
+    }
+
+  return (rc);
+}
+
 
 /* If this is set to non-zero value, it will override the width values
    got with SQLDescribeCol. */
@@ -6646,6 +6827,8 @@ next_set:
 		print_csv_rfc4180_banner ();
 	      else if (csv_mode)
                 print_csv_banner ();
+	      else if (json_mode)
+                print_json_banner ();
 	      else
 	        print_banner ();
 	    }
@@ -6664,6 +6847,8 @@ next_set:
 	        rc = print_csv_rfc4180_row();
 	      else if(csv_mode)
 	        rc = print_csv_row();
+	      else if (json_mode)
+	        rc = print_json_row(n_rows);
 	      else
 	        rc = print_row();
 	      IF_ERR_GO (stmt, error, rc);
@@ -6673,6 +6858,10 @@ next_set:
 		  break;
 		}
 	    }			/* for fetch loop */
+
+	  if (json_mode)
+	    print_json_footer();
+
 	  if (in_HTML_mode ())
 	    {
 	      HTML_sets_open--;
