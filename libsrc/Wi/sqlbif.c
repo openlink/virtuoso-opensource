@@ -13435,6 +13435,36 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
+bif_scheduler_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  boxint old_period, new_period;
+  int atomic = srv_have_global_lock (THREAD_CURRENT_THREAD);
+
+  new_period = (boxint) bif_long_arg (qst, args, 0, "scheduler_interval");
+  old_period = (boxint) (cfg_scheduler_period / 60000L);
+
+  sec_check_dba (qi, "scheduler_interval");
+
+  if (!atomic)
+    {
+      IN_CPT (((query_instance_t *) qst)->qi_trx);
+    }
+
+  if (0 > new_period)
+    new_period = 0;
+  cfg_scheduler_period = 60000L * new_period;
+
+  if (!atomic)
+    {
+      LEAVE_CPT (((query_instance_t *) qst)->qi_trx);
+    }
+
+  return box_num (old_period);
+}
+
+
+caddr_t
 bif_exec_error (caddr_t * qst, state_slot_t ** args, caddr_t err, dk_set_t warnings, shcompo_t *shc, query_t *qr)
 {
   char buf[80];
@@ -17042,6 +17072,7 @@ sql_bif_init (void)
   bif_define_ex ("\x01__reset_temp" /* was "__reset_temp" */, bif_clear_temp, BMD_MAX_ARGCOUNT, 0, BMD_IS_DBA_ONLY, BMD_DONE);
   bif_define ("__trx_disk_log_length", bif_trx_disk_log_length);
   bif_define ("checkpoint_interval", bif_checkpoint_interval);
+  bif_define ("scheduler_interval", bif_scheduler_interval);
   bif_define ("sql_lex_analyze", bif_sql_lex_analyze);
   bif_define ("sql_split_text", bif_sql_split_text);
 
