@@ -1,6 +1,4 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -18,7 +16,6 @@
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
 --
 
 create table DB.DBA.URL_REWRITE_RULE_LIST (
@@ -1414,10 +1411,10 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 }
 ;
 
-virt_proxy_init ()
+DB.DBA.virt_proxy_init ()
 ;
 
-grant execute on ext_http_proxy to PROXY
+grant execute on DB.DBA.ext_http_proxy to PROXY
 ;
 
 -- /* Example for 'denote' and 'entity' IRI patterns */
@@ -1426,8 +1423,7 @@ grant execute on ext_http_proxy to PROXY
 
 
 -- supported mime types
-create procedure
-url_rewrite_mime_types ()
+create procedure DB.DBA.url_rewrite_mime_types ()
 {
   return vector (
       vector ('html',  	'text/html', 		1.0),
@@ -1447,11 +1443,10 @@ url_rewrite_mime_types ()
 }
 ;
 
-create procedure
-url_rewrite_mime_pattern ()
+create procedure DB.DBA.url_rewrite_mime_pattern ()
 {
   declare x, res any;
-  x := url_rewrite_mime_types ();
+  x := DB.DBA.url_rewrite_mime_types ();
   res := '';
   foreach (varchar p in x) do
     {
@@ -1461,8 +1456,9 @@ url_rewrite_mime_pattern ()
 }
 ;
 
-create procedure
-url_rewrite_gen_describe (in graph varchar, in iri_spf varchar)
+create procedure DB.DBA.url_rewrite_gen_describe (
+  in graph varchar,
+  in iri_spf varchar)
 {
   declare ret, qr any;
   qr := sprintf ('DESCRIBE <%s>', iri_spf);
@@ -1473,17 +1469,22 @@ url_rewrite_gen_describe (in graph varchar, in iri_spf varchar)
 }
 ;
 
-create procedure
-url_rewrite_gen_vsp (in graph varchar, in iri_spf varchar)
+create procedure DB.DBA.url_rewrite_gen_vsp (
+  in graph varchar,
+  in iri_spf varchar)
 {
-  declare ret, qr any;
+  declare ret any;
   ret := sprintf ('/describe/?url=%s', iri_spf);
   return ret;
 }
 ;
 
-create procedure
-url_rewrite_from_template (in prefix varchar, in graph varchar, in iri_pattern varchar, in url_pattern varchar, in flags int := 0)
+create procedure DB.DBA.url_rewrite_from_template (
+  in prefix varchar,
+  in graph varchar,
+  in iri_pattern varchar,
+  in url_pattern varchar,
+  in flags int := 0)
 {
   declare arr, h, iri_path, iri_regex, iri_spf, iri_tcn, url_spf, url_regex, url_tcn, iri_param, url_param, iri_vd, url_vd any;
   declare pos, nth, fct int;
@@ -1581,19 +1582,19 @@ url_rewrite_from_template (in prefix varchar, in graph varchar, in iri_pattern v
 		sys_sql_val_print (iri_param),
 		rtrim (replace (replace (url_spf, '{Extension}', ''), '//', '/'), '.'),
 		sys_sql_val_print (url_param),
-		url_rewrite_mime_pattern ()
+		DB.DBA.url_rewrite_mime_pattern ()
 		), ses);
 
   http ('\n', ses);
   http (sprintf ('delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = \'%s_iri_rule_list\';\n', prefix), ses);
   if (flags and exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
     fct := 1;
-  mime_types := url_rewrite_mime_types ();
+  mime_types := DB.DBA.url_rewrite_mime_types ();
   foreach (any x in mime_types) do
     {
       declare redir varchar;
       if (fct and x[0] = 'html')
-	redir := url_rewrite_gen_vsp (graph, iri_tcn);
+	redir := DB.DBA.url_rewrite_gen_vsp (graph, iri_tcn);
       else
 	redir := replace (url_tcn, '{Extension}', x[0]);
       http (sprintf ('DB.DBA.HTTP_VARIANT_ADD (\'%s_iri_rule_list\', \'%s\', \'%s\', \'%s\', %.2f);\n',
@@ -1620,7 +1621,7 @@ url_rewrite_from_template (in prefix varchar, in graph varchar, in iri_pattern v
   foreach (any x in mime_types) do
     {
       declare redir any;
-      redir := url_rewrite_gen_describe (graph, iri_spf) || replace (sprintf ('&format=%U', x[1]), '%', '%%');
+      redir := DB.DBA.url_rewrite_gen_describe (graph, iri_spf) || replace (sprintf ('&format=%U', x[1]), '%', '%%');
       http (sprintf ('DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( \'%s_url_rule_%d\', 1, \'%s\', %s, 1, \'%s\', %s, null, null, 2, null, \'Content-Type: %s\'); \n',
 		prefix, nth,
 		replace (url_regex, '{Extension}', x[0]),
