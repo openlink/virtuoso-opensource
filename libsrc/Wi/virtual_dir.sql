@@ -806,7 +806,7 @@ create procedure DB.DBA.virt_proxy_init ()
       '/proxy?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
   DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_http_proxy_rule_list1', 1, vector ('ext_http_proxy_rule_1'));
   DB.DBA.VHOST_REMOVE (lpath=>'/proxy');
-  DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
+  DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/EXT_HTTP_PROXY', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
   registry_set ('DB.DBA.virt_proxy_init_state', '1.1');
 }
@@ -966,7 +966,8 @@ create procedure DB.DBA.ext_http_proxy_exec_qry (
 
 -- XXX now REALLY check for that SQL injection!
 
-create procedure DB.DBA.ext_http_proxy (
+create procedure
+DB.DBA.EXT_HTTP_PROXY (
   in url varchar := null,
   in exec varchar := null,
   in header varchar := null,
