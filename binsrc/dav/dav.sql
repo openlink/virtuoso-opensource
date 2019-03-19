@@ -120,7 +120,7 @@ not_found: ;
     'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n' ||
     _ldp_head ||
     'Access-Control-Allow-Methods: COPY, DELETE, GET, HEAD, LOCK, MOVE, MKCOL, OPTIONS, PATCH, POST, PROPFIND, PROPPATCH, PUT, TRACE, UNLOCK\r\n' ||
-    'Access-Control-Allow-Headers: Accept, Authorization, Content-Length, Content-Type, If-None-Match, Link, Location, On-Behalf-Of, Origin, Slug, X-Requested-With\r\n' ||
+    'Access-Control-Allow-Headers: Accept, Authorization, Content-Length, Content-Type, Depth, If-None-Match, Link, Location, On-Behalf-Of, Origin, WebID-TLS, Slug, X-Requested-With\r\n' ||
     'Access-Control-Expose-Headers: Accept-Patch, Accept-Post, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Origin, Allow, Authorization, Content-Length, Content-Type, ETag, Last-Modified, Link, Location, Updates-Via, User, Vary, WAC-Allow, WWW-Authenticate\r\n' ||
     'Access-Control-Allow-Credentials: true\r\n' ||
     'Access-Control-Max-Age: 1728000\r\n' ||
