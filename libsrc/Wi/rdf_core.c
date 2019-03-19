@@ -3453,6 +3453,11 @@ bif_iri_to_rdf_prefix_and_local (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_default_geo_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return uname_virtrdf_ns_uri_Geometry;
+}
 
 caddr_t
 rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, int is_set, int is_txn)
@@ -4396,6 +4401,8 @@ rdf_core_init (void)
   bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define_ex ("iri_from_pref_name", bif_iri_from_pref_name, BMD_RET_TYPE, &bt_any, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("default_geo_type"		, bif_default_geo_type	, BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
+
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
   bif_set_vectored (bif_rdf_cache_id, bif_rdf_cache_id_vec);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
