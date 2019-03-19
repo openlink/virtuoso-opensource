@@ -13406,31 +13406,31 @@ caddr_t
 bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
-  int32 old_cp_interval;
-  int atomic = srv_have_global_lock  (THREAD_CURRENT_THREAD);
-  c_checkpoint_interval = (int32) bif_long_arg (qst, args, 0, "checkpoint_interval");
-  old_cp_interval = cfg_autocheckpoint / 60000L;
+  int32 old_interval, new_interval;
+  int atomic = srv_have_global_lock (THREAD_CURRENT_THREAD);
+
+  old_interval = c_checkpoint_interval;
+  new_interval = (int32) bif_long_arg (qst, args, 0, "checkpoint_interval");
 
   sec_check_dba (qi, "checkpoint_interval");
 
   if (!atomic)
     {
-    IN_CPT (((query_instance_t *) qst)->qi_trx);
+      IN_CPT (((query_instance_t *) qst)->qi_trx);
     }
-  if (-1 > c_checkpoint_interval)
-  c_checkpoint_interval = -1;
-  cfg_autocheckpoint = 60000L * c_checkpoint_interval;
-#if 0
-  /*
-   * PMN: THIS SHOULD NEVER BE WRITTEN BACK INTO THE .INI FILE !!!!
-   */
-  cfg_set_checkpoint_interval (c_checkpoint_interval);
-#endif
+
+  if (-1 > new_interval)
+    new_interval = -1;
+
+  c_checkpoint_interval = new_interval;
+  cfg_autocheckpoint = new_interval > 0 ? (60000L * new_interval) : 0L;
+
   if (!atomic)
     {
-    LEAVE_CPT(((query_instance_t *) qst)->qi_trx);
+      LEAVE_CPT (((query_instance_t *) qst)->qi_trx);
     }
-  return box_num (old_cp_interval);
+
+  return box_num (old_interval);
 }
 
 
