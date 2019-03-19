@@ -1502,6 +1502,7 @@
 
               _params := self.vc_page.vc_event.ve_params;
 
+              http_header (http_header_get () || 'X-XSS-Protection: 0\r\n');
               self.mode := get_keyword ('mode', _params, self.mode);
               self.chars := WEBDAV.DBA.settings_chars (self.settings);
               self.dir_columns := vector (
@@ -2609,13 +2610,13 @@
                           File Content
                         </th>
                         <td>
-                          <div id="dav_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then 'none' else '' end ?>;">
+                          <div id="dav_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) in ('text/html', 'application/xhtml+xml') then 'none' else '' end ?>;">
                             <?vsp
                               http (sprintf ('<textarea id="dav_content_plain" name="dav_content_plain" style="width: 100%%; height: 170px">%V</textarea>', get_keyword ('dav_content_plain', self.vc_page.vc_event.ve_params, '')));
                             ?>
                           </div>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <div id="dav_html" style="display: <?V case when get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then '' else 'none' end ?>;">
+                            <div id="dav_html" style="display: <?V case when get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) in ('text/html', 'application/xhtml+xml') then '' else 'none' end ?>;">
                               <?vsp
                                 http (sprintf ('<textarea id="dav_content_html" name="dav_content_html" style="width: 400px; height: 170px;">%V</textarea>', get_keyword ('dav_content_html', self.vc_page.vc_event.ve_params, '')));
                               ?>
