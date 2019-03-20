@@ -3130,10 +3130,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('		<fieldset id="options">\n');
     http('		<input name="debug" id="debug" type="checkbox"' || case (debug) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="debug" class="ckb">Strict checking of void variables</label>\n');
-    http('		<br>\n');
+    http('		<br />\n');
     http('		<input name="log_debug_info" id="log_debug_info" type="checkbox"' || case (log_debug_info) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="log_debug_info" class="ckb">Log debug info at the end of output (has no effect on some queries and output formats)</label>\n');
-    http('		<br>\n');
+    http('		<br />\n');
     http('		<input name="explain" id="explain" onclick="javascript:change_run_button(this)" type="checkbox"' || case (explain_report) when '' then '' else ' checked="checked"' end || '/>\n');
     http('		<label for="explain" class="ckb">Generate SPARQL compilation report (instead of executing the query)</label>\n');
 
