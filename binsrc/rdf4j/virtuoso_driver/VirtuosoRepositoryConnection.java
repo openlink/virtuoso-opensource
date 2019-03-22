@@ -1003,8 +1003,109 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      *         because the repository is not writable.
      */
     public void add(InputStream in, String baseURI, RDFFormat dataFormat, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
-        Reader reader = new InputStreamReader(in);
-        add(reader, baseURI, dataFormat, contexts);
+        verifyIsOpen();
+        flushDelayAdd();
+
+        final boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+
+        try {
+            RDFParser parser = Rio.createParser(dataFormat, getValueFactory());
+            parser.setParserConfig(getParserConfig());
+            parser.setParseErrorListener(new ParseErrorLogger());
+
+            // set up a handler for parsing the data from reader
+
+            parser.setRDFHandler(new AbstractRDFHandler() {
+
+                int count = 0;
+                PreparedStatement ps = null;
+                java.sql.Statement st_cmd = null;
+                Resource[] _contexts = checkDMLContext(contexts);
+
+                public void startRDF() throws RDFHandlerException {
+                    if (!insertBNodeAsVirtuosoIRI) {
+                        try {
+                            st_cmd = createStatement(-1, false);
+                            st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
+                        }
+                        catch (SQLException e) {
+                            throw new RDFHandlerException("Problem with creation of BNode cache: ", e);
+                        }
+                    }
+                }
+
+                public void endRDF() throws RDFHandlerException {
+                    try {
+                        if (count > 0)
+                            ps = flushDelayAdd_batch(ps, count);
+                    }
+                    catch (RepositoryException e) {
+                        throw new RDFHandlerException("Problem executing query: ", e);
+                    }
+                    try {
+                        if (st_cmd!=null)
+                            st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                    }
+                    catch (SQLException e) {
+                        throw new RDFHandlerException("Problem with clearing of BNode cache: ", e);
+                    }
+                    if (ps != null) {
+                        try {
+                            ps.close();
+                        } catch (Exception e) {}
+                    }
+                    if (st_cmd != null) {
+                        try {
+                            st_cmd.close();
+                        } catch (Exception e) {}
+                    }
+                    ps = null;
+                    st_cmd = null;
+                    count = 0;
+                }
+
+                public void handleNamespace(String prefix, String name) throws RDFHandlerException {
+                    String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
+                    try {
+                        PreparedStatement psn = prepareStatement(query, false);
+                        psn.setString(1, prefix);
+                        psn.setString(2, name);
+                        psn.execute();
+                        psn.close();
+                    }
+                    catch (SQLException e) {
+                        throw new RDFHandlerException("Problem executing query: " + query, e);
+                    }
+                }
+
+                public void handleStatement(Statement st) throws RDFHandlerException {
+                    try {
+                        Resource[] hcontexts;
+                        if (st.getContext() != null && useStatementContext) {
+                            hcontexts = new Resource[] {st.getContext()};
+                        } else {
+                            hcontexts = _contexts;
+                        }
+
+                        ps = addToQuadStore_batch(ps, st.getSubject(),
+                                st.getPredicate(), st.getObject(), hcontexts);
+                        count += hcontexts.length;
+
+                        if (count > BATCH_SIZE) {
+                            ps = flushDelayAdd_batch(ps, count);
+                            count = 0;
+                        }
+                    }
+                    catch(Exception e) {
+                        throw new RDFHandlerException(e);
+                    }
+                }
+            });
+            parser.parse(in, baseURI); // parse out each tripled to be handled by the handler above
+        }
+        catch (Exception e) {
+            throw new RepositoryException("Problem parsing triples", e);
+        }
     }
 
     /**
