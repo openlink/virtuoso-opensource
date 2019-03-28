@@ -188,8 +188,11 @@ void sparyyerror_if_long_qname (caddr_t box, const char *lex_type_descr, struct 
       sparyyerror_if_long_qname (yylval->box, lex_type_descr, yyg); \
     return (name);
 
-#define TOKBOX_Q(n,name,lex_type_descr) { \
-    yylval->box = t_box_dv_uname_string (yytext+(n)); \
+#define TOKBOX_Q_ESC(name,lex_type_descr) { \
+    if (strchr (yytext, '\\')) \
+      yylval->box = spar_unescape_strliteral (yyextra, yytext, 0, SPAR_STRLITERAL_SPARQL_QNAME); \
+    else \
+      yylval->box = t_box_dv_uname_string (yytext); \
     TOKBOX_Q_FINAL(name,lex_type_descr) }
 
 #define TOKBOX_Q2(n1,n2,name,lex_type_descr) { \
@@ -216,7 +219,7 @@ sparyyalloc (yy_size_t  size, yyscan_t yyscanner)
 }
 
 void *
-sparyyrealloc  (void * ptr, yy_size_t  sz , yyscan_t yyscanner)
+sparyyrealloc  (void * ptr, yy_size_t sz, yyscan_t yyscanner)
 {
   int old_sz = ((NULL == ptr) ? 0 : box_length (ptr));
   if (old_sz < sz)
@@ -303,26 +306,31 @@ X		([Xx])
 Y		([Yy])
 Z		([Zz])
 
-INTEGER_LITERAL ([0-9]+)
-DECIMAL_LITERAL (([0-9]+"."[0-9]*)|("."[0-9]+))
-DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
+INTEGER_LITERAL		([0-9]+)
+DECIMAL_LITERAL		(([0-9]+"."[0-9]*)|("."[0-9]+))
+DOUBLE_LITERAL		(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
 
-SPAR_SQ_PLAIN	([^\\''\r\n])
-SPAR_DQ_PLAIN	([^\\""\r\n])
-SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
-S_NL		((\r\n)|(\n\r)|\n|\r)
-HEX		([0-9A-Fa-f])
+SPAR_SQ_PLAIN		([^\\''\r\n])
+SPAR_DQ_PLAIN		([^\\""\r\n])
+SPAR_UCHAR		([\\](("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
+SPAR_ECHAR		(([\\][atbvnrf\\""''])|{SPAR_UCHAR})
+S_NL			((\r\n)|(\n\r)|\n|\r)
+HEX			([0-9A-Fa-f])
 
-PN_CHARS_BASE	([A-Za-z\x7f-\xfe])
-PN_CHARS_U_09	([A-Za-z0-9_\x7f-\xfe])
-PN_CHARS	([A-Za-z0-9_\x7f-\xfe-])
-PN_PREFIX	({PN_CHARS_BASE}(([.]*{PN_CHARS})*))
-PN_LOCAL	({PN_CHARS_U_09}(([.]*{PN_CHARS})*))
-SPAR_VARNAME	([A-Za-z0-9_][A-Za-z0-9_\x7f-\xfe]*)
+PN_LOCAL_ESC		([\\][_~.!$&''()*+,;=/?#@%-])
+PN_LOCAL_ESC_X		({PN_LOCAL_ESC}|([%]{HEX}{HEX}))
+PN_CHARS_BASE		([A-Za-z\x7f-\xfe]|{SPAR_UCHAR})
+PN_CHARS_U_09		([A-Za-z0-9_\x7f-\xfe]|{SPAR_UCHAR})
+PN_CHARS_U_09_C_PLX	([A-Za-z0-9_\x7f-\xfe:]|{SPAR_UCHAR}|{PN_LOCAL_ESC_X})
+PN_CHARS		([A-Za-z0-9_\x7f-\xfe-]|{SPAR_UCHAR})
+PN_CHARS_C_PLX		([A-Za-z0-9_\x7f-\xfe:-]|{SPAR_UCHAR}|{PN_LOCAL_ESC_X})
+PN_PREFIX		({PN_CHARS_BASE}(([.]*{PN_CHARS})*))
+PN_LOCAL		({PN_CHARS_U_09_C_PLX}(([.]*{PN_CHARS_C_PLX})*))
+SPAR_VARNAME		([A-Za-z0-9_][A-Za-z0-9_\x7f-\xfe]*)
 SPAR_PLAIN_SQLNAME	([A-Za-z_][A-Za-z0-9_]*)
 SPAR_DQ_SQLNAME		([""][^""\\\r\n]*[""])
 SPAR_SQLNAME		(([A-Za-z_][A-Za-z0-9_]*)|([""][^""\\\r\n]*[""]))
-SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQLNAME})|(":"[0-9]+)))
+SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQLNAME})|(":"[0-9]+)))
 
 %%
 
@@ -372,9 +380,9 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
     return Q_IRI_REF;
   }
 
-<SPARQL>({PN_PREFIX}?)":"{PN_LOCAL}	{ TOKBOX_Q(0,QNAME,"qualified URI"); }
-<SPARQL>({PN_PREFIX}?)":"		{ TOKBOX_Q(0,QNAME_NS,"namespace"); }
-<SPARQL>"_:"{PN_LOCAL}			{ TOKBOX_Q(0,BLANK_NODE_LABEL,"blank node label"); }
+<SPARQL>({PN_PREFIX}?)":"{PN_LOCAL}	{ TOKBOX_Q_ESC(QNAME,"qualified URI"); }
+<SPARQL>({PN_PREFIX}?)":"		{ TOKBOX_Q_ESC(QNAME_NS,"namespace"); }
+<SPARQL>"_:"{PN_LOCAL}			{ TOKBOX_Q_ESC(BLANK_NODE_LABEL,"blank node label"); }
 
 <SPARQL>[?$]{SPAR_VARNAME}	{
     yylval->box = t_box_dv_uname_nchars (yytext + 1, yyleng - 1);
@@ -434,8 +442,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 
 <SPARQL>['']['']['']		{ yymore(); SET_INNER_BEGIN(SPARQL_SSSQ); BEGIN_INNER; }
 <SPARQL>[""][""][""]		{ yymore(); SET_INNER_BEGIN(SPARQL_DDDQ); BEGIN_INNER; }
-<SPARQL_SSSQ>['']['']['']	{ yylval->box = spar_strliteral (yyextra, yytext, 1, 0); BEGIN_OUTER; return SPARQL_STRING; }
-<SPARQL_DDDQ>[""][""][""]	{ yylval->box = spar_strliteral (yyextra, yytext, 1, 0); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_SSSQ>['']['']['']	{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 3, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_DDDQ>[""][""][""]	{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 3, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
 <SPARQL_SSSQ>(([''](['']?))?{S_NL})		{ yyextra->sparp_lexlineno++; yymore(); }
 <SPARQL_DDDQ>(([""]([""]?))?{S_NL})		{ yyextra->sparp_lexlineno++; yymore(); }
 <SPARQL_SSSQ>((([''](['']?))?({SPAR_SQ_PLAIN}|{SPAR_ECHAR}))+)		{ yymore(); }
@@ -450,8 +458,8 @@ SPAR_PARAMNAME	(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQL
 
 <SPARQL>['']		{ yymore(); SET_INNER_BEGIN(SPARQL_SQ); BEGIN_INNER; }
 <SPARQL>[""]		{ yymore(); SET_INNER_BEGIN(SPARQL_DQ); BEGIN_INNER; }
-<SPARQL_SQ>['']		{ yylval->box = spar_strliteral (yyextra, yytext, 0, 0); BEGIN_OUTER; return SPARQL_STRING; }
-<SPARQL_DQ>[""]		{ yylval->box = spar_strliteral (yyextra, yytext, 0, 0); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_SQ>['']		{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
+<SPARQL_DQ>[""]		{ yylval->box = spar_unescape_strliteral (yyextra, yytext, 1, SPAR_STRLITERAL_SPARQL_STRING); BEGIN_OUTER; return SPARQL_STRING; }
 <SPARQL_SQ>{S_NL}	{ sparyyerror ("End-of-line in a short single-quoted string"); yymore(); }
 <SPARQL_DQ>{S_NL}	{ sparyyerror ("End-of-line in a short double-quoted string"); yymore(); }
 <SPARQL_SQ>(({SPAR_SQ_PLAIN}|{SPAR_ECHAR})+)		{ yymore(); }

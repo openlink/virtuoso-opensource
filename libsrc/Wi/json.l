@@ -23,6 +23,7 @@
 
 %option 8bit
 %option never-interactive
+%option noyywrap
 %option nounput
 %{
 #include <ctype.h>
@@ -39,7 +40,10 @@ int jsonyy_string_input (char *buf, int max);
 #define jsonyyerror(str) jsonyyerror_impl(str)
 
 struct sparp_s; /* forward */
-extern caddr_t spar_strliteral (struct sparp_s *sparp, const char *strg, int strg_is_long, int is_json);
+#define SPAR_STRLITERAL_SPARQL_STRING	0
+#define SPAR_STRLITERAL_JSON_STRING	1
+#define SPAR_STRLITERAL_SPARQL_QNAME	2
+extern caddr_t spar_unescape_strliteral (struct sparp_s *sparp, const char *strg, int count_of_quotes, int mode);
 extern int json_line;
 %}
 
@@ -72,7 +76,7 @@ HEX             ([0-9A-Fa-f])
 
 <STRLIT>[^\\\"\n\r\t]*"\"" 	{
 		   BEGIN(INITIAL);
-		   jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
+                   jsonyylval.box = spar_unescape_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 1, SPAR_STRLITERAL_JSON_STRING);
 		   return STRING;
 		}
 

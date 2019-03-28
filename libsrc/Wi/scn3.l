@@ -391,16 +391,21 @@ extern int yylex (YYSTYPE *yylval, yyscan_t yyscanner);
 S_NL	(\r\n|\n|\r)
 SPAR_SQ_PLAIN	([^\\''\r\n])
 SPAR_DQ_PLAIN	([^\\""\r\n])
-SPAR_ECHAR	([\\]([atbvnrf\\""'']|("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
-HEX		([0-9A-Fa-f])
+SPAR_UCHAR		([\\](("u"{HEX}{HEX}{HEX}{HEX})|("U"{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX}{HEX})))
+SPAR_ECHAR		(([\\][atbvnrf\\""''])|{SPAR_UCHAR})
+HEX			([0-9A-Fa-f])
 
-SPAR_NCCHAR1p	([A-Za-z])
-SPAR_NCCHAR1	([A-Za-z_])
-SPAR_VARNAME	([A-Za-z0-9_]+)
-SPAR_NCCHAR	([A-Za-z0-9_-])
-SPAR_NCNAME_PREFIX	({SPAR_NCCHAR1p}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
-SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.-]*{SPAR_NCCHAR})?)
+SPAR_VARNAME	([A-Za-z0-9_][A-Za-z0-9_\x7f-\xfe]*)
 
+PN_LOCAL_ESC		([\\][_~.!$&''()*+,;=/?#@%-])
+PN_LOCAL_ESC_X		({PN_LOCAL_ESC}|([%]{HEX}{HEX}))
+PN_CHARS_BASE		([A-Za-z\x7f-\xfe]|{SPAR_UCHAR})
+PN_CHARS_U_09		([A-Za-z0-9_\x7f-\xfe]|{SPAR_UCHAR})
+PN_CHARS_U_09_C_PLX	([A-Za-z0-9_\x7f-\xfe:]|{SPAR_UCHAR}|{PN_LOCAL_ESC_X})
+PN_CHARS		([A-Za-z0-9_\x7f-\xfe-]|{SPAR_UCHAR})
+PN_CHARS_C_PLX		([A-Za-z0-9_\x7f-\xfe:-]|{SPAR_UCHAR}|{PN_LOCAL_ESC_X})
+PN_PREFIX		({PN_CHARS_BASE}(([.]*{PN_CHARS})*))
+PN_LOCAL		({PN_CHARS_U_09_C_PLX}(([.]*{PN_CHARS_C_PLX})*))
 
 %%
 
@@ -873,7 +878,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	t_set_push (&global_scs->scs_scn3c.namespaces, NULL);
         RETURN_WS(WS_PRAGMA_PREFIX_1); }
 
-<PRAGMA_PREFIX>({SPAR_NCNAME_PREFIX}?)":"	{
+<PRAGMA_PREFIX>({PN_PREFIX}?)":"	{
 	BEGIN(PRAGMA_PREFIX_2);
 	global_scs->scs_scn3c.namespaces->data = t_box_dv_uname_nchars (yytext, strlen (yytext) - 1);
 	RETURN_WS(WS_PRAGMA_PREFIX_2); }
@@ -882,7 +887,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 	const char *langl = strchr (yytext, '<');
 	BEGIN(SQL);
 	global_scs->scs_scn3c.namespaces->next->data = t_box_dv_uname_nchars (langl + 1, (yytext + yyleng - 2) - langl);
-        RETURN_WS(WS_PRAGMA_PREFIX_3); }
+	RETURN_WS(WS_PRAGMA_PREFIX_3); }
 
 <PRAGMA_PREFIX>.	{ scn3yyerror ("Ill formed namespace prefix in #pragma prefix"); }
 <PRAGMA_PREFIX><<EOF>>	{ scn3yyerror ("Unexpected end of text in #pragma prefix"); }
@@ -1016,6 +1021,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SKIP>"}"	TOKCLOSE_SKIP ('}','}');
 <SPARQL_SKIP>"["	TOKOPEN_SKIP ('[',']');
 <SPARQL_SKIP>"]"	TOKCLOSE_SKIP (']',']');
+
 <SPARQL_SKIP>"<"([^<>"{}|^`\001-\040\\])*">"		{ TOK_SKIP; }
 <SPARQL_SKIP>([""][^""\\\n]*[""])|([''][^''\\\n]*[''])	{ TOK_SKIP; }
 
@@ -1048,7 +1054,11 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
 <SPARQL_SQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL short single-quoted string"); }
 <SPARQL_DQ_SKIP><<EOF>>		{ scn3yyerror ("Unterminated SPARQL short double-quoted string"); }
 
-<SPARQL_SKIP>[^#''""\\\n\r(){}\[\];<>]+ TOK_SKIP;
+<SPARQL_SKIP>({PN_PREFIX}?)":"{PN_LOCAL}	TOK_SKIP;
+<SPARQL_SKIP>({PN_PREFIX}?)":"			TOK_SKIP;
+<SPARQL_SKIP>"_:"{PN_LOCAL}			TOK_SKIP;
+<SPARQL_SKIP>[^#''""\\\n\r(){}\[\];:<>]+	TOK_SKIP;
+
 <SPARQL_SKIP><<EOF>>  {
 #ifndef SCN3SPLIT
     scn3_include_fragment_t *outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;

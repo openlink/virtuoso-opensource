@@ -827,15 +827,15 @@ sparp_id_to_iri (sparp_t *sparp, iri_id_t iid)
   return NULL; /* to keep compiler happy */
 }
 
-caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, int is_json)
+caddr_t spar_unescape_strliteral (sparp_t *sparp, const char *strg, int count_of_quotes, int mode)
 {
   caddr_t tmp_buf;
   caddr_t res;
   const char *err_msg;
   const char *src_tail, *src_end;
   char *tgt_tail;
-  src_tail = strg + (strg_is_long ? 3 : 1);
-  src_end = strg + strlen (strg) - (strg_is_long ? 3 : 1);
+  src_tail = strg + count_of_quotes;
+  src_end = strg + strlen (strg) - count_of_quotes;
   tgt_tail = tmp_buf = dk_alloc_box ((src_end - src_tail) + 1, DV_SHORT_STRING);
   while (src_tail < src_end)
     {
@@ -843,16 +843,16 @@ caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, int
         {
         case '\\':
           {
-            const char *bs_src		= "abfnrtv/\\\'\"uU";
-            const char *bs_trans	= "\a\b\f\n\r\t\v/\\\'\"\0\0";
-            const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\2\6\012";
+            const char *bs_src		= ((SPAR_STRLITERAL_SPARQL_QNAME == mode) ? "_~.-!$&()*+,:=/?#@%\'uU"				: "abfnrtv/\\\'\"uU"			);
+            const char *bs_trans	= ((SPAR_STRLITERAL_SPARQL_QNAME == mode) ? "_~.-!$&()*+,:=/?#@%\'\0\0"				: "\a\b\f\n\r\t\v/\\\'\"\0\0"		);
+            const char *bs_lengths	= ((SPAR_STRLITERAL_SPARQL_QNAME == mode) ? "\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\2\6\012"	: "\2\2\2\2\2\2\2\2\2\2\2\6\012"	);
             const char *hit = strchr (bs_src, src_tail[1]);
             char bs_len, bs_tran;
             const char *nextchr;
             if (NULL == hit)
               {
-        	err_msg = "Unsupported escape sequence after '\'";
-        	goto err;
+                err_msg = "Unsupported escape sequence after '\'";
+                goto err;
               }
             bs_len = bs_lengths [hit - bs_src];
             bs_tran = bs_trans [hit - bs_src];
@@ -904,7 +904,7 @@ next_u:
                         goto err;
                       }
                   }
-                else if (is_json && (6 == bs_len) && (acc >= 0xD800) && (acc <= 0xDFFF))
+                else if ((SPAR_STRLITERAL_JSON_STRING == mode) && (6 == bs_len) && (acc >= 0xD800) && (acc <= 0xDFFF))
                   {
                     if (acc >= 0xDC00)
                       {
@@ -931,14 +931,17 @@ next_u:
         default: (tgt_tail++)[0] = (src_tail++)[0];
         }
     }
-  res = t_box_dv_short_nchars (tmp_buf, tgt_tail - tmp_buf);
+  if (SPAR_STRLITERAL_SPARQL_QNAME == mode)
+    res = t_box_dv_uname_nchars (tmp_buf, tgt_tail - tmp_buf);
+  else
+    res = t_box_dv_short_nchars (tmp_buf, tgt_tail - tmp_buf);
   box_flags (res) = BF_UTF8;
   dk_free_box (tmp_buf);
   return res;
 
 err:
   dk_free_box (tmp_buf);
-  if (is_json)
+  if (SPAR_STRLITERAL_JSON_STRING == mode)
     jsonyyerror_impl (err_msg);
   else
     sparyyerror_impl (sparp, NULL, err_msg);
