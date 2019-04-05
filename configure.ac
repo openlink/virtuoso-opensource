@@ -400,7 +400,7 @@ dnl OBSOLETE AC_INT_16_BITS	dnl now checked by AC_CHECK_SIZE(int)
 #
 if test "x$ac_cv_sizeof_void_p" != 'x8'
 then
-    AC_ERROR([The current version of $PACKAGE_NAME can only be build on 64bit platforms])
+    AC_ERROR([The current version of $PACKAGE_NAME can only be built on 64bit platforms])
 fi
 
 ##########################################################################
@@ -1293,7 +1293,7 @@ main ()
 [
   AC_MSG_RESULT([bad. Check config.log for details])
   with_proj4="no"
-  AC_MSG_WARN([The proj4 plugin will not be build])
+  AC_MSG_WARN([The proj4 plugin will not be built])
 ])
 
     LIBS="$save_LIBS"
@@ -1374,7 +1374,7 @@ main ()
 [
   AC_MSG_RESULT([bad. Check config.log for details])
   with_geos="no"
-  AC_MSG_WARN([The geos plugin will not be build])
+  AC_MSG_WARN([The geos plugin will not be built])
 ])
 
     LIBS="$save_LIBS"
@@ -1470,7 +1470,7 @@ then
 
     if test "x$HS_LOOKUP" = "xnotfound"
     then
-       AC_MSG_WARN([The hslookup plugin will not be build])
+       AC_MSG_WARN([The hslookup plugin will not be built])
        with_hsl=no
     fi
 fi
@@ -1520,7 +1520,7 @@ main ()
 [
   AC_MSG_RESULT([bad. Check config.log for details])
   with_hsl="no"
-  AC_MSG_WARN([The hslookup plugin will not be build])
+  AC_MSG_WARN([The hslookup plugin will not be built])
 ])
 
     LIBS="$save_LIBS"
@@ -1564,7 +1564,7 @@ PKG_CHECK_MODULES_STATIC(IM, MagickWand, [], [
 	IM_CFLAGS=`"$IM_CONFIG" --cflags`
 	IM_LIBS=`"$IM_CONFIG" --libs --static`
     else
-	AC_MSG_WARN([The ImageMagick plugin will not be build])
+	AC_MSG_WARN([The ImageMagick plugin will not be built])
 	with_im=no
     fi
 ])
@@ -1603,7 +1603,7 @@ main ()
 [
   AC_MSG_RESULT([bad. Check config.log for details])
   with_im="no"
-  AC_MSG_WARN([The ImageMagick plugin will not be build])
+  AC_MSG_WARN([The ImageMagick plugin will not be built])
 ])
 
     LIBS="$save_LIBS"
